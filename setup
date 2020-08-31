@@ -1,0 +1,232 @@
+#!/usr/bin/env bash
+
+# This script creates a build directory and sticks a config.sh script into it.
+# Then config.sh can be edited and run within the build directory.
+
+# Print usage info.
+if [ "$1" = "" ]; then
+  echo "setup: Creates a build directory with a configuration file."
+  echo "Usage: setup build_dir"
+  exit 1
+fi
+
+# Create the build directory if it doesn't exist.
+if [ ! -d $1 ]; then
+  mkdir -p $1
+fi
+
+# Copy our template config script into place.
+echo -e "#!/usr/bin/env bash\n" > $1/config.sh
+echo "SOURCE_DIR=$PWD" >> $1/config.sh
+cat <<EOT >> $1/config.sh
+# ^^^^^^ location of haero source code.
+
+# config.sh -- A CMake configuration script.
+# Edit this file to change the parameters in your build. Uncomment exactly one
+# value for each parameter.
+
+#-----------------------------------------------------------------------------
+#                             Installation prefix
+#-----------------------------------------------------------------------------
+PREFIX=$PWD/$1
+
+#-----------------------------------------------------------------------------
+#                              NetCDF and HDF5 libraries
+#-----------------------------------------------------------------------------
+# Usually you don't need to set these. But we provide this ability in case
+# another project (e.g. SCREAM) needs to build this one and use its own
+# NetCDF/HDF5 libraries. If one of these variables is supplied in a triplet,
+# all must be supplied.
+
+#KOKKOS_DIR=/path/to/kokkos
+
+#HDF5_INCLUDE_DIR=/path/to/hdf5/include
+#HDF5_LIBRARY_DIR=/path/to/hdf5/library
+#HDF5_LIBRARY=libhdf5.a
+#HDF5_HL_LIBRARY=libhdf5_hl.a
+
+#NETCDF_INCLUDE_DIR=/path/to/netcdf-c/includes
+#NETCDF_LIBRARY_DIR=/path/to/netcdf-c/library
+#NETCDF_LIBRARY=libnetcdf.a
+
+#YAMLCPP_INCLUDE_DIR=/path/to/yaml-cpp/includes
+#YAMLCPP_LIBRARY_DIR=/path/to/yaml-cpp/library
+#YAMLCPP_LIBRARY=libyamlcpp.a
+
+#-----------------------------------------------------------------------------
+#                                   MPI
+#-----------------------------------------------------------------------------
+
+# Build with MPI for parallel simulations.
+#MPI=ON
+
+#-----------------------------------------------------------------------------
+#                                  OPENMP
+#-----------------------------------------------------------------------------
+
+# Enable OpenMP threading.
+#OPENMP=ON
+
+#-----------------------------------------------------------------------------
+#                             Floating Point Precision
+#-----------------------------------------------------------------------------
+# Choose one of the following.
+
+# Double precision.
+PRECISION=double
+
+# Single precision.
+#PRECISION=single
+
+#-----------------------------------------------------------------------------
+#                                Build type
+#-----------------------------------------------------------------------------
+# Choose one of the following.
+
+# Debug executable (debugging symbols, no optimization).
+BUILD_TYPE=Debug
+
+# Release executable (No symbols, optimization).
+#BUILD_TYPE=Release
+
+#-----------------------------------------------------------------------------
+#                               Verbose builds
+#-----------------------------------------------------------------------------
+
+# Uncomment this if you want really verbose builds.
+#VERBOSE=ON
+
+#-----------------------------------------------------------------------------
+#                                   Compilers
+#-----------------------------------------------------------------------------
+
+if [ "\$MPI" = "ON" ]; then
+  CXX=mpic++
+  CC=mpicc
+  FC=mpif90
+else
+  CXX=c++
+  CC=cc
+  FC=gfortran
+fi
+
+# Override compilers here (ONLY if you know what you're doing!).
+
+# C++ compiler.
+#CXX=c++
+
+# Fortran compiler.
+#FC=gfortran
+
+# C compiler.
+#CC=cc
+
+#-----------------------------------------------------------------------------
+#                   Don't change anything below here.
+#-----------------------------------------------------------------------------
+
+# Are we on a special machine?
+pushd "\$SOURCE_DIR"/machines >& /dev/null
+for MACHINE_FILE in \$(ls)
+do
+  MACHINE=\${MACHINE_FILE/\.sh/}
+  if echo `hostname` | grep -q "\$MACHINE"; then
+    echo "Found machine file \$MACHINE_FILE. Setting up environment for \$MACHINE..."
+    . ./\$MACHINE.sh
+  fi
+done
+popd >& /dev/null
+
+# We use good old-fashioned UNIX makefiles.
+GENERATOR="Unix Makefiles"
+
+OPTIONS=""
+if [ "\$MPI" = "ON" ]; then
+  OPTIONS="-DHAVE_MPI=ON"
+fi
+if [ "\$OPENMP" = "ON" ]; then
+  OPTIONS="\$OPTIONS -DUSE_OPENMP=ON"
+fi
+if [ "\$VERBOSE" = "ON" ]; then
+  OPTIONS="\$OPTIONS -DCMAKE_VERBOSE_MAKEFILE=ON"
+fi
+
+# Configure HDF5 if needed.
+if [ ! "\$HDF5_LIBRARY_DIR" = "" -o ! "\$HDF5_INCLUDE_DIR" = "" -o ! "\$HDF5_LIBRARY" = "" -o ! "\$HDF5_HL_LIBRARY" = "" ]; then
+  if [ "\$HDF5_LIBRARY" = "" ]; then
+    echo "Error: HDF5_LIBRARY must be specified for a custom HDF5 library."
+    exit 1
+  fi
+  if [ "\$HDF5_HL_LIBRARY" = "" ]; then
+    echo "Error: HDF5_HL_LIBRARY must be specified for a custom high-level HDF5 library."
+    exit 1
+  fi
+  if [ "\$HDF5_INCLUDE_DIR" = "" ]; then
+    echo "Error: HDF5_INCLUDE_DIR must be specified for a custom HDF5 library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DHDF5_LIBRARY=\$HDF5_LIBRARY_DIR/\$HDF5_LIBRARY"
+  OPTIONS="\$OPTIONS -DHDF5_HL_LIBRARY=\$HDF5_LIBRARY_DIR/\$HDF5_HL_LIBRARY"
+  OPTIONS="\$OPTIONS -DHDF5_INCLUDE_DIR=\$HDF5_INCLUDE_DIR"
+fi
+
+# Configure NetCDF if needed.
+if [ ! "\$NETCDF_LIBRARY_DIR" = "" -o ! "\$NETCDF_INCLUDE_DIR" = "" -o ! "\$NETCDF_LIBRARY" = "" ]; then
+  if [ "\$NETCDF_LIBRARY" = "" ]; then
+    echo "Error: NETCDF_LIBRARY must be specified for a custom NetCDF library."
+    exit 1
+  fi
+  if [ "\$NETCDF_INCLUDE_DIR" = "" ]; then
+    echo "Error: NETCDF_INCLUDE_DIR must be specified for a custom NetCDF library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DNETCDF_LIBRARY=\$NETCDF_LIBRARY_DIR/\$NETCDF_LIBRARY"
+  OPTIONS="\$OPTIONS -DNETCDF_INCLUDE_DIR=\$NETCDF_INCLUDE_DIR"
+fi
+
+# Configure yaml-cpp if needed.
+if [ ! "\$YAMLCPP_LIBRARY_DIR" = "" -o ! "\$YAMLCPP_INCLUDE_DIR" = "" -o ! "\$YAMLCPP_LIBRARY" = "" ]; then
+  if [ "\$YAMLCPP_LIBRARY" = "" ]; then
+    echo "Error: YAMLCPP_LIBRARY must be specified for a custom yaml-cpp library."
+    exit 1
+  fi
+  if [ "\$YAMLCPP_INCLUDE_DIR" = "" ]; then
+    echo "Error: YAMLCPP_INCLUDE_DIR must be specified for a custom yaml-cpp library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DYAMLCPP_LIBRARY=\$YAMLCPP_LIBRARY_DIR/\$YAMLCPP_LIBRARY"
+  OPTIONS="\$OPTIONS -DYAMLCPP_INCLUDE_DIR=\$YAMLCPP_INCLUDE_DIR"
+fi
+
+# Add extra linker flags if needed.
+if [ ! "\$EXTRA_LDFLAGS" = "" ]; then
+  OPTIONS="\$OPTIONS -DHAERO_EXTRA_LDFLAGS=\$EXTRA_LDFLAGS"
+fi
+
+# Clear the build cache.
+rm -f CMakeCache.txt
+
+# Configure the build.
+cmake \
+ -DCMAKE_INSTALL_PREFIX:PATH=\$PREFIX \
+ -DCMAKE_BUILD_TYPE=\$BUILD_TYPE \
+ -DCMAKE_Fortran_COMPILER=\$FC \
+ -DCMAKE_C_COMPILER=\$CC \
+ -DCMAKE_CXX_COMPILER=\$CXX \
+ -DHAERO_PRECISION=\$PRECISION \
+ \$OPTIONS \
+ -G "\$GENERATOR" \
+ \$SOURCE_DIR
+EOT
+
+# Make config.sh executable.
+chmod a+x $1/config.sh
+
+# Give instructions.
+echo "Your build directory '$1' is ready."
+echo "To configure your build:"
+echo "  1. cd $1"
+echo "  2. Edit config.sh"
+echo "  3. ./config.sh"
+echo "  4. Build using 'make -j'."
+

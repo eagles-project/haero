@@ -1,0 +1,13 @@
+.DS_Store
+fort.*
+*.mod
+
+*.nc
+*.log
+*.out
+*.pdf
+*.aux
+*.bbl
+*.blg
+*.gz
+

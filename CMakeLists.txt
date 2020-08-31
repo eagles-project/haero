@@ -1,0 +1,239 @@
+# Minimum CMake version -- currently determined by HDF5.
+cmake_minimum_required (VERSION 3.10.0)
+
+# Adjust CMake's module path.
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
+# Set compilers. This must be done before enabling languages.
+include(set_up_platform)
+set_up_platform()
+enable_language(C)
+enable_language(Fortran)
+enable_language(CXX)
+
+# We declare the project here.
+project (haero)
+
+message(STATUS "Generating project files in build directory: ${PROJECT_BINARY_DIR}")
+message(STATUS "C++ compiler is ${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
+message(STATUS "C compiler is ${CMAKE_C_COMPILER} (${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION})")
+message(STATUS "Fortran compiler is ${CMAKE_Fortran_COMPILER} (${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION})")
+
+# Version numbers.
+set (HAERO_MAJOR_VERSION 0)
+set (HAERO_MINOR_VERSION 1)
+set (HAERO_PATCH_VERSION 0)
+
+set (HAERO_VERSION "${HAERO_MAJOR_VERSION}.${HAERO_MINOR_VERSION}.${HAERO_PATCH_VERSION}")
+message(STATUS "Configuring haero v${HAERO_VERSION}")
+
+# Precision of floating point numbers.
+if (HAERO_PRECISION STREQUAL "single")
+  set(HAERO_REAL_TYPE "float")
+  set(HAERO_REAL_KIND "sp")
+elseif(HAERO_PRECISION STREQUAL "double")
+  set(HAERO_REAL_TYPE "double")
+  set(HAERO_REAL_KIND "dp")
+else()
+  message(FATAL_ERROR "Invalid precision: ${HAERO_PRECISION}")
+endif()
+message(STATUS "Using ${HAERO_PRECISION} precision floating point numbers")
+
+# We build static libraries only.
+set(BUILD_SHARED_LIBS OFF)
+
+# Figure out the system type.
+if (APPLE)
+  set(SYS_FLAGS "-DAPPLE=1")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Accelerate")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Accelerate")
+  message(STATUS "Configuring on Mac.")
+elseif(LINUX)
+  set(SYS_FLAGS "-DLINUX=1")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
+  message(STATUS "Configuring on Linux.")
+else()
+  message(FATAL_ERROR "Unknown system type! Currently only Mac and Linux are supported")
+endif ()
+
+# C++ compiler flags.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SYS_FLAGS}")
+
+# C compiler flags
+set(CMAKE_C_FLAGS "-fPIC")
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-format-truncation -Wfloat-equal")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
+  if (HAVE_DOUBLE_PRECISION)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wfloat-conversion")
+  endif()
+
+  if (LINUX)
+    # Pass some more needed flags to the compiler.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+  endif()
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
+
+  # Clang proper behaves differently from Apple Clang, and requires
+  # more suppressions.
+  if (NOT CMAKE_C_COMPILER_ID MATCHES "AppleClang")
+    # tolower() is a recursive macro, which causes issues.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-disabled-macro-expansion")
+  endif()
+elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SYS_FLAGS}")
+
+# Fortran compiler flags
+set(CMAKE_Fortran_FLAGS "-cpp")
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")
+  endif()
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -ffree-form")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-unused-dummy-argument")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Werror=tabs")
+  if (APPLE)
+    # Mac-specific stuff goes here.
+  endif()
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
+  endif()
+endif()
+
+# Report the installation prefix.
+message(STATUS "Installation prefix is ${CMAKE_INSTALL_PREFIX}")
+
+# Basic libraries to be linked in.
+set(HAERO_LIBRARIES m)
+
+# NOTE: HDF5 requires dynamic loading as of v1.8.11, so we need libdl.
+set(HAERO_LIBRARIES ${HAERO_LIBRARIES};dl)
+
+# Process any additional linker flags supplied with EXTRA_LDFLAGS.
+if (HAERO_EXTRA_LDFLAGS)
+  include(parse_extra_ldflags)
+  parse_extra_ldflags(${HAERO_EXTRA_LDFLAGS})
+endif()
+
+# Figure out MPI.
+if (HAVE_MPI)
+  message(STATUS "MPI is enabled")
+  set(HAVE_MPI 1) # Normalize.
+
+  # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone.
+  set(NO_MPI_CXX_FLAGS "-DMPICH_SKIP_MPICXX -UHAVE_MPI_CPP -DLAM_WANT_MPI2CPP=0 -DLAM_BUILDING=1 -DOMPI_WANT_CXX_BINDINGS=0 -DOMPI_BUILDING=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NO_MPI_CXX_FLAGS}")
+else()
+  message(STATUS "MPI is disabled")
+  set(HAVE_MPI 0) # Normalize.
+endif ()
+
+# OpenMP support?
+if (USE_OPENMP)
+  find_package(OpenMP QUIET)
+  if (OPENMP_FOUND)
+    message(STATUS "OpenMP is enabled")
+    set(HAVE_OPENMP 1)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+  else()
+    message(STATUS "OpenMP is not supported")
+    set(HAVE_OPENMP 0)
+  endif()
+else()
+  message(STATUS "OpenMP is disabled")
+  set(HAVE_OPENMP 0)
+endif()
+
+# Other third-party libraries.
+add_subdirectory(ext)
+
+# Record the libraries we've gathered so far as the "base" libraries that
+# our box model needs. We use this for efficiently linking unit tests.
+set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
+
+# Include the binary directory in the header file search path,
+# since it's where we place the third-party libraries.
+include_directories("${PROJECT_BINARY_DIR}")
+include_directories("${PROJECT_BINARY_DIR}/include")
+link_directories("${PROJECT_BINARY_DIR}/lib")
+include_directories(${HAERO_INCDIRS})
+
+# Support for valgrind -- Linux only.
+if (LINUX)
+  find_package(Valgrind QUIET)
+  if (VALGRIND_FOUND)
+    set(VALGRIND_FOUND 1) # regularize this value
+    include_directories(${VALGRIND_INCLUDE_DIR})
+    set(MEMORYCHECK_COMMAND ${VALGRIND_PROGRAM})
+    # Add "--gen-suppressions=all" to MEMORYCHECK_COMMAND_OPTIONS to generate
+    # suppressions for Valgrind's false positives. The suppressions show up
+    # right in the MemoryChecker.*.log files.
+    set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=definite,possible --track-origins=yes --error-exitcode=1 --trace-children=yes --suppressions=${PROJECT_SOURCE_DIR}/tools/valgrind/scasm.supp" CACHE STRING "Options passed to Valgrind." FORCE)
+
+    # make memcheck target
+    add_custom_target(memcheck ctest -T memcheck -j ${NUMBER_OF_CORES} USES_TERMINAL)
+  else()
+    set(VALGRIND_FOUND 0)
+  endif()
+else()
+  # Valgrind doesn't work on Macs.
+  set(VALGRIND_FOUND 0)
+endif()
+
+# Unit testing.
+include(CTest)
+enable_testing()
+
+# Source directories.
+include_directories("${PROJECT_SOURCE_DIR}")
+add_subdirectory(haero)
+add_subdirectory(driver)
+
+# Documentation.
+find_package(Doxygen OPTIONAL_COMPONENTS dot QUIET)
+if (DOXYGEN_FOUND)
+  message(STATUS "Found Doxygen. Generating 'doc' target.")
+  set(DOXYGEN_EXTRACT_ALL YES)
+  set(DOXYGEN_EXTRACT_LOCAL_CLASSES YES)
+  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${PROJECT_SOURCE_DIR}/README.md")
+  set(DOXYGEN_WARN_IF_UNDOCUMENTED YES)
+  set(DOXYGEN_WARN_NO_PARAMDOC YES)
+  set(DOXYGEN_FILE_PATTERNS *.F90)
+  set(DOXYGEN_GENERATE_HTML YES)
+  set(DOXYGEN_GENERATE_MAN NO)
+  set(DOXYGEN_GENERATE_LATEX NO)
+  set(DOXYGEN_GENERATE_DOCBOOK NO)
+  set(DOXYGEN_GENERATE_XML NO)
+  set(DOXYGEN_USE_MATHJAX YES)
+  set(DOXYGEN_HIDE_UNDOC_CLASSES NO)
+  set(DOXYGEN_JAVADOC_AUTOBRIEF YES)
+  set(DOXYGEN_LAYOUT_FILE "${PROJECT_SOURCE_DIR}/cmake/DoxygenLayout.xml")
+  set(DOXYGEN_MARKDOWN_SUPPORT YES)
+  set(DOXYGEN_OPTIMIZE_FOR_FORTRAN YES)
+  set(DOXYGEN_RECURSIVE NO)
+  set(DOXYGEN_QUIET NO)
+  set(DOXYGEN_WARN_LOGFILE Doxygen_warnings.log)
+  set(DOXYGEN_SHOW_FILES YES)
+  set(DOXYGEN_SHOW_NAMESPACES YES)
+  set(DOXYGEN_CALL_GRAPH YES)
+  doxygen_add_docs(doc README.md;core;standalone
+                   COMMENT "Generating Documentation")
+endif()
