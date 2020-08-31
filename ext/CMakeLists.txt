@@ -152,7 +152,7 @@ endif()
 set(HAERO_TP_LIBS netcdf;${HAERO_TP_LIBS})
 set(HAERO_TP_INCDIRS ${HAERO_TP_INCDIRS};${NETCDF_INCLUDE_DIR})
 
-endif() # standalone/driver mode dependencies.
+endif() # ENABLE_HAERO_DRIVER
 
 #----------------------------------------------------------------------------
 # yaml-cpp C++ YAML library.

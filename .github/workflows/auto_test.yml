@@ -47,6 +47,7 @@ jobs:
           -DCMAKE_C_COMPILER=cc \
           -DCMAKE_Fortran_COMPILER=gfortran \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
+          -DHAERO_ENABLE_DRIVER=ON \
           -DHAERO_AUTOTESTER=ON \
           -G "Unix Makefiles" \
           ..
