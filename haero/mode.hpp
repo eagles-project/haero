@@ -2,7 +2,7 @@
 #define HAERO_MODE_HPP
 
 #include <string>
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 
 namespace haero {
 

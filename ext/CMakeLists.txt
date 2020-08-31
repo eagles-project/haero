@@ -35,6 +35,7 @@ if (Z_LIBRARY-NOTFOUND)
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
   set(Z_LIBRARY ${PROJECT_BINARY_DIR}/lib/libz.a)
+  set(HDF5_DEPS zlib_proj)
 endif()
 
 add_library(z STATIC IMPORTED GLOBAL)
@@ -79,7 +80,7 @@ if (NOT EXISTS ${HDF5_LIBRARY})
                         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/hdf5
                         INSTALL_DIR ${PROJECT_BINARY_DIR}
                         CMAKE_ARGS ${HDF5_CMAKE_OPTS}
-                        DEPENDS zlib_proj
+                        DEPENDS ${HDF5_DEPS}
                         LOG_CONFIGURE TRUE
                         LOG_BUILD TRUE
                         LOG_INSTALL TRUE)

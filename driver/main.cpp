@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
+#include "haero/haero.hpp"
 #include "haero/yaml_file.hpp"
 #include "driver/driver.hpp"
 
@@ -25,6 +26,20 @@ int _member_index = -1;
 // Are we conducting a convergence study using multiple time step sizes? If
 // so, this identifies a unique index for setting the time step.
 int _dt_index = -1;
+
+// Print version banner.
+void print_banner()
+{
+  string version = haero::version();
+  string revision = haero::revision();
+  bool not_for_science = haero::has_uncommitted_changes();
+  printf("haero v%s (git revision %s)\n", version.c_str(), revision.c_str());
+  if (not_for_science)
+  {
+    fprintf(stderr, "WARNING: haero was built with uncommitted changeѕ!\n");
+    fprintf(stderr, "WARNING: DO NOT USE FOR SCIENCE!\n");
+  }
+}
 
 // Print driver usage information and exit.
 void usage(const char* exe)
@@ -164,6 +179,8 @@ void read_cxx_yaml(int* mam_dt, int* mam_nstep,
 
 int main(int argc, const char* argv[])
 {
+  print_banner();
+
   if (argc < 2)
     usage(argv[0]);
 
