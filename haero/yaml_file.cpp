@@ -1,6 +1,6 @@
-#include "mam_yaml_file.hpp"
+#include "haero/yaml_file.hpp"
 
-namespace mam {
+namespace haero {
 
 Yaml_file::Yaml_file(const std::string& filename)
 {

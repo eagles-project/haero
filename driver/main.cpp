@@ -38,10 +38,6 @@ void usage(const char* exe)
 
 extern "C" {
 
-// Here's a bridge to the Fortran driver main routine for running a simulation.
-// Its implementation is in driver_all.F90.
-void cambox_main(void);
-
 // Here's a function that delivers input to the current member of an ensemble
 // in the Fortran driver.
 void read_cxx_yaml(int* mam_dt, int* mam_nstep,
@@ -229,16 +225,8 @@ int main(int argc, const char* argv[])
   // This is crummy, but it's a stepping stone toward an ensemble-aware C++
   // driver.
   for (_dt_index = 0; _dt_index < num_timesteps; ++_dt_index)
-  {
     for (_member_index = 0; _member_index < ensemble_size; ++_member_index)
-    {
-#ifdef MAMBOX_CXX_DRIVER
-      mambox_driver(*_sim_data);
-#else
-      cambox_main();
-#endif
-    }
-  }
+      haero_driver(*_sim_data);
 
   // Clean up.
   delete _sim_data;
