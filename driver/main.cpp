@@ -9,7 +9,7 @@
 #include "driver/driver.hpp"
 
 using namespace std;
-using namespace mam;
+using namespace haero;
 
 namespace {
 
@@ -180,7 +180,7 @@ int main(int argc, const char* argv[])
     Yaml_file input(argv[1]);
 
     // Populate our global ensemble data.
-    _sim_data = new Sim_data;
+    _sim_data = new Sim_input_data;
 
     _sim_data->initial_conditions = input.read_initial_conditions();
     ensemble_size = _sim_data->initial_conditions.size();

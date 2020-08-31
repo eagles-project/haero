@@ -1,9 +1,7 @@
-#include "standalone/driver.hpp"
+#include "driver.hpp"
 
 // This is our all-C++ driver. It's only built if/when the driver is compiled
 // with the -DMAMBOX_CXX_DRIVER flag.
-
-#ifdef MAMBOX_CXX_DRIVER
 
 namespace {
 
@@ -26,4 +24,3 @@ void mambox_driver(const Sim_input_data& data)
   std::map<std::string, std::vector<Real> > pbuf;
 }
 
-#endif

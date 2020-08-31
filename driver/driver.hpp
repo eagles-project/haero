@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 
+#include "haero/haero_config.hpp"
+
 namespace haero {
 
 // This type holds essential simulation input data.

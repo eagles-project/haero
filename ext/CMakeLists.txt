@@ -10,6 +10,37 @@ foreach(dir include;lib;bin;share)
 endforeach()
 
 #----------------------------------------------------------------------------
+# Dynamic loading library
+#----------------------------------------------------------------------------
+find_library(DL_LIBRARY libdl${CMAKE_SHARED_LIBRARY_SUFFIX} REQUIRED)
+add_library(dl SHARED IMPORTED GLOBAL)
+set_target_properties(dl PROPERTIES IMPORTED_LOCATION ${DL_LIBRARY})
+
+#----------------------------------------------------------------------------
+# libz compression library
+#----------------------------------------------------------------------------
+find_library(Z_LIBRARY libz.a)
+if (Z_LIBRARY-NOTFOUND)
+  # Build zlib.
+  set(ZLIB_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR} --static)
+  ExternalProject_Add(zlib_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/zlib
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/zlib
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/zlib/configure ${ZLIB_CONFIG_OPTS}
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND make -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND make install
+                      LOG_INSTALL TRUE)
+  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/lib/libz.a)
+endif()
+
+add_library(z STATIC IMPORTED GLOBAL)
+set_target_properties(z PROPERTIES IMPORTED_LOCATION ${Z_LIBRARY})
+
+#----------------------------------------------------------------------------
 # HDF5 parallel I/O library
 #----------------------------------------------------------------------------
 if (HDF5_LIBRARY MATCHES ".so")
@@ -27,44 +58,30 @@ if (NOT EXISTS ${HDF5_LIBRARY})
     execute_process(COMMAND ${GIT} submodule update --init --recursive
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
-    # Build zlib.
-    set(ZLIB_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR} --static)
-    ExternalProject_Add(zlib_proj
-                        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/zlib
-                        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
-                        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/zlib
-                        INSTALL_DIR ${PROJECT_BINARY_DIR}
-                        CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/zlib/configure ${ZLIB_CONFIG_OPTS}
-                        LOG_CONFIGURE TRUE
-                        BUILD_COMMAND make -j
-                        LOG_BUILD TRUE
-                        INSTALL_COMMAND make install
-                        LOG_INSTALL TRUE)
-
-    set(HDF5_ENV CC=${CMAKE_C_COMPILER})
-    set(HDF5_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR} --disable-shared
-        --with-zlib=${PROJECT_BINARY_DIR}/include,${PROJECT_BINARY_DIR}/lib
-        --disable-fortran --disable-cxx --disable-java --disable-tools
-        --disable-tests)
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(HDF5_CONFIG_OPTS ${HDF5_CONFIG_OPTS} --enable-build-mode=debug)
-    else()
-      set(HDF5_CONFIG_OPTS ${HDF5_CONFIG_OPTS} --enable-build-mode=production)
-    endif()
-    if (HAVE_MPI)
-      set(HDF5_CONFIG_OPTS ${HDF5_CONFIG_OPTS} --enable-parallel)
-    endif()
+    set(HDF5_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                        -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                        -DZLIB_INCLUDE_DIRS=${PROJECT_BINARY_DIR}/include
+                        -DZLIB_LIBARIES=z -DZLIB_USE_EXTERNAL=OFF
+                        -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
+                        -DHDF5_ENABLE_PARALLEL=${HAVE_MPI}
+                        -DHDF5_BUILD_CPP_LIB=OFF
+                        -DHDF5_BUILD_FORTRAN=OFF
+                        -DHDF5_BUILD_JAVA=OFF
+                        -DHDF5_BUILD_TOOLS=OFF
+                        -DHDF5_BUILD_UTILS=OFF
+                        -DBUILD_TESTING=OFF
+                        -DHDF5_BUILD_EXAMPLES=OFF)
     ExternalProject_Add(hdf5_proj
                         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/hdf5
                         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hdf5
                         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/hdf5
                         INSTALL_DIR ${PROJECT_BINARY_DIR}
-                        CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/hdf5/configure ${HDF5_CONFIG_OPTS}
+                        CMAKE_ARGS ${HDF5_CMAKE_OPTS}
                         DEPENDS zlib_proj
                         LOG_CONFIGURE TRUE
-                        BUILD_COMMAND make -j
                         LOG_BUILD TRUE
-                        INSTALL_COMMAND make install
                         LOG_INSTALL TRUE)
     add_dependencies(hdf5 hdf5_proj)
   else()
@@ -86,11 +103,32 @@ set(HAERO_TP_INCDIRS ${HAERO_TP_INCDIRS};${HDF5_INCLUDE_DIR})
 add_library(netcdf STATIC IMPORTED GLOBAL)
 set_target_properties(netcdf PROPERTIES IMPORTED_LOCATION ${NETCDF_LIBRARY})
 if (NOT EXISTS ${NETCDF_LIBRARY})
-  set(NETCDF_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR} --disable-shared
-      --enable-netcdf4 --disable-dap --disable-testsets --disable-examples)
-  # HDF5 headers should be given in CPPFLAGS, but the NetCDF folks aren't very
-  # careful about this stuff.
-  set(NETCDF_C_FLAGS "${CMAKE_C_FLAGS} -I${HDF5_INCLUDE_DIR}")
+  set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                        -DCMAKE_C_FLAGS=${NETCDF_C_FLAGS}
+                        -DUSE_HDF5=ON
+                        -DHDF5_C_LIBRARY=${HDF5_LIBRARY}
+                        -DHDF5_HL_LIBRARY=${HDF5_HL_LIBRARY}
+                        -DHDF5_C_LIBRARIES=${HDF5_LIBRARY}
+                        -DHDF5_HL_LIBRARIES=${HDF5_HL_LIBRARY}
+                        -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
+                        -DZLIB_LIBRARY=${Z_LIBRARY}
+                        -DHAVE_LIBDL=ON
+                        -DLIBDL=${DL_LIBRARY}
+                        -DENABLE_PARALLEL=${HAVE_MPI}
+                        -DHDF5_IS_PARALLEL=${HAVE_MPI}
+                        -DHDF5_IS_PARALLEL_MPIO=${HAVE_MPI}
+                        -DNC_HAVE_PARALLEL_HDF5=${HAVE_MPI}
+                        -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                        -DCMAKE_INSTALL_LIBDIR=lib
+                        -DENABLE_DAP=OFF
+                        -DBUILD_SHARED_LIBS=OFF
+                        -DFIND_SHARED_LIBS=OFF
+                        -DENABLE_DYNAMIC_LOADING=ON
+                        -DENABLE_TESTS=OFF
+                        -DBUILD_UTILITIES=ON
+                        -DBUILD_EXAMPLES=OFF
+                        -DCMAKE_FIND_LIBRARY_SUFFIXES=.a)
   ExternalProject_Add(netcdf_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/netcdf-c
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/netcdf-c
@@ -98,44 +136,13 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${NETCDF_CMAKE_OPTS}
                       DEPENDS hdf5
-                      CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} CFLAGS=${NETCDF_C_FLAGS} LDFLAGS=-L${HDF5_LIBRARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/netcdf-c/configure ${NETCDF_CONFIG_OPTS}
                       LOG_CONFIGURE TRUE
-                      BUILD_COMMAND make -j
                       LOG_BUILD TRUE
-                      INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
   add_dependencies(netcdf netcdf_proj)
 endif()
 set(HAERO_TP_LIBS netcdf;${HAERO_TP_LIBS})
 set(HAERO_TP_INCDIRS ${HAERO_TP_INCDIRS};${NETCDF_INCLUDE_DIR})
-
-# NetCDF Fortran library.
-add_library(netcdff STATIC IMPORTED GLOBAL)
-set_target_properties(netcdff PROPERTIES IMPORTED_LOCATION ${NETCDFF_LIBRARY})
-if (NOT EXISTS ${NETCDFF_LIBRARY})
-  set(NETCDFF_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR})
-  get_filename_component(NETCDFF_LIBHDF5 ${HDF5_LIBRARY} NAME_WLE)
-  string(REPLACE "lib" "" NETCDFF_LIBHDF5 ${NETCDFF_LIBHDF5})
-  get_filename_component(NETCDFF_LIBHDF5_HL ${HDF5_HL_LIBRARY} NAME_WLE)
-  string(REPLACE "lib" "" NETCDFF_LIBHDF5_HL ${NETCDFF_LIBHDF5_HL})
-  set(NETCDFF_LIBS "-l${NETCDFF_LIBHDF5_HL} -l${NETCDFF_LIBHDF5} -lz -ldl")
-  ExternalProject_Add(netcdff_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/netcdf-fortran
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/netcdf-fortran
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netcdf-fortran
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${NETCDFF_CMAKE_OPTS}
-                      DEPENDS netcdf
-                      CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} FC=${CMAKE_Fortran_COMPILER} CFLAGS=${CMAKE_C_FLAGS} FFLAGS=${CMAKE_Fortran_FLAGS} CPPFLAGS=-I${NETCDF_INCLUDE_DIR} LDFLAGS=-L${NETCDF_LIBRARY_DIR} LIBS=${NETCDFF_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/netcdf-fortran/configure ${NETCDFF_CONFIG_OPTS}
-                      LOG_CONFIGURE TRUE
-                      BUILD_COMMAND make -j
-                      LOG_BUILD TRUE
-                      INSTALL_COMMAND make install
-                      LOG_INSTALL TRUE)
-  add_dependencies(netcdff netcdff_proj)
-endif()
-set(HAERO_TP_LIBS netcdff;${HAERO_TP_LIBS})
-set(HAERO_TP_INCDIRS ${HAERO_TP_INCDIRS};${NETCDFF_INCLUDE_DIR})
 
 #----------------------------------------------------------------------------
 # yaml-cpp C++ YAML library.
@@ -171,14 +178,15 @@ set(HAERO_LIBRARIES ${HAERO_TP_LIBS};${HAERO_LIBRARIES} PARENT_SCOPE)
 set(HAERO_INCDIRS ${HAERO_INCDIRS};${HAERO_TP_INCDIRS} PARENT_SCOPE)
 
 # Installation targets
+if (${Z_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
+  install(FILES ${Z_LIBRARY} DESTINATION lib)
+endif()
 if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
-  add_library(z STATIC IMPORTED GLOBAL)
-  set_target_properties(z PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libz.a)
-  install(FILES ${PROJECT_BINARY_DIR}/lib/libz.a ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION lib)
+  install(FILES ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION lib)
 endif()
 if (${NETCDF_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
 endif()
-if (${NETCDFF_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-Fortran
-  install(FILES ${NETCDFF_LIBRARY} DESTINATION lib)
+if (${YAMLCPP_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
+  install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
 endif()
