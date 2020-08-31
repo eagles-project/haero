@@ -207,6 +207,7 @@ include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
 if (HAERO_ENABLE_DRIVER)
+  message(STATUS "Building standalone haero_driver.")
   add_subdirectory(driver)
 endif()
 
