@@ -99,6 +99,9 @@ documentation generated from code annotations. You can point your browser to
 
 ## Building and Rebuilding
 
++ **When I run config.sh, I see an error complaining about a bad fd number!**
+  You probably typed `sh config.sh` to run the configuration script. It's
+  actually a `bash` script. Just type `./config.sh`.
 + **How do I "reconfigure my build"?** If you want to change a compile-time
   parameter in your model, you must reconfigure and rebuild it. To do this,
   edit your `config.sh` and change the parameter as needed. Then rerun it with

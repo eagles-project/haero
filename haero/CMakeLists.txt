@@ -24,6 +24,7 @@ add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             yaml_file.cpp
             )
+add_dependencies(haero yaml_cpp)
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 

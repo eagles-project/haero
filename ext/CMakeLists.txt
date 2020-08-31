@@ -9,6 +9,9 @@ foreach(dir include;lib;bin;share)
   endif()
 endforeach()
 
+# Many of our dependencies are only needed in standalone mode.
+if (HAERO_ENABLE_DRIVER)
+
 #----------------------------------------------------------------------------
 # Dynamic loading library
 #----------------------------------------------------------------------------
@@ -22,6 +25,7 @@ set_target_properties(dl PROPERTIES IMPORTED_LOCATION ${DL_LIBRARY})
 find_library(Z_LIBRARY libz.a)
 if (Z_LIBRARY-NOTFOUND)
   # Build zlib.
+  message(STATUS "libz not found on system. Building locally.")
   set(ZLIB_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR} --static)
   ExternalProject_Add(zlib_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/zlib
@@ -36,6 +40,8 @@ if (Z_LIBRARY-NOTFOUND)
                       LOG_INSTALL TRUE)
   set(Z_LIBRARY ${PROJECT_BINARY_DIR}/lib/libz.a)
   set(HDF5_DEPS zlib_proj)
+else()
+  message(STATUS "Found libz: ${Z_LIBRARY}")
 endif()
 
 add_library(z STATIC IMPORTED GLOBAL)
@@ -64,7 +70,7 @@ if (NOT EXISTS ${HDF5_LIBRARY})
                         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DZLIB_INCLUDE_DIRS=${PROJECT_BINARY_DIR}/include
-                        -DZLIB_LIBARIES=z -DZLIB_USE_EXTERNAL=OFF
+                        -DZLIB_LIBARIES=${Z_LIBRARY} -DZLIB_USE_EXTERNAL=OFF
                         -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
                         -DHDF5_ENABLE_PARALLEL=${HAVE_MPI}
                         -DHDF5_BUILD_CPP_LIB=OFF
@@ -139,11 +145,14 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                       DEPENDS hdf5
                       LOG_CONFIGURE TRUE
                       LOG_BUILD TRUE
+                      BUILD_COMMAND make
                       LOG_INSTALL TRUE)
   add_dependencies(netcdf netcdf_proj)
 endif()
 set(HAERO_TP_LIBS netcdf;${HAERO_TP_LIBS})
 set(HAERO_TP_INCDIRS ${HAERO_TP_INCDIRS};${NETCDF_INCLUDE_DIR})
+
+endif() # standalone/driver mode dependencies.
 
 #----------------------------------------------------------------------------
 # yaml-cpp C++ YAML library.

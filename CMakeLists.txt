@@ -205,7 +205,10 @@ enable_testing()
 # Source directories.
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
-add_subdirectory(driver)
+
+if (HAERO_ENABLE_DRIVER)
+  add_subdirectory(driver)
+endif()
 
 # Documentation.
 find_package(Doxygen OPTIONAL_COMPONENTS dot QUIET)

@@ -90,6 +90,17 @@ BUILD_TYPE=Debug
 #BUILD_TYPE=Release
 
 #-----------------------------------------------------------------------------
+#                     Build the standalone haero driver?
+#-----------------------------------------------------------------------------
+# Choose one of the foillowing.
+
+# Build the standalone driver for haero.
+BUILD_DRIVER=ON
+
+# Skip the standalone driver and its dependencies.
+#BUILD_DRIVER=OFF
+
+#-----------------------------------------------------------------------------
 #                               Verbose builds
 #-----------------------------------------------------------------------------
 
@@ -214,6 +225,7 @@ cmake \
  -DCMAKE_C_COMPILER=\$CC \
  -DCMAKE_CXX_COMPILER=\$CXX \
  -DHAERO_PRECISION=\$PRECISION \
+ -DHAERO_ENABLE_DRIVER=\$BUILD_DRIVER \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR
