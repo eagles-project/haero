@@ -7,6 +7,3 @@
 [submodule "ext/netcdf-c"]
 	path = ext/netcdf-c
 	url = https://github.com/Unidata/netCDF-C
-[submodule "ext/yaml-cpp"]
-	path = ext/yaml-cpp
-	url = https://github.com/jbeder/yaml-cpp
