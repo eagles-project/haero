@@ -1,9 +1,12 @@
 [submodule "ext/hdf5"]
 	path = ext/hdf5
-	url = https://github.com/HDFGroup/hdf5
+	url = git@github.com:HDFGroup/hdf5
 [submodule "ext/zlib"]
 	path = ext/zlib
-	url = https://github.com/madler/zlib
+	url = git@github.com:madler/zlib
 [submodule "ext/netcdf-c"]
 	path = ext/netcdf-c
-	url = https://github.com/Unidata/netCDF-C
+	url = git@github.com:Unidata/netCDF-C
+[submodule "ext/ekat"]
+	path = ext/ekat
+	url = git@github.com:E3SM-Project/EKAT
