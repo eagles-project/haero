@@ -58,6 +58,7 @@ jobs:
       run: |
         cd build
         make -j
+        cat /home/runner/work/haero/haero/build/ext/ekat/src/ekat_proj-stamp/ekat_proj-build-*.log
 
     - name: Running tests (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
