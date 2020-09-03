@@ -155,29 +155,40 @@ set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${NETCDF_INCLUDE_DIR})
 endif() # ENABLE_HAERO_DRIVER
 
 #----------------------------------------------------------------------------
-# yaml-cpp C++ YAML library.
+# E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
+if (EKAT_LIBRARY MATCHES ".a")
+  add_library(ekat STATIC IMPORTED GLOBAL)
+else()
+  add_library(ekat SHARED IMPORTED GLOBAL)
+endif()
+set_target_properties(ekat PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/${EKAT_LIBRARY})
 if (YAMLCPP_LIBRARY MATCHES ".a")
   add_library(yaml_cpp STATIC IMPORTED GLOBAL)
 else()
   add_library(yaml_cpp SHARED IMPORTED GLOBAL)
 endif()
 set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY_DIR}/${YAMLCPP_LIBRARY})
-if (YAMLCPP_LIBRARY_DIR STREQUAL ${PROJECT_BINARY_DIR}/lib)
-  ExternalProject_Add(yaml_cpp_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp
+if (EKAT_LIBRARY_DIR STREQUAL ${PROJECT_BINARY_DIR}/lib)
+  ExternalProject_Add(ekat_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ekat
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ekat
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-  add_dependencies(yaml_cpp yaml_cpp_proj)
+  add_dependencies(yaml_cpp ekat_proj)
+  add_dependencies(ekat ekat_proj)
 endif()
-set(HAERO_EXT_LIBRARIES yaml_cpp;${HAERO_EXT_LIBRARIES})
+set(HAERO_EXT_LIBRARIES yaml_cpp;ekat;${HAERO_EXT_LIBRARIES})
+list(FIND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR} EKAT_INDEX)
+if (EKAT_INDEX EQUAL -1)
+  set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${EKAT_INCLUDE_DIR})
+endif()
 list(FIND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR} YAMLCPP_INDEX)
 if (YAMLCPP_INDEX EQUAL -1)
   set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${YAMLCPP_INCLUDE_DIR})
@@ -198,6 +209,9 @@ if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
 endif()
 if (${NETCDF_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
+endif()
+if (${EKAT_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
+  install(FILES ${EKAT_LIBRARY} DESTINATION lib)
 endif()
 if (${YAMLCPP_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
