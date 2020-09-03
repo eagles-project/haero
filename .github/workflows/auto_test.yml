@@ -38,7 +38,7 @@ jobs:
 
     - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
-        git config url."https://".insteadOf ssh://git@
+        git config url."https://".insteadOf git://
         ./setup build
         cd build
         cmake \
