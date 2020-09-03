@@ -35,10 +35,11 @@ jobs:
 
     - name: Checking out repository
       uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
-        git config url."https://github.com/".insteadOf git@github.com:
         ./setup build
         cd build
         cmake \
