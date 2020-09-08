@@ -32,6 +32,7 @@ if (Z_LIBRARY-NOTFOUND)
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/zlib
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      UPDATE_COMMAND ${GIT} submodule update --init
                       CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/zlib/configure ${ZLIB_CONFIG_OPTS}
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
@@ -61,10 +62,6 @@ set_target_properties(hdf5 PROPERTIES IMPORTED_LOCATION ${HDF5_LIBRARY})
 set_target_properties(hdf5_hl PROPERTIES IMPORTED_LOCATION ${HDF5_HL_LIBRARY})
 if (NOT EXISTS ${HDF5_LIBRARY})
   if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
-    # We need to build HDF5 locally. First, update git submodules
-    execute_process(COMMAND ${GIT} submodule update --init --recursive
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-
     set(HDF5_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
@@ -87,6 +84,7 @@ if (NOT EXISTS ${HDF5_LIBRARY})
                         INSTALL_DIR ${PROJECT_BINARY_DIR}
                         CMAKE_ARGS ${HDF5_CMAKE_OPTS}
                         DEPENDS ${HDF5_DEPS}
+                        UPDATE_COMMAND ${GIT} submodule update --init
                         LOG_CONFIGURE TRUE
                         LOG_BUILD TRUE
                         LOG_INSTALL TRUE)
@@ -110,44 +108,49 @@ set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
 add_library(netcdf STATIC IMPORTED GLOBAL)
 set_target_properties(netcdf PROPERTIES IMPORTED_LOCATION ${NETCDF_LIBRARY})
 if (NOT EXISTS ${NETCDF_LIBRARY})
-  set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                        -DCMAKE_C_FLAGS=${NETCDF_C_FLAGS}
-                        -DUSE_HDF5=ON
-                        -DHDF5_C_LIBRARY=${HDF5_LIBRARY}
-                        -DHDF5_HL_LIBRARY=${HDF5_HL_LIBRARY}
-                        -DHDF5_C_LIBRARIES=${HDF5_LIBRARY}
-                        -DHDF5_HL_LIBRARIES=${HDF5_HL_LIBRARY}
-                        -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
-                        -DZLIB_LIBRARY=${Z_LIBRARY}
-                        -DHAVE_LIBDL=ON
-                        -DLIBDL=${DL_LIBRARY}
-                        -DENABLE_PARALLEL=${HAVE_MPI}
-                        -DHDF5_IS_PARALLEL=${HAVE_MPI}
-                        -DHDF5_IS_PARALLEL_MPIO=${HAVE_MPI}
-                        -DNC_HAVE_PARALLEL_HDF5=${HAVE_MPI}
-                        -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                        -DCMAKE_INSTALL_LIBDIR=lib
-                        -DENABLE_DAP=OFF
-                        -DBUILD_SHARED_LIBS=OFF
-                        -DFIND_SHARED_LIBS=OFF
-                        -DENABLE_DYNAMIC_LOADING=ON
-                        -DENABLE_TESTS=OFF
-                        -DBUILD_UTILITIES=ON
-                        -DBUILD_EXAMPLES=OFF
-                        -DCMAKE_FIND_LIBRARY_SUFFIXES=.a)
-  ExternalProject_Add(netcdf_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/netcdf-c
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/netcdf-c
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netcdf-c
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${NETCDF_CMAKE_OPTS}
-                      DEPENDS hdf5
-                      LOG_CONFIGURE TRUE
-                      LOG_BUILD TRUE
-                      BUILD_COMMAND make
-                      LOG_INSTALL TRUE)
-  add_dependencies(netcdf netcdf_proj)
+  if (${NETCDF_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
+    set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                          -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                          -DCMAKE_C_FLAGS=${NETCDF_C_FLAGS}
+                          -DUSE_HDF5=ON
+                          -DHDF5_C_LIBRARY=${HDF5_LIBRARY}
+                          -DHDF5_HL_LIBRARY=${HDF5_HL_LIBRARY}
+                          -DHDF5_C_LIBRARIES=${HDF5_LIBRARY}
+                          -DHDF5_HL_LIBRARIES=${HDF5_HL_LIBRARY}
+                          -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
+                          -DZLIB_LIBRARY=${Z_LIBRARY}
+                          -DHAVE_LIBDL=ON
+                          -DLIBDL=${DL_LIBRARY}
+                          -DENABLE_PARALLEL=${HAVE_MPI}
+                          -DHDF5_IS_PARALLEL=${HAVE_MPI}
+                          -DHDF5_IS_PARALLEL_MPIO=${HAVE_MPI}
+                          -DNC_HAVE_PARALLEL_HDF5=${HAVE_MPI}
+                          -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                          -DCMAKE_INSTALL_LIBDIR=lib
+                          -DENABLE_DAP=OFF
+                          -DBUILD_SHARED_LIBS=OFF
+                          -DFIND_SHARED_LIBS=OFF
+                          -DENABLE_DYNAMIC_LOADING=ON
+                          -DENABLE_TESTS=OFF
+                          -DBUILD_UTILITIES=ON
+                          -DBUILD_EXAMPLES=OFF
+                          -DCMAKE_FIND_LIBRARY_SUFFIXES=.a)
+    ExternalProject_Add(netcdf_proj
+                        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/netcdf-c
+                        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/netcdf-c
+                        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netcdf-c
+                        INSTALL_DIR ${PROJECT_BINARY_DIR}
+                        CMAKE_ARGS ${NETCDF_CMAKE_OPTS}
+                        DEPENDS hdf5
+                        UPDATE_COMMAND ${GIT} submodule update --init
+                        LOG_CONFIGURE TRUE
+                        LOG_BUILD TRUE
+                        BUILD_COMMAND make
+                        LOG_INSTALL TRUE)
+    add_dependencies(netcdf netcdf_proj)
+  else()
+    message(FATAL_ERROR "Couldn't find NetCDF library: ${NETCDF_LIBRARY}")
+  endif()
 endif()
 set(HAERO_EXT_DRIVER_LIBRARIES netcdf;${HAERO_EXT_DRIVER_LIBRARIES})
 set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${NETCDF_INCLUDE_DIR})
@@ -176,6 +179,7 @@ if (EKAT_LIBRARY_DIR STREQUAL ${PROJECT_BINARY_DIR}/lib)
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ekat
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                      UPDATE_COMMAND ${GIT} submodule update --init --recursive
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
