@@ -10,6 +10,7 @@ set_up_platform()
 enable_language(C)
 enable_language(Fortran)
 enable_language(CXX)
+set(CMAKE_CXX_STANDARD 11)
 
 # We declare the project here.
 project (haero)
