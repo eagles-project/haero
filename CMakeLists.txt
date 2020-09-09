@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 3.10.0)
 
 # Adjust CMake's module path.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/")
 
 # Set compilers. This must be done before enabling languages.
 include(set_up_platform)
