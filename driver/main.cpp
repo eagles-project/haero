@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <limits>
 #include "haero/haero.hpp"
-#include "haero/yaml_file.hpp"
+#include "driver/yaml_file.hpp"
 #include "driver/driver.hpp"
 
 using namespace std;
