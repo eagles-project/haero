@@ -48,7 +48,7 @@ gases:
   NH3:
     name: ammonia
 
-# Here we can turn various physics on and off.
+# Here we can turn various aerosol physical processes on and off.
 physics:
   growth:               true
   gas_chemistry:        false
@@ -58,14 +58,16 @@ physics:
   nucleation:           true
   coagulation:          true
 
-# ambient atmospheric conditions for a column.
+# mean ambient atmospheric conditions for each column. Possible models are
+# `uniform` and `hydrostatic`, each with their own set of parameters.
 atmosphere:
-  molecular_weight:   30   # [kg/mol]
-  height:             3.e3 # [m]
-  reference_pressure: 1.e5 # reference pressure at z = 0 [Pa]
-  temperature:        273  # [K]
-  RH_CLEA:            0.95 # clear-sky RH [?]
-  cloud_fraction:     0    # [-]
+  model: uniform
+    mu:     0.02896 # mean molecular weight of air [kg/mol]
+    H:      3.e3    # scaled atmospheric height [m]
+    p0:     1.e5    # pressure [Pa]
+    T0:     273     # temperature [K]
+    phi0:   0.95    # clear-sky relative humidity [-]
+    N0:     0       # cloud fraction [-]
 
 # Grid geometry
 grid:
@@ -123,7 +125,7 @@ initial_conditions:
   num_factor: 1
   gas_factor: 1
 
-# Chemistry is pretty simplistic at the moment:
+# Chemistry is pretty simplistic at the moment.
 chemistry:
   # This specifies a constant production rate for a gas [mol gas / mol air / s]
   production:
