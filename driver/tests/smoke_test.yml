@@ -1,5 +1,55 @@
-# What physics do we include in our run?
-aerosol_physics:
+# Let's run a "MAM4" configuration. Modes are indexed automatically.
+modes:
+  aitken:
+    D_min: 0.0087
+    D_max: 0.052
+    sigma: 1.6
+  accumulation:
+    D_min: 0.0535
+    D_max: 0.44
+    sigma: 1.8
+  coarse:
+    D_min: 1
+    D_max: 4
+    sigma: 1.8
+  primary_carbon:
+    D_min: 0.01
+    D_max: 0.1
+    sigma: 1.6
+
+# Aerosol species can belong to more than one mode, and are indexed within
+# each mode automatically.
+aerosols:
+  SO4:
+    name: sulfate
+  NH4:
+    name: ammonium
+  POA:
+    name: primary organic aerosol
+  SOA:
+    name: secondary organic aerosol
+  BC:
+    name: black carbon
+  SS:
+    name: sea salt
+  DST:
+    name: dust
+  MOA:
+    name: marine organic aerosol
+
+# Gas species present. Also indexed automatically.
+gases:
+  SO2:
+    name: sulfur dioxide
+  H2SO4:
+    name: sulfuric acid
+  SOAG:
+    name: single semi-volatile organic gas-phase species
+  NH3:
+    name: ammonia
+
+# Here we can turn various aerosol physical processes on and off.
+physics:
   growth:               true
   gas_chemistry:        false
   cloud_chemistry:      false
@@ -8,76 +58,84 @@ aerosol_physics:
   nucleation:           true
   coagulation:          true
 
-# I think we should scuttle these parameters, which determine the units in which
-# haero interprets input parameters.
-units:
-  num_unit:       0
-  frac_unit:      0
-  gas_unit:       1
-
-# macroscopic atmospheric conditions for a column.
-background:
-  mu:              # mean molecular weight for air [kg/mol]
-  H:        3.e3   # scale height [m] of the atmosphere
-  p0:       1.e5   # reference pressure at z = 0 [Pa]
-  temp:     273    # air temperature [K]
-  RH_CLEA:  0.95   # clear-sky RH [?]
-  cld_frac: 0      # cloud fraction [-]
+# mean ambient atmospheric conditions for each column. Possible models are
+# `uniform` and `hydrostatic`, each with their own set of parameters.
+atmosphere:
+  model: uniform
+    mu:     0.02896 # mean molecular weight of air [kg/mol]
+    H:      3.e3    # scaled atmospheric height [m]
+    p0:     1.e5    # pressure [Pa]
+    T0:     273     # temperature [K]
+    phi0:   0.95    # clear-sky relative humidity [-]
+    N0:     0       # cloud fraction [-]
 
 # Grid geometry
 grid:
   num_columns: 1
-  num_levels:  128
+  num_levels:  72
 
-# Defining several values for any initial condition causes the driver to be
-# run in "ensemble mode", in which it runs an ensemble of simulations whose
-# initial conditions are the outer product of the defined set.
+# Multiple initial values specified anywhere in this section cause the driver to
+# run in "ensemble mode", in which the outer product of all initial conditions are run in an ensemble of
+# simulations.
 initial_conditions:
-  # Accumulation mode [mass fraction]
-  mfso41: 0.3
-  mfpom1: 0
-  mfsoa1: 0.3
-  mfbc1:  0
-  mfdst1: 0
-  mfncl1: 0.4
-  # Aitkin mode [mass fraction]
-  mfso42: 0.3
-  mfsoa2: 0.3
-  mfncl2: 0.4
-  # Coarse mode [mass fraction]
-  mfdst3: 0
-  mfncl3: 0.4
-  mfso43: 0.3
-  mfbc3:  0
-  mfpom3: 0
-  mfsoa3: 0.3
-  # Primary carbon mode [mass fraction]
-  mfpom4: 0
-  mfbc4:  1
-  # Gases [kmol gas/kmol air]
-  qso2:   1.e-4
-  qh2so4: 1.e-13
-  qsoag:  5.e-10
-  # Modal number densities [#/m3]
-  numc1: 1.e8
-  numc2: 1.e9
-  numc3: 1.e5
-  numc4: 5.e8
+  # We specify initial conditions for aerosol species mass fractions for each
+  # mode. A species is interpreted to belong to as many modes as it has
+  # initial conditions, so it's important to initialize mass fractions for all
+  # modes relevant to an aerosol species. Species for which there are no initial
+  # conditions are excluded from the simulation.
+  # NOTE: mass fractions must sum to 1.
+  aerosols:
+    accumulation:
+      SO4: 0.3
+      POA: 0
+      SOA: 0.3
+      BC: 0
+      DST: 0
+      NCL: 0.4
+    aitken:
+      SO4: 0.3
+      SOA: 0.3
+      NCL: 0.4
+    coarse:
+      DST: 0
+      NCL: 0.4
+      SO4: 0.3
+      BC: 0
+      POA: 0
+      SOA: 0.3
+    primary_carbon:
+      POA: 0
+      BC: 1
+
+  # Initial conditions for gases are mole fractions [kmol gas/kmol air].
+  # Gases for which initial conditions are not given are excluded from the
+  # simulation.
+  gases:
+    SO2: 1.e-4
+    H2SO4: 1.e-13
+    SOAG:  5.e-10
+
+  # Here we specify the number densities [#/cubic m**3] for each mode.
+  modes:
+    accumulation: 1.e8
+    aitken: 1.e9
+    coarse: 1.e5
+    primary_carbon: 5.e8
 
   num_factor: 1
   gas_factor: 1
 
-  # Constant gas chemistry production rate [mol gas / mol air]
-  h2so4_chem_prod_rate: 1.0e-16
+# Chemistry is pretty simplistic at the moment.
+chemistry:
+  # This specifies a constant production rate for a gas [mol gas / mol air / s]
+  production:
+    H2S04: 1.0e-16
 
-# Timestep [s]
-timestep: 1
-
-# Simulation duration [s]
-duration: 1800
-
-# Output options
-output:
-  directory: .       # directory in which to generate output files
-  prefix: smoke_test # prefix for each output file
-  frequency: 1       # number of steps between output dumps
+# Simulation parameters.
+simulation:
+  timestep: 1  # [s]
+  duration: 1800 # [s]
+  output:
+    directory: .       # directory in which to generate output files
+    prefix: smoke_test # prefix for each output file
+    frequency: 1       # number of steps between output dumps
