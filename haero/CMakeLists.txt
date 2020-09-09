@@ -29,6 +29,6 @@ set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 # Installation targets
 install(TARGETS haero DESTINATION lib)
 
-# Tests
-#add_subdirectory(tests)
+# Library unit tests.
+add_subdirectory(tests)
 
