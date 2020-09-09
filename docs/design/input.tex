@@ -1,0 +1,130 @@
+\section{Proposed Input Specification}
+\labelsection{input}
+
+Below is a proposed input specification for MAM. The spec uses Yet Another
+Markup Language (YAML). Compared to Fortran namelists, YAML offers
+
+\begin{itemize}
+  \item {\bf better readability}: YAML files are flexible, and don't have a lot
+    of "kibble" (braces, tags, and other stuff you see routinely in fancier
+    markup like XML, HTML, and so on). They're very easy to read.
+  \item {\bf better validation}: YAML files have named entries that can be
+    used or ignored, depending on the needs of the particular application.
+    Also, the file format allows for error checking.
+  \item {\bf better language support}: Fortran namelists are so-called because
+    they are only available to Fortran. YAML has libraries that allows it to
+    be used with several programming languages (including Fortran!). This makes
+    it easier for tools and other applications to use similar input files. In
+    particular, this allows workflows to use a single input file to define a
+    workload that can be processed with several tools.
+  \item {\bf support for lists and associative arrays}: YAML offers
+    constructions for dynamically-sized datasets. As we move MAM toward runtime
+    configurability, the ability to add species (and perhaps even modes) to an
+    input file will become more important.
+  \item {\bf a larger support community}: Fortran remains a niche language,
+    which can instill a sense of pride in scientists. Unfortunately, the
+    downside to belonging to a small community of specialists is that the tools
+    are invariably of lower quality than more commonly-used tools. One needs
+    only to witness the notorious ongoing issues with Fortran compilers to see
+    this phenomenon firsthand.
+\end{itemize}
+
+The YAML spec can be used both for initializing data via the API, and with
+standalone drivers. We also provide a proposed API for reading data from
+input files.
+
+\subsection*{Sections}
+
+A YAML file consists of several named sections. Each of these sections can
+contain data and metadata. Sections are a powerful tool for organizing input
+using simple concepts with human-readable notation.
+
+\subsubsection*{Modes}
+
+The \verb modes  section defines the particle size modes available to a MAM
+model. As we discussed in \refsection{modes_and_species}, a mode has metadata
+specifying its size range and its geometric standard deviation.
+
+\begin{verbatim}
+modes:
+- name: Aitken
+  D_min: 0.0087
+  D_max: 0.052
+  sigma: 1.6
+- name: Accumulation
+  D_min: 0.0535
+  D_max: 0.44
+  sigma: 1.8
+- name: Coarse
+  D_min: 1.0
+  D_max: 4.0
+  sigma: 1.8
+- name: Primary carbon
+  D_min: 0.01
+  D_max: 0.1
+  sigma: 1.6
+\end{verbatim}
+
+Particle diameters and $\sigma$ are measured in $\mu\mathrm{m}$.
+
+The \verb modes  section is essentially a list of named modes. In YAML, a list
+contains items identified by hyphens. As you can see above, the definition of
+each mode starts with its name, which is followed by its metadata. Modes can
+overlap. Each mode must be completely specified---there are no default values.
+
+Note that names don't require quotes around them.
+
+\subsubsection*{Species}
+
+Particle species exist within modes. As we discussed in
+\refsection{modes_and_species}, a species is defined by its elemental
+composition and its electric charge (given in units of the electronic charge
+$|e|$).
+
+\begin{verbatim}
+species:
+- name: SO2
+  composition: {S: 1, O: 2}
+  thermo:
+  equation-of-state: ideal-gas
+\end{verbatim}
+
+The \verb species  section follows the same format as defined by
+\href{https://cantera.org/documentation/dev/sphinx/html/yaml/species.html}{Cantera}.
+
+\subsubsection*{Reactions}
+
+Chemical reactions are defined in the \verb reactions  section.
+
+This section follows the same format as defined by \href{https://cantera.org/documentation/dev/sphinx/html/yaml/reactions.html}{Cantera}.
+The most interesting types of reactions for MAM are \verb elementary  reactions,
+which use Arrhenius coefficients, and \verb falloff  reactions, which include
+the \href{https://cantera.org/science/reactions.html#the-troe-falloff-function}{Troe falloff function}.
+
+\subsubsection*{Initial Conditions}
+
+The \verb initial-conditions section defines the initial state of an aerosol
+system in MAM. These include number concentrations for species.
+
+\begin{verbatim}
+initial-conditions:
+  SO2:
+    concentration: 0.01
+\end{verbatim}
+
+This section is a mapping from species names to their initial concentrations.
+
+\subsubsection*{Simulation Parameters}
+
+\subsubsection*{Time Stepping}
+
+\subsubsection*{Output}
+
+\subsection{A Complete Example}
+
+Let's see how we might define a MAM simulation for the standalone driver.
+
+\begin{verbatim}
+# Example MAM input specification (hashes are comments in YAML files).
+
+\end{verbatim}

@@ -1,0 +1,110 @@
+\section{Modes, Species, and Chemical Reactions}
+\labelsection{modes_and_species}
+
+In this section, we introduce data types in MAM that are used to define a
+physical system involving aerosols. These data types don't hold state
+information--they only specify the modes and species present in a system,
+and the chemical reactions that affect their populations.
+
+\subsection{The Mode Data Type}\labelsection{mode_data_type}
+
+We've seen how the dynamics of aerosols can be represented mathematically
+by evolution equations for moments of modal distribution functions. Modes
+simplify the description of aerosol particles in terms of their size: instead of
+representing a population of particles with a distribution function
+$n(V_p, \vec{x}, t)$ that varies continuously with the size of the particle, we
+introduced $M$ discrete modes and declared that these modes partition the
+population of aerosol particles in the sense of the modal assumption as given
+by \refeq{modal_n}.
+
+The essential information in a mode is the range of particle sizes it
+encompasses, $[D_{\min}, D_{\max}]$, and its geometric standard deviation,
+$\sigma_g$. In MAM's C and C++ interfaces,
+we represent an aerosol mode with the \verb|Mode| struct:
+
+\begin{verbatim}
+struct Mode {
+  char name[32]; // A string identifier for the mode
+  int index;     // The mode's index
+  Real D_min;    // The mode's minimum particle diameter
+  Real D_max;    // The mode's maximum particle diameter
+  Real sigma;    // The geometric standard deviation for the mode
+}
+\end{verbatim}
+
+Note that we provide a unique name that identifies the mode and a unique
+index for that mode within the context of a simulation, for bookkeeping
+purposes. In Fortran, we provide an equivalent derived type:
+
+\begin{verbatim}
+type Mode
+  integer           :: index
+  character(len=32) :: name
+  real(wp)          :: D_min
+  real(wp)          :: D_max
+  real(wp)          :: sigma
+end type Mode
+\end{verbatim}
+
+\subsection{The Species Data Type}\labelsection{species_data_type}
+
+{\bf WARNING: This section is under construction!}
+
+Each aerosol mode consists of one or more particle species.
+
+\begin{itemize}
+  \item \assume A particle species belongs to exactly one particle mode.
+\end{itemize}
+
+A particle species is a specifically-identified molecular assembly with
+a number of relevant physical properties. The fundamental description of a
+species includes
+
+\begin{itemize}
+  \item a descriptive name and a corresponding unique index, for bookkeeping
+  \item its elemental composition (how many of which atoms it possesses)
+  \item its net electrical charge (in units of the elementary charge $e$)
+  \item an appropriate equation of state for computing thermodynamic quantities
+\end{itemize}
+
+Because the composition of a species can involve an arbitrary number of
+elements, we use an interface (or ``object") to represent a species instead of
+a struct. In C++, a \verb|Species| is a class with methods for defining and
+querying its composition. In C and Fortran, a \verb|species_t| (the equivalent
+type) is an ``opaque'' type with associated functions/subroutines for defining
+and querying its composition.
+
+\subsubsection*{Constructor}
+
+You construct a species object by calling a {\bf constructor}---a
+function that creates a new species for use in MAM.
+
+\begin{verbatim}
+  ...
+  type(species_t) species
+  character(len=32) name
+  ...
+  name = "O3"
+  species = species_new(name, composition, charge, eos)
+
+\end{verbatim}
+
+\subsubsection*{Definition Functions}
+
+\subsubsection*{Query Functions}
+
+\subsubsection*{Destructor}
+
+At the end of a simulation, MAM destroys all of its data, freeing up any
+resources used. When a species object is destroyed its {\bf destructor }
+function is called, which performs any necessary deallocation.
+
+Typically, you don't need to call a destructor outside of a testing environment.
+But for completeness, here's how you call the destructor for a species object:
+
+\begin{verbatim}
+  call species_free(species)
+\end{verbatim}
+
+\subsection{Chemistry Data Types}\labelsection{chem_data_types}
+
