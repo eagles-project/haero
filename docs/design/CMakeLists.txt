@@ -9,5 +9,6 @@ add_latex_document(
          intro.tex
          modes_and_species.tex
          tendencies.tex
+  IMAGE_DIRS figures
   BIBFILES haero_design.bib
 )
