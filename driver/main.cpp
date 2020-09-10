@@ -38,10 +38,15 @@ void usage(const char* exe)
   exit(1);
 }
 
-// Extract simulation input from a parsed YAML file.
+// Extract simulation input from a parsed YAML file. This returns data for an
+// "ensemble" of simulations whose size depends on the size of the outer product
+// of all specified initial conditions. In the case that exactly one initial
+// value is provided for each datum, this returns a vector containing data for
+// a single simulation.
 std::vector<SimulationInput> extract_input(const ekat::ParameterList& yaml)
 {
   std::vector<SimulationInput> ensemble;
+
   return ensemble;
 }
 
