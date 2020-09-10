@@ -1,0 +1,306 @@
+\section{Governing Equations}
+\labelsection{equations}
+
+Here we offer an extremely abbreviated ``fly-over'' of the evolution equations
+that quantify the dynamics of aerosols. Our discussion emphasizes the
+mathematical representation of aerosols. For a more detailed explanation of
+the underlying ideas, we refer the reader to~\cite{Whitby1991}
+and~\cite{Friedlander1977}.
+
+All quantities are in SI units unless specifically mentioned. To keep the
+discussion simple and focused, we avoid referencing specific coordinates.
+
+\subsection*{Size Matters}
+
+MAM's approach to modeling aerosols is based on the observations that
+
+\begin{itemize}
+  \item the sizes of aerosol particles greatly influence their dynamical
+        behavior
+  \item these sizes span several orders of magnitude (from 0.001 to 100 microns)
+\end{itemize}
+
+Here, a ``particle'' is an individual aerosol molecule with some volume $V_p$.
+Aerosol particles consist of polymers, and a particle consisting of a chain of
+$i$ monomers is an $i$-mer.
+
+How do we represent a set of aerosol particles in space, given the importance
+of their size? In the simplest case (for small $i$-mers), we can denote
+$N_i(\vec{x}, t)$ as the number of $i$-mers per cubic meter in the vicinity of
+the point $\vec{x}$ at time $t$. In this language, the evolution equation is a
+set of coupled advection-diffusion-reaction (ADR) equations acting under the
+influence of a bulk velocity $\vec{v}$:
+
+\begin{equation}\labeleq{small_imer_dNdt}
+  \ddt{N_i} + \div{(N_i\vec{v})} = \mathcal{D}(\nabla N_i) +
+                                   \mathcal{R}(\{N_j\}) +
+                                   \mathcal{S}(N_i, t)
+\end{equation}
+
+Here we represent terms on the right hand side by
+
+\begin{itemize}
+  \item $\mathcal{D}$: terms related to {\it diffusion processes} for $N_i$
+  \item $\mathcal{R}$: terms related to {\it reaction processes}, in which
+        various $j$-mers combine, react, and dissociate to form particles of
+        other types
+  \item $\mathcal{S}$: terms related to {\it source and sink processes},
+        including external and prescribed sources of $N_i$.
+\end{itemize}
+
+We describe the forms of these terms in \refsection{tendencies}. The bulk
+velocity $\vec{v}$ is supplied by some dynamical atmospheric model.
+
+For larger $i$-mers ($i > 100$), the above description becomes inadequate, and
+we must adopt a description for particle numbers that admits a continuous
+number distribution in particle size space.
+
+Let $n(V_p, \vec{x}, t)$ be the number of particles of volume $V_p$ occupying
+the point $\vec{x}$ at time $t$. Then the evolution of all $i$-mers is described
+by a single ADR equation:
+
+\begin{equation}\labeleq{continuous_dndt}
+  \ddt{n} + \div{(n\vec{v})} = \mathcal{D}(\nabla n) +
+                               \mathcal{R}(n) +
+                               \mathcal{S}(n, t)
+\end{equation}
+
+where $\mathcal{D}$, $\mathcal{R}$, and $\mathcal{S}$ have been expressed
+in terms of $n$ instead of $N_i$. This is a tidy equation, but $n$ is a
+number distribution function that introduces a new dimension---the particle volume
+$V_p$---to the solution space. This makes it inconvenient for doing numerical
+calculations. In this description, $n$ can assume any shape in particle volume
+space, which raises the question of how to constrain the solution in $V_p$.
+
+\subsection*{Moment Equations and the Closure Problem}
+We can reduce the size of our solution space by making a few assumptions:
+
+\begin{itemize}
+  \item \assume Aerosol particles are spherical, and their size can be
+        parameterized by their diameter $D_p$.
+  \item \assume The detailed structure of the number distribution function
+        $n(V_p, \vec{x}, t)$ is unimportant to aerosol dynamics.
+\end{itemize}
+
+If we don't need to obtain the full solution for $n$, we can select a specific
+functional form $n(D_p, \vec{x}, t) = n(\vec{x}, t; D_p)$ for it. Then, taking cues from
+methods in particle kinetics and turbulence theory, we can integrate the product
+of \refeq{continuous_dndt} with powers of $D_p$ to obtain the {\bf moment
+equations}
+
+\begin{equation}\labeleq{moments}
+  \ddt{\mathcal{M}_k} + \div{(\mathcal{M}_k\vec{v})} = \int_0^{\infty} D_p^k (\mathcal{D} + \mathcal{R} + \mathcal{S}) \d{D_p}
+\end{equation}
+
+where $\mathcal{M}_k(\vec{x}, t) = \int_0^{\infty} D_p^k n(\vec{x}, t; D_p) \d{D_p}$
+is the ``$k$th moment'' of $n$.
+
+The moment equations are solved by picking a specific form of $n$'s functional
+dependence on $D_p$ and playing tricks to avoid actually evaluating the
+above integrals. However, the moment equations aren't closed---the advection,
+diffusion, reaction, and source terms can all involve $n$ and its spatial
+derivatives, and in general, the evolution of $\mathcal{M}_k$ is coupled to higher
+moments. To make further progress, we must solve this {\bf closure problem}.
+
+\subsection*{Modal Equations}
+
+Having already given up on obtaining a general solution for $n(\vec{x}, t)$,
+we allow ourselves to make another assumption:
+
+\begin{itemize}
+  \item \assume The number distribution function $n$ is the sum of a set of
+        specific number distribution functions $n_i$, each representing a
+        {\bf mode} with a specific functional form for a sub-population of
+        aerosol particles occupying a certain range in particle size space.
+\end{itemize}
+
+This is the {\bf modal assumption}. In other words,
+
+\begin{equation}\labeleq{modal_n}
+  n(\vec{x}, t; D_p) = \sum_{i=1}^M n_i(\vec{x}, t; D_p)
+\end{equation}
+
+where $n_i$ represents aerosol particles with sizes falling within the range
+of mode $i$ and $M$ is the number of modes. Each mode assumes a specific
+functional form for $n_i$ in terms of its relevant size as given by $D_p$.
+We include the arguments $\vec{x}$ and $t$ to emphasize that this equation holds
+at each point in space and at each instant in time for an aerosol system.
+
+When we adopt the modal assumption, we express our solution for particles in
+mode $i$ in terms of its zeroth, first, second, and third moments
+$\mathcal{M}_k^{(i)}(\vec{x}, t)$. These are, respectively:
+
+\begin{itemize}
+  \item $\mathcal{M}_0^{(i)} = N_i$, the total number of concentration for particles
+        in mode $i$
+  \item $\mathcal{M}_1^{(i)} = N_i\overline{D}_i$, the number-weighted mean diameter of
+        particles in mode $i$
+  \item $\mathcal{M}_2^{(i)} = \frac{1}{\pi}N_i\overline{A}_i$, a number-weighted
+        surface area of particles in mode $i$
+  \item $\mathcal{M}_3^{(i)} = \frac{6}{\pi}N_i\overline{V}_i$, a number-weighted
+        volume of particles in mode $i$
+\end{itemize}
+
+In this language, the aerosol evolution equation for the $k$th moment of the
+$i$th mode is
+
+\begin{equation}\labeleq{modal_evolution}
+  \ddt\mathcal{M}_k^{(i)} = F_k^{(i)}(N_i, \overline{D}_i, \overline{A}_i, \overline{V}_i, T, p, \mathsf{...})
+\end{equation}
+
+where the air temperature $T$ and the air pressure $p$ enter the moment
+equations, via right hand side terms in \refeq{moments}. These are the
+{\bf modal equations}.
+
+\begin{itemize}
+  \item \assume The time evolution of a moment $\mathcal{M}_k^{(i)}$ can be
+    expressed in terms of the quantities $N_i$, $\overline{D}_i$,
+    $\overline{A}_i$, $\overline{V}_i$, the air temperature $T$, the pressure $p$, and a few
+    selected additional quantities.
+\end{itemize}
+
+Solving the closure problem is then reduced to finding expressions for
+$\overline{D}_i$, $\overline{A}_i$, and $\overline{V}_i$ that relate the
+different moments of $n_i$:
+
+\begin{align}
+  \overline{D}_i &= \overline{D}_i(\mathcal{M}_{k_1}^{(i)}/N_i, \mathcal{M}_{k_2}^{(i)}/N_i) \labeleq{D_i}\\
+  \overline{A}_i &= \overline{A}_i(\mathcal{M}_{k_1}^{(i)}/N_i, \mathcal{M}_{k_2}^{(i)}/N_i) \labeleq{A_i}\\
+  \overline{V}_i &= \overline{V}_i(\mathcal{M}_{k_1}^{(i)}/N_i, \mathcal{M}_{k_2}^{(i)}/N_i) \labeleq{V_i}
+\end{align}
+
+Here, we formulate the above expressions by the selecting pairs of moments that
+contribute to the evolution of each quantity for mode $i$.
+
+\begin{itemize}
+  \item \assume The averaged quantities $\overline{D}_i$, $\overline{A}_i$,
+    and $\overline{V}_i$ can each be expressed as a function of a pair of
+    specific number-normalized moments for the $i$th mode.
+\end{itemize}
+
+\subsection*{Log-Normal Distribution Functions}
+
+MAM constructs its multi-modal distribution functions from log-normal
+probability distribution functions (PDFs) for each mode $i$. The PDF for mode
+$i$ expresses the fraction of aerosol particles present per unit size interval,
+in terms of a continuous particle diameter $D_p$ within that mode. Such PDFs
+have been found to represent measured aerosol size distributions with a level of
+accuracy comparable to that of the relevant measurement
+techniques~\cite{Whitby1991}.
+
+\begin{itemize}
+  \item \assume The probability distribution function $f_i$ used to construct
+        the number distribution function $n_i$ for mode $i$ is a continuous
+        function of the particle diameter $D_p$.
+\end{itemize}
+
+The log-normal distribution of mode $i$ in MAM's formalism is
+\begin{equation}\labeleq{log_normal_pdf}
+  f_i(D_p) = \frac{1}{\sqrt{2\pi} D_p \ln \sigma_{g,i}} \ 
+      \exp \left [-\frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2 \sigma_{g,i}} \right]
+\end{equation}
+where we have introduced the geometric mean $D_{g,i}$ and the geometric standard
+deviation $\sigma_{g,i}$ of $D_p$ within mode $i$. These two parameters are
+determined for each mode.
+
+This PDF can also be expressed in ``logarithmic form'' in terms of $\ln D_p$
+of $D_p$:
+\begin{equation}\label{eq:log_normal_pdf_log}
+  g_i(\ln D_p) = \frac{1}{\sqrt{2\pi} \ln\sigma_{g,i}} \
+      \exp \left [ -\frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2 \sigma_{g,i}} \right]
+\end{equation}
+
+Here, $g_i$ is a normal distribution of $\ln D_p$ with a mean of $\ln D_{g,i}$
+and standard deviation of $\ln\sigma_{g,i}$.
+
+These PDFs are referred to as {\bf normalized size distribution functions} in
+MAM. We can justify this name by multiplying each PDF by the total particle
+number density $N_i$ for mode $i$ to obtain the equivalent number distribution
+functions:
+
+\begin{align}\label{eq:log_normal_n}
+  n_i(D_p) = N_i f_i(D_p) &= \frac{N_i}{\sqrt{2\pi} D_p \ln \sigma_{g,i}} \ 
+  \exp \left [ - \frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2\sigma_{g,i}} \right ] \\
+  \hat{n}_{i}(\ln D_p) = N_i g_i(\ln D_p) &= \frac{N_i}{\sqrt{2\pi}\ln \sigma_{g,i}} \ 
+	\exp \left [ - \frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2\sigma_{g,i}} \right ]
+\end{align}
+
+The logarithmic form $\hat{n}_i$ is useful because of the relationship
+$ n_i(D_p) = \hat{n}_i(\ln D_p)/D_p$, which allows us to write
+\begin{equation} \labeleq{equ_norm_lognorm}
+  n_i(D_p) \d{D_p} = \hat{n}_i(\ln D_p) \d{\ln D_p}
+\end{equation}
+to simplify integrands involving number distribution functions.
+
+The choices of size range and width for the modes in MAM are based on
+measurements of tropospheric aerosols (see~\cite{Easter2004} and references).
+Table~\ref{tab:mode_size_parameters} shows the relevant parameters for MAM4,
+the 4-mode legacy MAM model.
+
+%------------------- table: mode parameters ---------------
+\begin{table}[htbp]
+\centering
+%\caption{
+%Geometric mean dry diameter ($D\dsub{gn,d,i}$, unit:
+%$\rm \mu m$) and geometric standard deviation ($\sigma\dsub{g,i}$)
+%of the number size distribution of each log-normal mode.
+%}
+%\begin{tabular}{ccccc}
+%  \toprule
+%  Mode        &  Lower bound of $D\dsub{gn,d,i}$  &  $D\dsub{gn,d,i}$   &
+%  Upper bound of $D\dsub{gn,d,i}$  &  $\sigma\dsub{g,i}$ \\
+%  \midrule
+%  Aitken 	            &  0.0087  &   0.026   &   0.052  &  1.6 \\
+%  Accumulation     &  0.0535  &   0.11      &   0.44    &  1.8 \\
+%  Coarse               &  1.0        &   2.0       &   4.0      &  1.8 \\
+%  Primary carbon  &  0.01      &   0.05      &   0.1      &  1.6 \\
+%  \bottomrule
+%\end{tabular}
+\caption{Parameters of log-normal modes in MAM4.}
+\label{tab:mode_size_parameters}
+\begin{tabular}{ccccc}
+  \toprule
+  Mode           &  Lower bound of $D\dsub{gn,d,i}$
+                 &  Upper bound of $D\dsub{gn,d,i}$  &  $\sigma\dsub{g,i}$ \\
+  \midrule
+  Aitken 	 &  0.0087  &   0.052  &  1.6 \\
+  Accumulation   &  0.0535  &   0.44   &  1.8 \\
+  Coarse         &  1.0     &   4.0    &  1.8 \\
+  Primary carbon &  0.01    &   0.1    &  1.6 \\
+  \bottomrule
+\end{tabular}
+\end{table}
+%-------------
+
+Thus, in MAM, all modes have the same mathematical form, but the parameters
+are different for each mode.
+
+\subsection*{Multi-Species Modes}
+
+We have derived the modal equations assuming that each mode contains a
+population of undifferentiated aerosol particles. If we wish to track individual
+particle species within a mode, we may do so by expressing the population of a
+mode as the sum of its constituent species in the modal assumption, adding
+a species index $s$ to the number distribution function $n$:
+
+\begin{equation}\labeleq{modal_multi_species}
+  n(\vec{x}, t; D_p) = \sum_{i=1}^M \sum_{s=1}^S n_{i,s}(\vec{x}, t; D_p)
+\end{equation}
+
+with $S$ as the number of species. Then we can carry out the subsequent analysis
+as before, breaking up the moments into species-specific parts
+$\mathcal{M}_k^{(i,s)}$ and expressing the total $k$th moment as the sum of these
+parts:
+
+\begin{equation}
+  \mathcal{M}_k^{(i)} = \sum_{s=1}^S \mathcal{M}_k^{(i,s)}
+\end{equation}
+
+Then the multi-species modal evolution equations are
+
+\begin{equation}\labeleq{modal_multi_species_evolution}
+  \ddt\mathcal{M}_k^{(i,s)} = F_k^{(i,s)}(N_{i,s}, \overline{D}_{i,s}, \overline{A}_{i,s}, \overline{V}_{i,s}, T, p, \mathsf{...})
+\end{equation}
+
+with species-specific equivalents of the quantities in \refeq{modal_evolution}.
+

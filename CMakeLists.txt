@@ -214,6 +214,8 @@ if (HAERO_ENABLE_DRIVER)
 endif()
 
 # Documentation.
+add_subdirectory(docs)
+
 find_package(Doxygen OPTIONAL_COMPONENTS dot QUIET)
 if (DOXYGEN_FOUND)
   message(STATUS "Found Doxygen. Generating 'doc' target.")
