@@ -115,15 +115,12 @@ initial_conditions:
     H2SO4: 1.e-13
     SOAG:  5.e-10
 
-  # Here we specify the number densities [#/cubic m**3] for each mode.
+  # Here we specify the number densities [#/m**3] for each mode.
   modes:
     accumulation: 1.e8
     aitken: 1.e9
     coarse: 1.e5
     primary_carbon: 5.e8
-
-  num_factor: 1
-  gas_factor: 1
 
 # Chemistry is pretty simplistic at the moment.
 chemistry:

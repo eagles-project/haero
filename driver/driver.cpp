@@ -1,8 +1,5 @@
 #include "driver.hpp"
 
-// This is our all-C++ driver. It's only built if/when the driver is compiled
-// with the -DMAMBOX_CXX_DRIVER flag.
-
 namespace {
 
 // Writes output to a NetCDF file with the given path.
@@ -14,7 +11,7 @@ void write_netcdf(const std::map<std::string, std::vector<Real> >& pbuf)
 
 namespace haero {
 
-void haero_driver(const haero::Sim_input_data& data)
+void haero_driver(const std::vector<SimulationInput>& ensemble)
 {
   // Our own "physics buffer" is just a set of named fields,
   // housed in a C++ map. We use vectors for storage and Kokkos
