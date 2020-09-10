@@ -7,6 +7,16 @@
 \usepackage{enumitem}
 \usepackage{color}
 \usepackage{booktabs,supertabular}
+\usepackage{amsthm,thmtools}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\newtheorem{appx}{Approximation}
+\newtheorem{assume}{Assumption}
+\renewcommand{\listtheoremname}{List of Assumptions and Approximations}
+
+\theoremstyle{remark}
+\newtheorem*{rem}{Remark}
 
 % Line spacing
 \setlength{\parindent}{0em}
@@ -40,7 +50,7 @@
 \newcommand{\refappendix}[1]{Appendix~\ref{app:#1}}
 
 % Annotating assumptions(!)
-\newcommand{\assume}{{\bf Assumption: }}
+%\newcommand{\assume}{{\bf Assumption: }}
 
 % Math stuff
 \renewcommand{\d}[1]{\mathrm{d} #1}
@@ -72,7 +82,7 @@ MAM Computation Team\\
 \include{glossary}
 \include{api}
 \include{input}
-
+\listoftheorems[ignoreall, show={assume,appx}]
 \nocite{*}
 \bibliography{haero_design}
 
