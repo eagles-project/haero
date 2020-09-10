@@ -75,12 +75,13 @@ space, which raises the question of how to constrain the solution in $V_p$.
 \subsection*{Moment Equations and the Closure Problem}
 We can reduce the size of our solution space by making a few assumptions:
 
-\begin{itemize}
-  \item \assume Aerosol particles are spherical, and their size can be
+\begin{assume}[Particles have spherical shapes] Aerosol particles are spherical, and their size can be
         parameterized by their diameter $D_p$.
-  \item \assume The detailed structure of the number distribution function
+\end{assume}
+\begin{assume}[Basic probability density functions]
+  The detailed structure of the number distribution function
         $n(V_p, \vec{x}, t)$ is unimportant to aerosol dynamics.
-\end{itemize}
+\end{assume}
 
 If we don't need to obtain the full solution for $n$, we can select a specific
 functional form $n(D_p, \vec{x}, t) = n(\vec{x}, t; D_p)$ for it. Then, taking cues from
@@ -107,14 +108,13 @@ moments. To make further progress, we must solve this {\bf closure problem}.
 Having already given up on obtaining a general solution for $n(\vec{x}, t)$,
 we allow ourselves to make another assumption:
 
-\begin{itemize}
-  \item \assume The number distribution function $n$ is the sum of a set of
+\begin{assume}[Modal assumption]
+  The number distribution function $n$ is the sum of a set of
         specific number distribution functions $n_i$, each representing a
         {\bf mode} with a specific functional form for a sub-population of
         aerosol particles occupying a certain range in particle size space.
-\end{itemize}
-
-This is the {\bf modal assumption}. In other words,
+\end{assume}
+In other words,
 
 \begin{equation}\labeleq{modal_n}
   n(\vec{x}, t; D_p) = \sum_{i=1}^M n_i(\vec{x}, t; D_p)
@@ -152,12 +152,12 @@ where the air temperature $T$ and the air pressure $p$ enter the moment
 equations, via right hand side terms in \refeq{moments}. These are the
 {\bf modal equations}.
 
-\begin{itemize}
-  \item \assume The time evolution of a moment $\mathcal{M}_k^{(i)}$ can be
+\begin{assume}[Modal dynamics]
+   The time evolution of a moment $\mathcal{M}_k^{(i)}$ can be
     expressed in terms of the quantities $N_i$, $\overline{D}_i$,
     $\overline{A}_i$, $\overline{V}_i$, the air temperature $T$, the pressure $p$, and a few
     selected additional quantities.
-\end{itemize}
+\end{assume}
 
 Solving the closure problem is then reduced to finding expressions for
 $\overline{D}_i$, $\overline{A}_i$, and $\overline{V}_i$ that relate the
@@ -172,11 +172,11 @@ different moments of $n_i$:
 Here, we formulate the above expressions by the selecting pairs of moments that
 contribute to the evolution of each quantity for mode $i$.
 
-\begin{itemize}
-  \item \assume The averaged quantities $\overline{D}_i$, $\overline{A}_i$,
+\begin{assume}[Moment pairs]
+ The averaged quantities $\overline{D}_i$, $\overline{A}_i$,
     and $\overline{V}_i$ can each be expressed as a function of a pair of
     specific number-normalized moments for the $i$th mode.
-\end{itemize}
+\end{assume}
 
 \subsection*{Log-Normal Distribution Functions}
 
@@ -188,11 +188,11 @@ have been found to represent measured aerosol size distributions with a level of
 accuracy comparable to that of the relevant measurement
 techniques~\cite{Whitby1991}.
 
-\begin{itemize}
-  \item \assume The probability distribution function $f_i$ used to construct
+\begin{assume}[Log-normal PDF]
+The probability distribution function $f_i$ used to construct
         the number distribution function $n_i$ for mode $i$ is a continuous
-        function of the particle diameter $D_p$.
-\end{itemize}
+        function of the particle diameter $D_p$, given as a log-normal distribution.
+\end{assume}
 
 The log-normal distribution of mode $i$ in MAM's formalism is
 \begin{equation}\labeleq{log_normal_pdf}
@@ -202,6 +202,12 @@ The log-normal distribution of mode $i$ in MAM's formalism is
 where we have introduced the geometric mean $D_{g,i}$ and the geometric standard
 deviation $\sigma_{g,i}$ of $D_p$ within mode $i$. These two parameters are
 determined for each mode.
+
+\begin{assume}[Constant standard deviation]
+  The geometric standard deviation $\sigma_{g,i}$ for each mode $i$ is constant in time.  
+  The justification for this assumption in \cite{Easter2004,Wilson2001,Whitby1991} is given in \cite{Whitby1981}.
+\end{assume}
+
 
 This PDF can also be expressed in ``logarithmic form'' in terms of $\ln D_p$
 of $D_p$:
@@ -224,6 +230,13 @@ functions:
   \hat{n}_{i}(\ln D_p) = N_i g_i(\ln D_p) &= \frac{N_i}{\sqrt{2\pi}\ln \sigma_{g,i}} \ 
 	\exp \left [ - \frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2\sigma_{g,i}} \right ]
 \end{align}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{figures/pdf_examples}
+\caption{Normalized size distributions for each mode in the MAM Box Model with $N_i$ set by the \texttt{num\_aer} variable.}\label{fig:mode_dists}  
+\end{figure}
+
 
 The logarithmic form $\hat{n}_i$ is useful because of the relationship
 $ n_i(D_p) = \hat{n}_i(\ln D_p)/D_p$, which allows us to write
@@ -258,15 +271,16 @@ the 4-mode legacy MAM model.
 %\end{tabular}
 \caption{Parameters of log-normal modes in MAM4.}
 \label{tab:mode_size_parameters}
-\begin{tabular}{ccccc}
+\begin{tabular}{cccccc}
   \toprule
   Mode           &  Lower bound of $D\dsub{gn,d,i}$
-                 &  Upper bound of $D\dsub{gn,d,i}$  &  $\sigma\dsub{g,i}$ \\
+                 &  Upper bound of $D\dsub{gn,d,i}$  &  $\sigma\dsub{g,i}$ 
+                 & $N_i(0)$\\
   \midrule
-  Aitken 	 &  0.0087  &   0.052  &  1.6 \\
-  Accumulation   &  0.0535  &   0.44   &  1.8 \\
-  Coarse         &  1.0     &   4.0    &  1.8 \\
-  Primary carbon &  0.01    &   0.1    &  1.6 \\
+  Aitken 	 &  0.0087  &   0.052  &  1.6     & 7.9031E7\\
+  Accumulation   &  0.0535  &   0.44   &  1.8 & 7.9697E7\\
+  Coarse         &  1.0     &   4.0    &  1.8 & 8.0361E7\\
+  Primary carbon &  0.01    &   0.1    &  1.6 & 8.1022E7\\
   \bottomrule
 \end{tabular}
 \end{table}
