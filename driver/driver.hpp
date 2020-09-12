@@ -7,6 +7,7 @@
 
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
+#include "haero/haero_config.hpp"
 
 namespace haero {
 
