@@ -1,4 +1,5 @@
 include(ExternalProject)
+include(${PROJECT_SOURCE_DIR}/cmake/cmake_helpers.cmake)
 include_directories(${PROJECT_BINARY_DIR}/include)
 
 # Create canonical top-level directories in the build directory.
@@ -192,8 +193,9 @@ set(HAERO_EXT_LIBRARIES ekat;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
 set(HAERO_EXT_DRIVER_LIBRARIES yaml_cpp;${HAERO_EXT_DRIVER_LIBRARIES})
 list(FIND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR} EKAT_INDEX)
 if (EKAT_INDEX EQUAL -1)
-  set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${EKAT_INCLUDE_DIR})
+  set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${EKAT_INCLUDE_DIR};${EKAT_INCLUDE_DIR}/ekat;${EKAT_INCLUDE_DIR}/kokkos)
 endif()
+printvar(EKAT_INCLUDE_DIR)
 list(FIND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR} YAMLCPP_INDEX)
 if (YAMLCPP_INDEX EQUAL -1)
   set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${YAMLCPP_INCLUDE_DIR})
