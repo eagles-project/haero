@@ -8,6 +8,7 @@
 \usepackage{color}
 \usepackage{booktabs,supertabular}
 \usepackage{amsthm,thmtools}
+\usepackage{xspace}
 
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}
@@ -23,6 +24,12 @@
 \setlength{\parskip}{1em}
 
 \usepackage[dvipsnames]{xcolor}
+
+%---------
+% Draft writing tools
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{To-do:\xspace} #1}}
+\newcommand{\pbc}[1]{\textcolor{blue}{\textbf{PB comment:\xspace} #1}}
+\newcommand{\jjc}[1]{\textcolor{teal}{\textbf{JJ comment:\xspace} #1}}
 
 % Bibliography stuff
 \usepackage[sort, numbers]{natbib}
@@ -82,7 +89,7 @@ MAM Computation Team\\
 \include{glossary}
 \include{api}
 \include{input}
-\listoftheorems[ignoreall, show={assume,appx}]
+\listoftheorems[ignoreall, show={assume,appx}, onlynamed]
 \nocite{*}
 \bibliography{haero_design}
 
