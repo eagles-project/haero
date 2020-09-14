@@ -9,7 +9,8 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/ekat_session.hpp"
-#include "driver/driver.hpp"
+#include "driver.hpp"
+#include "read_yaml.hpp"
 
 using namespace std;
 using namespace haero;
@@ -38,18 +39,6 @@ void usage(const char* exe)
   exit(1);
 }
 
-// Extract simulation input from a parsed YAML file. This returns data for an
-// "ensemble" of simulations whose size depends on the size of the outer product
-// of all specified initial conditions. In the case that exactly one initial
-// value is provided for each datum, this returns a vector containing data for
-// a single simulation.
-std::vector<SimulationInput> extract_input(const ekat::ParameterList& yaml)
-{
-  std::vector<SimulationInput> ensemble;
-
-  return ensemble;
-}
-
 } // anonymous namespace
 
 int main(int argc, const char** argv)
@@ -60,13 +49,9 @@ int main(int argc, const char** argv)
   if (argc < 2)
     usage(argv[0]);
 
-  // Read the input file.
+  // Read the input file and extract input.
   std::string input_file(argv[1]);
-  auto yaml = ekat::parse_yaml_file(input_file);
-
-  // Extract input. This produces one or more simulations belonging to an
-  // ensemble, depending on the initial conditions specified in the yaml file.
-  std::vector<SimulationInput> ensemble = extract_input(yaml);
+  std::vector<SimulationInput> ensemble = read_yaml(input_file);
 
   // Now run the driver with our input.
   haero_driver(ensemble);

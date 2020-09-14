@@ -62,12 +62,12 @@ physics:
 # `uniform` and `hydrostatic`, each with their own set of parameters.
 atmosphere:
   model: uniform
-    mu:     0.02896 # mean molecular weight of air [kg/mol]
-    H:      3.e3    # scaled atmospheric height [m]
-    p0:     1.e5    # pressure [Pa]
-    T0:     273     # temperature [K]
-    phi0:   0.95    # clear-sky relative humidity [-]
-    N0:     0       # cloud fraction [-]
+  mu:     0.02896 # mean molecular weight of air [kg/mol]
+  H:      3.e3    # scaled atmospheric height [m]
+  p0:     1.e5    # pressure [Pa]
+  T0:     273     # temperature [K]
+  phi0:   0.95    # clear-sky relative humidity [-]
+  N0:     0       # cloud fraction [-]
 
 # Grid geometry
 grid:
