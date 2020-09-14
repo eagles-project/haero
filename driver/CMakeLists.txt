@@ -2,6 +2,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(haero_standalone atmosphere.cpp
                              phys_column.cpp
+                             dyn_column.cpp
                              read_yaml.cpp
                              driver.cpp)
 add_dependencies(haero_standalone haero)
