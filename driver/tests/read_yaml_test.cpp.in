@@ -1,0 +1,11 @@
+#include "driver/read_yaml.hpp"
+#include "catch2/catch.hpp"
+#include <iostream>
+
+using namespace haero;
+
+TEST_CASE("read_yaml", "") {
+  SECTION("smoke_test.yml") {
+    auto input = read_yaml(${CMAKE_CURRENT_SOURCE_DIR} "/smoke_test.yml");
+  }
+}
