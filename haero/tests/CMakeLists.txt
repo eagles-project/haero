@@ -4,3 +4,4 @@ include(EkatCreateUnitTest)
 EkatCreateUnitTest(hello_world hello_world.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+
