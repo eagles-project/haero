@@ -1,11 +1,13 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(haero_standalone atmosphere.cpp
-                             phys_column.cpp)
+                             phys_column.cpp
+                             read_yaml.cpp
+                             driver.cpp)
+add_dependencies(haero_standalone haero)
 
-add_executable(haero_driver main.cpp driver.cpp yaml_file.cpp)
+add_executable(haero_driver main.cpp)
 target_link_libraries(haero_driver haero_standalone;${HAERO_DRIVER_LIBRARIES};${HAERO_LIBRARIES})
-add_dependencies(haero_driver haero haero_standalone yaml_cpp)
 
 install(TARGETS haero_driver DESTINATION bin)
 install(TARGETS haero_standalone DESTINATION lib)
