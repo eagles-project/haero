@@ -4,7 +4,7 @@ add_library(haero_standalone atmosphere.cpp
                              phys_column.cpp
                              dyn_column.cpp)
 
-add_executable(haero_driver main.cpp driver.cpp )
+add_executable(haero_driver main.cpp driver.cpp read_yaml.cpp)
 target_link_libraries(haero_driver haero_standalone;${HAERO_DRIVER_LIBRARIES};${HAERO_LIBRARIES})
 add_dependencies(haero_driver haero haero_standalone yaml_cpp)
 

@@ -51,7 +51,7 @@ int main(int argc, const char** argv)
 
   // Read the input file and extract input.
   std::string input_file(argv[1]);
-  std::vector<SimulationInput> ensemble;// = read_yaml(input_file);
+  std::vector<SimulationInput> ensemble = read_yaml(input_file);
 
   // Now run the driver with our input.
   haero_driver(ensemble);
