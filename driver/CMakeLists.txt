@@ -7,6 +7,9 @@ add_library(haero_standalone atmosphere.cpp
 add_dependencies(haero_standalone haero)
 
 add_executable(haero_driver main.cpp)
+                            dyn_column.cpp)
+
+add_executable(haero_driver main.cpp driver.cpp read_yaml.cpp)
 target_link_libraries(haero_driver haero_standalone;${HAERO_DRIVER_LIBRARIES};${HAERO_LIBRARIES})
 
 install(TARGETS haero_driver DESTINATION bin)
