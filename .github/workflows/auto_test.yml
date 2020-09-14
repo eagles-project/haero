@@ -33,9 +33,9 @@ jobs:
       if: contains(matrix.os, 'ubuntu')
       run: sudo apt-get install gfortran libopenmpi-dev
 
-    - name: Installing MPI and GFortran (Mac)
+    - name: Installing MPI (Mac)
       if: contains(matrix.os, 'macos')
-      run: brew install gfortran open-mpi
+      run: brew install open-mpi
 
     - name: Checking out repository
       uses: actions/checkout@v2
