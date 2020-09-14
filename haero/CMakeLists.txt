@@ -7,10 +7,10 @@ configure_file(
   @ONLY
 )
 
-# Generate haero_version.cpp with proper version/revision information.
+# Generate a blank haero_version.cpp file to get us off the ground.
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-  COMMAND ${BASH} ${PROJECT_SOURCE_DIR}/tools/update_version_info.sh ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-  COMMENT "Generating haero version information..."
+  COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
+  COMMENT "Generating initial haero_version.cpp..."
 )
 
 # Update the haero version information if it's already been generated
@@ -23,6 +23,7 @@ add_custom_target(update_version_info ALL
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             )
+add_dependencies(haero update_version_info)
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 
