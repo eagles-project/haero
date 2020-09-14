@@ -1,5 +1,5 @@
-#ifndef HAERO_PHYS_COLUMN_HPP
-#define HAERO_PHYS_COLUMN_HPP
+#ifndef HAERO_DYN_COLUMN_HPP
+#define HAERO_DYN_COLUMN_HPP
 
 #include "haero/haero_config.hpp"
 #include "column_base.hpp"
@@ -9,21 +9,23 @@
 
 namespace haero {
 
-class phys_column : public column_base {
+class dyn_column : public column_base {
   public:
 
-  phys_column() = delete;
+  dyn_column() = delete;
 
-  phys_column(const int& nlevs);
-
-  phys_column(const int& nlevs, const std::vector<std::string>& var_names);
+  dyn_column(const int& nl);
 
   std::map<std::string, view_1d> level_vars;
+  mask_view level_masks;
   std::map<std::string, view_1d> interface_vars;
+  mask_view interface_masks;
 
   int npack_mid;
   int npack_interface;
   int nlev;
+
+  std::string info_string(const int& tab_lev=0) const ;
 };
 
 
