@@ -5,31 +5,104 @@
 #include <map>
 #include <vector>
 
+#include "haero/mode.hpp"
+#include "haero/species.hpp"
 #include "haero/haero_config.hpp"
+#include "haero/physical_constants.hpp"
+#include "atmosphere.hpp"
 
 namespace haero {
 
-// This type holds essential simulation input data.
-struct Sim_input_data {
-  // Simulation parameters.
-  int do_gaschem, do_cloudchem, do_gasaerexch, do_rename, do_newnuc,
-      do_coag, do_calcsize, num_unit, frac_unit, gas_unit;
-  // "MET" input.
-  Real temp, press, RH_CLEA, hgt, cld_frac;
-  // Table of initial conditions.
-  std::vector<std::map<std::string, Real> > initial_conditions;
-  // Uniform perturbation factor.
-  Real perturb_factor;
-  // Time step and simulation duration.
-  std::vector<Real> dts;
+/// This type contains switches for activating/deactivating aerosol-related
+/// physical processes.
+struct AerosolProcesses {
+  /// Model growth of aerosol particles?
+  bool growth;
+  /// Model gas chemistry?
+  bool gas_chemistry;
+  /// Model cloud chemistry?
+  bool cloud_chemistry;
+  /// Model gas-aerosol exchange processes?
+  bool gas_aerosol_exchange;
+  /// Allow the merging of modes?
+  bool mode_merging;
+  /// Model aerosol nucleation/formation processes?
+  bool nucleation;
+  /// Model aerosol coagulation?
+  bool coagulation;
+};
+
+
+/// This type defines parameters related to atmospheric columns.
+struct GridParams {
+  /// Number of columns.
+  int num_columns;
+  /// Number of vertical levels per column.
+  int num_levels;
+};
+
+/// This holds initial conditions for aerosol/gas species. Below, modes are
+/// indexed in the same order as given in SimulationInput::modes (below).
+struct InitialConditions {
+  /// Aerosol species. Specified in modal mass fractions for each mode in
+  /// which they appear. All mass fractions for a given mode must sum to 1.
+  /// (aerosols[mode index][aerosol species symbol] -> mass fraction).
+  std::vector<std::map<std::string, Real> > aerosols;
+  /// Gas species. Specified in mole fractions [kmol gas / kmol air].
+  /// (gases[gas species symbol] -> mole fraction).
+  std::map<std::string, Real> gases;
+  /// Modal number densities [#/m**3].
+  std::vector<Real> modes;
+};
+
+/// This is a simplified surrogate for aerosol chemistry. It'll go away when
+/// we adopt a real solution.
+struct SimpleChemistryModel {
+  /// Uniform production rates for gases
+  /// (gas symbol -> molar production rate [mol gas / mol air / s]
+  std::map<std::string, Real> production_rates;
+};
+
+/// This type defines time-stepping-related parameters for a simulation.
+struct SimulationParams {
+  /// Fixed time step size [s]
+  Real dt;
+  /// Simulation duration [s]
   Real duration;
-  // Output parameters.
-  std::string output_prefix, output_dir;
+  /// Prefix for NetCDF output file.
+  std::string output_prefix;
+  /// Directory to which output file is written (absolute path).
+  std::string output_dir;
+  /// Output frequency in steps, or -1 if undefined.
   int output_freq;
 };
 
-// This is the entry point for our C++ driver.
-void haero_driver(const Sim_input_data& data);
+/// This type holds essential simulation input data for the haero stand-alone
+/// driver.
+struct SimulationInput {
+  /// List of aerosol modes.
+  std::vector<Mode> modes;
+  /// List of aerosol species.
+  std::vector<Species> aerosols;
+  /// List of gas species.
+  std::vector<Species> gases;
+  /// Settings for modeling specific processes.
+  AerosolProcesses physics;
+  /// Ambient atmosphere conditions.
+  AtmosphericConditions atmosphere;
+  /// Column grid parameters.
+  GridParams grid;
+  /// Initial conditions.
+  InitialConditions initial_conditions;
+  /// Chemistry modeling.
+  SimpleChemistryModel chemistry;
+  /// Simulation parameters (timestepping, duration, output)
+  SimulationParams simulation;
+};
+
+/// This is the entry point for the haero driver, which executes the simulations
+/// in the given ensemble.
+void haero_driver(const std::vector<SimulationInput>& ensemble);
 
 } // namespace haero
 

@@ -1,3 +1,167 @@
 \section{Simulation Contexts}
 \labelsection{contexts}
 
+\subsection{Uniform atmosphere}
+
+This is the simplest possible simulation setting, with each level of a physics column containing the exact same environment.  
+It provides a means of testing aerosol-specific methods in isolation.
+
+\subsection{Single-column}
+
+In this setting, we use a one-dimensional (vertical) atmosphere and tests of increasing complexity.
+The simplest conditions are a  statically stable, hydrostatically balanced atmosphere, with vertical velocity $w=0$.
+We assume a linear temperature profile with constant lapse rate $\Gamma = -\partial T/\partial z$,
+\begin{equation}
+  T(z) = T_0 - \Gamma z,
+\end{equation}
+where $T_0$ is the reference temperature at $z=0$ (K).  
+Note that the atmosphere is statically stable if $\Gamma < \Gamma_{dry}$, where $\Gamma_{dry}$ is the dry adiabatic lapse rate, $\Gamma_{dry} = 0.0098$ K/m and that an isothermal atmosphere is defined by $\Gamma = 0$.
+Using the ideal gas law, $p = \rho R T$ and the hydrostatic equation $\partial p/\partial z = -\rho g$, we derive the relations between pressure and height,
+\begin{equation}
+  p(z) = \begin{cases}
+          p_0\exp\left(\frac{-g z}{RT_0}\right) & \Gamma = 0,\\[0.5em]
+          p_0\, T_0^{-g/(R\Gamma)}\left(T_0 - \Gamma z\right)^{g/(R\Gamma)} & \Gamma \ne 0,
+        \end{cases}
+\end{equation}
+\begin{equation}
+  z(p) = \begin{cases}
+         -\frac{R T_0}{g}\log\frac{p}{p_0} & \Gamma = 0,\\[0.5em]
+         \frac{T_0}{\Gamma}\left(1 - \left(\frac{p}{p_0}\right)^{R\Gamma/g}\right) & \Gamma \ne 0,
+       \end{cases}
+\end{equation}
+where $p_0$ is the reference pressure at $z=0$ and $T=T_0$.
+
+%A nonzero vertical velocity may be prescribed using a simple analytic function, such as
+%\begin{equation}
+%  w(z,t) = w_0\cos\left(\frac{2\pi t}{W_P}\right)\sin\left(\frac{2\pi z}{z_{top}}\right),
+%\end{equation}
+%where $w_0$ is the maximum vertical velocity (m/s), $W_P$ is the velocity period in seconds, and $z_{top}$ is the top of the model (m).
+%Note that this velocity has nonzero divergence, $\partial w/\partial z \ne 0$.
+%
+%\pbc{This velocity probably destroys hydrostatic balance, without similar adjustments to pressure.}
+
+As in \cite{Taylor2020}, we use a pressure-based vertical mass coordinate defined by the arbitrary variable $s$ and the hydrostatic pressure $\pi$ so that $s=0$ at $z=z_{top},~p= p_{top}$ and $s=1$ at $z=0,~p=p_0$.
+The column is discretized by $n_{lev}$ vertical levels; pressure is defined at each level, while the height $z$ (or the geopotential $\phi=gz$) is defined at the $n_{lev}+1$ level interfaces (note that both the model top and the surface are interfaces).
+Transported quantities such as water vapor and aerosols are defined at level midpoints; the thermodynamic variable ($T$, potential temperature $\theta$, or virtual potential temperature $\theta_v$) are also defined at level midpoints.
+Vertical velocity and hydrostatic pressure are defined at interfaces; see \cite{Taylor2020} for details.
+
+
+\subsubsection{Single column dynamics}
+
+We define dynamics by the vertically Lagrangian form of the HOMME $\theta$-model \cite{Taylor2020}, using the vertical direction only,
+\begin{subequations}\label{eq:column_dynamics}
+  \begin{align}
+    \deriv{w}{t} &= -g(1-\mu),\\
+    \deriv{\phi}{t} &= gw, \\
+    \deriv{\Theta}{t} &= 0, \\
+    \deriv{\partd{\pi}{s}}{t} &= 0,\\
+    \deriv{q_v}{t} &= 0,     
+  \end{align}
+where $\partd{\pi}{s}$ is the pseudo-density, $\mu$ is the ratio of pressure to hydrostatic pressure, $\mu = \partd{p}{s}/\partd{\pi}{s}$. 
+In hydrostatic conditions, $\mu \equiv 1$.
+The water vapor mixing ratio is $q_v$.
+The conservative form of potential temperature $\Theta = \partd{\pi}{s}\theta_v$, where $\theta_v$ is the virtual potential temperature, is related by the equation of state to the geopotential $\phi$,
+\begin{equation}
+  \partd{\pi}{s} = -R\Theta \frac{\Pi}{p},
+\end{equation}
+where $\Pi$ is the Exner function,
+\begin{equation}
+  \Pi =\left(\frac{p}{p_0}\right)^{R/c_p}.%= \left(\frac{R_d}{p_0}\rho\theta_v\right)^{R_d/c_p}
+\end{equation}
+\end{subequations}
+\pbc{Check: 6 equations, 6 unknowns: $w, \phi, \partd{\pi}{s}, q_v, \theta_v, p$.}
+For our purposes, it suffices to approximate $\theta_v = \theta(1+0.61q_v)$ as in \cite{KlempWilhelmson1978}, where the potential temperature $\theta = T(p_0/p)^{\kappa}$, with the dry-air constant $\kappa = R_{dry}/c_p$.
+
+Srivastava \cite{Srivastava1967} present a simple model of a one-dimensional cumulus cloud based on warm rain microphysics.
+\pbc{Rogers \& Yau provide a better summary; it's 1D Euler plus Kessler microphysics.}
+Moisture is represented by $q_v,~q_c,$ and $q_r$, the mixing ratios of water vapor, cloud water droplets, and rain water droplets, respectively.
+The model was developed to show the effects of momentum transfer from falling rain on the cloud's vertical velocity; here, we adapt to test various aerosol-related parameterizations.
+The column is initially defined by statically unstable hydrostatic balance, with lapse rate $\Gamma = 0.0068$ K/m.
+We assume a constant background state with pressure $\overline{p}(z)$, density $\overline{\rho}(z)$ and temperature defined by $\overline{T}(z) = T_0 - \Gamma z$ and hydrostatic balance.
+The perturbation temperature $T' = T - \overline{T}(z)$.
+The model equations are:
+\begin{subequations}
+  \begin{align}
+    \partd{w}{t} + w\partd{w}{z} & = g\left( \frac{T'}{T} - (q_c + q_r)\right),\\
+    \partd{q_v}{t} + w\partd{q_v}{z} &= E_1 + E_2, \\
+    \partd{q_c}{t} + w\partd{q_c}{z} &= E_1 - P, \\
+    \partd{q_r}{t} + w\partd{q_r}{z} &= - q_r\partd{w_r}{z} - w_r\partd{q_r}{z} - \frac{q_r w_r}{\overline{\rho}}\partdn{\overline{p}}{z}{2}  - E_2 + P,\\
+    \partd{T}{t} + w\partd{T}{z} &= -w\Gamma - \frac{L}{c_p}(E_1+E_2),
+  \end{align}
+\end{subequations}
+where $E_1$ describes evaporation and condensation of vapor-to-cloud water, $P$ is the rain water production term that accounts for autoconversion and accretion, $w_r \le 0$ is the rain fall velocity, $L$ is the latent heat of evaporation, and $c_p$ is the specific heat (at constant pressure) of air.
+
+The evaporation rate depends on the saturation of the air,
+\begin{equation}
+  E_1 = a_0\left(\frac{q_v}{q_{vsat}} - 1\right),
+\end{equation}
+where $q_{vsat}$ is the saturation mixing ratio given by the Tetens equation,
+\begin{equation}
+  q_{vsat}(T) = \frac{380.042}{\overline{p}}\exp\left(17.27 \frac{T-273}{T-36}\right).
+\end{equation}
+
+%Cloud water in \cite{Srivastava1967} is generated simply,
+%\begin{equation*}
+%  P_c = -w\partd{q_v}{z};
+%\end{equation*}
+%we add terms to represent cloud water droplet activation via condensation nuclei,
+%\begin{equation}\label{eq:qc_prod}
+%  P_c = -w\partd{q_v}{z} + A(T, \Delta T, q_v,q_{aer}),
+%\end{equation}
+%where $q_{aer}$ is the mixing ratio of aerosol cloud condensation nuclei.
+%\todo{Need some help with \eqref{eq:qc_prod}.}
+%Rain production is decomposed into three subprocesses, $P_r=P_1 + P_2 + P_3$.
+%The first subprocess represents evaporation in convective downdrafts,
+%\begin{equation}
+%  P_1 = -\mu(w) w \partd{q_v}{z}, \quad \mu(w) = \begin{cases} 1 & w<0, \\ 0 & w >= 0\end{cases}.
+%\end{equation}
+%The second subprocess represents cloud water conversion,
+%\begin{equation}
+%  P_2 = \begin{cases} 0 & q_c \le  q_c^{(crit)} \\ \alpha(q_c - q_c^{(crit)}) & q_c >  q_c^{(crit)}\end{cases},
+%\end{equation}
+%where $\alpha$ is a constant parameter representing the conversion time scale and $q_c^{(crit)}$ is an additional parameter, representing the critical value of cloud water, above which cloud water is converted to rain water.
+%\pbc{Perhaps we should consider smoothing out these piecewise functions?}
+%The last subprocess represents accretion, the capture of cloud drops by rain drops,
+%\pbc{I assume that conversion implies $C: q_c,q_c \mapsto q_r$, whereas accretion implies $Ac:q_c,q_r\mapsto q_r$.}
+%The model assumes that rainwater fall speed is proportional to droplet size, $W_r(D) = a D^b$, where $a$ and $b$ are constants, and that rain water droplet sizes are governed by the distribution function $N(D) = N_0e^{-\lambda} D$, where $\lambda = 3.67/D_0$ is a variable parameter related to $D_0$, the median diameter of rainwater droplets \cite[eqn.~(18)]{Srivastava1967}.
+%With these assumptions, the expression for accretion is
+%\begin{equation}
+%  P_3 = \frac{\pi N_0 a \rho \Gamma(3+b) q_r}{4\lambda^{3+b}},
+%\end{equation}
+%where $\Gamma$ represents the Gamma Function (not a lapse rate).
+%The same assumptions give the expression for rain fall velocity,
+%\begin{equation}
+%  w_r = \frac{a\Gamma(4+b)}{6\lambda^b}.
+%\end{equation}
+
+Initial conditions for $w$ and $q_c$ are defined by solving the above equations with $q_r=0$, and $w(z_c)=q_c(z_c) = 0$, $T(z_c) = 277$ K, where $z_c$ is the height of the cloud base.
+\todo{Have to figure these out ourselves. Using standard thermodynamics and hydrostatic balance.}
+\pbc{I believe cloud base is the first point above $z=0$ where $q_c>0$.}
+The bottom boundary condition is $w(0) = 0$.
+At $z_{top} = 9.5$ km, if $w(z_top)>0$ then the equations are solved without regard for the boundary; if $w(z_top)<=0$ the other variables are held constant.
+
+%------------------- table: cloud model parameters ---------------
+\begin{table}[htbp]
+\centering
+\caption{Parameters of the 1D cloud model.}
+\label{tab:cloud_model_parameters}
+\begin{tabular}{ccccc}
+  \toprule
+  Parameter      &  value 1
+                 &  value 2
+                 & value 3\\
+  \midrule
+  $a$ 	 &  1500 cm$^{1/2}$/s  &  --  & -- \\
+  $b$    &  0.5                &  --  & --  \\
+  $\lambda$  &  1.0            &  --  & --  \\
+  $N_0$ &  80 (gm cm)$^{-1}$   &  --  & --  \\
+  $\alpha$ & 2.0E-5 s$^{-1}$ (14 hr) & 4.0E-5 s$^{-1}$ (7 hr) & 4.0E-5 s$^{-1}$ (4 min) \\
+  $q_c^{(crit)}$ & 0 & 3 gm/kg & 3 gm/kg \\
+  \bottomrule
+\end{tabular}
+\end{table}
+%-------------
+
+
+
+\subsection{Embedded parameterization}
