@@ -1,7 +1,7 @@
 \section{Modes, Species, and Chemical Reactions}
 \labelsection{modes_and_species}
 
-In this section, we introduce data types in MAM that are used to define a
+In this section, we introduce data types in Haero that are used to define a
 physical system involving aerosols. These data types don't hold state
 information--they only specify the modes and species present in a system,
 and the chemical reactions that affect their populations.
@@ -19,7 +19,7 @@ by \refeq{modal_n}.
 
 The essential information in a mode is the range of particle sizes it
 encompasses, $[D_{\min}, D_{\max}]$, and its geometric standard deviation,
-$\sigma_g$. In MAM's C and C++ interfaces,
+$\sigma_g$. In Haero's C and C++ interfaces,
 we represent an aerosol mode with the \verb|Mode| struct:
 
 \begin{verbatim}
@@ -73,7 +73,7 @@ and querying its composition.
 \subsubsection*{Constructor}
 
 You construct a species object by calling a {\bf constructor}---a
-function that creates a new species for use in MAM.
+function that creates a new species for use in Haero.
 
 \begin{verbatim}
   ...
@@ -91,7 +91,7 @@ function that creates a new species for use in MAM.
 
 \subsubsection*{Destructor}
 
-At the end of a simulation, MAM destroys all of its data, freeing up any
+At the end of a simulation, Haero destroys all of its data, freeing up any
 resources used. When a species object is destroyed its {\bf destructor }
 function is called, which performs any necessary deallocation.
 

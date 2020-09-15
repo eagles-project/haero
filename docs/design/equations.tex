@@ -10,9 +10,12 @@ and~\cite{Friedlander1977}.
 All quantities are in SI units unless specifically mentioned. To keep the
 discussion simple and focused, we avoid referencing specific coordinates.
 
+Many of the assumptions here are inherited from Dick Easter's Modal Aerosol
+Model 4-mode (MAM4) model.
+
 \subsection*{Size Matters}
 
-MAM's approach to modeling aerosols is based on the observations that
+The modal approach to modeling aerosols is based on the observations that
 
 \begin{itemize}
   \item the sizes of aerosol particles greatly influence their dynamical
@@ -125,7 +128,7 @@ at each point in space and at each instant in time for an aerosol system.
 
 \subsubsection*{Log-Normal Distribution Functions}
 
-MAM constructs its multi-modal distribution functions from log-normal
+Haero constructs its multi-modal distribution functions from log-normal
 probability distribution functions (PDFs) for each mode $i$. The PDF for mode
 $i$ expresses the fraction of aerosol particles present per unit size interval,
 in terms of a continuous particle diameter $D_p$ within that mode. Such PDFs
@@ -148,7 +151,7 @@ deviation $\sigma_{g,i}$ of $D_p$ within mode $i$.
 
 
 In general, these two parameters are determined for each mode via moment equations and corresponding time-evolution equations.
-MAM makes an additional simplifying assumption:
+Haero makes an additional simplifying assumption:
 
 \begin{assume}[Constant standard deviation]
   The geometric standard deviation $\sigma_{g,i}>1$ for each mode $i$ is constant in time.  
@@ -167,7 +170,7 @@ Here, $g_i$ is a normal distribution of $\ln D_p$ with a mean of $\ln D_{g,i}$
 and standard deviation of $\ln\sigma_{g,i}$.
 
 These PDFs are referred to as {\bf normalized size distribution functions} in
-MAM. We can justify this name by multiplying each PDF by the total particle
+Haero. We can justify this name by multiplying each PDF by the total particle
 number density $N_i$ for mode $i$ to obtain the equivalent number distribution
 functions:
 
@@ -181,7 +184,8 @@ functions:
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{figures/pdf_examples}
-\caption{Normalized size distributions $n_i$ for each mode in the MAM Box Model with $N_i$ set by the \texttt{num\_aer} variable.}\label{fig:mode_dists}  
+\caption{Normalized size distributions $n_i$ for each mode in the Haero model
+with $N_i$ set by the \texttt{num\_aer} variable.}\label{fig:mode_dists}
 \end{figure}
 
 The logarithmic form $\hat{n}_i$ is useful because of the relationship
