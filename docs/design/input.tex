@@ -1,8 +1,8 @@
 \section{Proposed Input Specification}
 \labelsection{input}
 
-Below is a proposed input specification for MAM. The spec uses Yet Another
-Markup Language (YAML). Compared to Fortran namelists, YAML offers
+Below is a proposed input specification for MAM. The spec uses
+[YAML](https://yaml.org/). Compared to Fortran namelists, YAML offers
 
 \begin{itemize}
   \item {\bf better readability}: YAML files are flexible, and don't have a lot
@@ -17,12 +17,12 @@ Markup Language (YAML). Compared to Fortran namelists, YAML offers
     it easier for tools and other applications to use similar input files. In
     particular, this allows workflows to use a single input file to define a
     workload that can be processed with several tools.
-  \item {\bf support for lists and associative arrays}: YAML offers
-    constructions for dynamically-sized datasets. As we move MAM toward runtime
-    configurability, the ability to add species (and perhaps even modes) to an
-    input file will become more important.
+  \item {\bf support for lists and maps}: YAML offers constructions for
+    dynamically-sized datasets. As we move MAM toward runtime configurability,
+    the ability to add species (and perhaps even modes) to an input file
+    becomes more important.
   \item {\bf a larger support community}: Fortran remains a niche language,
-    which can instill a sense of pride in scientists. Unfortunately, the
+    which often instills a sense of pride in scientists. Unfortunately, the
     downside to belonging to a small community of specialists is that the tools
     are invariably of lower quality than more commonly-used tools. One needs
     only to witness the notorious ongoing issues with Fortran compilers to see
@@ -47,64 +47,176 @@ specifying its size range and its geometric standard deviation.
 
 \begin{verbatim}
 modes:
-- name: Aitken
-  D_min: 0.0087
-  D_max: 0.052
-  sigma: 1.6
-- name: Accumulation
-  D_min: 0.0535
-  D_max: 0.44
-  sigma: 1.8
-- name: Coarse
-  D_min: 1.0
-  D_max: 4.0
-  sigma: 1.8
-- name: Primary carbon
-  D_min: 0.01
-  D_max: 0.1
-  sigma: 1.6
+  aitken:
+    D_min: 0.0087
+    D_max: 0.052
+    sigma: 1.6
+  accumulation:
+    D_min: 0.0535
+    D_max: 0.44
+    sigma: 1.8
+  coarse:
+    D_min: 1.0
+    D_max: 4.0
+    sigma: 1.8
+  primary_carbon:
+    D_min: 0.01
+    D_max: 0.1
+    sigma: 1.6
 \end{verbatim}
 
 Particle diameters and $\sigma$ are measured in $\mu\mathrm{m}$.
 
-The \verb modes  section is essentially a list of named modes. In YAML, a list
-contains items identified by hyphens. As you can see above, the definition of
-each mode starts with its name, which is followed by its metadata. Modes can
-overlap. Each mode must be completely specified---there are no default values.
+The \verb modes  section is essentially a map whose keys are mode names
+(\verb aitken , \verb accumulation , \verb coarse , and \verb primary_carbon ,
+in the example above), and whose values are themselves maps. The map for a given
+mode contains the following fields:
 
-Note that names don't require quotes around them.
+\begin{itemize}
+  \item \verb D_min : the minimum diameter of particles belonging to the mode
+  \item \verb D_max : the maximum diameter of particles belonging to the mode
+  \item \verb sigma : the geometric mean standard deviation for the size
+                      distribution for particles belonging to the mode
+\end{itemize}
 
-\subsubsection*{Species}
+Everything in a mode must be completely specified---there are no default values.
 
-Particle species exist within modes. As we discussed in
-\refsection{modes_and_species}, a species is defined by its elemental
-composition and its electric charge (given in units of the electronic charge
-$|e|$).
+\subsubsection*{Aerosol Species}
+
+Aerosol species populate each of the defined modes, and are defined in the
+\verb aerosols  section. As we discussed in \refsection{modes_and_species}, a
+species is defined by its elemental composition and its electric charge (given
+in units of the electronic charge $|e|$).
+%The \verb species  section follows the same format as defined by
+%\href{https://cantera.org/documentation/dev/sphinx/html/yaml/species.html}{Cantera}.
+
+Like the \verb modes  section, the \verb aerosols  section is a map whose keys
+are {\em symbolic names} of aerosol particle species (e.g. \verb SO4  for
+sulfate particles):
 
 \begin{verbatim}
-species:
-- name: SO2
-  composition: {S: 1, O: 2}
-  thermo:
-  equation-of-state: ideal-gas
+aerosols:
+  SO4:
+    name: sulfate
+%    composition: {S: 1, O: 4}
 \end{verbatim}
 
-The \verb species  section follows the same format as defined by
-\href{https://cantera.org/documentation/dev/sphinx/html/yaml/species.html}{Cantera}.
+An aerosol species has the following fields:
 
-\subsubsection*{Reactions}
+\begin{itemize}
+  \item \verb name : the full name for the species (e.g. \verb sulfate  for
+    \verb SO4 ). You don't need to quote the full name, even if
+                     it contains spaces.
+\end{itemize}
 
-Chemical reactions are defined in the \verb reactions  section.
+\subsubsection*{Gas Species}
 
-This section follows the same format as defined by \href{https://cantera.org/documentation/dev/sphinx/html/yaml/reactions.html}{Cantera}.
-The most interesting types of reactions for MAM are \verb elementary  reactions,
-which use Arrhenius coefficients, and \verb falloff  reactions, which include
-the \href{https://cantera.org/science/reactions.html#the-troe-falloff-function}{Troe falloff function}.
+Gas species exist in the atmosphere, and aren't associated with modes. These
+species are defined in the \verb gases  section.
+
+The \verb gases  section is identical in structure to the
+\verb aerosols section:
+
+\begin{verbatim}
+gases:
+  SO2:
+    name: sulfur dioxide
+\end{verbatim}
+
+A gas species has the following fields:
+
+\begin{itemize}
+  \item \verb name : the full name for a gas species (e.g.
+                     {\verb sulfur dioxide} for \verb SO4 . You don't need to quote the
+                     full name, even if it contains spaces.
+\end{itemize}
+
+\subsubsection*{Physics}
+
+In this section, we tell the Haero driver what physical processes we wish
+to simulate. Every field in this section assumes a \verb true  or
+\verb false  value, so it's really just a set of ON/OFF switches. Valid fields
+are:
+
+\begin{itemize}
+  \item \verb growth : enables particle growth modeling
+  \item \verb gas_chemistry : enables the gas chemistry mechanism
+  \item \verb cloud_chemistry : enables the cloud chemistry mechanism
+  \item \verb gas_aerosol_exchange : enables exchange processes that occur
+                                     between gas and aerosol particles
+  \item \verb mode_transfer : enables the transferring particles between modes
+  \item \verb nucleation : enables aerosol particle formation processes
+  \item \verb coagulation : enables inelastic aerosol collision processes
+\end{itemize}
+
+\subsubsection*{Atmospheric Conditions}
+
+In each cell within each column, there exist atmospheric conditions that
+provide important parameters---temperature, pressure, relative humidity, etc---
+that govern physical processes. The \verb atmosphere  section allows you
+to specify one of a handful of simple models for obtaining those parameters.
+Each model has its own parameters.
+
+First and foremost, you specify a model with the \verb model  field within
+the \verb atmosphere  section. Supported models are:
+
+\begin{itemize}
+  \item \verb uniform : a simple atmospheric environment in which columns are
+                        assumed to be short in comparison to the height of the
+                        atmosphere so that all conditions are uniform
+  \item \verb hydrostatic : an atmospheric environment in hydrostatic
+                            equilibrium, with the relationship between pressure
+                            and temperature defined by an ideal gas law
+\end{itemize}
+
+These models are described in detail in \refsection{contexts}. Here we simply
+list valid fields for each model. These fields are specified alongside the
+\verb model  field in the \verb atmosphere  section. Tables~\ref{tab:uniform_atm}
+and~\ref{tab:hydrostatic_atm} list fields for the \verb uniform  and
+\verb hydrostatic  models.
+
+\begin{table}[htbp]
+\caption{Uniform atmosphere parameters}
+\centering
+\label{tab:uniform_atm}
+\begin{tabular}{ccc}
+  \toprule
+  Parameter   & Description                  & Units   \\
+  \midrule
+  \verb mu    & Mean molecular weight of air & kg/mol  \\
+  \verb H     & Scaled atmospheric height    & m       \\
+  \verb p0    & Pressure                     & Pa      \\
+  \verb T0    & Temperature                  & K       \\
+  \verb phi0  & Relative humidity            & -       \\
+  \verb N0    & Cloud fraction               & -       \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\caption{Hydrostatic atmosphere parameters}
+\centering
+\label{tab:hydrostatic_atm}
+\begin{tabular}{ccc}
+  \toprule
+  Parameter   & Description                  & Units   \\
+  \midrule
+  \verb mu    & Mean molecular weight of air & kg/mol  \\
+  \verb H     & Scaled atmospheric height    & m       \\
+  \verb p0    & Pressure                     & Pa      \\
+  \verb T0    & Temperature                  & K       \\
+  \verb phi0  & Relative humidity            & -       \\
+  \verb N0    & Cloud fraction               & -       \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{Grid Parameters}
 
 \subsubsection*{Initial Conditions}
 
-The \verb initial-conditions section defines the initial state of an aerosol
-system in MAM. These include number concentrations for species.
+The \verb initial_conditions section defines the initial state of an aerosol
+system. These include number concentrations for species.
 
 \begin{verbatim}
 initial-conditions:
@@ -114,17 +226,11 @@ initial-conditions:
 
 This section is a mapping from species names to their initial concentrations.
 
+\subsubsection*{Chemistry Model}
+
 \subsubsection*{Simulation Parameters}
 
-\subsubsection*{Time Stepping}
+\subsection{Examples}
 
-\subsubsection*{Output}
-
-\subsection{A Complete Example}
-
-Let's see how we might define a MAM simulation for the standalone driver.
-
-\begin{verbatim}
-# Example MAM input specification (hashes are comments in YAML files).
-
-\end{verbatim}
+You can find examples of driver input files in the \verb driver/tests  directory
+within the \verb haero  GitHub repository.
