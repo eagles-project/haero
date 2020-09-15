@@ -382,6 +382,23 @@ symbolic names of the gases defined in the \verb gases section of the file.
 The \verb modes  subsection, the fields are named after the modes defined in
 the \verb modes  section.
 
+\subsubsection*{Data Section}
+
+The \verb data  section mentioned above contains fields with values that are
+either single numbers or YAML lists. This section is primarily used by fields
+in the \verb initial_conditions  section. Here's an example of some valid
+entries for a simulation with columns having 10 vertical levels, for data
+defined on each of those vertical levels:
+
+\begin{verbatim}
+data:
+  SO4_accum: [0.28, 0.285, 0.29, 0.295, 0.3, 0.305, 0.31, 0.315, 0.32, 0.325]
+  POA_accum: 0
+\end{verbatim}
+
+Lists for data defined on vertical level {\em interfaces} must contain one more
+element than those for data defined on vertical levels.
+
 \subsubsection*{Perturbations to Initial Conditions}
 
 TBD
