@@ -54,7 +54,7 @@ physics:
   gas_chemistry:        false
   cloud_chemistry:      false
   gas_aerosol_exchange: true
-  mode_merging:         true
+  mode_transfer:        true
   nucleation:           true
   coagulation:          true
 

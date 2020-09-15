@@ -1,7 +1,7 @@
-\section{Proposed Input Specification}
+\section{Driver Input Specification}
 \labelsection{input}
 
-Below is a proposed input specification for MAM. The spec uses
+Below is the input specification for the Haero driver. The spec uses
 [YAML](https://yaml.org/). Compared to Fortran namelists, YAML offers
 
 \begin{itemize}
@@ -29,9 +29,18 @@ Below is a proposed input specification for MAM. The spec uses
     this phenomenon firsthand.
 \end{itemize}
 
-The YAML spec can be used both for initializing data via the API, and with
-standalone drivers. We also provide a proposed API for reading data from
-input files.
+This specification is for use only with the Haero driver. The library provides
+no input/output interface---it assumes that the model in which it's embedded
+does the work of assembling input data and loading it into the appropriate
+data structures.
+
+The Haero driver is a single-column aerosol dynamics simulator---it doesn not
+model horizontal dynamics. However, depending on how initial conditions are
+specified, it's possible to generate ensembles whose members are individual
+atmospheric columns. Because the columns are independent of one another, these
+ensembles can be run entirely within a single simulation, allowing the driver
+to take advantage of parallelism, and allowing statistics and measures of
+convergence to be generated.
 
 \subsection*{Sections}
 
@@ -98,7 +107,20 @@ sulfate particles):
 aerosols:
   SO4:
     name: sulfate
-%    composition: {S: 1, O: 4}
+  NH4:
+    name: ammonium
+  POA:
+    name: primary organic aerosol
+  SOA:
+    name: secondary organic aerosol
+  BC:
+    name: black carbon
+  SS:
+    name: sea salt
+  DST:
+    name: dust
+  MOA:
+    name: marine organic aerosol
 \end{verbatim}
 
 An aerosol species has the following fields:
@@ -121,6 +143,12 @@ The \verb gases  section is identical in structure to the
 gases:
   SO2:
     name: sulfur dioxide
+  H2SO4:
+    name: sulfuric acid
+  SOAG:
+    name: single semi-volatile organic gas-phase species
+  NH3:
+    name: ammonia
 \end{verbatim}
 
 A gas species has the following fields:
@@ -147,6 +175,24 @@ are:
   \item \verb mode_transfer : enables the transferring particles between modes
   \item \verb nucleation : enables aerosol particle formation processes
   \item \verb coagulation : enables inelastic aerosol collision processes
+\end{itemize}
+
+\subsubsection*{Grid Parameters}
+
+This section contains information about the computational grid used by the
+Haero driver.
+
+\begin{verbatim}
+grid:
+  num_columns: 1
+  num_levels:  72
+\end{verbatim}
+
+There are two required fields:
+
+\begin{itemize}
+  \item \verb num_columns : the number of independent atmospheric columns
+  \item \verb num_levels : the numer of vertical cells in each column
 \end{itemize}
 
 \subsubsection*{Atmospheric Conditions}
@@ -211,24 +257,185 @@ and~\ref{tab:hydrostatic_atm} list fields for the \verb uniform  and
 \end{tabular}
 \end{table}
 
-\subsubsection*{Grid Parameters}
-
 \subsubsection*{Initial Conditions}
 
 The \verb initial_conditions section defines the initial state of an aerosol
-system. These include number concentrations for species.
+system. There are subsections for \verb aerosols , for \verb gases , and
+for \verb modes  themselves.
+
+In the Haero driver, the initial state for an aerosol species is specified by
+its modal mass fractions, given for every mode occupied by that species. The
+nodal mass fraction of an aerosol species is the fraction of the total mass of
+the mode's particles occupied by that species.
+
+Meanwhile, the initial state for a gas is its mole fraction---the number of
+moles of gas per mole of air.
+
+Finally, an initial mode state is given as a number density: the number of total
+aerosol particles in the mode per cubic meter.
+
+In each case, the initial state is specified for an entire column. There are a
+few ways of specifying input for a quantity within a column:
+
+\begin{enumerate}
+  \item {\bf Specify a uniform quantity with a single number.}
+        \begin{verbatim}
+          <quantity>: value
+        \end{verbatim}
+        This is the easiest option for defining a quantity's initial state: it's
+        the same everywhere, from the top to the bottom of the column. For
+        example, to define a uniform mass fraction of sulfate within a mode:
+        \begin{verbatim}
+          SO4: 0.3
+        \end{verbatim}
+  \item {\bf Use a YAML list to specify a quantity's vertical profile.}
+        \begin{verbatim}
+          <quantity>: [value1, value2, ..., valueN]
+        \end{verbatim}
+        This option allows you to specify a value of an aerosol, a gas, or a mode
+        in each of the cells of a column with a YAML list. For example, if your
+        columns have 10 vertical levels, you can specify the mass fraction of
+        sulfate within a mode using a list like this:
+        \begin{verbatim}
+          SO4: [0.28, 0.285, 0.29, 0.295, 0.3, 0.305, 0.31, 0.315, 0.32, 0.325]
+        \end{verbatim}
+        The size of the list must match the number of vertical levels.
+  \item {\bf Refer to a named field in the \verb data  section.}
+        \begin{verbatim}
+          <quantity>: data: <data_field>
+        \end{verbatim}
+        This option is similar to specifying a column profile with a YAML list
+        of values, except that the list is given a symbolic name within the
+        \verb data  section (described below), and the initial condition refers
+        to the symbolic name of that list. Suppose you were specifying modal
+        mass fractions for sulfate in the \verb accumulation  mode, and the
+        mass fraction data is defined in the \verb data  section in the field
+        \verb SO4_accum . Then your initial condition field would read:
+        \begin{verbatim}
+          SO4: data: SO4_accum
+        \end{verbatim}
+  \item {\bf Refer to a variable in a NetCDF file.}
+        \begin{verbatim}
+          <quantity>: <filename>: <var_name>
+        \end{verbatim}
+        If you have a NetCDF file that defines initial conditions for columns,
+        you can refer directly to any variable within that file, as long as its
+        dimension matches the dimension of the columns in your
+        \verb grid  section. For example, to read column mass fractions for
+        sulfate within a mode from the \verb SO4_massfrac  variable within a
+        NetCDF file named \verb column_ics.nc :
+        \begin{verbatim}
+          SO4: column_ics.nc: SO4_massfrac
+        \end{verbatim}
+\end{enumerate}
+
+Here's an example of a simple set of initial conditions in which all aerosols,
+gases, and modes are given uniform initial states:
 
 \begin{verbatim}
-initial-conditions:
-  SO2:
-    concentration: 0.01
+initial_conditions:
+  aerosols:
+    accumulation:
+      SO4: 0.3
+      POA: 0
+      SOA: 0.3
+      BC: 0
+      DST: 0
+      NCL: 0.4
+    aitken:
+      SO4: 0.3
+      SOA: 0.3
+      NCL: 0.4
+    coarse:
+      DST: 0
+      NCL: 0.4
+      SO4: 0.3
+      BC: 0
+      POA: 0
+      SOA: 0.3
+    primary_carbon:
+      POA: 0
+      BC: 1
+
+  gases:
+    SO2: 1.e-4
+    H2SO4: 1.e-13
+    SOAG:  5.e-10
+
+  modes:
+    accumulation: 1.e8
+    aitken: 1.e9
+    coarse: 1.e5
+    primary_carbon: 5.e8
 \end{verbatim}
 
-This section is a mapping from species names to their initial concentrations.
+In the \verb aerosols  subsection, the modal mass fractions of all species
+are defined for each mode. So the \verb aerosols contains mode names as fields.
+Each of these mode names contains one or more symbolic names of aerosol species.
+Every species and mode referenced in this subsection must be defined earlier
+in the file.
+
+In the \verb gases  subsection, the initial state of a gas section is simpler,
+since gases don't belong to specific modes. Each of the fields here adopt the
+symbolic names of the gases defined in the \verb gases section of the file.
+
+The \verb modes  subsection, the fields are named after the modes defined in
+the \verb modes  section.
+
+\subsubsection*{Perturbations to Initial Conditions}
+
+TBD
 
 \subsubsection*{Chemistry Model}
 
+The Haero driver implements an extremely simple chemistry model: the uniform
+production of a gas species at a constant rate. The parameters of this model,
+which are the rates at which one or more gas species are uniformly produced
+in all grid cells, are defined in the \verb production  subsection of the
+\verb chemistry  section, in the following way:
+
+\begin{verbatim}
+chemistry:
+  production:
+    H2S04: 1.0e-16
+\end{verbatim}
+
+Here¸ we specify that \verb H2SO4  gas (which must be defined in the
+\verb gases  section) gets produced at $ 10^{-16} $ mol gas / mol air / s.
+
 \subsubsection*{Simulation Parameters}
+
+In the \verb simulation  section, you define parameters relevant to your
+simulation, as opposed to the system being simulated:
+
+\begin{verbatim}
+simulation:
+  timestep: 1
+  duration: 1800
+  output:
+    directory: .
+    prefix: smoke_test
+    frequency: 1
+\end{verbatim}
+
+This section contains two fields relevant to timestepping:
+
+\begin{itemize}
+  \item \verb timestep : a fixed timestep size used in the simulation (s).
+                         This may also be a list of fixed timesteps, in which
+                         case the driver will run a self-convergence study
+  \item \verb duration : the total duration of the simulation (s)
+\end{itemize}
+
+There's also an \verb output  subsection with parameters related to simulation
+output. These parameters are defined by the following fields:
+
+\begin{itemize}
+  \item \verb directory : the directory in which output files are written
+  \item \verb prefix : a prefix for output files for this simulation
+  \item \verb frequency : the number of timesteps to advance between writing
+                          successive simulation output files.
+\end{itemize}
 
 \subsection{Examples}
 
