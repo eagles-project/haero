@@ -6,8 +6,7 @@
 namespace haero {
 
 /// This type represents an aerosol or gas species.
-class Species final {
-  public:
+struct Species final {
   /// Full species name.
   std::string name;
   /// Abbreviated symbolic name.
