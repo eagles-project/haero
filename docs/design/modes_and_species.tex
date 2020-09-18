@@ -3,8 +3,14 @@
 
 In this section, we introduce data types in Haero that are used to define a
 physical system involving aerosols. These data types don't hold state
-information--they only specify the modes and species present in a system,
+information---they only specify the modes and species present in a system,
 and the chemical reactions that affect their populations.
+
+Haero is written primarily in C++, so we describe C++ data structures in
+this section. However, Haero also provides a Fortran interface that can be
+used by scientists to develop and test new parametrizations. Both the C++
+and Fortran application programming interfaces (APIs) are described in
+detail in \refappendix{api}.
 
 \subsection{The Mode Data Type}\labelsection{mode_data_type}
 
@@ -24,83 +30,54 @@ we represent an aerosol mode with the \verb|Mode| struct:
 
 \begin{verbatim}
 struct Mode {
-  char name[32]; // A string identifier for the mode
-  int index;     // The mode's index
-  Real D_min;    // The mode's minimum particle diameter
-  Real D_max;    // The mode's maximum particle diameter
-  Real sigma;    // The geometric standard deviation for the mode
+  std::string name;  // a unique identifier for the mode
+  Real min_diameter; // the mode's minimum particle diameter
+  Real max_diameter; // the mode's maximum particle diameter
+  Real mean_std_dev; // the geometric mean standard deviation for the mode
 }
 \end{verbatim}
 
-Note that we provide a unique name that identifies the mode and a unique
-index for that mode within the context of a simulation, for bookkeeping
-purposes. In Fortran, we provide an equivalent derived type:
-
-\begin{verbatim}
-type Mode
-  integer           :: index
-  character(len=32) :: name
-  real(wp)          :: D_min
-  real(wp)          :: D_max
-  real(wp)          :: sigma
-end type Mode
-\end{verbatim}
+In principle, a Haero calculation can support any number of modes, but care
+must be taken to ensure that the modal assumptions remain valid, and that
+the parametrizations selected can accommodate the given modes.
 
 \subsection{The Species Data Type}\labelsection{species_data_type}
 
 {\bf WARNING: This section is under construction!}
 
-Each aerosol mode consists of one or more particle species.
+Each aerosol mode consists of one or more particle species. Additionally,
+gas particles also come in different species. Both aerosol particles and
+gas particles have physical properties that are described by the
+\verb Species  data type.
 
 A particle species is a specifically-identified molecular assembly with
 a number of relevant physical properties. The fundamental description of a
 species includes
 
 \begin{itemize}
-  \item a descriptive name and a corresponding unique index, for bookkeeping
-  \item its elemental composition (how many of which atoms it possesses)
-  \item its net electrical charge (in units of the elementary charge $e$)
-  \item an appropriate equation of state for computing thermodynamic quantities
+  \item a symbolic name (e.g. \verb SO4 , for sulfate)
+  \item a descriptive name (e.g. \verb "sulfate" )
+  \item its elemental composition (how many atoms of each type it possesses)
+  \item its net electrical charge (in units of the elementary charge $|e|$)
 \end{itemize}
 
-Because the composition of a species can involve an arbitrary number of
-elements, we use an interface (or ``object") to represent a species instead of
-a struct. In C++, a \verb|Species| is a class with methods for defining and
-querying its composition. In C and Fortran, a \verb|species_t| (the equivalent
-type) is an ``opaque'' type with associated functions/subroutines for defining
-and querying its composition.
-
-\subsubsection*{Constructor}
-
-You construct a species object by calling a {\bf constructor}---a
-function that creates a new species for use in Haero.
+We represent this information in the following way:
 
 \begin{verbatim}
-  ...
-  type(species_t) species
-  character(len=32) name
-  ...
-  name = "O3"
-  species = species_new(name, composition, charge, eos)
-
+struct Species {
+  std::string name;                       // full species name
+  std::string symbol;                     // abbreviated symbolic name
+  std::map<std::string, int> composition; // elemental make-up of species
+  int charge;                             // net electrical charge
+};
 \end{verbatim}
 
-\subsubsection*{Definition Functions}
-
-\subsubsection*{Query Functions}
-
-\subsubsection*{Destructor}
-
-At the end of a simulation, Haero destroys all of its data, freeing up any
-resources used. When a species object is destroyed its {\bf destructor }
-function is called, which performs any necessary deallocation.
-
-Typically, you don't need to call a destructor outside of a testing environment.
-But for completeness, here's how you call the destructor for a species object:
-
-\begin{verbatim}
-  call species_free(species)
-\end{verbatim}
+The \verb composition  field in the \verb Species  struct maps the name of
+a chemical element to the number of atoms of that type that appear within
+the species.
 
 \subsection{Chemistry Data Types}\labelsection{chem_data_types}
+
+TBD: we currently don't have a candidate for a chemical mechanism, though
+we are considering Cantera.
 
