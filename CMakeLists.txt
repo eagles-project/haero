@@ -41,6 +41,12 @@ else()
 endif()
 message(STATUS "Using ${HAERO_PRECISION} precision floating point numbers")
 
+if (HAERO_USE_PACK_SIZE)
+  set(HAERO_PACK_SIZE ${HAERO_USE_PACK_SIZE})
+else()
+  set(HAERO_PACK_SIZE 1)
+endif()
+
 # We build static libraries only.
 set(BUILD_SHARED_LIBS OFF)
 
@@ -214,6 +220,8 @@ if (HAERO_ENABLE_DRIVER)
 endif()
 
 # Documentation.
+add_subdirectory(docs)
+
 find_package(Doxygen OPTIONAL_COMPONENTS dot QUIET)
 if (DOXYGEN_FOUND)
   message(STATUS "Found Doxygen. Generating 'doc' target.")

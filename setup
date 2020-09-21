@@ -85,6 +85,10 @@ PRECISION=double
 #PRECISION=single
 
 #-----------------------------------------------------------------------------
+#                                Scalar packs
+#-----------------------------------------------------------------------------
+PACK_SIZE=1
+#-----------------------------------------------------------------------------
 #                                Build type
 #-----------------------------------------------------------------------------
 # Choose one of the following.
@@ -232,6 +236,7 @@ cmake \
  -DCMAKE_CXX_COMPILER=\$CXX \
  -DHAERO_PRECISION=\$PRECISION \
  -DHAERO_ENABLE_DRIVER=\$BUILD_DRIVER \
+ -DHAERO_USE_PACK_SIZE=\$PACK_SIZE \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR

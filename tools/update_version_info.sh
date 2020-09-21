@@ -35,9 +35,9 @@ namespace {
 END
 
 echo "// Version string" >> $cpp_file
-echo 'const char* _version = "$major_version.$minor_version.$patch_version";' >> $cpp_file
+echo "const char* _version = \"$major_version.$minor_version.$patch_version\";" >> $cpp_file
 echo "// Git revision (hash) string" >> $cpp_file
-echo 'const char* _revision = "$git_revision";' >> $cpp_file
+echo "const char* _revision = \"$git_revision\";" >> $cpp_file
 echo "// True iff there are uncommitted changes in your workspace, false if not" >> $cpp_file
 if [ $git_diffs -gt 0 ]; then
   echo "bool _has_uncommitted_changes = true;" >> $cpp_file

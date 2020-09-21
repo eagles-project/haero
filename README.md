@@ -13,13 +13,14 @@ atmospheric model, [SCREAM](https://github.com/E3SM-Project/scream).
 
 In addition to the Haero API, this repo also contains a standalone driver that
 can be used to easily set up and run simple column physics simulations in a
-"box model" configuration. The source for the driver lives in the `driver/`
-directory.
+"box model" configuration. A box model consists of a set of independent columns
+in which aerosol-related quantities are evolved according to the modal aerosol
+equations. The source for the driver lives in the `driver/` directory.
 
 ## Supported Platforms
 
-You can build and run the box model on a Mac or Linux laptop or workstation. We
-also support a limited number of platforms on which the box model is built and
+You can build and run Haero on a Mac or Linux laptop or workstation. We
+also support a limited number of platforms on which the Haero model is built and
 tested:
 
 * NERSC Cori
@@ -27,20 +28,24 @@ tested:
 
 ## Required Software
 
-To build the box model, you need:
+To build Haero, you need:
 
 * [CMake v3.10+](https://cmake.org/)
 * GNU Make
 * reliable C and C++ compilers
 * a good Fortran compiler, such as GNU `gfortran` or Intel's `ifort` compiler
+* a working MPI installation (like [OpenMPI](https://www.open-mpi.org/) or
+  [Mpich](https://www.mpich.org/)).
 
 You can obtain all of these (except perhaps your favorite Fortran compiler)
-freely on the Linux and Mac platforms. For example, installing XCode on your
-Mac gives you GNU Make and the C/C++ compilers.
+freely on the Linux and Mac platforms. For example, on a Mac, you can get the
+Clang C/C++ compiler by installing XCode, and use a package manager like
+[Homebrew](https://brew.sh/) or [MacPorts](https://www.macports.org/) to get
+the rest.
 
 ## Building the Model
 
-To configure the box model:
+To configure Haero:
 
 1. Create a build directory with the `setup` script:
    ```
@@ -49,7 +54,8 @@ To configure the box model:
 2. Change to your build directory and edit the `config.sh` file to select
    configuration options. Then run `./config.sh` to configure the model.
 3. From the build directory, type `make -j` to build the box model.
-4. To run the driver's tests, type `make test`.
+4. To run tests for the library (and the driver, if configured), type
+   `make test`.
 5. To install the model to the location indicated by `PREFIX` in your
    `config.sh` script, type `make install`. By default, products are installed
    in `include`, `lib`, `bin`, and `share` ѕubdirectories within your build
@@ -81,11 +87,14 @@ The build directory has a structure that mirrors the source directory, and you
 can type `make` in any one of its subdirectories to do partial builds. In
 practice, though, it's safest to always build from the top of the build tree.
 
-## Generating Reference Documentation
+## Generating Documentation
 
-If you have [Doxygen](https://www.doxygen.nl/index.html) installed, you can
-generate reference documentation for Fortran modules from your build directory
-with
+Haero includes a design document that is automatically built in the
+`docs/design` subdirectory of your build directory when you type `make`.
+
+In addition, if you have [Doxygen](https://www.doxygen.nl/index.html) installed,
+you can generate reference documentation for the C++ and Fortran library
+interface from your build directory with
 
 ```
 make doc
@@ -130,4 +139,9 @@ documentation generated from code annotations. You can point your browser to
   ```
   git config --global diff.ignoreSubmodules dirty
   ```
++ **Why must I clone the submodules for libraries that I already have installed
+  locally? Git submodules are annoying! Help!** We agree. The submodule
+  mechanism is a leaky abstraction and doesn't allow us to easily select which
+  submodules should be cloned, so we just clone them all to keep things simple.
+  We'll address this issue when a solution becomes more obvious.
 

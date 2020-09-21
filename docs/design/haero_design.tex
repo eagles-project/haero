@@ -1,0 +1,104 @@
+%coagulation verification document
+\documentclass[a4paper, 11pt]{article}
+
+\usepackage{amsmath,amssymb,mathrsfs}
+\usepackage{graphicx}
+\usepackage{fullpage,times}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{booktabs,supertabular}
+\usepackage{amsthm,thmtools}
+\usepackage{xspace}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\newtheorem{appx}{Approximation}
+\newtheorem{assume}{Assumption}
+\renewcommand{\listtheoremname}{List of Assumptions and Approximations}
+
+\theoremstyle{remark}
+\newtheorem*{rem}{Remark}
+
+% Line spacing
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1em}
+
+\usepackage[dvipsnames]{xcolor}
+
+%---------
+% Draft writing tools
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{To-do:\xspace} #1}}
+\newcommand{\pbc}[1]{\textcolor{blue}{\textbf{PB comment:\xspace} #1}}
+\newcommand{\jjc}[1]{\textcolor{teal}{\textbf{JJ comment:\xspace} #1}}
+
+% Bibliography stuff
+\usepackage[sort, numbers]{natbib}
+\bibliographystyle{acm}
+\setcitestyle{square}
+
+\usepackage{hyperref}
+
+% Hold the serifs, please!
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{helvet}
+
+%\usepackage[inline]{../trackchanges}
+%\addeditor{Kai}
+%\addeditor{Hui}
+
+% Labeling and referencing
+\newcommand{\labeleq}[1]{\label{eq:#1}}
+\newcommand{\labelsection}[1]{\label{sec:#1}}
+\newcommand{\labelsubsection}[1]{\label{subsec:#1}}
+\newcommand{\labelappendix}[1]{\label{app:#1}}
+\newcommand{\refeq}[1]{Equation~\ref{eq:#1}}
+\newcommand{\refsection}[1]{Section~\ref{sec:#1}}
+\newcommand{\refsubsection}[1]{Section~\ref{subsec:#1}}
+\newcommand{\refappendix}[1]{Appendix~\ref{app:#1}}
+
+% Annotating assumptions(!)
+%\newcommand{\assume}{{\bf Assumption: }}
+
+% Math stuff
+\renewcommand{\d}[1]{\mathrm{d} #1}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\ddt}[1]{\frac{\partial}{\partial t} #1}
+\renewcommand{\div}[1]{\nabla \cdot #1}
+\newcommand{\dsub}[1]{_{_{#1}}}
+\newcommand{\specidx}{L}
+\newcommand{\amass}[1]{q\dsub{m,#1,i}}
+\newcommand{\vmass}[1]{q\dsub{v,#1}}
+\newcommand{\mw}[1]{M\dsub{w,#1}}
+% Norm and Absolute value
+	\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
+	\newcommand{\norm}[1]{\left\lVert#1\right\rVert}	
+% derivatives
+	\newcommand{\partd}[2]{\frac{\partial #1 }{\partial #2}}
+	\newcommand{\partdn}[3]{\frac{\partial^#3 #1}{\partial #2 ^#3}}
+	\newcommand{\deriv}[2]{\frac{ d #1}{d #2}}
+	\newcommand{\derivn}[3]{\frac{d^#3 #1}{d #2^#3}}	
+
+\begin{document}
+\title{Haero Aerosol Model Design Document}
+\author{
+EAGLES Computation Team\\
+}
+%\date
+\maketitle
+
+% \include puts page breaks after each section, while \input does not.
+\include{intro}
+\include{equations}
+\include{modes_and_species}
+\include{contexts}
+\include{tendencies}
+
+\appendix
+\include{glossary}
+\include{api}
+\include{input}
+\listoftheorems[ignoreall, show={assume,appx}, onlynamed]
+\nocite{*}
+\bibliography{haero_design}
+
+\end{document}

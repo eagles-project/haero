@@ -54,7 +54,7 @@ physics:
   gas_chemistry:        false
   cloud_chemistry:      false
   gas_aerosol_exchange: true
-  mode_merging:         true
+  mode_transfer:        true
   nucleation:           true
   coagulation:          true
 
@@ -62,12 +62,12 @@ physics:
 # `uniform` and `hydrostatic`, each with their own set of parameters.
 atmosphere:
   model: uniform
-    mu:     0.02896 # mean molecular weight of air [kg/mol]
-    H:      3.e3    # scaled atmospheric height [m]
-    p0:     1.e5    # pressure [Pa]
-    T0:     273     # temperature [K]
-    phi0:   0.95    # clear-sky relative humidity [-]
-    N0:     0       # cloud fraction [-]
+  mu:     0.02896 # mean molecular weight of air [kg/mol]
+  H:      3.e3    # scaled atmospheric height [m]
+  p0:     1.e5    # pressure [Pa]
+  T0:     273     # temperature [K]
+  phi0:   0.95    # clear-sky relative humidity [-]
+  N0:     0       # cloud fraction [-]
 
 # Grid geometry
 grid:
@@ -115,15 +115,12 @@ initial_conditions:
     H2SO4: 1.e-13
     SOAG:  5.e-10
 
-  # Here we specify the number densities [#/cubic m**3] for each mode.
+  # Here we specify the number densities [#/m**3] for each mode.
   modes:
     accumulation: 1.e8
     aitken: 1.e9
     coarse: 1.e5
     primary_carbon: 5.e8
-
-  num_factor: 1
-  gas_factor: 1
 
 # Chemistry is pretty simplistic at the moment.
 chemistry:
