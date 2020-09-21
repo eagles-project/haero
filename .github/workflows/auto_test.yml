@@ -18,7 +18,7 @@ jobs:
     # A build matrix storing all desired configurations.
     strategy:
       matrix:
-        os: [ubuntu-latest] #, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         build-type: [Debug, Release]
         fp-precision: [single, double]
 
@@ -29,9 +29,13 @@ jobs:
     # Steps for building and running tests.
     steps:
 
-    - name: Installing GFortran
+    - name: Installing MPI and GFortran (Linux)
       if: contains(matrix.os, 'ubuntu')
       run: sudo apt-get install gfortran libopenmpi-dev
+
+    - name: Installing MPI (Mac)
+      if: contains(matrix.os, 'macos')
+      run: brew install open-mpi
 
     - name: Checking out repository
       uses: actions/checkout@v2

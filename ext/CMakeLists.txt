@@ -24,7 +24,7 @@ set_target_properties(dl PROPERTIES IMPORTED_LOCATION ${DL_LIBRARY})
 # libz compression library
 #----------------------------------------------------------------------------
 find_library(Z_LIBRARY libz.a)
-if (Z_LIBRARY-NOTFOUND)
+if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
   set(ZLIB_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR} --static)
