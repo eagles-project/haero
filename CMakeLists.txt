@@ -13,8 +13,12 @@ enable_language(Fortran)
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 11)
 
+include(GNUInstallDirs)
+
 # We declare the project here.
+message(STATUS "LIBDIR is ${CMAKE_INSTALL_LIBDIR}")
 project (haero)
+message(STATUS "LIBDIR is ${CMAKE_INSTALL_LIBDIR}")
 
 message(STATUS "Generating project files in build directory: ${PROJECT_BINARY_DIR}")
 message(STATUS "C++ compiler is ${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
