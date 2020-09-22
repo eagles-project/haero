@@ -5,7 +5,7 @@
 // #include "column_base.hpp" // requires column_dynamics branch
 // #include "dyn_column.hpp" // requires column_dynamics branch
 #include <string>
-//#include "ekat/util/ekat_units.hpp" // requires updated ekat
+#include "ekat/util/ekat_units.hpp" // requires updated ekat
 #include "netcdf.h"
 
 namespace haero {
