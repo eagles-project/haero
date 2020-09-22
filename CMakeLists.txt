@@ -17,10 +17,12 @@ set_up_platform()
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+if (APPLE)
   #  GCC has already impl'd some c++14 features even in a c++11 build.  Apple's Clang
   # (perhaps clang generally) doesn't like this and requires -std=c++14 for these features.
-  set(CMAKE_CXX_STANDARD 14)
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    set(CMAKE_CXX_STANDARD 14)
+  endif()
 endif()
 
 message(STATUS "Generating project files in build directory: ${PROJECT_BINARY_DIR}")
