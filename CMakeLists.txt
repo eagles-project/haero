@@ -5,20 +5,18 @@ cmake_minimum_required (VERSION 3.10.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/")
 
-# Set compilers. This must be done before enabling languages.
+
+# We declare the project right away.
+project (haero)
+
+# Setup all installation folders for tpls.
+# This will also be used to figure out whether haero
+# hass to build them as external projects
 include(set_up_platform)
 set_up_platform()
-enable_language(C)
-enable_language(Fortran)
-enable_language(CXX)
+
+# Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
-
-include(GNUInstallDirs)
-
-# We declare the project here.
-message(STATUS "LIBDIR is ${CMAKE_INSTALL_LIBDIR}")
-project (haero)
-message(STATUS "LIBDIR is ${CMAKE_INSTALL_LIBDIR}")
 
 message(STATUS "Generating project files in build directory: ${PROJECT_BINARY_DIR}")
 message(STATUS "C++ compiler is ${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
@@ -185,7 +183,9 @@ set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 # since it's where we place the third-party libraries.
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_BINARY_DIR}/include")
-link_directories("${PROJECT_BINARY_DIR}/lib")
+
+include(GNUInstallDirs)
+link_directories("${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
 include_directories(${HAERO_INCDIRS})
 
 # Support for valgrind -- Linux only.
