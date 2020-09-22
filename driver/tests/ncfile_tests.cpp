@@ -1,4 +1,4 @@
-#include "driver/column_netcdf.hpp"
+#include "driver/ncfile.hpp"
 #include <iostream>
 #include <string>
 #include "catch2/catch.hpp"
@@ -7,7 +7,7 @@ using namespace haero;
 
 TEST_CASE("column_netcdf", "") {
   const std::string fname = "test_file.nc";
-  NetCDFFileHandler ncf(fname);
+  NcFile ncf(fname);
 
   REQUIRE (ncf.get_ndims() == 0);
   REQUIRE (ncf.get_nvars() == 0);
@@ -26,6 +26,6 @@ TEST_CASE("column_netcdf", "") {
 
   REQUIRE (ncf.get_ndims() == 4);
 
-  ncf.close_file();
+  ncf.close();
   std::cout << ncf.info_string();
 }

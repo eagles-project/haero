@@ -1,4 +1,4 @@
-#include "column_netcdf.hpp"
+#include "ncfile.hpp"
 #include "haero/haero.hpp"
 #include "haero/utils.hpp"
 #include <exception>
@@ -10,7 +10,7 @@ namespace haero {
 
 #define CHECK_ERR(ec) if (ec != NC_NOERR) handle_errcode(ec)
 
-void NetCDFFileHandler::open_file() {
+void NcFile::open() {
   int retval = nc_create(fname.c_str(), NC_NETCDF4 | NC_CLOBBER, &ncid);
   CHECK_ERR(retval);
   const std::string haero_str = "High-performance AEROsols standalone driver";
@@ -26,7 +26,7 @@ void NetCDFFileHandler::open_file() {
     revision_str.size(), revision_str.c_str());
 }
 
-void NetCDFFileHandler::add_level_dims(const int& nlev) {
+void NcFile::add_level_dims(const int& nlev) {
   if (level_dimid == NC_EBADID and interface_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "level_midpts", nlev, &level_dimid);
     CHECK_ERR(retval);
@@ -38,7 +38,7 @@ void NetCDFFileHandler::add_level_dims(const int& nlev) {
   }
 }
 
-void NetCDFFileHandler::add_mode_dim(const int& nmodes) {
+void NcFile::add_mode_dim(const int& nmodes) {
   if (mode_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
     CHECK_ERR(retval);
@@ -49,7 +49,7 @@ void NetCDFFileHandler::add_mode_dim(const int& nmodes) {
   }
 }
 
-void NetCDFFileHandler::add_time_dim() {
+void NcFile::add_time_dim() {
   if (time_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "time", NC_UNLIMITED, &time_dimid);
     CHECK_ERR(retval);
@@ -60,15 +60,15 @@ void NetCDFFileHandler::add_time_dim() {
   }
 }
 
-void NetCDFFileHandler::close_file() {
+void NcFile::close() {
   int retval = nc_close(ncid);
   CHECK_ERR(retval);
 }
 
-std::string NetCDFFileHandler::info_string(const int& tab_level) const {
+std::string NcFile::info_string(const int& tab_level) const {
   std::ostringstream ss;
   auto tabstr = indent_string(tab_level);
-  ss << tabstr << "NetCDFFileHandler info:\n";
+  ss << tabstr << "NcFile info:\n";
   tabstr += "\t";
   ss << tabstr << "fname = " << fname << '\n';
   ss << tabstr << "ncid = " << ncid << '\n';
@@ -81,9 +81,9 @@ std::string NetCDFFileHandler::info_string(const int& tab_level) const {
   return ss.str();
 }
 
-void NetCDFFileHandler::handle_errcode(const int& ec) const {
+void NcFile::handle_errcode(const int& ec) const {
   std::ostringstream ss;
-  ss << "NetCDFFileHandler error: ";
+  ss << "NcFile error: ";
   switch (ec) {
     case (NC_NOERR) : {
       // no error: should not have called this routine
