@@ -1,6 +1,7 @@
 [submodule "ext/hdf5"]
 	path = ext/hdf5
 	url = git@github.com:HDFGroup/hdf5
+	branch = 1.10/master
 [submodule "ext/zlib"]
 	path = ext/zlib
 	url = git@github.com:madler/zlib

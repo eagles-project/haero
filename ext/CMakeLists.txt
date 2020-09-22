@@ -1,4 +1,5 @@
 include(ExternalProject)
+include(GNUInstallDirs)
 include(${PROJECT_SOURCE_DIR}/cmake/cmake_helpers.cmake)
 include_directories(${PROJECT_BINARY_DIR}/include)
 
@@ -24,10 +25,13 @@ set_target_properties(dl PROPERTIES IMPORTED_LOCATION ${DL_LIBRARY})
 # libz compression library
 #----------------------------------------------------------------------------
 find_library(Z_LIBRARY libz.a)
-if (Z_LIBRARY-NOTFOUND)
+if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
-  set(ZLIB_CONFIG_OPTS --prefix=${PROJECT_BINARY_DIR} --static)
+  set(ZLIB_CONFIG_OPTS
+      --prefix=${PROJECT_BINARY_DIR}
+      --static
+      --libdir=${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
   ExternalProject_Add(zlib_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/zlib
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
@@ -39,7 +43,7 @@ if (Z_LIBRARY-NOTFOUND)
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/lib/libz.a)
+  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
   set(HDF5_DEPS zlib_proj)
 else()
   message(STATUS "Found libz: ${Z_LIBRARY}")
@@ -72,6 +76,7 @@ if (NOT EXISTS ${HDF5_LIBRARY})
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DZLIB_INCLUDE_DIRS=${PROJECT_BINARY_DIR}/include
                         -DZLIB_LIBARIES=${Z_LIBRARY} -DZLIB_USE_EXTERNAL=OFF
+                        -DHDF5_INSTALL_LIB_DIR=${CMAKE_INSTALL_LIBDIR}
                         -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
                         -DHDF5_ENABLE_PARALLEL=${HAVE_MPI}
                         -DHDF5_BUILD_CPP_LIB=OFF
@@ -128,7 +133,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                         -DHDF5_IS_PARALLEL_MPIO=${HAVE_MPI}
                         -DNC_HAVE_PARALLEL_HDF5=${HAVE_MPI}
                         -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                        -DCMAKE_INSTALL_LIBDIR=lib
+                        -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
                         -DENABLE_DAP=OFF
                         -DBUILD_SHARED_LIBS=OFF
                         -DFIND_SHARED_LIBS=OFF
@@ -170,7 +175,10 @@ else()
   add_library(yaml_cpp SHARED IMPORTED GLOBAL)
 endif()
 set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY_DIR}/${YAMLCPP_LIBRARY})
-if (EKAT_LIBRARY_DIR STREQUAL ${PROJECT_BINARY_DIR}/lib)
+
+# Check if we're supposed to build ekat internally
+get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
+if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
   ExternalProject_Add(ekat_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ekat
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat

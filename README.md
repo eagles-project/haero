@@ -47,7 +47,8 @@ the rest.
 
 To configure Haero:
 
-1. Create a build directory with the `setup` script:
+1. Create a build directory by running the `setup` script from the top-level
+   source directory:
    ```
    ./setup build
    ```

@@ -30,6 +30,13 @@ set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 
 # Installation targets
 install(TARGETS haero DESTINATION lib)
+install(FILES haero.hpp
+              ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
+              mode.hpp
+              physical_constants.hpp
+              species.hpp
+              utils.hpp
+        DESTINATION include/haero)
 
 # Library unit tests.
 add_subdirectory(tests)
