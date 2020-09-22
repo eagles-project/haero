@@ -5,7 +5,7 @@
 // #include "column_base.hpp" // requires column_dynamics branch
 // #include "dyn_column.hpp" // requires column_dynamics branch
 #include <string>
-// #include "ekat/util/ekat_units.hpp" // requires updated ekat
+#include "ekat/util/ekat_units.hpp" // requires updated ekat
 #include "netcdf.h"
 
 namespace haero {
@@ -58,13 +58,6 @@ class NcFile {
     */
     void add_mode_dim(const int& nmodes);
 
-    /** @brief Adds a dimension for time.
-
-      @throws
-
-      This is required before any variables indexed by time step can be defined.
-    */
-    void add_time_dim();
 
     /** @brief Close the data file associated with this NcFile.
 
@@ -101,6 +94,16 @@ class NcFile {
       Called by the constructor, should not be called by the user.
     */
     void open();
+
+    /** @brief Adds a dimension for time.
+
+      Called by the constructor, should not be called by the user.
+
+      @throws
+
+      This is required before any variables indexed by time step can be defined.
+    */
+    void add_time_dim();
 
     /// filename for .nc data
     std::string fname;
