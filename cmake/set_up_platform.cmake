@@ -28,14 +28,6 @@ macro(set_up_platform)
     set(HAVE_GIT TRUE)
   endif()
 
-  # What about Python?
-  find_package(Python3 COMPONENTS Interpreter)
-  if (Python3_FOUND)
-    set(PYTHON ${Python3_EXECUTABLE})
-  else()
-    message(FATAL_ERROR "Python 3 is required, but is not available on this system.")
-  endif()
-
   if (HDF5_INCLUDE_DIR)
     if (NOT EXISTS ${HDF5_INCLUDE_DIR})
       message(FATAL_ERROR "Couldn't find HDF5 include dir at ${HDF5_INCLUDE_DIR}.")
