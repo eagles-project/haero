@@ -5,7 +5,7 @@
 // #include "column_base.hpp" // requires column_dynamics branch
 // #include "dyn_column.hpp" // requires column_dynamics branch
 #include <string>
-#include "ekat/util/ekat_units.hpp" // requires updated ekat
+//#include "ekat/util/ekat_units.hpp" // requires updated ekat
 #include "netcdf.h"
 
 namespace haero {
@@ -30,6 +30,7 @@ class NcFile {
      ncid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
      mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), nvars(0) {
       open();
+      add_time_dim();
     }
 
     /** @brief String with basic info about this NcFile.
