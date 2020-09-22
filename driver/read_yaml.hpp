@@ -14,6 +14,10 @@ class YamlException: public std::exception {
   YamlException(const std::string& message):
     _message(message) {}
 
+  /// Constructs an exception containing the given formatting string and
+  /// C-style variadic arguments (a la printf).
+  YamlException(const char* fmt, ...);
+
   const char* what() const throw() {
     return _message.c_str();
   }

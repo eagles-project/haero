@@ -36,6 +36,8 @@ aerosols:
     name: dust
   MOA:
     name: marine organic aerosol
+  NCL:
+    name: unknown
 
 # Gas species present. Also indexed automatically.
 gases:

@@ -43,7 +43,7 @@ void usage(const char* exe)
 
 int main(int argc, const char** argv)
 {
-  ekat::initialize_ekat_session(argc, const_cast<char**>(argv));
+  ekat::initialize_ekat_session(argc, const_cast<char**>(argv), false);
   print_banner();
 
   if (argc < 2)

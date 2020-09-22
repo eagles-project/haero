@@ -1,8 +1,19 @@
 #include <algorithm>
+#include <cstdarg>
 #include <yaml-cpp/yaml.h>
 #include "read_yaml.hpp"
 
 namespace haero {
+
+YamlException::YamlException(const char* fmt, ...)
+{
+  char ss[256];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(ss, 255, fmt, args);
+  va_end(args);
+  _message.assign(ss);
+}
 
 namespace {
 
@@ -47,7 +58,7 @@ std::vector<Species> read_aerosol_species(const YAML::Node& root)
       std::string symbol = iter->first.as<std::string>();
       auto snode = iter->second;
       if (not snode["name"])
-        throw YamlException("aerosol species entry has no name.");
+        throw YamlException("aerosol species '%s' has no name.", symbol.c_str());
       else
       {
         Species s;
@@ -73,7 +84,7 @@ std::vector<Species> read_gas_species(const YAML::Node& root)
       std::string symbol = iter->first.as<std::string>();
       auto snode = iter->second;
       if (not snode["name"])
-        throw YamlException("gas species entry has no name.");
+        throw YamlException("gas species '%s' has no name.", symbol.c_str());
       else
       {
         Species s;
@@ -111,7 +122,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
         auto mode_iter = std::find_if(modes.begin(), modes.end(),
           [&](const Mode& m) { return m.name == mode_name; });
         if (mode_iter == modes.end())
-          throw YamlException("Invalid mode specified in aerosol initial conditions!");
+          throw YamlException("Invalid mode specified in aerosol initial conditions: %s", mode_name.c_str());
 
         // The mode is valid, so compute its index.
         size_t mode_index = mode_iter - modes.begin();
@@ -130,12 +141,12 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
             auto aero_iter = std::find_if(aerosols.begin(), aerosols.end(),
               [&](const Species& s) { return s.symbol == aero_symbol; });
             if (aero_iter == aerosols.end())
-              throw YamlException("Invalid aerosol found in initial conditions!");
+              throw YamlException("Invalid aerosol found in initial conditions: %s", aero_symbol.c_str());
             auto aero_ic = m_iter->second.as<Real>();
             if (aero_ic < 0.0)
               throw YamlException("Negative aerosol mass fraction found!");
             else if (aero_ic > 1.0)
-              throw YamlException("Invalid aerosol mass fraction (> 1) found!");
+              throw YamlException("Invalid aerosol mass fraction (%g) for %s", aero_ic, aero_symbol.c_str());
             ics.aerosols[mode_index][aero_symbol] = aero_ic;
             mass_frac_sum += aero_ic;
           }
@@ -159,12 +170,12 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
         auto gas_iter = std::find_if(gases.begin(), gases.end(),
               [&](const Species& s) { return s.symbol == gas_symbol; });
         if (gas_iter == gases.end())
-          throw YamlException("Invalid gas found in initial conditions!");
+          throw YamlException("Invalid gas found in initial conditions: %s", gas_symbol.c_str());
         auto gas_ic = g_iter->second.as<Real>();
         if (gas_ic < 0.0)
           throw YamlException("Negative gas mole fraction found!");
         else if (gas_ic > 1.0)
-          throw YamlException("Invalid gas mole fraction (> 1) found!");
+          throw YamlException("Invalid gas mole fraction (%g) for %s", gas_ic, gas_symbol.c_str());
         ics.gases[gas_symbol] = gas_ic;
       }
     }
@@ -181,11 +192,13 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
         auto mode_iter = std::find_if(modes.begin(), modes.end(),
               [&](const Mode& mm) { return mm.name == mode_name; });
         if (mode_iter == modes.end())
-          throw YamlException("Invalid gas found in initial conditions!");
+          throw YamlException("Invalid mode found in initial conditions: %s", mode_name.c_str());
         size_t mode_index = mode_iter - modes.begin();
         auto mode_ic = m_iter->second.as<Real>();
         if (mode_ic < 0.0)
           throw YamlException("Negative mode number density found!");
+        if (mode_index >= ics.modes.size())
+          ics.modes.resize(mode_index+1);
         ics.modes[mode_index] = mode_ic;
       }
     }
@@ -238,7 +251,7 @@ AtmosphericConditions read_atmosphere(const YAML::Node& root)
       else if (model != "hydrostatic")
         atm.model = AtmosphericConditions::hydrostatic;
       else
-        throw YamlException("Invalid model for atmospheric conditions!");
+        throw YamlException("Invalid model for atmospheric conditions: %s", model.c_str());
     }
     else
       throw YamlException("No model found in atmosphere section!");
@@ -340,7 +353,7 @@ std::vector<SimulationParams> read_simulation_params(const YAML::Node& root)
     auto sim = root["simulation"];
     if (sim["timestep"])
     {
-      auto timestep = root["timestep"];
+      auto timestep = sim["timestep"];
       if (timestep.IsSequence())
       {
         for (size_t i = 0; i < timestep.size(); ++i)
@@ -349,8 +362,10 @@ std::vector<SimulationParams> read_simulation_params(const YAML::Node& root)
       else
         params0.dt = timestep.as<Real>();
     }
+    else
+      throw YamlException("No timestep found in simulation section.");
     if (sim["duration"])
-      params0.duration = root["duration"].as<Real>();
+      params0.duration = sim["duration"].as<Real>();
     else
       throw YamlException("No duration found in simulation section.");
 
