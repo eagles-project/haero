@@ -6,7 +6,7 @@ add_library(haero_standalone atmosphere.cpp
                              read_yaml.cpp
                              driver.cpp
                              ncfile.cpp)
-add_dependencies(haero_standalone haero)
+add_dependencies(haero_standalone haero yaml_cpp netcdf)
 
 add_executable(haero_driver main.cpp)
 target_link_libraries(haero_driver haero_standalone;${HAERO_DRIVER_LIBRARIES};${HAERO_LIBRARIES})
