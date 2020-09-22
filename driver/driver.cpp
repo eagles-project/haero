@@ -2,11 +2,6 @@
 
 namespace {
 
-// Writes output to a NetCDF file with the given path.
-void write_netcdf(const std::map<std::string, std::vector<haero::Real> >& pbuf)
-{
-}
-
 } // anonymous namespace
 
 namespace haero {
