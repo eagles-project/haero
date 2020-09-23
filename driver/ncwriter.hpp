@@ -123,6 +123,9 @@ class NcWriter {
 
     /** @brief defines a level midpoint variable from a view of that variable
 
+      Here, you're allowed to define a variable name that is different than the view label.
+      The view label will be recorded as an attribute of the variable.
+
       @throws
 
       @param [in] name (name of variable to write to file)
@@ -135,6 +138,9 @@ class NcWriter {
 
     /** @brief defines a level midpoint variable from a view of that variable
 
+      Here, you're allowed to define a variable name that is different than the view label.
+      The view label will be recorded as an attribute of the variable.
+
       @throws
 
       @param [in] name (name of variable to write to file)
@@ -146,6 +152,9 @@ class NcWriter {
 
     /** @brief defines an interface variable  from a view of that variable
 
+      Here, you're allowed to define a variable name that is different than the view label.
+      The view label will be recorded as an attribute of the variable.
+
       @throws
 
       @param [in] name (name of variable to write to file)
@@ -156,6 +165,9 @@ class NcWriter {
     define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
     /** @brief defines an interface variable  from a view of that variable
+
+      Here, you're allowed to define a variable name that is different than the view label.
+      The view label will be recorded as an attribute of the variable.
 
       @throws
 
@@ -170,9 +182,38 @@ class NcWriter {
 
       @throws
 
-      @param [in] units
+      @param [in] units (default = seconds)
+      @param [in] t0 first value of time coordinate (default = 0)
     */
-    void define_time_var(const ekat::units::Units& units=ekat::units::s);
+    void define_time_var(const ekat::units::Units& units=ekat::units::s, const Real t0=0.0);
+
+    /** @brief adds a time value to the time variable
+
+    @warning This will increase the size of the time dimension; re-index your variables accordingly!
+
+      @param [in] t
+    */
+    void add_time_value(const Real& t) const;
+
+    /** @brief write variable data from a std::vector to the nc file.
+
+      @throws
+
+      @param [in] varname name of variable to write
+      @param [in] time_index time index associated with data
+      @param [in] data
+    */
+    void add_level_variable_data(const std::string& varname, const size_t& time_index, const std::vector<Real>& data) const;
+
+    /** @brief write variable data from a std::vector to the nc file.
+
+      @throws
+
+      @param [in] varname name of variable to write
+      @param [in] time_index time index associated with data
+      @param [in] data
+    */
+    void add_interface_variable_data(const std::string& varname, const size_t& time_index, const std::vector<Real>& data) const;
 
   protected:
     /** @brief `netcdf.h` defines numerous error codes (integers); this function

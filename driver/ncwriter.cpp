@@ -52,6 +52,60 @@ void NcWriter::add_mode_dim(const int& nmodes) {
   }
 }
 
+void NcWriter::add_time_value(const Real& t) const {
+  const int timeid = name_varid_map.at("time");
+  size_t next_time_index = 0;
+  int retval = nc_inq_dimlen(ncid, time_dimid, &next_time_index);
+  CHECK_NCERR(retval);
+#ifdef HAERO_DOUBLE_PRECISION
+    nc_put_var1_double(ncid, timeid, &next_time_index, &t);
+#else
+    nc_put_var1_float (ncid, timeid, &next_time_index, &t);
+#endif
+  CHECK_NCERR(retval);
+}
+
+void NcWriter::add_level_variable_data(const std::string& varname, const size_t& time_index,
+  const std::vector<Real>& data) const {
+  const int varid = name_varid_map.at(varname);
+  size_t nlev = 0;
+  int retval = nc_inq_dimlen(ncid, level_dimid, &nlev);
+  CHECK_NCERR(retval);
+  EKAT_REQUIRE_MSG(data.size() == nlev, "add_level_variable_data called with data.size() != nlev");
+  size_t nsteps=0;
+  retval = nc_inq_dimlen(ncid, time_dimid, &nsteps);
+  CHECK_NCERR(retval);
+  EKAT_REQUIRE_MSG(time_index < nsteps, "add_level_variable_data called for out-of-bounds time index");
+  size_t start[2] = {time_index, 0};
+  size_t count[2] = {1, nlev};
+#ifdef HAERO_DOUBLE_PRECISION
+  retval = nc_put_vara_double(ncid, varid, start, count, &data[0]);
+#else
+  retval = nc_put_vara_float (ncid, varid, start, count, &data[0]);
+#endif
+  CHECK_NCERR(retval);
+}
+
+void NcWriter::add_interface_variable_data(const std::string& varname, const size_t& time_index,
+  const std::vector<Real>& data) const {
+  const int varid = name_varid_map.at(varname);
+  size_t ninterfaces = 0;
+  int retval = nc_inq_dimlen(ncid, interface_dimid, &ninterfaces);
+  CHECK_NCERR(retval);
+  EKAT_REQUIRE_MSG(data.size() == ninterfaces, "add_interface_variable_data called with data.size() != ninterfaces");
+  size_t nsteps = 0;
+  retval = nc_inq_dimlen(ncid, time_dimid, &nsteps);
+  EKAT_REQUIRE_MSG(time_index < nsteps, "add_interface_variable_data called for out-of-bounds time index");
+  size_t start[2] = {time_index, 0};
+  size_t count[2] = {1, ninterfaces};
+#ifdef HAERO_DOUBLE_PRECISION
+  retval = nc_put_vara_double(ncid, varid, start, count, &data[0]);
+#else
+  retval = nc_put_vara_float (ncid, varid, start, count, &data[0]);
+#endif
+  CHECK_NCERR(retval);
+}
+
 void NcWriter::add_time_dim() {
 
   EKAT_ASSERT(ncid != NC_EBADID);
@@ -110,7 +164,7 @@ void NcWriter::define_level_var(const std::string& name, const ekat::units::Unit
   name_varid_map.emplace(name, varid);
 }
 
-void NcWriter::define_time_var(const ekat::units::Units& units) {
+void NcWriter::define_time_var(const ekat::units::Units& units, const Real t0) {
 
   EKAT_ASSERT(time_dimid != NC_EBADID);
 
@@ -121,6 +175,7 @@ void NcWriter::define_time_var(const ekat::units::Units& units) {
   retval  = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
   CHECK_NCERR(retval);
   name_varid_map.emplace("time", varid);
+  add_time_value(t0);
 }
 
 void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units,
@@ -236,6 +291,10 @@ void NcWriter::handle_errcode(const int& ec,
     }
     case (NC_EBADNAME) : {
       ss << "name breaks NetCDF naming rules.";
+      break;
+    }
+    case (NC_EBADDIM) : {
+      ss << "invalid dimension id or name";
       break;
     }
     default : {
