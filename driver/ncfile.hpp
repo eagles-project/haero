@@ -13,6 +13,12 @@
 
 namespace haero {
 
+#define VIEW_REAL_TYPE_IS_SP \
+typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, float>::value,void>::type
+
+#define VIEW_REAL_TYPE_IS_DP \
+typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, double>::value,void>::type
+
 class NcFile {
   public:
     /** @brief Constructor.  Must be called from host.
@@ -101,12 +107,11 @@ class NcFile {
       @param [in] units
       @param [in] view
     */
-    template <typename ViewType=ColumnBase::view_1d>
-    typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, float>::value,void>::type
+    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
     define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
 
-    /** @brief defines a level midpoint variable (single precision real)
+    /** @brief defines a level midpoint variable (double precision real)
 
       @throws
 
@@ -114,10 +119,31 @@ class NcFile {
       @param [in] units
       @param [in] view
     */
-    template <typename ViewType=ColumnBase::view_1d>
-    typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, double>::value,void>::type
+    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_DP
     define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
+    /** @brief defines an interface variable (single precision real)
+
+      @throws
+
+      @param [in] name (name of variable to write to file)
+      @param [in] units
+      @param [in] view
+    */
+    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
+    define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+
+
+    /** @brief defines an interface variable (single precision real)
+
+      @throws
+
+      @param [in] name (name of variable to write to file)
+      @param [in] units
+      @param [in] view
+    */
+    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_DP
+    define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
     /** @brief defines the time variable
 
