@@ -5,7 +5,8 @@ add_library(haero_standalone atmosphere.cpp
                              dyn_column.cpp
                              read_yaml.cpp
                              driver.cpp
-                             ncfile.cpp)
+                             ncfile.cpp
+                             ncreader.cpp)
 add_dependencies(haero_standalone haero yaml_cpp netcdf)
 
 add_executable(haero_driver main.cpp)

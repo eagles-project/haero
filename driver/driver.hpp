@@ -44,15 +44,19 @@ struct GridParams {
 /// This holds initial conditions for aerosol/gas species. Below, modes are
 /// indexed in the same order as given in SimulationInput::modes (below).
 struct InitialConditions {
-  /// Aerosol species. Specified in modal mass fractions for each mode in
-  /// which they appear. All mass fractions for a given mode must sum to 1.
+  /// Aerosol species column profiles, stored from the top of the atmosphere
+  /// downward. Specified in modal mass fractions for each mode in
+  /// which they appear. So aerosols[mode_index][aerosol_name][k] gives the
+  /// mass fraction of the given aerosol within the given mode at elevation k.
+  /// All mass fractions for a given mode must sum to 1.
   /// (aerosols[mode index][aerosol species symbol] -> mass fraction).
-  std::vector<std::map<std::string, Real> > aerosols;
+  std::vector<std::map<std::string, std::vector<Real> > > aerosols;
   /// Gas species. Specified in mole fractions [kmol gas / kmol air].
-  /// (gases[gas species symbol] -> mole fraction).
-  std::map<std::string, Real> gases;
+  /// (gases[gas species symbol][k] -> mole fraction of the gas at elevation k).
+  std::map<std::string, std::vector<Real> > gases;
   /// Modal number densities [#/m**3].
-  std::vector<Real> modes;
+  /// (modes[mode_index][k] -> modal number density at elevation k.
+  std::vector<std::vector<Real> > modes;
 };
 
 /// This is a simplified surrogate for aerosol chemistry. It'll go away when
