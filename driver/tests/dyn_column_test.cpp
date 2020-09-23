@@ -3,12 +3,11 @@
 
 #include "catch2/catch.hpp"
 
-
 using namespace haero;
 
 TEST_CASE("dynamics_column", "") {
   const int nlev = 10;
-  dyn_column mycol(nlev);
+  DynColumn mycol(nlev);
 
   std::cout << mycol.info_string();
 }
