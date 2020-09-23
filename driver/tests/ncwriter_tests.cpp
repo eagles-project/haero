@@ -12,7 +12,7 @@ using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
 using real_pack_type = ekat::Pack<Real, HAERO_PACK_SIZE>;
 using view_1d = kokkos_device_type::view_1d<real_pack_type>;
 
-TEST_CASE("column_netcdf", "") {
+TEST_CASE("ncwriter", "") {
   const std::string fname = "test_file.nc";
   NcWriter ncf(fname);
 
