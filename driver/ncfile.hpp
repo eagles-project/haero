@@ -133,7 +133,6 @@ class NcFile {
     template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
     define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
-
     /** @brief defines an interface variable (single precision real)
 
       @throws
@@ -170,6 +169,8 @@ class NcFile {
       decodes this integers and throws an exeption with (hopefully) a more helpful message.
 
       @throws
+
+      @todo improve this function to include more info & use ekat_assert.hpp macros
     */
     void handle_errcode(const int& ec) const;
 
