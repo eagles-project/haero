@@ -6,7 +6,7 @@
 
 namespace haero {
 
-#define CHECK_NCERR(ec) if (ec != NC_NOERR) handle_errcode(ec)
+#define CHECK_NCERR(ec) if (ec != NC_NOERR) handle_errcode(ec, __FILE__, __FUNCTION__, __LINE__)
 
 template <typename ViewType>
 void NcWriter::add_var_atts(const int varid, const ekat::units::Units& units, const ViewType& view) {

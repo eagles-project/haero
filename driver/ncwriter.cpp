@@ -1,11 +1,9 @@
 #include "ncwriter.hpp"
 #include "ncwriter_impl.hpp"
 #include "haero/haero.hpp"
-#include "haero/utils.hpp"
 #include <exception>
 #include <iostream>
 #include <sstream>
-#include <cassert>
 
 namespace haero {
 
@@ -26,6 +24,9 @@ void NcWriter::open() {
 }
 
 void NcWriter::add_level_dims(const int& nlev) {
+
+  EKAT_ASSERT(ncid != NC_EBADID);
+
   if (level_dimid == NC_EBADID and interface_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "level_midpts", nlev, &level_dimid);
     CHECK_NCERR(retval);
@@ -38,6 +39,9 @@ void NcWriter::add_level_dims(const int& nlev) {
 }
 
 void NcWriter::add_mode_dim(const int& nmodes) {
+
+  EKAT_ASSERT(ncid != NC_EBADID);
+
   if (mode_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
     CHECK_NCERR(retval);
@@ -49,6 +53,9 @@ void NcWriter::add_mode_dim(const int& nmodes) {
 }
 
 void NcWriter::add_time_dim() {
+
+  EKAT_ASSERT(ncid != NC_EBADID);
+
   if (time_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "time", NC_UNLIMITED, &time_dimid);
     CHECK_NCERR(retval);
@@ -83,7 +90,7 @@ std::string NcWriter::info_string(const int& tab_level) const {
 void NcWriter::define_level_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts) {
 
-  assert(time_dimid != NC_EBADID && level_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
   const int m_ndims = 2;
@@ -105,7 +112,7 @@ void NcWriter::define_level_var(const std::string& name, const ekat::units::Unit
 
 void NcWriter::define_time_var(const ekat::units::Units& units) {
 
-  assert(time_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
   int retval = nc_def_var(ncid, "time", NC_REAL_KIND, 1, &time_dimid, &varid);
@@ -119,7 +126,7 @@ void NcWriter::define_time_var(const ekat::units::Units& units) {
 void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts) {
 
-  assert(time_dimid != NC_EBADID && interface_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID && interface_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
   const int m_ndims = 2;
@@ -148,13 +155,15 @@ std::vector<std::string> NcWriter::get_variable_names() const {
   return result;
 }
 
-void NcWriter::handle_errcode(const int& ec) const {
+void NcWriter::handle_errcode(const int& ec,
+  const std::string& file, const std::string& fn, const int& line) const {
   std::ostringstream ss;
-  ss << "NcWriter error: ";
+  ss << "NcWriter error in file: " << file << ", function: " << fn << ", at line: " << line << '\n';
+  ss << "\terror " << ec << " decodes to: ";
   switch (ec) {
     case (NC_NOERR) : {
       // no error: should not have called this routine
-      assert(ec != NC_NOERR);
+      EKAT_ASSERT(ec != NC_NOERR);
       return;
     }
     case (NC_EEXIST) : {
@@ -230,7 +239,7 @@ void NcWriter::handle_errcode(const int& ec) const {
       break;
     }
     default : {
-      ss << "unknown netcdf error; ec = " << ec;
+      ss << "unknown netcdf error";
     }
   }
   throw std::runtime_error(ss.str());
