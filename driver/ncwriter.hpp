@@ -2,6 +2,7 @@
 #define HAERO_NC_WRITER_HPP
 
 #include "haero/haero_config.hpp"
+#include "haero/view_helpers.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
@@ -13,14 +14,11 @@
 
 namespace haero {
 
-#define VIEW_REAL_TYPE_IS_SP \
-typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, float>::value,void>::type
-
-#define VIEW_REAL_TYPE_IS_DP \
-typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, double>::value,void>::type
-
 class NcWriter {
   public:
+    typedef std::pair<std::string,std::string> text_att_type;
+    static constexpr int NC_REAL_KIND = (std::is_same<Real,double>::value ? NC_DOUBLE : NC_FLOAT);
+
     /** @brief Constructor.  Must be called from host.
 
       Assumes at most 1 file open per NcWriter instance.
@@ -37,7 +35,7 @@ class NcWriter {
     */
     NcWriter(const std::string& new_filename) : fname(new_filename),
      ncid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
-     mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), view_var_map() {
+     mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), name_varid_map() {
       open();
       add_time_dim();
     }
@@ -57,7 +55,6 @@ class NcWriter {
       @param [in] nlev number of vertical levels (midpoints) in a column.
     */
     void add_level_dims(const int& nlev);
-
 
     /** @brief Adds a dimension for the number of modes.
 
@@ -87,19 +84,40 @@ class NcWriter {
 
     /** @brief return the current number of variables
     */
-    inline int get_nvars() const {return view_var_map.size();}
+    inline int get_nvars() const {return name_varid_map.size();}
 
-    /** @brief return the variable id for a view
+    /** @brief return the variable id associated with a name
+
+      @throws
+
+      @param [in] name
+      @return varid
     */
-    template <typename ViewType>
-    inline int get_varid(const ViewType& view) const {return view_var_map.at(view.label());}
+    inline int get_varid(const std::string& name) const {return name_varid_map.at(name);}
 
-    /** @brief returns the labels of the views associated with netcdf variables
-
+    /** @brief returns the names of the variables currently defined
     */
-    std::vector<std::string> get_variable_view_labels() const;
+    std::vector<std::string> get_variable_names() const;
 
-    /** @brief defines a level midpoint variable (single precision real)
+    /** @brief defines a level midpoint variable
+
+      @param [in] name
+      @param [in] units
+      @param [in] atts
+    */
+    void define_level_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts=std::vector<text_att_type>());
+
+    /** @brief defines a level midpoint variable
+
+      @param [in] name
+      @param [in] units
+      @param [in] atts
+    */
+    void define_interface_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts=std::vector<text_att_type>());
+
+    /** @brief defines a level midpoint variable from a view of that variable
 
       @throws
 
@@ -111,7 +129,7 @@ class NcWriter {
     define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
 
-    /** @brief defines a level midpoint variable (double precision real)
+    /** @brief defines a level midpoint variable from a view of that variable
 
       @throws
 
@@ -122,7 +140,7 @@ class NcWriter {
     template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_DP
     define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
-    /** @brief defines an interface variable (single precision real)
+    /** @brief defines an interface variable  from a view of that variable
 
       @throws
 
@@ -133,7 +151,7 @@ class NcWriter {
     template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
     define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
-    /** @brief defines an interface variable (single precision real)
+    /** @brief defines an interface variable  from a view of that variable
 
       @throws
 
@@ -150,9 +168,10 @@ class NcWriter {
 
       @param [in] units
     */
-    template <typename RealType>
-    typename std::enable_if<std::is_same<RealType,float>::value,void>::type
-    define_time_var(const ekat::units::Units& units = ekat::units::s);
+    void define_time_var(const ekat::units::Units& units=ekat::units::s);
+//     template <typename RealType>
+//     typename std::enable_if<std::is_same<RealType,float>::value,void>::type
+//     define_time_var(const ekat::units::Units& units = ekat::units::s);
 
     /** @brief defines the time variable
 
@@ -160,9 +179,9 @@ class NcWriter {
 
       @param [in] units
     */
-    template <typename RealType>
-    typename std::enable_if<std::is_same<RealType,double>::value,void>::type
-    define_time_var(const ekat::units::Units& units = ekat::units::s);
+//     template <typename RealType>
+//     typename std::enable_if<std::is_same<RealType,double>::value,void>::type
+//     define_time_var(const ekat::units::Units& units = ekat::units::s);
 
   protected:
     /** @brief `netcdf.h` defines numerous error codes (integers); this function
@@ -211,7 +230,7 @@ class NcWriter {
     /// Tracks the number of NetCDF dimensions in the current file.
     int ndims;
 
-    std::map<std::string, int> view_var_map;
+    std::map<std::string, int> name_varid_map;
 };
 
 }

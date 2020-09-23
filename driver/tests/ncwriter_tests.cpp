@@ -29,18 +29,18 @@ TEST_CASE("ncwriter", "") {
 
   REQUIRE (ncf.get_ndims() == 4);
 
-  ncf.define_time_var<Real>();
+  ncf.define_time_var();
 
   view_1d test_level_var("test_level_var", nlev);
   view_1d test_interface_var("interface_var", nlev+1);
 
   ncf.define_level_var("level_test_var", ekat::units::Units::nondimensional(), test_level_var);
   REQUIRE (ncf.get_nvars() == 2);
-  REQUIRE (ncf.get_varid(test_level_var) != NC_EBADID);
+  REQUIRE (ncf.get_varid("level_test_var") != NC_EBADID);
 
   ncf.define_interface_var("interface_test_var", ekat::units::Units::nondimensional(), test_interface_var);
   REQUIRE (ncf.get_nvars() == 3);
-  REQUIRE (ncf.get_varid(test_interface_var) != NC_EBADID);
+  REQUIRE (ncf.get_varid("interface_test_var") != NC_EBADID);
 
   ncf.close();
   std::cout << ncf.info_string();

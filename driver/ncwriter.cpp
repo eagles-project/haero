@@ -80,7 +80,73 @@ std::string NcWriter::info_string(const int& tab_level) const {
   return ss.str();
 }
 
+void NcWriter::define_level_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts) {
 
+  assert(time_dimid != NC_EBADID && level_dimid != NC_EBADID);
+
+  int varid = NC_EBADID;
+  const int m_ndims = 2;
+  const int dimids[2] = {time_dimid, level_dimid};
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
+  CHECK_NCERR(retval);
+  const std::string unit_str = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
+  CHECK_NCERR(retval);
+  if (!atts.empty()) {
+    for (int i=0; i<atts.size(); ++i) {
+      retval = nc_put_att_text(ncid, varid, atts[i].first.c_str(),
+        atts[i].second.size(), atts[i].second.c_str());
+      CHECK_NCERR(retval);
+    }
+  }
+  name_varid_map.emplace(name, varid);
+}
+
+void NcWriter::define_time_var(const ekat::units::Units& units) {
+
+  assert(time_dimid != NC_EBADID);
+
+  int varid = NC_EBADID;
+  int retval = nc_def_var(ncid, "time", NC_REAL_KIND, 1, &time_dimid, &varid);
+  CHECK_NCERR(retval);
+  const std::string unit_str = ekat::units::to_string(units);
+  retval  = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("time", varid);
+}
+
+void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts) {
+
+  assert(time_dimid != NC_EBADID && interface_dimid != NC_EBADID);
+
+  int varid = NC_EBADID;
+  const int m_ndims = 2;
+  const int dimids[2] = {time_dimid, interface_dimid};
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
+  CHECK_NCERR(retval);
+  const std::string unit_str = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
+  CHECK_NCERR(retval);
+  if (!atts.empty()) {
+    for (int i=0; i<atts.size(); ++i) {
+      retval = nc_put_att_text(ncid, varid, atts[i].first.c_str(),
+        atts[i].second.size(), atts[i].second.c_str());
+      CHECK_NCERR(retval);
+    }
+  }
+  name_varid_map.emplace(name, varid);
+}
+
+
+std::vector<std::string> NcWriter::get_variable_names() const {
+  std::vector<std::string> result;
+  for (const auto& v : name_varid_map) {
+    result.push_back(v.first);
+  }
+  return result;
+}
 
 void NcWriter::handle_errcode(const int& ec) const {
   std::ostringstream ss;
