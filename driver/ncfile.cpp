@@ -1,4 +1,5 @@
 #include "ncfile.hpp"
+#include "ncfile_impl.hpp"
 #include "haero/haero.hpp"
 #include "haero/utils.hpp"
 #include <exception>
@@ -8,19 +9,17 @@
 
 namespace haero {
 
-#define CHECK_ERR(ec) if (ec != NC_NOERR) handle_errcode(ec)
-
 void NcFile::open() {
   int retval = nc_create(fname.c_str(), NC_NETCDF4 | NC_CLOBBER, &ncid);
-  CHECK_ERR(retval);
+  CHECK_NCERR(retval);
   const std::string haero_str = "High-performance AEROsols standalone driver";
   retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO", haero_str.size(),
     haero_str.c_str());
-  CHECK_ERR(retval);
+  CHECK_NCERR(retval);
   const std::string version_string(version());
   retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO_version",
     version_string.size(), version_string.c_str());
-  CHECK_ERR(retval);
+  CHECK_NCERR(retval);
   const std::string revision_str(revision());
   retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO_revision",
     revision_str.size(), revision_str.c_str());
@@ -29,7 +28,7 @@ void NcFile::open() {
 void NcFile::add_level_dims(const int& nlev) {
   if (level_dimid == NC_EBADID and interface_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "level_midpts", nlev, &level_dimid);
-    CHECK_ERR(retval);
+    CHECK_NCERR(retval);
     retval = nc_def_dim(ncid, "level_interfaces", nlev+1, &interface_dimid);
     ndims += 2;
   }
@@ -41,7 +40,7 @@ void NcFile::add_level_dims(const int& nlev) {
 void NcFile::add_mode_dim(const int& nmodes) {
   if (mode_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
-    CHECK_ERR(retval);
+    CHECK_NCERR(retval);
     ndims++;
   }
   else {
@@ -52,7 +51,7 @@ void NcFile::add_mode_dim(const int& nmodes) {
 void NcFile::add_time_dim() {
   if (time_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "time", NC_UNLIMITED, &time_dimid);
-    CHECK_ERR(retval);
+    CHECK_NCERR(retval);
     ndims++;
   }
   else {
@@ -62,7 +61,7 @@ void NcFile::add_time_dim() {
 
 void NcFile::close() {
   int retval = nc_close(ncid);
-  CHECK_ERR(retval);
+  CHECK_NCERR(retval);
 }
 
 std::string NcFile::info_string(const int& tab_level) const {
@@ -77,9 +76,11 @@ std::string NcFile::info_string(const int& tab_level) const {
   ss << tabstr << "mode_dimid = " << mode_dimid << '\n';
   ss << tabstr << "time_dimid = " << time_dimid << '\n';
   ss << tabstr << "ndims = " << ndims << '\n';
-  ss << tabstr << "nvars = " << nvars << '\n';
+  ss << tabstr << "nvars = " << get_nvars() << '\n';
   return ss.str();
 }
+
+
 
 void NcFile::handle_errcode(const int& ec) const {
   std::ostringstream ss;
