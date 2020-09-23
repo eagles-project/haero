@@ -1,6 +1,6 @@
 #include "haero/haero_config.hpp"
-#include "driver/ncfile.hpp"
-#include "driver/ncfile_impl.hpp"
+#include "driver/ncwriter.hpp"
+#include "driver/ncwriter_impl.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include <iostream>
@@ -14,7 +14,7 @@ using view_1d = kokkos_device_type::view_1d<real_pack_type>;
 
 TEST_CASE("column_netcdf", "") {
   const std::string fname = "test_file.nc";
-  NcFile ncf(fname);
+  NcWriter ncf(fname);
 
   REQUIRE (ncf.get_ndims() == 1);
   REQUIRE (ncf.get_nvars() == 0);

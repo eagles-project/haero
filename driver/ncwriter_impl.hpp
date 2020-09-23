@@ -1,7 +1,7 @@
-#ifndef HAERO_NCFILE_IMPL_HPP
-#define HAERO_NCFILE_IMPL_HPP
+#ifndef HAERO_NC_WRITER_IMPL_HPP
+#define HAERO_NC_WRITER_IMPL_HPP
 
-#include "ncfile.hpp"
+#include "ncwriter.hpp"
 #include <cassert>
 
 namespace haero {
@@ -9,7 +9,7 @@ namespace haero {
 #define CHECK_NCERR(ec) if (ec != NC_NOERR) handle_errcode(ec)
 
 template <typename ViewType>
-void NcFile::add_var_atts(const int varid, const ekat::units::Units& units, const ViewType& view) {
+void NcWriter::add_var_atts(const int varid, const ekat::units::Units& units, const ViewType& view) {
 
   assert(varid != NC_EBADID);
 
@@ -22,7 +22,7 @@ void NcFile::add_var_atts(const int varid, const ekat::units::Units& units, cons
 }
 
 template <typename ViewType> VIEW_REAL_TYPE_IS_SP
-NcFile::define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+NcWriter::define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
 
    assert(time_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
@@ -37,7 +37,7 @@ NcFile::define_level_var(const std::string& name, const ekat::units::Units& unit
 
 
 template <typename ViewType> VIEW_REAL_TYPE_IS_DP
-NcFile::define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+NcWriter::define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
 
   assert(time_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
@@ -52,7 +52,7 @@ NcFile::define_level_var(const std::string& name, const ekat::units::Units& unit
 
 template <typename RealType>
 typename std::enable_if<std::is_same<RealType,float>::value,void>::type
-NcFile::define_time_var(const ekat::units::Units& units) {
+NcWriter::define_time_var(const ekat::units::Units& units) {
 
   assert(time_dimid != NC_EBADID);
 
@@ -69,7 +69,7 @@ NcFile::define_time_var(const ekat::units::Units& units) {
 
 template <typename RealType>
 typename std::enable_if<std::is_same<RealType,double>::value,void>::type
-NcFile::define_time_var(const ekat::units::Units& units) {
+NcWriter::define_time_var(const ekat::units::Units& units) {
 
   assert(time_dimid != NC_EBADID);
 
@@ -85,7 +85,7 @@ NcFile::define_time_var(const ekat::units::Units& units) {
 }
 
 template <typename ViewType> VIEW_REAL_TYPE_IS_SP
-NcFile::define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
 
   assert(time_dimid != NC_EBADID && interface_dimid != NC_EBADID);
 
@@ -99,7 +99,7 @@ NcFile::define_interface_var(const std::string& name, const ekat::units::Units& 
 }
 
 template <typename ViewType> VIEW_REAL_TYPE_IS_DP
-NcFile::define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
 
   assert(time_dimid != NC_EBADID && interface_dimid != NC_EBADID);
 
@@ -113,7 +113,7 @@ NcFile::define_interface_var(const std::string& name, const ekat::units::Units& 
 }
 
 // template <typename ViewType=ColumnBase::view_2d> VIEW_REAL_TYPE_IS_SP
-// NcFile::define_modal_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+// NcWriter::define_modal_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
 //
 //   assert(time_dimid != NC_EBADID && level_dimid != NC_EBADID && mode_dimid != NC_EBADID);
 //
@@ -127,7 +127,7 @@ NcFile::define_interface_var(const std::string& name, const ekat::units::Units& 
 // }
 //
 // template <typename ViewType=ColumnBase::view_2d> VIEW_REAL_TYPE_IS_DP
-// NcFile::define_modal_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+// NcWriter::define_modal_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
 //
 //   assert(time_dimid != NC_EBADID && level_dimid != NC_EBADID && mode_dimid != NC_EBADID);
 //

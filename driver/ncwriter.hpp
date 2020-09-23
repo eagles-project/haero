@@ -1,5 +1,5 @@
-#ifndef HAERO_NCFILE_HPP
-#define HAERO_NCFILE_HPP
+#ifndef HAERO_NC_WRITER_HPP
+#define HAERO_NC_WRITER_HPP
 
 #include "haero/haero_config.hpp"
 #include "column_base.hpp"
@@ -19,11 +19,11 @@ typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewTy
 #define VIEW_REAL_TYPE_IS_DP \
 typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, double>::value,void>::type
 
-class NcFile {
+class NcWriter {
   public:
     /** @brief Constructor.  Must be called from host.
 
-      Assumes at most 1 file open per NcFile instance.
+      Assumes at most 1 file open per NcWriter instance.
       All values initialized to invalid data; they will be set to valid data by other
       member functions.
 
@@ -35,20 +35,20 @@ class NcFile {
 
       @param [in] new_filename name of NetCDF data file to create.
     */
-    NcFile(const std::string& new_filename) : fname(new_filename),
+    NcWriter(const std::string& new_filename) : fname(new_filename),
      ncid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
      mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), view_var_map() {
       open();
       add_time_dim();
     }
 
-    /** @brief String with basic info about this NcFile.
+    /** @brief String with basic info about this NcWriter.
 
       @param [in] tab_level indent level for console output.
     */
     std::string info_string(const int& tab_level=0) const;
 
-    /** @brief Adds 2 dimensions to an existing NcFile; one for level midpoints,
+    /** @brief Adds 2 dimensions to an existing NcWriter; one for level midpoints,
       one for level interfaces.
 
       @throws
@@ -69,7 +69,7 @@ class NcFile {
     void add_mode_dim(const int& nmodes);
 
 
-    /** @brief Close the data file associated with this NcFile.
+    /** @brief Close the data file associated with this NcWriter.
 
       @throws
 

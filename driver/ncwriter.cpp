@@ -1,5 +1,5 @@
-#include "ncfile.hpp"
-#include "ncfile_impl.hpp"
+#include "ncwriter.hpp"
+#include "ncwriter_impl.hpp"
 #include "haero/haero.hpp"
 #include "haero/utils.hpp"
 #include <exception>
@@ -9,7 +9,7 @@
 
 namespace haero {
 
-void NcFile::open() {
+void NcWriter::open() {
   int retval = nc_create(fname.c_str(), NC_NETCDF4 | NC_CLOBBER, &ncid);
   CHECK_NCERR(retval);
   const std::string haero_str = "High-performance AEROsols standalone driver";
@@ -25,7 +25,7 @@ void NcFile::open() {
     revision_str.size(), revision_str.c_str());
 }
 
-void NcFile::add_level_dims(const int& nlev) {
+void NcWriter::add_level_dims(const int& nlev) {
   if (level_dimid == NC_EBADID and interface_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "level_midpts", nlev, &level_dimid);
     CHECK_NCERR(retval);
@@ -37,7 +37,7 @@ void NcFile::add_level_dims(const int& nlev) {
   }
 }
 
-void NcFile::add_mode_dim(const int& nmodes) {
+void NcWriter::add_mode_dim(const int& nmodes) {
   if (mode_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
     CHECK_NCERR(retval);
@@ -48,7 +48,7 @@ void NcFile::add_mode_dim(const int& nmodes) {
   }
 }
 
-void NcFile::add_time_dim() {
+void NcWriter::add_time_dim() {
   if (time_dimid == NC_EBADID) {
     int retval = nc_def_dim(ncid, "time", NC_UNLIMITED, &time_dimid);
     CHECK_NCERR(retval);
@@ -59,15 +59,15 @@ void NcFile::add_time_dim() {
   }
 }
 
-void NcFile::close() {
+void NcWriter::close() {
   int retval = nc_close(ncid);
   CHECK_NCERR(retval);
 }
 
-std::string NcFile::info_string(const int& tab_level) const {
+std::string NcWriter::info_string(const int& tab_level) const {
   std::ostringstream ss;
   auto tabstr = indent_string(tab_level);
-  ss << tabstr << "NcFile info:\n";
+  ss << tabstr << "NcWriter info:\n";
   tabstr += "\t";
   ss << tabstr << "fname = " << fname << '\n';
   ss << tabstr << "ncid = " << ncid << '\n';
@@ -82,9 +82,9 @@ std::string NcFile::info_string(const int& tab_level) const {
 
 
 
-void NcFile::handle_errcode(const int& ec) const {
+void NcWriter::handle_errcode(const int& ec) const {
   std::ostringstream ss;
-  ss << "NcFile error: ";
+  ss << "NcWriter error: ";
   switch (ec) {
     case (NC_NOERR) : {
       // no error: should not have called this routine
