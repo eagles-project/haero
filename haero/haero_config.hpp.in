@@ -11,5 +11,11 @@ typedef @HAERO_REAL_TYPE@ Real;
 /// Size for scalar packs (used for vector simd ops)
 static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 
+#if @HAERO_DOUBLE_PRECISION@
+#define HAERO_DOUBLE_PRECISION 1
+#else
+#define HAERO_SINGLE_PRECISION 1
+#endif
+
 }
 #endif

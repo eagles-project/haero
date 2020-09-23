@@ -11,6 +11,8 @@ std::string indent_string(const int tab_lev);
 
 std::string& tolower(std::string& s);
 
+std::string get_filename_ext(const std::string& fname);
+
 class ProgressBar {
   std::string name_;
   int niter_;
