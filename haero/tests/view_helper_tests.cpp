@@ -93,6 +93,7 @@ TEST_CASE("view_pack_helpers", "") {
           != vectors[i][j]) ++nerr;
       }
     }
+    REQUIRE (nerr == 0);
   }
 }
 
