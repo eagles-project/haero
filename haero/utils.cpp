@@ -18,4 +18,13 @@ std::string& tolower(std::string& s) {
   return s;
 }
 
+std::string get_filename_ext(const std::string& fname) {
+  const auto dotpos = fname.rfind('.');
+  std::string result = "";
+  if (dotpos != std::string::npos) {
+    result = fname.substr(dotpos);
+  }
+  return result;
+}
+
 }// namespace haero
