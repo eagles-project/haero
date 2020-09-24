@@ -1,11 +1,11 @@
 #include "ncreader.hpp"
 #include "haero/haero.hpp"
 #include "haero/utils.hpp"
+#include <ekat/ekat_assert.hpp>
 #include <cstring>
 #include <exception>
 #include <iostream>
 #include <sstream>
-#include <cassert>
 
 namespace haero {
 
