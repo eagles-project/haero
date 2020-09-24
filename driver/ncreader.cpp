@@ -1,6 +1,7 @@
 #include "ncreader.hpp"
 #include "haero/haero.hpp"
 #include "haero/utils.hpp"
+#include <cstring>
 #include <exception>
 #include <iostream>
 #include <sstream>
@@ -14,28 +15,56 @@ NcReader::NcReader(const std::string& filename)
   : fname(filename), ncid(NC_EBADID), level_dimid(NC_EBADID),
     interface_dimid(NC_EBADID), mode_dimid(NC_EBADID), time_dimid(NC_EBADID)
 {
-  open();
+  // We open the file and read it entirely into memory.
+  int retval = nc_open(fname.c_str(), NC_NETCDF4 | NC_DISKLESS, &ncid);
+  CHECK_ERR(retval);
+
+  // Make sure it's actually a Haero file!
+  const char* haero_str = "High-performance AEROsols standalone driver";
+  char text[128];
+  retval = nc_get_att_text(ncid, NC_GLOBAL, "HAERO", text);
+  CHECK_ERR(retval);
+  if (std::strcmp(text, haero_str) != 0) {
+    throw std::runtime_error("NetCDF file is not a Haero file!");
+  }
+
+  const char* version_string = version();
+  retval = nc_get_att_text(ncid, NC_GLOBAL, "HAERO_version", text);
+  CHECK_ERR(retval);
+  if (std::strcmp(text, version_string) != 0) {
+    throw std::runtime_error("NetCDF Haero file version does not match haero library version!");
+  }
+
+  const char* revision_str = revision();
+  retval = nc_get_att_text(ncid, NC_GLOBAL, "HAERO_revision", text);
+  if (std::strcmp(text, revision_str) != 0) {
+    throw std::runtime_error("NetCDF Haero file git revision does not match haero library revision!");
+  }
+
+  // Read some dimension IDs.
+  retval = nc_inq_dimid(ncid, "level_midpts", &level_dimid);
+  CHECK_ERR(retval);
+  retval = nc_inq_dimid(ncid, "level_interfaces", &interface_dimid);
+  CHECK_ERR(retval);
+  retval = nc_inq_dimid(ncid, "modes", &mode_dimid);
+  CHECK_ERR(retval);
+  retval = nc_inq_dimid(ncid, "time", &time_dimid);
+  CHECK_ERR(retval);
 }
 
-void NcReader::open() {
-  int retval = nc_create(fname.c_str(), NC_NETCDF4 | NC_CLOBBER, &ncid);
-  CHECK_ERR(retval);
-  const std::string haero_str = "High-performance AEROsols standalone driver";
-  retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO", haero_str.size(),
-    haero_str.c_str());
-  CHECK_ERR(retval);
-  const std::string version_string(version());
-  retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO_version",
-    version_string.size(), version_string.c_str());
-  CHECK_ERR(retval);
-  const std::string revision_str(revision());
-  retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO_revision",
-    revision_str.size(), revision_str.c_str());
+NcReader::~NcReader() {
+  nc_close(ncid);
 }
 
-void NcReader::read_var(const std::string& var_name,
-                        std::vector<Real>& data) {
-  // TODO
+void NcReader::read_level_var(const std::string& var_name,
+                              size_t time_index,
+                              std::vector<Real>& data) {
+
+}
+
+void NcReader::read_interface_var(const std::string& var_name,
+                                  size_t time_index,
+                                  std::vector<Real>& data) {
 }
 
 void NcReader::handle_errcode(const int& ec) const {

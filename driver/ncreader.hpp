@@ -12,56 +12,56 @@ namespace haero {
 
 /** @brief This class reads NetCDF files written by haero's driver.
  */
-class NcReader {
+class NcReader final {
   public:
-    /** @brief Constructor.  Must be called from host.
-
-      Opens the NetCDF file with the given name for reading, and validates its
-      format.
-
-      @param filename name of NetCDF data file to open.
-    */
+    /// Opens the NetCDF file with the given name for reading, and validates
+    /// its contents.
+    /// @param filename name of NetCDF data file to open.
     NcReader(const std::string& filename);
 
-    /** @brief Reads a variable with the given name from the NetCDF file.
-      @param var_name name of the variable to read from the file.
-      @param data a vector into which the data is read.
-     */
-    void read_var(const std::string& var_name,
-                  std::vector<Real>& data);
+    /// Destructor.
+    ~NcReader();
 
-  protected:
-    /** @brief `netcdf.h` defines numerous error codes (integers); this function
-      decodes this integers and throws an exeption with (hopefully) a more helpful message.
+    /// Reads a variable defined at grid levels (column cells) with the given
+    /// name from the NetCDF file.
+    /// @param var_name name of the variable to read from the file.
+    /// @param time_index the time index associated with the value.
+    /// @param data a vector into which the data is read. The vector is resized
+    ///             as necessary.
+    void read_level_var(const std::string& var_name,
+                        size_t time_index,
+                        std::vector<Real>& data);
 
-      @throws
-    */
+    /// Reads a variable defined at interfaces between grid levels (column
+    /// faces) with the given name from the NetCDF file.
+    /// @param var_name name of the variable to read from the file.
+    /// @param time_index the time index associated with the value.
+    /// @param data a vector into which the data is read. The vector is resized
+    ///             as necessary.
+    void read_interface_var(const std::string& var_name,
+                            size_t time_index,
+                            std::vector<Real>& data);
+
+  private:
+    // `netcdf.h` defines numerous error codes (integers); this function
+    // decodes this integer and throws an exeption with (hopefully) a more
+    // helpful message.
+    // @throws
     void handle_errcode(const int& ec) const;
 
-    /** @brief Calls nc_create to make a new .nc file with appropriate
-    parameters from `netcdf.h` (NETCDF4 format, NC_CLOBBER for overwrite), etc.
-
-      Called by the constructor, should not be called by the user.
-    */
-    void open();
-
-    /// filename for .nc data
+    // filename for .nc data
     std::string fname;
 
-    /// NetCDF file ID.  Assigned by `nc_create` during open()
+    // NetCDF file ID.
     int ncid;
-    /// Level dimension ID. Assigned by add_level_dims.
+    // Level dimension ID.
     int level_dimid;
-    /// Interface dimension ID.  Assigned by add_level_dims.
+    // Interface dimension ID.
     int interface_dimid;
-    /// Mode dimension ID. Assigned by add_mode_dim.
+    // Mode dimension ID.
     int mode_dimid;
-    /// Time dimension ID.  Assigned by add_time_dim.
+    // Time dimension ID.
     int time_dimid;
-    /// Tracks the number of NetCDF dimensions in the current file.
-    int ndims;
-    /// Tracks the number of NetCDF variables in the current file.
-    int nvars;
 };
 
 }

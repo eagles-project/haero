@@ -252,7 +252,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
                     auto filename = d_iter->first.as<std::string>();
                     auto var_name = d_iter->second.as<std::string>();
                     auto reader = NcReader(filename);
-                    reader.read_var(var_name, aero_ics);
+                    reader.read_level_var(var_name, 0, aero_ics);
                   }
                 }
               } else {
@@ -316,7 +316,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
                 auto filename = d_iter->first.as<std::string>();
                 auto var_name = d_iter->second.as<std::string>();
                 auto reader = NcReader(filename);
-                reader.read_var(var_name, gas_ics);
+                reader.read_level_var(var_name, 0, gas_ics);
               }
             }
           } else {
@@ -368,7 +368,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
                 auto filename = d_iter->first.as<std::string>();
                 auto var_name = d_iter->second.as<std::string>();
                 auto reader = NcReader(filename);
-                reader.read_var(var_name, mode_ics);
+                reader.read_level_var(var_name, 0, mode_ics);
               }
             }
           }
