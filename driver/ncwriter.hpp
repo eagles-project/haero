@@ -67,7 +67,8 @@ class NcWriter {
       This is required before any variables indexed by mode can be defined.
       @param [in] nmodes number of modes in a HAERO aerosol computation.
     */
-    void add_mode_dim(const int& nmodes);
+    void add_mode_dim(const int& nmodes, const std::vector<std::string>& mode_names,
+      const std::vector<std::pair<Real,Real>>& mode_max_mins);
 
 
     /** @brief Close the data file associated with this NcWriter.
@@ -135,6 +136,20 @@ class NcWriter {
     template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
     define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
+    /** @brief defines a modal aerosol variable on level midpoints.
+
+      @throws
+
+
+    */
+    template <typename ViewType> VIEW_REAL_TYPE_IS_SP
+    define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+
+    template <typename ViewType> VIEW_REAL_TYPE_IS_DP
+    define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+
+    void define_modal_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
     /** @brief defines a level midpoint variable from a view of that variable
 
