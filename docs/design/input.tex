@@ -261,12 +261,21 @@ and~\ref{tab:hydrostatic_atm} list fields for the \verb uniform  and
 
 The \verb initial_conditions section defines the initial state of an aerosol
 system. There are subsections for \verb aerosols , for \verb gases , and
-for \verb modes  themselves.
+for \verb modes  themselves. Alternatively all initial conditions can be read
+automatically from a properly-formatted NetCDF file with the following
+syntax:
 
-In the Haero driver, the initial state for an aerosol species is specified by
-its modal mass fractions, given for every mode occupied by that species. The
-nodal mass fraction of an aerosol species is the fraction of the total mass of
-the mode's particles occupied by that species.
+\begin{verbatim}
+initial_condition: my_ics_file.nc
+\end{verbatim}
+
+The rest of this section discusses how to specify initial conditions for each
+aerosol species, gas species, and mode.
+
+The initial state for an aerosol species is specified by its modal mass
+fractions, given for every mode occupied by that species. The nodal mass
+fraction of an aerosol species is the fraction of the total mass of the mode's
+particles occupied by that species.
 
 Meanwhile, the initial state for a gas is its mole fraction---the number of
 moles of gas per mole of air.
