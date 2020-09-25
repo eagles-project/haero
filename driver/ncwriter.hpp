@@ -2,7 +2,7 @@
 #define HAERO_NC_WRITER_HPP
 
 #include "haero/haero_config.hpp"
-#include "haero/view_helpers.hpp"
+#include "haero/view_pack_helpers.hpp"
 #include "haero/utils.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"

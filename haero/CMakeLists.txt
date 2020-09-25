@@ -23,6 +23,7 @@ add_custom_target(update_version_info ALL
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             utils.cpp
+            view_pack_helpers.cpp
             )
 add_dependencies(haero ekat update_version_info)
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
@@ -34,6 +35,8 @@ install(FILES haero.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
               mode.hpp
               physical_constants.hpp
+              utils.hpp
+              view_pack_helpers.hpp
               species.hpp
               utils.hpp
         DESTINATION include/haero)
