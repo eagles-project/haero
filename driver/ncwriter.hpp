@@ -14,6 +14,13 @@
 
 namespace haero {
 
+/// Compile-time functions
+#define VIEW_REAL_TYPE_IS_SP \
+typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, float>::value,void>::type
+
+#define VIEW_REAL_TYPE_IS_DP \
+typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, double>::value,void>::type
+
 class NcWriter {
   public:
     /// key-value pairs for metadata attributes
@@ -28,14 +35,18 @@ class NcWriter {
       All values initialized to invalid data; they will be set to valid data by other
       member functions.
 
-      Writes HAERO metadata (version, git hash) to file.
+      Data model:
+        - Non-aerosol data have rank = 3, with dimensions (time, column, level)
+        - Aerosol data have rank = 4, with dimensions (time, column, mode, level)
+
+      Writes HAERO metadata (version, git revision) to file.
 
       @throws
 
       @param [in] new_filename name of NetCDF data file to create.
     */
     NcWriter(const std::string& new_filename) : fname(new_filename),
-     ncid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
+     ncid(NC_EBADID), col_dimid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
      mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), name_varid_map() {
       const auto fext = get_filename_ext(new_filename);
       EKAT_REQUIRE_MSG(fext == ".nc",
@@ -49,6 +60,17 @@ class NcWriter {
       @param [in] tab_level indent level for console output.
     */
     std::string info_string(const int& tab_level=0) const;
+
+    /** @brief Adds a dimension for columns
+
+    */
+    void add_column_dim(const int& ncol=1);
+
+    int ncol() const;
+    int nlev() const;
+    inline int ninterfaces() const {return nlev() + 1;}
+    int nmodes() const;
+    int ntimesteps() const;
 
     /** @brief Adds 2 dimensions to an existing NcWriter; one for level midpoints,
       one for level interfaces.
@@ -66,6 +88,8 @@ class NcWriter {
 
       This is required before any variables indexed by mode can be defined.
       @param [in] nmodes number of modes in a HAERO aerosol computation.
+      @param [in] mode names (e.g., Aitken, accumulation, etc.)
+      @param [in] mode sizes in min/max pairs
     */
     void add_mode_dim(const int& nmodes, const std::vector<std::string>& mode_names,
       const std::vector<std::pair<Real,Real>>& mode_max_mins);
@@ -140,14 +164,32 @@ class NcWriter {
 
       @throws
 
-
+      @param [in] name
+      @param [in] units
+      @param [in] view
     */
     template <typename ViewType> VIEW_REAL_TYPE_IS_SP
     define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
+    /** @brief defines a modal aerosol variable on level midpoints.
+
+      @throws
+
+      @param [in] name
+      @param [in] units
+      @param [in] view
+    */
     template <typename ViewType> VIEW_REAL_TYPE_IS_DP
     define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
+    /** @brief defines a modal aerosol variable on level midpoints.
+
+      @throws
+
+      @param [in] name
+      @param [in] units
+      @param [in] atts
+    */
     void define_modal_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
@@ -266,6 +308,8 @@ class NcWriter {
     std::string fname;
     /// NetCDF file ID.  Assigned by `nc_create` during open()
     int ncid;
+    /// Column dimension ID.  Assigned by add_column_dim()
+    int col_dimid;
     /// Level dimension ID. Assigned by add_level_dims.
     int level_dimid;
     /// Interface dimension ID.  Assigned by add_level_dims.

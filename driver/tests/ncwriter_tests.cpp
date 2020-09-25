@@ -12,6 +12,8 @@ using namespace haero;
 using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
 using real_pack_type = ekat::Pack<Real, HAERO_PACK_SIZE>;
 using view_1d = kokkos_device_type::view_1d<real_pack_type>;
+using view_2d = kokkos_device_type::view_2d<real_pack_type>;
+using view_3d = kokkos_device_type::view_3d<real_pack_type>;
 
 TEST_CASE("ncwriter", "") {
 
@@ -26,12 +28,16 @@ TEST_CASE("ncwriter", "") {
   REQUIRE (ncf.get_ndims() == 1);
   REQUIRE (ncf.get_nvars() == 0);
 
+  const int ncol = 2;
+  ncf.add_column_dim(ncol);
+  REQUIRE (ncf.get_ndims() == 2);
+
   /**
     Add a dimension for level midpoints and a dimension for level interfaces.
   */
   const int nlev = 10;
   ncf.add_level_dims(nlev);
-  REQUIRE (ncf.get_ndims() == 3);
+  REQUIRE (ncf.get_ndims() == 4);
 
   /**
     Add a dimension for modes
@@ -46,7 +52,7 @@ TEST_CASE("ncwriter", "") {
   diameter_minmax.push_back(std::make_pair<Real>(20E-6, 200E-6));
   diameter_minmax.push_back(std::make_pair<Real>(200E-6, 4000E-6));
   ncf.add_mode_dim(nmodes, mode_names, diameter_minmax);
-  REQUIRE (ncf.get_ndims() == 4);
+  REQUIRE (ncf.get_ndims() == 5);
 
   /**
     Define the coordinate variable for the time dimension.
@@ -61,16 +67,19 @@ TEST_CASE("ncwriter", "") {
     Note: No data is copied at this stage, so we don't have to worry about
     which memory space it's in.
   */
-  view_1d test_level_var("test_level_var", nlev);
-  view_1d test_interface_var("interface_var", nlev+1);
+  view_2d test_level_var("test_level_var", ncol, nlev);
+  view_2d test_interface_var("interface_var", ncol, nlev+1);
+
   ncf.define_level_var("level_test_var", ekat::units::Units::nondimensional(), test_level_var);
-//   REQUIRE (ncf.get_nvars() == 2);
   REQUIRE (ncf.get_varid("level_test_var") != NC_EBADID);
 
   ncf.define_interface_var("interface_test_var", ekat::units::Units::nondimensional(), test_interface_var);
-//   REQUIRE (ncf.get_nvars() == 3);
   REQUIRE (ncf.get_varid("interface_test_var") != NC_EBADID);
 
+  view_3d test_modal_var("test_aerosol_view", ncol, nmodes, nlev);
+  ncf.define_modal_var("test_aerosol_from_view", ekat::units::pow(ekat::units::kg, -1), test_modal_var);
+
+  ncf.define_modal_var("test_aerosol", ekat::units::pow(ekat::units::kg, -1));
 
   /**
     The default data type for data arrays is std::vector; it's always on the host.
@@ -83,18 +92,18 @@ TEST_CASE("ncwriter", "") {
     pm1[i] = std::pow(-1, i);
   }
 
-  ncf.add_level_variable_data("plus_minus_one", 0, pm1);
+//   ncf.add_level_variable_data("plus_minus_one", 0, pm1);
 
   /**
     Here we try to add data to a time step index that is out of bounds.
   */
-  REQUIRE_THROWS (ncf.add_level_variable_data("plus_minus_one", 1, pm1));
+//   REQUIRE_THROWS (ncf.add_level_variable_data("plus_minus_one", 1, pm1));
   /**
     Add the time index and try again.
   */
-  const Real t=1.0;
-  ncf.add_time_value(t);
-  REQUIRE_NOTHROW (ncf.add_level_variable_data("plus_minus_one", 1, pm1));
+//   const Real t=1.0;
+//   ncf.add_time_value(t);
+//   REQUIRE_NOTHROW (ncf.add_level_variable_data("plus_minus_one", 1, pm1));
 
   ncf.close();
   std::cout << ncf.info_string();

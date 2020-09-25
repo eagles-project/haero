@@ -32,12 +32,7 @@ using view_2d_scalar_type = kokkos_device_type::view_2d<Real>;
 using view_2d_pack_type = kokkos_device_type::view_2d<real_pack_type>;
 using mask_view_2d_type = kokkos_device_type::view_2d<pack_mask_type>;
 
-/// Compile-time functions
-#define VIEW_REAL_TYPE_IS_SP \
-typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, float>::value,void>::type
 
-#define VIEW_REAL_TYPE_IS_DP \
-typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, double>::value,void>::type
 
 //------------------------ Run-time stuff ---------------//
 

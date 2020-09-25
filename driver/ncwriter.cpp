@@ -25,75 +25,77 @@ void NcWriter::open() {
 
 void NcWriter::add_level_dims(const int& nlev) {
 
-  EKAT_ASSERT(ncid != NC_EBADID);
+  EKAT_ASSERT(ncid != NC_EBADID); // file is open
+  EKAT_REQUIRE_MSG(level_dimid == NC_EBADID, "level dimension already defined.");
+  EKAT_REQUIRE_MSG(interface_dimid == NC_EBADID, "interface dimension already defined.");
 
-  if (level_dimid == NC_EBADID and interface_dimid == NC_EBADID) {
-    int retval = nc_def_dim(ncid, "level_midpts", nlev, &level_dimid);
-    CHECK_NCERR(retval);
-    retval = nc_def_dim(ncid, "level_interfaces", nlev+1, &interface_dimid);
-    ndims += 2;
-  }
-  else {
-    throw std::logic_error("level dimensions already defined.");
-  }
+  int retval = nc_def_dim(ncid, "level_midpts", nlev, &level_dimid);
+  CHECK_NCERR(retval);
+  retval = nc_def_dim(ncid, "level_interfaces", nlev+1, &interface_dimid);
+  ndims += 2;
+}
+
+void NcWriter::add_column_dim(const int& ncol) {
+  EKAT_ASSERT(ncid != NC_EBADID);
+  EKAT_REQUIRE_MSG(col_dimid == NC_EBADID, "column dimension already defined.");
+
+  int retval = nc_def_dim(ncid, "ncol", ncol, &col_dimid);
+  CHECK_NCERR(retval);
+  ++ndims;
 }
 
 void NcWriter::add_mode_dim(const int& nmodes, const std::vector<std::string>& mode_names,
       const std::vector<std::pair<Real,Real>>& mode_min_maxs) {
 
-  EKAT_ASSERT(ncid != NC_EBADID);
-
+  EKAT_ASSERT(ncid != NC_EBADID); // file is open
+  EKAT_REQUIRE_MSG(mode_dimid == NC_EBADID, "mode dimension already defined.");
   EKAT_REQUIRE_MSG(nmodes == mode_names.size(), "Each mode must have a name");
   EKAT_REQUIRE_MSG(nmodes == mode_min_maxs.size(), "Each mode must have a min and max diameter.");
 
-  if (mode_dimid == NC_EBADID) {
-    int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
+  int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
+  CHECK_NCERR(retval);
+  ndims++;
+  int mode_name_var_id = NC_EBADID;
+  retval = nc_def_var(ncid, "mode_names", NC_STRING, 1, &mode_dimid, &mode_name_var_id);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("mode_names", mode_name_var_id);
+  for (int i=0; i<nmodes; ++i) {
+    const size_t idx = i;
+    auto ncstr = mode_names[i].c_str();
+    retval = nc_put_var1_string(ncid, mode_name_var_id, &idx, &ncstr);
     CHECK_NCERR(retval);
-    ndims++;
-    int mode_name_var_id = NC_EBADID;
-    retval = nc_def_var(ncid, "mode_names", NC_STRING, 1, &mode_dimid, &mode_name_var_id);
-    CHECK_NCERR(retval);
-    name_varid_map.emplace("mode_names", mode_name_var_id);
-    for (int i=0; i<nmodes; ++i) {
-      const size_t idx = i;
-      auto ncstr = mode_names[i].c_str();
-      retval = nc_put_var1_string(ncid, mode_name_var_id, &idx, &ncstr);
-      CHECK_NCERR(retval);
-    }
-    int mode_min_varid = NC_EBADID;
-    int mode_max_varid = NC_EBADID;
-    retval = nc_def_var(ncid, "mode_minimum_diameter", NC_REAL_KIND, 1, &mode_dimid, &mode_min_varid);
-    CHECK_NCERR(retval);
-    name_varid_map.emplace("mode_minimum_diameter", mode_min_varid);
-    retval = nc_def_var(ncid, "mode_maximum_diameter", NC_REAL_KIND, 1, &mode_dimid, &mode_max_varid);
-    CHECK_NCERR(retval);
-    name_varid_map.emplace("mode_maximum_diameter", mode_max_varid);
-    const std::string meter_str = ekat::units::to_string(ekat::units::m);
-    retval = nc_put_att_text(ncid, mode_min_varid, "units", meter_str.size(), meter_str.c_str());
-    CHECK_NCERR(retval);
-    retval = nc_put_att_text(ncid, mode_max_varid, "units", meter_str.size(), meter_str.c_str());
-    CHECK_NCERR(retval);
-    for (int i=0; i<nmodes; ++i) {
-      const size_t idx = i;
-#ifdef HAERO_DOUBLE_PRECISION
-      retval = nc_put_var1_double(ncid, mode_min_varid, &idx, &mode_min_maxs[i].first);
-      CHECK_NCERR(retval);
-      retval = nc_put_var1_double(ncid, mode_max_varid, &idx, &mode_min_maxs[i].second);
-      CHECK_NCERR(retval);
-#else
-      retval = nc_put_var1_float (ncid, mode_min_varid, &idx, &mode_min_maxs[i].first);
-      CHECK_NCERR(retval);
-      retval = nc_put_var1_float (ncid, mode_max_varid, &idx, &mode_min_maxs[i].second);
-      CHECK_NCERR(retval);
-#endif
-    }
   }
-  else {
-    throw std::logic_error("mode dimension already defined.");
+  int mode_min_varid = NC_EBADID;
+  int mode_max_varid = NC_EBADID;
+  retval = nc_def_var(ncid, "mode_minimum_diameter", NC_REAL_KIND, 1, &mode_dimid, &mode_min_varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("mode_minimum_diameter", mode_min_varid);
+  retval = nc_def_var(ncid, "mode_maximum_diameter", NC_REAL_KIND, 1, &mode_dimid, &mode_max_varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("mode_maximum_diameter", mode_max_varid);
+  const std::string meter_str = ekat::units::to_string(ekat::units::m);
+  retval = nc_put_att_text(ncid, mode_min_varid, "units", meter_str.size(), meter_str.c_str());
+  CHECK_NCERR(retval);
+  retval = nc_put_att_text(ncid, mode_max_varid, "units", meter_str.size(), meter_str.c_str());
+  CHECK_NCERR(retval);
+  for (int i=0; i<nmodes; ++i) {
+    const size_t idx = i;
+#ifdef HAERO_DOUBLE_PRECISION
+    retval = nc_put_var1_double(ncid, mode_min_varid, &idx, &mode_min_maxs[i].first);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_double(ncid, mode_max_varid, &idx, &mode_min_maxs[i].second);
+    CHECK_NCERR(retval);
+#else
+    retval = nc_put_var1_float (ncid, mode_min_varid, &idx, &mode_min_maxs[i].first);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_float (ncid, mode_max_varid, &idx, &mode_min_maxs[i].second);
+    CHECK_NCERR(retval);
+#endif
   }
 }
 
 void NcWriter::add_time_value(const Real& t) const {
+  EKAT_ASSERT(time_dimid != NC_EBADID);
   const int timeid = name_varid_map.at("time");
   size_t next_time_index = 0;
   int retval = nc_inq_dimlen(ncid, time_dimid, &next_time_index);
@@ -127,8 +129,6 @@ void NcWriter::add_level_variable_data(const std::string& varname, const size_t&
   CHECK_NCERR(retval);
 }
 
-
-
 void NcWriter::add_interface_variable_data(const std::string& varname, const size_t& time_index,
   const std::vector<Real>& data) const {
   const int varid = name_varid_map.at(varname);
@@ -150,17 +150,11 @@ void NcWriter::add_interface_variable_data(const std::string& varname, const siz
 }
 
 void NcWriter::add_time_dim() {
-
   EKAT_ASSERT(ncid != NC_EBADID);
-
-  if (time_dimid == NC_EBADID) {
-    int retval = nc_def_dim(ncid, "time", NC_UNLIMITED, &time_dimid);
-    CHECK_NCERR(retval);
-    ndims++;
-  }
-  else {
-    throw std::logic_error("time dimension already defined.");
-  }
+  EKAT_REQUIRE_MSG(time_dimid == NC_EBADID, "time dimension already defined.");
+  int retval = nc_def_dim(ncid, "time", NC_UNLIMITED, &time_dimid);
+  CHECK_NCERR(retval);
+  ndims++;
 }
 
 void NcWriter::close() {
@@ -190,8 +184,8 @@ void NcWriter::define_level_var(const std::string& name, const ekat::units::Unit
   EKAT_ASSERT(time_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
-  const int m_ndims = 2;
-  const int dimids[2] = {time_dimid, level_dimid};
+  const int m_ndims = 3;
+  const int dimids[3] = {time_dimid, col_dimid, level_dimid};
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);
   const std::string unit_str = ekat::units::to_string(units);
@@ -224,11 +218,11 @@ void NcWriter::define_time_var(const ekat::units::Units& units, const Real t0) {
 void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts) {
 
-  EKAT_ASSERT(time_dimid != NC_EBADID && interface_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID && col_dimid != NC_EBADID && interface_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
-  const int m_ndims = 2;
-  const int dimids[2] = {time_dimid, interface_dimid};
+  const int m_ndims = 3;
+  const int dimids[3] = {time_dimid, col_dimid, interface_dimid};
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);
   const std::string unit_str = ekat::units::to_string(units);
@@ -244,9 +238,56 @@ void NcWriter::define_interface_var(const std::string& name, const ekat::units::
   name_varid_map.emplace(name, varid);
 }
 
+int NcWriter::ncol() const {
+  size_t nc;
+  int retval = nc_inq_dimlen(ncid, col_dimid, &nc);
+  CHECK_NCERR(retval);
+  return int(nc);
+}
+
+int NcWriter::nlev() const {
+  size_t nl;
+  int retval = nc_inq_dimlen(ncid, level_dimid, &nl);
+  CHECK_NCERR(retval);
+  return int(nl);
+}
+
+int NcWriter::nmodes() const {
+  size_t nm;
+  int retval = nc_inq_dimlen(ncid, mode_dimid, &nm);
+  CHECK_NCERR(retval);
+  return int(nm);
+}
+
+int NcWriter::ntimesteps() const {
+  size_t ns;
+  int retval = nc_inq_dimlen(ncid, time_dimid, &ns);
+  CHECK_NCERR(retval);
+  return int(ns);
+}
+
 void NcWriter::define_modal_var(const std::string& name, const ekat::units::Units& units,
-      const std::vector<text_att_type>& atts) {
-//     EKAT_ASSERT(time_dimid != NC_EBADID && level_dimid != NC_EBADID &&  mode_dimid != NC_EBADI
+  const std::vector<text_att_type>& atts) {
+
+  EKAT_ASSERT(time_dimid != NC_EBADID && col_dimid != NC_EBADID &&
+              mode_dimid != NC_EBADID && level_dimid != NC_EBADID);
+
+  const int m_ndims = 4;
+  const int dimids[4] = {time_dimid, col_dimid, mode_dimid, level_dimid};
+  int varid = NC_EBADID;
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
+  CHECK_NCERR(retval);
+  const std::string unit_str = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
+  CHECK_NCERR(retval);
+  if (!atts.empty()) {
+    for (int i=0; i<atts.size(); ++i) {
+      retval = nc_put_att_text(ncid, varid, atts[i].first.c_str(),
+        atts[i].second.size(), atts[i].second.c_str());
+      CHECK_NCERR(retval);
+    }
+  }
+  name_varid_map.emplace(name, varid);
 }
 
 std::vector<std::string> NcWriter::get_variable_names() const {
