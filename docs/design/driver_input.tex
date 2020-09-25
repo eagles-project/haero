@@ -1,5 +1,5 @@
-\section{Driver Input Specification}
-\labelsection{input}
+\chapter{Driver Input Specification}
+\labelappendix{driver_input}
 
 Below is the input specification for the Haero driver. The spec uses
 [YAML](https://yaml.org/). Compared to Fortran namelists, YAML offers
@@ -51,7 +51,7 @@ using simple concepts with human-readable notation.
 \subsubsection*{Modes}
 
 The \verb modes  section defines the particle size modes available to a Haero
-model. As we discussed in \refsection{modes_and_species}, a mode has metadata
+model. As we discussed in \refsection{modes}, a mode has metadata
 specifying its size range and its geometric standard deviation.
 
 \begin{verbatim}
@@ -93,7 +93,7 @@ Everything in a mode must be completely specified---there are no default values.
 \subsubsection*{Aerosol Species}
 
 Aerosol species populate each of the defined modes, and are defined in the
-\verb aerosols  section. As we discussed in \refsection{modes_and_species}, a
+\verb aerosols  section. As we discussed in \refsection{species}, a
 species is defined by its elemental composition and its electric charge (given
 in units of the electronic charge $|e|$).
 %The \verb species  section follows the same format as defined by
@@ -215,7 +215,7 @@ the \verb atmosphere  section. Supported models are:
                             and temperature defined by an ideal gas law
 \end{itemize}
 
-These models are described in detail in \refsection{contexts}. Here we simply
+These models are described in detail in \refchapter{driver}. Here we simply
 list valid fields for each model. These fields are specified alongside the
 \verb model  field in the \verb atmosphere  section. Tables~\ref{tab:uniform_atm}
 and~\ref{tab:hydrostatic_atm} list fields for the \verb uniform  and

@@ -1,0 +1,224 @@
+\chapter{The Haero Library}
+\labelchapter{library}
+
+In this chapter, we describe the data structures and algorithms provided by the
+Haero software library. We begin by discussing the data structures that
+represent the important elements for any modal aerosol model. In particular,
+the interface defines representations for:
+
+\begin{itemize}
+  \item {\bf Modes}: statistically-informed groupings of aerosol particles by
+        size
+  \item {\bf Species}: aerosol and gas molecules of interest. Each aerosol
+        species belongs to a single aerosol mode and is tracked by mass and
+        number.
+  \item {\bf Chemical Reactions}: reactions within the chemical mechanism that
+        governs how aerosol particles interact with each other, with the
+        atmosphere, and with solar radation.
+\end{itemize}
+
+These entities represent the quantities of interest in Haero, and provide
+{\bf metadata} needed to perform calculations on {\bf state data}, which is
+stored in multi-dimensional arrays of real-valued numbers.
+
+The modes and species present in the atmosphere don't uniquely specify the
+parameters of a simulation, however. These species interact chemically with each
+other, and with other species and also with radiation. Additionally, there are
+numerical parameters that define grid parameters, choices of algorithms, and
+other non-physical considerations. This information lives within an object
+called a {\bf context}. There's one such context for each simulation, and Haero
+uses the context to make decisions about how to numerically compute the
+evolution of aerosols, and their effects on a system. The simulation context and
+its interface is explained in \refsection{context}.
+
+When a context has been created, one can initialize the simulation {\bf state}---
+the set of quantities that define the physical state of an aerosol system. The
+state consists of a set of multidimensional arrays that contain all relevant
+physical quantities, and is defined by the \verb State  type described in
+\refsection{state}
+
+Given a system of modes, species, chemical reactions, etc, as represented by a
+context, and given an initial state, Haero's application programming interface
+(API) provides functions (subroutines) that evaluate aerosol
+{\bf parametrizations}---the simplified models of the various physical processes
+mentioned in \refchapter{physics}. Functions and subroutines are provided for
+the C++ and Fortran programming languages. These functions are described in
+detail in \refsection{parametrizations}, and listed comprehensively in
+\refappendix{api}.
+
+\section{Modes}\labelsection{modes}
+
+We've seen how the dynamics of aerosols can be represented mathematically
+by evolution equations for moments of modal distribution functions. Modes
+simplify the description of aerosol particles in terms of their size: instead of
+representing a population of particles with a distribution function
+$n(V_p, \vec{x}, t)$ that varies continuously with the size of the particle, we
+introduced $M$ discrete modes and declared that these modes partition the
+population of aerosol particles in the sense of the modal assumption as given
+by \refeq{modal_n}.
+
+The essential information in a mode is the range of particle sizes it
+encompasses, $[D_{\min}, D_{\max}]$, and its geometric standard deviation,
+$\sigma_g$. In Haero's C and C++ interfaces,
+we represent an aerosol mode with the \verb|Mode| struct:
+
+\begin{verbatim}
+struct Mode {
+  std::string name;  // a unique identifier for the mode
+  Real min_diameter; // the mode's minimum particle diameter
+  Real max_diameter; // the mode's maximum particle diameter
+  Real mean_std_dev; // the geometric mean standard deviation for the mode
+};
+\end{verbatim}
+
+In principle, a Haero calculation can support any number of modes, but care
+must be taken to ensure that the modal assumptions remain valid, and that
+the parametrizations selected can accommodate the given modes.
+
+\section{Species}\labelsection{species}
+
+{\bf WARNING: This section is under construction!}
+
+Each aerosol mode consists of one or more particle species. Additionally,
+gas particles also come in different species. Both aerosol particles and
+gas particles have physical properties that are described by the
+\verb Species  data type.
+
+A particle species is a specifically-identified molecular assembly with
+a number of relevant physical properties. The fundamental description of a
+species includes
+
+\begin{itemize}
+  \item a symbolic name (e.g. \verb SO4 , for sulfate)
+  \item a descriptive name (e.g. \verb "sulfate" )
+  \item its elemental composition (how many atoms of each type it possesses)
+  \item its net electrical charge (in units of the elementary charge $|e|$)
+\end{itemize}
+
+We represent this information in the following way:
+
+\begin{verbatim}
+struct Species {
+  std::string name;                       // full species name
+  std::string symbol;                     // abbreviated symbolic name
+  std::map<std::string, int> composition; // elemental make-up of species
+  int charge;                             // net electrical charge
+};
+\end{verbatim}
+
+The \verb composition  field in the \verb Species  struct maps the name of
+a chemical element to the number of atoms of that type that appear within
+the species.
+
+\section{Chemical Reactions}\labelsection{chemical_rxns}
+
+TBD: we currently don't have a candidate for a chemical mechanism, though
+we are considering Cantera.
+
+\section{Simulation Context}
+\labelsection{context}
+
+To model an aerosol system in Haero, one must first make some decisions about
+the aerosol system in question:
+
+\begin{itemize}
+  \item What modes are required to characterize the distribution of particle
+        sizes?
+  \item What species are present in the system, and in what modes are they
+        allowed to appear?
+  \item What chemical reactions are needed to accurately represent the dynamical
+        behavior of the system?
+  \item How many atmospheric columns are needed to model the system?
+  \item How many vertical levels are needed to resolve the profile of aerosols
+        in the system?
+  \item Which physical processes are relevant to a simulation of interest?
+        Should any processes be excluded, to answer a specific question about
+        how the processes interact with each other, or because they are not
+        signficant for the system?
+\end{itemize}
+
+Clearly, these decisions greatly effect the nature of the model---systems with
+different answers to these questions will have very different behavior. When we
+define a Haero simulation, we encode the answers to these decisions in a
+{\bf context}, represented by a {\verb Context}  object.
+
+What is a context, exactly? One can think about it in a few different ways,
+depending on one's perspective:
+
+\begin{itemize}
+  \item A context specifies the physics (or the approximations to the physics,
+        if you like) represented by an aerosol simulation.
+  \item A context stores a set of ``global variables'' that govern the behavior
+        for a single aerosol simulation.
+  \item Every aerosol simulation gets its own context.
+  \item A context describes only the form of an aerosol system's representation.
+        It does not describe the state of an aerosol system.
+\end{itemize}
+
+Essentially, a context contains all information about a system except for its
+(initial) states.
+
+\subsection{The Context Type}
+
+The \verb Context  type that describes a context is opaque, in the sense that
+you can query it for information, but this information is accessible only via an
+interface consisting of query functions/subroutines. This type is implemented
+by a C++ class.
+
+Here's a look at the \verb Context  class and its (public) interface.
+\begin{verbatim}
+class Context final {
+  public:
+
+  // Constructor -- creates a new Context.
+  Context(const Parametrizations& parametrizations,
+          const std::vector<Mode>& modes,
+          const std::vector<Species>& aero_species,
+          const std::vector<Species>& gas_species,
+          const std::vector<Reaction>& gas_chem_reactions,
+          int num_columns, int num_levels);
+
+  // Returns a description of the aerosol parametrizations used by a simulation
+  // associated with this context.
+  const Parametrizations& parametrizations() const;
+
+  // Returns the list of modes for the context.
+  const std::vector<Mode>& modes() const;
+
+  // Returns the list of aerosol species for the context.
+  const std::vector<Species>& aero_species() const;
+
+  // Returns the list of gas species for the context.
+  const std::vector<Species>& gas_species() const;
+
+  // Returns the number of vertical atmospheric columns in a simulation
+  // associated with this context.
+  int num_columns() const;
+
+  // Returns the number of vertical levels (cells) in each atmospheric column.
+  int num_levels() const;
+};
+\end{verbatim}
+
+In Fortran, the \verb Context  type consists of an opaque derived type with a
+set of associated functions and subroutines. You can find more information
+about the Fortran interface in \refappendix{api}.
+
+\section{Simulation State}
+\labelsection{state}
+
+When a context has been created that defines an aerosol system for a
+simulation, it remains to specify the initial state of that system. The state of
+a system is defined in terms of the following prognostic variables:
+
+\begin{itemize}
+  \item {\bf modal number densities}: the total number of particles per cubic
+        meter in each mode
+  \item {\bf aerosol modal mass fractions}: the fraction of a mode occupied
+        by each aerosol species present
+  \item {\bf gas mole fractions}: the number of moles of each gas species per
+        mole of air
+\end{itemize}
+
+\section{Parametrizations}
+\labelsection{parametrizations}

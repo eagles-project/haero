@@ -1,5 +1,5 @@
-\section{Introduction}
-\labelsection{intro}
+\chapter{Introduction}
+\labelchapter{intro}
 
 Aerosols and aerosol-cloud interactions remain a great source of uncertainty
 in global climate models. Haero, the modal aerosol model described in this
@@ -16,51 +16,25 @@ conversations. We hope that this close correspondence between code and
 the related scientific discourse can allow people with different areas of
 expertise to contribute to the development of Haero.
 
-In \refsection{equations}, we very briefly outline the governing equations of
+In \refchapter{physics}, we very briefly outline the governing equations of
 aerosol dynamics from a mathematical perspective. We begin from basic transport
 equations formulated in terms of aerosol size distribution functions. We also
 describe the assumptions that enter the model at the level of continuous
 mathematics (whose approximation errors are present even in analytic
 solutions!).
 
+\refchapter{library} introduces the Haero library and its various abstractions.
 Because the coupling of aerosol-related processes is still an active area of
 research, Haero's software interface focuses on defining specific physical and
 mathematical entities, providing a set of elementary building blocks from which
-more elaborate models can be constructed. In particular, the interface defines
-representations for:
+more elaborate models can be constructed.
 
-\begin{itemize}
-  \item {\bf Modes}: statistically-informed groupings of aerosol particles by
-        size
-  \item {\bf Species}: aerosol molecules of interest, each of which belongs to a
-        single mode and is tracked by mass and number.
-\end{itemize}
-
-These two entities represent the aerosols in Haero, and provide {\bf metadata} needed to
-perform calculations on {\bf state data}, which is stored in multi-dimensional
-arrays of real numbers. Modes and species and their associated data structures
-are explored in \refsection{modes_and_species}.
-
-The modes and species present in the atmosphere don't uniquely specify the
-parameters of a simulation, however. These species interact chemically with each
-other, and with other species and also with radiation.  Additionally, there are
-numerical parameters that define grid parameters, choices of algorithms, and
-other non-physical considerations. This information lives within an opaque
-object called a {\bf simulation context}. There's one such context for each
-simulation, and Haero uses the context to make decisions about how to numerically
-compute the evolution of aerosols, and their effects on a system. The simulation
-context and its interface is explained in \refsection{contexts}.
-
-Finally, given a system of modes, species, chemical reactions, etc, Haero's
-application programming interface (API) provides functions (sometimes called
-subroutines) that evaluate aerosol {\bf tendencies}---instantaneous temporal
-rates of change in their mass and number---as well as contributions to energy
-equations and coupling terms used by other physical processes. Functions are
-provided for the C, C++, and Fortran programming languages. These functions are
-described in detail in \refsection{tendencies}.
+In \refchapter{driver}, we introduce Haero's stand-alone driver program, which
+provides a way to run simple aerosol simulations and test parametrizations.
+The driver provides a dynamics model to allow researchers to study how transport
+and radiative processes affect aerosols.
 
 A comprehensive description of the API appears in \refappendix{api}. The input
-specification for Haero's single-column driver is explained in
-\refappendix{input}. A glossary of terms and definitions is also provided in
-\refappendix{glossary}.
+specification for the driver is explained in detail in \refappendix{driver_input}.
+A glossary of terms and definitions is also provided in \refappendix{glossary}.
 

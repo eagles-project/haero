@@ -1,5 +1,25 @@
-\section{Simulation Contexts}
-\labelsection{contexts}
+\chapter{The Haero Driver}
+\labelchapter{driver}
+
+The standalone driver program, {\verb haero_driver }, provides a simple way to
+explore the capabilities of Haero. It's a simple single-column model with a
+bundled one-dimensional dynamics package. With it, you can
+
+\begin{itemize}
+  \item run single-column aerosol simulations
+  \item perform statistical analysis on ensembles consisting of several columns
+  \item conduct time-step convergence studies to build confidence in Haero's
+        mathematical algorithms and their implementations
+  \item select specific aerosol processes and parametrizations to examine
+        in isolation, to debug or verify a given algorithm
+  \item study how the aerosol processes interact with one-dimensional dynamics
+        and other simplified physical process representations
+\end{itemize}
+
+In this chapter we describe the driver and its capabilities. The input format
+for the driver is based on YAML and is described in \refappendix{driver_input}.
+
+\section{Column Dynamics}
 
 \subsection{Uniform atmosphere}
 
