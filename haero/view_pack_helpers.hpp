@@ -6,7 +6,9 @@
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
+#include "kokkos/Kokkos_Core.hpp"
 #include <vector>
+#include <iostream>
 
 namespace haero {
 
@@ -42,12 +44,12 @@ typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewTy
 /// fwd decl
 template <typename VT>
 typename std::enable_if<!ekat::ScalarTraits<typename VT::value_type>::is_simd, std::vector<Real>>::type
-view1d_to_vector_impl(const VT& v);
+view1d_to_vector_impl(const VT& v, const int& array_length);
 
 /// fwd decl
 template <typename VT>
 typename std::enable_if<ekat::ScalarTraits<typename VT::value_type>::is_simd, std::vector<Real>>::type
-view1d_to_vector_impl(const VT& v);
+view1d_to_vector_impl(const VT& v, const int& array_length);
 
 /** @brief Convert a std::vector<Real> to Kokkos::View<Real*>.
 
@@ -67,7 +69,10 @@ view_1d_scalar_type vector_to_basic_1dview(const std::vector<Real>& vector, cons
 view_1d_pack_type vector_to_packed_1dview(const std::vector<Real>& vector, const std::string& view_name);
 
 template <typename ViewType>
-std::vector<Real> view1d_to_vector(const ViewType& v) {return view1d_to_vector_impl<ViewType>(v); }
+std::vector<Real> view1d_to_vector(const ViewType& v, const int array_length=0)
+  { static_assert(ViewType::Rank == 1, "view1d_to_vector error : View must be rank 1.");
+    return view1d_to_vector_impl<ViewType>(v,array_length);
+  }
 
 /** @brief Convert a 2d set of vectors, (`std::vector<std::vector<Real>>`) to `Kokkos::View<Real**>`
 
@@ -87,22 +92,13 @@ view_2d_scalar_type vector_to_basic_2dview(const std::vector<std::vector<Real>>&
 */
 view_2d_pack_type vectors_to_row_packed_2dview(const std::vector<std::vector<Real>>& vectors, const std::string& view_name);
 
-/** @brief Convert a 2d set of vectors (`std::vector<std::vector<Real>>`) to `Kokkos::View<Pack<Real,HAERO_PACK_SIZE>**>`
-
-  view(i,j) = PACK_SIZE x 1 block
-
-  @param [in] vector
-  @param [in] view_name
-  @return Kokkos view + deep copied data
-*/
-view_2d_pack_type vectors_to_col_packed_2dview(const std::vector<std::vector<Real>>& vectors, const std::string& view_name);
-
 
 //---------------------- Impl details (don't call these directly) ---------------//
 
 template <typename VT>
 typename std::enable_if<!ekat::ScalarTraits<typename VT::value_type>::is_simd, std::vector<Real>>::type
-view1d_to_vector_impl(const VT& v) {
+view1d_to_vector_impl(const VT& v, const int& array_length) {
+  std::cout << "!simd impl\n";
   auto hm = Kokkos::create_mirror_view(v);
   Kokkos::deep_copy(hm, v);
   std::vector<Real> result(v.extent(0));
@@ -114,12 +110,15 @@ view1d_to_vector_impl(const VT& v) {
 
 template <typename VT>
 typename std::enable_if<ekat::ScalarTraits<typename VT::value_type>::is_simd, std::vector<Real>>::type
-view1d_to_vector_impl(const VT& v) {
+view1d_to_vector_impl(const VT& v, const int& array_length) {
+  std::cout << "simd impl\n";
   auto hm = Kokkos::create_mirror_view(v);
   Kokkos::deep_copy(hm, v);
-  std::vector<Real> result(v.extent(0)*HAERO_PACK_SIZE);
+  std::vector<Real> result(array_length);
   for (int i=0; i<v.extent(0); ++i) {
-    result[i] = hm(pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+    for (int j=0; j<pack_info::vec_end(array_length,i); ++j) {
+      result[pack_info::array_idx(i,j)] = hm(i)[j];
+    }
   }
   return result;
 }

@@ -66,10 +66,17 @@ TEST_CASE("view_pack_helpers", "") {
     REQUIRE (nerr == 0);
 
     /// Test view -> vector
-    std::vector<Real> pm1pack = view1d_to_vector(v1d_pack);
+    std::vector<Real> pm1pack = view1d_to_vector(v1d_pack, nn);
     for (int j=0; j<nn; ++j) {
       if (pm1pack[j] != plus_minus_one[j]) ++nerr;
     }
+    if (nerr > 0) {
+      std::cout << "pm1pack [size " << pm1pack.size() << "] = (";
+      for (int j=0; j<pm1pack.size(); ++j) {
+        std::cout << pm1pack[j] << (j<pm1pack.size()-1 ? " " : ")\n");
+      }
+    }
+    REQUIRE (pm1pack.size() == nn);
     REQUIRE (nerr == 0);
 
     /// Test 2d vectors -> view
@@ -84,16 +91,6 @@ TEST_CASE("view_pack_helpers", "") {
     }
     REQUIRE (nerr == 0);
 
-    view_2d_pack_type v2d_colpack = vectors_to_col_packed_2dview(vectors, "vectors");
-    auto host_v2d_colpack = Kokkos::create_mirror_view(v2d_colpack);
-    Kokkos::deep_copy(host_v2d_colpack, v2d_colpack);
-    for (int i=0; i<mm; ++i) {
-      for (int j=0; j<nn; ++j) {
-        if (host_v2d_colpack(pack_info::pack_idx(i), j)[pack_info::vec_idx(i)]
-          != vectors[i][j]) ++nerr;
-      }
-    }
-    REQUIRE (nerr == 0);
   }
 }
 

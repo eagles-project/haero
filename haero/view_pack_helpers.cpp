@@ -51,18 +51,4 @@ view_2d_pack_type vectors_to_row_packed_2dview(const std::vector<std::vector<Rea
   return result;
 }
 
-view_2d_pack_type vectors_to_col_packed_2dview(const std::vector<std::vector<Real>>& vectors, const std::string& view_name) {
-  const int mm = vectors.size();
-  const int nn = vectors[0].size();
-  view_2d_pack_type result(view_name, mm, pack_info::num_packs(nn));
-  auto hm = Kokkos::create_mirror_view(result);
-  for (int i=0; i<mm; ++i) {
-    for (int j=0; j<nn; ++j) {
-      hm(pack_info::pack_idx(i), j)[pack_info::vec_idx(i)] = vectors[i][j];
-    }
-  }
-  return result;
-}
-
-
 } // namespace haero
