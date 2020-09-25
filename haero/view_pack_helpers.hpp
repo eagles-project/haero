@@ -117,7 +117,7 @@ typename std::enable_if<ekat::ScalarTraits<typename VT::value_type>::is_simd, st
 view1d_to_vector_impl(const VT& v) {
   auto hm = Kokkos::create_mirror_view(v);
   Kokkos::deep_copy(hm, v);
-  std::vector<Real> result(v.extent(0));
+  std::vector<Real> result(v.extent(0)*HAERO_PACK_SIZE);
   for (int i=0; i<v.extent(0); ++i) {
     result[i] = hm(pack_info::pack_idx(i))[pack_info::vec_idx(i)];
   }
