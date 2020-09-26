@@ -93,7 +93,6 @@ view_2d_pack_type vectors_to_row_packed_2dview(const std::vector<std::vector<Rea
 template <typename VT>
 typename std::enable_if<!ekat::ScalarTraits<typename VT::value_type>::is_simd, std::vector<Real>>::type
 view1d_to_vector_impl(const VT& v, const int& array_length) {
-  std::cout << "!simd impl\n";
   auto hm = Kokkos::create_mirror_view(v);
   Kokkos::deep_copy(hm, v);
   std::vector<Real> result(v.extent(0));
@@ -106,7 +105,6 @@ view1d_to_vector_impl(const VT& v, const int& array_length) {
 template <typename VT>
 typename std::enable_if<ekat::ScalarTraits<typename VT::value_type>::is_simd, std::vector<Real>>::type
 view1d_to_vector_impl(const VT& v, const int& array_length) {
-  std::cout << "simd impl\n";
   auto hm = Kokkos::create_mirror_view(v);
   Kokkos::deep_copy(hm, v);
   std::vector<Real> result(array_length);

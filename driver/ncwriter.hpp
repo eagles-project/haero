@@ -55,6 +55,12 @@ class NcWriter {
       add_time_dim();
     }
 
+    /** @brief adds a metadata attribute to the file
+
+      @param [in] att_pair
+    */
+    void add_file_attribute(const text_att_type& att_pair) const;
+
     /** @brief String with basic info about this NcWriter.
 
       @param [in] tab_level indent level for console output.
@@ -252,7 +258,7 @@ class NcWriter {
     */
     void add_time_value(const Real& t) const;
 
-    /** @brief write variable data from a std::vector to the nc file.
+    /** @brief write one column's data from a std::vector to the nc file.
 
       @throws
 
@@ -260,9 +266,10 @@ class NcWriter {
       @param [in] time_index time index associated with data
       @param [in] data
     */
-    void add_level_variable_data(const std::string& varname, const size_t& time_index, const std::vector<Real>& data) const;
+    void add_level_variable_data(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const std::vector<Real>& data) const;
 
-    /** @brief write variable data from a std::vector to the nc file.
+    /** @brief write one column's variable data from a std::vector to the nc file.
 
       @throws
 
@@ -270,7 +277,16 @@ class NcWriter {
       @param [in] time_index time index associated with data
       @param [in] data
     */
-    void add_interface_variable_data(const std::string& varname, const size_t& time_index, const std::vector<Real>& data) const;
+    void add_interface_variable_data(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const std::vector<Real>& data) const;
+
+    template <typename ViewType>
+    void add_variable_data(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const ViewType& v) const {
+        EKAT_REQUIRE(time_index < ntimesteps());
+        EKAT_REQUIRE(col_index < ncol());
+        return add_variable_impl<ViewType>(varname, time_index, col_index, v);
+        };
 
   protected:
     /** @brief `netcdf.h` defines numerous error codes (integers); this function
@@ -303,6 +319,16 @@ class NcWriter {
       This is required before any variables indexed by time step can be defined.
     */
     void add_time_dim();
+
+    template <typename VT>
+    typename std::enable_if<VT::Rank == 2, void>::type
+    add_variable_impl(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const VT& v) const;
+
+    template <typename VT>
+    typename std::enable_if<VT::Rank == 3, void>::type
+    add_variable_impl(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const VT& v) const;
 
     /// filename for .nc data
     std::string fname;

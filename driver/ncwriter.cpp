@@ -23,6 +23,12 @@ void NcWriter::open() {
     revision_str.size(), revision_str.c_str());
 }
 
+void NcWriter::add_file_attribute(const text_att_type& att_pair) const {
+  const int alen = att_pair.second.size();
+  int retval = nc_put_att_text(ncid, NC_GLOBAL, att_pair.first.c_str(), alen, att_pair.second.c_str());
+  CHECK_NCERR(retval);
+}
+
 void NcWriter::add_level_dims(const int& nlev) {
 
   EKAT_ASSERT(ncid != NC_EBADID); // file is open
@@ -109,7 +115,7 @@ void NcWriter::add_time_value(const Real& t) const {
 }
 
 void NcWriter::add_level_variable_data(const std::string& varname, const size_t& time_index,
-  const std::vector<Real>& data) const {
+  const size_t& col_index, const std::vector<Real>& data) const {
   const int varid = name_varid_map.at(varname);
   size_t nlev = 0;
   int retval = nc_inq_dimlen(ncid, level_dimid, &nlev);
@@ -119,8 +125,8 @@ void NcWriter::add_level_variable_data(const std::string& varname, const size_t&
   retval = nc_inq_dimlen(ncid, time_dimid, &nsteps);
   CHECK_NCERR(retval);
   EKAT_REQUIRE_MSG(time_index < nsteps, "add_level_variable_data called for out-of-bounds time index");
-  size_t start[2] = {time_index, 0};
-  size_t count[2] = {1, nlev};
+  size_t start[3] = {time_index, col_index, 0};
+  size_t count[3] = {1, 1, nlev};
 #ifdef HAERO_DOUBLE_PRECISION
   retval = nc_put_vara_double(ncid, varid, start, count, &data[0]);
 #else
@@ -130,7 +136,7 @@ void NcWriter::add_level_variable_data(const std::string& varname, const size_t&
 }
 
 void NcWriter::add_interface_variable_data(const std::string& varname, const size_t& time_index,
-  const std::vector<Real>& data) const {
+  const size_t& col_index, const std::vector<Real>& data) const {
   const int varid = name_varid_map.at(varname);
   size_t ninterfaces = 0;
   int retval = nc_inq_dimlen(ncid, interface_dimid, &ninterfaces);
@@ -139,8 +145,8 @@ void NcWriter::add_interface_variable_data(const std::string& varname, const siz
   size_t nsteps = 0;
   retval = nc_inq_dimlen(ncid, time_dimid, &nsteps);
   EKAT_REQUIRE_MSG(time_index < nsteps, "add_interface_variable_data called for out-of-bounds time index");
-  size_t start[2] = {time_index, 0};
-  size_t count[2] = {1, ninterfaces};
+  size_t start[3] = {time_index, col_index, 0};
+  size_t count[3] = {1, 1, ninterfaces};
 #ifdef HAERO_DOUBLE_PRECISION
   retval = nc_put_vara_double(ncid, varid, start, count, &data[0]);
 #else

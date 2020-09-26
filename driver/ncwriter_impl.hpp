@@ -131,5 +131,65 @@ NcWriter::define_modal_var(const std::string& name, const ekat::units::Units& un
   add_var_atts(varid, units, view);
   name_varid_map.emplace(name, varid);
 }
+
+template <typename VT> typename std::enable_if<VT::Rank == 2, void>::type
+NcWriter::add_variable_impl(const std::string& varname, const size_t& time_index,
+  const size_t& col_index, const VT& v) const {
+  const int varid = name_varid_map.at(varname);
+  int nvardims = 0;
+  int retval = nc_inq_varndims(ncid, varid, &nvardims);
+  CHECK_NCERR(retval);
+
+  EKAT_REQUIRE_MSG(nvardims == 3,
+    "add_variable_data (rank 2) error: unexpected number of dimensions.");
+
+  int dimids[3] = {NC_EBADID, NC_EBADID, NC_EBADID};
+  retval = nc_inq_vardimid(ncid, varid, &dimids[0]);
+  CHECK_NCERR(retval);
+
+  EKAT_REQUIRE(dimids[2] == level_dimid || dimids[2] == interface_dimid);
+
+  int array_length = (dimids[2] == level_dimid ? nlev() : ninterfaces());
+  const auto viewdata = view1d_to_vector(
+    Kokkos::subview(v, col_index, Kokkos::ALL), array_length);
+  if (array_length == nlev()) {
+    add_level_variable_data(varname, time_index, col_index, viewdata);
+  }
+  else {
+    add_interface_variable_data(varname, time_index, col_index, viewdata);
+  }
 }
+
+template <typename VT> typename std::enable_if<VT::Rank == 3, void>::type
+NcWriter::add_variable_impl(const std::string& varname, const size_t& time_index,
+  const size_t& col_index, const VT& v) const {
+  const int varid = name_varid_map.at(varname);
+  int nvardims = 0;
+  int retval = nc_inq_varndims(ncid, varid, &nvardims);
+  CHECK_NCERR(retval);
+
+  EKAT_REQUIRE_MSG(nvardims == 4,
+    "add_variable_data (rank 3) error: unexpected number of dimensions.");
+
+  int dimids[4] = {NC_EBADID, NC_EBADID, NC_EBADID, NC_EBADID};
+  retval = nc_inq_vardimid(ncid, varid, &dimids[0]);
+  CHECK_NCERR(retval);
+
+  EKAT_REQUIRE(dimids[2] == mode_dimid && dimids[3] == level_dimid);
+  const int array_length = nlev();
+  for (size_t i=0; i<nmodes(); ++i) {
+    const auto viewdata = view1d_to_vector(
+      Kokkos::subview(v, col_index, i, Kokkos::ALL), array_length);
+    const size_t start[4] = {time_index, col_index, i, 0};
+    const size_t count[4] = {1, 1, 1, static_cast<size_t>(array_length)};
+#ifdef HAERO_DOUBLE_PRECISION
+    retval = nc_put_vara_double(ncid, varid, start, count, &viewdata[0]);
+#else
+    retval = nc_put_vara_float(ncid, varid, start, count, &viewdata[0]);
+#endif
+    CHECK_NCERR(retval);
+  }
+}
+
+} // namespace haero
 #endif
