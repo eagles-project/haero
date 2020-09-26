@@ -1,11 +1,21 @@
-\section{Governing Equations}
-\labelsection{equations}
+\chapter{Aerosol Physics}
+\labelchapter{physics}
+
+In this chapter we describe the physics of aerosols as represented by Haero's
+modal aerosol model. First, we review the modal aerosol approximation, which
+defines the equations and quantites of interest and describes how various
+aerosol processes are parametrized. Then we describe in detail these various
+parametrized aerosol processes, their physical significance, and their
+mathematical represention. Along the way, we take care to highlight any
+physical, statistical, and mathematical assumptions, to make clear the
+circumstances under which Haero's aerosol model is valid.
+
+\section{The Modal Aerosol Approximation}
 
 Here we offer an extremely abbreviated ``fly-over'' of the evolution equations
-that quantify the dynamics of aerosols. Our discussion emphasizes the
-mathematical representation of aerosols. For a more detailed explanation of
-the underlying ideas, we refer the reader to~\cite{Whitby1991}
-and~\cite{Friedlander1977}.
+that quantify the dynamics of aerosols. Here, we emphasize the mathematical
+representation of aerosols. For a more detailed explanation of the underlying
+ideas, we refer the reader to~\cite{Whitby1991} and~\cite{Friedlander1977}.
 
 All quantities are in SI units unless specifically mentioned. To keep the
 discussion simple and focused, we avoid referencing specific coordinates.
@@ -51,7 +61,7 @@ Here we represent terms on the right hand side by
         including external and prescribed sources of $N_i$.
 \end{itemize}
 
-We describe the forms of these terms in \refsection{tendencies}. The bulk
+We describe the forms of these terms in \refsection{parametrizations}. The bulk
 velocity $\vec{v}$ is supplied by some dynamical atmospheric model.
 
 For larger $i$-mers ($i > 100$), the above description becomes inadequate, and
@@ -148,7 +158,6 @@ where we have introduced the geometric mean $D_{g,i}$ and the geometric standard
 deviation $\sigma_{g,i}$ of $D_p$ within mode $i$. 
 
 \end{assume}
-
 
 In general, these two parameters are determined for each mode via moment equations and corresponding time-evolution equations.
 Haero makes an additional simplifying assumption:
@@ -383,7 +392,6 @@ We assume that each particle is composed of several, potentially different, chem
   Quantitatively, the internal mixing assumption implies that the volume of each individual particle is the sum of the volumes of its various constituents; in this case, the species within the mode.  
 \end{assume}
 
-
 These assumption has several implications:
 \begin{enumerate}
   \item All species within mode $i$ share the same particle size distribution; as a corollary, they also share the same number concentration,
@@ -392,3 +400,6 @@ These assumption has several implications:
   \end{equation}
   for all species $q$ in mode $i$.
 \end{enumerate}
+
+\section{Important Aerosol Processes and Their Parametrizations}
+\labelsection{processes}

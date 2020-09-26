@@ -28,9 +28,8 @@ class YamlException: public std::exception {
 };
 
 /// This function reads simulation input from a YAML input file. If an error
-/// is encountered, this throws a YamlException.
-/// TODO: We could document the input spec here for clarity. For now, see
-/// TODO: tests/smoke_test.yml for an example.
+/// is encountered, this throws a YamlException. The input spec for the YAML
+/// file is documented in Haero's design document.
 /// \param [in] filename The name of the file to be read.
 /// \returns A vector containing one or more sets of simulation input read from
 ///          the file.

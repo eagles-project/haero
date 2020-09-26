@@ -1,5 +1,5 @@
-\section{Driver Input Specification}
-\labelsection{input}
+\chapter{Driver Input Specification}
+\labelappendix{driver_input}
 
 Below is the input specification for the Haero driver. The spec uses
 [YAML](https://yaml.org/). Compared to Fortran namelists, YAML offers
@@ -51,7 +51,7 @@ using simple concepts with human-readable notation.
 \subsubsection*{Modes}
 
 The \verb modes  section defines the particle size modes available to a Haero
-model. As we discussed in \refsection{modes_and_species}, a mode has metadata
+model. As we discussed in \refsection{modes}, a mode has metadata
 specifying its size range and its geometric standard deviation.
 
 \begin{verbatim}
@@ -93,7 +93,7 @@ Everything in a mode must be completely specified---there are no default values.
 \subsubsection*{Aerosol Species}
 
 Aerosol species populate each of the defined modes, and are defined in the
-\verb aerosols  section. As we discussed in \refsection{modes_and_species}, a
+\verb aerosols  section. As we discussed in \refsection{species}, a
 species is defined by its elemental composition and its electric charge (given
 in units of the electronic charge $|e|$).
 %The \verb species  section follows the same format as defined by
@@ -215,7 +215,7 @@ the \verb atmosphere  section. Supported models are:
                             and temperature defined by an ideal gas law
 \end{itemize}
 
-These models are described in detail in \refsection{contexts}. Here we simply
+These models are described in detail in \refchapter{driver}. Here we simply
 list valid fields for each model. These fields are specified alongside the
 \verb model  field in the \verb atmosphere  section. Tables~\ref{tab:uniform_atm}
 and~\ref{tab:hydrostatic_atm} list fields for the \verb uniform  and
@@ -261,12 +261,21 @@ and~\ref{tab:hydrostatic_atm} list fields for the \verb uniform  and
 
 The \verb initial_conditions section defines the initial state of an aerosol
 system. There are subsections for \verb aerosols , for \verb gases , and
-for \verb modes  themselves.
+for \verb modes  themselves. Alternatively all initial conditions can be read
+automatically from a properly-formatted NetCDF file with the following
+syntax:
 
-In the Haero driver, the initial state for an aerosol species is specified by
-its modal mass fractions, given for every mode occupied by that species. The
-nodal mass fraction of an aerosol species is the fraction of the total mass of
-the mode's particles occupied by that species.
+\begin{verbatim}
+initial_condition: my_ics_file.nc
+\end{verbatim}
+
+The rest of this section discusses how to specify initial conditions for each
+aerosol species, gas species, and mode.
+
+The initial state for an aerosol species is specified by its modal mass
+fractions, given for every mode occupied by that species. The nodal mass
+fraction of an aerosol species is the fraction of the total mass of the mode's
+particles occupied by that species.
 
 Meanwhile, the initial state for a gas is its mole fraction---the number of
 moles of gas per mole of air.

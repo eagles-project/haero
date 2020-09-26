@@ -2,6 +2,7 @@
 #include <cstdarg>
 #include <yaml-cpp/yaml.h>
 #include "read_yaml.hpp"
+#include "ncreader.hpp"
 
 namespace haero {
 
@@ -99,111 +100,290 @@ std::vector<Species> read_gas_species(const YAML::Node& root)
   return species;
 }
 
+// Read all initial conditions from a single NetCDF file.
+InitialConditions read_initial_conditions_from_file(const std::string& filename)
+{
+  InitialConditions ics;
+  NcReader reader(filename);
+  // Stuff happens here!
+  return ics;
+}
+
+// Read a single set of initial conditions from a YAML node into the given
+// array.
+void read_initial_conditions_from_node(const YAML::Node& node,
+                                       const std::string& name,
+                                       Real lower_bound,
+                                       Real upper_bound,
+                                       std::vector<Real>& ics)
+{
+  if (node.IsSequence()) { // column profile list data
+    if (node.size() != ics.size()) {
+      throw YamlException("Wrong initial data size %d in %s (should be %d).",
+                          node.size(), name.c_str(), ics.size());
+    }
+    for (size_t k = 0; k < node.size(); ++k) {
+      Real datum = node[k].as<Real>();
+      if (datum < lower_bound) {
+        throw YamlException("Invalid data found for %s (%g < %g)!",
+          name.c_str(), datum, lower_bound);
+      }
+      else if (datum > upper_bound) {
+        throw YamlException("Invalid data found for %s (%g > %g)!",
+          name.c_str(), datum, upper_bound);
+      }
+      ics[k] = datum;
+    }
+  }
+  else { // single value for an entire column
+    auto datum = node.as<Real>();
+    if (datum < lower_bound) {
+      throw YamlException("Invalid data found for %s (%g < %g)!",
+        name.c_str(), datum, lower_bound);
+    }
+    else if (datum > upper_bound) {
+      throw YamlException("Invalid data found for %s (%g > %g)!",
+        name.c_str(), datum, upper_bound);
+    }
+    std::fill(ics.begin(), ics.end(), datum);
+  }
+}
+
+GridParams read_grid_params(const YAML::Node& root)
+{
+  GridParams grid;
+  if (root["grid"] and root["grid"].IsMap())
+  {
+    auto g = root["grid"];
+    if (g["num_columns"])
+    {
+      auto num_columns = g["num_columns"].as<int>();
+      if (num_columns <= 0)
+        throw YamlException("Non-positive num_columns found in grid section!");
+      grid.num_columns = num_columns;
+    }
+    else
+      throw YamlException("No num_columns found in grid section!");
+    if (g["num_levels"])
+    {
+      auto num_levels = g["num_levels"].as<int>();
+      if (num_levels <= 0)
+        throw YamlException("Non-positive num_levels found in grid section!");
+      grid.num_levels = num_levels;
+    }
+    else
+      throw YamlException("No num_levels found in grid section!");
+  }
+  else
+    throw YamlException("No grid section was found!");
+  return grid;
+}
+
 InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
                                           const std::vector<Species>& aerosols,
                                           const std::vector<Species>& gases,
                                           const YAML::Node& root)
 {
-  // First read all the values directly into memory.
+  // Read grid parameters to properly size everything up.
+  auto grid_params = read_grid_params(root);
+  int num_levels = grid_params.num_levels;
+
+  // Now read all the values directly into memory.
   InitialConditions ics;
-  if (root["initial_conditions"] and root["initial_conditions"].IsMap())
-  {
+  if (root["initial_conditions"]) {
     auto n = root["initial_conditions"];
-    if (n["aerosols"] and n["aerosols"].IsMap())
-    {
-      auto a = n["aerosols"];
-      ics.aerosols.resize(modes.size());
+    if (root["initial_conditions"].IsMap()) { // if ICs are spelled out
 
-      // Iterate over modes, validating their names.
-      for (auto a_iter = a.begin(); a_iter != a.end(); ++a_iter)
+      // Aerosols
+      if (n["aerosols"] and n["aerosols"].IsMap())
       {
-        // Fetch the variable and its initial condition.
-        std::string mode_name = a_iter->first.as<std::string>();
-        auto mode_iter = std::find_if(modes.begin(), modes.end(),
-          [&](const Mode& m) { return m.name == mode_name; });
-        if (mode_iter == modes.end())
-          throw YamlException("Invalid mode specified in aerosol initial conditions: %s", mode_name.c_str());
+        auto a = n["aerosols"];
+        ics.aerosols.resize(modes.size());
 
-        // The mode is valid, so compute its index.
-        size_t mode_index = mode_iter - modes.begin();
-
-        // Is the mode entry a map?
-        if (a[mode_name] and a[mode_name].IsMap())
+        // Iterate over modes, validating their names.
+        for (auto a_iter = a.begin(); a_iter != a.end(); ++a_iter)
         {
-          auto m = a[mode_name];
+          // Fetch the variable and its initial condition.
+          std::string mode_name = a_iter->first.as<std::string>();
+          auto mode_iter = std::find_if(modes.begin(), modes.end(),
+              [&](const Mode& m) { return m.name == mode_name; });
+          if (mode_iter == modes.end())
+            throw YamlException("Invalid mode specified in aerosol initial conditions: %s", mode_name.c_str());
 
-          // Iterate over the aerosol ics for the mode. These ICs are mass
-          // fractions and must sum to 1.
-          Real mass_frac_sum = 0.0;
-          for (auto m_iter = m.begin(); m_iter != m.end(); ++m_iter)
+          // The mode is valid, so compute its index.
+          size_t mode_index = mode_iter - modes.begin();
+
+          // Is the mode entry a map?
+          if (a[mode_name] and a[mode_name].IsMap())
           {
-            auto aero_symbol = m_iter->first.as<std::string>();
-            auto aero_iter = std::find_if(aerosols.begin(), aerosols.end(),
-              [&](const Species& s) { return s.symbol == aero_symbol; });
-            if (aero_iter == aerosols.end())
-              throw YamlException("Invalid aerosol found in initial conditions: %s", aero_symbol.c_str());
-            auto aero_ic = m_iter->second.as<Real>();
-            if (aero_ic < 0.0)
-              throw YamlException("Negative aerosol mass fraction found!");
-            else if (aero_ic > 1.0)
-              throw YamlException("Invalid aerosol mass fraction (%g) for %s", aero_ic, aero_symbol.c_str());
-            ics.aerosols[mode_index][aero_symbol] = aero_ic;
-            mass_frac_sum += aero_ic;
+            auto m = a[mode_name];
+
+            // Iterate over the aerosol ics for the mode. These ICs are mass
+            // fractions and must sum to 1.
+            std::vector<Real> mass_frac_sum(num_levels);
+            for (auto m_iter = m.begin(); m_iter != m.end(); ++m_iter) {
+              auto aero_symbol = m_iter->first.as<std::string>();
+              auto aero_iter = std::find_if(aerosols.begin(), aerosols.end(),
+                  [&](const Species& s) { return s.symbol == aero_symbol; });
+              if (aero_iter == aerosols.end())
+                throw YamlException("Invalid aerosol found in initial conditions: %s", aero_symbol.c_str());
+
+              std::vector<Real>& aero_ics = ics.aerosols[mode_index][aero_symbol];
+              aero_ics.resize(num_levels);
+
+              auto aero = m_iter->second;
+              if (aero.IsMap()) { // data or NetCDF file
+                if (aero["data"]) { // refers to data section
+                  auto data_name = aero["data"].as<std::string>();
+                  if (root["data"] and root["data"].IsMap()) {
+                    auto data = root["data"];
+                    if (data[data_name] and data[data_name].IsSequence()) {
+                      read_initial_conditions_from_node(data, aero_symbol, 0.0, 1.0, aero_ics);
+                    } else {
+                      throw YamlException("Invalid data field for aerosol %s!", aero_symbol.c_str());
+                    }
+                  } else {
+                    throw YamlException("No data section present for aerosol %s!", aero_symbol.c_str());
+                  }
+                } else { // must be a NetCDF file?
+                  if (aero.size() > 1)
+                    throw YamlException("More than one data source given for aerosol %s!", aero_symbol.c_str());
+                  for (auto d_iter = aero.begin(); d_iter != aero.end(); ++d_iter) {
+                    auto filename = d_iter->first.as<std::string>();
+                    auto var_name = d_iter->second.as<std::string>();
+                    auto reader = NcReader(filename);
+                    reader.read_level_var(var_name, 0, aero_ics);
+                  }
+                }
+              } else {
+                read_initial_conditions_from_node(aero, aero_symbol, 0.0, 1.0,
+                                                  aero_ics);
+              }
+
+              // Accumulate the modal mass fraction at this level.
+              for (int k = 0; k < num_levels; ++k)
+                mass_frac_sum[k] += aero_ics[k];
+            }
+
+            // Verify that all mass fractions for this mode sum to 1.
+            for (int k = 0; k < num_levels; ++k) {
+              if (std::abs(mass_frac_sum[k] - 1.0) > 1e-12) // TODO: Use better machinery
+                throw YamlException("Aerosol mass fractions don't sum to 1 at level %d!", k);
+            }
           }
-          if (std::abs(mass_frac_sum - 1.0) > 1e-12) // TODO: Use better machinery
-            throw YamlException("Aerosol mass fractions don't sum to 1!");
+          else
+            throw YamlException("No aerosol initial conditions given for mode!");
         }
-        else
-          throw YamlException("No aerosol initial conditions given for mode!");
       }
-    }
-    else
-      throw YamlException("No aerosols subsection was found in initial_conditions!");
-    if (n["gases"] and n["gases"].IsMap())
-    {
-      auto g = n["gases"];
+      else
+        throw YamlException("No aerosols subsection was found in initial_conditions!");
 
-      // Iterate over the gas ICs (mole fractions).
-      for (auto g_iter = g.begin(); g_iter != g.end(); ++g_iter)
+      // Gases
+      if (n["gases"] and n["gases"].IsMap())
       {
-        auto gas_symbol = g_iter->first.as<std::string>();
-        auto gas_iter = std::find_if(gases.begin(), gases.end(),
+        auto g = n["gases"];
+
+        // Iterate over the gas ICs (mole fractions).
+        for (auto g_iter = g.begin(); g_iter != g.end(); ++g_iter)
+        {
+          auto gas_symbol = g_iter->first.as<std::string>();
+          auto gas_iter = std::find_if(gases.begin(), gases.end(),
               [&](const Species& s) { return s.symbol == gas_symbol; });
-        if (gas_iter == gases.end())
-          throw YamlException("Invalid gas found in initial conditions: %s", gas_symbol.c_str());
-        auto gas_ic = g_iter->second.as<Real>();
-        if (gas_ic < 0.0)
-          throw YamlException("Negative gas mole fraction found!");
-        else if (gas_ic > 1.0)
-          throw YamlException("Invalid gas mole fraction (%g) for %s", gas_ic, gas_symbol.c_str());
-        ics.gases[gas_symbol] = gas_ic;
-      }
-    }
-    else
-      throw YamlException("No gases subsection was found in initial_conditions!");
-    if (n["modes"] and n["modes"].IsMap())
-    {
-      auto m = n["modes"];
+          if (gas_iter == gases.end())
+            throw YamlException("Invalid gas found in initial conditions: %s", gas_symbol.c_str());
 
-      // Iterate over the mode ICs (number densities).
-      for (auto m_iter = m.begin(); m_iter != m.end(); ++m_iter)
-      {
-        auto mode_name = m_iter->first.as<std::string>();
-        auto mode_iter = std::find_if(modes.begin(), modes.end(),
-              [&](const Mode& mm) { return mm.name == mode_name; });
-        if (mode_iter == modes.end())
-          throw YamlException("Invalid mode found in initial conditions: %s", mode_name.c_str());
-        size_t mode_index = mode_iter - modes.begin();
-        auto mode_ic = m_iter->second.as<Real>();
-        if (mode_ic < 0.0)
-          throw YamlException("Negative mode number density found!");
-        if (mode_index >= ics.modes.size())
-          ics.modes.resize(mode_index+1);
-        ics.modes[mode_index] = mode_ic;
+          std::vector<Real>& gas_ics = ics.gases[gas_symbol];
+          gas_ics.resize(num_levels);
+
+          auto gas = g_iter->second;
+          if (gas.IsMap()) { // data or NetCDF file
+            if (gas["data"]) { // refers to data section
+              auto data_name = gas["data"].as<std::string>();
+              if (root["data"] and root["data"].IsMap()) {
+                auto data = root["data"];
+                if (data[data_name] and data[data_name].IsSequence()) {
+                  read_initial_conditions_from_node(data, gas_symbol, 0.0, 1.0, gas_ics);
+                } else {
+                  throw YamlException("Invalid data field for gas %s!", gas_symbol.c_str());
+                }
+              } else {
+                throw YamlException("No data section present for gas %s!", gas_symbol.c_str());
+              }
+            } else { // must be a NetCDF file?
+              if (gas.size() > 1)
+                throw YamlException("More than one data source given for gas %s!", gas_symbol.c_str());
+              for (auto d_iter = gas.begin(); d_iter != gas.end(); ++d_iter) {
+                auto filename = d_iter->first.as<std::string>();
+                auto var_name = d_iter->second.as<std::string>();
+                auto reader = NcReader(filename);
+                reader.read_level_var(var_name, 0, gas_ics);
+              }
+            }
+          } else {
+            read_initial_conditions_from_node(gas, gas_symbol, 0.0, 1.0, gas_ics);
+          }
+        }
       }
+      else
+        throw YamlException("No gases subsection was found in initial_conditions!");
+
+      // Modes
+      if (n["modes"] and n["modes"].IsMap())
+      {
+        auto m = n["modes"];
+
+        // Iterate over the mode ICs (number densities).
+        for (auto m_iter = m.begin(); m_iter != m.end(); ++m_iter)
+        {
+          auto mode_name = m_iter->first.as<std::string>();
+          auto mode_iter = std::find_if(modes.begin(), modes.end(),
+              [&](const Mode& mm) { return mm.name == mode_name; });
+          if (mode_iter == modes.end())
+            throw YamlException("Invalid mode found in initial conditions: %s", mode_name.c_str());
+
+          size_t mode_index = mode_iter - modes.begin();
+          if (mode_index >= ics.modes.size())
+            ics.modes.resize(mode_index+1);
+          std::vector<Real>& mode_ics = ics.modes[mode_index];
+          mode_ics.resize(num_levels);
+
+          auto mode = m[mode_name];
+          if (mode.IsMap()) { // data or NetCDF file
+            if (mode["data"]) { // refers to data section
+              auto data_name = mode["data"].as<std::string>();
+              if (root["data"] and root["data"].IsMap()) {
+                auto data = root["data"];
+                if (data[data_name] and data[data_name].IsSequence()) {
+                  read_initial_conditions_from_node(data, mode_name, 0.0, 1e200, mode_ics);
+                } else {
+                  throw YamlException("Invalid data field for mode %s!", mode_name.c_str());
+                }
+              } else {
+                throw YamlException("No data section present for mode %s!", mode_name.c_str());
+              }
+            } else { // must be a NetCDF file?
+              if (mode.size() > 1)
+                throw YamlException("More than one data source given for mode %s!", mode_name.c_str());
+              for (auto d_iter = mode.begin(); d_iter != mode.end(); ++d_iter) {
+                auto filename = d_iter->first.as<std::string>();
+                auto var_name = d_iter->second.as<std::string>();
+                auto reader = NcReader(filename);
+                reader.read_level_var(var_name, 0, mode_ics);
+              }
+            }
+          }
+          else {
+            read_initial_conditions_from_node(mode, mode_name, 0.0, 1e200, mode_ics);
+          }
+        }
+      }
+      else
+        throw YamlException("No modes subsection was found in initial_conditions!");
     }
-    else
-      throw YamlException("No modes subsection was found in initial_conditions!");
+    else { // ICs are all given in a single NetCDF file.
+      auto filename = n.as<std::string>();
+      ics = read_initial_conditions_from_file(filename);
+    }
   }
   else
     throw YamlException("No initial_conditions section was found!");
@@ -292,36 +472,6 @@ AtmosphericConditions read_atmosphere(const YAML::Node& root)
   else
     throw YamlException("No atmosphere section was found!");
   return atm;
-}
-
-GridParams read_grid_params(const YAML::Node& root)
-{
-  GridParams grid;
-  if (root["grid"] and root["grid"].IsMap())
-  {
-    auto g = root["grid"];
-    if (g["num_columns"])
-    {
-      auto num_columns = g["num_columns"].as<int>();
-      if (num_columns <= 0)
-        throw YamlException("Non-positive num_columns found in grid section!");
-      grid.num_columns = num_columns;
-    }
-    else
-      throw YamlException("No num_columns found in grid section!");
-    if (g["num_levels"])
-    {
-      auto num_levels = g["num_levels"].as<int>();
-      if (num_levels <= 0)
-        throw YamlException("Non-positive num_levels found in grid section!");
-      grid.num_levels = num_levels;
-    }
-    else
-      throw YamlException("No num_levels found in grid section!");
-  }
-  else
-    throw YamlException("No grid section was found!");
-  return grid;
 }
 
 SimpleChemistryModel read_chemistry_model(const YAML::Node& root)

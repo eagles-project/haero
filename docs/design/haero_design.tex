@@ -1,5 +1,5 @@
-%coagulation verification document
-\documentclass[a4paper, 11pt]{article}
+% Haero design document
+\documentclass{book}
 
 \usepackage{amsmath,amssymb,mathrsfs}
 \usepackage{graphicx}
@@ -48,12 +48,16 @@
 
 % Labeling and referencing
 \newcommand{\labeleq}[1]{\label{eq:#1}}
+\newcommand{\labelfig}[1]{\label{fig:#1}}
+\newcommand{\labelchapter}[1]{\label{ch:#1}}
 \newcommand{\labelsection}[1]{\label{sec:#1}}
 \newcommand{\labelsubsection}[1]{\label{subsec:#1}}
 \newcommand{\labelappendix}[1]{\label{app:#1}}
 \newcommand{\refeq}[1]{Equation~\ref{eq:#1}}
+\newcommand{\reffig}[1]{Figure~\ref{fig:#1}}
+\newcommand{\refchapter}[1]{Chapter~\ref{ch:#1}}
 \newcommand{\refsection}[1]{Section~\ref{sec:#1}}
-\newcommand{\refsubsection}[1]{Section~\ref{subsec:#1}}
+\newcommand{\refsubsection}[1]{Subsection~\ref{subsec:#1}}
 \newcommand{\refappendix}[1]{Appendix~\ref{app:#1}}
 
 % Annotating assumptions(!)
@@ -71,32 +75,29 @@
 \newcommand{\mw}[1]{M\dsub{w,#1}}
 % Norm and Absolute value
 	\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
-	\newcommand{\norm}[1]{\left\lVert#1\right\rVert}	
+	\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
 % derivatives
 	\newcommand{\partd}[2]{\frac{\partial #1 }{\partial #2}}
 	\newcommand{\partdn}[3]{\frac{\partial^#3 #1}{\partial #2 ^#3}}
 	\newcommand{\deriv}[2]{\frac{ d #1}{d #2}}
-	\newcommand{\derivn}[3]{\frac{d^#3 #1}{d #2^#3}}	
+	\newcommand{\derivn}[3]{\frac{d^#3 #1}{d #2^#3}}
 
 \begin{document}
-\title{Haero Aerosol Model Design Document}
-\author{
-EAGLES Computation Team\\
-}
+\title{Haero Aerosol Model Design}
+\author{EAGLES Computation Team}
 %\date
 \maketitle
 
 % \include puts page breaks after each section, while \input does not.
 \include{intro}
-\include{equations}
-\include{modes_and_species}
-\include{contexts}
-\include{tendencies}
+\include{physics}
+\include{library}
+\include{driver}
 
 \appendix
 \include{glossary}
 \include{api}
-\include{input}
+\include{driver_input}
 \listoftheorems[ignoreall, show={assume,appx}, onlynamed]
 \nocite{*}
 \bibliography{haero_design}
