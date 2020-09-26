@@ -70,8 +70,8 @@ TEST_CASE("ncwriter", "") {
     Note: No data is copied at this stage, so we don't have to worry about
     which memory space it's in.
   */
-  view_2d test_level_var("test_level_var", ncol, nlev);
-  view_2d test_interface_var("interface_var", ncol, nlev+1);
+  view_2d test_level_var("test_level_var", ncol, pack_info::num_packs(nlev));
+  view_2d test_interface_var("interface_var", ncol, pack_info::num_packs(nlev+1));
 
   ncf.define_level_var("level_test_var", ekat::units::Units::nondimensional(), test_level_var);
   REQUIRE (ncf.get_varid("level_test_var") != NC_EBADID);
@@ -82,7 +82,7 @@ TEST_CASE("ncwriter", "") {
   /**
     Create views for modal aerosols, and define corresponding netCDF variables.
   */
-  view_3d test_modal_var("plus_minus_modenum", ncol, nmodes, nlev);
+  view_3d test_modal_var("plus_minus_modenum", ncol, nmodes, pack_info::num_packs(nlev));
   ncf.define_modal_var("test_aerosol_from_view", ekat::units::pow(ekat::units::kg, -1), test_modal_var);
   /**
     Initialize a single column's worth of data on the host, copy to device
@@ -91,7 +91,7 @@ TEST_CASE("ncwriter", "") {
   auto hmodalc0 = Kokkos::create_mirror_view(modal_col0);
   for (int i = 0; i<nmodes; ++i ) {
     for (int j = 0; j<nlev; ++j) {
-      hmodalc0(i,j) = i * std::pow(-1,j);
+      hmodalc0(i, pack_info::pack_idx(j))[pack_info::vec_idx(j)] = i * std::pow(-1,j);
     }
   }
   Kokkos::deep_copy(modal_col0, hmodalc0);
@@ -122,8 +122,8 @@ TEST_CASE("ncwriter", "") {
   */
   auto hpm2 = Kokkos::create_mirror_view(test_interface_var);
   for (int i=0; i<nlev+1; ++i) {
-    hpm2(0,i) = 2*std::pow(-1,i);
-    hpm2(1,i) = 2*std::pow(-1,i);
+    hpm2(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 2*std::pow(-1,i);
+    hpm2(1,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 2*std::pow(-1,i);
   }
   Kokkos::deep_copy(test_interface_var, hpm2);
   for (int i=0; i<ncol; ++i) {

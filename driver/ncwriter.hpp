@@ -14,13 +14,6 @@
 
 namespace haero {
 
-/// Compile-time functions
-#define VIEW_REAL_TYPE_IS_SP \
-typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, float>::value,void>::type
-
-#define VIEW_REAL_TYPE_IS_DP \
-typename std::enable_if<std::is_same<typename ekat::ScalarTraits<typename ViewType::value_type>::scalar_type, double>::value,void>::type
-
 class NcWriter {
   public:
     /// key-value pairs for metadata attributes
@@ -152,45 +145,7 @@ class NcWriter {
     void define_interface_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
-    /** @brief defines a level midpoint variable from a view of that variable
-
-      Here, you're allowed to define a variable name that is different than the view label.
-      The view label will be recorded as an attribute of the variable.
-
-      @throws
-
-      @param [in] name (name of variable to write to file)
-      @param [in] units
-      @param [in] view
-    */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
-    define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
-
     /** @brief defines a modal aerosol variable on level midpoints.
-
-      @throws
-
-      @param [in] name
-      @param [in] units
-      @param [in] view
-    */
-    template <typename ViewType> VIEW_REAL_TYPE_IS_SP
-    define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
-
-    /** @brief defines a modal aerosol variable on level midpoints.
-
-      @throws
-
-      @param [in] name
-      @param [in] units
-      @param [in] view
-    */
-    template <typename ViewType> VIEW_REAL_TYPE_IS_DP
-    define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
-
-    /** @brief defines a modal aerosol variable on level midpoints.
-
-      @throws
 
       @param [in] name
       @param [in] units
@@ -210,8 +165,19 @@ class NcWriter {
       @param [in] units
       @param [in] view
     */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_DP
-    define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+    template <typename ViewType>
+    void define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+
+    /** @brief defines a modal aerosol variable on level midpoints.
+
+      @throws
+
+      @param [in] name
+      @param [in] units
+      @param [in] view
+    */
+    template <typename ViewType>
+    void define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
     /** @brief defines an interface variable  from a view of that variable
 
@@ -224,22 +190,8 @@ class NcWriter {
       @param [in] units
       @param [in] view
     */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
-    define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
-
-    /** @brief defines an interface variable  from a view of that variable
-
-      Here, you're allowed to define a variable name that is different than the view label.
-      The view label will be recorded as an attribute of the variable.
-
-      @throws
-
-      @param [in] name (name of variable to write to file)
-      @param [in] units
-      @param [in] view
-    */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_DP
-    define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+    template <typename ViewType>
+    void define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
     /** @brief defines the time variable
 
@@ -282,13 +234,10 @@ class NcWriter {
 
     template <typename ViewType>
     void add_variable_data(const std::string& varname, const size_t& time_index,
-      const size_t& col_index, const ViewType& v) const {
-        EKAT_REQUIRE(time_index < ntimesteps());
-        EKAT_REQUIRE(col_index < ncol());
-        return add_variable_impl<ViewType>(varname, time_index, col_index, v);
-        };
+      const size_t& col_index, const ViewType& v) const;
 
   protected:
+
     /** @brief `netcdf.h` defines numerous error codes (integers); this function
       decodes this integers and throws an exeption with (hopefully) a more helpful message.
 
@@ -320,16 +269,6 @@ class NcWriter {
     */
     void add_time_dim();
 
-    template <typename VT>
-    typename std::enable_if<VT::Rank == 2, void>::type
-    add_variable_impl(const std::string& varname, const size_t& time_index,
-      const size_t& col_index, const VT& v) const;
-
-    template <typename VT>
-    typename std::enable_if<VT::Rank == 3, void>::type
-    add_variable_impl(const std::string& varname, const size_t& time_index,
-      const size_t& col_index, const VT& v) const;
-
     /// filename for .nc data
     std::string fname;
     /// NetCDF file ID.  Assigned by `nc_create` during open()
@@ -348,6 +287,7 @@ class NcWriter {
     int ndims;
     /// key = variable name, value = variable id
     std::map<std::string, int> name_varid_map;
+
 };
 
 }
