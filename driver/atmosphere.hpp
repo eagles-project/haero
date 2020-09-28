@@ -3,7 +3,7 @@
 
 #include "haero/haero_config.hpp"
 #include "haero/physical_constants.hpp"
-#include "haero/floating_point_utils.hpp"
+#include "haero/floating_point.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 #include <cmath>
 
@@ -103,7 +103,7 @@ Real water_vapor_mixing_ratio(const Real& z, const Real& qv0, const Real& qv1) {
 KOKKOS_INLINE_FUNCTION
 Real hydrostatic_pressure_at_height(const Real& z, const Real& p0, const Real& T0, const Real& Gamma) {
   Real result = 0;
-  if (FloatingPointHelper<Real>::fp_zero(Gamma)) {
+  if (FloatingPoint<Real>::zero(Gamma)) {
     result = p0 * std::exp(-gravity_m_per_s2 * z / (r_gas_dry_air_joule_per_k_per_kg * T0));
   }
   else {
@@ -123,7 +123,7 @@ Real hydrostatic_pressure_at_height(const Real& z, const Real& p0, const Real& T
 KOKKOS_INLINE_FUNCTION
 Real height_at_pressure(const Real& p, const Real& p0, const Real& T0, const Real& Gamma) {
   Real result = 0;
-  if (FloatingPointHelper<Real>::fp_zero(Gamma)) {
+  if (FloatingPoint<Real>::zero(Gamma)) {
     result = -r_gas_dry_air_joule_per_k_per_kg * T0 * std::log(p/p0)/gravity_m_per_s2;
   }
   else {

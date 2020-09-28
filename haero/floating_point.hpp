@@ -1,7 +1,7 @@
 #ifndef HAERO_FLOATING_POINT_UTILS_HPP
 #define HAERO_FLOATING_POINT_UTILS_HPP
 
-#include "haero_config.hpp"
+#include "haero/haero_config.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 
@@ -42,7 +42,7 @@ struct FloatingPoint {
   KOKKOS_INLINE_FUNCTION
   static bool in_bounds(const T x, const T lower, const T upper, const T tol = zero_tol) {
     EKAT_ASSERT(tol>0);
-    return (x > (lower - tol) && x < (upper + tol));
+    return (x >= (lower - tol) && x <= (upper + tol));
   }
 
   /** multiplier for safe division by x, @f$ \frac{1}{x} \approx \frac{x}{x^2 + \epsilon_{tol}^2}@f$
