@@ -6,8 +6,8 @@ namespace haero {
 
 using fp_helper = FloatingPoint<Real>;
 
-AtmosphericConditions hydrostatic_conditions(const Real& p0, const Real& T0, const Real& Gamma,
-  const Real& qv0, const Real& qv1) {
+AtmosphericConditions hydrostatic_conditions(const Real p0, const Real T0, const Real Gamma,
+  const Real qv0, const Real qv1) {
 
   /// check valid input
   EKAT_REQUIRE_MSG(fp_helper::in_bounds(p0, 100000, p_std_pa),
@@ -21,6 +21,7 @@ AtmosphericConditions hydrostatic_conditions(const Real& p0, const Real& T0, con
   EKAT_REQUIRE_MSG(qv1 >= 0, "nonnegative decay rate required.");
 
   AtmosphericConditions result;
+  result.model = AtmosphericConditions::hydrostatic;
   result.params.hydrostatic.p0 = p0;
   result.params.hydrostatic.T0 = T0;
   result.params.hydrostatic.lapse_rate = Gamma;

@@ -36,14 +36,14 @@ TEST_CASE("atmosphere_conditions", "") {
     const auto conds = hydrostatic_conditions(p0, T0, Gamma, qv0, qv1);
 
     const Real z1000 = 1000;
-    const Real qv1000 = water_vapor_mixing_ratio(z1000, qv0, qv1);
-    const Real Tv1000 = virtual_temperature(z1000, T0, Gamma);
+    const Real qv1000 = water_vapor_mixing_ratio(z1000, conds);
+    const Real Tv1000 = virtual_temperature(z1000, conds);
     const Real T1000 = temperature_from_virtual_temperature(Tv1000, qv1000);
 
     REQUIRE(T1000 < Tv1000);
 
-    const Real p1000 = hydrostatic_pressure_at_height(z1000, p0, T0, Gamma);
-    const Real zp1000 = height_at_pressure(p1000, p0, T0, Gamma);
+    const Real p1000 = hydrostatic_pressure_at_height(z1000, conds);
+    const Real zp1000 = height_at_pressure(p1000, conds);
 
     std::cout << "qv1000 = " << qv1000 << "\n";
     std::cout << "Tv1000 = " << Tv1000 << "\n";
