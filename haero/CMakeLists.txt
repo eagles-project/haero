@@ -39,6 +39,7 @@ install(FILES haero.hpp
               view_pack_helpers.hpp
               species.hpp
               utils.hpp
+              floating_point_helper.hpp
         DESTINATION include/haero)
 
 # Library unit tests.
