@@ -4,6 +4,7 @@
 #include "haero/haero_config.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "haero/utils.hpp"
+#include "haero/mode.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -28,14 +29,18 @@ class NcWriter {
       All values initialized to invalid data; they will be set to valid data by other
       member functions.
 
-      Writes HAERO metadata (version, git hash) to file.
+      Data model:
+        - Non-aerosol data have rank = 3, with dimensions (time, column, level)
+        - Aerosol data have rank = 4, with dimensions (time, column, mode, level)
+
+      Writes HAERO metadata (version, git revision) to file.
 
       @throws
 
       @param [in] new_filename name of NetCDF data file to create.
     */
     NcWriter(const std::string& new_filename) : fname(new_filename),
-     ncid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
+     ncid(NC_EBADID), col_dimid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
      mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), name_varid_map() {
       const auto fext = get_filename_ext(new_filename);
       EKAT_REQUIRE_MSG(fext == ".nc",
@@ -44,11 +49,28 @@ class NcWriter {
       add_time_dim();
     }
 
+    /** @brief adds a metadata attribute to the file
+
+      @param [in] att_pair
+    */
+    void add_file_attribute(const text_att_type& att_pair) const;
+
     /** @brief String with basic info about this NcWriter.
 
       @param [in] tab_level indent level for console output.
     */
     std::string info_string(const int& tab_level=0) const;
+
+    /** @brief Adds a dimension for columns
+
+    */
+    void add_column_dim(const int& ncol=1);
+
+    int num_columns() const;
+    int num_levels() const;
+    inline int num_interfaces() const {return num_levels() + 1;}
+    int num_modes() const;
+    int num_timesteps() const;
 
     /** @brief Adds 2 dimensions to an existing NcWriter; one for level midpoints,
       one for level interfaces.
@@ -65,9 +87,9 @@ class NcWriter {
       @throws
 
       This is required before any variables indexed by mode can be defined.
-      @param [in] nmodes number of modes in a HAERO aerosol computation.
+      @param [in] modes
     */
-    void add_mode_dim(const int& nmodes);
+    void add_mode_dim(const std::vector<Mode>& modes);
 
 
     /** @brief Close the data file associated with this NcWriter.
@@ -121,6 +143,15 @@ class NcWriter {
     void define_interface_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
+    /** @brief defines a modal aerosol variable on level midpoints.
+
+      @param [in] name
+      @param [in] units
+      @param [in] atts
+    */
+    void define_modal_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts=std::vector<text_att_type>());
+
     /** @brief defines a level midpoint variable from a view of that variable
 
       Here, you're allowed to define a variable name that is different than the view label.
@@ -132,23 +163,19 @@ class NcWriter {
       @param [in] units
       @param [in] view
     */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
-    define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+    template <typename ViewType>
+    void define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
-
-    /** @brief defines a level midpoint variable from a view of that variable
-
-      Here, you're allowed to define a variable name that is different than the view label.
-      The view label will be recorded as an attribute of the variable.
+    /** @brief defines a modal aerosol variable on level midpoints.
 
       @throws
 
-      @param [in] name (name of variable to write to file)
+      @param [in] name
       @param [in] units
       @param [in] view
     */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_DP
-    define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+    template <typename ViewType>
+    void define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
     /** @brief defines an interface variable  from a view of that variable
 
@@ -161,22 +188,8 @@ class NcWriter {
       @param [in] units
       @param [in] view
     */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_SP
-    define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
-
-    /** @brief defines an interface variable  from a view of that variable
-
-      Here, you're allowed to define a variable name that is different than the view label.
-      The view label will be recorded as an attribute of the variable.
-
-      @throws
-
-      @param [in] name (name of variable to write to file)
-      @param [in] units
-      @param [in] view
-    */
-    template <typename ViewType=ColumnBase::view_1d> VIEW_REAL_TYPE_IS_DP
-    define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+    template <typename ViewType>
+    void define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
     /** @brief defines the time variable
 
@@ -195,7 +208,7 @@ class NcWriter {
     */
     void add_time_value(const Real& t) const;
 
-    /** @brief write variable data from a std::vector to the nc file.
+    /** @brief write one column's data from a std::vector to the nc file.
 
       @throws
 
@@ -203,9 +216,10 @@ class NcWriter {
       @param [in] time_index time index associated with data
       @param [in] data
     */
-    void add_level_variable_data(const std::string& varname, const size_t& time_index, const std::vector<Real>& data) const;
+    void add_level_variable_data(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const std::vector<Real>& data) const;
 
-    /** @brief write variable data from a std::vector to the nc file.
+    /** @brief write one column's variable data from a std::vector to the nc file.
 
       @throws
 
@@ -213,9 +227,15 @@ class NcWriter {
       @param [in] time_index time index associated with data
       @param [in] data
     */
-    void add_interface_variable_data(const std::string& varname, const size_t& time_index, const std::vector<Real>& data) const;
+    void add_interface_variable_data(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const std::vector<Real>& data) const;
+
+    template <typename ViewType>
+    void add_variable_data(const std::string& varname, const size_t& time_index,
+      const size_t& col_index, const ViewType& v) const;
 
   protected:
+
     /** @brief `netcdf.h` defines numerous error codes (integers); this function
       decodes this integers and throws an exeption with (hopefully) a more helpful message.
 
@@ -251,6 +271,8 @@ class NcWriter {
     std::string fname;
     /// NetCDF file ID.  Assigned by `nc_create` during open()
     int ncid;
+    /// Column dimension ID.  Assigned by add_column_dim()
+    int col_dimid;
     /// Level dimension ID. Assigned by add_level_dims.
     int level_dimid;
     /// Interface dimension ID.  Assigned by add_level_dims.
@@ -263,6 +285,7 @@ class NcWriter {
     int ndims;
     /// key = variable name, value = variable id
     std::map<std::string, int> name_varid_map;
+
 };
 
 }
