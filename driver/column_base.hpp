@@ -22,15 +22,19 @@ class ColumnBase {
 
   using pack_info = ekat::PackInfo<HAERO_PACK_SIZE>;
 
-  int nlev;
-  int npack_mid;
-  int npack_interface;
+  inline int num_levels() const {return m_num_levels;}
+  inline int num_packs_lev() const {return m_num_packs_lev;}
+  inline int num_packs_int() const {return m_num_packs_int;}
 
   ColumnBase() = delete;
 
   protected:
-    ColumnBase(const int& nl) : nlev(nl), npack_mid(pack_info::num_packs(nl)),
-      npack_interface(pack_info::num_packs(nl+1)) {};
+    ColumnBase(const int& nl) : m_num_levels(nl), m_num_packs_lev(pack_info::num_packs(nl)),
+      m_num_packs_int(pack_info::num_packs(nl+1)) {}
+
+  int m_num_levels;
+  int m_num_packs_lev;
+  int m_num_packs_int;
 };
 
 } // namespace haero

@@ -13,17 +13,19 @@ namespace haero {
 class DynColumn : public ColumnBase {
   public:
   DynColumn(const int& nl) : ColumnBase(nl),
-    w("w", npack_interface),
-    phi("phi", npack_interface),
-    dpids("dpids", npack_mid),
-    thetav("thetav", npack_mid),
-    p("p", npack_mid),
-    qv("qv", npack_mid),
-    pi("pi", npack_interface),
-    mu("mu", npack_interface),
-    exner("exner", npack_mid) {}
+    w("w", num_packs_int()),
+    phi("phi", num_packs_int()),
+    dpids("dpids", num_packs_lev()),
+    thetav("thetav", num_packs_lev()),
+    p("p", num_packs_lev()),
+    qv("qv", num_packs_lev()),
+    pi("pi", num_packs_lev()),
+    mu("mu", num_packs_int()),
+    exner("exner", num_packs_int()) {}
 
-  void initialize(const AtmosphericConditions& conds);
+  void init_from_interface_heights(const AtmosphericConditions& conds, const std::vector<Real>& z_vals);
+
+  void init_from_interface_pressures(const AtmosphericConditions& conds, const std::vector<Real>& p_vals);
 
   std::string info_string(const int& tab_lev=0) const ;
 

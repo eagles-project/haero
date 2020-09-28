@@ -70,6 +70,9 @@ static constexpr Real latent_heat_fusion_joule_per_kg = 3.337e5;
 /// Water vapor gas constant [J/K/kg]
 static constexpr Real r_gas_h2o_vapor_joule_per_k_per_kg = r_gas_joule_per_k_per_kmole / molec_weight_h2o_g_per_mole;
 
+/// Dry air gas constant [J/K/kg]
+static constexpr Real r_gas_dry_air_joule_per_k_per_kg = r_gas_joule_per_k_per_kmole / molec_weight_dry_air_g_per_mole;
+
 /// Specific heat (constant pressure) of dry air [J/kg/K]
 static constexpr Real cp_dry_air_joule_per_k_per_kg = 1.00464e3;
 
