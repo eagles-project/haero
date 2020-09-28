@@ -50,55 +50,70 @@ void NcWriter::add_column_dim(const int& ncol) {
   ++ndims;
 }
 
-void NcWriter::add_mode_dim(const int& nmodes, const std::vector<std::string>& mode_names,
-      const std::vector<std::pair<Real,Real>>& mode_min_maxs) {
-
+void NcWriter::add_mode_dim(const std::vector<Mode>& modes){
   EKAT_ASSERT(ncid != NC_EBADID); // file is open
   EKAT_REQUIRE_MSG(mode_dimid == NC_EBADID, "mode dimension already defined.");
-  EKAT_REQUIRE_MSG(nmodes == mode_names.size(), "Each mode must have a name");
-  EKAT_REQUIRE_MSG(nmodes == mode_min_maxs.size(), "Each mode must have a min and max diameter.");
 
+
+  /// Define mode dimension
+  const int nmodes = modes.size();
   int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
   CHECK_NCERR(retval);
-  ndims++;
+  ++ndims;
+
+  /// define coordinate variables for Mode dimension
   int mode_name_var_id = NC_EBADID;
   retval = nc_def_var(ncid, "mode_names", NC_STRING, 1, &mode_dimid, &mode_name_var_id);
   CHECK_NCERR(retval);
   name_varid_map.emplace("mode_names", mode_name_var_id);
-  for (int i=0; i<nmodes; ++i) {
-    const size_t idx = i;
-    auto ncstr = mode_names[i].c_str();
-    retval = nc_put_var1_string(ncid, mode_name_var_id, &idx, &ncstr);
-    CHECK_NCERR(retval);
-  }
+
   int mode_min_varid = NC_EBADID;
   int mode_max_varid = NC_EBADID;
+  int mode_std_dev_varid = NC_EBADID;
   retval = nc_def_var(ncid, "mode_minimum_diameter", NC_REAL_KIND, 1, &mode_dimid, &mode_min_varid);
   CHECK_NCERR(retval);
   name_varid_map.emplace("mode_minimum_diameter", mode_min_varid);
+
   retval = nc_def_var(ncid, "mode_maximum_diameter", NC_REAL_KIND, 1, &mode_dimid, &mode_max_varid);
   CHECK_NCERR(retval);
   name_varid_map.emplace("mode_maximum_diameter", mode_max_varid);
+
+  retval = nc_def_var(ncid, "mode_mean_std_deviation", NC_REAL_KIND, 1, &mode_dimid, &mode_std_dev_varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("mode_mean_std_deviation", mode_std_dev_varid);
+
+  /// define units for each variable
   const std::string meter_str = ekat::units::to_string(ekat::units::m);
   retval = nc_put_att_text(ncid, mode_min_varid, "units", meter_str.size(), meter_str.c_str());
   CHECK_NCERR(retval);
   retval = nc_put_att_text(ncid, mode_max_varid, "units", meter_str.size(), meter_str.c_str());
   CHECK_NCERR(retval);
+  const std::string nondim_str = ekat::units::to_string(ekat::units::Units::nondimensional());
+  retval = nc_put_att_text(ncid, mode_std_dev_varid, "units", nondim_str.size(), nondim_str.c_str());
+  CHECK_NCERR(retval);
+
+  /// add variable data
   for (int i=0; i<nmodes; ++i) {
     const size_t idx = i;
+    auto name = modes[i].name.c_str();
+    retval = nc_put_var1_string(ncid, mode_name_var_id, &idx, &name);
+    CHECK_NCERR(retval);
 #ifdef HAERO_DOUBLE_PRECISION
-    retval = nc_put_var1_double(ncid, mode_min_varid, &idx, &mode_min_maxs[i].first);
+    retval = nc_put_var1_double(ncid, mode_min_varid, &idx, &modes[i].min_diameter);
     CHECK_NCERR(retval);
-    retval = nc_put_var1_double(ncid, mode_max_varid, &idx, &mode_min_maxs[i].second);
+    retval = nc_put_var1_double(ncid, mode_max_varid, &idx, &modes[i].max_diameter);
     CHECK_NCERR(retval);
+    retval = nc_put_var1_double(ncid, mode_std_dev_varid, &idx, &modes[i].mean_std_dev);
 #else
-    retval = nc_put_var1_float (ncid, mode_min_varid, &idx, &mode_min_maxs[i].first);
+    retval = nc_put_var1_float(ncid, mode_min_varid, &idx, &modes[i].min_diameter);
     CHECK_NCERR(retval);
-    retval = nc_put_var1_float (ncid, mode_max_varid, &idx, &mode_min_maxs[i].second);
+    retval = nc_put_var1_float(ncid, mode_max_varid, &idx, &modes[i].max_diameter);
     CHECK_NCERR(retval);
+    retval = nc_put_var1_float(ncid, mode_std_dev_varid, &idx, &modes[i].mean_std_dev);
 #endif
   }
 }
+
 
 void NcWriter::add_time_value(const Real& t) const {
   EKAT_ASSERT(time_dimid != NC_EBADID);
@@ -244,28 +259,28 @@ void NcWriter::define_interface_var(const std::string& name, const ekat::units::
   name_varid_map.emplace(name, varid);
 }
 
-int NcWriter::ncol() const {
+int NcWriter::num_columns() const {
   size_t nc;
   int retval = nc_inq_dimlen(ncid, col_dimid, &nc);
   CHECK_NCERR(retval);
   return int(nc);
 }
 
-int NcWriter::nlev() const {
+int NcWriter::num_levels() const {
   size_t nl;
   int retval = nc_inq_dimlen(ncid, level_dimid, &nl);
   CHECK_NCERR(retval);
   return int(nl);
 }
 
-int NcWriter::nmodes() const {
+int NcWriter::num_modes() const {
   size_t nm;
   int retval = nc_inq_dimlen(ncid, mode_dimid, &nm);
   CHECK_NCERR(retval);
   return int(nm);
 }
 
-int NcWriter::ntimesteps() const {
+int NcWriter::num_timesteps() const {
   size_t ns;
   int retval = nc_inq_dimlen(ncid, time_dimid, &ns);
   CHECK_NCERR(retval);

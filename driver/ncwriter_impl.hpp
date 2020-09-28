@@ -39,10 +39,10 @@ void NcWriter::define_level_var(const std::string& name, const ekat::units::Unit
   EKAT_ASSERT(time_dimid != NC_EBADID && col_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
   if (ekat::ScalarTraits<typename ViewType::value_type>::is_simd) {
-    EKAT_REQUIRE(view.extent(0) == ncol() && view.extent(1) == pack_info::num_packs(nlev()));
+    EKAT_REQUIRE(view.extent(0) == num_columns() && view.extent(1) == pack_info::num_packs(num_levels()));
   }
   else {
-    EKAT_REQUIRE(view.extent(0) == ncol() && view.extent(1) == nlev());
+    EKAT_REQUIRE(view.extent(0) == num_columns() && view.extent(1) == num_levels());
   }
 
   int varid = NC_EBADID;
@@ -62,10 +62,10 @@ void NcWriter::define_interface_var(const std::string& name, const ekat::units::
   EKAT_ASSERT(time_dimid != NC_EBADID && col_dimid != NC_EBADID && interface_dimid != NC_EBADID);
 
   if (ekat::ScalarTraits<typename ViewType::value_type>::is_simd) {
-    EKAT_REQUIRE(view.extent(0) == ncol() && view.extent(1) == pack_info::num_packs(ninterfaces()));
+    EKAT_REQUIRE(view.extent(0) == num_columns() && view.extent(1) == pack_info::num_packs(num_interfaces()));
   }
   else {
-    EKAT_REQUIRE(view.extent(0) == ncol() && view.extent(1) == ninterfaces());
+    EKAT_REQUIRE(view.extent(0) == num_columns() && view.extent(1) == num_interfaces());
   }
 
   int varid = NC_EBADID;
@@ -85,10 +85,10 @@ void NcWriter::define_modal_var(const std::string& name, const ekat::units::Unit
               mode_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
   if (ekat::ScalarTraits<typename ViewType::value_type>::is_simd) {
-    EKAT_REQUIRE(view.extent(0) == ncol() && view.extent(1) == nmodes() && view.extent(2) == pack_info::num_packs(nlev()));
+    EKAT_REQUIRE(view.extent(0) == num_columns() && view.extent(1) == num_modes() && view.extent(2) == pack_info::num_packs(num_levels()));
   }
   else {
-    EKAT_REQUIRE(view.extent(0) == ncol() && view.extent(1) == nmodes() && view.extent(2) == nlev());
+    EKAT_REQUIRE(view.extent(0) == num_columns() && view.extent(1) == num_modes() && view.extent(2) == num_levels());
   }
 
   int varid = NC_EBADID;
@@ -104,13 +104,13 @@ template <typename ViewType>
 void NcWriter::add_variable_data(const std::string& varname, const size_t& time_idx,
   const size_t& col_idx, const ViewType& view) const {
 
-  EKAT_REQUIRE(time_idx < ntimesteps());
-  EKAT_REQUIRE(col_idx < ncol());
+  EKAT_REQUIRE(time_idx < num_timesteps());
+  EKAT_REQUIRE(col_idx < num_columns());
 
   return NcWriterImpl<ViewType::Rank,
     ekat::ScalarTraits<typename ViewType::value_type>::is_simd>::add_variable_data(
-    ncid, name_varid_map.at(varname), col_dimid, mode_dimid, nmodes(),
-    level_dimid, interface_dimid, nlev(), varname, time_idx, col_idx, view);
+    ncid, name_varid_map.at(varname), col_dimid, mode_dimid, num_modes(),
+    level_dimid, interface_dimid, num_levels(), varname, time_idx, col_idx, view);
 }
 
 template <>

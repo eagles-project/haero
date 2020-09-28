@@ -1,4 +1,5 @@
 #include "haero/haero_config.hpp"
+#include "haero/mode.hpp"
 #include "driver/ncwriter.hpp"
 #include "driver/ncwriter_impl.hpp"
 #include "ekat/ekat_pack.hpp"
@@ -53,7 +54,13 @@ TEST_CASE("ncwriter", "") {
   diameter_minmax.push_back(std::make_pair<Real>(30E-6, 300E-6));
   diameter_minmax.push_back(std::make_pair<Real>(20E-6, 200E-6));
   diameter_minmax.push_back(std::make_pair<Real>(200E-6, 4000E-6));
-  ncf.add_mode_dim(nmodes, mode_names, diameter_minmax);
+  const std::vector<Real> mode_std_devs = {1.6, 1.8, 1.8, 1.6};
+  std::vector<Mode> modes;
+  for (int i=0; i<nmodes; ++i) {
+    modes.push_back(Mode(mode_names[i],
+      diameter_minmax[i].first, diameter_minmax[i].second, mode_std_devs[i]));
+  }
+  ncf.add_mode_dim(modes);
   REQUIRE (ncf.get_ndims() == 5);
 
   /**

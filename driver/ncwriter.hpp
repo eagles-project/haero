@@ -4,6 +4,7 @@
 #include "haero/haero_config.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "haero/utils.hpp"
+#include "haero/mode.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -65,11 +66,11 @@ class NcWriter {
     */
     void add_column_dim(const int& ncol=1);
 
-    int ncol() const;
-    int nlev() const;
-    inline int ninterfaces() const {return nlev() + 1;}
-    int nmodes() const;
-    int ntimesteps() const;
+    int num_columns() const;
+    int num_levels() const;
+    inline int num_interfaces() const {return num_levels() + 1;}
+    int num_modes() const;
+    int num_timesteps() const;
 
     /** @brief Adds 2 dimensions to an existing NcWriter; one for level midpoints,
       one for level interfaces.
@@ -86,12 +87,9 @@ class NcWriter {
       @throws
 
       This is required before any variables indexed by mode can be defined.
-      @param [in] nmodes number of modes in a HAERO aerosol computation.
-      @param [in] mode names (e.g., Aitken, accumulation, etc.)
-      @param [in] mode sizes in min/max pairs
+      @param [in] modes
     */
-    void add_mode_dim(const int& nmodes, const std::vector<std::string>& mode_names,
-      const std::vector<std::pair<Real,Real>>& mode_max_mins);
+    void add_mode_dim(const std::vector<Mode>& modes);
 
 
     /** @brief Close the data file associated with this NcWriter.
