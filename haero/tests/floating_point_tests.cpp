@@ -1,4 +1,4 @@
-#include "haero/floating_point_helper.hpp"
+#include "haero/floating_point.hpp"
 #include "catch2/catch.hpp"
 #include <iostream>
 
@@ -11,8 +11,7 @@ TEST_CASE("FloatingPointHelper-sp", "single precision") {
   const float lower = 1;
   const float upper = 2;
 
-  using fp_helper = FloatingPointHelper<float>;
-  typedef FloatingPointHelper<float> fp_helper;
+  using fp_helper = FloatingPoint<float>;
 
   REQUIRE_FALSE(fp_helper::zero(test_tol));
   REQUIRE(fp_helper::zero(0.5*test_tol, test_tol));
@@ -29,7 +28,7 @@ TEST_CASE("FloatingPointHelper-sp", "single precision") {
 }
 
 TEST_CASE("FloatingPointHelper-dp","double precision") {
-  using fp_helper = FloatingPointHelper<double>;
+  using fp_helper = FloatingPoint<double>;
 
   const double test_tol = 1.0E-4;
 

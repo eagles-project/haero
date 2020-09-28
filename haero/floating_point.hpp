@@ -12,7 +12,7 @@ namespace haero {
 
 */
 template <typename T=Real>
-struct FloatingPointHelper {
+struct FloatingPoint {
   static_assert(std::is_floating_point<T>::value, "floating point type required.");
 
   /// Default tolerance for floating point comparisons
