@@ -69,7 +69,7 @@ In the context of a single column, the notion of ``terrain'' has no meaning and 
   s(z) = \frac{z_{top}-z}{z_{top}},
 \end{equation}
 so that $s=0$ at the model top and increases monotonically to $s=1$ at the surface.
-In most settings (include the HOMME $\theta$-model), it is unnecessary to explicitly define $s$; here we do it for convenience only.
+In most settings (including the HOMME $\theta$-model), it is unnecessary to explicitly define $s$; here we do it for convenience only.
 The discrete vertical operators from \cite[sec.~4]{Taylor2020} are,
 \begin{subequations}
   \begin{align}
@@ -88,15 +88,18 @@ The discrete vertical operators from \cite[sec.~4]{Taylor2020} are,
 
 \subsubsection{Initialization}
 
-The initial water vapor profile can be characterized by exponential decay with height \cite{Hashimoto2005,Palchetti2008}; here it is defined by two parameters, $q_v^{(0)}$ and $q_v^{(1)}$, the mixing ratio value at $z=0$ and its decay rate with height, respectively;
-\begin{equation}\label{eq:qv_profile}
-  q_v(z) = q_v^{(0)}e^{-q_v^{(1)}z}.
-\end{equation}
-To conform with the HOMME-NH dynamical core \cite{Taylor2020}, we use  virtual temperature $T_v$, which may be approximated by \cite[eqn.~(2.1)]{KlempWilhelmson1978},
+To conform with the HOMME-NH dynamical core \cite{Taylor2020}, we use  virtual temperature $T_v$, instead of temperature $T$.
+Virtual temperature may be approximated by \cite[eqn.~(2.1)]{KlempWilhelmson1978},
 \begin{equation}\label{eq:virtual_temperature}
   T_v(z) = T(z)(1+\alpha_q q_v(z)),
 \end{equation}
 where $q_v$ is the water vapor mass mixing ratio and the constant $\alpha_q = 0.61$ K.
+
+The initial water vapor profile can be characterized by exponential decay with height \cite{Hashimoto2005,Palchetti2008}; here it is defined by two parameters, $q_v^{(0)}$ and $q_v^{(1)}$, the mixing ratio value at $z=0$ and its decay rate with height, respectively;
+\begin{equation}\label{eq:qv_profile}
+  q_v(z) = q_v^{(0)}e^{-q_v^{(1)}z}.
+\end{equation}
+
 For simplicity we have assumed the equation of state implied by \eqref{eq:virtual_temperature}, from \cite{KlempWilhelmson1978}, which allows us to use the gas constant for dry air.  
    HOMME-NH uses a slightly different approximation; see \cite[sec.~2.3]{Taylor2020}.
    
@@ -148,9 +151,9 @@ Column data are initialized as follows:
       \left(\partd{\pi}{s}\right)_i = -\frac{g(\pi_{i+1/2}-\pi_{i-1/2})}{z_{top}(\phi_{i+1/2}-\phi_{i-1/2})},
     \end{equation}
     where we have used $\partial s / \partial z = - 1 /z_{top}$ from \eqref{eq:s_coord}.
-    \begin{rem}
-    This is an example of the $s$-coordinate cancelling, which is why most models don't explicitly define it.
-    \end{rem}
+%    \begin{rem}
+%    This is an example of the $s$-coordinate cancelling, which is why most models don't explicitly define it.
+%    \end{rem}
   \item A water vapor profile is defined, by choosing constant values for $q_v^{(0)}$ and $q_v^{(1)}$ in \eqref{eq:qv_profile}, and its values are stored at level midpoints.
   \item Virtual potential temperature $\theta_v = T_v(p_0/p)^{\kappa}$, with the dry-air constant $\kappa = R_{dry}/c_p$, is defined at level midpoints.
   \item The initial velocity profile is defined, usually $w=0$.  
@@ -179,8 +182,8 @@ Equations \eqref{eq:theta_v} and \eqref{eq:q_v} become,
 \end{align}
 and new equations are added for $q_c$ and $q_r$:
 \begin{align}
-  \deriv{q_c}{t} &= -E_1 - (P_1 + P_2),\\
-  \deriv{q_r}{t} &= -\frac{1}{\rho}\partd{}{z}(\rho q_r w_r) - E_2 + (P_1 + P_2),
+  \deriv{q_c}{t} &= -E_1 - (P_1 + P_2),\label{eq:cloud_water} \\
+  \deriv{q_r}{t} &= -\frac{1}{\rho}\partd{}{z}(\rho q_r w_r) - E_2 + (P_1 + P_2), \label{eq:rain_water}
 \end{align}
 where $P_1:q_c+q_c\mapsto q_r$ and $P_2:q_c+q_r\mapsto q_r$ represent rain production from autoconversion and accretion, respectively, and $w_r$ is the velocity of rain water. Each is discussed below in greater detail.
 
@@ -193,15 +196,7 @@ and the saturation mixing ratio is given by the Tetens equation,
   q_{vs}(T) = \frac{380.042}{p}\exp\left(\frac{15}{2}\log(10) \frac{T-273}{T-36}\right).
 \end{equation}
 
-% Evaporation rate is modeled as a linear function of the difference between the vapor mixing ratio $q_v$ and the saturation mixing ratio $q_{vs}$.
-%Temperature $T$ and potential temperature are recovered from $\theta_v$ at level midpoints as
-%\begin{equation}\label{eq:temperature}
-%  T = \frac{\theta_v}{1+\alpha_v q_v} \left(\frac{p_0}{p}\right)^{-\kappa}, \quad \theta = \frac{\theta_v}{1+\alpha_vq_v},
-%\end{equation}
-%and the saturation mixing ratio is given by the Tetens equation,
-%\begin{equation}
-%  q_{vs}(T) = \frac{380.042}{p}\exp\left(\frac{15}{2}\log(10) \frac{T-273}{T-36}\right).
-%\end{equation}
+  
 \paragraph{Evaporation and condensation.}
 The evaporation/condensation rate is parameterized by \cite[eqn.~(5)]{Srivastava1967}
 \begin{equation}\label{eq:evap_param}
@@ -230,132 +225,18 @@ Here, ``sufficient'' is defined as greater than a constant critical value, $q_c^
 \end{equation}
 where $\alpha_{auto}$ [1/s] is the inverse of the autoconversion time scale and $q_c^{(crit)}$ is a user-defined parameter.
 
+\paragraph{Accretion.} Accretion describes the capture of cloud water droplets by rainwater droplets.
+As in \cite{SoongOgura1973,KlempWilhelmson1978}, we use
+\begin{equation}
+  P_2 = \alpha_{accr}q_cq_r^{7/8},
+\end{equation}
+with $\alpha_{accr} = 2.2$.
 
-% First the equations are evolved assuming that $E_1 = 0$; denote these values $\theta_v^*$, $p^*$, $q_v^*$, and $q_c^*$.
-%Then, adjustments are made as follows.
-%
-%We denote by $T^*$ the value of the unadjusted state's temperature, \eqref{eq:temperature} at $\theta_v=\theta_v^*$; similarly, $q_{vs}^* = q_{vs}(T^*)$ is the saturation mixing ratio corresponding to the unadjusted state.
-%
-%\begin{itemize}
-%  \item Case 1: Saturated air, $q_v=q_{vs}$.  
-%    This is an equilibriums state where the evaporation and condensation rates are equal and opposite, $E_1 = E_2 = 0$.
-%    Hence, $\theta_v = \theta_v^*$, $p=p^*$, $q_v=q_v^*$ and $q_c=q_c^*$.
-%  \item Case 2: Supersaturated air, $q_v > q_{vs}$; water vapor condenses into cloud water and $E_2 = 0$.  
-%      We follow Klemp \& Wilhelmson's \cite[eqns.~(3.8)-(3.9)]{KlempWilhelmson1978} summary of \cite{SoongOgura1973}.
-%      We define the quantity,
-%      \begin{equation}
-%        \beta_E = q_{vs}^*\left(1 + \frac{4093 \alpha_E\Pi}{(T^*-36)^2}\right).
-%      \end{equation} 
-%      Then we compute the updated values,
-%      \begin{equation}
-%        \theta^{n+1} = \theta^* + \frac{L}{c_p\Pi}\left(1 + \frac{L}{c_p\Pi}\beta_E\right)^{-1}q_v^*,
-%      \end{equation}
-%      \begin{equation}
-%        q_v^{n+1} = \frac{c_p\Pi}{L}(\theta^*-\theta^{n+1}) + q_v^*.
-%      \end{equation}
-%      
-%      
-%  \item Case 3: Unsaturated air, $q_v < q_{vs}$; evaporation.
-%    \begin{itemize}
-%      \item Case 3a: $q_c>0$.
-%      \item Case 3b: $q_c=0$.
-%    \end{itemize}
-%\end{itemize}
-
-
-
-%For our purposes, it suffices to approximate $\theta_v = \theta(1+0.61q_v)$ as in \cite[eqn.~(2.1)]{KlempWilhelmson1978}, where the potential temperature $\theta = T(p_0/p)^{\kappa}$, with the dry-air constant $\kappa = R_{dry}/c_p$.
-%
-%Srivastava \cite{Srivastava1967} present a simple model of a one-dimensional cumulus cloud based on warm rain microphysics.
-%\pbc{Rogers \& Yau provide a better summary; it's 1D Euler plus Kessler microphysics.}
-%Moisture is represented by $q_v,~q_c,$ and $q_r$, the mixing ratios of water vapor, cloud water droplets, and rain water droplets, respectively.
-%The model was developed to show the effects of momentum transfer from falling rain on the cloud's vertical velocity; here, we adapt to test various aerosol-related parameterizations.
-%The column is initially defined by statically unstable hydrostatic balance, with lapse rate $\Gamma = 0.0068$ K/m.
-%We assume a constant background state with pressure $\overline{p}(z)$, density $\overline{\rho}(z)$ and temperature defined by $\overline{T}(z) = T_0 - \Gamma z$ and hydrostatic balance.
-%The perturbation temperature $T' = T - \overline{T}(z)$.
-%The model equations are:
-%\begin{subequations}
-%  \begin{align}
-%    \partd{w}{t} + w\partd{w}{z} & = g\left( \frac{T'}{T} - (q_c + q_r)\right),\\
-%    \partd{q_v}{t} + w\partd{q_v}{z} &= E_1 + E_2, \\
-%    \partd{q_c}{t} + w\partd{q_c}{z} &= E_1 - P, \\
-%    \partd{q_r}{t} + w\partd{q_r}{z} &= - q_r\partd{w_r}{z} - w_r\partd{q_r}{z} - \frac{q_r w_r}{\overline{\rho}}\partdn{\overline{p}}{z}{2}  - E_2 + P,\\
-%    \partd{T}{t} + w\partd{T}{z} &= -w\Gamma - \frac{L}{c_p}(E_1+E_2),
-%  \end{align}
-%\end{subequations}
-%where $E_1$ describes evaporation and condensation of vapor-to-cloud water, $P$ is the rain water production term that accounts for autoconversion and accretion, $w_r \le 0$ is the rain fall velocity, $L$ is the latent heat of evaporation, and $c_p$ is the specific heat (at constant pressure) of air.
-%
-%The evaporation rate depends on the saturation of the air,
-%\begin{equation}
-%  E_1 = a_0\left(\frac{q_v}{q_{vsat}} - 1\right),
-%\end{equation}
-%where $q_{vsat}$ is the saturation mixing ratio given by the Tetens equation,
-%\begin{equation}
-%  q_{vsat}(T) = \frac{380.042}{\overline{p}}\exp\left(17.27 \frac{T-273}{T-36}\right).
-%\end{equation}
-%
-%Cloud water in \cite{Srivastava1967} is generated simply,
-%\begin{equation*}
-%  P_c = -w\partd{q_v}{z};
-%\end{equation*}
-%we add terms to represent cloud water droplet activation via condensation nuclei,
-%\begin{equation}\label{eq:qc_prod}
-%  P_c = -w\partd{q_v}{z} + A(T, \Delta T, q_v,q_{aer}),
-%\end{equation}
-%where $q_{aer}$ is the mixing ratio of aerosol cloud condensation nuclei.
-%\todo{Need some help with \eqref{eq:qc_prod}.}
-%Rain production is decomposed into three subprocesses, $P_r=P_1 + P_2 + P_3$.
-%The first subprocess represents evaporation in convective downdrafts,
-%\begin{equation}
-%  P_1 = -\mu(w) w \partd{q_v}{z}, \quad \mu(w) = \begin{cases} 1 & w<0, \\ 0 & w >= 0\end{cases}.
-%\end{equation}
-%The second subprocess represents cloud water conversion,
-%\begin{equation}
-%  P_2 = \begin{cases} 0 & q_c \le  q_c^{(crit)} \\ \alpha(q_c - q_c^{(crit)}) & q_c >  q_c^{(crit)}\end{cases},
-%\end{equation}
-%where $\alpha$ is a constant parameter representing the conversion time scale and $q_c^{(crit)}$ is an additional parameter, representing the critical value of cloud water, above which cloud water is converted to rain water.
-%\pbc{Perhaps we should consider smoothing out these piecewise functions?}
-%The last subprocess represents accretion, the capture of cloud drops by rain drops,
-%\pbc{I assume that conversion implies $C: q_c,q_c \mapsto q_r$, whereas accretion implies $Ac:q_c,q_r\mapsto q_r$.}
-%The model assumes that rainwater fall speed is proportional to droplet size, $W_r(D) = a D^b$, where $a$ and $b$ are constants, and that rain water droplet sizes are governed by the distribution function $N(D) = N_0e^{-\lambda} D$, where $\lambda = 3.67/D_0$ is a variable parameter related to $D_0$, the median diameter of rainwater droplets \cite[eqn.~(18)]{Srivastava1967}.
-%With these assumptions, the expression for accretion is
-%\begin{equation}
-%  P_3 = \frac{\pi N_0 a \rho \Gamma(3+b) q_r}{4\lambda^{3+b}},
-%\end{equation}
-%where $\Gamma$ represents the Gamma Function (not a lapse rate).
-%The same assumptions give the expression for rain fall velocity,
-%\begin{equation}
-%  w_r = \frac{a\Gamma(4+b)}{6\lambda^b}.
-%\end{equation}
-%
-%Initial conditions for $w$ and $q_c$ are defined by solving the above equations with $q_r=0$, and $w(z_c)=q_c(z_c) = 0$, $T(z_c) = 277$ K, where $z_c$ is the height of the cloud base.
-%\todo{Have to figure these out ourselves. Using standard thermodynamics and hydrostatic balance.}
-%\pbc{I believe cloud base is the first point above $z=0$ where $q_c>0$.}
-%The bottom boundary condition is $w(0) = 0$.
-%At $z_{top} = 9.5$ km, if $w(z_top)>0$ then the equations are solved without regard for the boundary; if $w(z_top)<=0$ the other variables are held constant.
-%
-%%------------------- table: cloud model parameters ---------------
-%\begin{table}[htbp]
-%\centering
-%\caption{Parameters of the 1D cloud model.}
-%\label{tab:cloud_model_parameters}
-%\begin{tabular}{ccccc}
-%  \toprule
-%  Parameter      &  value 1
-%                 &  value 2
-%                 & value 3\\
-%  \midrule
-%  $a$ 	 &  1500 cm$^{1/2}$/s  &  --  & -- \\
-%  $b$    &  0.5                &  --  & --  \\
-%  $\lambda$  &  1.0            &  --  & --  \\
-%  $N_0$ &  80 (gm cm)$^{-1}$   &  --  & --  \\
-%  $\alpha$ & 2.0E-5 s$^{-1}$ (14 hr) & 4.0E-5 s$^{-1}$ (7 hr) & 4.0E-5 s$^{-1}$ (4 min) \\
-%  $q_c^{(crit)}$ & 0 & 3 gm/kg & 3 gm/kg \\
-%  \bottomrule
-%\end{tabular}
-%\end{table}
-%%-------------
-
-
+\paragraph{Rainwater flux.} Rainwater by definition falls relative to the air; its vertical flux is described by the first term on the RHS of \eqref{eq:rain_water}.
+  We use \cite[eqns.~(14),(15)]{SoongOgura1973} to approximate $w_r$,
+  \begin{equation}
+    w_r = 36.34 (\rho q_r)^{0.1364} ~\text{m/s}.
+  \end{equation}
+  
 
 \subsection{Embedded parameterization}
