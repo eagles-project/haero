@@ -2,6 +2,7 @@
 #define HAERO_DYN_COLUMN_HPP
 
 #include "haero/haero_config.hpp"
+#include "driver/ncwriter.hpp"
 #include "column_base.hpp"
 #include "atmosphere.hpp"
 #include <map>
@@ -21,14 +22,14 @@ class DynColumn : public ColumnBase {
     phi("geopotential", ncol, num_packs_int()),
     pi("hydrostatic_presssure", ncol, num_packs_int()),
     mu("mu", ncol, num_packs_int()),
-    dpds("dpds", ncol, num_packs_int()),
+    dpds("dp/ds", ncol, num_packs_int()),
     /// midpoint variables
-    dpids("pseudodensity", ncol, num_packs_lev()),
+    dpids("pseudodensity_dpi/ds", ncol, num_packs_lev()),
     thetav("virtual_potential_temperature", ncol, num_packs_lev()),
     p("pressure", ncol, num_packs_lev()),
     qv("water_vapor_mixing_ratio", ncol, num_packs_lev()),
     exner("exner", ncol, num_packs_lev()),
-    dphids("dphids", ncol, num_packs_lev()),
+    dphids("dphi/ds", ncol, num_packs_lev()),
     /// coordinate variables
     interface_scoord("interface_scoord", num_packs_int()),
     interface_ds("inteface_ds", num_packs_int()),
@@ -54,7 +55,11 @@ class DynColumn : public ColumnBase {
       host_level_ds = Kokkos::create_mirror_view(level_ds);
       host_interface_scoord = Kokkos::create_mirror_view(interface_scoord);
       host_interface_ds = Kokkos::create_mirror_view(interface_ds);
-    }
+  }
+
+  NcWriter write_new_ncdata(const std::string& filename) const;
+
+  void update_ncdata(NcWriter& writer, const Real time_val) const;
 
   void init_from_interface_heights(const std::vector<Real>& z_vals, const AtmosphericConditions& conds);
 

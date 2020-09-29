@@ -28,6 +28,9 @@ TEST_CASE("dynamics_column", "") {
     mycol.init_from_interface_heights(z_vals, conds);
 
     std::cout << mycol.info_string();
+    auto writer = mycol.write_new_ncdata("dyn_column_test.nc");
+
+    writer.close();
   }
 
   SECTION("pressure_init") {

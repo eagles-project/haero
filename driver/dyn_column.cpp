@@ -1,7 +1,9 @@
 #include "column_base.hpp"
 #include "dyn_column.hpp"
+#include "ncwriter_impl.hpp"
 #include "haero/utils.hpp"
 #include "haero/physical_constants.hpp"
+#include "ekat/util/ekat_units.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 #include <sstream>
 
@@ -163,5 +165,103 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
   }
 }
 
+NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
+  NcWriter writer(filename);
+
+  using att_type = NcWriter::text_att_type;
+  using var_atts = std::vector<att_type>;
+
+  writer.add_column_dim(w.extent(0));
+  writer.add_level_dims(num_levels());
+  writer.define_time_var();
+
+  /// Interface variables
+  const var_atts w_atts = {std::make_pair("cf_long_name", "upward_air_velocity"),
+    std::make_pair("short_name", "w")};
+  const auto w_units = ekat::units::m/ekat::units::s;
+
+  const var_atts phi_atts = {std::make_pair("cf_long_name", "geopotential"),
+    std::make_pair("short_name","phi")};
+  const auto phi_units = ekat::units::pow(ekat::units::m,2)*ekat::units::pow(ekat::units::s,-2);
+
+  const var_atts pi_atts = {std::make_pair("cf_long_name", "null"),
+                            std::make_pair("haero_long_name", "hydrostatic_air_pressure"),
+                            std::make_pair("short_name", "pi")};
+  const auto pi_units = ekat::units::Pa;
+
+  const var_atts mu_atts = {std::make_pair("cf_long_name", "null"),
+            std::make_pair("haero_long_name", "full_pressure_to_hydrostatic_pressure_ratio"),
+            std::make_pair("short_name", "mu")};
+  const auto mu_units = ekat::units::Units::nondimensional();
+
+  const var_atts dpds_atts = {std::make_pair("cf_long_name", "null"),
+            std::make_pair("haero_long_name", "change_in_air_pressure_at_level_interface"),
+            std::make_pair("short_name", "dp/ds")};
+  const auto dpds_units = ekat::units::Pa;
+
+  writer.define_interface_var("vertical_velocity", w_units, w, w_atts);
+  writer.define_interface_var("geopotential", phi_units, phi, phi_atts);
+  writer.define_interface_var("hydrostatic_pressure", pi_units, pi, pi_atts);
+  writer.define_interface_var("mu", mu_units, mu, mu_atts);
+  writer.define_interface_var("dpds", dpds_units, dpds, dpds_atts);
+
+  /// Level variables
+  const var_atts dpids_atts = {std::make_pair("cf_long_name", "null"),
+      std::make_pair("haero_long_name", "pseudodensity_of_air"),
+      std::make_pair("short_name", "dpi/ds")};
+  const auto dpids_units = ekat::units::Pa;
+
+  const var_atts thetav_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("haero_long_name", "virtual_potential_temperature"),
+    std::make_pair("short_name", "theta_v")};
+  const auto thetav_units = ekat::units::K;
+
+  const var_atts p_atts = {std::make_pair("cf_long_name", "air_pressure"),
+    std::make_pair("amip_short_name", "plev"),
+    std::make_pair("short_name", "p")};
+  const auto p_units = ekat::units::Pa;
+
+  const var_atts qv_atts = {std::make_pair("cf_long_name", "humidity_mixing_ratio"),
+    std::make_pair("haero_long_name", "water_vapor_mass_mixing_ratio"),
+    std::make_pair("short_name", "q_v")};
+  const auto qv_units = ekat::units::kg / ekat::units::kg;
+
+  const var_atts exner_atts = {std::make_pair("cf_long_name", "dimensionless_exner_function"),
+    std::make_pair("short_name", "Pi")};
+  const auto exner_units = ekat::units::Units::nondimensional();
+
+  const var_atts dphids_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("haero_long_name", "change_in_geopotential_at_level_midpoint"),
+    std::make_pair("short_name", "dphi/ds")};
+
+  writer.define_level_var("pseudodensity", dpids_units, dpids, dpids_atts);
+  writer.define_level_var("virtual_potential_temperature", thetav_units, thetav,
+    thetav_atts);
+  writer.define_level_var("pressure", p_units, p, p_atts);
+  writer.define_level_var("water_vapor_mixing_ratio", qv_units, qv, qv_atts);
+  writer.define_level_var("exner", exner_units, exner, exner_atts);
+  writer.define_level_var("dphids", phi_units, dphids, dphids_atts);
+
+  /// Scalar variables
+  const var_atts ptop_atts = {
+  std::make_pair("cf_long_name","air_pressure_at_top_of_atmosphere_model"),
+  std::make_pair("short_name", "p_top")};
+  const auto ptop_units = ekat::units::Pa;
+
+  writer.define_scalar_var("p_top", ptop_units, ptop_atts, m_ptop);
+
+  /// Coordinate variables
+  const var_atts scoord_atts = {
+    std::make_pair("cf_long_name","atmosphere_hybrid_sigma_pressure_coordinate"),
+    std::make_pair("short_name", "scoord")};
+  const auto scoord_units = ekat::units::Units::nondimensional();
+  const auto sinterface_vec = view1d_to_vector(interface_scoord, num_levels()+1);
+  const auto slevel_vec = view1d_to_vector(level_scoord, num_levels());
+  writer.define_const_1dvar("scoord_interfaces", scoord_units, sinterface_vec,
+    scoord_atts);
+  writer.define_const_1dvar("scoord_levels", scoord_units, slevel_vec, scoord_atts);
+
+  return writer;
+}
 
 } // namespace haero
