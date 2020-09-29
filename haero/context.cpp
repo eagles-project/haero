@@ -8,12 +8,18 @@ Context::Context(
   const std::vector<Species>& aerosol_species,
   const std::map<std::string, std::vector<std::string> >& mode_species,
   const std::vector<Species>& gas_species,
-  const ChemicalMechanism& gas_chemistry):
+  const ChemicalMechanism& gas_chemistry,
+  const ChemicalMechanism& aqueous_chemistry,
+  int num_columns,
+  int num_levels):
   parametrizations_(parametrizations),
   modes_(aerosol_modes),
   aero_species_(aerosol_species),
   gas_species_(gas_species),
-  gas_chem_(gas_chemistry)
+  gas_chem_(gas_chemistry),
+  aqueous_chem_(aqueous_chemistry),
+  num_columns_(num_columns),
+  num_levels_(num_levels)
 {
 
 }
@@ -41,8 +47,14 @@ const ChemicalMechanism& Context::gas_chemistry() const {
   return gas_chem_;
 }
 
+const ChemicalMechanism& Context::aqueous_chemistry() const {
+  return aqueous_chem_;
+}
+
 State Context::create_state() const {
-  return State();
+  std::vector<int> num_modal_species; // TODO
+  return State(modes_.size(), num_modal_species, gas_species_.size(),
+               num_columns_, num_levels_);
 }
 
 }

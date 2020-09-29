@@ -6,6 +6,7 @@
 #include "haero/chemistry.hpp"
 #include "haero/parametrizations.hpp"
 #include "haero/state.hpp"
+#include <map>
 
 namespace haero {
 
@@ -31,13 +32,22 @@ class Context final {
   ///             and the values are lists of symbolic names of aerosol species
   ///             (supplied in `aerosol_species`) that belong to those modes.
   /// @param [in] gas_species a list of gas species supported by the Context
-  /// @param [in] gas_chemistry a ChemicalMechanism representing gas chemistry.
+  /// @param [in] gas_chemistry a ChemicalMechanism representing gas chemistry
+  /// @param [in] aqueous_chemistry a ChemicalMechanism representing aqueous
+  ///                               chemistry
+  /// @param [in] num_columns The number of columns in the Context's
+  ///                         computational domain
+  /// @param [in] num_levels The number of vertical levels in each column within
+  ///                        the Context's computational domain
   Context(const Parametrizations& parametrizations,
           const std::vector<Mode>& aerosol_modes,
           const std::vector<Species>& aerosol_species,
           const std::map<std::string, std::vector<std::string> >& mode_species,
           const std::vector<Species>& gas_species,
-          const ChemicalMechanism& gas_chemistry = InactiveChemicalMechanism());
+          const ChemicalMechanism& gas_chemistry,
+          const ChemicalMechanism& aqueous_chemistry,
+          int num_columns,
+          int num_levels);
 
   /// Context objects are not deep-copyable. They should be passed by reference.
   Context(const Context&) = delete;
@@ -64,6 +74,10 @@ class Context final {
   /// Context.
   const ChemicalMechanism& gas_chemistry() const;
 
+  /// Returns the chemical mechanism for aqueous chemistry associated with this
+  /// Context.
+  const ChemicalMechanism& aqueous_chemistry() const;
+
   /// Creates a new State object that can be used with this Context.
   State create_state() const;
 
@@ -75,6 +89,11 @@ class Context final {
   std::vector<Species> aero_species_;
   std::vector<Species> gas_species_;
   ChemicalMechanism gas_chem_;
+  ChemicalMechanism aqueous_chem_;
+
+  // Grid parameters.
+  int num_columns_;
+  int num_levels_;
 };
 
 }

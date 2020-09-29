@@ -10,7 +10,8 @@ class Reaction final {
 
 /// This interface represents a chemical mechanism that can equilibrate systems
 /// and / model chemical kinetics where needed. Subclasses of this interface
-/// can provide different solvers to implement the mechanism.
+/// can provide different solvers to implement the mechanism. ChemicalMechanism
+/// instances can be used for both gas chemistry and aqueous chemistry.
 class ChemicalMechanism {
   // Just a placeholder so far...
 };
