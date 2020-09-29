@@ -3,7 +3,7 @@
 namespace haero {
 
 Context::Context(
-  const Parametrizations& parametrizations,
+  const Parameterizations& parameterizations,
   const std::vector<Mode>& aerosol_modes,
   const std::vector<Species>& aerosol_species,
   const std::map<std::string, std::vector<std::string> >& mode_species,
@@ -12,7 +12,7 @@ Context::Context(
   const ChemicalMechanism& aqueous_chemistry,
   int num_columns,
   int num_levels):
-  parametrizations_(parametrizations),
+  parameterizations_(parameterizations),
   modes_(aerosol_modes),
   aero_species_(aerosol_species),
   gas_species_(gas_species),
@@ -27,8 +27,8 @@ Context::Context(
 Context::~Context() {
 }
 
-const Parametrizations& Context::parametrizations() const {
-  return parametrizations_;
+const Parameterizations& Context::parameterizations() const {
+  return parameterizations_;
 }
 
 const std::vector<Mode>& Context::modes() const {

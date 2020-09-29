@@ -4,7 +4,7 @@
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
 #include "haero/chemistry.hpp"
-#include "haero/parametrizations.hpp"
+#include "haero/parameterizations.hpp"
 #include "haero/state.hpp"
 #include <map>
 
@@ -19,10 +19,10 @@ namespace haero {
 class Context final {
   public:
 
-  /// Creates a Context that supports the specified parametrizations.
-  /// @param [in] parametrizations the set of parametrizations (including
-  ///                              implementations) supported by the resulting
-  ///                              Context
+  /// Creates a Context that supports the specified parameterizations.
+  /// @param [in] parameterizations the set of parameterizations (including
+  ///                               implementations) supported by the resulting
+  ///                               Context
   /// @param [in] aerosol_modes a list of aerosol modes supported by the Context
   /// @param [in] aerosol_species a list of aerosol species supported by the
   ///                             Context
@@ -39,7 +39,7 @@ class Context final {
   ///                         computational domain
   /// @param [in] num_levels The number of vertical levels in each column within
   ///                        the Context's computational domain
-  Context(const Parametrizations& parametrizations,
+  Context(const Parameterizations& parameterizations,
           const std::vector<Mode>& aerosol_modes,
           const std::vector<Species>& aerosol_species,
           const std::map<std::string, std::vector<std::string> >& mode_species,
@@ -58,8 +58,8 @@ class Context final {
   /// Context objects are not assignable either.
   Context& operator=(const Context&) = delete;
 
-  /// Returns the parametrizations associated with this Context.
-  const Parametrizations& parametrizations() const;
+  /// Returns the parameterizations associated with this Context.
+  const Parameterizations& parameterizations() const;
 
   /// Returns the list of aerosol modes associated with this Context.
   const std::vector<Mode>& modes() const;
@@ -84,7 +84,7 @@ class Context final {
   private:
 
   // Parameterizations, modes, species, chemistry...
-  Parametrizations parametrizations_;
+  Parameterizations parameterizations_;
   std::vector<Mode> modes_;
   std::vector<Species> aero_species_;
   std::vector<Species> gas_species_;

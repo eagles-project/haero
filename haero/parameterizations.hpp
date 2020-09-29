@@ -1,14 +1,14 @@
-#ifndef HAERO_PARAMETRIZATIONS_HPP
-#define HAERO_PARAMETRIZATIONS_HPP
+#ifndef HAERO_PARAMETERIZATIONS_HPP
+#define HAERO_PARAMETERIZATIONS_HPP
 
 namespace haero {
 
-/// This type specifies aerosol parametrizations available to a Haero
-/// simulation. A set of parametrizations is a set of physical processes that
+/// This type specifies aerosol parameterizations available to a Haero
+/// simulation. A set of parameterizations is a set of physical processes that
 /// are approximately represented according to a specific algorithm. Each
 /// process can be selected from a set of available algorithms, or can be
 /// disabled to allow for testing.
-struct Parametrizations final {
+struct Parameterizations final {
 
   /// Available process models for aerosol activation, in which interstitial
   /// aerosol particles are coated by water and converted to cloud-borne
