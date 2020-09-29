@@ -71,6 +71,11 @@ TEST_CASE("ncwriter", "") {
   ncf.define_time_var();
 
   /**
+    Define a variable that is just one number (0-dimensional)
+  */
+  ncf.define_scalar_var("scalar_var_zero", ekat::units::Units::nondimensional());
+
+  /**
     Create views for basic level and interface variables,
       and define netCDF variables from their metadata.
 
