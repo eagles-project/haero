@@ -180,7 +180,8 @@ Real height_at_pressure(const Real p, const Real p0, const Real T0, const Real G
     result = -r_gas_dry_air_joule_per_k_per_kg * T0 * std::log(p/p0)/gravity_m_per_s2;
   }
   else {
-    result = (T0/Gamma)*(1 - std::pow(p/p0, kappa));
+    const Real pwr = r_gas_dry_air_joule_per_k_per_kg*Gamma/gravity_m_per_s2;
+    result = (T0/Gamma)*(1 - std::pow(p/p0, pwr));
   }
   return result;
 }
@@ -207,7 +208,7 @@ Real height_at_pressure(const Real p, const AtmosphericConditions& conds) {
 */
 KOKKOS_INLINE_FUNCTION
 Real potential_temperature(const Real T, const Real p, const Real p0) {
-  return T * std::pow(p0/p, r_gas_dry_air_joule_per_k_per_kg / cp_dry_air_joule_per_k_per_kg);
+  return T * std::pow(p0/p, kappa);
 }
 
 
