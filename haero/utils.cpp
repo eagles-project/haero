@@ -27,4 +27,29 @@ std::string get_filename_ext(const std::string& fname) {
   return result;
 }
 
+bool vector_is_monotone(const std::vector<Real>& vals) {
+  bool result = true;
+  if (vals.size() > 1) {
+    // check increasing or decreasing based on first 2 values
+    bool increasing = (vals[1] > vals[0]);
+    if (increasing) {
+      for (int i=1; i<vals.size(); ++i) {
+        if (vals[i] <= vals[i-1]) {
+          result = false;
+          break;
+        }
+      }
+    }
+    else {
+      for (int i=1; i<vals.size(); ++i) {
+        if (vals[i] >= vals[i-1]) {
+          result = false;
+          break;
+        }
+      }
+    }
+  }
+  return result;
+}
+
 }// namespace haero
