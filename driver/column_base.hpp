@@ -17,6 +17,7 @@ class ColumnBase {
   using mask_type = ekat::Mask<HAERO_PACK_SIZE>;
 
   using view_1d = kokkos_device_types::view_1d<real_pack_type>;
+  using view_2d = kokkos_device_types::view_2d<real_pack_type>;
   using modal_var_view = kokkos_device_types::view_2d<Real>;
   using mask_view = kokkos_device_types::view_1d<mask_type>;
 

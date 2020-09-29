@@ -13,6 +13,8 @@ TEST_CASE("dynamics_column", "") {
   const Real qv1 = 5E-4;
   const auto conds = hydrostatic_conditions(p0, T0, Gamma, qv0, qv1);
 
+  const int ncol = 2;
+
   SECTION("height_init") {
     const std::vector<Real> z_vals = {10000, 9000, 8000, 7000,
                                         6000, 5000, 4000, 3000,
@@ -22,8 +24,8 @@ TEST_CASE("dynamics_column", "") {
                                           20,   10, 0};
     const int nlev = z_vals.size()-1;
 
-    DynColumn mycol(nlev);
-
+    DynColumn mycol(ncol, nlev);
+    mycol.init_from_interface_heights(z_vals, conds);
 
     std::cout << mycol.info_string();
   }
@@ -32,7 +34,7 @@ TEST_CASE("dynamics_column", "") {
     const std::vector<Real> p_vals = {20000, 30000, 40000, 50000, 60000, 70000, 85000, 92500, 100000};
     const int nlev = p_vals.size()-1;
 
-    DynColumn mycol(nlev);
+    DynColumn mycol(ncol, nlev);
 
 
   }

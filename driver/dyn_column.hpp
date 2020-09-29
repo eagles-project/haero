@@ -66,6 +66,8 @@ class DynColumn : public ColumnBase {
 
   inline Real s_coord(const Real z) const {return (m_ztop - z)/m_ztop;}
 
+  inline Real psurf() const {return m_psurf;}
+
   /// level interface variables
   view_2d w;
   view_2d phi;
@@ -79,11 +81,13 @@ class DynColumn : public ColumnBase {
   view_2d p;
   view_2d qv;
   view_2d exner;
+  view_2d dphids;
 
-  view_1d level_scoord;
+  /// constant views
   view_1d interface_scoord;
-  view_1d level_ds;
   view_1d interface_ds;
+  view_1d level_scoord;
+  view_1d level_ds;
 
   DynColumn() = delete;
 
@@ -91,21 +95,25 @@ class DynColumn : public ColumnBase {
     Real m_ztop;
     Real m_ptop;
     Real m_ncol;
+    Real m_psurf;
 
     host_view2d host_w;
     host_view2d host_phi;
+    host_view2d host_pi;
+    host_view2d host_mu;
+    host_view2d host_dpds;
+
     host_view2d host_dpids;
     host_view2d host_thetav;
     host_view2d host_p;
     host_view2d host_qv;
-    host_view2d host_pi;
-    host_view2d host_mu;
     host_view2d host_exner;
+    host_view2d host_dphids;
 
-    host_view1d host_level_scoord;
-    host_view1d host_level_ds;
     host_view1d host_interface_scoord;
     host_view1d host_interface_ds;
+    host_view1d host_level_scoord;
+    host_view1d host_level_ds;
 };
 
 
