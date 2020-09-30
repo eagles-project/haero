@@ -28,7 +28,7 @@ TEST_CASE("dynamics_column", "") {
     mycol.init_from_interface_heights(z_vals, conds);
 
     std::cout << mycol.info_string();
-    auto writer = mycol.write_new_ncdata("dyn_column_test.nc");
+    auto writer = mycol.write_new_ncdata("dyn_column_test_zinit.nc");
     mycol.update_ncdata(writer, 0);
     writer.close();
   }
@@ -38,7 +38,12 @@ TEST_CASE("dynamics_column", "") {
     const int nlev = p_vals.size()-1;
 
     DynColumn mycol(ncol, nlev);
+    mycol.init_from_interface_pressures(p_vals, conds);
 
+    std::cout << mycol.info_string();
+    auto writer = mycol.write_new_ncdata("dyn_column_test_pinit.nc");
 
+    mycol.update_ncdata(writer, 0);
+    writer.close();
   }
 }

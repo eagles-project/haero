@@ -100,16 +100,6 @@ class DynColumn : public ColumnBase {
 
   inline int num_columns() const {return m_ncol;}
 
-  /** @brief Returns the nondimensional s-coordinate associated with height z.
-
-    @warning Must be called after either initialize method, since it requires z_top to be defined.
-
-    @param [in] z height [m]
-    @return s
-  */
-  inline Real s_coord(const Real z) const {return (m_ztop - z)/m_ztop;}
-
-
   /// level interface variables
   view_2d w;
   view_2d phi;
@@ -126,7 +116,7 @@ class DynColumn : public ColumnBase {
   view_2d dphids;
 
   /// surface variables
-  view_1d psurf;
+  kokkos_device_types::view_1d<Real> psurf;
 
   /// constant views
   view_1d interface_scoord;
@@ -137,9 +127,20 @@ class DynColumn : public ColumnBase {
   DynColumn() = delete;
 
   protected:
+    /** @brief Returns the nondimensional s-coordinate associated with height z.
+
+      @warning Must be called after either initialize method, since it requires z_top to be defined.
+
+      @param [in] z height [m]
+      @return s
+    */
+    inline Real s_coord(const Real z) const {return (m_ztop - z)/m_ztop;}
+
+    inline Real z_coord(const Real s) const {return m_ztop*(1-s);}
+
     Real m_ztop;
     Real m_ptop;
-    Real m_ncol;
+    int m_ncol;
     Real m_psurf;
 
     host_view2d host_w;
@@ -160,7 +161,7 @@ class DynColumn : public ColumnBase {
     host_view1d host_level_scoord;
     host_view1d host_level_ds;
 
-    host_view1d host_psurf;
+    typename kokkos_device_types::view_1d<Real>::HostMirror host_psurf;
 };
 
 

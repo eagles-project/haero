@@ -102,7 +102,7 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
             // my interface id = n + 1/2, "nphalf", where "p" => "plus"
             const Real ds_nphalf = 1 -
               host_interface_scoord(pack_info::pack_idx(num_levels()-1))[pack_info::vec_idx(num_levels()-1)];
-            const Real p_nphalf = m_psurf;
+            const Real p_nphalf = host_psurf(col_idx);
             const Real p_n = host_p(col_idx, pack_info::pack_idx(num_levels()-1))[pack_info::vec_idx(num_levels()-1)];
 
             /// Taylor et. al. eqn. (33)
@@ -158,6 +158,152 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
             host_dphids(col_idx, pack_idx)[vec_idx] = (phi_phalf - phi_mhalf)/ds_i;
             if (col_idx == 0) {
               host_level_ds(pack_idx)[vec_idx] = ds_i;
+            }
+          }
+        }
+      }
+    }
+  }
+  Kokkos::deep_copy(w, host_w);
+  Kokkos::deep_copy(phi, host_phi);
+  Kokkos::deep_copy(pi, host_pi);
+  Kokkos::deep_copy(mu, host_mu);
+  Kokkos::deep_copy(dpds, host_dpds);
+  Kokkos::deep_copy(dpids, host_dpids);
+  Kokkos::deep_copy(thetav, host_thetav);
+  Kokkos::deep_copy(p, host_p);
+  Kokkos::deep_copy(qv, host_qv);
+  Kokkos::deep_copy(exner, host_exner);
+  Kokkos::deep_copy(dphids, host_dphids);
+  Kokkos::deep_copy(interface_scoord, host_interface_scoord);
+  Kokkos::deep_copy(interface_ds, host_interface_ds);
+  Kokkos::deep_copy(level_scoord, host_level_scoord);
+  Kokkos::deep_copy(level_ds, host_level_ds);
+  Kokkos::deep_copy(psurf, host_psurf);
+}
+
+void DynColumn::init_from_interface_pressures(const std::vector<Real>& p_vals,
+  const AtmosphericConditions& conds) {
+
+  // check input
+  EKAT_REQUIRE_MSG(vector_is_monotone(p_vals), "input pressure interfaces must be monotone.");
+  EKAT_REQUIRE_MSG(p_vals.size() == num_levels()+1,
+    "p-values are stored on level interfaces; num_levels() + 1 values are required.");
+
+  // copy input in case we need to reverse the p_vals
+  std::vector<Real> interface_pressure(p_vals);
+  const bool increasing = (p_vals[1] > p_vals[0]);
+  if (!increasing) std::reverse(interface_pressure.begin(), interface_pressure.end());
+  // set boundary data
+  m_ptop = interface_pressure[0];
+  m_ztop = height_at_pressure(m_ptop, conds);
+
+  for (int col_idx=0; col_idx<m_ncol; ++col_idx) {
+    host_psurf(col_idx) = conds.params.hydrostatic.p0;
+
+    // set independent interface variables
+    for (int pack_idx=0; pack_idx<num_packs_int(); ++pack_idx) {
+      for (int vec_idx=0; vec_idx<HAERO_PACK_SIZE; ++vec_idx) {
+        const int array_idx = pack_info::array_idx(pack_idx, vec_idx);
+        if (array_idx < num_levels()+1) {// skip padding
+          host_w(col_idx, pack_idx)[vec_idx] = 0;
+          host_pi(col_idx, pack_idx)[vec_idx] = interface_pressure[array_idx];
+          const Real z = height_at_pressure(interface_pressure[array_idx], conds);
+          host_phi(col_idx, pack_idx)[vec_idx] = gravity_m_per_s2*z;
+          host_mu(col_idx, pack_idx)[vec_idx] = 1;
+          if (col_idx == 0) {
+            host_interface_scoord(pack_idx)[vec_idx] = s_coord(z);
+          }
+        }
+      }
+    }
+    // set all level variables
+    for (int pack_idx=0; pack_idx<num_packs_lev(); ++pack_idx) {
+      for (int vec_idx=0; vec_idx<HAERO_PACK_SIZE; ++vec_idx) {
+        const int array_idx = pack_info::array_idx(pack_idx, vec_idx);
+        if (array_idx < num_levels()) { // skip padding
+          // my level id = i = "array_idx"
+          const int interface_imhalf = array_idx; // interface i-1/2
+          const int interface_iphalf = array_idx+1; // interface i+1/2
+          const int imhalf_pack = pack_info::pack_idx(interface_imhalf);
+          const int imhalf_vec  = pack_info::vec_idx(interface_imhalf);
+          const int iphalf_pack = pack_info::pack_idx(interface_iphalf);
+          const int iphalf_vec  = pack_info::vec_idx(interface_iphalf);
+
+          const Real s_i = 0.5*(host_interface_scoord(imhalf_pack)[imhalf_vec] +
+                               host_interface_scoord(imhalf_pack)[imhalf_vec]);
+          const Real ds_i = host_interface_scoord(iphalf_pack)[iphalf_vec] -
+                            host_interface_scoord(imhalf_pack)[imhalf_vec];
+          const Real z = z_coord(s_i);
+
+          const Real Tv = virtual_temperature(z, conds);
+          const Real qv = water_vapor_mixing_ratio(z, conds);
+          const Real p = hydrostatic_pressure_at_height(z, conds);
+          host_thetav(col_idx, pack_idx)[vec_idx] = potential_temperature(Tv, p, conds);
+          host_qv(col_idx, pack_idx)[vec_idx] = qv;
+          host_p(col_idx, pack_idx)[vec_idx]  = p;
+          host_exner(col_idx, pack_idx)[vec_idx] = exner_function(p, conds);
+
+          const Real pi_phalf = host_pi(col_idx, iphalf_pack)[iphalf_vec];
+          const Real pi_mhalf = host_pi(col_idx, imhalf_pack)[imhalf_vec];
+          const Real phi_phalf = host_phi(col_idx, iphalf_pack)[iphalf_vec];
+          const Real phi_mhalf = host_phi(col_idx, imhalf_pack)[imhalf_vec];
+          host_dpids(col_idx, pack_idx)[vec_idx] = (pi_phalf - pi_mhalf)/ds_i;
+          host_dphids(col_idx, pack_idx)[vec_idx] = (phi_phalf - phi_mhalf)/ds_i;
+
+          if (col_idx == 0) {
+            host_level_scoord(pack_idx)[vec_idx] = s_i;
+            host_level_ds(pack_idx)[vec_idx] = ds_i;
+          }
+        }
+      }
+    }
+    // set level-dependent interface variables
+    for (int pack_idx=0; pack_idx<num_packs_int(); ++pack_idx) {
+      for (int vec_idx=0; vec_idx<HAERO_PACK_SIZE; ++vec_idx) {
+        const int array_idx = pack_info::array_idx(pack_idx, vec_idx);
+        if (array_idx < num_levels()+1) { // skip padding
+          if (array_idx == 0) { // top boundary
+            // id = 1/2
+            const Real ds_half = host_level_ds(pack_info::pack_idx(0))[pack_info::vec_idx(0)];
+            const Real p_half = m_ptop;
+            const Real p_1 = host_p(col_idx, pack_info::pack_idx(0))[pack_info::vec_idx(0)];
+
+            host_dpds(col_idx, pack_idx)[vec_idx] = 2*(p_1-p_half)/ds_half;
+            if (col_idx == 0) {
+              host_interface_ds(pack_idx)[vec_idx] = ds_half;
+            }
+          }
+          else if (array_idx == num_levels()) { // surface boundary
+            // id = n+12
+            const Real ds_nphalf = 1 -
+              host_interface_scoord(pack_info::pack_idx(num_levels()-1))[pack_info::vec_idx(num_levels()-1)];
+            const Real p_nphalf = host_psurf(col_idx);
+            const Real p_n = host_p(col_idx, pack_info::pack_idx(num_levels()-1))[pack_info::vec_idx(num_levels()-1)];
+
+            host_dpds(col_idx, pack_idx)[vec_idx] = 2*(p_nphalf - p_n)/ds_nphalf;
+            if (col_idx == 0) {
+              host_interface_ds(pack_idx)[vec_idx] = ds_nphalf;
+            }
+          }
+          else { // general case
+            // interface i + 1/2
+            const int level_i = array_idx-1;
+            const int level_ip1 = array_idx;
+            const int ipack = pack_info::pack_idx(level_i);
+            const int ivec = pack_info::vec_idx(level_i);
+            const int ip1pack = pack_info::pack_idx(level_ip1);
+            const int ip1vec = pack_info::vec_idx(level_ip1);
+
+            const Real p_i = host_p(col_idx, ipack)[ivec];
+            const Real p_ip1 = host_p(col_idx, ip1pack)[ip1vec];
+            const Real ds_iphalf = host_level_scoord(ip1pack)[ip1vec] -
+              host_level_scoord(ipack)[ivec];
+
+            host_dpds(col_idx, pack_idx)[vec_idx] = (p_ip1 - p_i)/ds_iphalf;
+
+            if (col_idx == 0) {
+              host_interface_ds(pack_idx)[vec_idx] = ds_iphalf;
             }
           }
         }
@@ -251,6 +397,10 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
     std::make_pair("haero_long_name", "change_in_geopotential_at_level_midpoint"),
     std::make_pair("short_name", "dphi/ds")};
 
+  const var_atts temp_atts = {std::make_pair("cf_long_name", "air_temperature"),
+    std::make_pair("amip_short_name", "ta")};
+  const auto temp_units = ekat::units::K;
+
   writer.define_level_var("pseudodensity", dpids_units, dpids, dpids_atts);
   writer.define_level_var("virtual_potential_temperature", thetav_units, thetav,
     thetav_atts);
@@ -258,6 +408,7 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
   writer.define_level_var("water_vapor_mixing_ratio", qv_units, qv, qv_atts);
   writer.define_level_var("exner", exner_units, exner, exner_atts);
   writer.define_level_var("dphids", phi_units, dphids, dphids_atts);
+  writer.define_level_var("temperature", temp_units, temp_atts);
 
   /// surface variables
   const var_atts ps_atts = {std::make_pair("cf_long_name", "surface_air_pressure"),
@@ -296,6 +447,20 @@ void DynColumn::update_ncdata(NcWriter& writer, const size_t time_idx) const {
   const auto ps = view1d_to_vector(psurf, m_ncol);
   writer.add_time_dependent_scalar_values("surface_pressure", time_idx, ps);
 
+  const auto thv_loc = thetav;
+  const auto qv_loc = qv;
+  const auto exner_loc = exner;
+  kokkos_device_types::view_2d<Real> temperature("temperature", m_ncol, num_levels());
+  Kokkos::parallel_for("compute_temperature",
+    Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {m_ncol, num_levels()}),
+    KOKKOS_LAMBDA (const int col_idx, const int lev_idx) {
+     const int pack_idx = pack_info::pack_idx(lev_idx);
+     const int vec_idx = pack_info::vec_idx(lev_idx);
+     const Real Tv = thv_loc(col_idx, pack_idx)[vec_idx] * exner_loc(col_idx, pack_idx)[vec_idx];
+     temperature(col_idx, lev_idx) =
+      temperature_from_virtual_temperature(Tv, qv_loc(col_idx, pack_idx)[vec_idx]);
+  });
+
   for (size_t col_idx = 0; col_idx < m_ncol; ++col_idx) {
     writer.add_variable_data("vertical_velocity", time_idx, col_idx, w);
     writer.add_variable_data("geopotential", time_idx, col_idx, phi);
@@ -309,6 +474,7 @@ void DynColumn::update_ncdata(NcWriter& writer, const size_t time_idx) const {
     writer.add_variable_data("water_vapor_mixing_ratio", time_idx, col_idx, qv);
     writer.add_variable_data("exner", time_idx, col_idx, exner);
     writer.add_variable_data("dphids", time_idx, col_idx, dphids);
+    writer.add_variable_data("temperature", time_idx, col_idx, temperature);
   }
 
 }
