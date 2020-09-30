@@ -11,11 +11,35 @@
 
 namespace haero {
 
+/** @brief Independent column dynamics of the HOMME-NH Theta Model.
+
+  Reference: Taylor, et. al., 2020, "An energy consistent discretization of the
+    nonhydrostatic equations in primitive variables," J. Adv. Mod. Earth Sys. 12
+    doi:10.1029/2019MS001783
+
+  ### Notes
+  - This implemenation assumes Lagrangian vertical levels.
+  - It is formulated with an equation of state based on virtual temperature rather than
+  dry air temperature.
+  - Variables are initialized as a hydrostatically balanced, stationary profile with:
+    - a constant virtual temperature lapse rate
+    - exponentially decaying (with height) water vapor profile
+    - perturbations can be added (separately from initialization) to this profile
+  - Since it's used for testing, it automatically writes all variables and related metadata
+    to netCDF via the NcWriter methods write_new_ncdata and update_ncdata.
+      - the NcWriter method 'close()' must be called after all data are written
+        to ensure the file is written correctly.
+*/
 class DynColumn : public ColumnBase {
   public:
   typedef typename view_2d::HostMirror host_view2d;
   typedef typename view_1d::HostMirror host_view1d;
 
+  /** @brief Constructor.  Defines all dynamics variable views.
+
+    @param [in] ncol number of columns
+    @param [in] nl number of vertical levels per column
+  */
   DynColumn(const int ncol, const int nl) : ColumnBase(nl),
     /// interface variables
     w("vertical_velocity", ncol, num_packs_int()),
@@ -100,14 +124,14 @@ class DynColumn : public ColumnBase {
 
   inline int num_columns() const {return m_ncol;}
 
-  /// level interface variables
+  /// level interface variables (variables named as in Taylor et. al. 2020)
   view_2d w;
   view_2d phi;
   view_2d pi;
   view_2d mu;
   view_2d dpds;
 
-  /// level midpoint variables
+  /// level midpoint variables (variables named as in Taylor et. al. 2020)
   view_2d dpids;
   view_2d thetav;
   view_2d p;
@@ -136,12 +160,19 @@ class DynColumn : public ColumnBase {
     */
     inline Real s_coord(const Real z) const {return (m_ztop - z)/m_ztop;}
 
+    /** @brief Returns the z-coordinate (height) associated with an s-coordinate
+
+      @warning this inverse function is only valid if the level interfaces remain at their
+        initial positions
+
+      @param [in] s
+      @return z [m]
+    */
     inline Real z_coord(const Real s) const {return m_ztop*(1-s);}
 
     Real m_ztop;
     Real m_ptop;
     int m_ncol;
-    Real m_psurf;
 
     host_view2d host_w;
     host_view2d host_phi;

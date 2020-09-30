@@ -9,6 +9,10 @@
 
 namespace haero {
 
+/** @brief Base class for the driver's columns.
+
+  Provides common types and methods for using Views of Scalar Packs.
+*/
 class ColumnBase {
   public :
   using kokkos_device_types = ekat::KokkosTypes<ekat::DefaultDevice>;
