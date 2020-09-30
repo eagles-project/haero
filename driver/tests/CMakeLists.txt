@@ -7,5 +7,5 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/read_yaml_test.cpp.in read_yaml_test.
 EkatCreateUnitTest(read_yaml read_yaml_test.cpp LIBS haero_standalone ${HAERO_LIBRARIES})
 
 EkatCreateUnitTest(ncwriter ncwriter_tests.cpp LIBS haero_standalone ${HAERO_LIBRARIES} ${HAERO_DRIVER_LIBRARIES})
-EkatCreateUnitTest(dynamics_column dyn_column_test.cpp LIBS haero_standalone ${HAERO_LIBRARIES})
+EkatCreateUnitTest(dynamics_column dyn_column_test.cpp LIBS haero_standalone ${HAERO_DRIVER_LIBRARIES} ${HAERO_LIBRARIES} )
 #EkatCreateUnitTest(phys_column phys_column_test.cpp LIBS haero_standalone ${HAERO_LIBRARIES})

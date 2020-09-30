@@ -170,6 +170,22 @@ void NcWriter::add_interface_variable_data(const std::string& varname, const siz
   CHECK_NCERR(retval);
 }
 
+void NcWriter::add_time_dependent_scalar_values(const std::string& name,
+  const size_t time_idx, const std::vector<Real>& column_values) const {
+
+  EKAT_REQUIRE(column_values.size() == num_columns());
+  EKAT_ASSERT(time_idx < num_timesteps());
+  const int varid = name_varid_map.at(name);
+  size_t start[2] = {time_idx, 0};
+  size_t count[2] = {1, static_cast<size_t>(num_columns())};
+#ifdef HAERO_DOUBLE_PRECISION
+  int retval = nc_put_vara_double(ncid, varid, start, count, &column_values[0]);
+#else
+  int retval = nc_put_vara_float(ncid, varid, start, count, &column_values[0]);
+#endif
+  CHECK_NCERR(retval);
+}
+
 void NcWriter::add_time_dim() {
   EKAT_ASSERT(ncid != NC_EBADID);
   EKAT_REQUIRE_MSG(time_dimid == NC_EBADID, "time dimension already defined.");
@@ -181,6 +197,42 @@ void NcWriter::add_time_dim() {
 void NcWriter::close() {
   int retval = nc_close(ncid);
   CHECK_NCERR(retval);
+}
+
+void NcWriter::define_scalar_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& var_atts, const Real val) {
+  EKAT_ASSERT(ncid != NC_EBADID);
+  int* not_used;
+  int varid = NC_EBADID;
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, 0, not_used, &varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace(name, varid);
+
+  for (int i=0; i<var_atts.size(); ++i) {
+    retval = nc_put_att_text(ncid, varid, var_atts[i].first.c_str(),
+        var_atts[i].second.size(), var_atts[i].second.c_str());
+    CHECK_NCERR(retval);
+  }
+  retval = nc_put_var(ncid, varid, &val);
+  CHECK_NCERR(retval);
+}
+
+void NcWriter::define_time_dependent_scalar_var(const std::string& name,
+  const ekat::units::Units& units, const std::vector<text_att_type>& var_atts) {
+
+  EKAT_ASSERT(ncid != NC_EBADID);
+  EKAT_REQUIRE(time_dimid != NC_EBADID);
+  int varid = NC_EBADID;
+  int dimids[2] = {time_dimid, col_dimid};
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, 2, &dimids[0], &varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace(name, varid);
+
+  for (int i=0; i<var_atts.size(); ++i) {
+    retval = nc_put_att_text(ncid, varid, var_atts[i].first.c_str(),
+        var_atts[i].second.size(), var_atts[i].second.c_str());
+    CHECK_NCERR(retval);
+  }
 }
 
 std::string NcWriter::info_string(const int& tab_level) const {
@@ -239,7 +291,7 @@ void NcWriter::define_time_var(const ekat::units::Units& units, const Real t0) {
 void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts) {
 
-  EKAT_ASSERT(time_dimid != NC_EBADID && col_dimid != NC_EBADID && interface_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID and col_dimid != NC_EBADID and interface_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
   const int m_ndims = 3;
@@ -259,6 +311,35 @@ void NcWriter::define_interface_var(const std::string& name, const ekat::units::
   name_varid_map.emplace(name, varid);
 }
 
+void NcWriter::define_const_1dvar(const std::string& name, const ekat::units::Units& units,
+      const std::vector<Real>& vals, const std::vector<text_att_type>& atts) {
+  EKAT_REQUIRE_MSG(vals.size() == num_levels() or vals.size() == num_levels()+1,
+    "coordinate variables must be either levels or interfaces.");
+
+  int varid = NC_EBADID;
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, 1,
+    (vals.size() == num_levels() ? &level_dimid : &interface_dimid),
+    &varid);
+  CHECK_NCERR(retval);
+  const std::string unit_str = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
+  CHECK_NCERR(retval);
+  name_varid_map.emplace(name, varid);
+  for (int i=0; i<atts.size(); ++i) {
+    retval = nc_put_att_text(ncid, varid, atts[i].first.c_str(),
+      atts[i].second.size(), atts[i].second.c_str());
+    CHECK_NCERR(retval);
+  }
+  const size_t start = 0;
+  const size_t count = vals.size();
+#ifdef HAERO_DOUBLE_PRECISION
+  retval = nc_put_vara_double(ncid, varid, &start, &count, &vals[0]);
+#else
+  retval = nc_put_vara_float(ncid, varid, &start, &count, &vals[0]);
+#endif
+  CHECK_NCERR(retval);
+}
+
 int NcWriter::num_columns() const {
   size_t nc;
   int retval = nc_inq_dimlen(ncid, col_dimid, &nc);
@@ -276,7 +357,12 @@ int NcWriter::num_levels() const {
 int NcWriter::num_modes() const {
   size_t nm;
   int retval = nc_inq_dimlen(ncid, mode_dimid, &nm);
-  CHECK_NCERR(retval);
+  if (retval == NC_EBADDIM) {
+    nm = 0;
+  }
+  else {
+    CHECK_NCERR(retval);
+  }
   return int(nm);
 }
 

@@ -18,7 +18,8 @@ struct NcWriterImpl {
 };
 
 template <typename ViewType>
-void NcWriter::add_var_atts(const int varid, const ekat::units::Units& units, const ViewType& view) {
+void NcWriter::add_var_atts(const int varid, const ekat::units::Units& units,
+  const ViewType& view, const std::vector<text_att_type>& var_atts) {
 
   EKAT_ASSERT(varid != NC_EBADID);
 
@@ -28,10 +29,16 @@ void NcWriter::add_var_atts(const int varid, const ekat::units::Units& units, co
   const std::string unit_str = ekat::units::to_string(units);
   retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
   CHECK_NCERR(retval);
+  for (int i=0; i<var_atts.size(); ++i) {
+    retval = nc_put_att_text(ncid, varid, var_atts[i].first.c_str(), var_atts[i].second.size(),
+      var_atts[i].second.c_str());
+    CHECK_NCERR(retval);
+  }
 }
 
 template <typename ViewType>
-void NcWriter::define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+void NcWriter::define_level_var(const std::string& name, const ekat::units::Units& units,
+  const ViewType& view, const std::vector<text_att_type>& var_atts) {
 
   static_assert(ViewType::Rank == 2, "non-aerosol variables should have views with rank = 2");
 
@@ -50,12 +57,13 @@ void NcWriter::define_level_var(const std::string& name, const ekat::units::Unit
   const int dimids[3] = {time_dimid, col_dimid, level_dimid};
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);
-  add_var_atts(varid, units, view);
+  add_var_atts(varid, units, view, var_atts);
   name_varid_map.emplace(name, varid);
 }
 
 template <typename ViewType>
-void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view) {
+void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units,
+ const ViewType& view, const std::vector<text_att_type>& var_atts) {
 
   static_assert(ViewType::Rank == 2, "non-aerosol variables should have views with rank = 2");
   EKAT_ASSERT(ncid != NC_EBADID);
@@ -73,7 +81,7 @@ void NcWriter::define_interface_var(const std::string& name, const ekat::units::
   const int dimids[3] = {time_dimid, col_dimid, interface_dimid};
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);
-  add_var_atts(varid, units, view);
+  add_var_atts(varid, units, view, var_atts);
   name_varid_map.emplace(name, varid);
 }
 

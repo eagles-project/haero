@@ -44,7 +44,7 @@ class NcWriter {
      mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), name_varid_map() {
       const auto fext = get_filename_ext(new_filename);
       EKAT_REQUIRE_MSG(fext == ".nc",
-        "NcWriter error: filename extension (" + fext + ")  must be .nc");
+        "NcWriter error: filename extension (" + fext + ") must be .nc");
       open();
       add_time_dim();
     }
@@ -152,6 +152,17 @@ class NcWriter {
     void define_modal_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
+    /** @brief defines a constant 1d variable (e.g., a coordinate variable)
+
+        @param [in] name
+        @param [in] units
+        @param [in] vals must have size == num_levels or size == num_levels + 1
+        @param [in] atts
+    */
+    void define_const_1dvar(const std::string& name, const ekat::units::Units& units,
+      const std::vector<Real>& vals,
+      const std::vector<text_att_type>& atts=std::vector<text_att_type>());
+
     /** @brief defines a level midpoint variable from a view of that variable
 
       Here, you're allowed to define a variable name that is different than the view label.
@@ -164,7 +175,8 @@ class NcWriter {
       @param [in] view
     */
     template <typename ViewType>
-    void define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+    void define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view,
+      const std::vector<text_att_type>& var_atts=std::vector<text_att_type>());
 
     /** @brief defines a modal aerosol variable on level midpoints.
 
@@ -176,6 +188,26 @@ class NcWriter {
     */
     template <typename ViewType>
     void define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+
+    /** @brief defines a constant scalar variable (dimension 0)
+
+      @param [in] name
+      @param [in] units
+      @param [in] var_atts
+      @param [in] val
+    */
+    void define_scalar_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& var_atts=std::vector<text_att_type>(),
+      const Real val=0);
+
+    /** @brief defines a scalar variable that can vary in time (dimension 1)
+
+      @param [in] name
+      @param [in] units
+      @param [in] var_atts
+    */
+    void define_time_dependent_scalar_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& var_atts=std::vector<text_att_type>());
 
     /** @brief defines an interface variable  from a view of that variable
 
@@ -189,7 +221,8 @@ class NcWriter {
       @param [in] view
     */
     template <typename ViewType>
-    void define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
+    void define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view,
+      const std::vector<text_att_type>& var_atts=std::vector<text_att_type>());
 
     /** @brief defines the time variable
 
@@ -207,6 +240,15 @@ class NcWriter {
       @param [in] t
     */
     void add_time_value(const Real& t) const;
+
+    /** @brief write scalar data for each column
+
+      @param [in] name
+      @param [in] time_idx
+      @param [in] column_values
+    */
+    void add_time_dependent_scalar_values(const std::string& name, const size_t time_idx,
+      const std::vector<Real>& column_values) const;
 
     /** @brief write one column's data from a std::vector to the nc file.
 
@@ -230,6 +272,10 @@ class NcWriter {
     void add_interface_variable_data(const std::string& varname, const size_t& time_index,
       const size_t& col_index, const std::vector<Real>& data) const;
 
+
+    /** @brief Add data directly from a view
+
+    */
     template <typename ViewType>
     void add_variable_data(const std::string& varname, const size_t& time_index,
       const size_t& col_index, const ViewType& v) const;
@@ -255,7 +301,8 @@ class NcWriter {
     /** @brief adds metadata attributes to newly defined variables
     */
     template <typename ViewType>
-    void add_var_atts(const int varid, const ekat::units::Units& units, const ViewType& view);
+    void add_var_atts(const int varid, const ekat::units::Units& units, const ViewType& view,
+      const std::vector<text_att_type>& var_atts=std::vector<text_att_type>());
 
     /** @brief Adds a dimension for time.
 

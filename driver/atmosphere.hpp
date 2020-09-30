@@ -52,6 +52,9 @@ struct AtmosphericConditions {
 
 /** Construct and return a hydrostatic instance of AtmosphericConditions
 
+  This method checks that the input arguments are within reasonably expected
+  bounds for the standard units listed below.
+
   @param [in] p0 reference pressure [Pa]
   @param [in] T0 reference virtual temperature [K]
   @param [in] Gamma virtual temperature lapse rate [K/m]
@@ -61,8 +64,13 @@ struct AtmosphericConditions {
 AtmosphericConditions hydrostatic_conditions(const Real p0, const Real T0, const Real Gamma,
                                              const Real qv0, const Real qv1);
 
-/// virtual temperature appx. factor [K]
+/**  virtual temperature appx. factor [K]
+
+  (equations (2.1) and (2.3) from Klemp & Wilhelmson, 1978, J. Atm. Sci. 35)
+*/
 static constexpr Real alpha_v = 0.61;
+/// dry air kappa [1]
+static constexpr Real kappa = r_gas_dry_air_joule_per_k_per_kg/cp_dry_air_joule_per_k_per_kg;
 
 /** @brief Computes temperature from virtual temperature an water vapor mixing ratio,
 @f$ T(T_v, q_v) @f$.
@@ -178,7 +186,8 @@ Real height_at_pressure(const Real p, const Real p0, const Real T0, const Real G
     result = -r_gas_dry_air_joule_per_k_per_kg * T0 * std::log(p/p0)/gravity_m_per_s2;
   }
   else {
-    result = (T0/Gamma)*(1 - std::pow(p/p0, r_gas_dry_air_joule_per_k_per_kg*Gamma/gravity_m_per_s2));
+    const Real pwr = r_gas_dry_air_joule_per_k_per_kg*Gamma/gravity_m_per_s2;
+    result = (T0/Gamma)*(1 - std::pow(p/p0, pwr));
   }
   return result;
 }
@@ -204,8 +213,34 @@ Real height_at_pressure(const Real p, const AtmosphericConditions& conds) {
   @return @f$ \theta @f$ or @f$ \theta_v @f$, depending on first argument @f$ T @f$ or @f$ T_v @f$
 */
 KOKKOS_INLINE_FUNCTION
-Real potential_temperature(const Real t, const Real p, const Real p0) {
-  return t * std::pow(p0/p, r_gas_dry_air_joule_per_k_per_kg / cp_dry_air_joule_per_k_per_kg);
+Real potential_temperature(const Real T, const Real p, const Real p0) {
+  return T * std::pow(p0/p, kappa);
+}
+
+
+/** @brief Computes the potential temperature or virtual potential temperature
+
+  @param [in] t temperature or virtual temperature [K]
+  @param [in] p pressure [Pa]
+  @param [in] conds AtmosphericConditions
+  @return @f$ \theta @f$ or @f$ \theta_v @f$, depending on first argument @f$ T @f$ or @f$ T_v @f$
+*/
+KOKKOS_INLINE_FUNCTION
+Real potential_temperature(const Real T, const Real p, const AtmosphericConditions& conds) {
+  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
+  return potential_temperature(T, p, conds.params.hydrostatic.p0);
+}
+
+/** @brief computes the Exner pressure function @f$ \Pi = \left(\frac{p}{p_0}\right)^{\kappa}@f$,
+  where @f$\kappa = R_d/c_p@f$ is a dry-air constant.
+
+  @param [in] p [Pa]
+  @param [in] conds
+*/
+KOKKOS_INLINE_FUNCTION
+Real exner_function(const Real p, const AtmosphericConditions& conds) {
+  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
+  return std::pow(p/conds.params.hydrostatic.p0, kappa);
 }
 
 } // namespace haero
