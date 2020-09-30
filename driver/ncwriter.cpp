@@ -170,6 +170,22 @@ void NcWriter::add_interface_variable_data(const std::string& varname, const siz
   CHECK_NCERR(retval);
 }
 
+void NcWriter::add_time_dependent_scalar_values(const std::string& name,
+  const size_t time_idx, const std::vector<Real>& column_values) const {
+
+  EKAT_REQUIRE(column_values.size() == num_columns());
+  EKAT_ASSERT(time_idx < num_timesteps());
+  const int varid = name_varid_map.at(name);
+  size_t start[2] = {time_idx, 0};
+  size_t count[2] = {1, static_cast<size_t>(num_columns())};
+#ifdef HAERO_DOUBLE_PRECISION
+  int retval = nc_put_vara_double(ncid, varid, start, count, &column_values[0]);
+#else
+  int retval = nc_put_vara_float(ncid, varid, start, count, &column_values[0]);
+#endif
+  CHECK_NCERR(retval);
+}
+
 void NcWriter::add_time_dim() {
   EKAT_ASSERT(ncid != NC_EBADID);
   EKAT_REQUIRE_MSG(time_dimid == NC_EBADID, "time dimension already defined.");
@@ -199,6 +215,24 @@ void NcWriter::define_scalar_var(const std::string& name, const ekat::units::Uni
   }
   retval = nc_put_var(ncid, varid, &val);
   CHECK_NCERR(retval);
+}
+
+void NcWriter::define_time_dependent_scalar_var(const std::string& name,
+  const ekat::units::Units& units, const std::vector<text_att_type>& var_atts) {
+
+  EKAT_ASSERT(ncid != NC_EBADID);
+  EKAT_REQUIRE(time_dimid != NC_EBADID);
+  int varid = NC_EBADID;
+  int dimids[2] = {time_dimid, col_dimid};
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, 2, &dimids[0], &varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace(name, varid);
+
+  for (int i=0; i<var_atts.size(); ++i) {
+    retval = nc_put_att_text(ncid, varid, var_atts[i].first.c_str(),
+        var_atts[i].second.size(), var_atts[i].second.c_str());
+    CHECK_NCERR(retval);
+  }
 }
 
 std::string NcWriter::info_string(const int& tab_level) const {
@@ -323,7 +357,12 @@ int NcWriter::num_levels() const {
 int NcWriter::num_modes() const {
   size_t nm;
   int retval = nc_inq_dimlen(ncid, mode_dimid, &nm);
-  CHECK_NCERR(retval);
+  if (retval == NC_EBADDIM) {
+    nm = 0;
+  }
+  else {
+    CHECK_NCERR(retval);
+  }
   return int(nm);
 }
 

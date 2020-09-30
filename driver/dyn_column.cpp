@@ -36,9 +36,10 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
   /// set boundary data
   m_ztop = interface_heights[0];
   m_ptop = hydrostatic_pressure_at_height(m_ztop, conds);
-  m_psurf = conds.params.hydrostatic.p0;
 
   for (int col_idx=0; col_idx<m_ncol; ++col_idx) {
+    host_psurf(col_idx) = conds.params.hydrostatic.p0;
+
     /// set independent interface variables
     for (int pack_idx=0; pack_idx<num_packs_int(); ++pack_idx) {
       for (int vec_idx=0; vec_idx<HAERO_PACK_SIZE; ++vec_idx) {
@@ -100,9 +101,9 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
           else if (array_idx == num_levels()) { // model surface
             // my interface id = n + 1/2, "nphalf", where "p" => "plus"
             const Real ds_nphalf = 1 -
-              host_interface_scoord(pack_info::pack_idx(num_levels()))[pack_info::vec_idx(num_levels())];
+              host_interface_scoord(pack_info::pack_idx(num_levels()-1))[pack_info::vec_idx(num_levels()-1)];
             const Real p_nphalf = m_psurf;
-            const Real p_n = host_p(col_idx, pack_info::pack_idx(num_levels()))[pack_info::vec_idx(num_levels())];
+            const Real p_n = host_p(col_idx, pack_info::pack_idx(num_levels()-1))[pack_info::vec_idx(num_levels()-1)];
 
             /// Taylor et. al. eqn. (33)
             host_dpds(col_idx, pack_idx)[vec_idx] = 2*(p_nphalf - p_n)/ds_nphalf;
@@ -163,6 +164,22 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
       }
     }
   }
+  Kokkos::deep_copy(w, host_w);
+  Kokkos::deep_copy(phi, host_phi);
+  Kokkos::deep_copy(pi, host_pi);
+  Kokkos::deep_copy(mu, host_mu);
+  Kokkos::deep_copy(dpds, host_dpds);
+  Kokkos::deep_copy(dpids, host_dpids);
+  Kokkos::deep_copy(thetav, host_thetav);
+  Kokkos::deep_copy(p, host_p);
+  Kokkos::deep_copy(qv, host_qv);
+  Kokkos::deep_copy(exner, host_exner);
+  Kokkos::deep_copy(dphids, host_dphids);
+  Kokkos::deep_copy(interface_scoord, host_interface_scoord);
+  Kokkos::deep_copy(interface_ds, host_interface_ds);
+  Kokkos::deep_copy(level_scoord, host_level_scoord);
+  Kokkos::deep_copy(level_ds, host_level_ds);
+  Kokkos::deep_copy(psurf, host_psurf);
 }
 
 NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
@@ -242,6 +259,12 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
   writer.define_level_var("exner", exner_units, exner, exner_atts);
   writer.define_level_var("dphids", phi_units, dphids, dphids_atts);
 
+  /// surface variables
+  const var_atts ps_atts = {std::make_pair("cf_long_name", "surface_air_pressure"),
+    std::make_pair("short_name", "psurf"), std::make_pair("amip_short_name", "ps")};
+  const auto ps_units = ekat::units::Pa;
+  writer.define_time_dependent_scalar_var("surface_pressure", ps_units, ps_atts);
+
   /// Scalar variables
   const var_atts ptop_atts = {
   std::make_pair("cf_long_name","air_pressure_at_top_of_atmosphere_model"),
@@ -257,11 +280,37 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
   const auto scoord_units = ekat::units::Units::nondimensional();
   const auto sinterface_vec = view1d_to_vector(interface_scoord, num_levels()+1);
   const auto slevel_vec = view1d_to_vector(level_scoord, num_levels());
+  const auto ds_levels = view1d_to_vector(level_ds, num_levels());
+  const auto ds_interfaces = view1d_to_vector(interface_ds, num_levels()+1);
   writer.define_const_1dvar("scoord_interfaces", scoord_units, sinterface_vec,
     scoord_atts);
   writer.define_const_1dvar("scoord_levels", scoord_units, slevel_vec, scoord_atts);
+  writer.define_const_1dvar("ds_levels", scoord_units, ds_levels);
+  writer.define_const_1dvar("ds_interfaces", scoord_units, ds_interfaces);
 
   return writer;
+}
+
+void DynColumn::update_ncdata(NcWriter& writer, const size_t time_idx) const {
+
+  const auto ps = view1d_to_vector(psurf, m_ncol);
+  writer.add_time_dependent_scalar_values("surface_pressure", time_idx, ps);
+
+  for (size_t col_idx = 0; col_idx < m_ncol; ++col_idx) {
+    writer.add_variable_data("vertical_velocity", time_idx, col_idx, w);
+    writer.add_variable_data("geopotential", time_idx, col_idx, phi);
+    writer.add_variable_data("hydrostatic_pressure", time_idx, col_idx, pi);
+    writer.add_variable_data("mu", time_idx, col_idx, mu);
+    writer.add_variable_data("dpds", time_idx, col_idx, dpds);
+
+    writer.add_variable_data("pseudodensity", time_idx, col_idx, dpids);
+    writer.add_variable_data("virtual_potential_temperature", time_idx, col_idx, thetav);
+    writer.add_variable_data("pressure", time_idx, col_idx, p);
+    writer.add_variable_data("water_vapor_mixing_ratio", time_idx, col_idx, qv);
+    writer.add_variable_data("exner", time_idx, col_idx, exner);
+    writer.add_variable_data("dphids", time_idx, col_idx, dphids);
+  }
+
 }
 
 } // namespace haero

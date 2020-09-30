@@ -30,6 +30,8 @@ class DynColumn : public ColumnBase {
     qv("water_vapor_mixing_ratio", ncol, num_packs_lev()),
     exner("exner", ncol, num_packs_lev()),
     dphids("dphi/ds", ncol, num_packs_lev()),
+    /// surface variables
+    psurf("surface_pressure", ncol),
     /// coordinate variables
     interface_scoord("interface_scoord", num_packs_int()),
     interface_ds("inteface_ds", num_packs_int()),
@@ -55,23 +57,58 @@ class DynColumn : public ColumnBase {
       host_level_ds = Kokkos::create_mirror_view(level_ds);
       host_interface_scoord = Kokkos::create_mirror_view(interface_scoord);
       host_interface_ds = Kokkos::create_mirror_view(interface_ds);
+
+      host_psurf = Kokkos::create_mirror_view(psurf);
   }
 
+  /** @brief Return a netcdf writer (and open a new netcdf file)
+
+    Defines all dimensions and variables required by the column dynamics model.
+    Does not write any variable data except for constant coordinate variables.
+
+    @param [in] filename
+  */
   NcWriter write_new_ncdata(const std::string& filename) const;
 
-  void update_ncdata(NcWriter& writer, const Real time_val) const;
+  /** @brief Write current variable data to netCDF filename
 
+    @param [in] writer
+    @param [in] time_idx
+  */
+  void update_ncdata(NcWriter& writer, const size_t time_idx) const;
+
+  /** @brief Initialize all column data to a hydrostatically balanced, stationary reference state
+  using a list of z values to define interface heights.
+
+    @param [in] z_vals
+    @param [in] conds
+  */
   void init_from_interface_heights(const std::vector<Real>& z_vals, const AtmosphericConditions& conds);
 
+  /** @brief Initialize all column data to a hydrostatically balanced, stationary reference state
+  using a list of p values to define interface hydrostatic pressures.
+
+    @param [in] p_vals
+    @param [in] conds
+  */
   void init_from_interface_pressures(const std::vector<Real>& p_vals, const AtmosphericConditions& conds);
 
+  /** @brief return a string with basic column state data for use with console output.
+
+  */
   std::string info_string(const int& tab_lev=0) const ;
 
   inline int num_columns() const {return m_ncol;}
 
+  /** @brief Returns the nondimensional s-coordinate associated with height z.
+
+    @warning Must be called after either initialize method, since it requires z_top to be defined.
+
+    @param [in] z height [m]
+    @return s
+  */
   inline Real s_coord(const Real z) const {return (m_ztop - z)/m_ztop;}
 
-  inline Real psurf() const {return m_psurf;}
 
   /// level interface variables
   view_2d w;
@@ -87,6 +124,9 @@ class DynColumn : public ColumnBase {
   view_2d qv;
   view_2d exner;
   view_2d dphids;
+
+  /// surface variables
+  view_1d psurf;
 
   /// constant views
   view_1d interface_scoord;
@@ -119,6 +159,8 @@ class DynColumn : public ColumnBase {
     host_view1d host_interface_ds;
     host_view1d host_level_scoord;
     host_view1d host_level_ds;
+
+    host_view1d host_psurf;
 };
 
 

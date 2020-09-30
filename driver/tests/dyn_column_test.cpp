@@ -13,7 +13,7 @@ TEST_CASE("dynamics_column", "") {
   const Real qv1 = 5E-4;
   const auto conds = hydrostatic_conditions(p0, T0, Gamma, qv0, qv1);
 
-  const int ncol = 2;
+  const int ncol = 1;
 
   SECTION("height_init") {
     const std::vector<Real> z_vals = {10000, 9000, 8000, 7000,
@@ -29,7 +29,7 @@ TEST_CASE("dynamics_column", "") {
 
     std::cout << mycol.info_string();
     auto writer = mycol.write_new_ncdata("dyn_column_test.nc");
-
+    mycol.update_ncdata(writer, 0);
     writer.close();
   }
 
