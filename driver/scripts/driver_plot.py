@@ -41,7 +41,7 @@ def haero_atts(dset):
   haero_revision = dset.__dict__["HAERO_revision"]
   return "HAERO (version, revision) = (" + haero_version + ", "+ haero_revision + ")"
 
-def plot_column(ax0,ax1,ax2, time_idx, col_idx, dset):
+def plot_dynamics_column(ax0, ax1, time_idx, col_idx, dset):
   tval = ncd.variables["time"][time_idx]
   # interface quantities
   phi = np.array(ncd.variables["geopotential"][time_idx][col_idx])
@@ -94,9 +94,20 @@ def plot_column(ax0,ax1,ax2, time_idx, col_idx, dset):
   ax12.set_xlabel("$\mu$", color=mucolor)
   ax12.tick_params(axis='x', labelcolor=mucolor)
 
-  ### Plot 2 : reserved for parameterization variables
-  ax2.text(0.5,0.5, "Reserved for", fontsize=10, wrap=True, ha='center')
-  ax2.text(0.5,0.25, "parameterizations", fontsize=10,ha='center')
+def plot_empty(ax):
+  ax.text(0.5,0.65, "Reserved for", fontsize=10, wrap=True, ha='center')
+  ax.text(0.5,0.5, "parameterizations", fontsize=10,ha='center',va='center')
+
+def plot_text_data(ax3, hatts, fname, col_idx, time_idx):
+  fs = 5
+  ax3.set_xlim(0,10)
+  ax3.set_ylim(0,10)
+  ax3.axis('off')
+  ax3.text(0, 10, "HAERO Standalone Driver", fontsize=fs)
+  ax3.text(0, 9.5, hatts[6:].replace('_', '\_'), fontsize=fs)
+  ax3.text(0.15, 9, "data file: " + PurePath(fname).name.replace('_','\_'), fontsize=fs)
+  ax3.text(0.15, 8.5, "time\_idx = " + str(time_idx) + ", col\_idx = " + str(col_idx),fontsize=fs)
+  ax3.text(0.15, 8, "plots made at " + datetime.utcnow().strftime("%H:%MZ%b-%d-%y"), fontsize=fs)
 
 if __name__ == "__main__":
   parser = make_parser()
@@ -107,7 +118,7 @@ if __name__ == "__main__":
   print(hatts)
 
   plt.rc('text', usetex=True)
-  plt.rc('font', family='serif')
+  plt.rc('font', family='sans-serif')
   plt.rc('ps', useafm=True)
   plt.rc('pdf', use14corefonts=True)
 
@@ -116,11 +127,16 @@ if __name__ == "__main__":
   ax0 = fig.add_subplot(gspc[0,0])
   ax1 = fig.add_subplot(gspc[0,1])
   ax2 = fig.add_subplot(gspc[0,2])
-  plot_column(ax0, ax1, ax2, time_idx, col_idx, ncd)
-  fig.text(0, 0.4, "HAERO Standalone Driver", fontsize=6)
-  fig.text(0, 0.37, hatts.replace('_', '\_'), fontsize=6)
-  fig.text(0.015, 0.35, "data file: " + args.filename.replace('_','\_'), fontsize=6)
-  fig.text(0.015, 0.33, "time\_idx = " + str(time_idx) + ", col\_idx = " + str(col_idx),fontsize=6)
-  fig.text(0.015, 0.31, "plots made at " + datetime.utcnow().strftime("%H:%MZ%b-%d-%y"), fontsize=6)
+  ax3 = fig.add_subplot(gspc[1,0])
+  ax4 = fig.add_subplot(gspc[1,1])
+  ax5 = fig.add_subplot(gspc[1,2])
+  plot_dynamics_column(ax0, ax1, time_idx, col_idx, ncd)
+
+  plot_text_data(ax3, hatts, args.filename, col_idx, time_idx)
+
+  plot_empty(ax2)
+  plot_empty(ax4)
+  plot_empty(ax5)
+
   fig.savefig(args.output_file, bbox_inches='tight')
   plt.close(fig)
