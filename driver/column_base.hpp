@@ -49,7 +49,7 @@ class ColumnBase {
       ````
       for (int pack_idx=0; pack_idx<num_packs; ++pack_idx) {
         for (int vec_idx=0; vec_idx<PACK_SIZE; ++vec_idx) {
-          //********** Convert from (pack, vec) pairs to level or interface index
+          // ********** Convert from (pack, vec) pairs to level or interface index
           const int array_index = pack_info::array_idx(pack_idx, vec_idx);
         }
       }
@@ -65,7 +65,7 @@ class ColumnBase {
 
     ````
       for (int lev_ind = 0; lev_ind < num_levels; ++lev_ind) {
-        //********** Convert from level or interface index to (pack, vec) pairs
+        // ********** Convert from level or interface index to (pack, vec) pairs
         const int pack_idx = pack_info::pack_idx(lev_ind);
         cosnt int vec_idx  = pack_info::vec_idx(lev_ind);
       }
