@@ -91,8 +91,9 @@ class DynColumn : public ColumnBase {
     Does not write any variable data except for constant coordinate variables.
 
     @param [in] filename
+    @param [in] conds  AtmosphericCondition used to initialize reference state
   */
-  NcWriter write_new_ncdata(const std::string& filename) const;
+  NcWriter write_new_ncdata(const std::string& filename, const AtmosphericConditions& conds) const;
 
   /** @brief Write current variable data to netCDF filename
 

@@ -328,8 +328,10 @@ void DynColumn::init_from_interface_pressures(const std::vector<Real>& p_vals,
   Kokkos::deep_copy(psurf, host_psurf);
 }
 
-NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
+NcWriter DynColumn::write_new_ncdata(const std::string& filename, const AtmosphericConditions& conds) const {
   NcWriter writer(filename);
+
+  EKAT_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
 
   using att_type = NcWriter::text_att_type;
   using var_atts = std::vector<att_type>;
@@ -421,8 +423,36 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename) const {
   std::make_pair("cf_long_name","air_pressure_at_top_of_atmosphere_model"),
   std::make_pair("short_name", "p_top")};
   const auto ptop_units = ekat::units::Pa;
-
   writer.define_scalar_var("p_top", ptop_units, ptop_atts, m_ptop);
+
+  const var_atts p0_atts = {
+    std::make_pair("cf_long_name", "reference_air_pressure_for_atmospheric_vertical_coordinate"),
+    std::make_pair("short_name", "p0")};
+  writer.define_scalar_var("p0", ptop_units, p0_atts, conds.params.hydrostatic.p0);
+
+  const var_atts T0_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("haero_long_name", "reference_virtual_temperature")};
+  const auto T0_units = ekat::units::K;
+  writer.define_scalar_var("T0", T0_units, T0_atts, conds.params.hydrostatic.T0);
+
+  const var_atts Gamma_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("haero_long_name", "virtual_temperature_lapse_rate"),
+    std::make_pair("short_name", "Gamma_v")};
+  const auto Gamma_units = ekat::units::K / ekat::units::m;
+  writer.define_scalar_var("Tv_lapse_rate", Gamma_units, Gamma_atts,
+    conds.params.hydrostatic.lapse_rate);
+
+  const var_atts qv0_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("haero_long_name", "surface_water_vapor_mixing_ratio"),
+    std::make_pair("short_name", "qv0")};
+  writer.define_scalar_var("qv0", ekat::units::Units::nondimensional(), qv0_atts,
+    conds.params.hydrostatic.qv0);
+
+  const var_atts qv1_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("haero_long_name", "water_vapor_mixing_ratio_decay_rate"),
+    std::make_pair("short_name", "qv1")};
+  writer.define_scalar_var("qv1", ekat::units::pow(ekat::units::m, -1), qv1_atts,
+    conds.params.hydrostatic.qv1);
 
   /// Coordinate variables
   const var_atts scoord_atts = {
