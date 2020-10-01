@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import argparse
 from datetime import datetime
+from pathlib import PurePath
 
 gravity_m_per_s2 = 9.80616
 mSize = 8.0
@@ -11,14 +12,14 @@ mWidth = mSize/4.0
 
 def make_parser():
   parser = argparse.ArgumentParser(description="Plot output from HAERO driver",
-    usage="python %(prog)s <data_file.nc> [-t, --time_idx] [-c, --col_idx]")
+    usage="python %(prog)s <data_file.nc> [-t, --time_idx] [-c, --col_idx] [-o, --output_file]")
   parser.add_argument("filename", help="HAERO Driver netCDF file",
     default=argparse.SUPPRESS)
   parser.add_argument("--col_idx", "-c", nargs='?', type=int, default=0,
     help="column index for requested data [default=0]")
   parser.add_argument("--time_idx", "-t", nargs='?', type=int, default=0,
     help="time index for requested data [default=0]")
-#   parser.add_argument("--vars, -v", nargs='*', help="variables to plot")
+  parser.add_argument("--output_file", "-o", nargs='?', default="column_profiles.pdf")
   return parser
 
 def process_input(args):
@@ -27,6 +28,10 @@ def process_input(args):
     raise IndexError("time index out of bounds")
   if args.col_idx >= len(ncd.dimensions["ncol"]):
     raise IndexError("column index out of bounds.")
+  sfx = PurePath(args.output_file).suffix
+  valid_sfx = (sfx == ".pdf" or sfx == ".png")
+  if not valid_sfx:
+    raise RuntimeError("output file must have extension '.png' or '.pdf'")
   time_idx = args.time_idx
   col_idx = args.col_idx
   return ncd, time_idx, col_idx
@@ -117,5 +122,5 @@ if __name__ == "__main__":
   fig.text(0.015, 0.35, "data file: " + args.filename.replace('_','\_'), fontsize=6)
   fig.text(0.015, 0.33, "time\_idx = " + str(time_idx) + ", col\_idx = " + str(col_idx),fontsize=6)
   fig.text(0.015, 0.31, "plots made at " + datetime.utcnow().strftime("%H:%MZ%b-%d-%y"), fontsize=6)
-  fig.savefig('column_profiles.pdf', bbox_inches='tight')
+  fig.savefig(args.output_file, bbox_inches='tight')
   plt.close(fig)
