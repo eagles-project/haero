@@ -69,7 +69,7 @@ def plot_dynamics_column(ax0, ax1, time_idx, col_idx, dset):
   ax02 = ax0.twiny()
   qvcolor = "tab:red"
   ax02.plot(qv,p, 'x', color=qvcolor)
-  ax02.set_xlabel("$q_v$ (kg/kg)", color=qvcolor)
+  ax02.set_xlabel("$q_v$ (kg H$_2$O/kg air)", color=qvcolor)
   ax02.tick_params(axis='x', labelcolor=qvcolor)
 
   ### Plot 1 : temperature variables and mu
