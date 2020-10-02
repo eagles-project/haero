@@ -22,9 +22,9 @@ add_custom_target(update_version_info ALL
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-            aerosol_model.cpp
-            aerosol_state.cpp
-            aerosol_tendencies.cpp
+            aero_model.cpp
+            aero_state.cpp
+            aero_tendencies.cpp
             chemistry.cpp
             utils.cpp
             view_pack_helpers.cpp

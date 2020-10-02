@@ -1,22 +1,22 @@
-#ifndef HAERO_AEROSOL_MODEL_HPP
-#define HAERO_AEROSOL_MODEL_HPP
+#ifndef HAERO_AERO_MODEL_HPP
+#define HAERO_AERO_MODEL_HPP
 
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
 #include "haero/chemistry.hpp"
 #include "haero/parameterizations.hpp"
-#include "haero/aerosol_state.hpp"
-#include "haero/aerosol_tendencies.hpp"
+#include "haero/aero_state.hpp"
+#include "haero/aero_tendencies.hpp"
 #include <map>
 
 namespace haero {
 
 /// This type represents an aerosol system to be simulated, including all
 /// information about modes, species, chemistry, and selected parametrizations.
-class AerosolModel final {
+class AeroModel final {
   public:
 
-  /// Creates a AerosolModel that supports the specified parameterizations.
+  /// Creates a AeroModel that supports the specified parameterizations.
   /// @param [in] parameterizations the set of parameterizations (including
   ///                               implementations) supported by the resulting
   ///                               Context
@@ -36,7 +36,7 @@ class AerosolModel final {
   ///                         computational domain
   /// @param [in] num_levels The number of vertical levels in each column within
   ///                        the Context's computational domain
-  AerosolModel(const Parameterizations& parameterizations,
+  AeroModel(const Parameterizations& parameterizations,
                const std::vector<Mode>& aerosol_modes,
                const std::vector<Species>& aerosol_species,
                const std::map<std::string, std::vector<std::string> >& mode_species,
@@ -46,21 +46,21 @@ class AerosolModel final {
                int num_columns,
                int num_levels);
 
-  /// AerosolModels are not deep-copyable. They should be passed by reference.
-  AerosolModel(const AerosolModel&) = delete;
+  /// AeroModels are not deep-copyable. They should be passed by reference.
+  AeroModel(const AeroModel&) = delete;
 
   /// Destructor.
-  ~AerosolModel();
+  ~AeroModel();
 
-  /// AerosolModels are not assignable either.
-  AerosolModel& operator=(const AerosolModel&) = delete;
+  /// AeroModels are not assignable either.
+  AeroModel& operator=(const AeroModel&) = delete;
 
-  /// Creates a new AerosolState object that can be used with this AerosolModel.
-  /// All fields within this new AerosolState are owned and managed by it. In
+  /// Creates a new AeroState object that can be used with this AeroModel.
+  /// All fields within this new AeroState are owned and managed by it. In
   /// the general case, this might not be what you want--in particular, a host
   /// model may demand to manage all of its own state information. Nevertheless,
   /// this simplified state creation can be useful for testing.
-  AerosolState* create_state() const;
+  AeroState* create_state() const;
 
   // Parameterizations
 
@@ -68,8 +68,8 @@ class AerosolModel final {
   /// tendencies (time derivatives).
   /// @param [in] state The aerosol state to be updated.
   /// @param [out] tendencies The aerosol tendencies computed.
-  void run_water_uptake(const AerosolState& state,
-                        AerosolTendencies& tendencies);
+  void run_water_uptake(const AeroState& state,
+                        AeroTendencies& tendencies);
 
   // Accessors
 

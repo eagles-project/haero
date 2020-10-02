@@ -1,7 +1,7 @@
-#ifndef HAERO_AEROSOL_TENDENCIES_HPP
-#define HAERO_AEROSOL_TENDENCIES_HPP
+#ifndef HAERO_AERO_TENDENCIES_HPP
+#define HAERO_AERO_TENDENCIES_HPP
 
-#include "haero/aerosol_state.hpp"
+#include "haero/aero_state.hpp"
 
 namespace haero {
 
@@ -11,14 +11,14 @@ namespace haero {
 ///   aerosol species
 /// * interstitial and cloud-borne number concentrations for each aerosol mode
 /// * mole fractions for gas species
-class AerosolTendencies final {
+class AeroTendencies final {
   public:
 
-  /// This is the device on which the AerosolTendencies stores its data.
-  using DeviceType = AerosolState::DeviceType;
+  /// This is the device on which the AeroTendencies stores its data.
+  using DeviceType = AeroState::DeviceType;
 
   /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
-  using PackType = AerosolState::PackType;
+  using PackType = AeroState::PackType;
 
   /// This type represents a multidimensional array mapping a column and
   /// vertical level to a pack.
@@ -41,13 +41,13 @@ class AerosolTendencies final {
 
   /// Creates a fully-functional set of tendencies that work with the given
   /// aerosol state.
-  /// @param [in] state A finalized AerosolState object that provides all the
+  /// @param [in] state A finalized AeroState object that provides all the
   ///                   necessary information to create a set of corresponding
   ///                   tendencies.
-  explicit AerosolTendencies(const AerosolState& state);
+  explicit AeroTendencies(const AeroState& state);
 
   /// Destructor.
-  ~AerosolTendencies();
+  ~AeroTendencies();
 
   /// Returns the number of aerosol mode tendencies.
   int num_aerosol_modes() const;
@@ -59,6 +59,12 @@ class AerosolTendencies final {
 
   /// Returns the number of gas species tendencies in the state.
   int num_gas_species() const;
+
+  /// Returns the number of independent atmospheric columns.
+  int num_columns() const;
+
+  /// Returns the number of vertical levels per column.
+  int num_levels() const;
 
   /// Returns the view storing interstitial aerosol species mixing fraction
   /// tendencies for the mode with the given index.
@@ -88,12 +94,15 @@ class AerosolTendencies final {
   /// the state (const).
   const ColumnSpeciesView& gas_mole_fractions() const;
 
-  /// Returns the view storing the modal number density tendencies for the state.
-  ColumnView& modal_densities();
+  /// Returns the view storing the number density tendencies for the mode with
+  /// the given index.
+  /// @param [in] mode_index The index of the desired mode.
+  ColumnView& modal_num_density(int mode_index);
 
-  /// Returns the view storing the modal number density tendencies for the state
-  /// (const).
-  const ColumnView& modal_densities() const;
+  /// Returns the view storing the number density tendencies for the mode with
+  /// the given index (const).
+  /// @param [in] mode_index The index of the desired mode.
+  const ColumnView& modal_num_density(int mode_index) const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
@@ -102,23 +111,14 @@ class AerosolTendencies final {
   /// Scales all tendencies by the given constant factor, in place.
   /// @param [in] factor The factor by which the tendencies are scaled.
   /// @returns a reference to the tendencies, which have been scaled.
-  AerosolTendencies& scale(Real factor);
+  AeroTendencies& scale(Real factor);
 
   /// Adds the given set of tendencies to this set, summing the values of the
   /// prognostic variables in place.
   /// @param [in] tendencies The tendencies to be summed into this object.
-  void add(const AerosolTendencies& tendencies);
+  void add(const AeroTendencies& tendencies);
 
   private:
-
-  /// Number of columns in the state.
-  int num_columns_;
-
-  /// Number of vertical levels per column in the state.
-  int num_levels_;
-
-  /// Number of aerosol modes.
-  int num_modes_;
 
   /// Modal interstitial aerosol species mixing ratios.
   /// interstitial_aerosols_[m][s][i][k] -> mixing ratio of aerosol species s
@@ -138,7 +138,7 @@ class AerosolTendencies final {
   /// Modal number densities.
   /// modal_n_[m][i][k] -> number density of mode m located at vertical level k
   /// within column i.
-  ColumnView modal_num_densities_;
+  std::vector<ColumnView> modal_num_densities_;
 };
 
 }

@@ -1,5 +1,5 @@
-#ifndef HAERO_AEROSOL_STATE_HPP
-#define HAERO_AEROSOL_STATE_HPP
+#ifndef HAERO_AERO_STATE_HPP
+#define HAERO_AERO_STATE_HPP
 
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
@@ -13,17 +13,17 @@
 
 namespace haero {
 
-class AerosolTendencies;
+class AeroTendencies;
 
 /// This type stores state information for an aerosol system. It stores
 /// * mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
 /// * interstitial and cloud-borne number concentrations for each aerosol mode
 /// * mole fractions for gas species
-class AerosolState final {
+class AeroState final {
   public:
 
-  /// This is the device on which the AerosolState stores its data.
+  /// This is the device on which the AeroState stores its data.
   using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
 
   /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
@@ -48,14 +48,14 @@ class AerosolState final {
   /// responsibility for managing resources.
   using ColumnSpeciesView = ekat::Unmanaged<Kokkos::View<Real***> >;
 
-  /// Creates an empty AerosolState to which data can be added.
+  /// Creates an empty AeroState to which data can be added.
   /// @param [in] num_columns the number of vertical columns stored by the state
   /// @param [in] num_levels the number of vertical levels per column stored by
   ///                        the state
-  AerosolState(int num_columns, int num_levels);
+  AeroState(int num_columns, int num_levels);
 
   /// Destructor.
-  ~AerosolState();
+  ~AeroState();
 
   // --------------------------------------------------------------------------
   //                               State Setup
@@ -134,6 +134,12 @@ class AerosolState final {
   /// Returns the number of gas species in the state.
   int num_gas_species() const;
 
+  /// Returns the number of independent atmospheric columns in the state.
+  int num_columns() const;
+
+  /// Returns the number of vertical levels per column in the state.
+  int num_levels() const;
+
   /// Returns the view storing interstitial aerosol species mixing fraction data
   /// for the mode with the given index.
   /// @param [in] mode_index The index of the desired mode.
@@ -161,11 +167,15 @@ class AerosolState final {
   /// (const).
   const ColumnSpeciesView& gas_mole_fractions() const;
 
-  /// Returns the view storing the modal number densities for the state.
-  ColumnView& modal_densities();
+  /// Returns the view storing the modal number density for the mode with the
+  /// given index.
+  /// @param [in] mode_index The index of the desired mode.
+  ColumnView& modal_num_density(int mode_index);
 
-  /// Returns the view storing the modal number densities for the state (const).
-  const ColumnView& modal_densities() const;
+  /// Returns the view storing the modal number density for the mode with the
+  /// given index (const).
+  /// @param [in] mode_index The index of the desired mode.
+  const ColumnView& modal_num_density(int mode_index) const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
@@ -174,7 +184,7 @@ class AerosolState final {
   /// Adds the given set of tendencies to this state, summing the values of the
   /// prognostic variables in place.
   /// @param [in] tendencies The tendencies to be summed into the state.
-  void add(const AerosolTendencies& tendencies);
+  void add(const AeroTendencies& tendencies);
 
   private:
 
@@ -189,8 +199,11 @@ class AerosolState final {
   /// Number of vertical levels per column in the state.
   int num_levels_;
 
-  /// Number of aerosol modes.
-  int num_modes_;
+  /// Number of aerosol species within each mode.
+  std::vector<int> num_aero_species_;
+
+  /// Number of gas species.
+  int num_gas_species_;
 
   /// Modal interstitial aerosol species mixing ratios.
   /// interstitial_aerosols_[m][s][i][k] -> mixing ratio of aerosol species s
@@ -210,7 +223,7 @@ class AerosolState final {
   /// Modal number densities.
   /// modal_n_[m][i][k] -> number density of mode m located at vertical level k
   /// within column i.
-  ColumnView modal_num_densities_;
+  std::vector<ColumnView> modal_num_densities_;
 
   // Lists of managed views to be destroyed with the state.
   std::vector<ManagedColumnView> managed_column_views_;
