@@ -18,28 +18,30 @@ int AerosolTendencies::num_aerosol_species(int mode_index) const {
 int AerosolTendencies::num_gas_species() const {
 }
 
-ColumnSpeciesView& AerosolTendencies::interstitial_aerosols(int mode_index) {
+AerosolTendencies::ColumnSpeciesView&
+AerosolTendencies::interstitial_aerosols(int mode_index) {
 }
 
-const ColumnSpeciesView& AerosolTendencies::interstitial_aerosols(int mode_index) const {
+const AerosolTendencies::ColumnSpeciesView&
+AerosolTendencies::interstitial_aerosols(int mode_index) const {
 }
 
-ColumnSpeciesView& AerosolTendencies::cloudborne_aerosols(int mode_index) {
+AerosolTendencies::ColumnSpeciesView& AerosolTendencies::cloudborne_aerosols(int mode_index) {
 }
 
-const ColumnSpeciesView& AerosolTendencies::cloudborne_aerosols(int mode_index) const {
+const AerosolTendencies::ColumnSpeciesView& AerosolTendencies::cloudborne_aerosols(int mode_index) const {
 }
 
-ColumnSpeciesView& AerosolTendencies::gas_mole_fractions() {
+AerosolTendencies::ColumnSpeciesView& AerosolTendencies::gas_mole_fractions() {
 }
 
-const ColumnSpeciesView& AerosolTendencies::gas_mole_fractions() const {
+const AerosolTendencies::ColumnSpeciesView& AerosolTendencies::gas_mole_fractions() const {
 }
 
-ColumnView& AerosolTendencies::modal_densities() {
+AerosolTendencies::ColumnView& AerosolTendencies::modal_densities() {
 }
 
-const ColumnView& AerosolTendencies::modal_densities() const {
+const AerosolTendencies::ColumnView& AerosolTendencies::modal_densities() const {
 }
 
 AerosolTendencies& AerosolTendencies::scale(Real factor) {

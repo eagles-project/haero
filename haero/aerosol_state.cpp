@@ -40,7 +40,7 @@ int AerosolState::num_aerosol_modes() const {
   return num_modes_;
 }
 
-int AeosolState::num_aerosol_species(int mode_index) const {
+int AerosolState::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_modes_);
 }
@@ -48,43 +48,49 @@ int AeosolState::num_aerosol_species(int mode_index) const {
 int AerosolState::num_gas_species() const {
 }
 
-ColumnSpeciesView& AerosolState::interstitial_aerosols(int mode_index) {
+AerosolState::ColumnSpeciesView&
+AerosolState::interstitial_aerosols(int mode_index) {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_modes_);
   return int_aero_species_[mode_index];
 }
 
-const ColumnSpeciesView& AerosolState::interstitial_aerosols(int mode_index) const {
+const AerosolState::ColumnSpeciesView&
+AerosolState::interstitial_aerosols(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_modes_);
   return int_aero_species_[mode_index];
 }
 
-ColumnSpeciesView& AerosolState::cloudborne_aerosols(int mode_index) {
+AerosolState::ColumnSpeciesView&
+AerosolState::cloudborne_aerosols(int mode_index) {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_modes_);
   return cld_aero_species_[mode_index];
 }
 
-const ColumnSpeciesView& AerosolState::cloudborne_aerosols(int mode_index) const {
+const AerosolState::ColumnSpeciesView&
+AerosolState::cloudborne_aerosols(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_modes_);
   return cld_aero_species_[mode_index];
 }
 
-ColumnSpeciesView& AerosolState::gas_mole_fractions() {
+AerosolState::ColumnSpeciesView&
+AerosolState::gas_mole_fractions() {
   return gas_mole_fractions_;
 }
 
-const ColumnSpeciesView& AerosolState::gas_mole_fractions() const {
+const AerosolState::ColumnSpeciesView&
+AerosolState::gas_mole_fractions() const {
   return gas_mole_fractions_;
 }
 
-ColumnView& AerosolState::modal_densities() {
+AerosolState::ColumnView& AerosolState::modal_densities() {
   return modal_num_densities_;
 }
 
-const ColumnView& AerosolState::modal_densities() const {
+const AerosolState::ColumnView& AerosolState::modal_densities() const {
   return modal_num_densities_;
 }
 

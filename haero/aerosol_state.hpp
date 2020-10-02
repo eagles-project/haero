@@ -215,6 +215,10 @@ class AerosolState final {
   // Lists of managed views to be destroyed with the state.
   std::vector<ManagedColumnView> managed_column_views_;
   std::vector<ManagedColumnSpeciesView> managed_column_species_views_;
+
+  // Flag indicating whether the state has been finalized (completely
+  // constructed).
+  bool finalized_;
 };
 
 }
