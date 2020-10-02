@@ -1,8 +1,9 @@
-#include "haero/context.hpp"
+#include "haero/aerosol_model.hpp"
+#include "ekat/util/ekat_units.hpp"
 
 namespace haero {
 
-AerosolModel::Context(
+AerosolModel::AerosolModel(
   const Parameterizations& parameterizations,
   const std::vector<Mode>& aerosol_modes,
   const std::vector<Species>& aerosol_species,
@@ -16,49 +17,40 @@ AerosolModel::Context(
   modes_(aerosol_modes),
   aero_species_(aerosol_species),
   gas_species_(gas_species),
-  species_for_modes_(mode_species),
+  species_for_modes_(),
   gas_chem_(gas_chemistry),
   aqueous_chem_(aqueous_chemistry),
   num_columns_(num_columns),
   num_levels_(num_levels)
 {
+  // Set up mode/species indexing.
+  // TODO
 }
 
-AerosolModel::~Context() {
+AerosolModel::~AerosolModel() {
 }
 
 AerosolState* AerosolModel::create_state() const {
-  std::vector<std::string> mode_names(modes_.size());
-  for (size_t i = 0; i < modes_.size(); ++i) {
-    mode_names[i] = modes_[i].name();
-  }
-  auto state = new AerosolState(modes);
 
-  // Add fields for modal number densities.
-  auto num_density_units = pow(ekat::units::m, -3);
-  for (size_t i = 0; i < modes_.size(); ++i) {
-    auto field_name = modes_[i].name + std::string("_num_density");
-    state.create_field(field_name, num_density_units);
-  }
+  auto state = new AerosolState(num_columns_, num_levels_);
 
-  // Add fields for modal aerosol species mix fractions.
-  auto mix_frac_units = ekat::units::Units(1);
+  // Add aerosol modes/species data.
   for (size_t i = 0; i < modes_.size(); ++i) {
-    auto field_name = gas_species_[i].symbol + std::string("_mix_frac");
-    state.create_modal_field(modes_[i].name(), field_name, mix_frac_units);
+    std::vector<Species> species;
+    for (size_t j = 0; j < species_for_modes_[i].size(); ++j) {
+      species.push_back(aero_species_[species_for_modes_[i][j]]);
+    }
+    state->add_aerosol_mode(modes_[i], species);
   }
 
-  // Add fields for gas species mole fractions.
-  auto mole_frac_units = ekat::units::Units(1);
-  for (size_t i = 0; i < modes_.size(); ++i) {
-    auto field_name = gas_species_[i].symbol + std::string("_mole_frac");
-    state.create_field(field_name, mole_frac_units);
-  }
+  // Add gas species data.
+  state->add_gas_species(gas_species_);
 
   return state;
 }
 
-void AerosolModel::run_water_uptake(AerosolState& state) {
+void AerosolModel::run_water_uptake(const AerosolState& state,
+                                    AerosolTendencies& tendencies) {
 }
 
 const Parameterizations& AerosolModel::parameterizations() const {

@@ -13,6 +13,8 @@
 
 namespace haero {
 
+class AerosolTendencies;
+
 /// This type stores state information for an aerosol system. It stores
 /// * mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
@@ -145,7 +147,7 @@ class AerosolState final {
   /// Returns the view storing cloud-borne aerosol species mixing fraction data
   /// for the mode with the given index.
   /// @param [in] mode_index The index of the desired mode.
-  ColumnSpeciesView& cloudborne_erosols(int mode_index);
+  ColumnSpeciesView& cloudborne_aerosols(int mode_index);
 
   /// Returns the view storing cloud-borne aerosol species data for the mode
   /// with the given index (const).
@@ -164,6 +166,15 @@ class AerosolState final {
 
   /// Returns the view storing the modal number densities for the state (const).
   const ColumnView& modal_densities() const;
+
+  // --------------------------------------------------------------------------
+  //                         Mathematical Operations
+  // --------------------------------------------------------------------------
+
+  /// Adds the given set of tendencies to this state, summing the values of the
+  /// prognostic variables in place.
+  /// @param [in] tendencies The tendencies to be summed into the state.
+  void add(const AerosolTendencies& tendencies);
 
   private:
 

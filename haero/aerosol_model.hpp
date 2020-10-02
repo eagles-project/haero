@@ -6,6 +6,7 @@
 #include "haero/chemistry.hpp"
 #include "haero/parameterizations.hpp"
 #include "haero/aerosol_state.hpp"
+#include "haero/aerosol_tendencies.hpp"
 #include <map>
 
 namespace haero {
@@ -66,7 +67,9 @@ class AerosolModel final {
   /// Runs the selected water uptake parametrization, computing related
   /// tendencies (time derivatives).
   /// @param [in] state The aerosol state to be updated.
-  void run_water_uptake(const AerosolState& state);
+  /// @param [out] tendencies The aerosol tendencies computed.
+  void run_water_uptake(const AerosolState& state,
+                        AerosolTendencies& tendencies);
 
   // Accessors
 
@@ -100,7 +103,7 @@ class AerosolModel final {
 
   // The association of aerosol species with modes.
   // species_for_modes_[mode_name] = vector of species names
-  std::map<std::string, std::vector<std::string> > species_for_modes_;
+  std::vector<std::vector<int> > species_for_modes_;
 
   // Chemical mechanisms.
   ChemicalMechanism gas_chem_;
