@@ -13,35 +13,62 @@ AeroState::~AeroState() {
 
 int AeroState::add_aerosol_mode(const Mode& mode,
                                 const std::vector<Species>& aero_species) {
-  EKAT_ASSERT_MSG(not finalized_,
-                  "Cannot add an aerosol mode to a finalized AeroState!");
-  num_aero_species_.push_back(aero_species.size());
-  return static_cast<int>(num_aero_species_.size()-1);
+  auto int_view_name = std::string("interstitial_aerosols(") + mode.name +
+                       std::string(")");
+  auto int_aero_data = ManagedColumnSpeciesView(int_view_name,
+                                                num_columns_,
+                                                aero_species.size(),
+                                                num_levels_);
+  managed_column_species_views_.push_back(int_aero_data);
+  auto cld_view_name = std::string("cloudborne_aerosols(") + mode.name +
+                       std::string(")");
+  auto cld_aero_data = ManagedColumnSpeciesView(cld_view_name,
+                                                num_columns_,
+                                                aero_species.size(),
+                                                num_levels_);
+  managed_column_species_views_.push_back(cld_aero_data);
+  return add_aerosol_mode(mode,
+                          aero_species,
+                          ColumnSpeciesView(int_aero_data),
+                          ColumnSpeciesView(cld_aero_data));
 }
 
 int AeroState::add_aerosol_mode(const Mode& mode,
                                 const std::vector<Species>& aero_species,
                                 ColumnSpeciesView& int_aero_data,
-                                ColumnSpeciesView& cld_aero_data) {
+                                ColumnSpeciesView& cld_aero_data,
+                                ColumnView& modal_data) {
   EKAT_ASSERT_MSG(not finalized_,
                   "Cannot add an aerosol mode to a finalized AeroState!");
-  num_aero_species_.push_back(aero_species.size());
-  return static_cast<int>(num_aero_species_.size()-1);
+  aero_species_names_.push_back(std::vector<std::string>());
+  for (int s = 0; s < aero_species.size(); ++s) {
+    aero_species_names_.back().push_back(aero_species[s].symbol);
+  }
+  int_aero_species_.push_back(int_aero_data);
+  cld_aero_species_.push_back(cld_aero_data);
+  return static_cast<int>(aero_species_names_.size()-1);
 }
 
-int AeroState::add_gas_species(const std::vector<Species>& gas_species) {
-  EKAT_ASSERT_MSG(not finalized_,
-                  "Cannot add gas species to a finalized AeroState!");
-  num_gas_species_ += gas_species.size();
-  return static_cast<int>(num_aero_species_.size()-gas_species.size()-1);
+void AeroState::add_gas_species(const std::vector<Species>& gas_species) {
+  int num_species = gas_species.size();
+  auto gas_mole_fracs = ManagedColumnSpeciesView("gas_mole_fractions",
+                                                 num_columns_,
+                                                 num_species,
+                                                 num_levels_);
+  managed_column_species_views_.push_back(gas_mole_fracs);
+  add_gas_species(gas_species, ColumnSpeciesView(gas_mole_fracs));
 }
 
-int AeroState::add_gas_species(const std::vector<Species>& gas_species,
-                               ColumnSpeciesView& int_aero_data) {
+void AeroState::add_gas_species(const std::vector<Species>& gas_species,
+                                std::unique_ptr<ColumnSpeciesView> gas_data) {
   EKAT_ASSERT_MSG(not finalized_,
                   "Cannot add gas species to a finalized AeroState!");
-  num_gas_species_ += gas_species.size();
-  return static_cast<int>(num_aero_species_.size()-gas_species.size()-1);
+  EKAT_ASSERT_MSG(gas_species_names_.empty(),
+                  "Cannot add more than one set of gas species to an AeroState!");
+  for (int s = 0; s < gas_species.size(); ++s) {
+    gas_species_names_.push_back(gas_species[s].symbol);
+  }
+  gas_mole_fractions_ = gas_data;
 }
 
 void AeroState::finalize() {
@@ -53,17 +80,17 @@ bool AeroState::is_finalized() const {
 }
 
 int AeroState::num_aerosol_modes() const {
-  return num_aero_species_.size();
+  return aero_species_names_.size();
 }
 
 int AeroState::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < num_aero_species_.size());
-  return num_aero_species_[mode_index];
+  EKAT_ASSERT(mode_index < aero_species_names_.size());
+  return aero_species_names_[mode_index].size();
 }
 
 int AeroState::num_gas_species() const {
-  return num_gas_species_;
+  return static_cast<int>(gas_species_names_.size());
 }
 
 int AeroState::num_columns() const {
@@ -79,7 +106,7 @@ AeroState::interstitial_aerosols(int mode_index) {
   EKAT_ASSERT_MSG(finalized_,
                   "Cannot access data in a non-finalized AeroState!");
   EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < num_aero_species_.size());
+  EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
 }
 
@@ -88,7 +115,7 @@ AeroState::interstitial_aerosols(int mode_index) const {
   EKAT_ASSERT_MSG(finalized_,
                   "Cannot access data in a non-finalized AeroState!");
   EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < num_aero_species_.size());
+  EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
 }
 
@@ -96,7 +123,7 @@ AeroState::ColumnSpeciesView& AeroState::cloudborne_aerosols(int mode_index) {
   EKAT_ASSERT_MSG(finalized_,
                   "Cannot access data in a non-finalized AeroState!");
   EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < num_aero_species_.size());
+  EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
 }
 
@@ -105,7 +132,7 @@ AeroState::cloudborne_aerosols(int mode_index) const {
   EKAT_ASSERT_MSG(finalized_,
                   "Cannot access data in a non-finalized AeroState!");
   EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < num_aero_species_.size());
+  EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
 }
 

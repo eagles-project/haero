@@ -84,12 +84,15 @@ class AeroState final {
   ///                           interstitial aerosol data in this mode.
   /// @param [in] cld_aero_data An unmanaged view to use for storing
   ///                           cloud-borne aerosol data in this mode.
+  /// @param [in] modal_data An unmanaged view to use for storing
+  ///                        the mode's number density data.
   /// @returns the index of the aerosol mode within the state.
   /// @throws
   int add_aerosol_mode(const Mode& mode,
                        const std::vector<Species>& aero_species,
                        ColumnSpeciesView& int_aero_data,
-                       ColumnSpeciesView& cld_aero_data);
+                       ColumnSpeciesView& cld_aero_data,
+                       ColumnView& modal_data);
 
   /// Adds a set of gas species to the state. This method creates managed views
   /// for the gas species data within the state. Use this when your host model
@@ -97,9 +100,7 @@ class AeroState final {
   /// @param [in] gas_species An list of gas species belonging to the mode.
   ///                         The species are appended to any existing gas
   ///                         species within the state.
-  /// @returns the index of the first new gas species added to the state.
-  /// @throws
-  int add_gas_species(const std::vector<Species>& gas_species);
+  void add_gas_species(const std::vector<Species>& gas_species);
 
   /// Adds a set of gas species to the state. This method accepts an unmanaged
   /// view for the gas species data to be used by the state, but whose resources
@@ -108,10 +109,10 @@ class AeroState final {
   /// @param [in] gas_species An list of gas species to be added to the state.
   ///                         The species are appended to any existing gas
   ///                         species within the state.
-  /// @returns the index of the first new gas species added to the state.
-  /// @throws
-  int add_gas_species(const std::vector<Species>& gas_species,
-                      ColumnSpeciesView& int_aero_data);
+  /// @param [in] gas_data An unmanaged view to use for storing
+  ///                      gas species data.
+  void add_gas_species(const std::vector<Species>& gas_species,
+                       ColumnSpeciesView& gas_data);
 
   /// Finalizes the state, doing any necessary allocations. No data may be
   /// accessed within the state before this is done.
@@ -199,11 +200,11 @@ class AeroState final {
   /// Number of vertical levels per column in the state.
   int num_levels_;
 
-  /// Number of aerosol species within each mode.
-  std::vector<int> num_aero_species_;
+  /// Aerosol species names within each mode.
+  std::vector<std::vector<std::string> > aero_species_names_;
 
-  /// Number of gas species.
-  int num_gas_species_;
+  /// Gas species names.
+  std::vector<std::string> gas_species_names_;
 
   /// Modal interstitial aerosol species mixing ratios.
   /// interstitial_aerosols_[m][s][i][k] -> mixing ratio of aerosol species s
@@ -226,8 +227,8 @@ class AeroState final {
   std::vector<ColumnView> modal_num_densities_;
 
   // Lists of managed views to be destroyed with the state.
-  std::vector<ManagedColumnView> managed_column_views_;
-  std::vector<ManagedColumnSpeciesView> managed_column_species_views_;
+  std::vector<std::unique_ptr<ManagedColumnView> > managed_column_views_;
+  std::vector<std::unique_ptr<ManagedColumnSpeciesView> > managed_column_species_views_;
 
   // Flag indicating whether the state has been finalized (completely
   // constructed).

@@ -37,14 +37,14 @@ class AeroModel final {
   /// @param [in] num_levels The number of vertical levels in each column within
   ///                        the Context's computational domain
   AeroModel(const Parameterizations& parameterizations,
-               const std::vector<Mode>& aerosol_modes,
-               const std::vector<Species>& aerosol_species,
-               const std::map<std::string, std::vector<std::string> >& mode_species,
-               const std::vector<Species>& gas_species,
-               const ChemicalMechanism& gas_chemistry,
-               const ChemicalMechanism& aqueous_chemistry,
-               int num_columns,
-               int num_levels);
+            const std::vector<Mode>& aerosol_modes,
+            const std::vector<Species>& aerosol_species,
+            const std::map<std::string, std::vector<std::string> >& mode_species,
+            const std::vector<Species>& gas_species,
+            ChemicalMechanism* gas_chemistry,
+            ChemicalMechanism* aqueous_chemistry,
+            int num_columns,
+            int num_levels);
 
   /// AeroModels are not deep-copyable. They should be passed by reference.
   AeroModel(const AeroModel&) = delete;
@@ -106,8 +106,8 @@ class AeroModel final {
   std::vector<std::vector<int> > species_for_modes_;
 
   // Chemical mechanisms.
-  ChemicalMechanism gas_chem_;
-  ChemicalMechanism aqueous_chem_;
+  ChemicalMechanism* gas_chem_;
+  ChemicalMechanism* aqueous_chem_;
 
   // Grid parameters.
   int num_columns_;

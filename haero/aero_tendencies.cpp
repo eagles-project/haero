@@ -2,8 +2,29 @@
 
 namespace haero {
 
-AeroTendencies::AeroTendencies(const AeroState& state)
-{
+AeroTendencies::AeroTendencies(const AeroState& state) {
+  EKAT_ASSERT_MSG(state.is_finalized(),
+                  "Cannot construct AeroTendencies from an AeroState that isn't finalized!");
+  int num_modes = state.num_aerosol_modes();
+  int num_columns = state.num_columns();
+  int num_levels = state.num_levels();
+  for (int m = 0; m < num_modes; ++m) {
+    int num_aero_species = state.num_aerosol_species(m);
+    int_aero_species_.push_back(ColumnSpeciesView("dqi/dt",
+                                                  num_columns,
+                                                  num_aero_species,
+                                                  num_levels));
+    cld_aero_species_.push_back(ColumnSpeciesView("dqc/dt",
+                                                  num_columns,
+                                                  num_aero_species,
+                                                  num_levels));
+    modal_num_densities_.push_back(ColumnView("dn/dt", num_columns, num_levels));
+  }
+  int num_gas_species = state.num_gas_species();
+  gas_mole_fractions_ = ColumnSpeciesView("d(gas_mole_fractions)/dt",
+                                          num_columns,
+                                          num_gas_species,
+                                          num_levels);
 }
 
 AeroTendencies::~AeroTendencies() {

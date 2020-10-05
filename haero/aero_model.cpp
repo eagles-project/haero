@@ -9,8 +9,8 @@ AeroModel::AeroModel(
   const std::vector<Species>& aerosol_species,
   const std::map<std::string, std::vector<std::string> >& mode_species,
   const std::vector<Species>& gas_species,
-  const ChemicalMechanism& gas_chemistry,
-  const ChemicalMechanism& aqueous_chemistry,
+  ChemicalMechanism* gas_chemistry,
+  ChemicalMechanism* aqueous_chemistry,
   int num_columns,
   int num_levels):
   parameterizations_(parameterizations),
@@ -23,6 +23,11 @@ AeroModel::AeroModel(
   num_columns_(num_columns),
   num_levels_(num_levels)
 {
+  EKAT_ASSERT_MSG(gas_chemistry != nullptr,
+                  "A gas chemistry mechanism must be provided!");
+  EKAT_ASSERT_MSG(aqueous_chemistry != nullptr,
+                  "An aqueous chemistry mechanism must be provided!");
+
   // Set up mode/species indexing.
   // TODO
 }
@@ -70,11 +75,11 @@ const std::vector<Species>& AeroModel::gas_species() const {
 }
 
 const ChemicalMechanism& AeroModel::gas_chemistry() const {
-  return gas_chem_;
+  return *gas_chem_;
 }
 
 const ChemicalMechanism& AeroModel::aqueous_chemistry() const {
-  return aqueous_chem_;
+  return *aqueous_chem_;
 }
 
 }
