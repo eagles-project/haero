@@ -6,6 +6,7 @@
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include "kokkos/Kokkos_Core.hpp"
+#include <iostream>
 
 namespace haero {
 
@@ -33,6 +34,7 @@ class ColumnBase {
   using view_1d = kokkos_device_types::view_1d<real_pack_type>;
   /// A 2d view of packs for 2d variables
   using view_2d = kokkos_device_types::view_2d<real_pack_type>;
+
   /** A view type that adds a dimension for number of modes.
 
     @todo Should we keep this?

@@ -149,7 +149,11 @@ class DynColumn : public ColumnBase {
   view_1d level_scoord;
   view_1d level_ds;
 
+  void sum_psurf();
+
   DynColumn() = delete;
+
+  void update_device();
 
   protected:
     /** @brief Returns the nondimensional s-coordinate associated with height z.
@@ -170,6 +174,24 @@ class DynColumn : public ColumnBase {
       @return z [m]
     */
     inline Real z_coord(const Real s) const {return m_ztop*(1-s);}
+
+    /** @brief Set values of pack padding = 0.
+
+        Called on host mirrors.
+    */
+    void set_padding_to_zero();
+
+
+    /** @brief A set of assertions to verify the columns' reference profile is initialized
+      correctly.
+
+      Tests properties from Taylor et. al. 2020.
+      - @f$ s_{1/2} = 0, \quad s_{n+1/2} = 1@f$
+      - @f$\Delta s_{1/2} = \Delta s_1, \quad \Delta s_{n+1/2} = \Delta s_n@f$
+      - eqn.~(34): @f$ p_{top} + \sum_{k=1}^n \big(\frac{\partial \pi}{\partial s}\big)_k\Delta s_k = p_0 @f$
+      - eqn.~(35): @f$ p_{top} + \sum_{k=0}^n'\big(\frac{\partial p}{\partial s}\big)_{k+1/2} \Detla s_{k+1/2} @f$
+    */
+    void check_init(const AtmosphericConditions& conds);
 
     Real m_ztop;
     Real m_ptop;
