@@ -1,4 +1,5 @@
 #include "driver/dyn_column.hpp"
+#include "haero/floating_point.hpp"
 #include <iostream>
 
 #include "catch2/catch.hpp"
@@ -28,6 +29,18 @@ TEST_CASE("dynamics_column", "") {
 
     DynColumn mycol(ncol, nlev);
     mycol.init_from_interface_heights(z_vals, conds);
+    mycol.sum_psurf();
+
+    auto hps = Kokkos::create_mirror_view(mycol.psurf);
+    Kokkos::deep_copy(hps, mycol.psurf);
+    int nerr = 0;
+    for (int i=0; i<ncol; ++i) {
+      if (!FloatingPoint<Real>::equiv(hps(i), p0)) {
+        ++nerr;
+        std::cout << "surface pressure error: ps " << hps(i) << " != p0 " << p0 << '\n';
+      }
+    }
+    CHECK (nerr == 0);
 
     std::cout << mycol.info_string();
     auto writer = mycol.write_new_ncdata("dyn_column_test_zinit.nc", conds);
@@ -43,6 +56,29 @@ TEST_CASE("dynamics_column", "") {
 
     DynColumn mycol(ncol, nlev);
     mycol.init_from_interface_pressures(p_vals, conds);
+    mycol.sum_psurf();
+
+    auto hps = Kokkos::create_mirror_view(mycol.psurf);
+    Kokkos::deep_copy(hps, mycol.psurf);
+    int nerr = 0;
+    for (int i=0; i<ncol; ++i) {
+      if (!FloatingPoint<Real>::equiv(hps(i), p0)) {
+        ++nerr;
+        std::cout << "surface pressure error: ps " << hps(i) << " != p0 " << p0 << '\n';
+      }
+    }
+    CHECK (nerr == 0);
+
+    Real pi_surf = 0;
+    const auto dpids_loc = mycol.dpids;
+    const auto ds_lev_loc = mycol.level_ds;
+    Kokkos::parallel_reduce(nlev, KOKKOS_LAMBDA (const int i, Real& ps) {
+      const int pack_idx = pack_info::pack_idx(i);
+      const int vec_idx = pack_info::vec_idx(i);
+      ps += dpids_loc(0,pack_idx)[vec_idx] * ds_lev_loc(pack_idx)[vec_idx];
+    }, pi_surf);
+    pi_surf += p_vals[0];
+    CHECK(FloatingPoint<Real>::equiv(pi_surf, p_vals[nlev]));
 
     std::cout << mycol.info_string();
     auto writer = mycol.write_new_ncdata("dyn_column_test_pinit.nc", conds);
