@@ -5,7 +5,7 @@ namespace haero {
 AeroState::AeroState(int num_columns, int num_levels):
   num_columns_(num_columns),
   num_levels_(num_levels),
-  finalized_(false) {
+  assembled_(false) {
 }
 
 AeroState::~AeroState() {
@@ -44,8 +44,8 @@ int AeroState::add_aerosol_mode(const Mode& mode,
                                 ColumnSpeciesView int_aero_data,
                                 ColumnSpeciesView cld_aero_data,
                                 ColumnView modal_data) {
-  EKAT_ASSERT_MSG(not finalized_,
-                  "Cannot add an aerosol mode to a finalized AeroState!");
+  EKAT_ASSERT_MSG(not assembled_,
+                  "Cannot add an aerosol mode to an assembled AeroState!");
   aero_species_names_.push_back(std::vector<std::string>());
   for (int s = 0; s < aero_species.size(); ++s) {
     aero_species_names_.back().push_back(aero_species[s].symbol);
@@ -67,8 +67,8 @@ void AeroState::add_gas_species(const std::vector<Species>& gas_species) {
 
 void AeroState::add_gas_species(const std::vector<Species>& gas_species,
                                 ColumnSpeciesView gas_data) {
-  EKAT_ASSERT_MSG(not finalized_,
-                  "Cannot add gas species to a finalized AeroState!");
+  EKAT_ASSERT_MSG(not assembled_,
+                  "Cannot add gas species to an assembled AeroState!");
   EKAT_ASSERT_MSG(gas_species_names_.empty(),
                   "Cannot add more than one set of gas species to an AeroState!");
   for (int s = 0; s < gas_species.size(); ++s) {
@@ -77,12 +77,12 @@ void AeroState::add_gas_species(const std::vector<Species>& gas_species,
   gas_mole_fractions_ = gas_data;
 }
 
-void AeroState::finalize() {
-  finalized_ = true;
+void AeroState::assemble() {
+  assembled_ = true;
 }
 
-bool AeroState::is_finalized() const {
-  return finalized_;
+bool AeroState::is_assembled() const {
+  return assembled_;
 }
 
 int AeroState::num_aerosol_modes() const {
@@ -109,8 +109,8 @@ int AeroState::num_levels() const {
 
 AeroState::ColumnSpeciesView&
 AeroState::interstitial_aerosols(int mode_index) {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in a unassembled AeroState!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
@@ -118,16 +118,16 @@ AeroState::interstitial_aerosols(int mode_index) {
 
 const AeroState::ColumnSpeciesView&
 AeroState::interstitial_aerosols(int mode_index) const {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in an unassembled AeroState!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
 }
 
 AeroState::ColumnSpeciesView& AeroState::cloudborne_aerosols(int mode_index) {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in an unassembled AeroState!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
@@ -135,36 +135,36 @@ AeroState::ColumnSpeciesView& AeroState::cloudborne_aerosols(int mode_index) {
 
 const AeroState::ColumnSpeciesView&
 AeroState::cloudborne_aerosols(int mode_index) const {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in an unassembled AeroState!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
 }
 
 AeroState::ColumnSpeciesView& AeroState::gas_mole_fractions() {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in an unassembled AeroState!");
   return gas_mole_fractions_;
 }
 
 const AeroState::ColumnSpeciesView& AeroState::gas_mole_fractions() const {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in an unassembled AeroState!");
   return gas_mole_fractions_;
 }
 
 AeroState::ColumnView& AeroState::modal_num_density(int mode_index) {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in an unassembled AeroState!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < modal_num_densities_.size());
   return modal_num_densities_[mode_index];
 }
 
 const AeroState::ColumnView& AeroState::modal_num_density(int mode_index) const {
-  EKAT_ASSERT_MSG(finalized_,
-                  "Cannot access data in a non-finalized AeroState!");
+  EKAT_ASSERT_MSG(assembled_,
+                  "Cannot access data in an unassembled AeroState!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < modal_num_densities_.size());
   return modal_num_densities_[mode_index];

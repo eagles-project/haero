@@ -13,12 +13,12 @@ TEST_CASE("aero_tendencies_ctor", "") {
   AeroState state(10, 72);
   // TODO
 
-  // Try to create tendencies for this state before it's finalized.
+  // Try to create tendencies for this state before it's assembled.
   REQUIRE_THROWS(AeroTendencies(state));
 
-  // Finalize the state, create tendencies for it, and make sure the vitals
+  // Assemble the state, create tendencies for it, and make sure the vitals
   // match up.
-  state.finalize();
+  state.assemble();
   AeroTendencies tends(state);
   REQUIRE(tends.num_aerosol_modes() == state.num_aerosol_modes());
   for (int m = 0; m < tends.num_aerosol_modes(); ++m) {

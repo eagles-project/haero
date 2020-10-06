@@ -3,8 +3,8 @@
 namespace haero {
 
 AeroTendencies::AeroTendencies(const AeroState& state) {
-  EKAT_ASSERT_MSG(state.is_finalized(),
-                  "Cannot construct AeroTendencies from an AeroState that isn't finalized!");
+  EKAT_ASSERT_MSG(state.is_assembled(),
+                  "Cannot construct AeroTendencies from an unassembled AeroState!");
   int num_modes = state.num_aerosol_modes();
   int num_columns = state.num_columns();
   int num_levels = state.num_levels();

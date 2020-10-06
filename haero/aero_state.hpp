@@ -13,6 +13,7 @@
 
 namespace haero {
 
+/// This is a forward declaration, since we refer to AeroTendencies below.
 class AeroTendencies;
 
 /// This type stores state information for an aerosol system. It stores
@@ -114,12 +115,12 @@ class AeroState final {
   void add_gas_species(const std::vector<Species>& gas_species,
                        ColumnSpeciesView gas_data);
 
-  /// Finalizes the state, doing any necessary allocations. No data may be
-  /// accessed within the state before this is done.
-  void finalize();
+  /// Assembles the state, doing any necessary allocations and making it ready
+  /// for use. No data may be accessed within the state before this is done.
+  void assemble();
 
-  /// Returns true if the state has been finalized, false if not.
-  bool is_finalized() const;
+  /// Returns true if the state has been assembled, false if not.
+  bool is_assembled() const;
 
   // --------------------------------------------------------------------------
   //                           Access to Data and Metadata
@@ -230,9 +231,9 @@ class AeroState final {
   std::vector<ManagedColumnView> managed_column_views_;
   std::vector<ManagedColumnSpeciesView> managed_column_species_views_;
 
-  // Flag indicating whether the state has been finalized (completely
+  // Flag indicating whether the state has been assembled (completely
   // constructed).
-  bool finalized_;
+  bool assembled_;
 };
 
 }
