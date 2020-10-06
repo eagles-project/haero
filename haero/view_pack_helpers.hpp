@@ -63,6 +63,13 @@ view_1d_scalar_type vector_to_basic_1dview(const std::vector<Real>& vector, cons
 */
 view_1d_pack_type vector_to_packed_1dview(const std::vector<Real>& vector, const std::string& view_name);
 
+/** @brief Converts a 1d view (or 1d subview) to a std::vector
+
+  @warning For packed data, the length of the output vector may not be the same as the extent of the view.
+
+  @param [in] v view with ViewType::Rank = 1
+  @param [in] array_length length of output vector
+*/
 template <typename ViewType>
 std::vector<Real> view1d_to_vector(const ViewType& v, const int array_length=0)
   { static_assert(ViewType::Rank == 1, "view1d_to_vector error : View must be rank 1.");
@@ -71,7 +78,7 @@ std::vector<Real> view1d_to_vector(const ViewType& v, const int array_length=0)
 
 /** @brief Convert a 2d set of vectors, (`std::vector<std::vector<Real>>`) to `Kokkos::View<Real**>`
 
-  @param [in] vector
+  @param [in] vectors
   @param [in] view_name
   @return Kokkos view + deep copied data
 */
@@ -81,7 +88,7 @@ view_2d_scalar_type vector_to_basic_2dview(const std::vector<std::vector<Real>>&
 
   view(i,j) = 1 x PACK_SIZE block
 
-  @param [in] vector
+  @param [in] vectors
   @param [in] view_name
   @return Kokkos view + deep copied data
 */

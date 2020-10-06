@@ -28,7 +28,7 @@ class State final {
   /// call this constructor explicitly--create a State using a Context object
   /// instead.
   /// @param [in] num_modes the number of aerosol modes stored by the state
-  /// @param [in] num_modal_aero_species an array mapping each mode to the
+  /// @param [in] num_modal_species an array mapping each mode to the
   ///                                    number of aerosol species it contains
   ///                                    (both interstitial and cloud-borne)
   /// @param [in] num_gas_species the number of gas species stored by the state

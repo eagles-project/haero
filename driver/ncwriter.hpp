@@ -16,6 +16,20 @@
 namespace haero {
 namespace driver {
 
+/** @brief Class for writing netCDF data from driver
+
+  Combines definition and attribute steps, and sets all possible metadata.
+
+  Assumes at most 1 file open per NcWriter instance.
+      All values initialized to invalid data; they will be set to valid data by other
+      member functions.
+
+      Data model:
+        - Non-aerosol data have rank = 3, with dimensions (time, column, level)
+        - Aerosol data have rank = 4, with dimensions (time, column, mode, level)
+
+      Writes HAERO metadata (version, git revision) to file.
+*/
 class NcWriter {
   public:
     /// key-value pairs for metadata attributes
@@ -25,18 +39,6 @@ class NcWriter {
     static constexpr int NC_REAL_KIND = (std::is_same<Real,double>::value ? NC_DOUBLE : NC_FLOAT);
 
     /** @brief Constructor.  Must be called from host.
-
-      Assumes at most 1 file open per NcWriter instance.
-      All values initialized to invalid data; they will be set to valid data by other
-      member functions.
-
-      Data model:
-        - Non-aerosol data have rank = 3, with dimensions (time, column, level)
-        - Aerosol data have rank = 4, with dimensions (time, column, mode, level)
-
-      Writes HAERO metadata (version, git revision) to file.
-
-      @throws
 
       @param [in] new_filename name of NetCDF data file to create.
     */
@@ -63,20 +65,23 @@ class NcWriter {
     std::string info_string(const int& tab_level=0) const;
 
     /** @brief Adds a dimension for columns
-
     */
     void add_column_dim(const int& ncol=1);
 
+
+    /// Return the size of the column dimension
     int num_columns() const;
+    /// return the size of the level dimension
     int num_levels() const;
+    /// return the size of the interface dimension
     inline int num_interfaces() const {return num_levels() + 1;}
+    /// return the size of the mode dimension
     int num_modes() const;
+    /// return the (current) size of the time dimension
     int num_timesteps() const;
 
     /** @brief Adds 2 dimensions to an existing NcWriter; one for level midpoints,
       one for level interfaces.
-
-      @throws
 
       This is required before any column variables can be defined.
       @param [in] nlev number of vertical levels (midpoints) in a column.
@@ -85,17 +90,12 @@ class NcWriter {
 
     /** @brief Adds a dimension for the number of modes.
 
-      @throws
-
       This is required before any variables indexed by mode can be defined.
       @param [in] modes
     */
     void add_mode_dim(const std::vector<Mode>& modes);
 
-
     /** @brief Close the data file associated with this NcWriter.
-
-      @throws
 
       @warning Data may not be written to file until this method is called.
     */
@@ -114,8 +114,6 @@ class NcWriter {
     inline int get_nvars() const {return name_varid_map.size();}
 
     /** @brief return the variable id associated with a name
-
-      @throws
 
       @param [in] name
       @return varid
@@ -169,19 +167,16 @@ class NcWriter {
       Here, you're allowed to define a variable name that is different than the view label.
       The view label will be recorded as an attribute of the variable.
 
-      @throws
-
       @param [in] name (name of variable to write to file)
       @param [in] units
       @param [in] view
+      @param [in] var_atts variable attributes (but not units)
     */
     template <typename ViewType>
     void define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view,
       const std::vector<text_att_type>& var_atts=std::vector<text_att_type>());
 
     /** @brief defines a modal aerosol variable on level midpoints.
-
-      @throws
 
       @param [in] name
       @param [in] units
@@ -215,19 +210,16 @@ class NcWriter {
       Here, you're allowed to define a variable name that is different than the view label.
       The view label will be recorded as an attribute of the variable.
 
-      @throws
-
       @param [in] name (name of variable to write to file)
       @param [in] units
       @param [in] view
+      @param [in] var_atts variable attributes (not units)
     */
     template <typename ViewType>
     void define_interface_var(const std::string& name, const ekat::units::Units& units, const ViewType& view,
       const std::vector<text_att_type>& var_atts=std::vector<text_att_type>());
 
     /** @brief defines the time variable
-
-      @throws
 
       @param [in] units (default = seconds)
       @param [in] t0 first value of time coordinate (default = 0)
@@ -253,9 +245,8 @@ class NcWriter {
 
     /** @brief write one column's data from a std::vector to the nc file.
 
-      @throws
-
       @param [in] varname name of variable to write
+      @param [in] col_index column containing data
       @param [in] time_index time index associated with data
       @param [in] data
     */
@@ -264,9 +255,8 @@ class NcWriter {
 
     /** @brief write one column's variable data from a std::vector to the nc file.
 
-      @throws
-
       @param [in] varname name of variable to write
+      @param [in] col_index column containing data
       @param [in] time_index time index associated with data
       @param [in] data
     */
@@ -285,10 +275,6 @@ class NcWriter {
 
     /** @brief `netcdf.h` defines numerous error codes (integers); this function
       decodes this integers and throws an exeption with (hopefully) a more helpful message.
-
-      @throws
-
-      @todo improve this function to include more info & use ekat_assert.hpp macros
     */
     void handle_errcode(const int& ec, const std::string& file="", const std::string& fn="", const int& line=-1) const;
 
@@ -308,8 +294,6 @@ class NcWriter {
     /** @brief Adds a dimension for time.
 
       Called by the constructor, should not be called by the user.
-
-      @throws
 
       This is required before any variables indexed by time step can be defined.
     */

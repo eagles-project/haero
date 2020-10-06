@@ -8,7 +8,12 @@
 
 namespace haero {
 
-/// return a string with tab_lev copies of the indent character, '\t'
+/** @defgroup Utilities Miscellaneous utilities
+
+ @{
+*/
+
+/// return a string with tab_lev copies of the indent character, '\\t'
 std::string indent_string(const int tab_lev);
 
 /// convert a string to lower case
@@ -43,5 +48,7 @@ class ProgressBar {
     void update();
 };
 
-}
+
+/// @} defgroup utilities
+} // namespace haero
 #endif

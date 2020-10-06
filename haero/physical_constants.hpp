@@ -5,9 +5,11 @@
 
 namespace haero {
 
-/** double_precision_required
+/** @defgroup Physical_constants_double_precision_required Physical constants (double_precision)
 
-    Double-precision physical constants.
+    Force-double precision for constants in this group.
+
+    @{
 */
 /// Avogadro's constant [# / kmol]
 static constexpr double avogadro_molec_per_kmole = 6.022214E26;
@@ -17,12 +19,13 @@ static constexpr double avogadro_molec_per_mole = 1.0E-3 * avogadro_molec_per_km
 static constexpr double boltzmann_joule_per_k_per_molec = 1.38065e-23;
 /// pi
 static constexpr double pi = 3.14159265358979323846264;
+/// @}
 
+/** @defgroup Physical_constants_single_precision_allowed Physical constants (working_precision)
 
-/**  single_precision_allowed working_precision
+    Configurable precision (single or double) constants.
 
-    Configurable-precision (single or double) physical constants.
-
+    @{
 */
 /// Universal gas constant [J / (K kmol)]
 static constexpr Real r_gas_joule_per_k_per_kmole = avogadro_molec_per_kmole*boltzmann_joule_per_k_per_molec;
@@ -90,6 +93,7 @@ static constexpr Real surften_sigma_h2o_air_273k_mnewton_per_m = 76.0;
 /// Dry adiabatic lapse rate [K/m]
 static constexpr Real dry_adiabatic_lapse_rate_K_per_m = 0.0098;
 
+/// @}
 
 } // namespace haero
 #endif
