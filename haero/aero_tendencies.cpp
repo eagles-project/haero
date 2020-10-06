@@ -10,18 +10,30 @@ AeroTendencies::AeroTendencies(const AeroState& state) {
   int num_levels = state.num_levels();
   for (int m = 0; m < num_modes; ++m) {
     int num_aero_species = state.num_aerosol_species(m);
+    auto int_view_name = std::string("d/dt[") +
+                         state.interstitial_aerosols(m).label() +
+                         std::string(")]");
     int_aero_species_.push_back(ColumnSpeciesView("dqi/dt",
                                                   num_columns,
                                                   num_aero_species,
                                                   num_levels));
-    cld_aero_species_.push_back(ColumnSpeciesView("dqc/dt",
+    auto cld_view_name = std::string("d/dt[") +
+                         state.cloudborne_aerosols(m).label() +
+                         std::string(")]");
+    cld_aero_species_.push_back(ColumnSpeciesView(cld_view_name,
                                                   num_columns,
                                                   num_aero_species,
                                                   num_levels));
-    modal_num_densities_.push_back(ColumnView("dn/dt", num_columns, num_levels));
+    auto n_view_name = std::string("d/dt[") +
+                       state.modal_num_density(m).label() +
+                       std::string(")]");
+    modal_num_densities_.push_back(ColumnView(n_view_name, num_columns, num_levels));
   }
   int num_gas_species = state.num_gas_species();
-  gas_mole_fractions_ = ColumnSpeciesView("d(gas_mole_fractions)/dt",
+  auto gas_view_name = std::string("d/dt[") +
+                       state.gas_mole_fractions().label() +
+                       std::string(")]");
+  gas_mole_fractions_ = ColumnSpeciesView(gas_view_name,
                                           num_columns,
                                           num_gas_species,
                                           num_levels);
@@ -41,15 +53,15 @@ int AeroTendencies::num_aerosol_species(int mode_index) const {
 }
 
 int AeroTendencies::num_gas_species() const {
-  return gas_mole_fractions_.extent(2);
-}
-
-int AeroTendencies::num_columns() const {
   return gas_mole_fractions_.extent(1);
 }
 
+int AeroTendencies::num_columns() const {
+  return gas_mole_fractions_.extent(0);
+}
+
 int AeroTendencies::num_levels() const {
-  return gas_mole_fractions_.extent(3);
+  return gas_mole_fractions_.extent(2);
 }
 
 AeroTendencies::ColumnSpeciesView&

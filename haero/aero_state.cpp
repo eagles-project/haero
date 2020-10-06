@@ -26,18 +26,24 @@ int AeroState::add_aerosol_mode(const Mode& mode,
                                                 num_columns_,
                                                 aero_species.size(),
                                                 num_levels_);
+  auto modal_data_name = std::string("num_density(") + mode.name +
+                         std::string(")");
+  auto modal_data = ManagedColumnView(modal_data_name,
+                                      num_columns_,
+                                      num_levels_);
   managed_column_species_views_.push_back(cld_aero_data);
   return add_aerosol_mode(mode,
                           aero_species,
                           ColumnSpeciesView(int_aero_data),
-                          ColumnSpeciesView(cld_aero_data));
+                          ColumnSpeciesView(cld_aero_data),
+                          ColumnView(modal_data));
 }
 
 int AeroState::add_aerosol_mode(const Mode& mode,
                                 const std::vector<Species>& aero_species,
-                                ColumnSpeciesView& int_aero_data,
-                                ColumnSpeciesView& cld_aero_data,
-                                ColumnView& modal_data) {
+                                ColumnSpeciesView int_aero_data,
+                                ColumnSpeciesView cld_aero_data,
+                                ColumnView modal_data) {
   EKAT_ASSERT_MSG(not finalized_,
                   "Cannot add an aerosol mode to a finalized AeroState!");
   aero_species_names_.push_back(std::vector<std::string>());
@@ -60,7 +66,7 @@ void AeroState::add_gas_species(const std::vector<Species>& gas_species) {
 }
 
 void AeroState::add_gas_species(const std::vector<Species>& gas_species,
-                                std::unique_ptr<ColumnSpeciesView> gas_data) {
+                                ColumnSpeciesView gas_data) {
   EKAT_ASSERT_MSG(not finalized_,
                   "Cannot add gas species to a finalized AeroState!");
   EKAT_ASSERT_MSG(gas_species_names_.empty(),
