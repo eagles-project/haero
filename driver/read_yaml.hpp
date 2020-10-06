@@ -37,5 +37,5 @@ class YamlException: public std::exception {
 std::vector<SimulationInput> read_yaml(const std::string& filename);
 
 } // namespace driver
-}
+} // namespace haero
 #endif

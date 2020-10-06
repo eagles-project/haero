@@ -11,13 +11,22 @@
 namespace haero {
 namespace driver {
 
+/**
+@defgroup ColumnModel Driver: Standalone column model
+
+  Classes and functions used by driver's standalone column model.
+
+@{
+*/
+
 /** @brief Base class for the driver's columns.
 
   Provides common types and methods for using Views of Scalar Packs.
 
-  Uses EKAT to define common kokkos types.
+  Uses [EKAT](https://github.com/E3SM-Project/EKAT) to define common kokkos types.
 
   Defines default view types for Haero's Driver
+
 */
 class ColumnBase {
   public :
@@ -104,6 +113,8 @@ class ColumnBase {
   int m_num_packs_int;
 };
 
+
+/// @} standalone column model
 } // namespace driver
 } // namespace haero
 #endif

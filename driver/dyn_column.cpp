@@ -35,24 +35,24 @@ std::string DynColumn::info_string(const int& tab_lev) const {
 void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
   const AtmosphericConditions& conds) {
 
-  /// check input
+  // 1. check input
   EKAT_REQUIRE_MSG(vector_is_monotone(z_vals), "input height interface values must be monotone.");
   EKAT_REQUIRE_MSG(z_vals.size() == num_levels() + 1,
     "z-values are stored on level interfaces; num_levels() + 1 values are required.");
 
-  /// copy input in case we need to reverse the z_vals so that they go from model top to the surface
+  // 2. copy input in case we need to reverse the z_vals so that they go from model top to the surface
   std::vector<Real> interface_heights(z_vals);
   std::vector<Real> level_heights(num_levels());
   const bool increasing = (z_vals[1] > z_vals[0]);
   if (increasing) std::reverse(interface_heights.begin(), interface_heights.end());
-  /// set boundary data
+  // 3. set boundary data
   m_ztop = interface_heights[0];
   m_ptop = hydrostatic_pressure_at_height(m_ztop, conds);
 
   for (int col_idx=0; col_idx<m_ncol; ++col_idx) {
     host_psurf(col_idx) = conds.params.hydrostatic.p0;
 
-    /// set independent interface variables
+    // 4. set independent interface variables
     for (int pack_idx=0; pack_idx<m_num_packs_int; ++pack_idx) {
       for (int vec_idx=0; vec_idx<pack_info::vec_end(m_num_levels+1,pack_idx); ++vec_idx) {
         const int array_idx = pack_info::array_idx(pack_idx, vec_idx);
@@ -66,7 +66,7 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
         }
       }
     }
-    /// set independent level variables
+    // 5. set independent level variables
     for (int pack_idx=0; pack_idx<m_num_packs_lev; ++pack_idx) {
       for (int vec_idx=0; vec_idx<pack_info::vec_end(m_num_levels,pack_idx); ++vec_idx) {
         const int array_idx = pack_info::array_idx(pack_idx, vec_idx);
@@ -84,11 +84,11 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
         }
       }
     }
-    /// set level-dependent interface variables
+    //1.  set level-dependent interface variables
     for (int pack_idx=0; pack_idx<num_packs_int(); ++pack_idx) {
       for (int vec_idx=0; vec_idx<pack_info::vec_end(m_num_levels+1,pack_idx); ++vec_idx) {
         const int array_idx = pack_info::array_idx(pack_idx, vec_idx);
-        /** array_idx maps to
+        /* array_idx maps to
             interface id and level id comments that correspond
             to indices in Taylor et. al., Figure 1.
 
@@ -103,7 +103,7 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
           const Real p_half = m_ptop;
           const Real p_1 = host_p(col_idx,pack_info::pack_idx(0))[pack_info::vec_idx(0)];
 
-          /// Taylor et. al. eqn. (33)
+          // Taylor et. al. eqn. (33)
           host_dpds(col_idx, pack_idx)[vec_idx] = 2*(p_1 - p_half)/ds_half;
           if (col_idx == 0) {
             host_interface_ds(pack_idx)[vec_idx] = ds_half;
@@ -117,7 +117,7 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
           const Real p_nphalf = conds.params.hydrostatic.p0;
           const Real p_n = host_p(col_idx, pack_info::pack_idx(num_levels()-1))[pack_info::vec_idx(num_levels()-1)];
 
-          /// Taylor et. al. eqn. (33)
+          // Taylor et. al. eqn. (33)
           host_dpds(col_idx, pack_idx)[vec_idx] = 2*(p_nphalf - p_n)/ds_nphalf;
           if (col_idx == 0) {
             host_interface_ds(pack_idx)[vec_idx] = ds_nphalf;
@@ -137,14 +137,14 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
           const Real ds_iphalf = host_level_scoord(ip1pack)[ip1vec] -
                           host_level_scoord(ipack)[ivec];
 
-          /// Taylor et. al. eqn. (32)
+          // Taylor et. al. eqn. (32)
           host_dpds(col_idx, pack_idx)[vec_idx] = (p_ip1 - p_i) / (ds_iphalf);
           if (col_idx == 0) {
             host_interface_ds(pack_idx)[vec_idx] = ds_iphalf;
           }
         }
       }
-      /// set interface-dependent level variables
+      // set interface-dependent level variables
       for (int pack_idx=0; pack_idx<num_packs_lev(); ++pack_idx) {
         for (int vec_idx=0; vec_idx<HAERO_PACK_SIZE; ++vec_idx) {
           const int array_idx = pack_info::array_idx(pack_idx, vec_idx);
@@ -164,7 +164,7 @@ void DynColumn::init_from_interface_heights(const std::vector<Real>& z_vals,
             const Real phi_mhalf = host_phi(col_idx, imhalf_pack)[imhalf_vec];
             const Real phi_phalf = host_phi(col_idx, iphalf_pack)[iphalf_vec];
 
-            /// Taylor et. al. eqn. (32)
+            // Taylor et. al. eqn. (32)
             host_dpids(col_idx, pack_idx)[vec_idx] = (pi_phalf - pi_mhalf)/ds_i;
             host_dphids(col_idx, pack_idx)[vec_idx] = (phi_phalf - phi_mhalf)/ds_i;
             if (col_idx == 0) {
@@ -399,7 +399,7 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename, const Atmosphe
   writer.add_level_dims(num_levels());
   writer.define_time_var();
 
-  /// Interface variables
+  // Interface variables
   const var_atts w_atts = {std::make_pair("cf_long_name", "upward_air_velocity"),
     std::make_pair("short_name", "w")};
   const auto w_units = ekat::units::m/ekat::units::s;
@@ -429,7 +429,7 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename, const Atmosphe
   writer.define_interface_var("mu", mu_units, mu, mu_atts);
   writer.define_interface_var("dpds", dpds_units, dpds, dpds_atts);
 
-  /// Level variables
+  // Level variables
   const var_atts dpids_atts = {std::make_pair("cf_long_name", "null"),
       std::make_pair("haero_long_name", "pseudodensity_of_air"),
       std::make_pair("short_name", "dpi/ds")};
@@ -471,13 +471,13 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename, const Atmosphe
   writer.define_level_var("dphids", phi_units, dphids, dphids_atts);
   writer.define_level_var("temperature", temp_units, temp_atts);
 
-  /// surface variables
+  // surface variables
   const var_atts ps_atts = {std::make_pair("cf_long_name", "surface_air_pressure"),
     std::make_pair("short_name", "psurf"), std::make_pair("amip_short_name", "ps")};
   const auto ps_units = ekat::units::Pa;
   writer.define_time_dependent_scalar_var("surface_pressure", ps_units, ps_atts);
 
-  /// Scalar variables
+  // Scalar variables
   const var_atts ptop_atts = {
   std::make_pair("cf_long_name","air_pressure_at_top_of_atmosphere_model"),
   std::make_pair("short_name", "p_top")};
@@ -513,7 +513,7 @@ NcWriter DynColumn::write_new_ncdata(const std::string& filename, const Atmosphe
   writer.define_scalar_var("qv1", ekat::units::pow(ekat::units::m, -1), qv1_atts,
     conds.params.hydrostatic.qv1);
 
-  /// Coordinate variables
+  // Coordinate variables
   const var_atts scoord_atts = {
     std::make_pair("cf_long_name","atmosphere_hybrid_sigma_pressure_coordinate"),
     std::make_pair("short_name", "scoord")};

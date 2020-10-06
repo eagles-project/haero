@@ -11,12 +11,25 @@
 namespace haero {
 namespace driver {
 
-/// This type defines ambient atmospheric conditions for supported models.
+
+
+/** @defgroup ReferenceAtmosphere ReferenceAtmosphere
+
+  Functions and classes related to generating model atmosphere vertical profiles.
+
+  @{
+*/
+
+/** @brief This type and its associated functions
+  define ambient atmospheric conditions for supported models.
+
+   The model used to generate the atmospheric conditions.
+   * uniform: all vertical levels have identical atmospheric conditions
+   * hydrostatic: the vertical profile of the atmospheric conditions is
+                  determined using the hydrostatic equilibrium approximation.
+*/
 struct AtmosphericConditions {
-  /// The model used to generate the atmospheric conditions.
-  /// * uniform: all vertical levels have identical atmospheric conditions
-  /// * hydrostatic: the vertical profile of the atmospheric conditions is
-  ///                determined using the hydrostatic equilibrium approximation.
+
   enum { uniform, hydrostatic } model;
   /// Parameters specific to each model.
   union {
@@ -43,7 +56,7 @@ struct AtmosphericConditions {
       Real T0;
       /// Virtual temperature lapse rate @f$ \Gamma = -\partial T_v / \partial z @f$ [K/m]
       Real lapse_rate;
-      /// Water vapor mixing ratio [kg h2o / kg air] at surface
+      /// Water vapor mixing ratio [kg H<sub>2</sub>O / kg air] at surface
       Real qv0;
       /// Water vapor decay rate with height [1/m]
       Real qv1;
@@ -59,7 +72,7 @@ struct AtmosphericConditions {
   @param [in] p0 reference pressure [Pa]
   @param [in] T0 reference virtual temperature [K]
   @param [in] Gamma virtual temperature lapse rate [K/m]
-  @param [in] qv0 water vapor mixing ratio at z = 0 [kg h2o / kg air]
+  @param [in] qv0 water vapor mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
   @param [in] qv1 water vapor decay rate [1/m]
 */
 AtmosphericConditions hydrostatic_conditions(const Real p0, const Real T0, const Real Gamma,
@@ -70,19 +83,20 @@ AtmosphericConditions hydrostatic_conditions(const Real p0, const Real T0, const
   (equations (2.1) and (2.3) from Klemp & Wilhelmson, 1978, J. Atm. Sci. 35)
 */
 static constexpr Real alpha_v = 0.61;
+
 /// dry air kappa [1]
 static constexpr Real kappa = r_gas_dry_air_joule_per_k_per_kg/cp_dry_air_joule_per_k_per_kg;
 
-/** @brief Computes temperature from virtual temperature an water vapor mixing ratio,
+/** @brief Computes temperature from virtual temperature and water vapor mixing ratio,
 @f$ T(T_v, q_v) @f$.
 
-  @param [in] tv virtual temperature [K]
-  @param [in] qv water vapor mixing ratio [kg h2o / kg air]
+  @param [in] Tv virtual temperature [K]
+  @param [in] qv water vapor mixing ratio [kg H<sub>2</sub>O / kg air]
   @return temperature [K]
 */
 KOKKOS_INLINE_FUNCTION
-Real temperature_from_virtual_temperature(const Real tv, const Real qv) {
-  return tv / (1 + alpha_v * qv);
+Real temperature_from_virtual_temperature(const Real Tv, const Real qv) {
+  return Tv / (1 + alpha_v * qv);
 }
 
 /** @brief Virtual temperature profile, @f$T_v(z)@f$.
@@ -110,10 +124,10 @@ Real virtual_temperature(const Real z, const AtmosphericConditions& conds) {
   return virtual_temperature(z, conds.params.hydrostatic.T0, conds.params.hydrostatic.lapse_rate);
 }
 
-/** @brief Water vapor mixing ratio profile, @f$ q_v(z) @f
+/** @brief Water vapor mixing ratio profile, @f$ q_v(z) @f$
 
   @param [in] z height [m]
-  @param [in] qv0 mixing ratio at surface [kg h2o / kg air]
+  @param [in] qv0 mixing ratio at surface [kg H<sub>2</sub>O / kg air]
   @param [in] qv1 decay rate of water vapor [1/m]
   @return @f$ q_v @f$
 */
@@ -122,11 +136,13 @@ Real water_vapor_mixing_ratio(const Real z, const Real qv0, const Real qv1) {
   return qv0 * std::exp(-qv1 * z);
 }
 
-/** @brief Water vapor mixing ratio profile, @f$ q_v(z) @f
+/** @brief Water vapor mixing ratio profile, @f$ q_v(z) @f$
+
+  @f$ q_v(z) = q_v^{(0)} e^{-q_v^{(1)}z} @f$
 
   @param [in] z height [m]
   @param [in] conds AtmosphericConditions
-  @return @f$q_v(z)@f$ [kg h2o / kg air]
+  @return @f$q_v(z)@f$ [kg H<sub>2</sub>O / kg air]
 */
 KOKKOS_INLINE_FUNCTION
 Real water_vapor_mixing_ratio(const Real z, const AtmosphericConditions& conds) {
@@ -208,7 +224,7 @@ Real height_at_pressure(const Real p, const AtmosphericConditions& conds) {
 
 /** @brief Computes the potential temperature or virtual potential temperature
 
-  @param [in] t temperature or virtual temperature [K]
+  @param [in] T temperature or virtual temperature [K]
   @param [in] p pressure [Pa]
   @param [in] p0 reference pressure [Pa]
   @return @f$ \theta @f$ or @f$ \theta_v @f$, depending on first argument @f$ T @f$ or @f$ T_v @f$
@@ -221,7 +237,7 @@ Real potential_temperature(const Real T, const Real p, const Real p0) {
 
 /** @brief Computes the potential temperature or virtual potential temperature
 
-  @param [in] t temperature or virtual temperature [K]
+  @param [in] T temperature or virtual temperature [K]
   @param [in] p pressure [Pa]
   @param [in] conds AtmosphericConditions
   @return @f$ \theta @f$ or @f$ \theta_v @f$, depending on first argument @f$ T @f$ or @f$ T_v @f$
@@ -244,6 +260,7 @@ Real exner_function(const Real p, const AtmosphericConditions& conds) {
   return std::pow(p/conds.params.hydrostatic.p0, kappa);
 }
 
+/// @} group AtmosphericConditions
 } // namespace driver
 } // namespace haero
 #endif

@@ -14,9 +14,8 @@ namespace driver {
 
 /** @brief Independent column dynamics of the HOMME-NH Theta Model.
 
-  Reference: Taylor, et. al., 2020, "An energy consistent discretization of the
-    nonhydrostatic equations in primitive variables," J. Adv. Mod. Earth Sys. 12
-    doi:10.1029/2019MS001783
+  Reference: Taylor, et. al., 2020, ["An energy consistent discretization of the
+    nonhydrostatic equations in primitive variables," J. Adv. Mod. Earth Sys. 12, e2019MS001783.](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001783)
 
   ### Notes
   - This implemenation assumes Lagrangian vertical levels.
@@ -27,9 +26,33 @@ namespace driver {
     - exponentially decaying (with height) water vapor profile
     - perturbations can be added (separately from initialization) to this profile
   - Since it's used for testing, it automatically writes all variables and related metadata
-    to netCDF via the NcWriter methods write_new_ncdata and update_ncdata.
-      - the NcWriter method 'close()' must be called after all data are written
+    to netCDF via the NcWriter methods @ref DynColumn::write_new_ncdata() and DynColumn::update_ncdata.
+      - the NcWriter method NcWriter::close() must be called after all data are written
         to ensure the file is written correctly.
+
+  ### level variables
+  - @f$ \theta_v @f$
+  - @f$ \frac{\partial \pi}{\partial s} @f$
+  - @f$ p @f$
+  - @f$ q_v @f$
+  - @f$ \Pi @f$
+  - @f$ \frac{\partial \phi}{\partial s} @f$
+
+  ### interface variables
+  - @f$ w @f$
+  - @f$ \phi @f$
+  - @f$ \pi @f$
+  - @f$ \mu @f$
+  - @f$ \frac{\partial p}{\partial s} @f$
+
+  ### surface variables
+  - @f$ p_{surf} @f$
+
+  ### coordinate variables
+  - @f$ s @f$
+  - @f$ \Delta s @f$
+
+  @ingroup ColumnModel
 */
 class DynColumn : public ColumnBase {
   public:
@@ -124,36 +147,60 @@ class DynColumn : public ColumnBase {
   */
   std::string info_string(const int& tab_lev=0) const ;
 
+  /// Return the number of columns
   inline int num_columns() const {return m_ncol;}
 
-  /// level interface variables (variables named as in Taylor et. al. 2020)
+  // --------------- Interface variables
+  /// vertical velocity (interface) [m/s]
   view_2d w;
+  /// geopotential (interface) [m<sup>2</sup>s<sup>-2</sup>]
   view_2d phi;
+  /// hydrostatic pressure (interface) [Pa]
   view_2d pi;
+  /// full pressure to hydrostatic pressure ratio (interface) [nondimensional]
   view_2d mu;
+  /// vertical pressure derivative (interface) [Pa]
   view_2d dpds;
 
-  /// level midpoint variables (variables named as in Taylor et. al. 2020)
+  // --------------- Level variables
+  /// pseudodensity (level) [Pa]
   view_2d dpids;
+  /// virtual potential temperature (level) [K]
   view_2d thetav;
+  /// full pressure (level) [Pa]
   view_2d p;
+  /// water vapor mass mixing ratio [kg H<sub>2</sub>O / kg air]
   view_2d qv;
+  /// Exner function [nondimensional]
   view_2d exner;
+  /// vertical derivative of geopotential [m<sup>2</sup>s<sup>-2</sup>]
   view_2d dphids;
 
-  /// surface variables
+  // --------------- surface variables
+  /// surface pressure [Pa]
   kokkos_device_types::view_1d<Real> psurf;
 
-  /// constant views
+  // --------------- coordinate variables
+  /// s-coordinate at interfaces @f$ s_{i+1/2} @f$
   view_1d interface_scoord;
+  /// ds at interfaces, @f$\Delta s_{i+1/2} @f$
   view_1d interface_ds;
+  /// s-coordinate at levels @f$ s_{i} @f$
   view_1d level_scoord;
+  /// ds at levels, @f$\Delta s_{i} @f$
   view_1d level_ds;
 
+  /** @brief Compute surface pressure
+
+    @f$ ps = p_{top} + \sum_{k=0}^{n_{lev}}' \big(\frac{\partial p}{\partial s}\big)_{k+1/2} \Delta s_{k+1/2} @f$
+
+  */
   void sum_psurf();
 
+  /// no default constructor
   DynColumn() = delete;
 
+  /// deep copy data from host to device
   void update_device();
 
   protected:
@@ -182,7 +229,6 @@ class DynColumn : public ColumnBase {
     */
     void set_padding_to_zero();
 
-
     /** @brief A set of assertions to verify the columns' reference profile is initialized
       correctly.
 
@@ -190,12 +236,15 @@ class DynColumn : public ColumnBase {
       - @f$ s_{1/2} = 0, \quad s_{n+1/2} = 1@f$
       - @f$\Delta s_{1/2} = \Delta s_1, \quad \Delta s_{n+1/2} = \Delta s_n@f$
       - eqn.~(34): @f$ p_{top} + \sum_{k=1}^n \big(\frac{\partial \pi}{\partial s}\big)_k\Delta s_k = p_0 @f$
-      - eqn.~(35): @f$ p_{top} + \sum_{k=0}^n'\big(\frac{\partial p}{\partial s}\big)_{k+1/2} \Detla s_{k+1/2} @f$
+      - eqn.~(35): @f$ p_{top} + \sum_{k=0}^n'\big(\frac{\partial p}{\partial s}\big)_{k+1/2} \Delta s_{k+1/2} @f$
     */
     void check_init(const AtmosphericConditions& conds);
 
+    /// height of model top (based on reference profile)
     Real m_ztop;
+    /// pressure at model top
     Real m_ptop;
+    /// number of columns
     int m_ncol;
 
     host_view2d host_w;
