@@ -8,6 +8,7 @@
 #include <sstream>
 
 namespace haero {
+namespace driver {
 
 std::string DynColumn::info_string(const int& tab_lev) const {
   std::ostringstream ss;
@@ -509,4 +510,5 @@ void DynColumn::update_ncdata(NcWriter& writer, const size_t time_idx) const {
 
 }
 
+} // namespace driver
 } // namespace haero

@@ -9,6 +9,7 @@
 #include "netcdf.h"
 
 namespace haero {
+namespace driver {
 
 /** @brief This class reads NetCDF files written by haero's driver.
  */
@@ -64,5 +65,6 @@ class NcReader final {
     int time_dimid;
 };
 
-}
+} // namespace driver
+} // namespace haero
 #endif

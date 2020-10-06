@@ -4,6 +4,7 @@
 #include "driver.hpp"
 
 namespace haero {
+namespace driver {
 
 /// This exception class stores information about errors encountered in reading
 /// data from a YAML file.
@@ -35,6 +36,6 @@ class YamlException: public std::exception {
 ///          the file.
 std::vector<SimulationInput> read_yaml(const std::string& filename);
 
+} // namespace driver
 }
-
 #endif

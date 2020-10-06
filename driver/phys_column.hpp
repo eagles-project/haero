@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace haero {
+namespace driver {
 
 class phys_column : public column_base {
   public:
@@ -27,5 +28,6 @@ class phys_column : public column_base {
 };
 
 
+} // namespace driver
 } // namespace haero
 #endif

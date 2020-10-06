@@ -6,6 +6,7 @@
 #include <sstream>
 
 namespace haero {
+namespace driver {
 
 void NcWriter::open() {
   int retval = nc_create(fname.c_str(), NC_NETCDF4 | NC_CLOBBER, &ncid);
@@ -499,4 +500,5 @@ void NcWriter::handle_errcode(const int& ec,
   throw std::runtime_error(ss.str());
 }
 
+} // namespace driver
 } // namespace haero

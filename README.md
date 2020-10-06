@@ -11,7 +11,7 @@ The short-term goal of Haero is to provide an aerosol model for
 [E3SM](https://github.com/E3SM-Project)'s state-of-the-science cloud-resolving
 atmospheric model, [SCREAM](https://github.com/E3SM-Project/scream).
 
-In addition to the Haero API, this repo also contains a standalone driver that
+In addition to the Haero API, this repo also contains a standalone @ref driver that
 can be used to easily set up and run simple column physics simulations in a
 "box model" configuration. A box model consists of a set of independent columns
 in which aerosol-related quantities are evolved according to the modal aerosol
@@ -62,6 +62,13 @@ To configure Haero:
    in `include`, `lib`, `bin`, and `share` ѕubdirectories within your build
    directory.
 
+### Model subcomponents
+
+The Haero library includes its basic library and interfaces as well as a standalone
+driver for testing purposes.  These two components are separated into different
+namespaces, @ref haero and @ref driver.
+
+
 ### Making code changes and rebuilding
 
 This project uses **build trees** that are separate from source trees. This
@@ -101,9 +108,9 @@ interface from your build directory with
 make doc
 ```
 
-This generates an `html/` directory containing a static website with
+This generates a directory, `<build_dir>/docs/html/`, containing a static website with
 documentation generated from code annotations. You can point your browser to
-`html/index.html` to peruse this documentation.
+`docs/html/index.html` to peruse this documentation.
 
 # FAQ
 

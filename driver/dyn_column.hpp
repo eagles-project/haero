@@ -10,6 +10,7 @@
 #include <vector>
 
 namespace haero {
+namespace driver {
 
 /** @brief Independent column dynamics of the HOMME-NH Theta Model.
 
@@ -196,6 +197,6 @@ class DynColumn : public ColumnBase {
     typename kokkos_device_types::view_1d<Real>::HostMirror host_psurf;
 };
 
-
+} // namespace driver
 } // namespace haero
 #endif

@@ -12,6 +12,7 @@
 #include "atmosphere.hpp"
 
 namespace haero {
+namespace driver {
 
 /// This type contains switches for activating/deactivating aerosol-related
 /// physical processes.
@@ -108,6 +109,7 @@ struct SimulationInput {
 /// in the given ensemble.
 void haero_driver(const std::vector<SimulationInput>& ensemble);
 
+} // namespace driver
 } // namespace haero
 
 #endif

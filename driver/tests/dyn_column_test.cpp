@@ -4,6 +4,7 @@
 #include "catch2/catch.hpp"
 
 using namespace haero;
+using namespace haero::driver;
 
 TEST_CASE("dynamics_column", "") {
   const Real p0 = 100000;

@@ -4,6 +4,7 @@
 #include <iostream>
 
 using namespace haero;
+using namespace haero::driver;
 
 TEST_CASE("atmosphere_conditions", "") {
   SECTION("uniform") {

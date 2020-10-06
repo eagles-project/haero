@@ -9,6 +9,7 @@
 #include <cmath>
 
 namespace haero {
+namespace driver {
 
 /// This type defines ambient atmospheric conditions for supported models.
 struct AtmosphericConditions {
@@ -243,5 +244,6 @@ Real exner_function(const Real p, const AtmosphericConditions& conds) {
   return std::pow(p/conds.params.hydrostatic.p0, kappa);
 }
 
+} // namespace driver
 } // namespace haero
 #endif

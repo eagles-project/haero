@@ -5,6 +5,7 @@
 #include "ncreader.hpp"
 
 namespace haero {
+namespace driver {
 
 YamlException::YamlException(const char* fmt, ...)
 {
@@ -613,4 +614,5 @@ std::vector<SimulationInput> read_yaml(const std::string& filename)
   }
 }
 
+} // namespace driver
 } // namespace haero

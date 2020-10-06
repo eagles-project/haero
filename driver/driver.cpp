@@ -1,10 +1,7 @@
 #include "driver.hpp"
 
-namespace {
-
-} // anonymous namespace
-
 namespace haero {
+namespace driver {
 
 void haero_driver(const std::vector<SimulationInput>& ensemble)
 {
@@ -14,5 +11,6 @@ void haero_driver(const std::vector<SimulationInput>& ensemble)
   std::map<std::string, std::vector<Real> > pbuf;
 }
 
+} // namespace driver
 } // namespace haero
 

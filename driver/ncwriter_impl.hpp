@@ -5,6 +5,7 @@
 #include "ekat/ekat_assert.hpp"
 
 namespace haero {
+namespace driver {
 
 #define CHECK_NCERR(ec) if (ec != NC_NOERR) handle_errcode(ec, __FILE__, __FUNCTION__, __LINE__)
 
@@ -286,5 +287,6 @@ struct NcWriterImpl<3,true> {
   }
 };
 
+} // namespace driver
 } // namespace haero
 #endif

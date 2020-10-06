@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace haero;
+using namespace haero::driver;
 
 namespace {
 

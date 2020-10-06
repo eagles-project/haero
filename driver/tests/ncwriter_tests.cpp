@@ -10,6 +10,7 @@
 #include "catch2/catch.hpp"
 
 using namespace haero;
+using namespace haero::driver;
 using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
 using real_pack_type = ekat::Pack<Real, HAERO_PACK_SIZE>;
 using view_2d = kokkos_device_type::view_2d<real_pack_type>;
