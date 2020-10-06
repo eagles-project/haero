@@ -21,10 +21,11 @@ add_custom_target(update_version_info ALL
 )
 
 add_library(haero
-            chemistry.cpp
-            context.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-            state.cpp
+            aero_model.cpp
+            aero_state.cpp
+            aero_tendencies.cpp
+            chemistry.cpp
             utils.cpp
             view_pack_helpers.cpp
             )

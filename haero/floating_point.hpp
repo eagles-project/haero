@@ -16,7 +16,7 @@ struct FloatingPoint {
   static_assert(std::is_floating_point<T>::value, "floating point type required.");
 
   /// Default tolerance for floating point comparisons
-  static constexpr T zero_tol = (std::is_same<T,float>::value, 1.0E-7, 1.0E-13);
+  static constexpr T zero_tol = (std::is_same<T,float>::value) ? 1.0E-7 : 1.0E-13;
 
   /// Define floating point zero by @f$\lvert x \rvert < \epsilon_{tol}@f$
   KOKKOS_INLINE_FUNCTION
