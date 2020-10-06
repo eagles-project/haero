@@ -3,6 +3,7 @@
 #include "haero/floating_point.hpp"
 
 namespace haero {
+namespace driver {
 
 using fp_helper = FloatingPoint<Real>;
 
@@ -30,4 +31,5 @@ AtmosphericConditions hydrostatic_conditions(const Real p0, const Real T0, const
   return result;
 }
 
+} // namespace driver
 } // namespace haero

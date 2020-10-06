@@ -8,6 +8,7 @@
 #include <sstream>
 
 namespace haero {
+namespace driver {
 
 #define CHECK_ERR(ec) if (ec != NC_NOERR) handle_errcode(ec)
 
@@ -155,4 +156,5 @@ void NcReader::handle_errcode(const int& ec) const {
   throw std::runtime_error(ss.str());
 }
 
+} // namespace driver
 } // namespace haero

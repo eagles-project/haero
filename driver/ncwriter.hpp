@@ -14,6 +14,7 @@
 #include <vector>
 
 namespace haero {
+namespace driver {
 
 class NcWriter {
   public:
@@ -335,5 +336,6 @@ class NcWriter {
 
 };
 
-}
+} // namespace driver
+}// namespace haero
 #endif

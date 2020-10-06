@@ -9,6 +9,7 @@
 #include <iostream>
 
 namespace haero {
+namespace driver {
 
 /** @brief Base class for the driver's columns.
 
@@ -103,5 +104,6 @@ class ColumnBase {
   int m_num_packs_int;
 };
 
+} // namespace driver
 } // namespace haero
 #endif

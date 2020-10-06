@@ -11,6 +11,7 @@
 #include <iostream>
 
 namespace haero {
+namespace driver {
 
 std::string DynColumn::info_string(const int& tab_lev) const {
   std::ostringstream ss;
@@ -590,4 +591,5 @@ void DynColumn::sum_psurf() {
   });
 }
 
+} // namespace driver
 } // namespace haero
