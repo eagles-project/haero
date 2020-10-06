@@ -27,7 +27,7 @@ class AeroTendencies final {
   /// So view[i][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ColumnView = Kokkos::View<Real**>;
+  using ColumnView = Kokkos::View<PackType**>;
 
   /// This type represents a multidimensional array mapping a column, species,
   /// and vertical level to a pack.
@@ -37,7 +37,7 @@ class AeroTendencies final {
   /// So view[i][s][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ColumnSpeciesView = Kokkos::View<Real***>;
+  using ColumnSpeciesView = Kokkos::View<PackType***>;
 
   /// Creates a fully-functional set of tendencies that work with the given
   /// aerosol state.
@@ -113,10 +113,10 @@ class AeroTendencies final {
   /// @returns a reference to the tendencies, which have been scaled.
   AeroTendencies& scale(Real factor);
 
-  /// Adds the given set of tendencies to this set, summing the values of the
-  /// prognostic variables in place.
+  /// Acculumates the given set of tendencies into this set, summing the values
+  /// of the prognostic variables in place.
   /// @param [in] tendencies The tendencies to be summed into this object.
-  void add(const AeroTendencies& tendencies);
+  void accumulate(const AeroTendencies& tendencies);
 
   private:
 

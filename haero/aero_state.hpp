@@ -37,7 +37,7 @@ class AeroState final {
   /// So view[i][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ColumnView = ekat::Unmanaged<Kokkos::View<Real**> >;
+  using ColumnView = ekat::Unmanaged<Kokkos::View<PackType**> >;
 
   /// This type represents a multidimensional array mapping a column, species,
   /// and vertical level to a pack.
@@ -47,7 +47,7 @@ class AeroState final {
   /// So view[i][s][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ColumnSpeciesView = ekat::Unmanaged<Kokkos::View<Real***> >;
+  using ColumnSpeciesView = ekat::Unmanaged<Kokkos::View<PackType***> >;
 
   /// Creates an empty AeroState to which data can be added.
   /// @param [in] num_columns the number of vertical columns stored by the state
@@ -183,17 +183,18 @@ class AeroState final {
   //                         Mathematical Operations
   // --------------------------------------------------------------------------
 
-  /// Adds the given set of tendencies to this state, summing the values of the
-  /// prognostic variables in place.
+  /// Scales the given set of tendencies and adds it into this state, summing
+  /// the values of the prognostic variables in place.
+  /// @param [in] scale_factor The factor by which the tendecies are scaled.
   /// @param [in] tendencies The tendencies to be summed into the state.
-  void add(const AeroTendencies& tendencies);
+  void scale_and_add(Real scale_factor, const AeroTendencies& tendencies);
 
   private:
 
   // These are managed versions of the views above, for views created by the
   // state itself.
-  using ManagedColumnView = Kokkos::View<Real**>;
-  using ManagedColumnSpeciesView = Kokkos::View<Real***>;
+  using ManagedColumnView = Kokkos::View<PackType**>;
+  using ManagedColumnSpeciesView = Kokkos::View<PackType***>;
 
   /// Number of columns in the state.
   int num_columns_;
