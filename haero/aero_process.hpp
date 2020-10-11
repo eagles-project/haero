@@ -103,11 +103,10 @@ class AeroProcess {
   ///                this process occurs.
   /// @param [out] tendencies A container that stores time derivatives for
   ///                         prognostic variables evolved by this process.
-  virtual void compute(const AeroModel& model,
-                       const AeroState& state,
-                       Real t,
-                       Real dt,
-                       AeroTendencies& tendencies) = 0;
+  virtual void run(const AeroModel& model,
+                   const AeroState& state,
+                   Real t, Real dt,
+                   AeroTendencies& tendencies) = 0;
 
   private:
 
