@@ -51,6 +51,9 @@ AeroModel::AeroModel(
 }
 
 AeroModel::~AeroModel() {
+  for (auto p: processes_) {
+    delete p.second;
+  }
 }
 
 AeroState* AeroModel::create_state() const {
