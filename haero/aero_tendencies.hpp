@@ -5,6 +5,7 @@
 
 namespace haero {
 
+/// @class AeroTendencies
 /// This type stores time derivatives ("tendencies") for the prognostic
 /// variables in an aerosol system. These variables are:
 /// * mixing ratios of for each mode-specific interstitial and cloud-borne

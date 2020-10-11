@@ -1,4 +1,5 @@
 #include "haero/aero_model.hpp"
+#include "haero/select_process.hpp"
 #include "ekat/util/ekat_units.hpp"
 
 namespace haero {
@@ -21,7 +22,8 @@ AeroModel::AeroModel(
   gas_chem_(gas_chemistry),
   aqueous_chem_(aqueous_chemistry),
   num_columns_(num_columns),
-  num_levels_(num_levels)
+  num_levels_(num_levels),
+  processes_()
 {
   EKAT_ASSERT_MSG(gas_chemistry != nullptr,
                   "A gas chemistry mechanism must be provided!");
@@ -30,6 +32,22 @@ AeroModel::AeroModel(
 
   // Set up mode/species indexing.
   // TODO
+
+  // Set up processes.
+  AeroProcessType processTypes[9] = {
+    ActivationProcess,
+    CloudBorneWetRemovalProcess,
+    CoagulationProcess,
+    CondensationProcess,
+    DryDepositionProcess,
+    EmissionsProcess,
+    NucleationProcess,
+    ResuspensionProcess,
+    WaterUptakeProcess
+  };
+  for (auto p: processTypes) {
+    processes_[p] = select_process(p, parameterizations);
+  }
 }
 
 AeroModel::~AeroModel() {
@@ -54,8 +72,14 @@ AeroState* AeroModel::create_state() const {
   return state;
 }
 
-void AeroModel::run_water_uptake(const AeroState& state,
-                                 AeroTendencies& tendencies) {
+void AeroModel::run_process(AeroProcessType type,
+                            const AeroState& state,
+                            Real t, Real dt,
+                            AeroTendencies& tendencies) {
+  auto iter = processes_.find(type);
+  EKAT_ASSERT_MSG(iter != processes_.end(),
+                  "No process of the selected type is available!");
+  iter->second->compute(*this, state, t, dt, tendencies);
 }
 
 const Parameterizations& AeroModel::parameterizations() const {

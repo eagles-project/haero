@@ -3,6 +3,7 @@
 
 namespace haero {
 
+/// @struct Parameterizations
 /// This type specifies aerosol parameterizations available to a Haero
 /// simulation. A set of parameterizations is a set of physical processes that
 /// are approximately represented according to a specific algorithm. Each

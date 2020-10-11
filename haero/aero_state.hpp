@@ -16,6 +16,7 @@ namespace haero {
 /// This is a forward declaration, since we refer to AeroTendencies below.
 class AeroTendencies;
 
+/// @class AeroState
 /// This type stores state information for an aerosol system. It stores
 /// * mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
