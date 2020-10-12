@@ -1,5 +1,4 @@
 #include "haero/aero_model.hpp"
-#include "haero/select_process.hpp"
 #include "ekat/util/ekat_units.hpp"
 
 namespace haero {
@@ -46,7 +45,7 @@ AeroModel::AeroModel(
     WaterUptakeProcess
   };
   for (auto p: processTypes) {
-    processes_[p] = select_process(p, parameterizations);
+    processes_[p] = select_parametrization(p, parameterizations);
   }
 }
 

@@ -18,6 +18,7 @@ enum AeroProcessType {
   CondensationProcess,
   DryDepositionProcess,
   EmissionsProcess,
+  InterstitialWetRemovalProcess,
   NucleationProcess,
   ResuspensionProcess,
   WaterUptakeProcess
@@ -106,12 +107,30 @@ class AeroProcess {
   virtual void run(const AeroModel& model,
                    const AeroState& state,
                    Real t, Real dt,
-                   AeroTendencies& tendencies) = 0;
+                   AeroTendencies& tendencies) const = 0;
 
   private:
 
   AeroProcessType type_;
   std::string name_;
+};
+
+/// @class NullAeroProcess
+/// This AeroProcess represents a null process in which no tendencies are
+/// computed. It can be used for all processes that have been disabled.
+class NullAeroProcess: public AeroProcess {
+public:
+  /// Constructor: constructs a null aerosol process of the given type.
+  /// @param [in] type The type of aerosol process.
+  explicit NullAeroProcess(AeroProcessType type):
+    AeroProcess(type, "Null process") {}
+
+  // Overrides
+  void run(const AeroModel& model,
+           const AeroState& state,
+           Real t, Real dt,
+           AeroTendencies& tendencies) const override {}
+
 };
 
 }
