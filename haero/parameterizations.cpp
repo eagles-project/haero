@@ -57,7 +57,7 @@ AeroProcess* select_parametrization(AeroProcessType type,
       process = new NullAeroProcess(type);
     }
   }
-  EKAT_ASSERT_MSG(process != nullptr, "No process was selected!");
+  EKAT_REQUIRE_MSG(process != nullptr, "No process was selected!");
   return process;
 }
 

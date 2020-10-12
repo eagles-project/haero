@@ -79,12 +79,12 @@ void AeroModel::run_process(AeroProcessType type,
                             Real t, Real dt,
                             AeroTendencies& tendencies) {
   auto iter = processes_.find(type);
-  EKAT_ASSERT_MSG(iter != processes_.end(),
-                  "No process of the selected type is available!");
-  EKAT_ASSERT_MSG(iter->second != nullptr,
-                  "Null process pointer encountered!");
-  EKAT_ASSERT_MSG(iter->second->type() == type,
-                  "Invalid process type encountered!");
+  EKAT_REQUIRE_MSG(iter != processes_.end(),
+                   "No process of the selected type is available!");
+  EKAT_REQUIRE_MSG(iter->second != nullptr,
+                   "Null process pointer encountered!");
+  EKAT_REQUIRE_MSG(iter->second->type() == type,
+                   "Invalid process type encountered!");
   iter->second->run(*this, state, t, dt, tendencies);
 }
 
