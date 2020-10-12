@@ -5,6 +5,7 @@
 
 namespace haero {
 
+/// @struct Species
 /// This type represents an aerosol or gas species.
 struct Species final {
 

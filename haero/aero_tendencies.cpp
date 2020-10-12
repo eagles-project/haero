@@ -118,7 +118,7 @@ AeroTendencies& AeroTendencies::scale(Real factor) {
   return *this;
 }
 
-void AeroTendencies::add(const AeroTendencies& tendencies) {
+void AeroTendencies::accumulate(const AeroTendencies& tendencies) {
 }
 
 }

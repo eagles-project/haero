@@ -5,12 +5,14 @@
 #include "haero/species.hpp"
 #include "haero/chemistry.hpp"
 #include "haero/parameterizations.hpp"
+#include "haero/aero_process.hpp"
 #include "haero/aero_state.hpp"
 #include "haero/aero_tendencies.hpp"
 #include <map>
 
 namespace haero {
 
+/// @class AeroModel
 /// This type represents an aerosol system to be simulated, including all
 /// information about modes, species, chemistry, and selected parametrizations.
 class AeroModel final {
@@ -64,12 +66,17 @@ class AeroModel final {
 
   // Parameterizations
 
-  /// Runs the selected water uptake parametrization, computing related
-  /// tendencies (time derivatives).
+  /// Runs the aerosol process of the given type, computing any relevant
+  /// tendencies.
+  /// @param [in] type The type of aerosol state to be updated.
   /// @param [in] state The aerosol state to be updated.
+  /// @param [in] t The time at which the process runs.
+  /// @param [in] dt The time interval over which the process runs.
   /// @param [out] tendencies The aerosol tendencies computed.
-  void run_water_uptake(const AeroState& state,
-                        AeroTendencies& tendencies);
+  void run_process(AeroProcessType type,
+                   const AeroState& state,
+                   Real t, Real dt,
+                   AeroTendencies& tendencies);
 
   // Accessors
 
@@ -112,6 +119,9 @@ class AeroModel final {
   // Grid parameters.
   int num_columns_;
   int num_levels_;
+
+  // Selected implementations of processes used by this model.
+  std::map<AeroProcessType, AeroProcess*> processes_;
 };
 
 }

@@ -21,7 +21,8 @@ AeroModel::AeroModel(
   gas_chem_(gas_chemistry),
   aqueous_chem_(aqueous_chemistry),
   num_columns_(num_columns),
-  num_levels_(num_levels)
+  num_levels_(num_levels),
+  processes_()
 {
   EKAT_ASSERT_MSG(gas_chemistry != nullptr,
                   "A gas chemistry mechanism must be provided!");
@@ -30,9 +31,28 @@ AeroModel::AeroModel(
 
   // Set up mode/species indexing.
   // TODO
+
+  // Set up processes.
+  AeroProcessType processTypes[9] = {
+    ActivationProcess,
+    CloudBorneWetRemovalProcess,
+    CoagulationProcess,
+    CondensationProcess,
+    DryDepositionProcess,
+    EmissionsProcess,
+    NucleationProcess,
+    ResuspensionProcess,
+    WaterUptakeProcess
+  };
+  for (auto p: processTypes) {
+    processes_[p] = select_parametrization(p, parameterizations);
+  }
 }
 
 AeroModel::~AeroModel() {
+  for (auto p: processes_) {
+    delete p.second;
+  }
 }
 
 AeroState* AeroModel::create_state() const {
@@ -54,8 +74,18 @@ AeroState* AeroModel::create_state() const {
   return state;
 }
 
-void AeroModel::run_water_uptake(const AeroState& state,
-                                 AeroTendencies& tendencies) {
+void AeroModel::run_process(AeroProcessType type,
+                            const AeroState& state,
+                            Real t, Real dt,
+                            AeroTendencies& tendencies) {
+  auto iter = processes_.find(type);
+  EKAT_REQUIRE_MSG(iter != processes_.end(),
+                   "No process of the selected type is available!");
+  EKAT_REQUIRE_MSG(iter->second != nullptr,
+                   "Null process pointer encountered!");
+  EKAT_REQUIRE_MSG(iter->second->type() == type,
+                   "Invalid process type encountered!");
+  iter->second->run(*this, state, t, dt, tendencies);
 }
 
 const Parameterizations& AeroModel::parameterizations() const {

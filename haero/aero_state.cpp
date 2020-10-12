@@ -170,5 +170,8 @@ const AeroState::ColumnView& AeroState::modal_num_density(int mode_index) const 
   return modal_num_densities_[mode_index];
 }
 
+void AeroState::scale_and_add(Real scale_factor, const AeroTendencies& tendencies) {
+}
+
 }
 

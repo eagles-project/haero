@@ -26,6 +26,7 @@ add_library(haero
             aero_state.cpp
             aero_tendencies.cpp
             chemistry.cpp
+            parameterizations.cpp
             utils.cpp
             view_pack_helpers.cpp
             )

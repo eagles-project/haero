@@ -6,6 +6,7 @@
 
 namespace haero {
 
+/// @struct Mode
 /// This struct represents an aerosol particle mode and contains all associated
 /// metadata. It is not polymorphic, so don't derive any subclass from it.
 struct Mode final {
