@@ -108,18 +108,33 @@ struct Parameterizations final {
 
 };
 
-/// Given an aerosol process type and a set of selected parameterizations,
-/// this function creates and returns a pointer to a newly-allocated
-/// AeroProcess instance representing a specific parameterization (or
-/// implementation). The implementation of this function must be updated
-/// whenever a new AeroProcess implementation is made available.
+/// Given a (prognostic) aerosol process type and a set of selected
+/// parameterizations, this function creates and returns a pointer to a
+/// newly-allocated PrognosticAeroProcess instance representing a specific
+/// parameterization (or implementation). The implementation of this function
+/// must be updated whenever a new PrognosticAeroProcess implementation is made
+/// available.
 /// @param [in] type The type of aerosol process to be selected.
 /// @param [in] selections A struct containing selected aerosol parametrizations
 ///                        and their implementations.
 /// @returns A pointer to a newly allocated process reflecting the given
 ///          selections.
-AeroProcess* select_parametrization(AeroProcessType type,
-                                    const Parameterizations& selections);
+PrognosticAeroProcess* select_prognostic_process(AeroProcessType type,
+                                                 const Parameterizations& selections);
+
+/// Given a (diagnostic) aerosol process type and a set of selected
+/// parameterizations, this function creates and returns a pointer to a
+/// newly-allocated DiagnosticAeroProcess instance representing a specific
+/// parameterization (or implementation). The implementation of this function
+/// must be updated whenever a new DiagnosticAeroProcess implementation is made
+/// available.
+/// @param [in] type The type of aerosol process to be selected.
+/// @param [in] selections A struct containing selected aerosol parametrizations
+///                        and their implementations.
+/// @returns A pointer to a newly allocated process reflecting the given
+///          selections.
+DiagnosticAeroProcess* select_diagnostic_process(AeroProcessType type,
+                                                 const Parameterizations& selections);
 
 } // end haero namespace
 

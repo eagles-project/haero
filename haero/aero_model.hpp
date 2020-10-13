@@ -66,17 +66,23 @@ class AeroModel final {
 
   // Parameterizations
 
-  /// Runs the aerosol process of the given type, computing any relevant
-  /// tendencies.
+  /// Runs the (prognostic) aerosol process of the given type, computing any
+  /// relevant tendencies.
   /// @param [in] type The type of aerosol state to be updated.
-  /// @param [in] state The aerosol state to be updated.
   /// @param [in] t The time at which the process runs.
   /// @param [in] dt The time interval over which the process runs.
+  /// @param [in] state The aerosol state to be updated.
   /// @param [out] tendencies The aerosol tendencies computed.
   void run_process(AeroProcessType type,
-                   const AeroState& state,
                    Real t, Real dt,
+                   const AeroState& state,
                    AeroTendencies& tendencies);
+
+  /// Updates the state with the (diagnostic) aerosol process of the given type.
+  /// @param [in] type The type of aerosol state to be updated.
+  /// @param [in] t The time at which the process runs.
+  /// @param [out] state The aerosol state to be updated.
+  void update_state(AeroProcessType type, Real t, AeroState& state);
 
   // Accessors
 
@@ -100,6 +106,12 @@ class AeroModel final {
   /// aerosol model.
   const ChemicalMechanism& aqueous_chemistry() const;
 
+  /// Returns the number of columns in the model.
+  int num_columns() const { return num_columns_; }
+
+  /// Returns the number of vertical levels in the model.
+  int num_levels() const { return num_levels_; }
+
   private:
 
   // Parameterizations, modes, species...
@@ -120,8 +132,11 @@ class AeroModel final {
   int num_columns_;
   int num_levels_;
 
-  // Selected implementations of processes used by this model.
-  std::map<AeroProcessType, AeroProcess*> processes_;
+  // Selected implementations of prognostic processes used by this model.
+  std::map<AeroProcessType, PrognosticAeroProcess*> prog_processes_;
+
+  // Selected implementations of diagnostic processes used by this model.
+  std::map<AeroProcessType, DiagnosticAeroProcess*> diag_processes_;
 };
 
 }
