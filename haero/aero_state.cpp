@@ -170,6 +170,48 @@ const AeroState::ColumnView& AeroState::modal_num_density(int mode_index) const 
   return modal_num_densities_[mode_index];
 }
 
+AeroState::DiagColumnView&
+AeroState::diagnostic(const std::string& name) {
+  auto iter = diags_.find(name);
+  if (iter == diags_.end()) {
+    DiagColumnView var(name, num_columns_, num_levels_);
+    diags_[name] = var;
+    return diags_[name];
+  } else {
+    return iter->second;
+  }
+}
+
+const AeroState::DiagColumnView&
+AeroState::diagnostic(const std::string& name) const {
+  auto iter = diags_.find(name);
+  EKAT_REQUIRE_MSG(iter != diags_.end(), "Diagnostic variable not found!");
+  return iter->second;
+}
+
+AeroState::DiagColumnView&
+AeroState::modal_diagnostic(const std::string& name, int mode_index) {
+  auto iter = modal_diags_.find(name);
+  if (iter == modal_diags_.end()) {
+    for (int m = 0; m < aero_species_names_.size(); ++m) {
+      DiagColumnView var(name, num_columns_, num_levels_);
+      modal_diags_[name].push_back(var);
+    }
+    return modal_diags_[name][mode_index];
+  } else {
+    return iter->second[mode_index];
+  }
+}
+
+const AeroState::DiagColumnView&
+AeroState::modal_diagnostic(const std::string& name, int mode_index) const {
+  auto iter = modal_diags_.find(name);
+  EKAT_REQUIRE_MSG(iter != modal_diags_.end(), "Diagnostic variable not found!");
+  EKAT_REQUIRE_MSG(mode_index >= 0, "Invalid mode index for diagnostic variable!");
+  EKAT_REQUIRE_MSG(mode_index < iter->second.size(), "Invalid mode index for diagnostic variable!");
+  return iter->second[mode_index];
+}
+
 void AeroState::scale_and_add(Real scale_factor, const AeroTendencies& tendencies) {
 }
 

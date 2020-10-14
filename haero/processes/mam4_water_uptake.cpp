@@ -52,7 +52,7 @@ void compute_relative_humidity() {
 namespace haero {
 
 Mam4WaterUptake::Mam4WaterUptake(bool use_bisection):
-  DiagnosticAeroProcess(WaterUptakeProcess, "MAM4 water uptake (Fortran)"),
+  DiagnosticAeroProcess(haero::WaterUptakeProcess, "MAM4 water uptake (Fortran)"),
   use_bisection_(use_bisection), rh(nullptr), maer(nullptr), hygro(nullptr),
   naer(nullptr), dryvol(nullptr), drymass(nullptr), dryrad(nullptr),
   rhcrystal(nullptr), rhdeliques(nullptr), ѕpecdens_1(nullptr) {
@@ -102,10 +102,14 @@ void Mam4WaterUptake::update(const AeroModel& model, Real t, AeroState& state) c
   }
 
   // Extract diagnostic variables from the state.
-  auto qaerwat = state.diagnostic("aero_water");
+  std::vector<AeroState::ColumnView> qaerwat(num_modes),
+    dgncur_awet(num_modes), wetdens(num_modes);
+  for (int m = 0; m < num_modes; ++m) {
+    qaerwat.push_back(state.diagnostic("aero_water", m));
+    dgncur_awet.push_back(state.diagnostic("mean_wet_diameter", m));
+    wetdens.push_back(state.diagnostic("wet_density", m));
+  }
   auto aerosol_water = state.diagnostic("total_aero_water");
-  auto dgncur_awet = state.diagnostic("mean_wet_diameter");
-  auto wetdens = state.diagnostic("wet_density");
 
   // Compute the relative humidity.
   compute_relative_humidity(
@@ -116,12 +120,6 @@ void Mam4WaterUptake::update(const AeroModel& model, Real t, AeroState& state) c
                              &use_bisection_, &rhcrystal[0], &rhdeliques[0],
                              dryrad, naer, hygro, rh, dryvol, drymass,
                              specdens_1, dgncur_a, dgncur_awet, qaerwat, wetdens);
-
-  // Store the updated quantities in the state.
-  state.put("aero_water", qaerwat);
-  state.put("total_aero_water", aerosol_water);
-  state.put("mean_wet_diameter", dgncur_awet);
-  state.put("wet_density", wetdens);
 }
 
 }
