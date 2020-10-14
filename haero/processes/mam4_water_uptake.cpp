@@ -49,6 +49,8 @@ void compute_relative_humidity() {
   }
 }
 
+}
+
 namespace haero {
 
 Mam4WaterUptake::Mam4WaterUptake(bool use_bisection):
@@ -102,13 +104,9 @@ void Mam4WaterUptake::update(const AeroModel& model, Real t, AeroState& state) c
   }
 
   // Extract diagnostic variables from the state.
-  std::vector<AeroState::ColumnView> qaerwat(num_modes),
-    dgncur_awet(num_modes), wetdens(num_modes);
-  for (int m = 0; m < num_modes; ++m) {
-    qaerwat.push_back(state.diagnostic("aero_water", m));
-    dgncur_awet.push_back(state.diagnostic("mean_wet_diameter", m));
-    wetdens.push_back(state.diagnostic("wet_density", m));
-  }
+  auto qaerwat = state.modal_diagnostic("aero_water");
+  auto dgncur_awet = state.modal_diagnostic("mean_wet_diameter");
+  auto wetdens = state.modal_diagnostic("wet_density");
   auto aerosol_water = state.diagnostic("total_aero_water");
 
   // Compute the relative humidity.

@@ -40,6 +40,16 @@ class AeroTendencies final {
   /// responsibility for managing resources.
   using ColumnSpeciesView = Kokkos::View<PackType***>;
 
+  /// This type represents a multidimensional array mapping a mode, column, and
+  /// vertical level to a pack.
+  /// * The mode is identified by the index m.
+  /// * The column is identified by the index i.
+  /// * The vertical level identified by the index k.
+  /// So view[m][i][k] yields the desired pack.
+  /// Our views are unmanaged in general, to allow a host model to assume
+  /// responsibility for managing resources.
+  using ModalColumnView = Kokkos::View<PackType***>;
+
   /// Creates a fully-functional set of tendencies that work with the given
   /// aerosol state.
   /// @param [in] state A finalized AeroState object that provides all the
@@ -95,15 +105,11 @@ class AeroTendencies final {
   /// the state (const).
   const ColumnSpeciesView& gas_mole_fractions() const;
 
-  /// Returns the view storing the number density tendencies for the mode with
-  /// the given index.
-  /// @param [in] mode_index The index of the desired mode.
-  ColumnView& modal_num_density(int mode_index);
+  /// Returns the view storing the modal number density tendencies.
+  ModalColumnView& modal_num_densities();
 
-  /// Returns the view storing the number density tendencies for the mode with
-  /// the given index (const).
-  /// @param [in] mode_index The index of the desired mode.
-  const ColumnView& modal_num_density(int mode_index) const;
+  /// Returns the view storing the modal number density tendencies.
+  const ModalColumnView& modal_num_densities() const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
@@ -139,7 +145,7 @@ class AeroTendencies final {
   /// Modal number densities.
   /// modal_n_[m][i][k] -> number density of mode m located at vertical level k
   /// within column i.
-  std::vector<ColumnView> modal_num_densities_;
+  ModalColumnView modal_num_densities_;
 };
 
 }

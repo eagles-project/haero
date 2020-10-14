@@ -50,12 +50,30 @@ class AeroState final {
   /// responsibility for managing resources.
   using ColumnSpeciesView = ekat::Unmanaged<Kokkos::View<PackType***> >;
 
+  /// This type represents a multidimensional array mapping a mode, column, and
+  /// vertical level to a pack.
+  /// * The mode is identified by the index m.
+  /// * The column is identified by the index i.
+  /// * The vertical level identified by the index k.
+  /// So view[m][i][k] yields the desired pack.
+  /// Our views are unmanaged in general, to allow a host model to assume
+  /// responsibility for managing resources.
+  using ModalColumnView = ekat::Unmanaged<Kokkos::View<PackType***> >;
+
   /// This type represents a multidimensional array mapping a column and
   /// vertical level to a pack, for diagnostic variables.
   /// * The column is identified by the index i.
   /// * The vertical level identified by the index k.
-  /// So view[i][k] yields the desired pack.
+  /// So view[i][k] yields the desired pack. Note that this is a managed view.
   using DiagColumnView = Kokkos::View<PackType**>;
+
+  /// This type represents a multidimensional array mapping a mode, column, and
+  /// vertical level to a pack, for diagnostic variables.
+  /// * The mode is identified by the index m.
+  /// * The column is identified by the index i.
+  /// * The vertical level identified by the index k.
+  /// So view[m][i][k] yields the desired pack. Note that this is a managed view.
+  using ModalDiagColumnView = Kokkos::View<PackType***>;
 
   /// Creates an empty AeroState to which data can be added.
   /// @param [in] num_columns the number of vertical columns stored by the state
@@ -93,15 +111,12 @@ class AeroState final {
   ///                           interstitial aerosol data in this mode.
   /// @param [in] cld_aero_data An unmanaged view to use for storing
   ///                           cloud-borne aerosol data in this mode.
-  /// @param [in] modal_data An unmanaged view to use for storing
-  ///                        the mode's number density data.
   /// @returns the index of the aerosol mode within the state.
   /// @throws
   int add_aerosol_mode(const Mode& mode,
                        const std::vector<Species>& aero_species,
                        ColumnSpeciesView int_aero_data,
-                       ColumnSpeciesView cld_aero_data,
-                       ColumnView modal_data);
+                       ColumnSpeciesView cld_aero_data);
 
   /// Adds a set of gas species to the state. This method creates managed views
   /// for the gas species data within the state. Use this when your host model
@@ -122,6 +137,10 @@ class AeroState final {
   ///                      gas species data.
   void add_gas_species(const std::vector<Species>& gas_species,
                        ColumnSpeciesView gas_data);
+
+  /// Sets the view that stores the modal number densities. Use this when your
+  /// host model manages resources for these number densities.
+  void set_modal_number_densities(ModalColumnView modal_num_densities);
 
   /// Assembles the state, doing any necessary allocations and making it ready
   /// for use. No data may be accessed within the state before this is done.
@@ -181,15 +200,11 @@ class AeroState final {
   /// (const).
   const ColumnSpeciesView& gas_mole_fractions() const;
 
-  /// Returns the view storing the modal number density for the mode with the
-  /// given index.
-  /// @param [in] mode_index The index of the desired mode.
-  ColumnView& modal_num_density(int mode_index);
+  /// Returns the view storing the modal number densities.
+  ModalColumnView& modal_num_densities();
 
-  /// Returns the view storing the modal number density for the mode with the
-  /// given index (const).
-  /// @param [in] mode_index The index of the desired mode.
-  const ColumnView& modal_num_density(int mode_index) const;
+  /// Returns the view storing the modal number densities (const).
+  const ModalColumnView& modal_num_densities() const;
 
   // --------------------------------------------------------------------------
   //                         Diagnostic variables
@@ -209,17 +224,14 @@ class AeroState final {
   /// given name. If the variable does not yet exist, it is allocated within
   /// the state.
   /// @param [in] name The name of the diagnostic variable.
-  /// @param [in] mode_index The index of the desired mode.
-  DiagColumnView& modal_diagnostic(const std::string& name,
-                                   int mode_index);
+  ModalDiagColumnView& modal_diagnostic(const std::string& name);
 
   /// Returns a const view storing the mode-specific diagnostic variable with
   /// the given name. If the variable does not yet exist, this throws an
   /// exception.
   /// @param [in] name The name of the diagnostic variable.
   /// @param [in] mode_index The index of the desired mode.
-  const DiagColumnView& modal_diagnostic(const std::string& name,
-                                         int mode_index) const;
+  const ModalDiagColumnView& modal_diagnostic(const std::string& name) const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
@@ -266,9 +278,9 @@ class AeroState final {
   ColumnSpeciesView gas_mole_fractions_;
 
   /// Modal number densities.
-  /// modal_n_[m][i][k] -> number density of mode m located at vertical level k
-  /// within column i.
-  std::vector<ColumnView> modal_num_densities_;
+  /// modal_num_densities_[m][i][k] -> number density of mode m located at
+  /// vertical level k within column i.
+  ModalColumnView modal_num_densities_;
 
   // Lists of managed views to be destroyed with the state.
   std::vector<ManagedColumnView> managed_column_views_;
@@ -276,7 +288,7 @@ class AeroState final {
 
   // Named diagnostic variables.
   std::map<std::string, DiagColumnView> diags_;
-  std::map<std::string, std::vector<DiagColumnView> > modal_diags_;
+  std::map<std::string, ModalDiagColumnView> modal_diags_;
 
   // Flag indicating whether the state has been assembled (completely
   // constructed).

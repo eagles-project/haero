@@ -24,11 +24,12 @@ AeroTendencies::AeroTendencies(const AeroState& state) {
                                                   num_columns,
                                                   num_aero_species,
                                                   num_levels));
-    auto n_view_name = std::string("d/dt[") +
-                       state.modal_num_density(m).label() +
-                       std::string(")]");
-    modal_num_densities_.push_back(ColumnView(n_view_name, num_columns, num_levels));
   }
+  auto n_view_name = std::string("d/dt[") +
+                     state.modal_num_densities().label() +
+                     std::string(")]");
+  modal_num_densities_ = ModalColumnView(n_view_name, num_modes, num_columns,
+                                         num_levels);
   int num_gas_species = state.num_gas_species();
   auto gas_view_name = std::string("d/dt[") +
                        state.gas_mole_fractions().label() +
@@ -43,7 +44,7 @@ AeroTendencies::~AeroTendencies() {
 }
 
 int AeroTendencies::num_aerosol_modes() const {
-  return static_cast<int>(modal_num_densities_.size());
+  return modal_num_densities_.extent(0);
 }
 
 int AeroTendencies::num_aerosol_species(int mode_index) const {
@@ -100,18 +101,14 @@ const AeroTendencies::ColumnSpeciesView& AeroTendencies::gas_mole_fractions() co
   return gas_mole_fractions_;
 }
 
-AeroTendencies::ColumnView&
-AeroTendencies::modal_num_density(int mode_index) {
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < modal_num_densities_.size());
-  return modal_num_densities_[mode_index];
+AeroTendencies::ModalColumnView&
+AeroTendencies::modal_num_densities() {
+  return modal_num_densities_;
 }
 
-const AeroTendencies::ColumnView&
-AeroTendencies::modal_num_density(int mode_index) const {
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < modal_num_densities_.size());
-  return modal_num_densities_[mode_index];
+const AeroTendencies::ModalColumnView&
+AeroTendencies::modal_num_densities() const {
+  return modal_num_densities_;
 }
 
 AeroTendencies& AeroTendencies::scale(Real factor) {

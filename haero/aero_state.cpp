@@ -35,15 +35,13 @@ int AeroState::add_aerosol_mode(const Mode& mode,
   return add_aerosol_mode(mode,
                           aero_species,
                           ColumnSpeciesView(int_aero_data),
-                          ColumnSpeciesView(cld_aero_data),
-                          ColumnView(modal_data));
+                          ColumnSpeciesView(cld_aero_data));
 }
 
 int AeroState::add_aerosol_mode(const Mode& mode,
                                 const std::vector<Species>& aero_species,
                                 ColumnSpeciesView int_aero_data,
-                                ColumnSpeciesView cld_aero_data,
-                                ColumnView modal_data) {
+                                ColumnSpeciesView cld_aero_data) {
   EKAT_ASSERT_MSG(not assembled_,
                   "Cannot add an aerosol mode to an assembled AeroState!");
   aero_species_names_.push_back(std::vector<std::string>());
@@ -77,8 +75,15 @@ void AeroState::add_gas_species(const std::vector<Species>& gas_species,
   gas_mole_fractions_ = gas_data;
 }
 
+void AeroState::set_modal_number_densities(ModalColumnView modal_num_densities) {
+  EKAT_ASSERT_MSG(not assembled_,
+                  "Cannot set modal number densities in an assembled AeroState!");
+  modal_num_densities_ = modal_num_densities;
+}
+
 void AeroState::assemble() {
   assembled_ = true;
+  // TODO: Allocate modal number densities, etc.
 }
 
 bool AeroState::is_assembled() const {
@@ -154,20 +159,16 @@ const AeroState::ColumnSpeciesView& AeroState::gas_mole_fractions() const {
   return gas_mole_fractions_;
 }
 
-AeroState::ColumnView& AeroState::modal_num_density(int mode_index) {
+AeroState::ModalColumnView& AeroState::modal_num_densities() {
   EKAT_ASSERT_MSG(assembled_,
                   "Cannot access data in an unassembled AeroState!");
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < modal_num_densities_.size());
-  return modal_num_densities_[mode_index];
+  return modal_num_densities_;
 }
 
-const AeroState::ColumnView& AeroState::modal_num_density(int mode_index) const {
+const AeroState::ModalColumnView& AeroState::modal_num_densities() const {
   EKAT_ASSERT_MSG(assembled_,
                   "Cannot access data in an unassembled AeroState!");
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < modal_num_densities_.size());
-  return modal_num_densities_[mode_index];
+  return modal_num_densities_;
 }
 
 AeroState::DiagColumnView&
@@ -189,27 +190,24 @@ AeroState::diagnostic(const std::string& name) const {
   return iter->second;
 }
 
-AeroState::DiagColumnView&
-AeroState::modal_diagnostic(const std::string& name, int mode_index) {
+AeroState::ModalDiagColumnView&
+AeroState::modal_diagnostic(const std::string& name) {
   auto iter = modal_diags_.find(name);
   if (iter == modal_diags_.end()) {
-    for (int m = 0; m < aero_species_names_.size(); ++m) {
-      DiagColumnView var(name, num_columns_, num_levels_);
-      modal_diags_[name].push_back(var);
-    }
-    return modal_diags_[name][mode_index];
+    ModalDiagColumnView var(name, aero_species_names_.size(),
+                            num_columns_, num_levels_);
+    modal_diags_[name] = var;
+    return modal_diags_[name];
   } else {
-    return iter->second[mode_index];
+    return iter->second;
   }
 }
 
-const AeroState::DiagColumnView&
-AeroState::modal_diagnostic(const std::string& name, int mode_index) const {
+const AeroState::ModalDiagColumnView&
+AeroState::modal_diagnostic(const std::string& name) const {
   auto iter = modal_diags_.find(name);
-  EKAT_REQUIRE_MSG(iter != modal_diags_.end(), "Diagnostic variable not found!");
-  EKAT_REQUIRE_MSG(mode_index >= 0, "Invalid mode index for diagnostic variable!");
-  EKAT_REQUIRE_MSG(mode_index < iter->second.size(), "Invalid mode index for diagnostic variable!");
-  return iter->second[mode_index];
+  EKAT_REQUIRE_MSG(iter != modal_diags_.end(), "Modal diagnostic variable not found!");
+  return iter->second;
 }
 
 void AeroState::scale_and_add(Real scale_factor, const AeroTendencies& tendencies) {
