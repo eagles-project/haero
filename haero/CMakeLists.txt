@@ -25,14 +25,15 @@ add_subdirectory(processes)
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-            aero_model.cpp
-            aero_state.cpp
-            aero_tendencies.cpp
             chemistry.cpp
+            diagnostics.cpp
+            model.cpp
             parameterizations.cpp
+            prognostics.cpp
+            tendencies.cpp
             utils.cpp
             view_pack_helpers.cpp
-            ${HAERO_PROCESSES}
+            ${HAERO_PROCESSES} # populated by the processes/ ѕubdirectory
             )
 add_dependencies(haero ekat update_version_info)
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
@@ -42,13 +43,16 @@ set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 install(TARGETS haero DESTINATION lib)
 install(FILES haero.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
+              diagnostics.hpp
+              floating_point.hpp
               mode.hpp
+              model.hpp
+              parameterizations.hpp
               physical_constants.hpp
-              utils.hpp
-              view_pack_helpers.hpp
+              prognostics.hpp
               species.hpp
               utils.hpp
-              floating_point.hpp
+              view_pack_helpers.hpp
         DESTINATION include/haero)
 
 # Library unit tests.

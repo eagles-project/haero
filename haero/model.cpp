@@ -1,16 +1,14 @@
-#include "haero/aero_model.hpp"
+#include "haero/model.hpp"
 #include "ekat/util/ekat_units.hpp"
 
 namespace haero {
 
-AeroModel::AeroModel(
+Model::Model(
   const Parameterizations& parameterizations,
   const std::vector<Mode>& aerosol_modes,
   const std::vector<Species>& aerosol_species,
   const std::map<std::string, std::vector<std::string> >& mode_species,
   const std::vector<Species>& gas_species,
-  ChemicalMechanism* gas_chemistry,
-  ChemicalMechanism* aqueous_chemistry,
   int num_columns,
   int num_levels):
   parameterizations_(parameterizations),
@@ -18,23 +16,16 @@ AeroModel::AeroModel(
   aero_species_(aerosol_species),
   gas_species_(gas_species),
   species_for_modes_(),
-  gas_chem_(gas_chemistry),
-  aqueous_chem_(aqueous_chemistry),
   num_columns_(num_columns),
   num_levels_(num_levels),
   prog_processes_(),
   diag_processes_()
 {
-  EKAT_ASSERT_MSG(gas_chemistry != nullptr,
-                  "A gas chemistry mechanism must be provided!");
-  EKAT_ASSERT_MSG(aqueous_chemistry != nullptr,
-                  "An aqueous chemistry mechanism must be provided!");
-
   // Set up mode/species indexing.
   // TODO
 
   // Set up prognostic and diagnostic processes.
-  AeroProcessType progProcessTypes[] = {
+  ProcessType progProcessTypes[] = {
     ActivationProcess,
     CloudBorneWetRemovalProcess,
     CoagulationProcess,
@@ -48,7 +39,7 @@ AeroModel::AeroModel(
     prog_processes_[p] = select_prognostic_process(p, parameterizations);
   }
 
-  AeroProcessType diagProcessTypes[] = {
+  ProcessType diagProcessTypes[] = {
     WaterUptakeProcess
   };
   for (auto p: diagProcessTypes) {
@@ -56,7 +47,7 @@ AeroModel::AeroModel(
   }
 }
 
-AeroModel::~AeroModel() {
+Model::~Model() {
   for (auto p: prog_processes_) {
     delete p.second;
   }
@@ -65,9 +56,9 @@ AeroModel::~AeroModel() {
   }
 }
 
-AeroState* AeroModel::create_state() const {
+Prognostics* Model::create_prognostics() const {
 
-  auto state = new AeroState(num_columns_, num_levels_);
+  auto progs = new Prognostics(num_columns_, num_levels_);
 
   // Add aerosol modes/species data.
   for (size_t i = 0; i < modes_.size(); ++i) {
@@ -75,19 +66,29 @@ AeroState* AeroModel::create_state() const {
     for (size_t j = 0; j < species_for_modes_[i].size(); ++j) {
       species.push_back(aero_species_[species_for_modes_[i][j]]);
     }
-    state->add_aerosol_mode(modes_[i], species);
+    progs->add_aerosol_mode(modes_[i], species);
   }
 
   // Add gas species data.
-  state->add_gas_species(gas_species_);
+  progs->add_gas_species(gas_species_);
 
-  return state;
+  return progs;
 }
 
-void AeroModel::run_process(AeroProcessType type,
-                            Real t, Real dt,
-                            const AeroState& state,
-                            AeroTendencies& tendencies) {
+Diagnostics* Model::create_diagnostics() const {
+  std::vector<int> num_aero_species(modes_.size());
+  for (size_t m = 0; m < modes_.size(); ++m) {
+    num_aero_species[m] = static_cast<int>(species_for_modes_[m].size());
+  }
+  return new Diagnostics(num_columns_, num_levels_,
+                         num_aero_species, gas_species_.size());
+}
+
+void Model::run_process(ProcessType type,
+                        Real t, Real dt,
+                        const Prognostics& prognostics,
+                        const Diagnostics& diagnostics,
+                        Tendencies& tendencies) {
   auto iter = prog_processes_.find(type);
   EKAT_REQUIRE_MSG(iter != prog_processes_.end(),
                    "No process of the selected type is available!");
@@ -95,12 +96,13 @@ void AeroModel::run_process(AeroProcessType type,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->run(*this, t, dt, state, tendencies);
+  iter->second->run(*this, t, dt, prognostics, diagnostics, tendencies);
 }
 
-void AeroModel::update_state(AeroProcessType type,
-                             Real t,
-                             AeroState& state) {
+void Model::update_state(ProcessType type,
+                         Real t,
+                         const Prognostics& prognostics,
+                         Diagnostics& diagnostics) {
   auto iter = diag_processes_.find(type);
   EKAT_REQUIRE_MSG(iter != diag_processes_.end(),
                    "No process of the selected type is available!");
@@ -108,31 +110,23 @@ void AeroModel::update_state(AeroProcessType type,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->update(*this, t, state);
+  iter->second->update(*this, t, prognostics, diagnostics);
 }
 
-const Parameterizations& AeroModel::parameterizations() const {
+const Parameterizations& Model::parameterizations() const {
   return parameterizations_;
 }
 
-const std::vector<Mode>& AeroModel::modes() const {
+const std::vector<Mode>& Model::modes() const {
   return modes_;
 }
 
-const std::vector<Species>& AeroModel::aerosol_species() const {
+const std::vector<Species>& Model::aerosol_species() const {
   return aero_species_;
 }
 
-const std::vector<Species>& AeroModel::gas_species() const {
+const std::vector<Species>& Model::gas_species() const {
   return gas_species_;
-}
-
-const ChemicalMechanism& AeroModel::gas_chemistry() const {
-  return *gas_chem_;
-}
-
-const ChemicalMechanism& AeroModel::aqueous_chemistry() const {
-  return *aqueous_chem_;
 }
 
 }

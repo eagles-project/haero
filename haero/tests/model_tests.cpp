@@ -1,4 +1,4 @@
-#include "haero/aero_tendencies.hpp"
+#include "haero/model.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "catch2/catch.hpp"
@@ -7,7 +7,7 @@
 
 using namespace haero;
 
-TEST_CASE("aero_model_ctor", "") {
+TEST_CASE("model_ctor", "") {
   // TODO
 }
 

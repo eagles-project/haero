@@ -1,55 +1,55 @@
-#include "haero/aero_process.hpp"
+#include "haero/process.hpp"
 #include "haero/parameterizations.hpp"
 
 namespace haero {
 
-PrognosticAeroProcess* select_prognostic_process(AeroProcessType type,
-                                                 const Parameterizations& selections)
+PrognosticProcess* select_prognostic_process(ProcessType type,
+                                             const Parameterizations& selections)
 {
-  PrognosticAeroProcess* process = nullptr;
+  PrognosticProcess* process = nullptr;
   if (type == ActivationProcess) {
     if (selections.activation == Parameterizations::NoActivation) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == CloudBorneWetRemovalProcess) {
     if (selections.cloudborne_wet_removal == Parameterizations::NoCloudBorneWetRemoval) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == CoagulationProcess) {
     if (selections.coagulation == Parameterizations::NoCoagulation) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == CondensationProcess) {
     if (selections.condensation == Parameterizations::NoCondensation) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == DryDepositionProcess) {
     if (selections.cloudborne_wet_removal == Parameterizations::NoCloudBorneWetRemoval) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == EmissionsProcess) {
     if (selections.emissions == Parameterizations::NoEmissions) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == InterstitialWetRemovalProcess) {
     if (selections.interstitial_wet_removal == Parameterizations::NoInterstitialWetRemoval) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == NucleationProcess) {
     if (selections.nucleation == Parameterizations::NoNucleation) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == ResuspensionProcess) {
     if (selections.resuspension == Parameterizations::NoResuspension) {
-      process = new NullPrognosticAeroProcess(type);
+      process = new NullPrognosticProcess(type);
     }
   }
   else if (type == WaterUptakeProcess) {
@@ -59,10 +59,10 @@ PrognosticAeroProcess* select_prognostic_process(AeroProcessType type,
   return process;
 }
 
-DiagnosticAeroProcess* select_diagnostic_process(AeroProcessType type,
-                                                 const Parameterizations& selections)
+DiagnosticProcess* select_diagnostic_process(ProcessType type,
+                                             const Parameterizations& selections)
 {
-  DiagnosticAeroProcess* process = nullptr;
+  DiagnosticProcess* process = nullptr;
   if (type == ActivationProcess) {
     EKAT_REQUIRE_MSG(process != nullptr, "Activation is a prognostic aerosol process!");
   }
@@ -92,7 +92,7 @@ DiagnosticAeroProcess* select_diagnostic_process(AeroProcessType type,
   }
   else if (type == WaterUptakeProcess) {
     if (selections.water_uptake == Parameterizations::NoWaterUptake) {
-      process = new NullDiagnosticAeroProcess(type);
+      process = new NullDiagnosticProcess(type);
     }
   }
   EKAT_REQUIRE_MSG(process != nullptr, "No diagnostic process was selected!");

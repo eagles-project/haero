@@ -1,4 +1,4 @@
-#include "haero/aero_model.hpp"
+#include "haero/model.hpp"
 #include "haero/processes/mam4_water_uptake.hpp"
 
 using haero::Real;
@@ -25,6 +25,7 @@ extern void modal_aero_wateruptake_sub(int* num_cols,
 
 namespace {
 
+/*
 void compute_relative_humidity() {
   for (int i = 0; i < num_cols; ++i) {
     qsat_water(t(:ncol,k), pmid(:ncol,k), es(:ncol), qs(:ncol))
@@ -48,16 +49,17 @@ void compute_relative_humidity() {
     }
   }
 }
+*/
 
 }
 
 namespace haero {
 
 Mam4WaterUptake::Mam4WaterUptake(bool use_bisection):
-  DiagnosticAeroProcess(haero::WaterUptakeProcess, "MAM4 water uptake (Fortran)"),
+  DiagnosticProcess(haero::WaterUptakeProcess, "MAM4 water uptake (Fortran)"),
   use_bisection_(use_bisection), rh(nullptr), maer(nullptr), hygro(nullptr),
   naer(nullptr), dryvol(nullptr), drymass(nullptr), dryrad(nullptr),
-  rhcrystal(nullptr), rhdeliques(nullptr), ѕpecdens_1(nullptr) {
+  rhcrystal(nullptr), rhdeliques(nullptr), specdens_1(nullptr) {
 }
 
 Mam4WaterUptake::~Mam4WaterUptake() {
@@ -75,18 +77,10 @@ Mam4WaterUptake::~Mam4WaterUptake() {
   }
 }
 
-void Mam4WaterUptake::update(const AeroModel& model, Real t, AeroState& state) const {
+void Mam4WaterUptake::init(const Model& model) {
   int num_cols = model.num_columns();
   int num_levels = model.num_levels();
   int num_modes = model.modes().size();
-
-  // This implementation follows the logic in modal_aero_wateruptake_dr
-  // (see modal_aero_wateruptake.F90 in our box model repo), which handles
-  // the coupling between MAM and CAM.
-  //
-  // We follow the path in which list_idx = 0, where data are
-  // extracted from the physics buffer. Here we extract our own data from
-  // our model and state.
 
   // Allocate memory for working arrays if we haven't already. All of these
   // working arrays have identical names to their counterparts in MAM4.
@@ -102,22 +96,42 @@ void Mam4WaterUptake::update(const AeroModel& model, Real t, AeroState& state) c
     rhdeliques = new Real[num_modes];
     specdens_1 = new Real[num_modes];
   }
+}
+
+void Mam4WaterUptake::update(const Model& model, Real t,
+                             const Prognostics& prognostics,
+                             Diagnostics& diagnostics) const {
+  int num_cols = model.num_columns();
+  int num_levels = model.num_levels();
+  int num_modes = model.modes().size();
+
+  // This implementation follows the logic in modal_aero_wateruptake_dr
+  // (see modal_aero_wateruptake.F90 in our box model repo), which handles
+  // the coupling between MAM and CAM.
+  //
+  // We follow the path in which list_idx = 0, where data are
+  // extracted from the physics buffer. Here we extract our own data from
+  // our model and state.
 
   // Extract diagnostic variables from the state.
-  auto qaerwat = state.modal_diagnostic("aero_water");
-  auto dgncur_awet = state.modal_diagnostic("mean_wet_diameter");
-  auto wetdens = state.modal_diagnostic("wet_density");
-  auto aerosol_water = state.diagnostic("total_aero_water");
+  auto qaerwat = diagnostics.modal_var("aero_water");
+  auto dgncur_a = diagnostics.modal_var("mean_diameter");
+  auto dgncur_awet = diagnostics.modal_var("mean_wet_diameter");
+  auto wetdens = diagnostics.modal_var("wet_density");
+  auto aerosol_water = diagnostics.var("total_aero_water");
 
   // Compute the relative humidity.
-  compute_relative_humidity(
 
   // Call the Fortran water uptake subroutine.
   int top_lev = 1; // top of atmosphere is the first entry in the column
+  bool bisect = use_bisection_;
   modal_aero_wateruptake_sub(&num_cols, &top_lev, &num_levels, &num_modes,
-                             &use_bisection_, &rhcrystal[0], &rhdeliques[0],
-                             dryrad, naer, hygro, rh, dryvol, drymass,
-                             specdens_1, dgncur_a, dgncur_awet, qaerwat, wetdens);
+                             &bisect, &rhcrystal[0], &rhdeliques[0], dryrad,
+                             naer, hygro, rh, dryvol, drymass, specdens_1,
+                             &(*dgncur_a.data())[0],
+                             &(*dgncur_awet.data())[0],
+                             &(*qaerwat.data())[0],
+                             &(*wetdens.data())[0]);
 }
 
 }

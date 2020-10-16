@@ -1,25 +1,25 @@
-#ifndef HAERO_AERO_TENDENCIES_HPP
-#define HAERO_AERO_TENDENCIES_HPP
+#ifndef HAERO_TENDENCIES_HPP
+#define HAERO_TENDENCIES_HPP
 
-#include "haero/aero_state.hpp"
+#include "haero/prognostics.hpp"
 
 namespace haero {
 
-/// @class AeroTendencies
+/// @class Tendencies
 /// This type stores time derivatives ("tendencies") for the prognostic
 /// variables in an aerosol system. These variables are:
 /// * mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
 /// * interstitial and cloud-borne number concentrations for each aerosol mode
 /// * mole fractions for gas species
-class AeroTendencies final {
+class Tendencies final {
   public:
 
-  /// This is the device on which the AeroTendencies stores its data.
-  using DeviceType = AeroState::DeviceType;
+  /// This is the device on which the Tendencies stores its data.
+  using DeviceType = Prognostics::DeviceType;
 
   /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
-  using PackType = AeroState::PackType;
+  using PackType = Prognostics::PackType;
 
   /// This type represents a multidimensional array mapping a column and
   /// vertical level to a pack.
@@ -52,13 +52,13 @@ class AeroTendencies final {
 
   /// Creates a fully-functional set of tendencies that work with the given
   /// aerosol state.
-  /// @param [in] state A finalized AeroState object that provides all the
-  ///                   necessary information to create a set of corresponding
-  ///                   tendencies.
-  explicit AeroTendencies(const AeroState& state);
+  /// @param [in] prognostics An assembled Prognostics object that provides the
+  ///                         necessary information to create a set of
+  ///                         corresponding tendencies.
+  explicit Tendencies(const Prognostics& prognostics);
 
   /// Destructor.
-  ~AeroTendencies();
+  ~Tendencies();
 
   /// Returns the number of aerosol mode tendencies.
   int num_aerosol_modes() const;
@@ -118,12 +118,12 @@ class AeroTendencies final {
   /// Scales all tendencies by the given constant factor, in place.
   /// @param [in] factor The factor by which the tendencies are scaled.
   /// @returns a reference to the tendencies, which have been scaled.
-  AeroTendencies& scale(Real factor);
+  Tendencies& scale(Real factor);
 
   /// Acculumates the given set of tendencies into this set, summing the values
   /// of the prognostic variables in place.
   /// @param [in] tendencies The tendencies to be summed into this object.
-  void accumulate(const AeroTendencies& tendencies);
+  void accumulate(const Tendencies& tendencies);
 
   private:
 

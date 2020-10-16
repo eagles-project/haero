@@ -1,5 +1,5 @@
-#ifndef HAERO_AERO_STATE_HPP
-#define HAERO_AERO_STATE_HPP
+#ifndef HAERO_PROGNOSTICS_HPP
+#define HAERO_PROGNOSTICS_HPP
 
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
@@ -13,19 +13,19 @@
 
 namespace haero {
 
-/// This is a forward declaration, since we refer to AeroTendencies below.
-class AeroTendencies;
+/// This is a forward declaration, since we refer to Tendencies below.
+class Tendencies;
 
-/// @class AeroState
+/// @class Prognostics
 /// This type stores state information for an aerosol system. It stores
 /// * mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
 /// * interstitial and cloud-borne number concentrations for each aerosol mode
 /// * mole fractions for gas species
-class AeroState final {
+class Prognostics final {
   public:
 
-  /// This is the device on which the AeroState stores its data.
+  /// This is the device on which the Prognostics stores its data.
   using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
 
   /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
@@ -75,17 +75,17 @@ class AeroState final {
   /// So view[m][i][k] yields the desired pack. Note that this is a managed view.
   using ModalDiagColumnView = Kokkos::View<PackType***>;
 
-  /// Creates an empty AeroState to which data can be added.
+  /// Creates an empty Prognostics to which data can be added.
   /// @param [in] num_columns the number of vertical columns stored by the state
   /// @param [in] num_levels the number of vertical levels per column stored by
   ///                        the state
-  AeroState(int num_columns, int num_levels);
+  Prognostics(int num_columns, int num_levels);
 
   /// Destructor.
-  ~AeroState();
+  ~Prognostics();
 
   // --------------------------------------------------------------------------
-  //                               State Setup
+  //                               Setup
   // --------------------------------------------------------------------------
 
   /// Adds an aerosol mode to the state, with a set of species belonging to that
@@ -170,7 +170,7 @@ class AeroState final {
   int num_levels() const;
 
   // --------------------------------------------------------------------------
-  //                         Prognostic variables
+  //                                 Data
   // --------------------------------------------------------------------------
 
   /// Returns the view storing interstitial aerosol species mixing fraction data
@@ -207,33 +207,6 @@ class AeroState final {
   const ModalColumnView& modal_num_densities() const;
 
   // --------------------------------------------------------------------------
-  //                         Diagnostic variables
-  // --------------------------------------------------------------------------
-
-  /// Returns the view storing the diagnostic variable with the given name.
-  /// If the variable does not yet exist, it is allocated within the state.
-  /// @param [in] name The name of the diagnostic variable.
-  DiagColumnView& diagnostic(const std::string& name);
-
-  /// Returns a const view storing the diagnostic variable with the given name.
-  /// If the variable does not yet exist, this throws an exception.
-  /// @param [in] name The name of the diagnostic variable.
-  const DiagColumnView& diagnostic(const std::string& name) const;
-
-  /// Returns the view storing the mode-specific diagnostic variable with the
-  /// given name. If the variable does not yet exist, it is allocated within
-  /// the state.
-  /// @param [in] name The name of the diagnostic variable.
-  ModalDiagColumnView& modal_diagnostic(const std::string& name);
-
-  /// Returns a const view storing the mode-specific diagnostic variable with
-  /// the given name. If the variable does not yet exist, this throws an
-  /// exception.
-  /// @param [in] name The name of the diagnostic variable.
-  /// @param [in] mode_index The index of the desired mode.
-  const ModalDiagColumnView& modal_diagnostic(const std::string& name) const;
-
-  // --------------------------------------------------------------------------
   //                         Mathematical Operations
   // --------------------------------------------------------------------------
 
@@ -241,7 +214,7 @@ class AeroState final {
   /// the values of the prognostic variables in place.
   /// @param [in] scale_factor The factor by which the tendecies are scaled.
   /// @param [in] tendencies The tendencies to be summed into the state.
-  void scale_and_add(Real scale_factor, const AeroTendencies& tendencies);
+  void scale_and_add(Real scale_factor, const Tendencies& tendencies);
 
   private:
 
@@ -285,10 +258,6 @@ class AeroState final {
   // Lists of managed views to be destroyed with the state.
   std::vector<ManagedColumnView> managed_column_views_;
   std::vector<ManagedColumnSpeciesView> managed_column_species_views_;
-
-  // Named diagnostic variables.
-  std::map<std::string, DiagColumnView> diags_;
-  std::map<std::string, ModalDiagColumnView> modal_diags_;
 
   // Flag indicating whether the state has been assembled (completely
   // constructed).
