@@ -37,6 +37,7 @@ Model::Model(
   };
   for (auto p: progProcessTypes) {
     prog_processes_[p] = select_prognostic_process(p, parameterizations);
+    prog_processes_[p]->init(*this);
   }
 
   ProcessType diagProcessTypes[] = {
@@ -44,6 +45,7 @@ Model::Model(
   };
   for (auto p: diagProcessTypes) {
     diag_processes_[p] = select_diagnostic_process(p, parameterizations);
+    diag_processes_[p]->init(*this);
   }
 }
 

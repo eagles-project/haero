@@ -3,6 +3,8 @@
 
 using haero::Real;
 
+extern "C" {
+
 // Fortran subroutine that computes water uptake.
 extern void modal_aero_wateruptake_sub(int* num_cols,
                                        int* top_lev,
@@ -22,6 +24,8 @@ extern void modal_aero_wateruptake_sub(int* num_cols,
                                        Real* dgncur_awet,
                                        Real* qaerwat,
                                        Real* wetdens);
+
+} // extern "C"
 
 namespace {
 
