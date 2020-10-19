@@ -50,7 +50,7 @@ int Tendencies::num_aerosol_modes() const {
 int Tendencies::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < int_aero_species_.size());
-  return int_aero_species_[mode_index].extent(2);
+  return int_aero_species_[mode_index].extent(1);
 }
 
 int Tendencies::num_gas_species() const {

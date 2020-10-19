@@ -82,6 +82,8 @@ void Prognostics::set_modal_number_densities(ModalColumnView modal_num_densities
 }
 
 void Prognostics::assemble() {
+  EKAT_ASSERT_MSG(aero_species_names_.size() > 0,
+                  "Prognostics cannot be assembled without modal species!");
   // Allocate modal number densities if they've not yet been set.
   if(modal_num_densities_.extent(1) == 0) {
     int num_modes = aero_species_names_.size();
