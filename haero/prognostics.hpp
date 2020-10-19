@@ -17,7 +17,8 @@ namespace haero {
 class Tendencies;
 
 /// @class Prognostics
-/// This type stores state information for an aerosol system. It stores
+/// This type stores the prognostic variables for an aerosol system.
+/// Specifically,It stores
 /// * mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
 /// * interstitial and cloud-borne number concentrations for each aerosol mode

@@ -11,11 +11,9 @@
 namespace haero {
 
 /// @class Diagnostics
-/// This type stores state information for an aerosol system. It stores
-/// * mixing ratios of for each mode-specific interstitial and cloud-borne
-///   aerosol species
-/// * interstitial and cloud-borne number concentrations for each aerosol mode
-/// * mole fractions for gas species
+/// This type stores a set of named diagnostic variables an aerosol system.
+/// The set of diagnostic variables for such a system is determined by the
+/// parameterizations selected for that system.
 class Diagnostics final {
   public:
 
