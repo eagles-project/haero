@@ -1,5 +1,5 @@
 #include "driver.hpp"
-#include "haero/aero_model.hpp"
+#include "haero/model.hpp"
 
 namespace haero {
 namespace driver {

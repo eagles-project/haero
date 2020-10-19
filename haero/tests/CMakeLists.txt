@@ -16,11 +16,11 @@ EkatCreateUnitTest(mode_tests mode_tests.cpp
 EkatCreateUnitTest(species_tests species_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-EkatCreateUnitTest(aero_model_tests aero_model_tests.cpp
+EkatCreateUnitTest(model_tests model_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-EkatCreateUnitTest(aero_state_tests aero_state_tests.cpp
+EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-EkatCreateUnitTest(aero_tendencies_tests aero_tendencies_tests.cpp
+EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
