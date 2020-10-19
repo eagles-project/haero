@@ -89,6 +89,7 @@ void Prognostics::assemble() {
     int num_modes = aero_species_names_.size();
     auto modal_num_densities = ManagedModalColumnView("modal_num_densities",
       num_modes, num_columns_, num_levels_);
+    managed_modal_column_views_.push_back(modal_num_densities);
     set_modal_number_densities(modal_num_densities);
   }
   assembled_ = true;
