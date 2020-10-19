@@ -82,8 +82,14 @@ void Prognostics::set_modal_number_densities(ModalColumnView modal_num_densities
 }
 
 void Prognostics::assemble() {
+  // Allocate modal number densities if they've not yet been set.
+  if(modal_num_densities_.extent(1) == 0) {
+    int num_modes = aero_species_names_.size();
+    auto modal_num_densities = ManagedModalColumnView("modal_num_densities",
+      num_modes, num_columns_, num_levels_);
+    set_modal_number_densities(modal_num_densities);
+  }
   assembled_ = true;
-  // TODO: Allocate modal number densities, etc.
 }
 
 bool Prognostics::is_assembled() const {

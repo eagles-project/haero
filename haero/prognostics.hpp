@@ -222,6 +222,7 @@ class Prognostics final {
   // state itself.
   using ManagedColumnView = Kokkos::View<PackType**>;
   using ManagedColumnSpeciesView = Kokkos::View<PackType***>;
+  using ManagedModalColumnView = Kokkos::View<PackType***>;
 
   /// Number of columns in the state.
   int num_columns_;
@@ -258,6 +259,7 @@ class Prognostics final {
   // Lists of managed views to be destroyed with the state.
   std::vector<ManagedColumnView> managed_column_views_;
   std::vector<ManagedColumnSpeciesView> managed_column_species_views_;
+  std::vector<ManagedModalColumnView> managed_modal_column_views_;
 
   // Flag indicating whether the state has been assembled (completely
   // constructed).
