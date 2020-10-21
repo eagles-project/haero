@@ -34,6 +34,10 @@ int Diagnostics::num_levels() const {
   return num_levels_;
 }
 
+bool Diagnostics::has_var(const std::string& name) const {
+  return (vars_.find(name) != vars_.end());
+}
+
 void Diagnostics::create_var(const std::string& name) {
   auto iter = vars_.find(name);
   EKAT_REQUIRE_MSG(iter == vars_.end(), "Diagnostic variable already exists!");
@@ -52,6 +56,10 @@ Diagnostics::var(const std::string& name) const {
   auto iter = vars_.find(name);
   EKAT_REQUIRE_MSG(iter != vars_.end(), "Diagnostic variable not found!");
   return iter->second;
+}
+
+bool Diagnostics::has_modal_var(const std::string& name) const {
+  return (modal_vars_.find(name) != modal_vars_.end());
 }
 
 void Diagnostics::create_modal_var(const std::string& name) {

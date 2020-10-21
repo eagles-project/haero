@@ -90,6 +90,11 @@ class Diagnostics final {
   //                                  Data
   // --------------------------------------------------------------------------
 
+  /// Returns true if the given (non-modal) variable exists within this object,
+  /// false otherwise.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  bool has_var(const std::string& name) const;
+
   /// Creates a diagnostic variable with the given name within this object.
   /// @param [in] name The name of the diagnostic variable to be created.
   void create_var(const std::string& name);
@@ -103,6 +108,11 @@ class Diagnostics final {
   /// If the variable does not yet exist, this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
   const ColumnView& var(const std::string& name) const;
+
+  /// Returns true if the given modal variable exists within this object,
+  /// false otherwise.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  bool has_modal_var(const std::string& name) const;
 
   /// Creates a diagnostic modal variable with the given name within this object.
   /// @param [in] name The name of the modal diagnostic variable to be created.

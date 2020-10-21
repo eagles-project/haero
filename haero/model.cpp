@@ -78,12 +78,21 @@ Prognostics* Model::create_prognostics() const {
 }
 
 Diagnostics* Model::create_diagnostics() const {
+  // Create an empty Diagnostics object.
   std::vector<int> num_aero_species(modes_.size());
   for (size_t m = 0; m < modes_.size(); ++m) {
     num_aero_species[m] = static_cast<int>(species_for_modes_[m].size());
   }
-  return new Diagnostics(num_columns_, num_levels_,
-                         num_aero_species, gas_species_.size());
+  auto diags =  new Diagnostics(num_columns_, num_levels_,
+                                num_aero_species, gas_species_.size());
+
+  // Make sure that all diagnostic variables needed by the model's processes
+  // are present.
+  for (auto iter = diag_processes_.begin(); iter != diag_processes_.end(); ++iter) {
+    iter->second->prepare(*diags);
+  }
+
+  return diags;
 }
 
 void Model::run_process(ProcessType type,

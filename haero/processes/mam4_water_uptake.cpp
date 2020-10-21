@@ -64,6 +64,11 @@ Mam4WaterUptake::Mam4WaterUptake(bool use_bisection):
   use_bisection_(use_bisection), rh(nullptr), maer(nullptr), hygro(nullptr),
   naer(nullptr), dryvol(nullptr), drymass(nullptr), dryrad(nullptr),
   rhcrystal(nullptr), rhdeliques(nullptr), specdens_1(nullptr) {
+
+  auto vars = std::vector<std::string>({"total_aero_water"});
+  auto modal_vars = std::vector<std::string>({"aero_water", "mean_diameter",
+    "mean_wet_diameter", "wet_density"});
+  set_diag_vars(vars, modal_vars);
 }
 
 Mam4WaterUptake::~Mam4WaterUptake() {

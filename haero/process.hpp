@@ -176,6 +176,28 @@ class DiagnosticProcess {
   const std::string& name() const { return name_; }
 
   //------------------------------------------------------------------------
+  //                Methods called during initialization
+  //------------------------------------------------------------------------
+
+  /// This method creates all necessary diagnostic variables within the
+  /// given Diagnostics object. It's called during the model initialization
+  /// process at the beginning of a simulation.
+  /// @param [inout] diagnostics The Diagnostics object in which the needed
+  ///                            variables are created.
+  void prepare(Diagnostics& diagnostics) const {
+    for (const auto& var: required_vars_) {
+      if (not diagnostics.has_var(var)) {
+        diagnostics.create_var(var);
+      }
+    }
+    for (const auto& var: required_modal_vars_) {
+      if (not diagnostics.has_modal_var(var)) {
+        diagnostics.create_modal_var(var);
+      }
+    }
+  }
+
+  //------------------------------------------------------------------------
   //                Methods to be overridden by subclasses
   //------------------------------------------------------------------------
 
@@ -197,10 +219,37 @@ class DiagnosticProcess {
                       const Prognostics& prognostics,
                       Diagnostics& diagnostics) const = 0;
 
+  protected:
+
+  //------------------------------------------------------------------------
+  //                Methods for constructing diagnostic processes
+  //------------------------------------------------------------------------
+
+  /// This method accepts the names of diagnostic variables required by this
+  /// process. These variables include those variables used by the process, as
+  /// well as variables computed by the process. The process ensures that any
+  /// Diagnostics object passed to it has storage for these variables. This
+  /// is usually called inside the constructor of a DiagnosticProcess subclass.
+  /// @param [in] vars A list of names of (non-mode-ѕpecific variables required
+  ///                  by the process
+  /// @param [in] modal_vars A list of names of mode-ѕpecific variables required
+  ///                        by the process
+  void set_diag_vars(const std::vector<std::string>& vars,
+                     const std::vector<std::string>& modal_vars) {
+    required_vars_ = vars;
+    required_modal_vars_ = modal_vars;
+  }
+
   private:
 
+  // The specific type of aerosol process.
   ProcessType type_;
+  // The name of this diagnostic process.
   std::string name_;
+  // The non-modal variables required by this process.
+  std::vector<std::string> required_vars_;
+  // The modal variables required by this process.
+  std::vector<std::string> required_modal_vars_;
 };
 
 /// @class NullDiagnosticProcess
