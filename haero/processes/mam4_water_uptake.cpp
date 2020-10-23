@@ -6,24 +6,12 @@ using haero::Real;
 extern "C" {
 
 // Fortran subroutine that computes water uptake.
-extern void modal_aero_wateruptake_sub(int* num_cols,
-                                       int* top_lev,
-                                       int* num_levels,
-                                       int* num_modes,
-                                       bool* use_bisection,
-                                       Real* rhcrystal,
-                                       Real* rhdeliques,
-                                       Real* dryrad,
-                                       Real* naer,
-                                       Real* hygro,
-                                       Real* rh,
-                                       Real* dryvol,
-                                       Real* drymass,
-                                       Real* specdens_1,
-                                       Real* dgncur_a,
-                                       Real* dgncur_awet,
-                                       Real* qaerwat,
-                                       Real* wetdens);
+extern void modal_aero_wateruptake_sub(
+  int* num_cols, int* top_lev, int* num_levels, int* num_modes,
+  bool* use_bisection, Real* rhcrystal, Real* rhdeliques, Real* dryrad,
+  Real* naer, Real* hygro, Real* rh, Real* dryvol,
+  Real* drymass, Real* specdens_1, Real* dgncur_a, Real* dgncur_awet,
+  Real* qaerwat, Real* wetdens);
 
 } // extern "C"
 
@@ -120,30 +108,25 @@ void Mam4WaterUptake::update(const Model& model, Real t,
     const auto& int_aero_mfrac = prognostics.interstitial_aerosols(m);
 
     // Loop over species
+    Real spechygro_1;
     for (int s = 0; s < num_species; ++s) {
 
       // Get species properties.
       Real specdens = species.mass_density;
       Real spechygro = species.hygroscopicity;
 
-      // get species interstitial mixing ratio ('a')
-
-      // get species mass mixing ratio
-      call rad_cnst_get_aer_mmr(list_idx, m, l, 'a', state, pbuf, raer)
-
       if (l == 0) {
         // save off these values to be used as defaults
-        specdens_1(m)  = specdens
-        spechygro_1    = spechygro
+        specdens_1[m] = specdens;
+        spechygro_1   = spechygro;
       }
 
       for (int i = 0; i < num_columns; ++i) {
         for (int k = 0; k < num_levels; ++k) {
-          Real raer_ik = raer(i,k);
-          maer(i,k,m) += raeri_ik;
-          Real = duma/specdens
-          dryvolmr(i,k) += dryvolmr(i,k) + 
-          hygro(i,k,m)  = hygro(i,k,m) + dumb*spechygro
+          Real mfrac_ik = int_aero_mfrac(i,k);
+          maer(i,k,m) += specdens * mfrac_ik;
+          dryvolmr(i,k) += mfrac_ik;
+          hygro(i,k,m) += mfrac_ik * spechygro;
         } // levels
       } // columns
     } // species
@@ -155,16 +138,17 @@ void Mam4WaterUptake::update(const Model& model, Real t,
 
         if (dryvolmr(i,k) > 1.0e-30_wp) {
           // volume-mean hygroscopicity
-          hygro(i,k,m) = hygro(i,k,m)/dryvolmr(i,k);
+          hygro(i,k,m) = hygro(i,k,m) / dryvolmr(i,k);
         } else {
           hygro(i,k,m) = spechygro_1;
         }
 
         // dry aerosol properties
-        v2ncur_a = 1._wp / ( (pi/6._wp)*(dgncur_a(i,k,m)**3._wp)*exp(4.5_wp*alnsg**2._wp) )
+        Real v2ncur_a = 1.0 /
+          ( M_PI/6.0 * cube(dgncur_a(i,k,m)) * exp(4.5*square(alnsg)) );
 
         // naer = aerosol number (#/kg)
-        naer(i,k,m) = dryvolmr(i,k)*v2ncur_a
+        naer(i,k,m) = dryvolmr(i,k)*v2ncur_a;
 
         // compute mean (1 particle) dry volume and mass for each mode
         // old coding is replaced because the new (1/v2ncur_a) is equal to
@@ -172,13 +156,13 @@ void Mam4WaterUptake::update(const Model& model, Real t,
         // also moletomass forces maer >= 1.0e-30, so (maer/dryvolmr)
         // should never cause problems (but check for maer < 1.0e-31 anyway)
         if (maer(i,k,m) > 1.0e-31) {
-          drydens = maer(i,k,m)/dryvolmr(i,k)
+          drydens = maer(i,k,m) / dryvolmr(i,k);
         } else {
-          drydens = 1.0_wp
+          drydens = 1.0;
         }
-        dryvol(i,k,m)   = 1.0_wp/v2ncur_a
-        drymass(i,k,m)  = drydens*dryvol(i,k,m)
-        dryrad(i,k,m)   = (dryvol(i,k,m)/pi43)**third
+        dryvol(i,k,m)  = 1.0 / v2ncur_a;
+        drymass(i,k,m) = drydens * dryvol(i,k,m);
+        dryrad(i,k,m)  = std::pow(dryvol(i,k,m)/pi43, 1.0/3.0);
       }
     }
   }
