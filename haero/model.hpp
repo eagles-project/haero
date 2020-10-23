@@ -98,8 +98,15 @@ class Model final {
   /// Returns the list of aerosol modes associated with this aerosol model.
   const std::vector<Mode>& modes() const;
 
-  /// Returns the list of aerosol species associated with this aerosol model.
+  /// Returns the list of all aerosol species associated with this aerosol
+  /// model.
   const std::vector<Species>& aerosol_species() const;
+
+  /// Returns the list of aerosol species associated with the model with the
+  /// given mode index.
+  /// @param [in]mode_index An integer index identifying the mode in question. This
+  ///                       This index goes from 0 to num_modes-1.
+  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
 
   /// Returns the list of gas species associated with this aerosol model.
   const std::vector<Species>& gas_species() const;
@@ -120,7 +127,7 @@ class Model final {
 
   // The association of aerosol species with modes.
   // species_for_modes_[mode_name] = vector of species names
-  std::vector<std::vector<int> > species_for_modes_;
+  std::vector<std::vector<int> > species_for_mode_;
 
   // Grid parameters.
   int num_columns_;

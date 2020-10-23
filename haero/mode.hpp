@@ -19,12 +19,17 @@ struct Mode final {
   /// @param [in] max_diameter The maximum diameter for particles that belong
   ///                          to this mode.
   /// @param [in] mean_std_dev The geometric standard deviation for this mode.
+  /// @param [in] rh_crystal TODO
+  /// @param [in] rh_deliques TODO
   Mode(const std::string& name,
        Real min_diameter,
        Real max_diameter,
-       Real mean_std_dev):
+       Real mean_std_dev,
+       Real rh_crystal,
+       Real rh_deliques):
     name(name), min_diameter(min_diameter), max_diameter(max_diameter),
-    mean_std_dev(mean_std_dev) {}
+    mean_std_dev(mean_std_dev), rh_crystal(rh_crystal),
+    rh_deliques(rh_deliques) {}
 
   /// A unique name for this mode.
   std::string name;
@@ -37,6 +42,12 @@ struct Mode final {
 
   /// The geometric mean standard deviation for this mode.
   Real mean_std_dev;
+
+  /// TODO
+  Real rh_crystal;
+
+  /// TODO
+  Real rh_deliques;
 };
 
 }

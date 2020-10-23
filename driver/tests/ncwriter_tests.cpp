@@ -58,8 +58,9 @@ TEST_CASE("ncwriter", "") {
   const std::vector<Real> mode_std_devs = {1.6, 1.8, 1.8, 1.6};
   std::vector<Mode> modes;
   for (int i=0; i<nmodes; ++i) {
-    modes.push_back(Mode(mode_names[i],
-      diameter_minmax[i].first, diameter_minmax[i].second, mode_std_devs[i]));
+    modes.push_back(Mode(mode_names[i], diameter_minmax[i].first,
+                    diameter_minmax[i].second, mode_std_devs[i],
+                    0.0, 0.0)); // TODO
   }
   ncf.add_mode_dim(modes);
   REQUIRE (ncf.get_ndims() == 5);
