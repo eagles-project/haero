@@ -1,13 +1,22 @@
-!> This module contains subroutines for accessing data within the Prognostics
-!> C++ data structure.
-module prognostics
+!> This module contains data structures that allow Fortran modules to access
+!> data from the C++ model, prognostics, and diagnostics.
+module haero_fortran
 
-  use haero, only: c_real
+  use iso_c_binding
 
   implicit none
 
+  integer, parameter :: Real = c_double
+
   private
-  public :: Prognostics
+  public :: Model, Prognostics, Diagnostics
+
+  !> This type represents an aerosol model (as represented by the Model C++
+  !> class).
+  type :: Model
+  private
+    type(c_ptr) :: ptr
+  end type
 
   !> This type represents the set of prognostic variables for an aerosol
   !> model.
@@ -23,6 +32,13 @@ module prognostics
     procedure :: cld_aero_mix_frac => p_cld_aero_mix_frac
     procedure :: gas_mole_frac => p_gas_mole_frac
     procedure :: modal_num_densities => p_modal_num_densities
+  end type
+
+  !> This type represents the set of diagnostic variables for an aerosol
+  !> model.
+  type :: Diagnostics
+  private
+    type(c_ptr) :: ptr
   end type
 
 contains

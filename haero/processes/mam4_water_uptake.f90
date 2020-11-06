@@ -1,126 +1,105 @@
 module mam4_wateruptake
 
-  use prognostics, only: Prognostics
-  use diagnostics, only: Diagnostics
+  use iso_c_binding
+  use haero_fortran, only: wp => Real, Model, Prognostics, Diagnostics
 
   implicit none
   private
 
   save
 
-  public :: wateruptake_init, wateruptake_dr, wateruptake_sub, 
+  public :: wateruptake_init, wateruptake_update
+
+  logical :: use_bisection = .false.
 
   real(wp), parameter :: third  = 1._wp/3._wp
   real(wp), parameter :: pi43   = pi*4.0_wp/3.0_wp
 
-  ! Physics buffer indices
-  integer :: cld_idx            = 0
-  integer :: dgnum_idx          = 0
-  integer :: dgnumwet_idx       = 0
-  integer :: wetdens_ap_idx     = 0
-  integer :: qaerwat_idx        = 0
-
-  logical :: pergro_mods = .false.
-
 contains
 
-subroutine modal_aero_wateruptake_reg()
+subroutine wateruptake_init(model, bisect) bind(c)
+  use iso_c_binding, only :: c_bool
+  implicit none
 
-  use modal_aero_config
-  use physics_buffer,   only: pbuf_add_field, dtype_r8
-  use rad_constituents, only: rad_cnst_get_info
+  type(Model),            intent(in) :: model
+  logical(c_bool), value, intent(in) :: bisect
 
-   integer :: nmodes
+  integer :: m, nmodes
+  logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
+  logical :: history_verbose      ! produce verbose history output
 
-   call rad_cnst_get_info(0, nmodes=nmodes)
-   call pbuf_add_field('DGNUMWET',   'global',  dtype_r8, (/pcols, pver, nmodes/), dgnumwet_idx)
-   call pbuf_add_field('WETDENS_AP', 'physpkg', dtype_r8, (/pcols, pver, nmodes/), wetdens_ap_idx)
+  character(len=3) :: trnum       ! used to hold mode number (as characters)
 
-   ! 1st order rate for direct conversion of strat. cloud water to precip (1/s)
-   call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)
+  use_bisection = bisect
 
-end subroutine modal_aero_wateruptake_reg
+  call rad_cnst_get_info(0, nmodes=nmodes)
+  call pbuf_add_field('DGNUMWET',   'global',  dtype_r8, (/pcols, pver, nmodes/), dgnumwet_idx)
+  call pbuf_add_field('WETDENS_AP', 'physpkg', dtype_r8, (/pcols, pver, nmodes/), wetdens_ap_idx)
 
-!===============================================================================
-!===============================================================================
+  ! 1st order rate for direct conversion of strat. cloud water to precip (1/s)
+  call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)
 
-subroutine wateruptake_init(pbuf2d)
-   use time_manager,  only: is_first_step
-   use physics_buffer,only: pbuf_set_field
+  ! assume for now that will compute wateruptake for climate list modes only
 
-   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+  call rad_cnst_get_info(0, nmodes=nmodes)
 
-   integer :: m, nmodes
-   logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
-   logical :: history_verbose      ! produce verbose history output
+  ! determine default variables
+  call phys_getopts(history_aerosol_out = history_aerosol, &
+                    history_verbose_out = history_verbose, &
+                    pergro_mods_out = pergro_mods)
 
-   character(len=3) :: trnum       ! used to hold mode number (as characters)
-   !----------------------------------------------------------------------------
+  do m = 1, nmodes
+    write(trnum, '(i3.3)') m
+    call addfld('dgnd_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
+       'dry dgnum, interstitial, mode '//trnum(2:3))
+    call addfld('dgnw_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
+      'wet dgnum, interstitial, mode '//trnum(2:3))
+    call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
+      'aerosol water, interstitial, mode '//trnum(2:3))
 
-   cld_idx        = pbuf_get_index('CLD')
-   dgnum_idx      = pbuf_get_index('DGNUM')
-
-   ! assume for now that will compute wateruptake for climate list modes only
-
-   call rad_cnst_get_info(0, nmodes=nmodes)
-
-   ! determine default variables
-   call phys_getopts(history_aerosol_out = history_aerosol, &
-                     history_verbose_out = history_verbose, &
-                     pergro_mods_out = pergro_mods)
-
-   do m = 1, nmodes
-      write(trnum, '(i3.3)') m
-      call addfld('dgnd_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
-         'dry dgnum, interstitial, mode '//trnum(2:3))
-      call addfld('dgnw_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
-         'wet dgnum, interstitial, mode '//trnum(2:3))
-      call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
-         'aerosol water, interstitial, mode '//trnum(2:3))
-
-      if (history_aerosol) then
-         if (history_verbose) then
-            call add_default('dgnd_a'//trnum(2:3), 1, ' ')
-            call add_default('dgnw_a'//trnum(2:3), 1, ' ')
-            call add_default('wat_a'//trnum(3:3),  1, ' ')
-         endif
+    if (history_aerosol) then
+      if (history_verbose) then
+        call add_default('dgnd_a'//trnum(2:3), 1, ' ')
+        call add_default('dgnw_a'//trnum(2:3), 1, ' ')
+        call add_default('wat_a'//trnum(3:3),  1, ' ')
       endif
+    endif
 
-   end do
+  end do
 
-   ! Add total aerosol water
-   if (history_aerosol .and. .not. history_verbose) then
-      call addfld('aero_water', (/ 'lev' /), 'A', 'm', &
-         'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
-      call add_default( 'aero_water',  1, ' ')
-   endif
+  ! Add total aerosol water
+  if (history_aerosol .and. .not. history_verbose) then
+    call addfld('aero_water', (/ 'lev' /), 'A', 'm', &
+       'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
+    call add_default( 'aero_water',  1, ' ')
+  endif
 
-   if (is_first_step()) then
-      ! initialize fields in physics buffer
-      call pbuf_set_field(pbuf2d, dgnumwet_idx, 0.0_wp)
-   endif
+  if (is_first_step()) then
+    ! initialize fields in physics buffer
+    call pbuf_set_field(pbuf2d, dgnumwet_idx, 0.0_wp)
+  endif
 
 end subroutine wateruptake_init
 
-subroutine wateruptake_update(state, pbuf, list_idx_in, dgnumdry_m, &
-                              dgnumwet_m, qaerwat_m, wetdens_m      )
+subroutine wateruptake_update(model, t, prognostics, diagnostics) bind(c)
 
   ! Arguments
-  type(physics_state), target, intent(in)    :: state   ! Physics state variables
-  type(physics_buffer_desc),   pointer       :: pbuf(:) ! physics buffer
+  type(Model),       intent(in)    :: model
+  real(wp), value,   intent(in)    :: t
+  type(Prognostics), intent(in)    :: prognostics
+  type(Diagnostics), intent(inout) :: diagnostics
 
-  integer,  optional,          intent(in)    :: list_idx_in
-  real(wp), optional,          pointer       :: dgnumdry_m(:,:,:)
-  real(wp), optional,          pointer       :: dgnumwet_m(:,:,:)
-  real(wp), optional,          pointer       :: qaerwat_m(:,:,:)
-  real(wp), optional,          pointer       :: wetdens_m(:,:,:)
+  real(wp), optional, pointer :: dgnumdry_m(:,:,:)
+  real(wp), optional, pointer :: dgnumwet_m(:,:,:)
+  real(wp), optional, pointer :: qaerwat_m(:,:,:)
+  real(wp), optional, pointer :: wetdens_m(:,:,:)
 
   ! local variables
 
-  integer  :: lchnk                         ! chunk index
-  integer  :: ncol                          ! number of columns
-  integer  :: list_idx                      ! radiative constituents list index
-  integer  :: stat
+  integer :: lchnk                         ! chunk index
+  integer :: ncol                          ! number of columns
+  integer :: list_idx                      ! radiative constituents list index
+  integer :: stat
 
   integer :: i, k, l, m
   integer :: itim_old
@@ -292,8 +271,7 @@ subroutine wateruptake_update(state, pbuf, list_idx_in, dgnumdry_m, &
 
      end do
    end do
-
- end do    ! modes
+ end do ! modes
 
  ! relative humidity calc
  h2ommr => state%q(:,:,1)
@@ -355,18 +333,14 @@ subroutine wateruptake_update(state, pbuf, list_idx_in, dgnumdry_m, &
 
 end subroutine waterupdate_update
 
-!===============================================================================
-
 subroutine wateruptake_sub( &
-   ncol, str_lev, end_lev, nmodes, use_bisection, &
-   rhcrystal, rhdeliques, dryrad, naer, hygro, rh, dryvol, &
-   drymass, specdens_1, dgncur_a, dgncur_awet, qaerwat, wetdens)
+   ncol, str_lev, end_lev, nmodes, rhcrystal, rhdeliques, dryrad, naer, hygro,
+   rh, dryvol, drymass, specdens_1, dgncur_a, dgncur_awet, qaerwat, wetdens)
 
   ! Arguments
   integer, intent(in) :: ncol             ! number of columns
   integer, intent(in) :: str_lev, end_lev ! start and end vertical levels
   integer, intent(in) :: nmodes
-  logical, intent(in) :: use_bisection    ! Solve the Kohler equation with bisection
 
   real(wp), dimension(:), intent(in)      :: rhcrystal, rhdeliques, specdens_1
   real(wp), dimension(:,:), intent(in)    :: rh
@@ -721,7 +695,7 @@ subroutine makoh_quartic( cx, p3, p2, p1, p0, im )
 end subroutine makoh_quartic
 
 ! bisection method to find a root for the equation F(x) = 0 !
-subroutine bisection ( rd, c, rw )
+subroutine bisection( rd, c, rw )
 
   real(wp), intent(in) :: rd, c(5)
   real(wp), intent(out) :: rw
