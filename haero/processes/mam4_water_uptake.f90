@@ -1,93 +1,92 @@
 module mam4_wateruptake
 
   use iso_c_binding
-  use haero_fortran, only: wp => Real, Model, Prognostics, Diagnostics
+  use haero, only: wp => Real, model_num_modes
 
   implicit none
   private
 
-  save
+  public :: wateruptake_init, &
+            wateruptake_init_with_bisection, &
+            wateruptake_update, &
+            wateruptake_destroy
 
-  public :: wateruptake_init, wateruptake_update
+  !> This type stores parameters for the water uptake process.
+  type :: waterupdate_process
+    !> Do we use bisection, or the algebraic method?
+    logical :: use_bisection
+    !> How many modes are in this aerosol model?
+    integer :: nmodes
+  end type
 
-  logical :: use_bisection = .false.
-
+  !> These parameters are used by the water uptake process.
   real(wp), parameter :: third  = 1._wp/3._wp
   real(wp), parameter :: pi43   = pi*4.0_wp/3.0_wp
 
 contains
 
-subroutine wateruptake_init(model, bisect) bind(c)
-  use iso_c_binding, only :: c_bool
+!> Creates and returns an initialized pointer for a water uptake process that
+!> solves the Kohler equation using the algebraic method.
+type(c_ptr) function wateruptake_init(model) bind(c)
+  use iso_c_binding, only :: c_ptr, c_loc
   implicit none
 
-  type(Model),            intent(in) :: model
-  logical(c_bool), value, intent(in) :: bisect
+  ! Arguments
+  type(c_ptr),            intent(in) :: model
 
-  integer :: m, nmodes
-  logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
-  logical :: history_verbose      ! produce verbose history output
+  type(water_uptake_process), pointer, target :: process
 
-  character(len=3) :: trnum       ! used to hold mode number (as characters)
+  ! Initialize the water uptake process.
+  allocate(process)
+  process%use_bisection = .false.
+  process%nmodes = model_num_modes(model)
 
-  use_bisection = bisect
+  ! Return a C pointer.
+  wateruptake_init = c_loc(process)
+end function
 
-  call rad_cnst_get_info(0, nmodes=nmodes)
-  call pbuf_add_field('DGNUMWET',   'global',  dtype_r8, (/pcols, pver, nmodes/), dgnumwet_idx)
-  call pbuf_add_field('WETDENS_AP', 'physpkg', dtype_r8, (/pcols, pver, nmodes/), wetdens_ap_idx)
-
-  ! 1st order rate for direct conversion of strat. cloud water to precip (1/s)
-  call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)
-
-  ! assume for now that will compute wateruptake for climate list modes only
-
-  call rad_cnst_get_info(0, nmodes=nmodes)
-
-  ! determine default variables
-  call phys_getopts(history_aerosol_out = history_aerosol, &
-                    history_verbose_out = history_verbose, &
-                    pergro_mods_out = pergro_mods)
-
-  do m = 1, nmodes
-    write(trnum, '(i3.3)') m
-    call addfld('dgnd_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
-       'dry dgnum, interstitial, mode '//trnum(2:3))
-    call addfld('dgnw_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
-      'wet dgnum, interstitial, mode '//trnum(2:3))
-    call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
-      'aerosol water, interstitial, mode '//trnum(2:3))
-
-    if (history_aerosol) then
-      if (history_verbose) then
-        call add_default('dgnd_a'//trnum(2:3), 1, ' ')
-        call add_default('dgnw_a'//trnum(2:3), 1, ' ')
-        call add_default('wat_a'//trnum(3:3),  1, ' ')
-      endif
-    endif
-
-  end do
-
-  ! Add total aerosol water
-  if (history_aerosol .and. .not. history_verbose) then
-    call addfld('aero_water', (/ 'lev' /), 'A', 'm', &
-       'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
-    call add_default( 'aero_water',  1, ' ')
-  endif
-
-  if (is_first_step()) then
-    ! initialize fields in physics buffer
-    call pbuf_set_field(pbuf2d, dgnumwet_idx, 0.0_wp)
-  endif
-
-end subroutine wateruptake_init
-
-subroutine wateruptake_update(model, t, prognostics, diagnostics) bind(c)
+!> Creates and returns an initialized pointer for a water uptake process that
+!> solves the Kohler equation using bisection.
+type(c_ptr) function wateruptake_init_with_bisection(model) bind(c)
+  use iso_c_binding, only :: c_ptr, c_loc
+  implicit none
 
   ! Arguments
-  type(Model),       intent(in)    :: model
+  type(c_ptr),            intent(in) :: model
+
+  type(water_uptake_process), pointer, target :: process
+
+  ! Initialize the water uptake process.
+  allocate(process)
+  process%use_bisection = .true.
+  process%nmodes = model_num_modes(model)
+
+  ! Return a C pointer.
+  wateruptake_init = c_loc(process)
+end function
+
+subroutine wateruptake_destroy(p)
+  use iso_c_binding, only :: c_ptr, c_f_pointer
+  implicit none
+
+  type(c_ptr), intent(inout) :: p
+
+  type(wateruptake_process), pointer :: process
+
+  call c_f_pointer(p, process)
+  deallocate(process)
+end subroutine
+
+subroutine wateruptake_update(p, model, t, prognostics, diagnostics) bind(c)
+  use iso_c_binding, only :: c_ptr, c_f_pointer
+  implicit none
+
+  ! Arguments
+  type(c_ptr),       intent(in)    :: p
+  type(c_ptr),       intent(in)    :: model
   real(wp), value,   intent(in)    :: t
-  type(Prognostics), intent(in)    :: prognostics
-  type(Diagnostics), intent(inout) :: diagnostics
+  type(c_ptr),       intent(in)    :: prognostics
+  type(c_ptr),       intent(inout) :: diagnostics
 
   real(wp), optional, pointer :: dgnumdry_m(:,:,:)
   real(wp), optional, pointer :: dgnumwet_m(:,:,:)
@@ -95,6 +94,8 @@ subroutine wateruptake_update(model, t, prognostics, diagnostics) bind(c)
   real(wp), optional, pointer :: wetdens_m(:,:,:)
 
   ! local variables
+
+  type(wateruptake_process) :: process
 
   integer :: lchnk                         ! chunk index
   integer :: ncol                          ! number of columns
@@ -146,6 +147,9 @@ subroutine wateruptake_update(model, t, prognostics, diagnostics) bind(c)
   logical :: history_verbose                ! produce verbose history output
 
   character(len=3) :: trnum       ! used to hold mode number (as characters)
+
+  ! Get access to process data.
+  call c_f_pointer(p, process)
 
   lchnk = state%lchnk
   ncol = state%ncol

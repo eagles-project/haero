@@ -1,6 +1,6 @@
 !> This module contains data structures that allow Fortran modules to access
 !> data from the C++ model, prognostics, and diagnostics.
-module haero_fortran
+module haero
 
   use iso_c_binding
 
