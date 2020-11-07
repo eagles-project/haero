@@ -6,16 +6,38 @@ module haero
 
   implicit none
 
-  integer, parameter :: Real = c_double
+  !> Working precision real kind
+  integer, parameter :: wp = c_double
 
   private
   public :: Model, Prognostics, Diagnostics
 
-  !> This type represents an aerosol model (as represented by the Model C++
-  !> class).
+  !> This Fortran type is the equivalent of the C++ Mode struct.
+  type, bind(c) :: Mode
+    character(len=32) :: name
+    real(wp) :: min_diameter
+    real(wp) :: max_diameter
+    real(wp) :: mean_std_dev
+  end type
+
+  !> This Fortran type is the equivalent of the C++ Species struct.
+  type, bind(c) :: Species
+    character(len=32) :: name
+    character(len=8) :: symbol
+  end type
+
+  !> This Fortran type is the equivalent of the C++ Model class.
   type :: Model
   private
     type(c_ptr) :: ptr
+  contains
+    procedure :: from_c_ptr => m_from_c_ptr
+    procedure :: modes => m_modes
+    procedure :: aero_species => m_aero_species
+    procedure :: aero_species_for_mode => m_aero_species_for_mode
+    procedure :: gas_species => m_gas_species
+    procedure :: num_columns => m_num_columns
+    procedure :: num_levels => m_num_levels
   end type
 
   !> This type represents the set of prognostic variables for an aerosol
@@ -24,10 +46,12 @@ module haero
   private
     type(c_ptr) :: ptr
   contains
+    procedure :: from_c_ptr => p_from_c_ptr
     procedure :: num_aero_modes => p_num_aero_modes
     procedure :: num_aero_species => p_num_aero_species
     procedure :: num_gas_species => p_num_gas_species
-    procedure :: num_columns => p_num_levels
+    procedure :: num_columns => p_num_columns
+    procedure :: num_levels => p_num_levels
     procedure :: int_aero_mix_frac => p_int_aero_mix_frac
     procedure :: cld_aero_mix_frac => p_cld_aero_mix_frac
     procedure :: gas_mole_frac => p_gas_mole_frac
@@ -39,6 +63,17 @@ module haero
   type :: Diagnostics
   private
     type(c_ptr) :: ptr
+  contains
+    procedure :: from_c_ptr => d_from_c_ptr
+    procedure :: num_aero_modes => d_num_aero_modes
+    procedure :: num_aero_species => d_num_aero_species
+    procedure :: num_gas_species => d_num_gas_species
+    procedure :: num_columns => d_num_columns
+    procedure :: num_levels => d_num_levels
+    procedure :: has_var => d_has_var
+    procedure :: var => d_var
+    procedure :: has_modal_var => d_has_modal_var
+    procedure :: modal_var => d_modal_var
   end type
 
 contains
