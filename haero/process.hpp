@@ -139,6 +139,25 @@ class NullPrognosticProcess: public PrognosticProcess {
 
 };
 
+extern "C" {
+
+/// Given a C pointer to a Fortran-backed prognostic process, this function
+/// initializes the process with the given aerosol model.
+void fortran_prognostic_process_init(void* process, void* model);
+
+/// Given a C pointer to a Fortran-backed prognostic process, this function
+/// invokes the process to compute tendencies for prognostic variables with the
+/// given arguments.
+void fortran_prognostic_process_run(void* process, void* model, Real t, Real dt,
+                                    void* prognostics, void* diagnostics,
+                                    void* tendencies);
+
+/// Given a C pointer to a Fortran-backed diagnostic process, this function
+/// frees all resources allocated within the process
+void fortran_prognostic_process_destroy(void* process);
+
+} // extern "C"
+
 /// @class FPrognosticProcess
 /// This PrognosticProcess makes it easier to implement an aerosol process in
 /// Fortran by wrapping the run method in a Fortran call that creates the
@@ -148,60 +167,31 @@ class FPrognosticProcess: public PrognosticProcess
 {
   public:
 
-  /// This type represents an interoperable Fortran subroutine that initializes
-  /// a process using information from an aerosol model. It accepts an aerosol
-  /// model and returns a pointer to an initialized Fortran process data type.
-  /// Can return a null pointer if the process doesn't store any data.
-  typedef void* (*init_subroutine_t)(void* model);
-
-  /// This type represents an interoperable Fortran subroutine that runs
-  /// a process with interoperable arguments.
-  typedef void (*run_subroutine_t)(void* process, void* model,
-                                   Real t, Real dt,
-                                   void* prognostics, void* diagnostics,
-                                   void* tendencies);
-
-  /// This type represents an interoperable Fortran subroutine that destroys
-  /// a process using information from an aerosol model. It accepts a pointer to
-  /// a Fortran process data type.
-  typedef void (*destroy_subroutine_t)(void* process);
+  /// This type is a pointer to a Fortran function that accepts no arguments
+  /// and returns a C pointer to a newly Fortran-backed implementation of a
+  /// prognostic process.
+  typedef void* (*fortran_prognostic_process_ctor)(void);
 
   /// Constructor.
   /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
-  /// @param [in] init_subroutine A pointer to an interoperable Fortran
-  ///                             subroutine that initializes the process.
-  /// @param [in] run_subroutine A pointer to an interoperable Fortran
-  ///                            subroutine that runs the process.
-  /// @param [in] destroy_subroutine A pointer to an interoperable Fortran
-  ///                                subroutine that destroys the process.
+  /// @param [in] create_process A pointer to an interoperable Fortran function
+  ///                            that returns a C pointer to a newly allocated
+  ///                            Fortran-backed prognostic process.
   FPrognosticProcess(ProcessType type,
                      const std::string& name,
-                     init_subroutine_t init_subroutine,
-                     run_subroutine_t run_subroutine,
-                     destroy_subroutine_t destroy_subroutine):
-    PrognosticProcess(type, name), process_(nullptr),
-    init_(init_subroutine), run_(run_subroutine), destroy_(destroy_subroutine)
-  {
-    EKAT_ASSERT_MSG((init_ != nullptr) && (destroy_ != nullptr),
-      "init and destroy subroutines must both be specified or omitted.");
-    EKAT_ASSERT(run_ != nullptr);
-  }
+                     fortran_prognostic_process_ctor create_process):
+    PrognosticProcess(type, name), process_(create_process()) {}
 
   /// Destructor.
   ~FPrognosticProcess() {
-    if (process_ != nullptr) {
-      destroy_(process_);
-    }
+    fortran_prognostic_process_destroy(process_);
   }
 
   // Overrides.
   void init(const Model& model) override {
-    EKAT_ASSERT(process_ == nullptr);
-    if (init_ != nullptr) {
-      process_ = init_((void*)&model);
-    }
+    fortran_prognostic_process_init(process_, (void*)&model);
   }
 
   void run(const Model& model,
@@ -209,21 +199,14 @@ class FPrognosticProcess: public PrognosticProcess
            const Prognostics& prognostics,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {
-    run_(process_, (void*)&model, t, dt,
-         (void*)&prognostics, (void*)&diagnostics, (void*)&tendencies);
+    fortran_prognostic_process_run(process_, (void*)&model, t, dt,
+      (void*)&prognostics, (void*)&diagnostics, (void*)tendencies);
   }
 
   private:
 
-  // Pointer to Fortran process data type. Can be null if the process stores
-  // no data.
+  // Pointer to Fortran process data.
   void* process_;
-
-  // Interoperable Fortran subroutines for initializing and running a process.
-  init_subroutine_t init_;
-  run_subroutine_t run_;
-  destroy_subroutine_t destroy_;
-
 };
 
 /// @class DiagnosticProcess
@@ -240,6 +223,22 @@ class DiagnosticProcess {
   ///                  its underlying parametrization, and its implementation.
   DiagnosticProcess(ProcessType type, const std::string& name):
     type_(type), name_(name) {}
+
+  /// Constructor that accepts names of all modal and non-modal diagnostic
+  /// variables needed by this process.
+  /// @param [in] type The type of aerosol process modeled by the subclass.
+  /// @param [in] name A descriptive name that captures the aerosol process,
+  ///                  its underlying parametrization, and its implementation.
+  /// @param [in] variables The set of (non-modal) diagnostic variables
+  ///                       required by this process.
+  /// @param [in] modal_variables The set of modal diagnostic variables
+  ///                             required by this process.
+  DiagnosticProcess(ProcessType type, const std::string& name,
+                    const std::vector<std::string>& variables,
+                    const std::vector<std::string>& modal_variables):
+    type_(type), name_(name) {
+    set_diag_vars(variables, modal_variables);
+  }
 
   /// Destructor.
   virtual ~DiagnosticProcess();
@@ -359,6 +358,23 @@ class NullDiagnosticProcess: public DiagnosticProcess {
               Diagnostics& diagnostics) const override {}
 };
 
+extern "C" {
+
+/// Given a C pointer to a Fortran-backed diagnostic process, this function
+/// initializes the process with the given aerosol model.
+void fortran_diagnostic_process_init(void* process, void* model);
+
+/// Given a C pointer to a Fortran-backed diagnostic process, this function
+/// invokes the process to update diagnostic variables with the given arguments.
+void fortran_diagnostic_process_update(void* process, void* model, Real t,
+                                       void* prognostics, void* diagnostics);
+
+/// Given a C pointer to a Fortran-backed diagnostic process, this function
+/// frees all resources allocated within the process
+void fortran_diagnostic_process_destroy(void* process);
+
+} // extern "C"
+
 /// @class FDiagnosticProcess
 /// This DiagnosticProcess makes it easier to implement an aerosol process in
 /// Fortran by wrapping the update method in a Fortran call that creates the
@@ -366,79 +382,51 @@ class NullDiagnosticProcess: public DiagnosticProcess {
 class FDiagnosticProcess: public DiagnosticProcess {
   public:
 
-  /// This type represents an interoperable Fortran subroutine that initializes
-  /// a process using information from an aerosol model. It accepts an aerosol
-  /// model and returns a pointer to an initialized Fortran process data type.
-  /// Can return a null pointer if the process doesn't store any data.
-  typedef void* (*init_subroutine_t)(void* model);
-
-  /// This type represents an interoperable Fortran subroutine that updates
-  /// diagnostic variables using interoperable arguments.
-  typedef void (*update_subroutine_t)(void* process, void* model, Real t,
-                                      void* prognostics, void* diagnostics);
-
-  /// This type represents an interoperable Fortran subroutine that destroys
-  /// a process using information from an aerosol model. It accepts a pointer to
-  /// a Fortran process data type.
-  typedef void (*destroy_subroutine_t)(void* process);
+  /// This type is a pointer to a Fortran function that accepts no arguments
+  /// and returns a C pointer to a newly Fortran-backed implementation of a
+  /// diagnostic process.
+  typedef void* (*fortran_diagnostic_process_ctor)(void);
 
   /// Constructor.
   /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
-  /// @param [in] init_subroutine A pointer to an interoperable Fortran
-  ///                             subroutine that initializes the process.
-  /// @param [in] update_subroutine A pointer to an interoperable Fortran
-  ///                               subroutine that updates diagnostic variables.
-  /// @param [in] destroy_subroutine A pointer to an interoperable Fortran
-  ///                                subroutine that destroys the process.
+  /// @param [in] variables The set of (non-modal) diagnostic variables
+  ///                       required by this process.
+  /// @param [in] modal_variables The set of modal diagnostic variables
+  ///                             required by this process.
+  /// @param [in] create_process A pointer to an interoperable Fortran function
+  ///                            that returns a C pointer to a newly allocated
+  ///                            Fortran-backed diagnostic process.
   FDiagnosticProcess(ProcessType type,
                      const std::string& name,
-                     init_subroutine_t init_subroutine,
-                     update_subroutine_t update_subroutine,
-                     destroy_subroutine_t destroy_subroutine):
-    DiagnosticProcess(type, name), process_(nullptr),
-    init_(init_subroutine), update_(update_subroutine),
-    destroy_(destroy_subroutine)
-  {
-    EKAT_ASSERT_MSG((init_ != nullptr) && (destroy_ != nullptr),
-      "init and destroy subroutines must both be specified or omitted.");
-    EKAT_ASSERT(update_ != nullptr);
-  }
+                     const std::vector<std::string>& variables,
+                     const std::vector<std::string>& modal_variables,
+                     fortran_diagnostic_process_ctor create_process):
+    DiagnosticProcess(type, name, variables, modal_variables),
+    process_(create_process()) {}
 
   /// Destructor.
   ~FDiagnosticProcess() {
-    if (process_ != nullptr) {
-      destroy_(process_);
-    }
+    fortran_diagnostic_process_destroy(process_);
   }
 
   // Overrides.
   void init(const Model& model) override {
-    EKAT_ASSERT(process_ == nullptr);
-    if (init_ != nullptr) {
-      process_ = init_((void*)&model);
-    }
+    fortran_diagnostic_process_init(process_, (void*)&model);
   }
 
   void update(const Model& model, Real t,
               const Prognostics& prognostics,
               Diagnostics& diagnostics) const override {
-    update_(process_, (void*)&model, t, (void*)&prognostics,
-            (void*)&diagnostics);
+    fortran_diagnostic_process_update(process_, (void*)&model, t,
+      (void*)&prognostics, (void*)&diagnostics);
   }
 
   private:
 
-  // Pointer to Fortran process data type. Can be null if the process stores
-  // no data.
+  // Pointer to Fortran process data.
   void* process_;
-
-  // Interoperable Fortran subroutines for initializing and running a process.
-  init_subroutine_t init_;
-  update_subroutine_t update_;
-  destroy_subroutine_t destroy_;
-
 };
 
 }
