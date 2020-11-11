@@ -139,25 +139,6 @@ class NullPrognosticProcess: public PrognosticProcess {
 
 };
 
-extern "C" {
-
-/// Given a C pointer to a Fortran-backed prognostic process, this function
-/// initializes the process with the given aerosol model.
-void fortran_prognostic_process_init(void* process, void* model);
-
-/// Given a C pointer to a Fortran-backed prognostic process, this function
-/// invokes the process to compute tendencies for prognostic variables with the
-/// given arguments.
-void fortran_prognostic_process_run(void* process, void* model, Real t, Real dt,
-                                    void* prognostics, void* diagnostics,
-                                    void* tendencies);
-
-/// Given a C pointer to a Fortran-backed diagnostic process, this function
-/// frees all resources allocated within the process
-void fortran_prognostic_process_destroy(void* process);
-
-} // extern "C"
-
 /// @class FPrognosticProcess
 /// This PrognosticProcess makes it easier to implement an aerosol process in
 /// Fortran by wrapping the run method in a Fortran call that creates the
@@ -167,10 +148,17 @@ class FPrognosticProcess: public PrognosticProcess
 {
   public:
 
-  /// This type is a pointer to a Fortran function that accepts no arguments
-  /// and returns a C pointer to a newly Fortran-backed implementation of a
-  /// prognostic process.
-  typedef void* (*fortran_prognostic_process_ctor)(void);
+  /// This type is a pointer to a Fortran function that initializes a process.
+  /// Since the model is already available to the Fortran process via Haero's
+  /// Fortran helper module, this type of function takes no arguments.
+  typedef void (*InitProcessFunction)(void);
+
+  /// This type is a pointer to a Fortran function that runs a process.
+  typedef void (*RunProcessFunction)(Real t, Real dt, void* progs, void* diags, void* tends);
+
+  /// This type is a pointer to a Fortran function that finalizes a process,
+  /// deallocating any resources allocated in the process's init function.
+  typedef void (*FinalizeProcessFunction)(void);
 
   /// Constructor.
   /// @param [in] type The type of aerosol process modeled by the subclass.
@@ -181,17 +169,20 @@ class FPrognosticProcess: public PrognosticProcess
   ///                            Fortran-backed prognostic process.
   FPrognosticProcess(ProcessType type,
                      const std::string& name,
-                     fortran_prognostic_process_ctor create_process):
-    PrognosticProcess(type, name), process_(create_process()) {}
+                     InitProcessFunction init_process,
+                     RunProcessFunction run_process,
+                     FinalizeProcessFunction finalize_process):
+    PrognosticProcess(type, name), init_process_(init_process),
+    run_process_(run_process), finalize_process_(finalize_process) {}
 
   /// Destructor.
   ~FPrognosticProcess() {
-    fortran_prognostic_process_destroy(process_);
+    finalize_process_();
   }
 
   // Overrides.
   void init(const Model& model) override {
-    fortran_prognostic_process_init(process_, (void*)&model);
+    init_process_();
   }
 
   void run(const Model& model,
@@ -199,14 +190,16 @@ class FPrognosticProcess: public PrognosticProcess
            const Prognostics& prognostics,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {
-    fortran_prognostic_process_run(process_, (void*)&model, t, dt,
-      (void*)&prognostics, (void*)&diagnostics, (void*)tendencies);
+    run_process_(t, dt, (void*)&prognostics, (void*)&diagnostics,
+                 (void*)&tendencies);
   }
 
   private:
 
-  // Pointer to Fortran process data.
-  void* process_;
+  // Pointers to Fortran subroutines.
+  InitProcessFunction init_process_;
+  RunProcessFunction run_process_;
+  FinalizeProcessFunction finalize_process_;
 };
 
 /// @class DiagnosticProcess
@@ -382,10 +375,17 @@ void fortran_diagnostic_process_destroy(void* process);
 class FDiagnosticProcess: public DiagnosticProcess {
   public:
 
-  /// This type is a pointer to a Fortran function that accepts no arguments
-  /// and returns a C pointer to a newly Fortran-backed implementation of a
-  /// diagnostic process.
-  typedef void* (*fortran_diagnostic_process_ctor)(void);
+  /// This type is a pointer to a Fortran function that initializes a process.
+  /// Since the model is already available to the Fortran process via Haero's
+  /// Fortran helper module, this type of function takes no arguments.
+  typedef void (*InitProcessFunction)(void);
+
+  /// This type is a pointer to a Fortran function that runs a process update.
+  typedef void (*UpdateProcessFunction)(Real t, void* progs, void* diags);
+
+  /// This type is a pointer to a Fortran function that finalizes a process,
+  /// deallocating any resources allocated in the process's init function.
+  typedef void (*FinalizeProcessFunction)(void);
 
   /// Constructor.
   /// @param [in] type The type of aerosol process modeled by the subclass.
@@ -402,31 +402,35 @@ class FDiagnosticProcess: public DiagnosticProcess {
                      const std::string& name,
                      const std::vector<std::string>& variables,
                      const std::vector<std::string>& modal_variables,
-                     fortran_diagnostic_process_ctor create_process):
+                     InitProcessFunction init_process,
+                     UpdateProcessFunction update_process,
+                     FinalizeProcessFunction finalize_process):
     DiagnosticProcess(type, name, variables, modal_variables),
-    process_(create_process()) {}
+    init_process_(init_process), update_process_(update_process),
+    finalize_process_(finalize_process) {}
 
   /// Destructor.
   ~FDiagnosticProcess() {
-    fortran_diagnostic_process_destroy(process_);
+    finalize_process_();
   }
 
   // Overrides.
   void init(const Model& model) override {
-    fortran_diagnostic_process_init(process_, (void*)&model);
+    init_process_();
   }
 
   void update(const Model& model, Real t,
               const Prognostics& prognostics,
               Diagnostics& diagnostics) const override {
-    fortran_diagnostic_process_update(process_, (void*)&model, t,
-      (void*)&prognostics, (void*)&diagnostics);
+    update_process_(t, (void*)&prognostics, (void*)&diagnostics);
   }
 
   private:
 
-  // Pointer to Fortran process data.
-  void* process_;
+  // Pointers to Fortran subroutines.
+  InitProcessFunction init_process_;
+  UpdateProcessFunction update_process_;
+  FinalizeProcessFunction finalize_process_;
 };
 
 }

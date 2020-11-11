@@ -33,6 +33,7 @@ add_library(haero
             tendencies.cpp
             utils.cpp
             view_pack_helpers.cpp
+            haero.f90
             ${HAERO_PROCESSES} # populated by the processes/ ѕubdirectory
             )
 add_dependencies(haero ekat update_version_info)

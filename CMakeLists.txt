@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 
 
 # We declare the project right away.
+enable_language(CXX)
+enable_language(Fortran)
 project (haero)
 
 # Setup all installation folders for tpls.

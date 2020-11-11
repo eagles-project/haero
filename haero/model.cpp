@@ -1,7 +1,35 @@
 #include "haero/model.hpp"
 #include "ekat/util/ekat_units.hpp"
 
+// Functions for intializing the haero Fortran module.
+extern "C" {
+
+using haero::Real;
+
+void haerotran_begin_init();
+void haerotran_set_num_modes(int);
+void haerotran_set_max_mode_species(int);
+void haerotran_set_mode(int, const char*, Real, Real, Real);
+void haerotran_set_mode_species(int, int, const char*, const char*);
+void haerotran_set_num_gas_species(int);
+void haerotran_set_gas_species(int, const char*, const char*);
+void haerotran_set_num_columns(int);
+void haerotran_set_num_levels(int);
+void haerotran_end_init();
+void haerotran_finalize();
+
+}
+
 namespace haero {
+
+namespace {
+
+// Indicates whether we have initialized the Haero Fortran helper module. Only
+// one model gets to do this, so if more than one model instance has
+// Fortran-backed processes, we encounter a fatal error.
+bool initialized_fortran_ = false;
+
+} // anonymous namespace
 
 Model::Model(
   const Parameterizations& parameterizations,
@@ -50,17 +78,80 @@ Model::Model(
     NucleationProcess,
     ResuspensionProcess
   };
+  bool haveFortranProcesses = false;
   for (auto p: progProcessTypes) {
-    prog_processes_[p] = select_prognostic_process(p, parameterizations);
-    prog_processes_[p]->init(*this);
+    PrognosticProcess* process = select_prognostic_process(p, parameterizations);
+    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
+      haveFortranProcesses = true;
+    }
+    process->init(*this);
+    prog_processes_[p] = process;
   }
 
   ProcessType diagProcessTypes[] = {
     WaterUptakeProcess
   };
   for (auto p: diagProcessTypes) {
-    diag_processes_[p] = select_diagnostic_process(p, parameterizations);
-    diag_processes_[p]->init(*this);
+    DiagnosticProcess* process = select_diagnostic_process(p, parameterizations);
+    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
+      haveFortranProcesses = true;
+    }
+    process->init(*this);
+    diag_processes_[p] = process;
+  }
+
+  // If we encountered a Fortran-backed process, attempt to initialize the
+  // Haero Fortran helper module with our model data.
+  if (haveFortranProcesses) {
+    // If we've already initialized the Fortran module, this means that this is
+    // not the first C++ model instance that has Fortran-backed processes. We
+    // đon't allow this, since we've made assumptions in order to simplify
+    // the process of implementing Fortran processes.
+    EKAT_REQUIRE_MSG(not initialized_fortran_,
+      "More than one C++ model includes Fortran-backed processes. This is not allowed!");
+
+    // This series of calls sets things up in Haero's Fortran module.
+    haerotran_begin_init();
+    int num_modes = modes_.size();
+    haerotran_set_num_modes(num_modes);
+    int max_species = 0;
+    for (int i = 0; i < num_modes; ++i) {
+      max_species = std::max(max_species, (int)species_for_mode_[i].size());
+    }
+    for (int i = 0; i < num_modes; ++i) {
+      // Set the properties of mode i+1 (as indexed in Fortran).
+      const auto& mode = modes_[i];
+      haerotran_set_mode(i+1, mode.name.c_str(), mode.min_diameter,
+                         mode.max_diameter, mode.mean_std_dev);
+
+      // Set up aerosol species for this mode.
+      int num_species = species_for_mode_[i].size();
+      for (int j = 0; j < num_species; ++j) {
+        const auto& species = aero_species_[species_for_mode_[i][j]];
+        haerotran_set_mode_species(i+1, j+1, species.name.c_str(),
+                                   species.symbol.c_str());
+      }
+    }
+
+    // Set up gas species.
+    int num_gas_species = gas_species_.size();
+    haerotran_set_num_gas_species(num_gas_species);
+    for (int i = 0; i < num_gas_species; ++i) {
+      const auto& species = gas_species_[i];
+      haerotran_set_gas_species(i+1, species.name.c_str(),
+                                species.symbol.c_str());
+    }
+
+    // Set dimensions.
+    haerotran_set_num_columns(num_columns_);
+    haerotran_set_num_levels(num_levels_);
+    haerotran_end_init();
+
+    // Make sure the Fortran stuff is broken down when the process exits.
+    atexit(haerotran_finalize);
+
+    // Okay, the Fortran module is initialized.
+    initialized_fortran_ = true;
   }
 }
 
