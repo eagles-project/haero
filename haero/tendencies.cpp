@@ -118,5 +118,39 @@ Tendencies& Tendencies::scale(Real factor) {
 void Tendencies::accumulate(const Tendencies& tendencies) {
 }
 
+// Interoperable C functions for providing data to Fortran.
+// See haero.F90.in for details on how these functions are used.
+extern "C" {
+
+void* t_int_aero_mix_frac_c(void* t, int mode)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto mix_fracs = tends->interstitial_aerosols(mode);
+  return (void*)mix_fracs.data();
 }
+
+void* t_cld_aero_mix_frac_c(void* t, int mode)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto mix_fracs = tends->cloudborne_aerosols(mode);
+  return (void*)mix_fracs.data();
+}
+
+void* t_gas_mole_frac_c(void* t)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto mole_fracs = tends->gas_mole_fractions();
+  return (void*)mole_fracs.data();
+}
+
+void* t_modal_num_densities_c(void* t)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto num_densities = tends->modal_num_densities();
+  return (void*)num_densities.data();
+}
+
+} // extern "C"
+
+} // haero
 
