@@ -91,35 +91,27 @@ module haero
 
   interface
 
-    subroutine p_get_int_aero_mix_frac_c(p, mode, v_ptr, v_shape) bind(c)
+    type(c_ptr) function p_int_aero_mix_frac_c(p, mode) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: p
       integer(c_int), value, intent(in) :: mode
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
-    subroutine p_get_cld_aero_mix_frac_c(p, mode, v_ptr, v_shape) bind(c)
+    type(c_ptr) function p_cld_aero_mix_frac_c(p, mode) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: p
       integer(c_int), value, intent(in) :: mode
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
-    subroutine p_get_gas_mole_frac_c(p, v_ptr, v_shape) bind(c)
+    type(c_ptr) function p_gas_mole_frac_c(p) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: p
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
-    subroutine p_get_modal_num_densities_c(p, v_ptr, v_shape) bind(c)
+    type(c_ptr) function p_modal_num_densities_c(p) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: p
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
     logical(c_bool) function d_has_var_c(d, name) bind(c)
       use iso_c_binding, only: c_bool, c_ptr, c_char
@@ -127,13 +119,11 @@ module haero
       character(kind=c_char, len=1), dimension(*), intent(in) :: name
     end function
 
-    subroutine d_get_var_c(p, name, v_ptr, v_shape) bind(c)
+    type(c_ptr) function d_var_c(p, name) bind(c)
       use iso_c_binding, only: c_ptr, c_char, c_int
       type(c_ptr), value, intent(in) :: p
       character(kind=c_char, len=1), dimension(32), intent(in) :: name
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
     logical(c_bool) function d_has_modal_var_c(d, name) bind(c)
       use iso_c_binding, only: c_bool, c_char, c_ptr, c_char
@@ -141,43 +131,33 @@ module haero
       character(kind=c_char, len=1), dimension(*), intent(in) :: name
     end function
 
-    subroutine d_get_modal_var_c(d, name, v_ptr, v_shape) bind(c)
+    type(c_ptr) function d_modal_var_c(d, name) bind(c)
       use iso_c_binding, only: c_ptr, c_char, c_int
       type(c_ptr), value, intent(in) :: d
       character(kind=c_char, len=1), dimension(32), intent(in) :: name
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
-    subroutine t_get_int_aero_mix_frac_c(t, mode, v_ptr, v_shape) bind(c)
+    type(c_ptr) function t_int_aero_mix_frac_c(t, mode) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: t
       integer(c_int), value, intent(in) :: mode
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
-    subroutine t_get_cld_aero_mix_frac_c(t, mode, v_ptr, v_shape) bind(c)
+    type(c_ptr) function t_cld_aero_mix_frac_c(t, mode) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: t
       integer(c_int), value, intent(in) :: mode
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
-    subroutine t_get_gas_mole_frac_c(t, v_ptr, v_shape) bind(c)
+    type(c_ptr) function t_gas_mole_frac_c(t) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: t
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
-    subroutine t_get_modal_num_densities_c(t, v_ptr, v_shape) bind(c)
+    type(c_ptr) function t_modal_num_densities_c(t) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: t
-      type(c_ptr), intent(out) :: v_ptr
-      integer(c_int), dimension(3), intent(out) :: v_shape
-    end subroutine
+    end function
 
   end interface
 
@@ -316,9 +296,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call p_get_int_aero_mix_frac_c(p%ptr, mode, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_int_aero_mix_frac_c(p%ptr, mode)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the cloud-borne aerosol mixing fractions array
@@ -331,9 +310,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call p_get_cld_aero_mix_frac_c(p%ptr, mode, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_cld_aero_mix_frac_c(p%ptr, mode)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the gas mole fractions array for the given
@@ -345,9 +323,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call p_get_gas_mole_frac_c(p%ptr, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_gas_mole_frac_c(p%ptr)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the modal number fractions array for the given
@@ -359,9 +336,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call p_get_modal_num_densities_c(p%ptr, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_modal_num_densities_c(p%ptr)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Returns true if the given diagnostics object contains a (non-modal)
@@ -393,14 +369,13 @@ contains
 
     character(kind=c_char, len=1), dimension(32) :: c_name
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
     integer :: i
 
     do i=1,min(32, len(trim(name)))
       c_name(i) = name(i:i)
     end do
-    call d_var_c(d%ptr, c_name, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = d_var_c(d%ptr, c_name)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Returns true if the given diagnostics object contains a modal
@@ -433,14 +408,13 @@ contains
 
     character(kind=c_char, len=1), dimension(32) :: c_name
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
     integer :: i
 
     do i=1,min(32, len(trim(name)))
       c_name(i) = name(i:i)
     end do
-    call d_modal_var_c(d%ptr, c_name, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = d_modal_var_c(d%ptr, c_name)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the interstitial aerosol mixing fractions array
@@ -453,9 +427,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call t_get_int_aero_mix_frac_c(t%ptr, mode, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_int_aero_mix_frac_c(t%ptr, mode)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the cloud-borne aerosol mixing fractions array
@@ -468,9 +441,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call t_get_cld_aero_mix_frac_c(t%ptr, mode, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_cld_aero_mix_frac_c(t%ptr, mode)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the gas mole fractions array for the given
@@ -482,9 +454,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call t_get_gas_mole_frac_c(t%ptr, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_gas_mole_frac_c(t%ptr)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the modal number fractions array for the given
@@ -496,9 +467,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    integer(c_int), dimension(3) :: v_shape
-    call t_get_modal_num_densities_c(t%ptr, v_ptr, v_shape)
-    call c_f_pointer(v_ptr, retval, v_shape)
+    v_ptr = p_modal_num_densities_c(t%ptr)
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
 
 end module
