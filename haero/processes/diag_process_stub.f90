@@ -4,7 +4,7 @@
 module diag_process_stub
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp => real_t, model, prognostics_t, diagnostics_t
+  use haero, only: wp, model, prognostics_t, diagnostics_t
 
   implicit none
   private
@@ -21,8 +21,8 @@ subroutine diag_stub_init() bind(c)
 end subroutine
 
 !> Calls the update for the process.
-subroutine diag_process_update(t, progs, diags) bind(c)
-  use iso_c_binding, only :: c_double, c_ptr, c_f_pointer
+subroutine diag_stub_update(t, progs, diags) bind(c)
+  use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
   ! Arguments
