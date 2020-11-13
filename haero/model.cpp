@@ -10,7 +10,7 @@ void haerotran_begin_init();
 void haerotran_set_num_modes(int);
 void haerotran_set_max_mode_species(int);
 void haerotran_set_mode(int, const char*, Real, Real, Real);
-void haerotran_set_mode_species(int, int, const char*, const char*);
+void haerotran_set_aero_species(int, int, const char*, const char*);
 void haerotran_set_num_gas_species(int);
 void haerotran_set_gas_species(int, const char*, const char*);
 void haerotran_set_num_columns(int);
@@ -128,7 +128,7 @@ Model::Model(
       int num_species = species_for_mode_[i].size();
       for (int j = 0; j < num_species; ++j) {
         const auto& species = aero_species_[species_for_mode_[i][j]];
-        haerotran_set_mode_species(i+1, j+1, species.name.c_str(),
+        haerotran_set_aero_species(i+1, j+1, species.name.c_str(),
                                    species.symbol.c_str());
       }
     }

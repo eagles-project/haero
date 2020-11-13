@@ -60,7 +60,7 @@ class PrognosticProcess {
     type_(type), name_(name) {}
 
   /// Destructor.
-  virtual ~PrognosticProcess();
+  virtual ~PrognosticProcess() {}
 
   /// Default constructor is disabled.
   PrognosticProcess() = delete;
@@ -234,7 +234,7 @@ class DiagnosticProcess {
   }
 
   /// Destructor.
-  virtual ~DiagnosticProcess();
+  virtual ~DiagnosticProcess() {}
 
   /// Default constructor is disabled.
   DiagnosticProcess() = delete;

@@ -16,7 +16,8 @@ namespace haero {
 
 DiagProcessStub::DiagProcessStub():
   FDiagnosticProcess(haero::WaterUptakeProcess, "Diagnostic process stub (Fortran)",
-                     {}, {}, diag_stub_init, diag_stub_update, diag_stub_finalize) {
+                     {"diag_stub_var"}, {"diag_stub_modal_var"},
+                     diag_stub_init, diag_stub_update, diag_stub_finalize) {
 }
 
 } // end haero namespace
