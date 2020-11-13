@@ -1,5 +1,7 @@
 # Add source files for prognostic and diagnostic processes here.
 set(PROCESS_SOURCES
+    prog_process_stub.cpp
+    prog_process_stub.f90
     diag_process_stub.cpp
     diag_process_stub.f90
 #    mam4_water_uptake.cpp

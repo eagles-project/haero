@@ -25,5 +25,8 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(prog_process_stub_tests prog_process_stub_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 EkatCreateUnitTest(diag_process_stub_tests diag_process_stub_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
