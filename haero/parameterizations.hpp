@@ -14,6 +14,9 @@ namespace haero {
 /// parametrization is made available.
 struct Parameterizations final {
 
+  /// Default constructor.
+  Parameterizations();
+
   /// Available process models for aerosol activation, in which interstitial
   /// aerosol particles are coated by water and converted to cloud-borne
   /// aerosol particles.
