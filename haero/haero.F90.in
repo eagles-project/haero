@@ -43,6 +43,8 @@ module haero
   type :: model_t
     !> The aerosol modes in the model, in indexed order.
     type(mode_t), dimension(:), allocatable :: modes
+    !> The number of actual species that exist within each mode.
+    integer, dimension(:), allocatable :: num_mode_species
     !> The aerosol species within each mode. Indexed as (mode, species).
     type(species_t), dimension(:,:), allocatable :: aero_species
     !> The gas species in the model.
@@ -62,9 +64,9 @@ module haero
   type :: prognostics_t
     type(c_ptr) :: ptr
   contains
-    procedure :: int_aero_mix_frac => p_int_aero_mix_frac
-    procedure :: cld_aero_mix_frac => p_cld_aero_mix_frac
-    procedure :: gas_mole_frac => p_gas_mole_frac
+    procedure :: interstitial_aerosols => p_int_aero_mix_frac
+    procedure :: cloudborne_aerosols => p_cld_aero_mix_frac
+    procedure :: gas_mole_fractions => p_gas_mole_frac
     procedure :: modal_num_densities => p_modal_num_densities
   end type
 
@@ -84,9 +86,9 @@ module haero
   type :: tendencies_t
     type(c_ptr) :: ptr
   contains
-    procedure :: int_aero_mix_frac => t_int_aero_mix_frac
-    procedure :: cld_aero_mix_frac => t_cld_aero_mix_frac
-    procedure :: gas_mole_frac => t_gas_mole_frac
+    procedure :: interstitial_aerosols => t_int_aero_mix_frac
+    procedure :: cloudborne_aerosols => t_cld_aero_mix_frac
+    procedure :: gas_mole_fractions => t_gas_mole_frac
     procedure :: modal_num_densities => t_modal_num_densities
   end type
 
@@ -177,6 +179,7 @@ contains
     integer(c_int), value, intent(in) :: num_modes
 
     allocate(model%modes(num_modes))
+    allocate(model%num_mode_species(num_modes))
   end subroutine
 
   subroutine haerotran_set_max_modal_aero_species(max_num_species) bind(c)
@@ -226,6 +229,7 @@ contains
     do i=1, min(8,size(symbol))
       model%aero_species(mode, species)%symbol(i:i) = symbol(i)
     end do
+    model%num_mode_species(mode) = max(species, model%num_mode_species(mode))
   end subroutine
 
   subroutine haerotran_set_num_gas_species(num_species) bind(c)
@@ -283,6 +287,7 @@ contains
     if (allocated(model%modes)) then
       deallocate(model%aero_species)
       deallocate(model%gas_species)
+      deallocate(model%num_mode_species)
       deallocate(model%modes)
     end if
   end subroutine
@@ -307,7 +312,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_int_aero_mix_frac_c(p%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
   end function
 
   !> Provides access to the cloud-borne aerosol mixing fractions array
@@ -321,7 +326,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_cld_aero_mix_frac_c(p%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
   end function
 
   !> Provides access to the gas mole fractions array for the given
@@ -456,7 +461,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_int_aero_mix_frac_c(t%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
   end function
 
   !> Provides access to the cloud-borne aerosol mixing fractions array
@@ -470,7 +475,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_cld_aero_mix_frac_c(t%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
   end function
 
   !> Provides access to the gas mole fractions array for the given

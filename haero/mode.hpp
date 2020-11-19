@@ -2,6 +2,7 @@
 #define HAERO_MODE_HPP
 
 #include <string>
+#include <vector>
 #include "haero/haero.hpp"
 
 namespace haero {
@@ -24,12 +25,9 @@ struct Mode final {
   Mode(const std::string& name,
        Real min_diameter,
        Real max_diameter,
-       Real mean_std_dev,
-       Real rh_crystal,
-       Real rh_deliques):
+       Real mean_std_dev):
     name(name), min_diameter(min_diameter), max_diameter(max_diameter),
-    mean_std_dev(mean_std_dev), rh_crystal(rh_crystal),
-    rh_deliques(rh_deliques) {}
+    mean_std_dev(mean_std_dev) {}
 
   /// A unique name for this mode.
   std::string name;
@@ -42,13 +40,22 @@ struct Mode final {
 
   /// The geometric mean standard deviation for this mode.
   Real mean_std_dev;
-
-  /// TODO
-  Real rh_crystal;
-
-  /// TODO
-  Real rh_deliques;
 };
+
+/// This factory function constructs a set of modes corresponding to the
+/// legacy MAM4 model. Four modes are included:
+/// 1. Aitken,         with D_min = 0.0087, D_max = 0.052, sigma = 1.6,
+/// 2. Accumulation,   with D_min = 0.0535, D_max =  0.44, sigma = 1.8,
+/// 3. Coarse,         with D_min = 1.0,    D_max =  4.0,  sigma = 1.8,
+/// 4. Primary carbon, with D_min = 0.01,   D_max =  0.1,  sigma = 1.6.
+inline std::vector<Mode> create_mam4_modes() {
+  return std::vector<Mode>({
+    Mode("aitken", 0.0087, 0.052, 1.6),
+    Mode("accumulation", 0.0535, 0.44, 1.8),
+    Mode("coarse", 1.0, 0.01, 1.8),
+    Mode("primary_carbon", 0.01, 0.1, 1.6)
+  });
+}
 
 }
 

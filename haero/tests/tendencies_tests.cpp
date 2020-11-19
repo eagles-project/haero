@@ -11,7 +11,7 @@ TEST_CASE("tendencies_ctor", "") {
 
   // Create a set of prognostics and add some modes and species to it.
   Prognostics progs(10, 72);
-  Mode mode1("mode1", 1e-3, 1e-1, 1e-4, 0.0, 0.0);
+  Mode mode1("mode1", 1e-3, 1e-1, 1e-4);
   std::vector<Species> mode1_species;
   mode1_species.push_back(Species("Sulfate", "SO4"));
   progs.add_aerosol_mode(mode1, mode1_species);

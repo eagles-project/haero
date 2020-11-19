@@ -12,7 +12,7 @@ TEST_CASE("prog_process_stub", "") {
 
   // We create a phony model to be used for these tests.
   Parameterizations params;
-  std::vector<Mode> modes;
+  std::vector<Mode> modes = create_mam4_modes();
   std::vector<Species> aero_species, gas_species;
   std::map<std::string, std::vector<std::string> > mode_species;
   auto* model = new Model(params, modes, aero_species, mode_species,

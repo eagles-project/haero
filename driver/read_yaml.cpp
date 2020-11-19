@@ -31,17 +31,11 @@ std::vector<Mode> read_modes(const YAML::Node& root) {
         throw YamlException("mode entry has no maximum diameter (D_max).");
       } else if (not mnode["sigma"]) {
         throw YamlException("mode entry has no geometric stddev (sigma).");
-      } else if (not mnode["rh_crystal"]) {
-        throw YamlException("mode entry has no (rh_crytsal).");
-      } else if (not mnode["rh_deliques"]) {
-        throw YamlException("mode entry has no (rh_deliques).");
       } else {
         modes.push_back(Mode(name,
                              mnode["D_min"].as<Real>(),
                              mnode["D_max"].as<Real>(),
-                             mnode["sigma"].as<Real>(),
-                             mnode["rh_crystal"].as<Real>(),
-                             mnode["rh_deliques"].as<Real>()));
+                             mnode["sigma"].as<Real>()));
       }
     }
   }
