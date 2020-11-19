@@ -4,7 +4,8 @@
 module diag_process_stub
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, prognostics_t, diagnostics_t
+  use haero, only: wp, model, prognostics_t, diagnostics_t, &
+                   prognostics_from_c_ptr, diagnostics_from_c_ptr
 
   implicit none
   private
@@ -26,17 +27,17 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
   implicit none
 
   ! Arguments
-  real(wp), value, intent(in) :: t              ! simulation time
-  type(c_ptr), intent(in)     :: progs          ! prognostic variables
-  type(c_ptr), intent(inout)  :: diags          ! diagnostic variables
+  real(wp), value, intent(in) :: t     ! simulation time
+  type(c_ptr), intent(in)     :: progs ! prognostic variables
+  type(c_ptr), intent(inout)  :: diags ! diagnostic variables
 
   ! Fortran prognostics and diagnostics types
   type(prognostics_t) :: prognostics
   type(diagnostics_t) :: diagnostics
 
-  ! Emplace the C pointer into our Fortran types so we can use them.
-  prognostics%ptr = progs
-  diagnostics%ptr = diags
+  ! Get Fortran data types from our C pointers.
+  prognostics = prognostics_from_c_ptr(progs)
+  diagnostics = diagnostics_from_c_ptr(diags)
 
   ! Do stuff
 end subroutine

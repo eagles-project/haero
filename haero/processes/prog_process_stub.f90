@@ -4,7 +4,9 @@
 module prog_process_stub
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, prognostics_t, diagnostics_t, tendencies_t
+  use haero, only: wp, model, prognostics_t, diagnostics_t, tendencies_t, &
+                   prognostics_from_c_ptr, diagnostics_from_c_ptr, &
+                   tendencies_from_c_ptr
 
   implicit none
   private
@@ -26,23 +28,24 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
   implicit none
 
   ! Arguments
-  real(wp), value, intent(in) :: t              ! simulation time
-  real(wp), value, intent(in) :: dt             ! simulation time step
-  type(c_ptr), intent(in)     :: progs          ! prognostic variables
-  type(c_ptr), intent(inout)  :: diags          ! diagnostic variables
-  type(c_ptr), intent(inout)  :: tends          ! tendencies
+  real(wp), value, intent(in) :: t     ! simulation time
+  real(wp), value, intent(in) :: dt    ! simulation time step
+  type(c_ptr), intent(in)     :: progs ! prognostic variables
+  type(c_ptr), intent(inout)  :: diags ! diagnostic variables
+  type(c_ptr), intent(inout)  :: tends ! tendencies
 
   ! Fortran prognostics and diagnostics types
   type(prognostics_t) :: prognostics
   type(diagnostics_t) :: diagnostics
   type(tendencies_t)  :: tendencies
 
-  ! Emplace the C pointer into our Fortran types so we can use them.
-  prognostics%ptr = progs
-  diagnostics%ptr = diags
-  tendencies%ptr = tends
+  ! Get Fortran data types from our C pointers.
+  prognostics = prognostics_from_c_ptr(progs)
+  diagnostics = diagnostics_from_c_ptr(diags)
+  tendencies = tendencies_from_c_ptr(tends)
 
   ! Do stuff
+
 end subroutine
 
 !> Disposes of the process-specific data allocated in prog_process_init.

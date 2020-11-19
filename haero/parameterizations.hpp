@@ -14,7 +14,7 @@ namespace haero {
 /// parametrization is made available.
 struct Parameterizations final {
 
-  /// Default constructor.
+  /// Default constructor (no parameterizations selected).
   Parameterizations();
 
   /// Available process models for aerosol activation, in which interstitial

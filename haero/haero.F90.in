@@ -12,7 +12,8 @@ module haero
 
   public :: wp, mode_t, species_t, model_t, &
             prognostics_t, diagnostics_t, tendencies_t, &
-            model
+            prognostics_from_c_ptr, diagnostics_from_c_ptr, &
+            tendencies_from_c_ptr, model
 
   !> Working precision real kind
   integer, parameter :: wp = c_real
@@ -286,6 +287,15 @@ contains
     end if
   end subroutine
 
+  !> Extracts a prognostics_t variable from the given C pointer.
+  function prognostics_from_c_ptr(ptr) result(retval)
+    implicit none
+    type(c_ptr), intent(in) :: ptr
+    type(prognostics_t) :: retval
+
+    retval%ptr = ptr
+  end function
+
   !> Provides access to the interstitial aerosol mixing fractions array
   !> for the given mode in the given prognostics object.
   !> @param [in] p A pointer to a prognostics object.
@@ -338,6 +348,15 @@ contains
     type(c_ptr) :: v_ptr
     v_ptr = p_modal_num_densities_c(p%ptr)
     call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+  end function
+
+  !> Extracts a diagnostics_t variable from the given C pointer.
+  function diagnostics_from_c_ptr(ptr) result(retval)
+    implicit none
+    type(c_ptr), intent(in) :: ptr
+    type(diagnostics_t) :: retval
+
+    retval%ptr = ptr
   end function
 
   !> Returns true if the given diagnostics object contains a (non-modal)
@@ -415,6 +434,15 @@ contains
     end do
     v_ptr = d_modal_var_c(d%ptr, c_name)
     call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+  end function
+
+  !> Extracts a tendencies_t variable from the given C pointer.
+  function tendencies_from_c_ptr(ptr) result(retval)
+    implicit none
+    type(c_ptr), intent(in) :: ptr
+    type(tendencies_t) :: retval
+
+    retval%ptr = ptr
   end function
 
   !> Provides access to the interstitial aerosol mixing fractions array
