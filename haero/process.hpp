@@ -173,16 +173,20 @@ class FPrognosticProcess: public PrognosticProcess
                      RunProcessFunction run_process,
                      FinalizeProcessFunction finalize_process):
     PrognosticProcess(type, name), init_process_(init_process),
-    run_process_(run_process), finalize_process_(finalize_process) {}
+    run_process_(run_process), finalize_process_(finalize_process),
+    initialized_(false) {}
 
   /// Destructor.
   ~FPrognosticProcess() {
-    finalize_process_();
+    if (initialized_) {
+      finalize_process_();
+    }
   }
 
   // Overrides.
   void init(const Model& model) override {
     init_process_();
+    initialized_ = true;
   }
 
   void run(const Model& model,
@@ -200,6 +204,9 @@ class FPrognosticProcess: public PrognosticProcess
   InitProcessFunction init_process_;
   RunProcessFunction run_process_;
   FinalizeProcessFunction finalize_process_;
+
+  // Has the process been initialized?
+  bool initialized_;
 };
 
 /// @class DiagnosticProcess
@@ -407,16 +414,19 @@ class FDiagnosticProcess: public DiagnosticProcess {
                      FinalizeProcessFunction finalize_process):
     DiagnosticProcess(type, name, variables, modal_variables),
     init_process_(init_process), update_process_(update_process),
-    finalize_process_(finalize_process) {}
+    finalize_process_(finalize_process), initialized_(false) {}
 
   /// Destructor.
   ~FDiagnosticProcess() {
-    finalize_process_();
+    if (initialized_) {
+      finalize_process_();
+    }
   }
 
   // Overrides.
   void init(const Model& model) override {
     init_process_();
+    initialized_ = true;
   }
 
   void update(const Model& model, Real t,
@@ -431,6 +441,9 @@ class FDiagnosticProcess: public DiagnosticProcess {
   InitProcessFunction init_process_;
   UpdateProcessFunction update_process_;
   FinalizeProcessFunction finalize_process_;
+
+  // Has the process been initialized?
+  bool initialized_;
 };
 
 }
