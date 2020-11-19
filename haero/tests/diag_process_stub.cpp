@@ -1,5 +1,5 @@
 #include "haero/model.hpp"
-#include "haero/processes/diag_process_stub.hpp"
+#include "diag_process_stub.hpp"
 
 using haero::Real;
 
