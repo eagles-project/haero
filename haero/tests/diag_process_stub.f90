@@ -35,11 +35,27 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
   type(prognostics_t) :: prognostics
   type(diagnostics_t) :: diagnostics
 
+  ! Other local variables.
+  integer :: num_modes, m
+  real(wp), pointer, dimension(:,:,:) :: q_a ! (interstitial) aerosol mix fracs
+  real(wp), pointer, dimension(:,:,:) :: q_g ! gas mole fracs
+  real(wp), pointer, dimension(:,:,:) :: f_a ! (interstitial) aerosol frequencies
+  real(wp), pointer, dimension(:,:,:) :: f_g ! gas frequencies
+
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
   diagnostics = diagnostics_from_c_ptr(diags)
 
-  ! Do stuff
+  ! Iterate over modes and diagnose aerosol oscillation frequencies.
+  num_modes = size(model%modes)
+  f_a = diagnostics%modal_var("aerosol_frequencies")
+  do m=1,num_modes
+    q_a = prognostics%interstitial_aerosols(m)
+  end do
+
+  ! Diagnose gas mole fraction oscillation frequency.
+  q_g = prognostics%gas_mole_fractions()
+  f_g = diagnostics%var("gas_frequencies")
 end subroutine
 
 !> Disposes of the process-specific data allocated in diag_process_init.
