@@ -33,6 +33,7 @@ EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
 add_library(haero_process_stubs
             prog_process_stub.cpp prog_process_stub.f90
             diag_process_stub.cpp diag_process_stub.f90)
+add_dependencies(haero_process_stubs haero)
 
 EkatCreateUnitTest(process_stub_tests process_stub_tests.cpp
                    LIBS haero_process_stubs;${HAERO_LIBRARIES})
