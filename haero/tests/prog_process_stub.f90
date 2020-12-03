@@ -16,11 +16,8 @@ module prog_process_stub
   implicit none
   private
 
-  ! Module variables that govern the processes.
-  ! For these prognostic processes, we define frequencies for sinusoidal
-  ! signals: one for each modal species.
-  real(wp), dimension(:), allocatable :: modal_frequencies
-  real(wp) :: gas_frequency
+  ! Process parameters
+  real(wp) :: tau ! e-folding rate for cloudborne aerosols
 
   public :: prog_stub_init, &
             prog_stub_run, &
@@ -34,15 +31,8 @@ subroutine prog_stub_init() bind(c)
 
   integer :: num_modes, i
 
-  ! Set modal frequencies.
-  num_modes = size(model%modes)
-  allocate(modal_frequencies(num_modes))
-  do i=1,num_modes
-    modal_frequencies(i) = 1.0_wp*i
-  end do
-
-  ! Set gas frequency.
-  gas_frequency = 1.0_wp * (num_modes+1)
+  ! Initialize process parameters.
+  tau = 1.0_wp
 end subroutine
 
 !> Calls the update for the process, computing tendencies for each affected
@@ -64,31 +54,48 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
   type(tendencies_t)  :: tendencies
 
   ! Other local variables.
-  integer :: num_modes, m
+  integer :: num_modes, m, i, k
   real(wp), pointer, dimension(:,:,:) :: q_i    ! interstitial aerosol mix fracs
   real(wp), pointer, dimension(:,:,:) :: q_c    ! cloudborne aerosol mix fracs
   real(wp), pointer, dimension(:,:,:) :: q_g    ! gas mole fracs
+  real(wp), pointer, dimension(:,:,:) :: n      ! modal number densities
   real(wp), pointer, dimension(:,:,:) :: dqdt_i ! interstitial aerosol tends
   real(wp), pointer, dimension(:,:,:) :: dqdt_c ! cloudborne aerosol tends
   real(wp), pointer, dimension(:,:,:) :: dqdt_g ! gas mole frac tends
+  real(wp), pointer, dimension(:,:,:) :: dndt   ! modal number density tends
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 
-  ! Iterate over modes and compute aerosol tendencies.
+  ! Iterate over modes and compute aerosol mix fraction tendencies.
   num_modes = size(model%modes)
   do m=1,num_modes
     q_i = prognostics%interstitial_aerosols(m)
     q_c = prognostics%cloudborne_aerosols(m)
     dqdt_i = tendencies%interstitial_aerosols(m)
     dqdt_c = tendencies%cloudborne_aerosols(m)
+
+    ! Cloudborne aerosols decay exponentially into interstitial aerosols.
+    ! Modal number densities are unchanged.
+    do k=1,model%num_levels
+      do i=1,model%num_columns
+        dqdt_i(k, i, m) = -tau * q_i(k, i, m)
+        dqdt_c(k, i, m) = +tau * q_i(k, i, m)
+      end do
+    end do
   end do
 
-  ! Compute gas mole fraction tendencies.
+  ! Gas mole fraction tendencies are zero.
   q_g = prognostics%gas_mole_fractions()
   dqdt_g = tendencies%gas_mole_fractions()
+  dqdt_g(:,:,:) = 0.0_wp
+
+  ! Modal number density tendencies are zero.
+  n = prognostics%modal_num_densities()
+  dndt = tendencies%modal_num_densities()
+  dndt(:,:,:) = 0.0_wp
 
 end subroutine
 
@@ -97,8 +104,7 @@ end subroutine
 subroutine prog_stub_finalize() bind(c)
   implicit none
 
-  ! Deallocate our modal frequencies array.
-  deallocate(modal_frequencies)
+  ! Deallocate any process-specific resources
 end subroutine
 
 end module

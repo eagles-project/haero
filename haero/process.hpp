@@ -286,13 +286,11 @@ class DiagnosticProcess {
     }
     for (const auto& var: required_aero_vars_) {
       if (not diagnostics.has_aerosol_var(var)) {
-        printf("Creating aero var: %s\n", var.c_str());
         diagnostics.create_aerosol_var(var);
       }
     }
     for (const auto& var: required_gas_vars_) {
       if (not diagnostics.has_gas_var(var)) {
-        printf("Creating gas var: %s\n", var.c_str());
         diagnostics.create_gas_var(var);
       }
     }

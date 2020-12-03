@@ -64,8 +64,7 @@ TEST_CASE("diag_process_stub", "") {
     Diagnostics diags(10, 72, {1, 2}, 1);
     auto* stub = new DiagProcessStub();
     stub->prepare(diags);
-    REQUIRE(diags.has_aerosol_var("aerosol_frequencies"));
-    REQUIRE(diags.has_gas_var("gas_frequencies"));
+    REQUIRE(diags.has_modal_var("pressure"));
     delete stub;
   }
 

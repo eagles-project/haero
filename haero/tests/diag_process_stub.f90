@@ -10,6 +10,10 @@ module diag_process_stub
   implicit none
   private
 
+  ! Process parameters
+  real(wp), parameter :: R = 8.314472 ! universal gas constant [J/K/mol]
+  real(wp), parameter :: T0 = 283.15  ! constant temperature [K]
+
   public :: diag_stub_init, &
             diag_stub_update, &
             diag_stub_finalize
@@ -36,26 +40,26 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
   type(diagnostics_t) :: diagnostics
 
   ! Other local variables.
-  integer :: num_modes, m
-  real(wp), pointer, dimension(:,:,:) :: q_a ! (interstitial) aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_g ! gas mole fracs
-  real(wp), pointer, dimension(:,:,:) :: f_a ! (interstitial) aerosol frequencies
-  real(wp), pointer, dimension(:,:,:) :: f_g ! gas frequencies
+  integer :: num_modes, m, i, k
+  real(wp), pointer, dimension(:,:,:) :: n ! modal number densities
+  real(wp), pointer, dimension(:,:,:) :: p ! modal pressure
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
   diagnostics = diagnostics_from_c_ptr(diags)
 
-  ! Iterate over modes and diagnose aerosol oscillation frequencies.
+  ! Diagnose modal pressure using ideal gas law
+  n = prognostics%modal_num_densities()
+  p = diagnostics%modal_var("pressure")
   num_modes = size(model%modes)
-  f_a = diagnostics%modal_var("aerosol_frequencies")
-  do m=1,num_modes
-    q_a = prognostics%interstitial_aerosols(m)
+  do k=1,model%num_levels
+    do i=1,model%num_columns
+      do m=1,num_modes
+        p(k, i, m) = n(k, i, m) * R * T
+      end do
+    end do
   end do
 
-  ! Diagnose gas mole fraction oscillation frequency.
-  q_g = prognostics%gas_mole_fractions()
-  f_g = diagnostics%var("gas_frequencies")
 end subroutine
 
 !> Disposes of the process-specific data allocated in diag_process_init.
