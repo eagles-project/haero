@@ -79,8 +79,8 @@ module haero
     procedure :: var => d_var
     procedure :: has_aerosol_var => d_has_aerosol_var
     procedure :: aerosol_var => d_aerosol_var
-    procedure :: has_gas_species_var => d_has_gas_species_var
-    procedure :: gas_species_var => d_gas_species_var
+    procedure :: has_gas_var => d_has_gas_var
+    procedure :: gas_var => d_gas_var
     procedure :: has_modal_var => d_has_modal_var
     procedure :: modal_var => d_modal_var
   end type
@@ -146,13 +146,13 @@ module haero
       integer(c_int), value, intent(in) :: mode
     end function
 
-    logical(c_bool) function d_has_gas_species_var_c(d, name) bind(c)
+    logical(c_bool) function d_has_gas_var_c(d, name) bind(c)
       use iso_c_binding, only: c_bool, c_ptr, c_char
       type(c_ptr), value, intent(in) :: d
       character(kind=c_char, len=1), dimension(*), intent(in) :: name
     end function
 
-    type(c_ptr) function d_gas_species_var_c(p, name) bind(c)
+    type(c_ptr) function d_gas_var_c(p, name) bind(c)
       use iso_c_binding, only: c_ptr, c_char, c_int
       type(c_ptr), value, intent(in) :: p
       character(kind=c_char, len=1), dimension(32), intent(in) :: name
@@ -478,7 +478,7 @@ contains
   !> variable with the given name, false otherwise.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
-  function d_has_gas_species_var(d, name) result(retval)
+  function d_has_gas_var(d, name) result(retval)
     use iso_c_binding, only: c_ptr, c_char, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=32), intent(in) :: name
@@ -489,14 +489,14 @@ contains
     do i=1,min(32, len(trim(name)))
       c_name(i) = name(i:i)
     end do
-    retval = d_has_gas_species_var_c(d%ptr, c_name)
+    retval = d_has_gas_var_c(d%ptr, c_name)
   end function
 
   !> Provides access to the given (non-modal) variable in the given
   !> diagnostics object.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
-  function d_gas_species_var(d, name) result(retval)
+  function d_gas_var(d, name) result(retval)
     class(diagnostics_t), intent(in)  :: d
     character(len=32), intent(in) :: name
     real(wp), dimension(:,:,:), pointer :: retval
@@ -508,7 +508,7 @@ contains
     do i=1,min(32, len(trim(name)))
       c_name(i) = name(i:i)
     end do
-    v_ptr = d_gas_species_var_c(d%ptr, c_name)
+    v_ptr = d_gas_var_c(d%ptr, c_name)
     call c_f_pointer(v_ptr, retval, [model%num_levels, size(model%gas_species), model%num_columns])
   end function
 

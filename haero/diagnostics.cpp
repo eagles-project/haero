@@ -87,25 +87,25 @@ Diagnostics::aerosol_var(const std::string& name, int mode_index) const {
   return iter->second[mode_index];
 }
 
-bool Diagnostics::has_gas_species_var(const std::string& name) const {
+bool Diagnostics::has_gas_var(const std::string& name) const {
   return (gas_vars_.find(name) != gas_vars_.end());
 }
 
-void Diagnostics::create_gas_species_var(const std::string& name) {
-  auto iter = aero_vars_.find(name);
-  EKAT_REQUIRE_MSG(iter == aero_vars_.end(), "Gas diagnostic variable already exists!");
+void Diagnostics::create_gas_var(const std::string& name) {
+  auto iter = gas_vars_.find(name);
+  EKAT_REQUIRE_MSG(iter == gas_vars_.end(), "Gas diagnostic variable already exists!");
   gas_vars_[name] = ColumnSpeciesView(name, num_columns_, num_gas_species_, num_levels_);
 }
 
 Diagnostics::ColumnSpeciesView&
-Diagnostics::gas_species_var(const std::string& name) {
+Diagnostics::gas_var(const std::string& name) {
   auto iter = gas_vars_.find(name);
   EKAT_REQUIRE_MSG(iter != gas_vars_.end(), "Gas diagnostic variable not found!");
   return iter->second;
 }
 
 const Diagnostics::ColumnSpeciesView&
-Diagnostics::gas_species_var(const std::string& name) const {
+Diagnostics::gas_var(const std::string& name) const {
   auto iter = gas_vars_.find(name);
   EKAT_REQUIRE_MSG(iter != gas_vars_.end(), "Gas diagnostic variable not found!");
   return iter->second;
@@ -166,16 +166,16 @@ void* d_aerosol_var_c(void* d, char name[32], int mode)
   return (void*)var.data();
 }
 
-bool d_has_gas_species_var_c(void* d, char name[32])
+bool d_has_gas_var_c(void* d, char name[32])
 {
   Diagnostics* diags = (Diagnostics*)d;
-  return diags->has_gas_species_var(name);
+  return diags->has_gas_var(name);
 }
 
-void* d_gas_species_var_c(void* d, char name[32])
+void* d_gas_var_c(void* d, char name[32])
 {
   Diagnostics* diags = (Diagnostics*)d;
-  auto var = diags->gas_species_var(name);
+  auto var = diags->gas_var(name);
   return (void*)var.data();
 }
 

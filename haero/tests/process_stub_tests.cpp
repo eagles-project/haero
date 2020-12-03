@@ -15,8 +15,10 @@ TEST_CASE("prog_process_stub", "") {
   std::vector<Mode> modes = create_mam4_modes();
   std::vector<Species> aero_species, gas_species;
   std::map<std::string, std::vector<std::string> > mode_species;
+  int num_columns = 10;
+  int num_levels = 72;
   auto* model = new Model(params, modes, aero_species, mode_species,
-                          gas_species, 10, 72);
+                          gas_species, num_columns, num_levels);
 
   // Test basic construction.
   SECTION("construct") {
@@ -44,8 +46,10 @@ TEST_CASE("diag_process_stub", "") {
   std::vector<Mode> modes;
   std::vector<Species> aero_species, gas_species;
   std::map<std::string, std::vector<std::string> > mode_species;
+  int num_columns = 10;
+  int num_levels = 72;
   auto* model = new Model(params, modes, aero_species, mode_species,
-                          gas_species, 10, 72);
+                          gas_species, num_columns, num_levels);
 
   // Test basic construction.
   SECTION("construct") {
@@ -60,8 +64,8 @@ TEST_CASE("diag_process_stub", "") {
     Diagnostics diags(10, 72, {1, 2}, 1);
     auto* stub = new DiagProcessStub();
     stub->prepare(diags);
-    REQUIRE(diags.has_var("diag_stub_var"));
-    REQUIRE(diags.has_modal_var("diag_stub_modal_var"));
+    REQUIRE(diags.has_aerosol_var("aerosol_frequencies"));
+    REQUIRE(diags.has_gas_var("gas_frequencies"));
     delete stub;
   }
 

@@ -134,26 +134,27 @@ class Diagnostics final {
   const ColumnSpeciesView& aerosol_var(const std::string& name,
                                        int mode_index) const;
 
-  /// Returns true if the given gas species variable exists within this object,
-  /// false otherwise.
+  /// Returns true if a variable defined for each gas species exists within
+  /// this object with the given name, false otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  bool has_gas_species_var(const std::string& name) const;
+  bool has_gas_var(const std::string& name) const;
 
   /// Creates a diagnostic gas species variable with the given name within this
   /// object.
   /// @param [in] name The name of the modal diagnostic variable to be created.
-  void create_gas_species_var(const std::string& name);
+  void create_gas_var(const std::string& name);
 
-  /// Returns the view storing the gas species diagnostic variable with the
-  /// given name. If the variable does not yet exist, this throws an exception.
+  /// Returns the view storing a diagnostic variable, defined for each gas
+  /// species, with the given name. If the variable does not yet exist, this
+  /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  ColumnSpeciesView& gas_species_var(const std::string& name);
+  ColumnSpeciesView& gas_var(const std::string& name);
 
-  /// Returns a const view storing the gas species diagnostic variable with
-  /// the given name. If the variable does not yet exist, this throws an
-  /// exception.
+  /// Returns the const view storing a diagnostic variable, defined for each gas
+  /// species, with the given name. If the variable does not yet exist, this
+  /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  const ColumnSpeciesView& gas_species_var(const std::string& name) const;
+  const ColumnSpeciesView& gas_var(const std::string& name) const;
 
   /// Returns true if the given modal variable exists within this object,
   /// false otherwise.

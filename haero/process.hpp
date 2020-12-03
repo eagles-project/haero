@@ -231,13 +231,19 @@ class DiagnosticProcess {
   ///                  its underlying parametrization, and its implementation.
   /// @param [in] variables The set of (non-modal) diagnostic variables
   ///                       required by this process.
+  /// @param [in] aero_variables The set of per-aerosol-species diagnostic
+  ///                            variables required by this process.
+  /// @param [in] gas_variables The set of per-gas-species diagnostic
+  ///                            variables required by this process.
   /// @param [in] modal_variables The set of modal diagnostic variables
   ///                             required by this process.
   DiagnosticProcess(ProcessType type, const std::string& name,
                     const std::vector<std::string>& variables,
+                    const std::vector<std::string>& aero_variables,
+                    const std::vector<std::string>& gas_variables,
                     const std::vector<std::string>& modal_variables):
     type_(type), name_(name) {
-    set_diag_vars(variables, modal_variables);
+    set_diag_vars(variables, aero_variables, gas_variables, modal_variables);
   }
 
   /// Destructor.
@@ -276,6 +282,18 @@ class DiagnosticProcess {
     for (const auto& var: required_vars_) {
       if (not diagnostics.has_var(var)) {
         diagnostics.create_var(var);
+      }
+    }
+    for (const auto& var: required_aero_vars_) {
+      if (not diagnostics.has_aerosol_var(var)) {
+        printf("Creating aero var: %s\n", var.c_str());
+        diagnostics.create_aerosol_var(var);
+      }
+    }
+    for (const auto& var: required_gas_vars_) {
+      if (not diagnostics.has_gas_var(var)) {
+        printf("Creating gas var: %s\n", var.c_str());
+        diagnostics.create_gas_var(var);
       }
     }
     for (const auto& var: required_modal_vars_) {
@@ -320,11 +338,19 @@ class DiagnosticProcess {
   /// is usually called inside the constructor of a DiagnosticProcess subclass.
   /// @param [in] vars A list of names of (non-mode-ѕpecific variables required
   ///                  by the process
+  /// @param [in] aero_vars The set of per-aerosol-species diagnostic
+  ///                       variables required by this process.
+  /// @param [in] gas_vars The set of per-gas-species diagnostic
+  ///                      variables required by this process.
   /// @param [in] modal_vars A list of names of mode-ѕpecific variables required
   ///                        by the process
   void set_diag_vars(const std::vector<std::string>& vars,
+                     const std::vector<std::string>& aero_vars,
+                     const std::vector<std::string>& gas_vars,
                      const std::vector<std::string>& modal_vars) {
     required_vars_ = vars;
+    required_aero_vars_ = aero_vars;
+    required_gas_vars_ = gas_vars;
     required_modal_vars_ = modal_vars;
   }
 
@@ -336,6 +362,10 @@ class DiagnosticProcess {
   std::string name_;
   // The non-modal variables required by this process.
   std::vector<std::string> required_vars_;
+  // The per-aerosol-species variables required by this process.
+  std::vector<std::string> required_aero_vars_;
+  // The per-gas-species variables required by this process.
+  std::vector<std::string> required_gas_vars_;
   // The modal variables required by this process.
   std::vector<std::string> required_modal_vars_;
 };
@@ -400,6 +430,10 @@ class FDiagnosticProcess: public DiagnosticProcess {
   ///                  its underlying parametrization, and its implementation.
   /// @param [in] variables The set of (non-modal) diagnostic variables
   ///                       required by this process.
+  /// @param [in] aero_variables The set of per-aerosol-species diagnostic
+  ///                            variables required by this process.
+  /// @param [in] gas_variables The set of per-gas-species diagnostic
+  ///                            variables required by this process.
   /// @param [in] modal_variables The set of modal diagnostic variables
   ///                             required by this process.
   /// @param [in] create_process A pointer to an interoperable Fortran function
@@ -408,11 +442,14 @@ class FDiagnosticProcess: public DiagnosticProcess {
   FDiagnosticProcess(ProcessType type,
                      const std::string& name,
                      const std::vector<std::string>& variables,
+                     const std::vector<std::string>& aero_variables,
+                     const std::vector<std::string>& gas_variables,
                      const std::vector<std::string>& modal_variables,
                      InitProcessFunction init_process,
                      UpdateProcessFunction update_process,
                      FinalizeProcessFunction finalize_process):
-    DiagnosticProcess(type, name, variables, modal_variables),
+    DiagnosticProcess(type, name, variables, aero_variables, gas_variables,
+                      modal_variables),
     init_process_(init_process), update_process_(update_process),
     finalize_process_(finalize_process), initialized_(false) {}
 
