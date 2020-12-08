@@ -216,10 +216,10 @@ void Model::run_process(ProcessType type,
   iter->second->run(*this, t, dt, prognostics, diagnostics, tendencies);
 }
 
-void Model::update_state(ProcessType type,
-                         Real t,
-                         const Prognostics& prognostics,
-                         Diagnostics& diagnostics) {
+void Model::update_diagnostics(ProcessType type,
+                               Real t,
+                               const Prognostics& prognostics,
+                               Diagnostics& diagnostics) {
   auto iter = diag_processes_.find(type);
   EKAT_REQUIRE_MSG(iter != diag_processes_.end(),
                    "No process of the selected type is available!");

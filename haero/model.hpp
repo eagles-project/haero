@@ -86,9 +86,9 @@ class Model final {
   /// @param [in] prognostics The prognostic variables used by this process.
   /// @param [inout] diagnostics The diagnostic variables used by and updated by
   ///                            this process.
-  void update_state(ProcessType type, Real t,
-                    const Prognostics& prognostics,
-                    Diagnostics& diagnostics);
+  void update_diagnostics(ProcessType type, Real t,
+                          const Prognostics& prognostics,
+                          Diagnostics& diagnostics);
 
   // Accessors
 
