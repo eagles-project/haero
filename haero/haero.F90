@@ -137,9 +137,9 @@ module haero
       integer(c_int), value, intent(in) :: mode
     end function
 
-    type(c_ptr) function d_aerosol_var_c(p, name, mode) bind(c)
+    type(c_ptr) function d_aerosol_var_c(d, name, mode) bind(c)
       use iso_c_binding, only: c_ptr, c_char, c_int
-      type(c_ptr), value, intent(in) :: p
+      type(c_ptr), value, intent(in) :: d
       character(kind=c_char, len=1), dimension(32), intent(in) :: name
       integer(c_int), value, intent(in) :: mode
     end function
@@ -150,9 +150,9 @@ module haero
       character(kind=c_char, len=1), dimension(*), intent(in) :: name
     end function
 
-    type(c_ptr) function d_gas_var_c(p, name) bind(c)
+    type(c_ptr) function d_gas_var_c(d, name) bind(c)
       use iso_c_binding, only: c_ptr, c_char, c_int
-      type(c_ptr), value, intent(in) :: p
+      type(c_ptr), value, intent(in) :: d
       character(kind=c_char, len=1), dimension(32), intent(in) :: name
     end function
 
@@ -323,7 +323,7 @@ contains
   !> Extracts a prognostics_t variable from the given C pointer.
   function prognostics_from_c_ptr(ptr) result(retval)
     implicit none
-    type(c_ptr), intent(in) :: ptr
+    type(c_ptr), value, intent(in) :: ptr
     type(prognostics_t) :: retval
 
     retval%ptr = ptr
@@ -335,12 +335,12 @@ contains
   !> @param [in] mode An index identifying the desired mode.
   function p_int_aero_mix_frac(p, mode) result(retval)
     class(prognostics_t), intent(in)  :: p
-    integer, intent(in) :: mode
+    integer, value, intent(in) :: mode
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
     v_ptr = p_int_aero_mix_frac_c(p%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
+    call c_f_pointer(v_ptr, retval, [model%num_mode_species(mode), model%num_columns, model%num_levels])
   end function
 
   !> Provides access to the cloud-borne aerosol mixing fractions array
@@ -349,12 +349,12 @@ contains
   !> @param [in] mode An index identifying the desired mode.
   function p_cld_aero_mix_frac(p, mode) result(retval)
     class(prognostics_t), intent(in)  :: p
-    integer, intent(in) :: mode
+    integer, value, intent(in) :: mode
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
     v_ptr = p_cld_aero_mix_frac_c(p%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
+    call c_f_pointer(v_ptr, retval, [model%num_mode_species(mode), model%num_columns, model%num_levels])
   end function
 
   !> Provides access to the gas mole fractions array for the given
@@ -362,7 +362,7 @@ contains
   !> @param [in] p A Prognostics object.
   function p_gas_mole_frac(p) result(retval)
     use iso_c_binding, only: c_ptr, c_int
-    class(prognostics_t), value, intent(in) :: p
+    class(prognostics_t), intent(in) :: p
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
@@ -375,7 +375,7 @@ contains
   !> @param [in] p A Prognostics object.
   function p_modal_num_densities(p) result(retval)
     use iso_c_binding, only: c_ptr, c_int
-    class(prognostics_t), value, intent(in) :: p
+    class(prognostics_t), intent(in) :: p
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
@@ -386,7 +386,7 @@ contains
   !> Extracts a diagnostics_t variable from the given C pointer.
   function diagnostics_from_c_ptr(ptr) result(retval)
     implicit none
-    type(c_ptr), intent(in) :: ptr
+    type(c_ptr), value, intent(in) :: ptr
     type(diagnostics_t) :: retval
 
     retval%ptr = ptr
@@ -552,7 +552,7 @@ contains
   !> Extracts a tendencies_t variable from the given C pointer.
   function tendencies_from_c_ptr(ptr) result(retval)
     implicit none
-    type(c_ptr), intent(in) :: ptr
+    type(c_ptr), value, intent(in) :: ptr
     type(tendencies_t) :: retval
 
     retval%ptr = ptr
@@ -591,7 +591,7 @@ contains
   !> @param [in] p A pointer to a tendencies object.
   function t_gas_mole_frac(t) result(retval)
     use iso_c_binding, only: c_ptr, c_int
-    class(tendencies_t), value, intent(in) :: t
+    class(tendencies_t), intent(in) :: t
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr

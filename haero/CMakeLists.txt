@@ -25,7 +25,7 @@ add_subdirectory(processes)
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-            ${CMAKE_CURRENT_BINARY_DIR}/haero.F90
+            haero.F90
             chemistry.cpp
             diagnostics.cpp
             model.cpp

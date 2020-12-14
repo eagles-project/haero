@@ -137,7 +137,7 @@ Diagnostics::modal_var(const std::string& name) const {
 }
 
 // Interoperable C functions for providing data to Fortran.
-// See haero.F90.in for details on how these functions are used.
+// See haero.F90 for details on how these functions are used.
 extern "C" {
 
 bool d_has_var_c(void* d, char name[32])
@@ -149,7 +149,7 @@ bool d_has_var_c(void* d, char name[32])
 void* d_var_c(void* d, char name[32])
 {
   Diagnostics* diags = (Diagnostics*)d;
-  auto var = diags->var(name);
+  auto& var = diags->var(name);
   return (void*)var.data();
 }
 
@@ -162,7 +162,7 @@ bool d_has_aerosol_var_c(void* d, char name[32])
 void* d_aerosol_var_c(void* d, char name[32], int mode)
 {
   Diagnostics* diags = (Diagnostics*)d;
-  auto var = diags->aerosol_var(name, mode);
+  auto& var = diags->aerosol_var(name, mode);
   return (void*)var.data();
 }
 
@@ -175,7 +175,7 @@ bool d_has_gas_var_c(void* d, char name[32])
 void* d_gas_var_c(void* d, char name[32])
 {
   Diagnostics* diags = (Diagnostics*)d;
-  auto var = diags->gas_var(name);
+  auto& var = diags->gas_var(name);
   return (void*)var.data();
 }
 
@@ -188,7 +188,7 @@ bool d_has_modal_var_c(void* d, char name[32])
 void* d_modal_var_c(void* d, char name[32])
 {
   Diagnostics* diags = (Diagnostics*)d;
-  auto var = diags->modal_var(name);
+  auto& var = diags->modal_var(name);
   return (void*)var.data();
 }
 

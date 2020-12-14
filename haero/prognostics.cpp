@@ -185,34 +185,34 @@ void Prognostics::scale_and_add(Real scale_factor,
 }
 
 // Interoperable C functions for providing data to Fortran.
-// See haero.F90.in for details on how these functions are used.
+// See haero.F90 for details on how these functions are used.
 extern "C" {
 
 void* p_int_aero_mix_frac_c(void* p, int mode)
 {
   Prognostics* progs = (Prognostics*)p;
-  auto mix_fracs = progs->interstitial_aerosols(mode);
+  auto& mix_fracs = progs->interstitial_aerosols(mode);
   return (void*)mix_fracs.data();
 }
 
 void* p_cld_aero_mix_frac_c(void* p, int mode)
 {
   Prognostics* progs = (Prognostics*)p;
-  auto mix_fracs = progs->cloudborne_aerosols(mode);
+  auto& mix_fracs = progs->cloudborne_aerosols(mode);
   return (void*)mix_fracs.data();
 }
 
 void* p_gas_mole_frac_c(void* p)
 {
   Prognostics* progs = (Prognostics*)p;
-  auto mole_fracs = progs->gas_mole_fractions();
+  auto& mole_fracs = progs->gas_mole_fractions();
   return (void*)mole_fracs.data();
 }
 
 void* p_modal_num_densities_c(void* p)
 {
   Prognostics* progs = (Prognostics*)p;
-  auto num_densities = progs->modal_num_densities();
+  auto& num_densities = progs->modal_num_densities();
   return (void*)num_densities.data();
 }
 
