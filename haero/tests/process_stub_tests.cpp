@@ -49,8 +49,42 @@ TEST_CASE("prog_process_stub", "") {
     auto* diags = model->create_diagnostics();
     auto* tends = new Tendencies(*progs);
 
-    // Set initial conditions. We start with 100% clouds for simplicity.
+    // Set initial conditions.
+    Real N0 = 1e6;
+    auto& modal_num_densities = progs->modal_num_densities();
+    for (int m = 0; m < progs->num_aerosol_modes(); ++m) {
+      auto& cld_aerosols = progs->cloudborne_aerosols(m);
+      auto& int_aerosols = progs->interstitial_aerosols(m);
+      int num_aero_species = progs->num_aerosol_species(m);
+      for (int i = 0; i < progs->num_columns(); ++i) {
+        for (int k = 0; k < progs->num_levels(); ++k) {
 
+          // Set aerosol mix fractions. We start with 100% clouds for simplicity.
+          for (int s = 0; s < num_aero_species; ++s) {
+            cld_aerosols(i, k, s) = 1.0 / num_aero_species;
+            int_aerosols(i, k, s) = 0.0;
+          }
+
+          // Set modal number densities.
+          modal_num_densities(m, i, k) = N0;
+        }
+      }
+    }
+
+    // Set gas mole fractions.
+    auto& gas_mole_fracs = progs->gas_mole_fractions();
+    int num_gas_species = progs->num_gas_species();
+    for (int i = 0; i < progs->num_columns(); ++i) {
+      for (int k = 0; k < progs->num_levels(); ++k) {
+        for (int s = 0; s < num_gas_species; ++s) {
+          gas_mole_fracs(i, k, s) = 1.0 / num_gas_species;
+        }
+      }
+    }
+
+    // Now compute the tendencies by running the process.
+    Real t = 0.0, dt = 0.01;
+    stub->run(*model, t, dt, *progs, *diags, *tends);
 
     // Clean up.
     delete progs;
