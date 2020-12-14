@@ -2,10 +2,11 @@
 !> It demonstrates how to use Haero's Fortran data types in a way that allows
 !> such a process to communicate with the underlying C++ machinery.
 !>
-!> The prognostic process evolves a collection of sinusoidally-varying
-!> signals in aerosols and gases. There is an accompanying diagnostic process
-!> that diagnoses the frequencies of these sinusoids. All species in a mode
-!> have the same frequency, as do all gas species.
+!> This prognostic process transfers a cloudborne aerosol to an interstitial
+!> aerosol using an exponential decay process. The process can work with any
+!> number of modes/species. Gases are ignored. Modal number densities are
+!> unaffected, as aerosol particles are simply transferred from one population
+!> to the other.
 module prog_process_stub
 
   use iso_c_binding, only: c_ptr
@@ -17,11 +18,18 @@ module prog_process_stub
   private
 
   ! Process parameters
-  real(wp) :: tau ! e-folding rate for cloudborne aerosols
+  real(wp) :: decay_rate ! Decay rate for cloudborne aerosols
 
   public :: prog_stub_init, &
             prog_stub_run, &
             prog_stub_finalize
+
+  ! C function for obtaining decay rate.
+  interface
+    real(c_real) function prog_stub_decay_rate() bind(c)
+      use iso_c_binding, only: c_real
+    end function
+  end interface
 
 contains
 
@@ -32,7 +40,7 @@ subroutine prog_stub_init() bind(c)
   integer :: num_modes, i
 
   ! Initialize process parameters.
-  tau = 1.0_wp
+  decay_rate = prog_stub_decay_rate()
 end subroutine
 
 !> Calls the update for the process, computing tendencies for each affected
@@ -78,11 +86,10 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
     dqdt_c = tendencies%cloudborne_aerosols(m)
 
     ! Cloudborne aerosols decay exponentially into interstitial aerosols.
-    ! Modal number densities are unchanged.
     do k=1,model%num_levels
       do i=1,model%num_columns
-        dqdt_i(k, i, m) = -tau * q_i(k, i, m)
-        dqdt_c(k, i, m) = +tau * q_i(k, i, m)
+        dqdt_c(k, i, m) = decay_rate * q_i(k, i, m)
+        dqdt_i(k, i, m) = -decay_rate * q_i(k, i, m)
       end do
     end do
   end do

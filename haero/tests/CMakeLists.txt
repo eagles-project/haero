@@ -31,8 +31,8 @@ EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
 
 # Process stub tests -- checks that data can be passed between C++ and Fortran
 add_library(haero_process_stubs
-            prog_process_stub.cpp prog_process_stub.f90
-            diag_process_stub.cpp diag_process_stub.f90)
+            prog_process_stub.cpp prog_process_stub.F90
+            diag_process_stub.cpp diag_process_stub.F90)
 add_dependencies(haero_process_stubs haero)
 
 EkatCreateUnitTest(process_stub_tests process_stub_tests.cpp

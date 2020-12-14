@@ -7,13 +7,6 @@ configure_file(
   @ONLY
 )
 
-# Generate files containing our config parameters.
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/haero.F90.in
-  ${CMAKE_CURRENT_BINARY_DIR}/haero.F90
-  @ONLY
-)
-
 # Generate a blank haero_version.cpp file to get us off the ground.
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
   COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp

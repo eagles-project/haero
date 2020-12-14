@@ -120,7 +120,7 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SYS_FLAGS}")
 
 # Fortran compiler flags
-set(CMAKE_Fortran_FLAGS "-cpp")
+set(CMAKE_Fortran_FLAGS "-cpp -Dc_real=c_${HAERO_REAL_TYPE}")
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")

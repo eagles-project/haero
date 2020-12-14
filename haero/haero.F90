@@ -1,5 +1,3 @@
-#define c_real c_@HAERO_REAL_TYPE@
-
 !> This module contains data structures that allow Fortran modules to access
 !> data from the C++ model, prognostics, and diagnostics.
 module haero

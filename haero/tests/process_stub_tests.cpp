@@ -20,9 +20,12 @@ TEST_CASE("prog_process_stub", "") {
   auto* model = new Model(params, modes, aero_species, mode_species,
                           gas_species, num_columns, num_levels);
 
+  // Rate of decay from cloudborne to interstitial aerosols.
+  Real decay_rate = -0.05;
+
   // Test basic construction.
   SECTION("construct") {
-    auto* stub = new ProgProcessStub();
+    auto* stub = new ProgProcessStub(decay_rate);
     REQUIRE(stub->type() == haero::ActivationProcess);
     REQUIRE(stub->name() == "Prognostic process stub (Fortran)");
     delete stub;
@@ -30,7 +33,7 @@ TEST_CASE("prog_process_stub", "") {
 
   // Test process initialization.
   SECTION("init_process") {
-    auto* stub = new ProgProcessStub();
+    auto* stub = new ProgProcessStub(decay_rate);
     stub->init(*model);
     delete stub;
   }
