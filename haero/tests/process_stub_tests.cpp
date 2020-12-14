@@ -38,6 +38,27 @@ TEST_CASE("prog_process_stub", "") {
     delete stub;
   }
 
+  // Test process tendencies.
+  SECTION("tendencies") {
+    auto* stub = new ProgProcessStub(decay_rate);
+    stub->init(*model);
+
+    // Initialize prognostic and diagnostic variables, and construct a
+    // tendencies container.
+    auto* progs = model->create_prognostics();
+    auto* diags = model->create_diagnostics();
+    auto* tends = new Tendencies(*progs);
+
+    // Set initial conditions. We start with 100% clouds for simplicity.
+
+
+    // Clean up.
+    delete progs;
+    delete diags;
+    delete tends;
+    delete stub;
+  }
+
   delete model;
 }
 

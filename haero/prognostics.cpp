@@ -17,15 +17,15 @@ int Prognostics::add_aerosol_mode(const Mode& mode,
                        std::string(")");
   auto int_aero_data = ManagedColumnSpeciesView(int_view_name,
                                                 num_columns_,
-                                                aero_species.size(),
-                                                num_levels_);
+                                                num_levels_,
+                                                aero_species.size());
   managed_column_species_views_.push_back(int_aero_data);
   auto cld_view_name = std::string("cloudborne_aerosols(") + mode.name +
                        std::string(")");
   auto cld_aero_data = ManagedColumnSpeciesView(cld_view_name,
                                                 num_columns_,
-                                                aero_species.size(),
-                                                num_levels_);
+                                                num_levels_,
+                                                aero_species.size());
   auto modal_data_name = std::string("num_density(") + mode.name +
                          std::string(")");
   auto modal_data = ManagedColumnView(modal_data_name,
@@ -57,8 +57,8 @@ void Prognostics::add_gas_species(const std::vector<Species>& gas_species) {
   int num_species = gas_species.size();
   auto gas_mole_fracs = ManagedColumnSpeciesView("gas_mole_fractions",
                                                  num_columns_,
-                                                 num_species,
-                                                 num_levels_);
+                                                 num_levels_,
+                                                 num_species);
   managed_column_species_views_.push_back(gas_mole_fracs);
   add_gas_species(gas_species, ColumnSpeciesView(gas_mole_fracs));
 }

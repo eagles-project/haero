@@ -68,8 +68,8 @@ void Diagnostics::create_aerosol_var(const std::string& name) {
   aero_vars_[name] = std::vector<ColumnSpeciesView>();
   for (int m = 0; m < num_aerosol_modes(); ++m) {
     aero_vars_[name].push_back(ColumnSpeciesView(name, num_columns_,
-                                                 num_aero_species_[m],
-                                                 num_levels_));
+                                                 num_levels_,
+                                                 num_aero_species_[m]));
   }
 }
 
@@ -94,7 +94,7 @@ bool Diagnostics::has_gas_var(const std::string& name) const {
 void Diagnostics::create_gas_var(const std::string& name) {
   auto iter = gas_vars_.find(name);
   EKAT_REQUIRE_MSG(iter == gas_vars_.end(), "Gas diagnostic variable already exists!");
-  gas_vars_[name] = ColumnSpeciesView(name, num_columns_, num_gas_species_, num_levels_);
+  gas_vars_[name] = ColumnSpeciesView(name, num_columns_, num_levels_, num_gas_species_);
 }
 
 Diagnostics::ColumnSpeciesView&

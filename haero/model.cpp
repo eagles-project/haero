@@ -180,6 +180,8 @@ Prognostics* Model::create_prognostics() const {
   // Add gas species data.
   progs->add_gas_species(gas_species_);
 
+  // Assemble the prognostics and return them.
+  progs->assemble();
   return progs;
 }
 

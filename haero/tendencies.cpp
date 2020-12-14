@@ -15,15 +15,15 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
                          std::string(")]");
     int_aero_species_.push_back(ColumnSpeciesView("dqi/dt",
                                                   num_columns,
-                                                  num_aero_species,
-                                                  num_levels));
+                                                  num_levels,
+                                                  num_aero_species));
     auto cld_view_name = std::string("d/dt[") +
                          prognostics.cloudborne_aerosols(m).label() +
                          std::string(")]");
     cld_aero_species_.push_back(ColumnSpeciesView(cld_view_name,
                                                   num_columns,
-                                                  num_aero_species,
-                                                  num_levels));
+                                                  num_levels,
+                                                  num_aero_species));
   }
   auto n_view_name = std::string("d/dt[") +
                      prognostics.modal_num_densities().label() +
@@ -36,8 +36,8 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
                        std::string(")]");
   gas_mole_fractions_ = ColumnSpeciesView(gas_view_name,
                                           num_columns,
-                                          num_gas_species,
-                                          num_levels);
+                                          num_levels,
+                                          num_gas_species);
 }
 
 Tendencies::~Tendencies() {
@@ -50,19 +50,19 @@ int Tendencies::num_aerosol_modes() const {
 int Tendencies::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < int_aero_species_.size());
-  return int_aero_species_[mode_index].extent(1);
+  return int_aero_species_[mode_index].extent(2);
 }
 
 int Tendencies::num_gas_species() const {
-  return gas_mole_fractions_.extent(1);
+  return gas_mole_fractions_.extent(2);
 }
 
 int Tendencies::num_columns() const {
-  return gas_mole_fractions_.extent(0);
+  return modal_num_densities_.extent(1);
 }
 
 int Tendencies::num_levels() const {
-  return gas_mole_fractions_.extent(2);
+  return modal_num_densities_.extent(2);
 }
 
 Tendencies::ColumnSpeciesView&

@@ -44,9 +44,9 @@ class Prognostics final {
   /// This type represents a multidimensional array mapping a column, species,
   /// and vertical level to a pack.
   /// * The column is identified by the index i.
-  /// * The species is identified by the index s.
   /// * The vertical level identified by the index k.
-  /// So view[i][s][k] yields the desired pack.
+  /// * The species is identified by the index s.
+  /// So view[i][k][s] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
   using ColumnSpeciesView = ekat::Unmanaged<Kokkos::View<PackType***> >;
