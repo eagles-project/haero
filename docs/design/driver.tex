@@ -47,7 +47,7 @@ In hydrostatic conditions, $\mu \equiv 1$.
 The water vapor mixing ratio is $q_v$.
 The conservative form of potential temperature $\Theta = \partd{\pi}{s}\theta_v$, where $\theta_v$ is the virtual potential temperature, is related by the equation of state to the geopotential $\phi$,
 \begin{equation}
-  \partd{\pi}{s} = -R\Theta \frac{\Pi}{p},
+  \partd{\phi}{s} = -R\Theta \frac{\Pi}{p},
 \end{equation}
 where $\Pi$ is the Exner function,
 \begin{equation}
@@ -158,6 +158,63 @@ Column data are initialized as follows:
   \item Virtual potential temperature $\theta_v = T_v(p_0/p)^{\kappa}$, with the dry-air constant $\kappa = R_{dry}/c_p$, is defined at level midpoints.
   \item The initial velocity profile is defined, usually $w=0$.  
 \end{enumerate}
+
+\subsubsection{Time stepping}
+
+%We use an explicit 2nd order Runge-Kutta method, hereafter RK2, for advancing \eqref{eq:column_dynamics} forward in time \cite[\S 8.3.3]{DahlquistBjork}.
+
+\paragraph{Case 1: Prescribed velocity.} In this case we assume that vertical velocity $w$ is prescribed by a known function $w=w(z,t)$, for example,
+\begin{equation}\label{eq:presc_velocity}
+  w(z,t) = w_0 \sin \frac{2\pi t}{t_p}\sin \frac{m \pi z}{z_{top}},
+\end{equation}
+where the user-chosen parameters are $w_0$, the maximum vertical velocity [m/s], $t_p$, the period [s], and $m$, the vertical wave number (a dimensionless integer).
+%Equations \eqref{eq:column_dynamics} are separable in this case and we can solve them analytically by recalling that $z = \phi/g$.
+Using \eqref{eq:presc_velocity} in \eqref{eq:column_dynamics} and recalling that $\phi = gz$, the geopotential equation becomes,
+\begin{equation}
+  \deriv{\phi}{t} = gw_0\sin\frac{2\pi t}{t_p}\sin\frac{m\pi \phi(t)}{g z_{top}},
+\end{equation}
+which is a separable equation for $\phi(t)$ that can be solved analytically for each interface.
+\begin{subequations}
+We find that
+\begin{equation}
+  \phi_{i+1/2}(t_{n+1}) = \frac{2 g z_{top}}{m \pi}\arccot\left[ {\exp\left(-\frac{m t_p w_0}{z_{top}}\sin^2\frac{\pi t_{n+1}}{t_p}\right)}{{\cot\left(\frac{m \pi \phi_0}{2gz_{top}}\right)}}\right],
+\end{equation}
+where $\phi_0 = \phi_{i+1/2}(0)$.
+Vertical velocity is updated as
+\begin{equation}
+  w_{i+1/2}(t_{n+1}) = w(\phi_{i+1/2}(t_{n+1})/g, t_{n+1}).
+\end{equation}
+
+The level variables lack source/sink terms; hence,
+\begin{align}
+  \partd{\pi}{s}_i(t_{n+1}) &= \partd{\pi}{s}_i(t_n),\\
+  \theta_{v,i}(t_{n+1}) &= \theta_{v,i}(t_{n+1}),\\
+  q_{v,i}(t_{n+1}) &= q_{v,i}(t_{n+1}).
+\end{align}
+
+Substituting \eqref{eq:presc_velocity} into the momentum equation we find that
+\begin{equation}
+  \mu_{i+1/2}(t_{n+1})= 1 + \frac{2\pi w_0}{gt_p}\cos\frac{2\pi t_{n+1}}{t_p}\sin\frac{m\pi \phi_{i+1/2}(t_{n+1})}{gz_{top}}.
+\end{equation}
+
+At each level we can directly apply the vertical derivative operator to get
+\begin{equation}
+  \partd{\phi}{s}_i(t_{n+1}) = \frac{\phi_{i+1/2}(t_{n+1})-\phi_{i-1/2}(t_{n+1})}{\Delta s_i}.
+\end{equation}
+After averaging the pseudodensity to the interfaces, the definition of $\mu$ gives $\partd{p}{s}$,
+\begin{equation}
+  \partd{p}{s}_{i+1/2}(t_{n+1}) = \mu_{i+1/2}(t_{n+1})\overline{\partd{\pi}{s}}_{i+1/2}(t_{n+1}).
+\end{equation}
+Pressure at the levels follows from the equation of state,
+\begin{equation}
+  p_{i+1}(t_{n+1}) = \exp\left(\frac{1}{{R}/{c_p}-1}\right)\left(\frac{\partd{\phi}{s}_ip_0^{R/c_p}}{R \theta_{v,i}(t_{n+1}) \partd{\pi}{s}_i(t_{n+1})}\right).
+\end{equation}
+Finally, surface pressure is updated as \cite[eqn.~(35)]{Taylor2020},
+\begin{equation}
+  p_s(t_{n+1}) = p_{top} -\frac{1}{2}\left[\left(\partd{p}{s}\Delta s\right)_{1/2} + \left(\partd{p}{s}\Delta s\right)_{n_{lev}+1/2}\right] + \sum_{k=0}^{n_{lev}}\left(\partd{p}{s}\Delta s\right)_{k+1/2}.
+\end{equation}
+\end{subequations}
+
 
 
 \subsubsection{Simple microphysics}

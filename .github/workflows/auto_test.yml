@@ -19,8 +19,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        build-type: [Debug, Release]
-        fp-precision: [single, double]
+        build-type: [Debug] #, Release]
+        fp-precision: [double] #[single, double]
 
     # Environment variables
     env:
