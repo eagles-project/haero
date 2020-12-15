@@ -25,11 +25,13 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
                                                   num_levels,
                                                   num_aero_species));
   }
+
   auto n_view_name = std::string("d/dt[") +
                      prognostics.modal_num_densities().label() +
                      std::string(")]");
   modal_num_densities_ = ModalColumnView(n_view_name, num_modes, num_columns,
                                          num_levels);
+
   int num_gas_species = prognostics.num_gas_species();
   auto gas_view_name = std::string("d/dt[") +
                        prognostics.gas_mole_fractions().label() +

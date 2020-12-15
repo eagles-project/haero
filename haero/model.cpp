@@ -64,10 +64,14 @@ Model::Model(
   num_columns_(num_columns),
   num_levels_(num_levels),
   prog_processes_(),
-  diag_processes_()
+  diag_processes_(),
+  uses_fortran_(false)
 {
+  // Validate model parameters.
+  validate();
+
   // Set up mode/species indexing.
-  set_up_indexing(mode_species);
+  index_modal_species(mode_species);
 
   // Gather processes, and determine whether any of them are backed by Fortran.
   bool have_fortran_processes = gather_processes();
@@ -103,10 +107,15 @@ Model* Model::ForUnitTests(
   model->gas_species_ = gas_species;
   model->num_columns_ = num_columns;
   model->num_levels_ = num_levels;
+  model->uses_fortran_ = false;
+
+  // Validate model parameters.
+  model->validate();
 
   // Set up mode/species indexing.
-  model->set_up_indexing(mode_species);
+  model->index_modal_species(mode_species);
 
+  // Initialize Fortran
   model->init_fortran();
 
   return model;
@@ -118,6 +127,12 @@ Model::~Model() {
   }
   for (auto p: diag_processes_) {
     delete p.second;
+  }
+
+  // If we initialized the Haero Fortran module, we must finalize it.
+  if (uses_fortran_) {
+    haerotran_finalize();
+    initialized_fortran_ = false;
   }
 }
 
@@ -216,7 +231,7 @@ const std::vector<Species>& Model::gas_species() const {
   return gas_species_;
 }
 
-void Model::set_up_indexing(const std::map<std::string, std::vector<std::string> >& mode_species) {
+void Model::index_modal_species(const std::map<std::string, std::vector<std::string> >& mode_species) {
   species_for_mode_.resize(modes_.size());
   for (auto iter = mode_species.begin(); iter != mode_species.end(); ++iter) {
     const auto& mode_name = iter->first;
@@ -228,10 +243,16 @@ void Model::set_up_indexing(const std::map<std::string, std::vector<std::string>
 
     for (int s = 0; s < mode_species.size(); ++s) {
       auto s_iter = std::find_if(aero_species_.begin(), aero_species_.end(),
-        [&] (const Species& species) { return species.name == mode_name; });
+        [&] (const Species& species) { return species.symbol == mode_species[s]; });
       int species_index = s_iter - aero_species_.begin();
       species_for_mode_[mode_index].push_back(species_index);
     }
+  }
+
+  // Make sure each mode contains at least one species.
+  for (int m = 0; m < species_for_mode_.size(); ++m) {
+    EKAT_REQUIRE_MSG(not species_for_mode_[m].empty(),
+      modes_[m].name.c_str() << " mode contains no aerosol species!");
   }
 }
 
@@ -251,6 +272,7 @@ void Model::init_fortran() {
   for (int i = 0; i < num_modes; ++i) {
     max_species = std::max(max_species, (int)species_for_mode_[i].size());
   }
+  haerotran_set_max_mode_species(max_species);
   for (int i = 0; i < num_modes; ++i) {
     // Set the properties of mode i+1 (as indexed in Fortran).
     const auto& mode = modes_[i];
@@ -280,11 +302,9 @@ void Model::init_fortran() {
   haerotran_set_num_levels(num_levels_);
   haerotran_end_init();
 
-  // Make sure the Fortran stuff is broken down when the process exits.
-  atexit(haerotran_finalize);
-
   // Okay, the Fortran module is initialized.
   initialized_fortran_ = true;
+  uses_fortran_ = true;
 }
 
 bool Model::gather_processes() {
@@ -311,6 +331,14 @@ bool Model::gather_processes() {
   }
 
   return have_fortran_processes;
+}
+
+void Model::validate() {
+  EKAT_REQUIRE_MSG(not modes_.empty(), "Model: No modes were defined!");
+  EKAT_REQUIRE_MSG(not aero_species_.empty(), "Model: No aerosol species were given!");
+  EKAT_REQUIRE_MSG(not gas_species_.empty(), "Model: No gas species were given!");
+  EKAT_REQUIRE_MSG((num_columns_ > 0), "Model: No columns were specified!");
+  EKAT_REQUIRE_MSG((num_levels_ > 0), "Model: No vertical levels were specified!");
 }
 
 }

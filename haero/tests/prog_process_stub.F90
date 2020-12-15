@@ -37,8 +37,6 @@ contains
 subroutine prog_stub_init() bind(c)
   implicit none
 
-  integer :: num_modes, i
-
   ! Initialize process parameters.
   decay_rate = prog_stub_decay_rate()
 end subroutine
@@ -53,8 +51,8 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
   real(wp), value, intent(in) :: t     ! simulation time
   real(wp), value, intent(in) :: dt    ! simulation time step
   type(c_ptr), value, intent(in) :: progs ! prognostic variables
-  type(c_ptr), intent(inout) :: diags ! diagnostic variables
-  type(c_ptr), intent(inout) :: tends ! tendencies
+  type(c_ptr), value, intent(in) :: diags ! diagnostic variables
+  type(c_ptr), value, intent(in) :: tends ! tendencies
 
   ! Fortran prognostics, diagnostics, tendencies types
   type(prognostics_t) :: prognostics
@@ -63,12 +61,12 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
 
   ! Other local variables.
   integer :: num_modes, m, i, k, s
-  real(wp), pointer, dimension(:,:,:) :: q_i    ! interstitial aerosol mix fracs
   real(wp), pointer, dimension(:,:,:) :: q_c    ! cloudborne aerosol mix fracs
+  real(wp), pointer, dimension(:,:,:) :: q_i    ! interstitial aerosol mix fracs
   real(wp), pointer, dimension(:,:,:) :: q_g    ! gas mole fracs
   real(wp), pointer, dimension(:,:,:) :: n      ! modal number densities
-  real(wp), pointer, dimension(:,:,:) :: dqdt_i ! interstitial aerosol tends
   real(wp), pointer, dimension(:,:,:) :: dqdt_c ! cloudborne aerosol tends
+  real(wp), pointer, dimension(:,:,:) :: dqdt_i ! interstitial aerosol tends
   real(wp), pointer, dimension(:,:,:) :: dqdt_g ! gas mole frac tends
   real(wp), pointer, dimension(:,:,:) :: dndt   ! modal number density tends
 
@@ -80,16 +78,16 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
   ! Iterate over modes and compute aerosol mix fraction tendencies.
   num_modes = size(model%modes)
   do m=1,num_modes
-    q_i = prognostics%interstitial_aerosols(m)
-    q_c = prognostics%cloudborne_aerosols(m)
-    dqdt_i = tendencies%interstitial_aerosols(m)
-    dqdt_c = tendencies%cloudborne_aerosols(m)
+    q_c => prognostics%cloudborne_aerosols(m)
+    q_i => prognostics%interstitial_aerosols(m)
+    dqdt_c => tendencies%cloudborne_aerosols(m)
+    dqdt_i => tendencies%interstitial_aerosols(m)
 
     ! Cloudborne aerosols decay exponentially into interstitial aerosols.
-    do k=1,model%num_levels
-      do i=1,model%num_columns
+    do i=1,model%num_columns
+      do k=1,model%num_levels
         do s=1,model%num_mode_species(m)
-          dqdt_c(s, k, i) =  decay_rate * q_i(s, k, i)
+          dqdt_c(s, k, i) =  decay_rate * q_c(s, k, i)
           dqdt_i(s, k, i) = -decay_rate * q_i(s, k, i)
         end do
       end do
@@ -97,13 +95,13 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
   end do
 
   ! Gas mole fraction tendencies are zero.
-  q_g = prognostics%gas_mole_fractions()
-  dqdt_g = tendencies%gas_mole_fractions()
+  q_g => prognostics%gas_mole_fractions()
+  dqdt_g => tendencies%gas_mole_fractions()
   dqdt_g(:,:,:) = 0.0_wp
 
   ! Modal number density tendencies are zero.
-  n = prognostics%modal_num_densities()
-  dndt = tendencies%modal_num_densities()
+  n => prognostics%modal_num_densities()
+  dndt => tendencies%modal_num_densities()
   dndt(:,:,:) = 0.0_wp
 
 end subroutine

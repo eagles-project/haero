@@ -29,8 +29,9 @@ class Model final {
   ///                          species with an aerosol mode. The keys in this
   ///                          map are names of aerosol modes (corresponding to
   ///                          those found in `modes`), and the values are lists
-  ///                          of symbolic names of aerosol species (supplied in
-  ///                          `aerosol_species`) that belong to those modes.
+  ///                          of symbolic names (symbols) of aerosol species
+  ///                          (supplied in `aerosol_species`) that belong to
+  ///                          those modes.
   /// @param [in] gas_species a list of gas species supported by the Context
   /// @param [in] num_columns The number of columns in the Context's
   ///                         computational domain
@@ -132,8 +133,13 @@ class Model final {
   // Default constructor--used only internally
   Model();
 
-  // This sets mode->species indexing.
-  void set_up_indexing(const std::map<std::string, std::vector<std::string> >& mode_species);
+  // This validates the Model's given parameters, throwing an exception if an
+  // issue is encountered.
+  void validate();
+
+  // This sets mode->species indexing. Throws an exception if the mode_species
+  // mapping produces an inconsistent configuration.
+  void index_modal_species(const std::map<std::string, std::vector<std::string> >& mode_species);
 
   // This gathers the set of processes based on selections, returning true if
   // any are backed by Fortran, and false if not.
@@ -161,6 +167,9 @@ class Model final {
 
   // Selected implementations of diagnostic processes used by this model.
   std::map<ProcessType, DiagnosticProcess*> diag_processes_;
+
+  // This flag is set if this model initializes the haero Fortran model.
+  bool uses_fortran_;
 };
 
 }

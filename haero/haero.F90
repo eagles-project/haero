@@ -19,7 +19,7 @@ module haero
   !> This Fortran type is the equivalent of the C++ Mode struct.
   type :: mode_t
     !> Mode name
-    character(len=1), dimension(32) :: name
+    character(len=:), allocatable :: name
     !> Minimum particle diameter
     real(wp) :: min_diameter
     !> Maximum particle diameter
@@ -31,9 +31,9 @@ module haero
   !> This Fortran type is the equivalent of the C++ Species struct.
   type :: species_t
     !> Species name
-    character(len=1), dimension(32) :: name
+    character(len=:), allocatable :: name
     !> Species symbol (abbreviation)
-    character(len=1), dimension(8)  :: symbol
+    character(len=:), allocatable :: symbol
   end type
 
   !> This Fortran type is the equivalent of the C++ Model class. Exactly one
@@ -109,63 +109,63 @@ module haero
     end function
 
     type(c_ptr) function p_gas_mole_frac_c(p) bind(c)
-      use iso_c_binding, only: c_ptr, c_int
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: p
     end function
 
     type(c_ptr) function p_modal_num_densities_c(p) bind(c)
-      use iso_c_binding, only: c_ptr, c_int
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: p
     end function
 
     logical(c_bool) function d_has_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_char
+      use iso_c_binding, only: c_bool, c_ptr
       type(c_ptr), value, intent(in) :: d
-      character(kind=c_char, len=1), dimension(*), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
     end function
 
     type(c_ptr) function d_var_c(p, name) bind(c)
       use iso_c_binding, only: c_ptr, c_char, c_int
       type(c_ptr), value, intent(in) :: p
-      character(kind=c_char, len=1), dimension(32), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
     end function
 
     logical(c_bool) function d_has_aerosol_var_c(d, name, mode) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_int, c_char
+      use iso_c_binding, only: c_bool, c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
-      character(kind=c_char, len=1), dimension(*), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
       integer(c_int), value, intent(in) :: mode
     end function
 
     type(c_ptr) function d_aerosol_var_c(d, name, mode) bind(c)
-      use iso_c_binding, only: c_ptr, c_char, c_int
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
-      character(kind=c_char, len=1), dimension(32), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
       integer(c_int), value, intent(in) :: mode
     end function
 
     logical(c_bool) function d_has_gas_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_char
+      use iso_c_binding, only: c_bool, c_ptr
       type(c_ptr), value, intent(in) :: d
-      character(kind=c_char, len=1), dimension(*), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
     end function
 
     type(c_ptr) function d_gas_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_ptr, c_char, c_int
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: d
-      character(kind=c_char, len=1), dimension(32), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
     end function
 
     logical(c_bool) function d_has_modal_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_char, c_ptr, c_char
+      use iso_c_binding, only: c_bool, c_ptr
       type(c_ptr), value, intent(in) :: d
-      character(kind=c_char, len=1), dimension(*), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
     end function
 
     type(c_ptr) function d_modal_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_ptr, c_char, c_int
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: d
-      character(kind=c_char, len=1), dimension(32), intent(in) :: name
+      type(c_ptr), value, intent(in) :: name
     end function
 
     type(c_ptr) function t_int_aero_mix_frac_c(t, mode) bind(c)
@@ -181,18 +181,61 @@ module haero
     end function
 
     type(c_ptr) function t_gas_mole_frac_c(t) bind(c)
-      use iso_c_binding, only: c_ptr, c_int
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: t
     end function
 
     type(c_ptr) function t_modal_num_densities_c(t) bind(c)
-      use iso_c_binding, only: c_ptr, c_int
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: t
     end function
 
   end interface
 
 contains
+
+  !> This helper function converts the given C string to a Fortran string.
+  function c_to_f_string(c_string) result(f_string)
+    use, intrinsic :: iso_c_binding
+    implicit none
+    type(c_ptr), value, intent(in) :: c_string
+    character(len=:), pointer      :: f_ptr
+    character(len=:), allocatable  :: f_string
+    integer(c_size_t)              :: c_string_len
+
+    interface
+        function c_strlen(str_ptr) bind ( C, name = "strlen" ) result(len)
+        use, intrinsic :: iso_c_binding
+            type(c_ptr), value     :: str_ptr
+            integer(kind=c_size_t) :: len
+        end function c_strlen
+    end interface
+
+    call c_f_pointer(c_string, f_ptr )
+    c_string_len = c_strlen(c_string)
+
+    f_string = f_ptr(1:c_string_len)
+  end function c_to_f_string
+
+  !> This helper function converts the given Fortran string to a C string.
+  function f_to_c_string(f_string) result(c_string)
+    use, intrinsic :: iso_c_binding
+    implicit none
+    character(len=*), target :: f_string
+    character(len=:), pointer :: f_ptr
+    type(c_ptr) :: c_string
+
+    interface
+        function c_strlen(str_ptr) bind ( C, name = "strlen" ) result(len)
+        use, intrinsic :: iso_c_binding
+            type(c_ptr), value     :: str_ptr
+            integer(kind=c_size_t) :: len
+        end function c_strlen
+    end interface
+
+    f_ptr => f_string
+    c_string = c_loc(f_ptr)
+  end function f_to_c_string
 
   ! Begin the process of initializing the Haero Fortran module.
   subroutine haerotran_begin_init() bind(c)
@@ -208,9 +251,10 @@ contains
 
     allocate(model%modes(num_modes))
     allocate(model%num_mode_species(num_modes))
+    model%num_mode_species(:) = 0
   end subroutine
 
-  subroutine haerotran_set_max_modal_aero_species(max_num_species) bind(c)
+  subroutine haerotran_set_max_mode_species(max_num_species) bind(c)
     use iso_c_binding, only: c_int
     implicit none
 
@@ -220,20 +264,16 @@ contains
   end subroutine
 
   subroutine haerotran_set_mode(mode, name, min_d, max_d, std_dev) bind(c)
-    use iso_c_binding, only: c_char, c_real
+    use iso_c_binding, only: c_int, c_ptr, c_real
     implicit none
 
     integer(c_int), value, intent(in) :: mode
-    character(kind=c_char, len=1), dimension(:), intent(in) :: name
+    type(c_ptr), value, intent(in) :: name
     real(c_real), value, intent(in) :: min_d
     real(c_real), value, intent(in) :: max_d
     real(c_real), value, intent(in) :: std_dev
 
-    integer :: i
-
-    do i=1, min(32,size(name))
-      model%modes(mode)%name(i:i) = name(i)
-    end do
+    model%modes(mode)%name = c_to_f_string(name)
     model%modes(mode)%min_diameter = min_d
     model%modes(mode)%max_diameter = max_d
     model%modes(mode)%mean_std_dev = std_dev
@@ -241,22 +281,16 @@ contains
   end subroutine
 
   subroutine haerotran_set_aero_species(mode, species, name, symbol) bind(c)
-    use iso_c_binding, only: c_int, c_char
+    use iso_c_binding, only: c_int, c_ptr
     implicit none
 
     integer(c_int), value, intent(in) :: mode
     integer(c_int), value, intent(in) :: species
-    character(kind=c_char, len=1), dimension(:), intent(in) :: name
-    character(kind=c_char, len=1), dimension(:), intent(in) :: symbol
+    type(c_ptr), value, intent(in) :: name
+    type(c_ptr), value, intent(in) :: symbol
 
-    integer :: i
-
-    do i=1, min(32,size(name))
-      model%aero_species(mode, species)%name(i:i) = name(i)
-    end do
-    do i=1, min(8,size(symbol))
-      model%aero_species(mode, species)%symbol(i:i) = symbol(i)
-    end do
+    model%aero_species(mode, species)%name = c_to_f_string(name)
+    model%aero_species(mode, species)%symbol = c_to_f_string(symbol)
     model%num_mode_species(mode) = max(species, model%num_mode_species(mode))
   end subroutine
 
@@ -270,21 +304,15 @@ contains
   end subroutine
 
   subroutine haerotran_set_gas_species(species, name, symbol) bind(c)
-    use iso_c_binding, only: c_char, c_int
+    use iso_c_binding, only: c_int, c_ptr
     implicit none
 
     integer(c_int), value, intent(in) :: species
-    character(kind=c_char, len=1), dimension(:), intent(in) :: name
-    character(kind=c_char, len=1), dimension(:), intent(in) :: symbol
+    type(c_ptr), value, intent(in) :: name
+    type(c_ptr), value, intent(in) :: symbol
 
-    integer :: i
-
-    do i=1, min(32,size(name))
-      model%gas_species(species)%name(i:i) = name(i)
-    end do
-    do i=1, min(8,size(symbol))
-      model%gas_species(species)%symbol(i:i) = symbol(i)
-    end do
+    model%gas_species(species)%name = c_to_f_string(name)
+    model%gas_species(species)%symbol = c_to_f_string(symbol)
   end subroutine
 
   subroutine haerotran_set_num_columns(num_columns) bind(c)
@@ -312,10 +340,16 @@ contains
 
   ! This subroutine gets called when the C++ process exits.
   subroutine haerotran_finalize() bind(c)
-    if (allocated(model%modes)) then
+    if (allocated(model%aero_species)) then
       deallocate(model%aero_species)
+    end if
+    if (allocated(model%gas_species)) then
       deallocate(model%gas_species)
+    end if
+    if (allocated(model%num_mode_species)) then
       deallocate(model%num_mode_species)
+    end if
+    if (allocated(model%modes)) then
       deallocate(model%modes)
     end if
   end subroutine
@@ -335,11 +369,11 @@ contains
   !> @param [in] mode An index identifying the desired mode.
   function p_int_aero_mix_frac(p, mode) result(retval)
     class(prognostics_t), intent(in)  :: p
-    integer, value, intent(in) :: mode
+    integer(c_int), value, intent(in) :: mode
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_int_aero_mix_frac_c(p%ptr, mode)
+    v_ptr = p_int_aero_mix_frac_c(p%ptr, mode-1)
     call c_f_pointer(v_ptr, retval, shape=[model%num_mode_species(mode), model%num_columns, model%num_levels])
   end function
 
@@ -349,11 +383,11 @@ contains
   !> @param [in] mode An index identifying the desired mode.
   function p_cld_aero_mix_frac(p, mode) result(retval)
     class(prognostics_t), intent(in)  :: p
-    integer, value, intent(in) :: mode
+    integer(c_int), value, intent(in) :: mode
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_cld_aero_mix_frac_c(p%ptr, mode)
+    v_ptr = p_cld_aero_mix_frac_c(p%ptr, mode-1)
     call c_f_pointer(v_ptr, retval, shape=[model%num_mode_species(mode), model%num_columns, model%num_levels])
   end function
 
@@ -367,7 +401,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_gas_mole_frac_c(p%ptr)
-    call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, shape=[size(model%gas_species), model%num_levels, model%num_columns])
   end function
 
   !> Provides access to the modal number fractions array for the given
@@ -397,16 +431,13 @@ contains
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired variable.
   function d_has_var(d, name) result(retval)
-    use iso_c_binding, only: c_ptr, c_char, c_bool
+    use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     logical(c_bool) :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    integer :: i
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
+    type(c_ptr) :: c_name
+    c_name = f_to_c_string(name)
     retval = d_has_var_c(d%ptr, c_name)
   end function
 
@@ -416,16 +447,12 @@ contains
   !> @param [in] name The name of the desired variable.
   function d_var(d, name) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     real(wp), dimension(:,:,:), pointer :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    type(c_ptr) :: v_ptr
-    integer :: i
+    type(c_ptr) :: c_name, v_ptr
 
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
+    c_name = f_to_c_string(name)
     v_ptr = d_var_c(d%ptr, c_name)
     call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
@@ -438,16 +465,14 @@ contains
   function d_has_aerosol_var(d, name, mode) result(retval)
     use iso_c_binding, only: c_ptr, c_char, c_bool, c_int
     class(diagnostics_t), intent(in) :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     integer(c_int), intent(in) :: mode
     logical(c_bool) :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    integer :: i
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
-    retval = d_has_aerosol_var_c(d%ptr, c_name, mode)
+    type(c_ptr) :: c_name
+
+    c_name = f_to_c_string(name)
+    retval = d_has_aerosol_var_c(d%ptr, c_name, mode-1)
   end function
 
   !> Provides access to the given (non-modal) variable in the given
@@ -457,18 +482,14 @@ contains
   !> @param [in] mode The index of the desired mode.
   function d_aerosol_var(d, name, mode) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     integer(c_int), intent(in) :: mode
     real(wp), dimension(:,:,:), pointer :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    type(c_ptr) :: v_ptr
-    integer :: i
+    type(c_ptr) :: c_name, v_ptr
 
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
-    v_ptr = d_aerosol_var_c(d%ptr, c_name, mode)
+    c_name = f_to_c_string(name)
+    v_ptr = d_aerosol_var_c(d%ptr, c_name, mode-1)
     call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_mode_species(mode), model%num_columns])
   end function
 
@@ -477,16 +498,13 @@ contains
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
   function d_has_gas_var(d, name) result(retval)
-    use iso_c_binding, only: c_ptr, c_char, c_bool
+    use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     logical(c_bool) :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    integer :: i
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
+    type(c_ptr) :: c_name
+    c_name = f_to_c_string(name)
     retval = d_has_gas_var_c(d%ptr, c_name)
   end function
 
@@ -496,16 +514,12 @@ contains
   !> @param [in] name The name of the desired modal variable.
   function d_gas_var(d, name) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     real(wp), dimension(:,:,:), pointer :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    type(c_ptr) :: v_ptr
-    integer :: i
+    type(c_ptr) :: c_name, v_ptr
 
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
+    c_name = f_to_c_string(name)
     v_ptr = d_gas_var_c(d%ptr, c_name)
     call c_f_pointer(v_ptr, retval, [model%num_levels, size(model%gas_species), model%num_columns])
   end function
@@ -515,17 +529,14 @@ contains
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
   function d_has_modal_var(d, name) result(retval)
-    use iso_c_binding, only: c_ptr, c_char, c_bool
+    use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     logical(c_bool) :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    integer :: i
+    type(c_ptr) :: c_name
 
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
+    c_name = f_to_c_string(name)
     retval = d_has_modal_var_c(d%ptr, c_name)
   end function
 
@@ -535,16 +546,12 @@ contains
   !> @param [in] name The name of the desired modal variable.
   function d_modal_var(d, name) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=32), intent(in) :: name
+    character(len=*), intent(in) :: name
     real(wp), dimension(:,:,:), pointer :: retval
 
-    character(kind=c_char, len=1), dimension(32) :: c_name
-    type(c_ptr) :: v_ptr
-    integer :: i
+    type(c_ptr) :: c_name, v_ptr
 
-    do i=1,min(32, len(trim(name)))
-      c_name(i) = name(i:i)
-    end do
+    c_name = f_to_c_string(name)
     v_ptr = d_modal_var_c(d%ptr, c_name)
     call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
   end function
@@ -564,12 +571,12 @@ contains
   !> @param [in] mode An index identifying the desired mode.
   function t_int_aero_mix_frac(t, mode) result(retval)
     class(tendencies_t), intent(in) :: t
-    integer(c_int), intent(in) :: mode
+    integer(c_int), value, intent(in) :: mode
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_int_aero_mix_frac_c(t%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
+    v_ptr = t_int_aero_mix_frac_c(t%ptr, mode-1)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_mode_species(mode), model%num_levels, model%num_columns])
   end function
 
   !> Provides access to the cloud-borne aerosol mixing fractions array
@@ -578,12 +585,12 @@ contains
   !> @param [in] mode An index identifying the desired mode.
   function t_cld_aero_mix_frac(t, mode) result(retval)
     class(tendencies_t), intent(in)  :: t
-    integer(c_int), intent(in) :: mode
+    integer(c_int), value, intent(in) :: mode
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_cld_aero_mix_frac_c(t%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, model%num_mode_species(mode)])
+    v_ptr = t_cld_aero_mix_frac_c(t%ptr, mode-1)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_mode_species(mode), model%num_levels, model%num_columns])
   end function
 
   !> Provides access to the gas mole fractions array for the given
@@ -595,8 +602,8 @@ contains
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_gas_mole_frac_c(t%ptr)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    v_ptr = t_gas_mole_frac_c(t%ptr)
+    call c_f_pointer(v_ptr, retval, shape=[size(model%gas_species), model%num_levels, model%num_columns])
   end function
 
   !> Provides access to the modal number fractions array for the given
@@ -604,12 +611,12 @@ contains
   !> @param [in] t A pointer to a tendencies object.
   function t_modal_num_densities(t) result(retval)
     use iso_c_binding, only: c_ptr, c_int
-    class(tendencies_t), value, intent(in) :: t
+    class(tendencies_t), intent(in) :: t
     real(c_real), pointer, dimension(:,:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_modal_num_densities_c(t%ptr)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    v_ptr = t_modal_num_densities_c(t%ptr)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_columns, size(model%modes)])
   end function
 
 end module

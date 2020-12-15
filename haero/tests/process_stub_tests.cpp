@@ -11,13 +11,14 @@ using namespace haero;
 TEST_CASE("prog_process_stub", "") {
 
   // We create a phony model to be used for these tests.
-  std::vector<Mode> modes = create_mam4_modes();
-  std::vector<Species> aero_species, gas_species;
-  std::map<std::string, std::vector<std::string> > mode_species;
+  auto modes = create_mam4_modes();
+  auto aero_species = create_mam4_aerosol_species(),
+       gas_species = create_mam4_gas_species();
+  auto mode_species = create_mam4_mode_species();
   int num_columns = 10;
   int num_levels = 72;
   auto* model = Model::ForUnitTests(modes, aero_species, mode_species,
-                  gas_species, num_columns, num_levels);
+                                    gas_species, num_columns, num_levels);
 
   // Rate of decay from cloudborne to interstitial aerosols.
   Real decay_rate = -0.05;
@@ -85,6 +86,8 @@ TEST_CASE("prog_process_stub", "") {
     Real t = 0.0, dt = 0.01;
     stub->run(*model, t, dt, *progs, *diags, *tends);
 
+    // Check the tendencies to make sure they make sense.
+
     // Clean up.
     delete progs;
     delete diags;
@@ -99,14 +102,14 @@ TEST_CASE("prog_process_stub", "") {
 TEST_CASE("diag_process_stub", "") {
 
   // We create a phony model to be used for these tests.
-  Parameterizations params;
-  std::vector<Mode> modes;
-  std::vector<Species> aero_species, gas_species;
-  std::map<std::string, std::vector<std::string> > mode_species;
+  auto modes = create_mam4_modes();
+  auto aero_species = create_mam4_aerosol_species(),
+       gas_species = create_mam4_gas_species();
+  auto mode_species = create_mam4_mode_species();
   int num_columns = 10;
   int num_levels = 72;
-  auto* model = new Model(params, modes, aero_species, mode_species,
-                          gas_species, num_columns, num_levels);
+  auto* model = Model::ForUnitTests(modes, aero_species, mode_species,
+                                    gas_species, num_columns, num_levels);
 
   // Test basic construction.
   SECTION("construct") {

@@ -49,12 +49,12 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
   diagnostics = diagnostics_from_c_ptr(diags)
 
   ! Diagnose modal pressure using ideal gas law
-  n = prognostics%modal_num_densities()
-  p = diagnostics%modal_var("pressure")
+  n => prognostics%modal_num_densities()
+  p => diagnostics%modal_var("pressure")
   num_modes = size(model%modes)
-  do k=1,model%num_levels
+  do m=1,num_modes
     do i=1,model%num_columns
-      do m=1,num_modes
+      do k=1,model%num_levels
         p(k, i, m) = n(k, i, m) * R * T
       end do
     end do
