@@ -1,4 +1,5 @@
 #include "haero/model.hpp"
+#include "haero/floating_point.hpp"
 #include "prog_process_stub.hpp"
 #include "diag_process_stub.hpp"
 #include "catch2/catch.hpp"
@@ -86,7 +87,48 @@ TEST_CASE("prog_process_stub", "") {
     Real t = 0.0, dt = 0.01;
     stub->run(*model, t, dt, *progs, *diags, *tends);
 
+    // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
+    // --------------------------------------------------
+
+    // Cloudborne aerosol mix fractions have negative tendencies, interstitial
+    // mix fractions have positive tendencies, and their sums are zero.
+    for (int m = 0; m < progs->num_aerosol_modes(); ++m) {
+      auto& dqdt_c = tends->cloudborne_aerosols(m);
+      auto& dqdt_i = tends->interstitial_aerosols(m);
+      int num_aero_species = progs->num_aerosol_species(m);
+      for (int i = 0; i < progs->num_columns(); ++i) {
+        for (int k = 0; k < progs->num_levels(); ++k) {
+          for (int s = 0; s < num_aero_species; ++s) {
+            REQUIRE(dqdt_c(i, k, s)[0] < 0.0);
+            REQUIRE(dqdt_i(i, k, s)[0] > 0.0);
+            Real sum = dqdt_c(i, k, s)[0] + dqdt_i(i, k, s)[0];
+            REQUIRE(FloatingPoint<Real>::equiv(sum, 0.0));
+          }
+        }
+      }
+    }
+
+    // Aerosol modal number densities are unchanged.
+    auto& dndt = tends->modal_num_densities();
+    for (int m = 0; m < progs->num_aerosol_modes(); ++m) {
+      for (int i = 0; i < progs->num_columns(); ++i) {
+        for (int k = 0; k < progs->num_levels(); ++k) {
+          REQUIRE(FloatingPoint<Real>::equiv(dndt(m, i, k)[0], 0.0));
+        }
+      }
+    }
+
+    // Gas mole fractions are unchanged.
+    const auto& dqdt_g = tends->gas_mole_fractions();
+    for (int i = 0; i < progs->num_columns(); ++i) {
+      for (int k = 0; k < progs->num_levels(); ++k) {
+        for (int s = 0; s < num_gas_species; ++s) {
+          REQUIRE(FloatingPoint<Real>::equiv(dqdt_g(i, k, s)[0], 0.0));
+        }
+      }
+    }
+
 
     // Clean up.
     delete progs;

@@ -88,7 +88,7 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
       do k=1,model%num_levels
         do s=1,model%num_mode_species(m)
           dqdt_c(s, k, i) =  decay_rate * q_c(s, k, i)
-          dqdt_i(s, k, i) = -decay_rate * q_i(s, k, i)
+          dqdt_i(s, k, i) = -dqdt_c(s, k, i)
         end do
       end do
     end do
