@@ -44,6 +44,16 @@ class Model final {
         int num_columns,
         int num_levels);
 
+  /// This factory function creates a model for use with unit tests. It
+  /// initializes the Fortran subsystem, but doesn't perform any process
+  /// initialization, and omits the selection of parameterizations.
+  static Model* ForUnitTests(const std::vector<Mode>& aerosol_modes,
+                             const std::vector<Species>& aerosol_species,
+                             const std::map<std::string, std::vector<std::string> >& mode_species,
+                             const std::vector<Species>& gas_species,
+                             int num_columns,
+                             int num_levels);
+
   /// Models are not deep-copyable. They should be passed by reference.
   Model(const Model&) = delete;
 
@@ -118,6 +128,19 @@ class Model final {
   int num_levels() const { return num_levels_; }
 
   private:
+
+  // Default constructor--used only internally
+  Model();
+
+  // This sets mode->species indexing.
+  void set_up_indexing(const std::map<std::string, std::vector<std::string> >& mode_species);
+
+  // This gathers the set of processes based on selections, returning true if
+  // any are backed by Fortran, and false if not.
+  bool gather_processes();
+
+  // This initializes the Model's Fortran subsystem.
+  void init_fortran();
 
   // Parameterizations, modes, species...
   Parameterizations parameterizations_;

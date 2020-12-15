@@ -223,7 +223,7 @@ contains
     use iso_c_binding, only: c_char, c_real
     implicit none
 
-    integer(c_int), intent(in) :: mode
+    integer(c_int), value, intent(in) :: mode
     character(kind=c_char, len=1), dimension(:), intent(in) :: name
     real(c_real), value, intent(in) :: min_d
     real(c_real), value, intent(in) :: max_d
@@ -244,8 +244,8 @@ contains
     use iso_c_binding, only: c_int, c_char
     implicit none
 
-    integer(c_int), intent(in) :: mode
-    integer(c_int), intent(in) :: species
+    integer(c_int), value, intent(in) :: mode
+    integer(c_int), value, intent(in) :: species
     character(kind=c_char, len=1), dimension(:), intent(in) :: name
     character(kind=c_char, len=1), dimension(:), intent(in) :: symbol
 
@@ -273,7 +273,7 @@ contains
     use iso_c_binding, only: c_char, c_int
     implicit none
 
-    integer(c_int), intent(in) :: species
+    integer(c_int), value, intent(in) :: species
     character(kind=c_char, len=1), dimension(:), intent(in) :: name
     character(kind=c_char, len=1), dimension(:), intent(in) :: symbol
 
@@ -340,7 +340,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_int_aero_mix_frac_c(p%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_mode_species(mode), model%num_columns, model%num_levels])
+    call c_f_pointer(v_ptr, retval, shape=[model%num_mode_species(mode), model%num_columns, model%num_levels])
   end function
 
   !> Provides access to the cloud-borne aerosol mixing fractions array
@@ -354,7 +354,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_cld_aero_mix_frac_c(p%ptr, mode)
-    call c_f_pointer(v_ptr, retval, [model%num_mode_species(mode), model%num_columns, model%num_levels])
+    call c_f_pointer(v_ptr, retval, shape=[model%num_mode_species(mode), model%num_columns, model%num_levels])
   end function
 
   !> Provides access to the gas mole fractions array for the given
@@ -367,7 +367,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_gas_mole_frac_c(p%ptr)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Provides access to the modal number fractions array for the given
@@ -380,7 +380,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = p_modal_num_densities_c(p%ptr)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_columns, size(model%modes)])
   end function
 
   !> Extracts a diagnostics_t variable from the given C pointer.

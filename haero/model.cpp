@@ -29,6 +29,23 @@ namespace {
 // Fortran-backed processes, we encounter a fatal error.
 bool initialized_fortran_ = false;
 
+// Prognostic process types.
+const ProcessType progProcessTypes[] = {
+  ActivationProcess,
+  CloudBorneWetRemovalProcess,
+  CoagulationProcess,
+  CondensationProcess,
+  DryDepositionProcess,
+  EmissionsProcess,
+  NucleationProcess,
+  ResuspensionProcess
+};
+
+// Diagnostic process types.
+const ProcessType diagProcessTypes[] = {
+  WaterUptakeProcess
+};
+
 } // anonymous namespace
 
 Model::Model(
@@ -50,109 +67,49 @@ Model::Model(
   diag_processes_()
 {
   // Set up mode/species indexing.
-  species_for_mode_.resize(aerosol_modes.size());
-  for (auto iter = mode_species.begin(); iter != mode_species.end(); ++iter) {
-    const auto& mode_name = iter->first;
-    const auto& mode_species = iter->second;
+  set_up_indexing(mode_species);
 
-    auto m_iter = std::find_if(aerosol_modes.begin(), aerosol_modes.end(),
-      [&] (const Mode& mode) { return mode.name == mode_name; });
-    int mode_index = m_iter - aerosol_modes.begin();
-
-    for (int s = 0; s < mode_species.size(); ++s) {
-      auto s_iter = std::find_if(aerosol_species.begin(), aerosol_species.end(),
-        [&] (const Species& species) { return species.name == mode_name; });
-      int species_index = s_iter - aerosol_species.begin();
-      species_for_mode_[mode_index].push_back(species_index);
-    }
-  }
-
-  // Set up prognostic and diagnostic processes.
-  ProcessType progProcessTypes[] = {
-    ActivationProcess,
-    CloudBorneWetRemovalProcess,
-    CoagulationProcess,
-    CondensationProcess,
-    DryDepositionProcess,
-    EmissionsProcess,
-    NucleationProcess,
-    ResuspensionProcess
-  };
-  bool haveFortranProcesses = false;
-  for (auto p: progProcessTypes) {
-    PrognosticProcess* process = select_prognostic_process(p, parameterizations);
-    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
-      haveFortranProcesses = true;
-    }
-    process->init(*this);
-    prog_processes_[p] = process;
-  }
-
-  ProcessType diagProcessTypes[] = {
-    WaterUptakeProcess
-  };
-  for (auto p: diagProcessTypes) {
-    DiagnosticProcess* process = select_diagnostic_process(p, parameterizations);
-    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
-      haveFortranProcesses = true;
-    }
-    process->init(*this);
-    diag_processes_[p] = process;
-  }
+  // Gather processes, and determine whether any of them are backed by Fortran.
+  bool have_fortran_processes = gather_processes();
 
   // If we encountered a Fortran-backed process, attempt to initialize the
   // Haero Fortran helper module with our model data.
-  if (haveFortranProcesses) {
-    // If we've already initialized the Fortran module, this means that this is
-    // not the first C++ model instance that has Fortran-backed processes. We
-    // đon't allow this, since we've made assumptions in order to simplify
-    // the process of implementing Fortran processes.
-    EKAT_REQUIRE_MSG(not initialized_fortran_,
-      "More than one C++ model includes Fortran-backed processes. This is not allowed!");
-
-    // This series of calls sets things up in Haero's Fortran module.
-    haerotran_begin_init();
-    int num_modes = modes_.size();
-    haerotran_set_num_modes(num_modes);
-    int max_species = 0;
-    for (int i = 0; i < num_modes; ++i) {
-      max_species = std::max(max_species, (int)species_for_mode_[i].size());
-    }
-    for (int i = 0; i < num_modes; ++i) {
-      // Set the properties of mode i+1 (as indexed in Fortran).
-      const auto& mode = modes_[i];
-      haerotran_set_mode(i+1, mode.name.c_str(), mode.min_diameter,
-                         mode.max_diameter, mode.mean_std_dev);
-
-      // Set up aerosol species for this mode.
-      int num_species = species_for_mode_[i].size();
-      for (int j = 0; j < num_species; ++j) {
-        const auto& species = aero_species_[species_for_mode_[i][j]];
-        haerotran_set_aero_species(i+1, j+1, species.name.c_str(),
-                                   species.symbol.c_str());
-      }
-    }
-
-    // Set up gas species.
-    int num_gas_species = gas_species_.size();
-    haerotran_set_num_gas_species(num_gas_species);
-    for (int i = 0; i < num_gas_species; ++i) {
-      const auto& species = gas_species_[i];
-      haerotran_set_gas_species(i+1, species.name.c_str(),
-                                species.symbol.c_str());
-    }
-
-    // Set dimensions.
-    haerotran_set_num_columns(num_columns_);
-    haerotran_set_num_levels(num_levels_);
-    haerotran_end_init();
-
-    // Make sure the Fortran stuff is broken down when the process exits.
-    atexit(haerotran_finalize);
-
-    // Okay, the Fortran module is initialized.
-    initialized_fortran_ = true;
+  if (have_fortran_processes) {
+    init_fortran();
   }
+
+  // Now we can initialize the processes.
+  for (auto p: prog_processes_) {
+    p.second->init(*this);
+  }
+  for (auto p: diag_processes_) {
+    p.second->init(*this);
+  }
+}
+
+Model::Model() {
+}
+
+Model* Model::ForUnitTests(
+  const std::vector<Mode>& aerosol_modes,
+  const std::vector<Species>& aerosol_species,
+  const std::map<std::string, std::vector<std::string> >& mode_species,
+  const std::vector<Species>& gas_species,
+  int num_columns,
+  int num_levels) {
+  Model* model = new Model();
+  model->modes_ = aerosol_modes;
+  model->aero_species_ = aerosol_species;
+  model->gas_species_ = gas_species;
+  model->num_columns_ = num_columns;
+  model->num_levels_ = num_levels;
+
+  // Set up mode/species indexing.
+  model->set_up_indexing(mode_species);
+
+  model->init_fortran();
+
+  return model;
 }
 
 Model::~Model() {
@@ -257,6 +214,103 @@ std::vector<Species> Model::aerosol_species_for_mode(int mode_index) const {
 
 const std::vector<Species>& Model::gas_species() const {
   return gas_species_;
+}
+
+void Model::set_up_indexing(const std::map<std::string, std::vector<std::string> >& mode_species) {
+  species_for_mode_.resize(modes_.size());
+  for (auto iter = mode_species.begin(); iter != mode_species.end(); ++iter) {
+    const auto& mode_name = iter->first;
+    const auto& mode_species = iter->second;
+
+    auto m_iter = std::find_if(modes_.begin(), modes_.end(),
+      [&] (const Mode& mode) { return mode.name == mode_name; });
+    int mode_index = m_iter - modes_.begin();
+
+    for (int s = 0; s < mode_species.size(); ++s) {
+      auto s_iter = std::find_if(aero_species_.begin(), aero_species_.end(),
+        [&] (const Species& species) { return species.name == mode_name; });
+      int species_index = s_iter - aero_species_.begin();
+      species_for_mode_[mode_index].push_back(species_index);
+    }
+  }
+}
+
+void Model::init_fortran() {
+  // If we've already initialized the Fortran module, this means that this is
+  // not the first C++ model instance that has Fortran-backed processes. We
+  // đon't allow this, since we've made assumptions in order to simplify
+  // the process of implementing Fortran processes.
+  EKAT_REQUIRE_MSG(not initialized_fortran_,
+      "More than one C++ model includes Fortran-backed processes. This is not allowed!");
+
+  // This series of calls sets things up in Haero's Fortran module.
+  haerotran_begin_init();
+  int num_modes = modes_.size();
+  haerotran_set_num_modes(num_modes);
+  int max_species = 0;
+  for (int i = 0; i < num_modes; ++i) {
+    max_species = std::max(max_species, (int)species_for_mode_[i].size());
+  }
+  for (int i = 0; i < num_modes; ++i) {
+    // Set the properties of mode i+1 (as indexed in Fortran).
+    const auto& mode = modes_[i];
+    haerotran_set_mode(i+1, mode.name.c_str(), mode.min_diameter,
+        mode.max_diameter, mode.mean_std_dev);
+
+    // Set up aerosol species for this mode.
+    int num_species = species_for_mode_[i].size();
+    for (int j = 0; j < num_species; ++j) {
+      const auto& species = aero_species_[species_for_mode_[i][j]];
+      haerotran_set_aero_species(i+1, j+1, species.name.c_str(),
+          species.symbol.c_str());
+    }
+  }
+
+  // Set up gas species.
+  int num_gas_species = gas_species_.size();
+  haerotran_set_num_gas_species(num_gas_species);
+  for (int i = 0; i < num_gas_species; ++i) {
+    const auto& species = gas_species_[i];
+    haerotran_set_gas_species(i+1, species.name.c_str(),
+        species.symbol.c_str());
+  }
+
+  // Set dimensions.
+  haerotran_set_num_columns(num_columns_);
+  haerotran_set_num_levels(num_levels_);
+  haerotran_end_init();
+
+  // Make sure the Fortran stuff is broken down when the process exits.
+  atexit(haerotran_finalize);
+
+  // Okay, the Fortran module is initialized.
+  initialized_fortran_ = true;
+}
+
+bool Model::gather_processes() {
+
+  // We determine whether we have Fortran-backed processes, and map the
+  // aerosol process types to these processes. We don't initialize the processes
+  // yet, because that requires that the Fortran representation of the Model
+  // needs to be set up before that happens.
+  bool have_fortran_processes = false;
+  for (auto p: progProcessTypes) {
+    PrognosticProcess* process = select_prognostic_process(p, parameterizations_);
+    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
+      have_fortran_processes = true;
+    }
+    prog_processes_[p] = process;
+  }
+
+  for (auto p: diagProcessTypes) {
+    DiagnosticProcess* process = select_diagnostic_process(p, parameterizations_);
+    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
+      have_fortran_processes = true;
+    }
+    diag_processes_[p] = process;
+  }
+
+  return have_fortran_processes;
 }
 
 }
