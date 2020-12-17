@@ -35,7 +35,7 @@ jobs:
 
     - name: Installing MPI (Mac)
       if: contains(matrix.os, 'macos')
-      run: brew install open-mpi
+      run: brew install gfortran open-mpi
 
     - name: Checking out repository
       uses: actions/checkout@v2
