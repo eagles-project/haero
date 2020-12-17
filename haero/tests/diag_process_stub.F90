@@ -16,6 +16,7 @@ module diag_process_stub
 
   ! Process parameters
   real(wp), parameter :: R = 8.314472 ! universal gas constant [J/K/mol]
+  real(wp), parameter :: Avogadro = 6.022e23 ! Avogadro's number [#/mol]
 
   public :: diag_stub_init, &
             diag_stub_update, &
@@ -36,9 +37,9 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
   implicit none
 
   ! Arguments
-  real(wp), value, intent(in)        :: t     ! simulation time
-  type(c_ptr), value, intent(in)     :: progs ! prognostic variables
-  type(c_ptr), value, intent(inout)  :: diags ! diagnostic variables
+  real(wp), value, intent(in)    :: t     ! simulation time
+  type(c_ptr), value, intent(in) :: progs ! prognostic variables
+  type(c_ptr), value, intent(in) :: diags ! diagnostic variables
 
   ! Fortran prognostics and diagnostics types
   type(prognostics_t) :: prognostics
@@ -46,21 +47,21 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
 
   ! Other local variables.
   integer :: num_modes, num_gas_species, m, i, k, s
-  real(wp), mu_s
-  real(wp), pointer, dimension(:,:,:) :: q_c ! cloudborne aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_i ! interstitial aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_g ! gas mole fracs
-  real(wp), pointer, dimension(:,:,:) :: n   ! modal number densities
-  real(wp), pointer, dimension(:,:,:) :: T   ! atmospheric temperature
-  real(wp), pointer, dimension(:,:,:) :: p_g ! gas partial pressure
-  real(wp), pointer, dimension(:,:,:) :: p_a ! modal aerosol partial pressure
+  real(wp) :: mu_s, nu_s
+  real(wp), pointer, dimension(:,:,:) :: q_c  ! cloudborne aerosol mix fracs
+  real(wp), pointer, dimension(:,:,:) :: q_i  ! interstitial aerosol mix fracs
+  real(wp), pointer, dimension(:,:,:) :: q_g  ! gas mole fracs
+  real(wp), pointer, dimension(:,:,:) :: n    ! modal number densities
+  real(wp), pointer, dimension(:,:)   :: temp ! atmospheric temperature
+  real(wp), pointer, dimension(:,:,:) :: p_g  ! gas partial pressure
+  real(wp), pointer, dimension(:,:,:) :: p_a  ! modal aerosol partial pressure
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
   diagnostics = diagnostics_from_c_ptr(diags)
   n => prognostics%modal_num_densities()
   q_g => prognostics%gas_mole_fractions()
-  T => diagnostics%var("temperature")
+  temp => diagnostics%var("temperature")
 
   ! Zero the partial pressures.
   p_a => diagnostics%modal_var("pressure")
@@ -77,9 +78,10 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
     do i=1,model%num_columns
       do k=1,model%num_levels
         do s=1,model%num_mode_species(m)
-          mu_s = model%aero_species(s)%molecular_wt ! species molecular weight
-          nu_s = 1 ! TODO: number of moles
-          p_a(k, i, m) = p_a(k, i, m) + nu_s * R * T(k, i)
+          mu_s = model%aero_species(m, s)%molecular_wt ! species molecular weight
+          ! Compute the number of aerosol moles per unit volume
+          nu_s = (q_c(s, k, i) + q_i(s, k, i)) * n(k, i, m) / Avogadro
+          p_a(k, i, m) = p_a(k, i, m) + nu_s * R * temp(k, i)
         end do
       end do
     end do
@@ -90,8 +92,9 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
   do i=1,model%num_columns
     do k=1,model%num_levels
       do s=1,num_gas_species
-      nu_s = 1 ! TODO: number of moles
-        p_g(s, i, k) = nu_s * R * T(k, i)
+        ! Compute the number of gas moles per unit volume
+        nu_s = 1
+        p_g(s, k, i) = nu_s * R * temp(k, i)
       end do
     end do
   end do

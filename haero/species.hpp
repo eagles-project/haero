@@ -1,6 +1,8 @@
 #ifndef HAERO_SPECIES_HPP
 #define HAERO_SPECIES_HPP
 
+#include "haero/haero.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
