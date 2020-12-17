@@ -34,6 +34,12 @@ module haero
     character(len=:), allocatable :: name
     !> Species symbol (abbreviation)
     character(len=:), allocatable :: symbol
+    !> Molecular weight [g/mol]
+    real(wp) :: molecular_wt
+    !> Crystalization point [?]
+    real(wp) :: crystal_pt
+    !> Deliquenscence point [?]
+    real(wp) :: deliques_pt
   end type
 
   !> This Fortran type is the equivalent of the C++ Model class. Exactly one
@@ -280,7 +286,8 @@ contains
 
   end subroutine
 
-  subroutine haerotran_set_aero_species(mode, species, name, symbol) bind(c)
+  subroutine haerotran_set_aero_species(mode, species,
+    name, symbol, molecular_wt, crystal_pt, deliques_pt) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -288,9 +295,15 @@ contains
     integer(c_int), value, intent(in) :: species
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
+    real(c_real), value, intent(in) :: molecular_wt
+    real(c_real), value, intent(in) :: crystal_pt
+    real(c_real), value, intent(in) :: deliques_pt
 
     model%aero_species(mode, species)%name = c_to_f_string(name)
     model%aero_species(mode, species)%symbol = c_to_f_string(symbol)
+    model%aero_species(mode, species)%molecular_wt = molecular_wt
+    model%aero_species(mode, species)%crystal_pt = crystal_pt
+    model%aero_species(mode, species)%deliques_pt = deliques_pt
     model%num_mode_species(mode) = max(species, model%num_mode_species(mode))
   end subroutine
 
@@ -303,16 +316,23 @@ contains
     allocate(model%gas_species(num_species))
   end subroutine
 
-  subroutine haerotran_set_gas_species(species, name, symbol) bind(c)
+  subroutine haerotran_set_gas_species(species,
+    name, symbol, molecular_wt, crystal_pt, deliques_pt) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
     integer(c_int), value, intent(in) :: species
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
+    real(c_real), value, intent(in) :: molecular_wt
+    real(c_real), value, intent(in) :: crystal_pt
+    real(c_real), value, intent(in) :: deliques_pt
 
     model%gas_species(species)%name = c_to_f_string(name)
     model%gas_species(species)%symbol = c_to_f_string(symbol)
+    model%gas_species(species)%molecular_wt = molecular_wt
+    model%gas_species(species)%crystal_pt = crystal_pt
+    model%gas_species(species)%deliques_pt = deliques_pt
   end subroutine
 
   subroutine haerotran_set_num_columns(num_columns) bind(c)

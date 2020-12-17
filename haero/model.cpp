@@ -10,9 +10,11 @@ void haerotran_begin_init();
 void haerotran_set_num_modes(int);
 void haerotran_set_max_mode_species(int);
 void haerotran_set_mode(int, const char*, Real, Real, Real);
-void haerotran_set_aero_species(int, int, const char*, const char*);
+void haerotran_set_aero_species(int, int, const char*, const char*,
+                                Real, Real, Real);
 void haerotran_set_num_gas_species(int);
-void haerotran_set_gas_species(int, const char*, const char*);
+void haerotran_set_gas_species(int, const char*, const char*,
+                               Real, Real, Real);
 void haerotran_set_num_columns(int);
 void haerotran_set_num_levels(int);
 void haerotran_end_init();
@@ -284,7 +286,8 @@ void Model::init_fortran() {
     for (int j = 0; j < num_species; ++j) {
       const auto& species = aero_species_[species_for_mode_[i][j]];
       haerotran_set_aero_species(i+1, j+1, species.name.c_str(),
-          species.symbol.c_str());
+          species.symbol.c_str(), species.molecular_weight,
+          species.crystalization_point, species.deliquescence_point);
     }
   }
 
@@ -294,7 +297,8 @@ void Model::init_fortran() {
   for (int i = 0; i < num_gas_species; ++i) {
     const auto& species = gas_species_[i];
     haerotran_set_gas_species(i+1, species.name.c_str(),
-        species.symbol.c_str());
+        species.symbol.c_str(), species.molecular_weight,
+        species.crystalization_point, species.deliquescence_point);
   }
 
   // Set dimensions.
