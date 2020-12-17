@@ -194,7 +194,7 @@ TEST_CASE("diag_process_stub", "") {
     auto* diags = model->create_diagnostics();
 
     // Set initial conditions.
-    Real N0 = 1e6;
+    Real N0 = 1e16;
     auto& modal_num_densities = progs->modal_num_densities();
     for (int m = 0; m < progs->num_aerosol_modes(); ++m) {
       auto& cld_aerosols = progs->cloudborne_aerosols(m);
@@ -229,6 +229,16 @@ TEST_CASE("diag_process_stub", "") {
     // Set up required diagnostic variables.
     stub->prepare(*diags);
 
+    // Set the atmospheric temperature.
+    {
+      auto& T = diags->var("temperature");
+      for (int i = 0; i < progs->num_columns(); ++i) {
+        for (int k = 0; k < progs->num_levels(); ++k) {
+          T(i, k) = 273.15;
+        }
+      }
+    }
+
     // Make a copy of the temperature field.
     auto T0 = diags->var("temperature");
 
@@ -239,10 +249,33 @@ TEST_CASE("diag_process_stub", "") {
     // -------------------------------------------------
     // Make sure the temperature field was not affected.
     // -------------------------------------------------
+    const auto& T = diags->var("temperature");
+    for (int i = 0; i < progs->num_columns(); ++i) {
+      for (int k = 0; k < progs->num_levels(); ++k) {
+        REQUIRE(FloatingPoint<Real>::equiv(T(i, k)[0], T0(i, k)[0]));
+      }
+    }
 
     // ---------------------------------------
     // Check the diagnostic partial pressures.
     // ---------------------------------------
+    const auto& p_m = diags->modal_var("pressure");
+    for (int m = 0; m < progs->num_aerosol_modes(); ++m) {
+      for (int i = 0; i < progs->num_columns(); ++i) {
+        for (int k = 0; k < progs->num_levels(); ++k) {
+          REQUIRE(p_m(m, i, k)[0] > 0.0);
+        }
+      }
+    }
+
+    const auto& p_g = diags->gas_var("pressure");
+    for (int i = 0; i < progs->num_columns(); ++i) {
+      for (int k = 0; k < progs->num_levels(); ++k) {
+        for (int s = 0; s < num_gas_species; ++s) {
+          REQUIRE(p_g(i, k, s)[0] > 0.0);
+        }
+      }
+    }
 
     // Clean up.
     delete progs;

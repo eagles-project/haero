@@ -17,6 +17,8 @@ module diag_process_stub
   ! Process parameters
   real(wp), parameter :: R = 8.314472 ! universal gas constant [J/K/mol]
   real(wp), parameter :: Avogadro = 6.022e23 ! Avogadro's number [#/mol]
+  real(wp), parameter :: dry_air_density = 1.292 ! Density of dry air [kg/m**3]
+  real(wp), parameter :: dry_air_mw = 28.9647 ! Molecular weight of dry air [g/mol]
 
   public :: diag_stub_init, &
             diag_stub_update, &
@@ -93,7 +95,7 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
     do k=1,model%num_levels
       do s=1,num_gas_species
         ! Compute the number of gas moles per unit volume
-        nu_s = 1
+        nu_s = q_g(s, k, i) * dry_air_density / dry_air_mw
         p_g(s, k, i) = nu_s * R * temp(k, i)
       end do
     end do
