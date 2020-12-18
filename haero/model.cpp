@@ -144,6 +144,7 @@ Model::~Model() {
     // Delete all relevant Fortran string instances.
     if (fortran_strings_ != nullptr) {
       delete fortran_strings_;
+      fortran_strings_ = nullptr;
     }
   }
 }
