@@ -38,10 +38,16 @@ To build Haero, you need:
   [Mpich](https://www.mpich.org/)).
 
 You can obtain all of these (except perhaps your favorite Fortran compiler)
-freely on the Linux and Mac platforms. For example, on a Mac, you can get the
-Clang C/C++ compiler by installing XCode, and use a package manager like
-[Homebrew](https://brew.sh/) or [MacPorts](https://www.macports.org/) to get
-the rest.
+freely on the Linux and Mac platforms. On Linux, just use your favorite package
+manager. On a Mac, you can get the Clang C/C++ compiler by installing XCode, and
+then use a package manager like [Homebrew](https://brew.sh/) or
+[MacPorts](https://www.macports.org/) to get the rest.
+
+For example, to download the relevant software on your Mac using Homebrew, type
+
+```
+brew install cmake gfortran openmpi
+```
 
 ## Building the Model
 
