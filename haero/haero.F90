@@ -47,6 +47,8 @@ module haero
   type :: model_t
     !> The aerosol modes in the model, in indexed order.
     type(mode_t), dimension(:), allocatable :: modes
+    !> The number of modes in the model. Equal to size(modes).
+    integer :: num_modes
     !> The number of actual species that exist within each mode.
     integer, dimension(:), allocatable :: num_mode_species
     !> The aerosol species within each mode. Indexed as (mode, species).
@@ -256,6 +258,7 @@ contains
 
     integer(c_int), value, intent(in) :: num_modes
 
+    model%num_modes = num_modes
     allocate(model%modes(num_modes))
     allocate(model%num_mode_species(num_modes))
     model%num_mode_species(:) = 0
