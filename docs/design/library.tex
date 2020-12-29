@@ -1,52 +1,251 @@
 \chapter{The Haero Library}
 \labelchapter{library}
 
-In this chapter, we describe the data structures and algorithms provided by the
-Haero software library. We begin by discussing the data structures that
-represent the important elements for any modal aerosol model. In particular,
-the interface defines representations for:
+In this chapter, we describe the Haero software library itself, and its usage
+within an atmospheric model.
+
+\section{Overview}
+
+Haero is designed to provide a modal aerosol capability to an atmospheric model
+written in C++ and/or Fortran. It makes no attempt to describe or evolve any
+atmospheric phenomena outside of aerosols. Instead, Haero evolves the state of
+aerosols within a modal aerosol model as part of a broader atmospheric
+{\bf host model}---a mathematically consistent description of the atmosphere.
+
+To use Haero in your own host model, you write code to interact to construct
+a modal aerosol system and invoke aerosol processes on that system. Haero gives
+you all the flexibility and control you need to define how the aerosol processes
+couple with and interoperate with the other processes in the host model. In this
+sense, Haero is a set of building blocks you can use to construct the most
+appropriate modal aerosol representation for your host model.
+
+\subsection{Aerosol Systems}
+
+Haero's representation of aerosols relies on a set of elementary data structures
+that define the assumptions underlying a specific modal aerosol system. These
+elements are:
 
 \begin{itemize}
-  \item {\bf Modes}: statistically-informed groupings of aerosol particles by
-        size
+  \item An {\bf Aerosol Model}: the definition of a specific modal aerosol
+        system to be simulated
+  \item {\bf Modes}: statistical representations of aerosol particle populations
+        organized by particle size
   \item {\bf Species}: aerosol and gas molecules of interest. Each aerosol
         species belongs to a single aerosol mode and is tracked by mass and
         number.
-  \item {\bf Chemical Reactions}: reactions within the chemical mechanism that
-        governs how aerosol particles interact with each other, with the
-        atmosphere, and with solar radation.
 \end{itemize}
 
-These entities represent the quantities of interest in Haero, and provide
-{\bf metadata} needed to perform calculations on {\bf state data}, which is
-stored in multi-dimensional arrays of real-valued numbers.
+These entities define the aerosol system of interest in Haero, and provide
+any related {\bf metadata} needed to make decisions about how an aerosol
+processes does its work.
 
-The modes and species present in the atmosphere don't uniquely specify the
-parameters of a simulation, however. These species interact chemically with each
-other, and with other species and also with radiation. Additionally, there are
-numerical parameters that define grid parameters, choices of algorithms, and
-other non-physical considerations. This information lives within an object
-called a {\bf context}. There's one such context for each simulation, and Haero
-uses the context to make decisions about how to numerically compute the
-evolution of aerosols, and their effects on a system. The simulation context and
-its interface is explained in \refsection{context}.
+\subsection{Aerosol State Data}
 
-When a context has been created, one can initialize the simulation {\bf state}---
-the set of quantities that define the physical state of an aerosol system. The
-state consists of a set of multidimensional arrays that contain all relevant
-physical quantities, and is defined by the \verb State  type described in
-\refsection{state}
+Haero deals with two distinct types of state variables:
 
-Given a system of modes, species, chemical reactions, etc, as represented by a
-context, and given an initial state, Haero's application programming interface
-(API) provides functions (subroutines) that evaluate aerosol
-{\bf parametrizations}---the simplified models of the various physical processes
-mentioned in \refchapter{physics}. Functions and subroutines are provided for
-the C++ and Fortran programming languages. These functions are described in
-detail in \refsection{parametrizations}, and listed comprehensively in
-\refappendix{api}.
+\begin{itemize}
+  \item {\bf Prognostic variables}: variables that are evolved in time according
+        to a system of differential equations
+  \item {\bf Diagnostic variables}: variables that are algebraically related to
+        other variables, whether those variables are prognostic or diagnostic
+\end{itemize}
 
-\section{Modes}\labelsection{modes}
+Prognostic variables are quantities that possess an initial state and are
+evolved forward in time by their {\bf tendencies} (time derivatives). It is
+not possible to construct the value of a prognostic variable at time $t$ without
+an initial condition at some time $t_0$ and a tendency defined over the period
+$\left[t_0, t\right]$.
+
+The concept of a ``diagnostic'' variable is more general than its name suggests.
+The word "diagnostic" suggests that the variable is used only as an indicator
+by a human attempting to ``diagnose'' some atmospheric condition. In fact, a
+diagnostic variable can be any variable whose state can be constructed at any
+instant in time, using only the relevant prognostic variables.
+
+Haero's aerosol state data lives in multi-dimensional arrays within ``smart
+containers'' called \verb Prognostics  and \verb Diagnostics , whose names
+indicate the types of variables they store. These arrays are stored in
+\verb View  data structures provided by the Kokkos C++ library. Aerosol state
+data is allocated in C++, but available for use in Fortran for implementing
+aerosol processes or for using Haero from within a Fortran host model.
+
+\subsection{Aerosol Processes}
+
+The aerosol ``life cycle'' consists of a set of complicated physical processes
+involving many participants, with a wide range of length and time scales. These
+different scales demand a degree of flexibility in how we evaluate changes to
+the state of an aerosol system. For example, we expect to be able to resolve
+processes whose time scale is similar to or larger than the time scale for
+convection in the atmosphere, whereas processes with faster time scales must be
+treated in some special way that accommodates a relaxation or equilibration
+process.
+
+Haero provides data structures for constructing two distinct types of aerosol
+processes:
+
+\begin{itemize}
+  \item A {\bf prognostic process} accepts a set of prognostic and diagnostic
+        variables as input, and computes as output one or more tendencies for a
+        corresponding set of prognostic variables. It does not make any changes
+        to any of its inputs.
+  \item A {\bf diagnostic process} accepts a set of prognostic variables as
+        input, and updates one or more diagnostic variables in place so that
+        these variables are consistent with the prognostic variables.
+\end{itemize}
+
+These processes are the true assets of the Haero library. They can be
+implemented in C++, in Fortran, or in both. This allows aerosol researchers to
+make their latest parameterizations available in the Haero library, while
+providing software engineers with a ``future-proof'' environment for optimizing
+these and other parameterizations for DOE's Leadership Class Facilities.
+
+That's an orbit-level view of the Haero library. Now let's take a closer look at
+each of these aspects.
+
+\section{Aerosol Systems in Haero}
+
+To model a specific aerosol system in Haero, we must answer some questions:
+
+\begin{itemize}
+  \item What modes are required to accurately characterize the distribution of
+        interesting particle sizes?
+  \item What species are present in the system, and in what modes are they
+        allowed to appear?
+  \item How many atmospheric columns are needed to model the system?
+  \item How many vertical levels are needed to resolve the profile of aerosols
+        in the system?
+  \item Which physical processes are relevant to a simulation of interest?
+        Should any processes be excluded, to answer a specific question about
+        how the processes interact with each other, or because they are not
+        signficant for the system?
+\end{itemize}
+
+Each of these decisions greatly affects the nature of the model---systems with
+different answers to these questions will have very different behavior. When we
+define a Haero simulation, we encode the answers to these decisions in an
+{\bf aerosol model} variable.
+
+What do we mean by an ``aerosol model'', exactly? One can think about it in a
+few different ways.
+
+\begin{itemize}
+  \item An aerosol model specifies the physics (or the approximations to the
+        physics, if you like) represented by an aerosol simulation.
+  \item An aerosol model stores a set of ``global variables'' that govern the
+        behavior for the simulation of a single aerosol system.
+  \item Every aerosol system is described by exactly one aerosol model.
+  \item The aerosol model encodes the assumptions made about an aerosol system's
+        representation. It does not define the state of that system at any given
+        time. In this sense, all of its information is ``timeless''.
+\end{itemize}
+
+\subsection{The Model Type}
+\labelsubsection{model}
+
+In Haero, an aerosol model is defined by the \verb Model  type, defined within
+the \verb haero  namespace. Interfaces to this type are provided in both C++ and
+Fortran.
+
+Below is an abbreviated look at the \verb Model  C++ class. The source code for
+this class can be found in the \verb haero/model.hpp  and
+\verb haero/model.cpp files within the repository. Reading through this class,
+you'll see references to various other data structures. We describe these data
+structures in subsequent sections.
+
+\begin{verbatim}
+class Model final {
+  public:
+
+  // Constructor -- creates a new model given all relevant data.
+  Model(const Parameterizations& parameterizations,
+        const std::vector<Mode>& aerosol_modes,
+        const std::vector<Species>& aerosol_species,
+        const std::map<std::string, std::vector<std::string> >& mode_species,
+        const std::vector<Species>& gas_species,
+        int num_columns,
+        int num_levels);
+
+  // Creates a set of prognostic variables for use with this model.
+  Prognostics* create_prognostics() const;
+
+  // Creates a set of diagnostic variables for use with this model.
+  Diagnostics* create_diagnostics() const;
+
+  // Runs the (prognostic) aerosol process of the given type, computing any
+  // relevant tendencies.
+  void run_process(ProcessType type,
+                   Real t, Real dt,
+                   const Prognostics& prognostics,
+                   const Diagnostics& diagnostics,
+                   Tendencies& tendencies);
+
+  // Runs the (diagnostic) aerosol process of the given type, updating all
+  // relevant diagnostic variables in place.
+  void update_diagnostics(ProcessType type, Real t,
+                          const Prognostics& prognostics,
+                          Diagnostics& diagnostics);
+
+  // Returns the parameterizations associated with this aerosol model.
+  const Parametrizations& parametrizations() const;
+
+  // Returns the list of modes for the context.
+  const std::vector<Mode>& modes() const;
+
+  // Returns the list of aerosol species for the context.
+  const std::vector<Species>& aero_species() const;
+
+  // Returns the list of gas species for the context.
+  const std::vector<Species>& gas_species() const;
+
+  // Returns the number of vertical atmospheric columns in a simulation
+  // associated with this context.
+  int num_columns() const;
+
+  // Returns the number of vertical levels (cells) in each atmospheric column.
+  int num_levels() const;
+};
+\end{verbatim}
+
+In C++, you can create as many \verb Model  variables as you like, though
+there's usually no reason to do so, unless you're running an ensemble of
+simulations whose underlying assumptions differ beyond their initial states.
+
+Haero's Fortran interface provides a \verb model_t  derived type with a subset
+of the information available to the C++ \verb Model  type. While the Fortran
+interface doesn't have ``feature parity'' with its C++ counterpart, we argue
+that it provides ample information for implementing aerosol processes in
+Fortran.
+
+\begin{verbatim}
+type :: model_t
+  ! The aerosol modes in the model, in indexed order.
+  type(mode_t), dimension(:), allocatable :: modes
+  ! The number of modes in the model. Equal to size(modes).
+  integer :: num_modes
+  ! The number of actual species that exist within each mode.
+  integer, dimension(:), allocatable :: num_mode_species
+  ! The aerosol species within each mode. Indexed as (mode, species).
+  type(species_t), dimension(:,:), allocatable :: aero_species
+  ! The gas species in the model.
+  type(species_t), dimension(:), allocatable :: gas_species
+  ! The number of columns in the model.
+  integer :: num_columns
+  ! The number of vertical levels in each column.
+  integer :: num_levels
+end type
+\end{verbatim}
+
+In Fortran, a single global \verb Model  variable, \verb model , is provided
+within the \verb haero  module. This variable is automatically populated with
+data by Haero before any work is done, so there's no need to create it or
+modify it yourself. {\em Do not attempt to change any data within
+this global variable}.
+
+Because the model definition is provided as a global variable, only one instance
+of an aerosol model is available to Fortran implementations of aerosol processes.
+
+\subsection{The Mode Type}
+\labelsubsection{modes}
 
 We've seen how the dynamics of aerosols can be represented mathematically
 by evolution equations for moments of modal distribution functions. Modes
@@ -71,13 +270,29 @@ struct Mode {
 };
 \end{verbatim}
 
+Haero's Fortran interface offers a \verb mode_t  data structure, equivalent to
+the C++ \verb Mode  class. This data structure is defined in the \verb haero  Fortran
+module:
+
+\begin{verbatim}
+type :: mode_t
+  ! Mode name
+  character(len=:), allocatable :: name
+  ! Minimum particle diameter
+  real(wp) :: min_diameter
+  ! Maximum particle diameter
+  real(wp) :: max_diameter
+  ! Geometric mean standard deviation
+  real(wp) :: mean_std_dev
+end type
+\end{verbatim}
+
 In principle, a Haero calculation can support any number of modes, but care
 must be taken to ensure that the modal assumptions remain valid, and that
 the parametrizations selected can accommodate the given modes.
 
-\section{Species}\labelsection{species}
-
-{\bf WARNING: This section is under construction!}
+\subsection{The Species Type}
+\labelsubsection{species}
 
 Each aerosol mode consists of one or more particle species. Additionally,
 gas particles also come in different species. Both aerosol particles and
@@ -91,134 +306,380 @@ species includes
 \begin{itemize}
   \item a symbolic name (e.g. \verb SO4 , for sulfate)
   \item a descriptive name (e.g. \verb "sulfate" )
-  \item its elemental composition (how many atoms of each type it possesses)
-  \item its net electrical charge (in units of the elementary charge $|e|$)
+  \item information about the chemical properties of the species
 \end{itemize}
 
-We represent this information in the following way:
+In C++, we represent this information in the following way:
 
 \begin{verbatim}
 struct Species {
-  std::string name;                       // full species name
-  std::string symbol;                     // abbreviated symbolic name
-  std::map<std::string, int> composition; // elemental make-up of species
-  int charge;                             // net electrical charge
+  std::string name;          // full species name
+  std::string symbol;        // abbreviated symbolic name
+  Real molecular weight;     // molecular weight [g/mol]
+  Real crystalization_point; // crystalization point [?]
+  Real deliquescence_point;  // deliquenscence point [?]
 };
 \end{verbatim}
 
-The \verb composition  field in the \verb Species  struct maps the name of
-a chemical element to the number of atoms of that type that appear within
-the species.
-
-\section{Chemical Reactions}\labelsection{chemical_rxns}
-
-TBD: we currently don't have a candidate for a chemical mechanism, though
-we are considering Cantera.
-
-\section{Simulation Context}
-\labelsection{context}
-
-To model an aerosol system in Haero, one must first make some decisions about
-the aerosol system in question:
-
-\begin{itemize}
-  \item What modes are required to characterize the distribution of particle
-        sizes?
-  \item What species are present in the system, and in what modes are they
-        allowed to appear?
-  \item What chemical reactions are needed to accurately represent the dynamical
-        behavior of the system?
-  \item How many atmospheric columns are needed to model the system?
-  \item How many vertical levels are needed to resolve the profile of aerosols
-        in the system?
-  \item Which physical processes are relevant to a simulation of interest?
-        Should any processes be excluded, to answer a specific question about
-        how the processes interact with each other, or because they are not
-        signficant for the system?
-\end{itemize}
-
-Clearly, these decisions greatly effect the nature of the model---systems with
-different answers to these questions will have very different behavior. When we
-define a Haero simulation, we encode the answers to these decisions in a
-{\bf context}, represented by a {\verb Context}  object.
-
-What is a context, exactly? One can think about it in a few different ways,
-depending on one's perspective:
-
-\begin{itemize}
-  \item A context specifies the physics (or the approximations to the physics,
-        if you like) represented by an aerosol simulation.
-  \item A context stores a set of ``global variables'' that govern the behavior
-        for a single aerosol simulation.
-  \item Every aerosol simulation gets its own context.
-  \item A context describes only the form of an aerosol system's representation.
-        It does not describe the state of an aerosol system.
-\end{itemize}
-
-Essentially, a context contains all information about a system except for its
-(initial) states.
-
-\subsection{The Context Type}
-
-The \verb Context  type that describes a context is opaque, in the sense that
-you can query it for information, but this information is accessible only via an
-interface consisting of query functions/subroutines. This type is implemented
-by a C++ class.
-
-Here's a look at the \verb Context  class and its (public) interface.
+In Fortran, a species is defined by the following derived type:
 \begin{verbatim}
-class Context final {
-  public:
-
-  // Constructor -- creates a new Context.
-  Context(const Parametrizations& parametrizations,
-          const std::vector<Mode>& modes,
-          const std::vector<Species>& aero_species,
-          const std::vector<Species>& gas_species,
-          const std::vector<Reaction>& gas_chem_reactions,
-          int num_columns, int num_levels);
-
-  // Returns a description of the aerosol parametrizations used by a simulation
-  // associated with this context.
-  const Parametrizations& parametrizations() const;
-
-  // Returns the list of modes for the context.
-  const std::vector<Mode>& modes() const;
-
-  // Returns the list of aerosol species for the context.
-  const std::vector<Species>& aero_species() const;
-
-  // Returns the list of gas species for the context.
-  const std::vector<Species>& gas_species() const;
-
-  // Returns the number of vertical atmospheric columns in a simulation
-  // associated with this context.
-  int num_columns() const;
-
-  // Returns the number of vertical levels (cells) in each atmospheric column.
-  int num_levels() const;
-};
+type :: species_t
+  ! Species name
+  character(len=:), allocatable :: name
+  ! Species symbol (abbreviation)
+  character(len=:), allocatable :: symbol
+  ! Molecular weight [g/mol]
+  real(wp) :: molecular_wt
+  ! Crystalization point [?]
+  real(wp) :: crystal_pt
+  ! Deliquenscence point [?]
+  real(wp) :: deliques_pt
+end type
 \end{verbatim}
 
-In Fortran, the \verb Context  type consists of an opaque derived type with a
-set of associated functions and subroutines. You can find more information
-about the Fortran interface in \refappendix{api}.
-
-\section{Simulation State}
+\section{State Variables in Haero}
 \labelsection{state}
 
-When a context has been created that defines an aerosol system for a
-simulation, it remains to specify the initial state of that system. The state of
-a system is defined in terms of the following prognostic variables:
+Once a model variable has been created that defines an aerosol system, you can
+create state variables for that system. The state of a system is defined by the
+following prognostic variables:
 
 \begin{itemize}
   \item {\bf modal number densities}: the total number of particles per cubic
         meter in each mode
-  \item {\bf aerosol modal mass fractions}: the fraction of a mode occupied
-        by each aerosol species present
+  \item {\bf aerosol modal mix fractions}: the fraction of a mode occupied
+        by each aerosol species present within that mode
   \item {\bf gas mole fractions}: the number of moles of each gas species per
         mole of air
 \end{itemize}
 
-\section{Parametrizations}
-\labelsection{parametrizations}
+In addition, the model possesses a set of diagnostic variables that depend on
+its selected aerosol processes (which are discussed in a later section).
+
+How does one create a set of state variables given a model variable? Recall that
+the \verb Model  C++ class provides the following two functions, which you can
+call directly yourself, given a pointer to a C++ variable called \verb model :
+
+\begin{itemize}
+  \item \verb model->create_prognostics()  : returns a pointer to a C++
+    \verb Prognostics  container
+  \item \verb model->create_diagnostics()  : returns a pointer to a C++
+    \verb Diagnostics  container
+\end{itemize}
+
+These functions don't take any parameters---they just use the information within
+the model variable.
+
+By the way, you don't always have to call these functions yourself. State
+variables are automatically created if you're using the Haero driver or
+implementing a parameterization in C++ or Fortran. However, if you're using
+Haero within your own host model, or if you're writing a unit test for your
+parameterization, you must call these functions to obtain containers for your
+aerosol model's state data.
+
+The \verb Prognostics  and \verb Diagnostics  containers store prognostic and
+diagnostic state data, respectively, in multidimensional arrays allocated in C++
+but made available to both C++ and Fortran. The data for each array is stored
+within a Kokkos View.
+
+\subsection*{Kokkos Views}
+
+The C++ programming language has lots of features, but remarkably it includes no
+mechanism for allocating multidimensional arrays at runtime. The Kokkos C++
+library fills this gap by providing a data structure called a \verb View . A
+\verb View  is essentially an interface that allows a C++ programmer to treat a
+chunk of memory like a multidimensional array.
+
+A \verb View  has a rank and a set of dimensions, just like an allocatable
+Fortran array. You access a \verb View  in the same way that you'd access a
+Fortran array, except that C++ uses row-major indexing instead of Fortran's
+column-major indexing. So for a rank-3 view \verb f  that you access in C++
+as \verb f(i,j,k) , you would access the corresponding array in Fortran as
+\verb f(k,j,i) .
+
+{\em TODO: try to make some sense of packs}
+
+Because Haero is concerned with arrays having very specific dimensions, we
+define some named types that correspond to views/arrays that span specific
+spaces:
+
+\begin{table}[htbp]
+\centering
+\caption{Named C++ View Types}
+\label{tab:viewtypes}
+\begin{tabular}{|l|l|l|l|l|}
+  \toprule
+  View Name & Rank & Description & C++ & Fortran \\
+  \midrule
+  \verb ColumnView  & 2 & Maps a column $i$ and a vertical level $k$ to a pack & \verb v(i,k)  & \verb v(k,i) \\
+  \verb ColumnSpeciesView  & 3 & Maps a column $i$, a vertical level $k$, and a species $s$ to a pack & \verb v(i,k,s)  & \verb v(s,k,i) \\
+  \verb ModalColumnView & 3 & Maps a mode index $m$, a column $i$, and a vertical level $k$ to a pack & \verb v(i,k,s)  & \verb v(s,k,i) \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+Both the \verb Prognostics  and \verb Diagnostics  containers described below
+make use of these named types.
+
+\subsection{Prognostics Type}
+
+The \verb Prognostics  C++ class provides access to the prognostic variables
+that define aerosols in a modal description. Here's the C++ class interface
+(abbreviated for brevity---see the full interface in \verb haero/prognostics.hpp ):
+
+\begin{verbatim}
+class Prognostics final {
+  public:
+  // Returns the number of aerosol modes in the system.
+  int num_aerosol_modes() const;
+
+  // Returns the number of aerosol species in the mode with the given index.
+  int num_aerosol_species(int mode_index) const;
+
+  // Returns the number of gas species in the system.
+  int num_gas_species() const;
+
+  // Returns the number of independent atmospheric columns in the system.
+  int num_columns() const;
+
+  // Returns the number of vertical levels per column in the system.
+  int num_levels() const;
+
+  // Returns the view storing interstitial aerosol species mixing fraction data
+  // for the mode with the given index.
+  const ColumnSpeciesView& interstitial_aerosols(int mode_index) const;
+
+  // Returns the view storing cloud-borne aerosol species mixing fraction data
+  // for the mode with the given index.
+  const ColumnSpeciesView& cloudborne_aerosols(int mode_index) const;
+
+  // Returns the view storing the mole fractions of gas species in the state.
+  const ColumnSpeciesView& gas_mole_fractions() const;
+
+  // Returns the view storing the modal number densities.
+  const ModalColumnView& modal_num_densities() const;
+
+  // Scales the given set of tendencies and adds it into this state, summing
+  // the values of the prognostic variables in place.
+  void scale_and_add(Real scale_factor, const Tendencies& tendencies);
+};
+\end{verbatim}
+
+Typically, you never modify a \verb Prognostics  variable directly. Instead, you
+compute a set of tendencies (in a \verb Tendencies  variable, which is very
+similar to a \verb Prognostics  variable) and accumulate them into your
+\verb Prognostics  variable by calling \verb scale_and_add .
+
+The Fortran version of the \verb Prognostics  type is similar, and offers
+access to Fortran multidimensional arrays instead of C++ views. For cleaner
+syntax, this type uses bound procedures to return pointers to its arrays.
+
+\begin{verbatim}
+  type :: prognostics_t
+  contains
+    ! Access to interstitial aerosol mix fractions array
+    procedure :: interstitial_aerosols => p_int_aero_mix_frac
+    ! Access to cloudborne aerosol mix fractions array
+    procedure :: cloudborne_aerosols => p_cld_aero_mix_frac
+    ! Access to gas mole fractions array
+    procedure :: gas_mole_fractions => p_gas_mole_frac
+    ! Access to modal number densities array
+    procedure :: modal_num_densities => p_modal_num_densities
+  end type
+
+  ! Provides access to the interstitial aerosol mixing fractions array
+  ! for the given mode in the given prognostics object p.
+  function p_int_aero_mix_frac(p, mode) result(retval)
+    class(prognostics_t), intent(in)  :: p
+    integer(c_int), value, intent(in) :: mode
+    real(c_real), pointer, dimension(:,:,:) :: retval
+  end function
+
+  ! Provides access to the cloud-borne aerosol mixing fractions array
+  ! for the given mode in the given prognostics object p.
+  function p_cld_aero_mix_frac(p, mode) result(retval)
+    class(prognostics_t), intent(in)  :: p
+    integer(c_int), value, intent(in) :: mode
+    real(c_real), pointer, dimension(:,:,:) :: retval
+  end function
+
+  ! Provides access to the gas mole fractions array for the given
+  ! prognostics object p.
+  function p_gas_mole_frac(p) result(retval)
+    use iso_c_binding, only: c_ptr, c_int
+    class(prognostics_t), intent(in) :: p
+    real(c_real), pointer, dimension(:,:,:) :: retval
+  end function
+
+  ! Provides access to the modal number fractions array for the given
+  ! prognostics object p.
+  function p_modal_num_densities(p) result(retval)
+    use iso_c_binding, only: c_ptr, c_int
+    class(prognostics_t), intent(in) :: p
+    real(c_real), pointer, dimension(:,:,:) :: retval
+  end function
+
+\end{verbatim}
+
+\subsection{Diagnostics Type}
+
+The \verb Diagnostics  C++ class stores a dynamically-determined set of
+diagnostic variables that correspond to the specific parameterizations available
+to the aerosol model that created it.
+
+\begin{verbatim}
+class Diagnostics final {
+  public:
+  // Returns the number of aerosol modes in the system.
+  int num_aerosol_modes() const;
+
+  // Returns the number of aerosol species in the mode with the given index.
+  int num_aerosol_species(int mode_index) const;
+
+  // Returns the number of gas species in the system.
+  int num_gas_species() const;
+
+  // Returns the number of independent atmospheric columns in the system.
+  int num_columns() const;
+
+  // Returns the number of vertical levels per column in the system.
+  int num_levels() const;
+
+  // Returns true if the given (non-modal) variable exists within this object,
+  // false otherwise.
+  bool has_var(const std::string& name) const;
+
+  // Returns the view storing the diagnostic variable with the given name.
+  // If the variable does not yet exist, this throws an exception.
+  ColumnView& var(const std::string& name);
+
+  // Returns true if the given modal aerosol variable exists within this object,
+  // false otherwise.
+  bool has_aerosol_var(const std::string& name) const;
+
+  // Returns the view storing the modal aerosol diagnostic variable with the
+  // given name and mode index. If the variable does not yet exist, this throws
+  // an exception.
+  ColumnSpeciesView& aerosol_var(const std::string& name, int mode_index);
+
+  // Returns true if a variable defined for each gas species exists within
+  // this object with the given name, false otherwise.
+  bool has_gas_var(const std::string& name) const;
+
+  // Returns the view storing a diagnostic variable, defined for each gas
+  // species, with the given name. If the variable does not yet exist, this
+  // throws an exception.
+  ColumnSpeciesView& gas_var(const std::string& name);
+
+  // Returns true if the given modal variable exists within this object,
+  // false otherwise.
+  bool has_modal_var(const std::string& name) const;
+
+  // Returns the view storing the mode-specific diagnostic variable with the
+  // given name. If the variable does not yet exist, this throws an exception.
+  // @param [in] name The name of the diagnostic variable.
+  ModalColumnView& modal_var(const std::string& name);
+};
+\end{verbatim}
+
+The Fortran version of \verb Diagnostics , like its \verb Prognostics  counterpart,
+uses bound procedures to provide access to its array data:
+
+\begin{verbatim}
+  type :: diagnostics_t
+  contains
+    procedure :: has_var => d_has_var
+    procedure :: var => d_var
+    procedure :: has_aerosol_var => d_has_aerosol_var
+    procedure :: aerosol_var => d_aerosol_var
+    procedure :: has_gas_var => d_has_gas_var
+    procedure :: gas_var => d_gas_var
+    procedure :: has_modal_var => d_has_modal_var
+    procedure :: modal_var => d_modal_var
+  end type
+
+  ! Returns true if the given diagnostics object d contains a (non-modal)
+  ! variable with the given name, false otherwise.
+  function d_has_var(d, name) result(retval)
+    use iso_c_binding, only: c_ptr, c_bool
+    class(diagnostics_t), intent(in) :: d
+    character(len=*), intent(in) :: name
+    logical(c_bool) :: retval
+  end function
+
+  ! Provides access to the given (non-modal) variable in the given
+  ! diagnostics object d.
+  function d_var(d, name) result(retval)
+    class(diagnostics_t), intent(in)  :: d
+    character(len=*), intent(in) :: name
+    real(wp), dimension(:,:), pointer :: retval
+  end function
+
+  ! Returns true if the given diagnostics object d contains a modal aerosol
+  ! variable with the given name, false otherwise.
+  function d_has_aerosol_var(d, name, mode) result(retval)
+    use iso_c_binding, only: c_ptr, c_char, c_bool, c_int
+    class(diagnostics_t), intent(in) :: d
+    character(len=*), intent(in) :: name
+    integer(c_int), intent(in) :: mode
+    logical(c_bool) :: retval
+  end function
+
+  ! Provides access to the given (non-modal) variable in the given
+  ! diagnostics object d.
+  function d_aerosol_var(d, name, mode) result(retval)
+    class(diagnostics_t), intent(in)  :: d
+    character(len=*), intent(in) :: name
+    integer(c_int), intent(in) :: mode
+    real(wp), dimension(:,:,:), pointer :: retval
+  end function
+
+  ! Returns true if the given diagnostics object d contains a (non-modal)
+  ! variable with the given name, false otherwise.
+  function d_has_gas_var(d, name) result(retval)
+    use iso_c_binding, only: c_ptr, c_bool
+    class(diagnostics_t), intent(in) :: d
+    character(len=*), intent(in) :: name
+    logical(c_bool) :: retval
+  end function
+
+  ! Provides access to the given (non-modal) variable in the given
+  ! diagnostics object d.
+  function d_gas_var(d, name) result(retval)
+    class(diagnostics_t), intent(in)  :: d
+    character(len=*), intent(in) :: name
+    real(wp), dimension(:,:,:), pointer :: retval
+  end function
+
+  ! Returns true if the given diagnostics object d contains a modal
+  ! variable with the given name, false otherwise.
+  function d_has_modal_var(d, name) result(retval)
+    use iso_c_binding, only: c_ptr, c_bool
+    class(diagnostics_t), intent(in) :: d
+    character(len=*), intent(in) :: name
+    logical(c_bool) :: retval
+  end function
+
+  ! Provides access to the given modal variable in the given
+  ! diagnostics object d.
+  function d_modal_var(d, name) result(retval)
+    class(diagnostics_t), intent(in)  :: d
+    character(len=*), intent(in) :: name
+    real(wp), dimension(:,:,:), pointer :: retval
+  end function
+
+\end{verbatim}
+
+At this point, you might wonder how a \verb Diagnostics  variable knows which
+variables it needs. In fact, the \verb Diagnostics  class provides functions for
+creating variables that it needs. The C++ \verb Model  variable used to create
+a \verb Diagnostics  variable knows this information, and automatically calls
+these functions for you.
+
+For examples of how these \verb Prognostics  and \verb Diagnostics  types are
+used in practice, take a look at one of the existing aerosol process
+implementations.
+
+\section{Aerosol Processes in Haero}
+\labelsubsection{processes}
+
