@@ -52,12 +52,16 @@
 \newcommand{\labelchapter}[1]{\label{ch:#1}}
 \newcommand{\labelsection}[1]{\label{sec:#1}}
 \newcommand{\labelsubsection}[1]{\label{subsec:#1}}
+\newcommand{\labelsubsubsection}[1]{\label{subsubsec:#1}}
+\newcommand{\labelparagraph}[1]{\label{para:#1}}
 \newcommand{\labelappendix}[1]{\label{app:#1}}
 \newcommand{\refeq}[1]{Equation~\ref{eq:#1}}
 \newcommand{\reffig}[1]{Figure~\ref{fig:#1}}
 \newcommand{\refchapter}[1]{Chapter~\ref{ch:#1}}
 \newcommand{\refsection}[1]{Section~\ref{sec:#1}}
 \newcommand{\refsubsection}[1]{Subsection~\ref{subsec:#1}}
+\newcommand{\refsubsubsection}[1]{Subsubsection~\ref{subsubsec:#1}}
+\newcommand{\refparagraph}[1]{Paragraph~\ref{para:#1}}
 \newcommand{\refappendix}[1]{Appendix~\ref{app:#1}}
 
 % Annotating assumptions(!)
@@ -71,8 +75,17 @@
 \newcommand{\dsub}[1]{_{_{#1}}}
 \newcommand{\specidx}{L}
 \newcommand{\amass}[1]{q\dsub{m,#1,i}}
+\newcommand{\aitmass}[1]{q_{_{m,#1,2}}}
 \newcommand{\vmass}[1]{q\dsub{v,#1}}
 \newcommand{\mw}[1]{M\dsub{w,#1}}
+\newcommand{\rsag}{\rm H_{_2}SO_{_4}}
+\newcommand{\rasf}{\rm SO_{_4}}
+\newcommand{\rwater}{\rm H_{_2}O}
+\newcommand{\sag}{H_{_2}SO_{_4}}
+\newcommand{\asf}{SO_{_4}}
+\newcommand{\water}{H_{_2}O}
+\newcommand{\numc}{N_{_{t,i}}}
+\mathchardef\mhyphen="2D % Define a "math hyphen", make the dash shorter
 \DeclareMathOperator{\arccot}{arccot}
 % Norm and Absolute value
 	\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
@@ -93,6 +106,7 @@
 \include{intro}
 \include{physics}
 \include{library}
+\include{processes}
 \include{driver}
 
 \appendix
