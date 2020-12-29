@@ -4,7 +4,7 @@
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
 #include "haero/diagnostics.hpp"
-#include "haero/parameterizations.hpp"
+#include "haero/selected_processes.hpp"
 #include "haero/process.hpp"
 #include "haero/prognostics.hpp"
 #include "haero/tendencies.hpp"
@@ -14,14 +14,14 @@ namespace haero {
 
 /// @class Model
 /// This type represents an aerosol system to be simulated, including all
-/// information about modes, species, chemistry, and selected parametrizations.
+/// information about modes, species, chemistry, and selected processes.
 class Model final {
   public:
 
-  /// Creates an aerosol model that supports the specified parameterizations.
-  /// @param [in] parameterizations the set of parameterizations (including
-  ///                               implementations) supported by the resulting
-  ///                               Context
+  /// Creates an aerosol model that supports the selected processes.
+  /// @param [in] selected_processes the set of processes (including
+  ///                                implementations) supported by the resulting
+  ///                                Context
   /// @param [in] aerosol_modes a list of aerosol modes supported by the Context
   /// @param [in] aerosol_species a list of aerosol species supported by the
   ///                             Context
@@ -37,7 +37,7 @@ class Model final {
   ///                         computational domain
   /// @param [in] num_levels The number of vertical levels in each column within
   ///                        the Context's computational domain
-  Model(const Parameterizations& parameterizations,
+  Model(const SelectedProcesses& selected_processes,
         const std::vector<Mode>& aerosol_modes,
         const std::vector<Species>& aerosol_species,
         const std::map<std::string, std::vector<std::string> >& mode_species,
@@ -47,7 +47,7 @@ class Model final {
 
   /// This factory function creates a model for use with unit tests. It
   /// initializes the Fortran subsystem, but doesn't perform any process
-  /// initialization, and omits the selection of parameterizations.
+  /// initialization, and omits the selection of processes.
   static Model* ForUnitTests(const std::vector<Mode>& aerosol_modes,
                              const std::vector<Species>& aerosol_species,
                              const std::map<std::string, std::vector<std::string> >& mode_species,
@@ -75,7 +75,7 @@ class Model final {
   /// All fields within this new Diagnostics are owned and managed by it.
   Diagnostics* create_diagnostics() const;
 
-  // Parameterizations
+  // Processes
 
   /// Runs the (prognostic) aerosol process of the given type, computing any
   /// relevant tendencies.
@@ -103,8 +103,8 @@ class Model final {
 
   // Accessors
 
-  /// Returns the parameterizations associated with this aerosol model.
-  const Parameterizations& parameterizations() const;
+  /// Returns the selected set of processes associated with this aerosol model.
+  const SelectedProcesses& selected_processes() const;
 
   /// Returns the list of aerosol modes associated with this aerosol model.
   const std::vector<Mode>& modes() const;
@@ -148,8 +148,8 @@ class Model final {
   // This initializes the Model's Fortran subsystem.
   void init_fortran();
 
-  // Parameterizations, modes, species...
-  Parameterizations parameterizations_;
+  // Process selections, modes, species...
+  SelectedProcesses selected_processes_;
   std::vector<Mode> modes_;
   std::vector<Species> aero_species_;
   std::vector<Species> gas_species_;

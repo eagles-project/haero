@@ -29,7 +29,7 @@ add_library(haero
             chemistry.cpp
             diagnostics.cpp
             model.cpp
-            parameterizations.cpp
+            selected_processes.cpp
             prognostics.cpp
             tendencies.cpp
             utils.cpp
@@ -48,7 +48,7 @@ install(FILES haero.hpp
               floating_point.hpp
               mode.hpp
               model.hpp
-              parameterizations.hpp
+              selected_processes.hpp
               physical_constants.hpp
               prognostics.hpp
               species.hpp
