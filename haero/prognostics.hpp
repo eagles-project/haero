@@ -61,21 +61,6 @@ class Prognostics final {
   /// responsibility for managing resources.
   using ModalColumnView = ekat::Unmanaged<Kokkos::View<PackType***> >;
 
-  /// This type represents a multidimensional array mapping a column and
-  /// vertical level to a pack, for diagnostic variables.
-  /// * The column is identified by the index i.
-  /// * The vertical level identified by the index k.
-  /// So view[i][k] yields the desired pack. Note that this is a managed view.
-  using DiagColumnView = Kokkos::View<PackType**>;
-
-  /// This type represents a multidimensional array mapping a mode, column, and
-  /// vertical level to a pack, for diagnostic variables.
-  /// * The mode is identified by the index m.
-  /// * The column is identified by the index i.
-  /// * The vertical level identified by the index k.
-  /// So view[m][i][k] yields the desired pack. Note that this is a managed view.
-  using ModalDiagColumnView = Kokkos::View<PackType***>;
-
   /// Creates an empty Prognostics to which data can be added.
   /// @param [in] num_columns the number of vertical columns stored by the state
   /// @param [in] num_levels the number of vertical levels per column stored by
@@ -96,7 +81,7 @@ class Prognostics final {
   /// @param [in] mode The name of the mode to which this aerosol species
   ///                       is added.
   /// @param [in] aero_species A list of aerosol species belonging to the mode.
-  /// @returns the index of the aerosol mode within the state.
+  /// @returns the index of the aerosol mode within the system.
   /// @throws
   int add_aerosol_mode(const Mode& mode,
                        const std::vector<Species>& aero_species);
@@ -112,7 +97,7 @@ class Prognostics final {
   ///                           interstitial aerosol data in this mode.
   /// @param [in] cld_aero_data An unmanaged view to use for storing
   ///                           cloud-borne aerosol data in this mode.
-  /// @returns the index of the aerosol mode within the state.
+  /// @returns the index of the aerosol mode within the system.
   /// @throws
   int add_aerosol_mode(const Mode& mode,
                        const std::vector<Species>& aero_species,
@@ -120,11 +105,11 @@ class Prognostics final {
                        ColumnSpeciesView cld_aero_data);
 
   /// Adds a set of gas species to the state. This method creates managed views
-  /// for the gas species data within the state. Use this when your host model
+  /// for the gas species data within the system. Use this when your host model
   /// doesn't need to manage resources for your gas species.
   /// @param [in] gas_species An list of gas species belonging to the mode.
   ///                         The species are appended to any existing gas
-  ///                         species within the state.
+  ///                         species within the system.
   void add_gas_species(const std::vector<Species>& gas_species);
 
   /// Adds a set of gas species to the state. This method accepts an unmanaged
@@ -133,7 +118,7 @@ class Prognostics final {
   /// your gas species.
   /// @param [in] gas_species An list of gas species to be added to the state.
   ///                         The species are appended to any existing gas
-  ///                         species within the state.
+  ///                         species within the system.
   /// @param [in] gas_data An unmanaged view to use for storing
   ///                      gas species data.
   void add_gas_species(const std::vector<Species>& gas_species,
@@ -144,7 +129,7 @@ class Prognostics final {
   void set_modal_number_densities(ModalColumnView modal_num_densities);
 
   /// Assembles the state, doing any necessary allocations and making it ready
-  /// for use. No data may be accessed within the state before this is done.
+  /// for use. No data may be accessed within the system before this is done.
   void assemble();
 
   /// Returns true if the state has been assembled, false if not.
@@ -154,20 +139,20 @@ class Prognostics final {
   //                                Metadata
   // --------------------------------------------------------------------------
 
-  /// Returns the number of aerosol modes in the state.
+  /// Returns the number of aerosol modes in the system.
   int num_aerosol_modes() const;
 
   /// Returns the number of aerosol species in the mode with the given index.
   /// @param [in] mode_index The index of the desired mode.
   int num_aerosol_species(int mode_index) const;
 
-  /// Returns the number of gas species in the state.
+  /// Returns the number of gas species in the system.
   int num_gas_species() const;
 
-  /// Returns the number of independent atmospheric columns in the state.
+  /// Returns the number of independent atmospheric columns in the system.
   int num_columns() const;
 
-  /// Returns the number of vertical levels per column in the state.
+  /// Returns the number of vertical levels per column in the system.
   int num_levels() const;
 
   // --------------------------------------------------------------------------
@@ -194,10 +179,10 @@ class Prognostics final {
   /// @param [in] mode_index The index of the desired mode.
   const ColumnSpeciesView& cloudborne_aerosols(int mode_index) const;
 
-  /// Returns the view storing the mole fractions of gas species in the state.
+  /// Returns the view storing the mole fractions of gas species in the system.
   ColumnSpeciesView& gas_mole_fractions();
 
-  /// Returns the view storing the mole fractions of gas species in the state
+  /// Returns the view storing the mole fractions of gas species in the system
   /// (const).
   const ColumnSpeciesView& gas_mole_fractions() const;
 
@@ -225,10 +210,10 @@ class Prognostics final {
   using ManagedColumnSpeciesView = Kokkos::View<PackType***>;
   using ManagedModalColumnView = Kokkos::View<PackType***>;
 
-  /// Number of columns in the state.
+  /// Number of columns.
   int num_columns_;
 
-  /// Number of vertical levels per column in the state.
+  /// Number of vertical levels.
   int num_levels_;
 
   /// Aerosol species names within each mode.
