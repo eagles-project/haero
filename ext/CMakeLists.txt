@@ -11,6 +11,17 @@ foreach(dir include;lib;bin;share)
   endif()
 endforeach()
 
+# Keep track of whether we've updated our submodules.
+set(SUBMODULES_UPDATED FALSE)
+macro(update_submodules)
+  message(STATUS "Updating git submodules recursively...")
+  if (NOT SUBMODULES_UPDATED)
+    execute_process(COMMAND ${GIT} submodule update --init --recursive
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+    set(SUBMODULES_UPDATED TRUE)
+  endif()
+endmacro()
+
 # Many of our dependencies are only needed in standalone mode.
 if (HAERO_ENABLE_DRIVER)
 
@@ -28,6 +39,7 @@ find_library(Z_LIBRARY libz.a)
 if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
+  update_submodules()
   set(ZLIB_CONFIG_OPTS
       --prefix=${PROJECT_BINARY_DIR}
       --static
@@ -66,9 +78,8 @@ set_target_properties(hdf5 PROPERTIES IMPORTED_LOCATION ${HDF5_LIBRARY})
 set_target_properties(hdf5_hl PROPERTIES IMPORTED_LOCATION ${HDF5_HL_LIBRARY})
 if (NOT EXISTS ${HDF5_LIBRARY})
   if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
-    # We need to build HDF5 locally. First, update git submodules
-    execute_process(COMMAND ${GIT} submodule update --init --recursive
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+    message(STATUS "HDF5 not found on system. Building locally.")
+    update_submodules()
 
     set(HDF5_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -116,6 +127,8 @@ set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
 add_library(netcdf STATIC IMPORTED GLOBAL)
 set_target_properties(netcdf PROPERTIES IMPORTED_LOCATION ${NETCDF_LIBRARY})
 if (NOT EXISTS ${NETCDF_LIBRARY})
+  message(STATUS "NetCDF not found on system. Building locally.")
+  update_submodules()
   set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_C_FLAGS=${NETCDF_C_FLAGS}
@@ -179,6 +192,8 @@ set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY_DI
 # Check if we're supposed to build ekat internally
 get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
 if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
+  message(STATUS "Building EKAT locally.")
+  update_submodules()
   ExternalProject_Add(ekat_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ekat
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat
