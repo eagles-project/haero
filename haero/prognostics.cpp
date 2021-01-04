@@ -104,6 +104,7 @@ int Prognostics::num_aerosol_modes() const {
 }
 
 int Prognostics::num_aerosol_species(int mode_index) const {
+  EKAT_REQUIRE_MSG(assembled_, "Prognostics must be assembled before querying!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return aero_species_names_[mode_index].size();
@@ -123,8 +124,8 @@ int Prognostics::num_levels() const {
 
 Prognostics::ColumnSpeciesView&
 Prognostics::interstitial_aerosols(int mode_index) {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in a unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
@@ -132,16 +133,16 @@ Prognostics::interstitial_aerosols(int mode_index) {
 
 const Prognostics::ColumnSpeciesView&
 Prognostics::interstitial_aerosols(int mode_index) const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
 }
 
 Prognostics::ColumnSpeciesView& Prognostics::cloudborne_aerosols(int mode_index) {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
@@ -149,34 +150,34 @@ Prognostics::ColumnSpeciesView& Prognostics::cloudborne_aerosols(int mode_index)
 
 const Prognostics::ColumnSpeciesView&
 Prognostics::cloudborne_aerosols(int mode_index) const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
 }
 
 Prognostics::ColumnSpeciesView& Prognostics::gas_mole_fractions() {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return gas_mole_fractions_;
 }
 
 const Prognostics::ColumnSpeciesView& Prognostics::gas_mole_fractions() const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return gas_mole_fractions_;
 }
 
 Prognostics::ModalColumnView& Prognostics::modal_num_densities() {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return modal_num_densities_;
 }
 
 const Prognostics::ModalColumnView& Prognostics::modal_num_densities() const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return modal_num_densities_;
 }
 
