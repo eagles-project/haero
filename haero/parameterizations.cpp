@@ -3,9 +3,21 @@
 
 namespace haero {
 
+Parameterizations::Parameterizations():
+  activation(NoActivation),
+  cloudborne_wet_removal(NoCloudBorneWetRemoval),
+  coagulation(NoCoagulation),
+  condensation(NoCondensation),
+  dry_deposition(NoDryDeposition),
+  emissions(NoEmissions),
+  interstitial_wet_removal(NoInterstitialWetRemoval),
+  nucleation(NoNucleation),
+  resuspension(NoResuspension),
+  water_uptake(NoWaterUptake) {
+}
+
 PrognosticProcess* select_prognostic_process(ProcessType type,
-                                             const Parameterizations& selections)
-{
+                                             const Parameterizations& selections) {
   PrognosticProcess* process = nullptr;
   if (type == ActivationProcess) {
     if (selections.activation == Parameterizations::NoActivation) {
@@ -60,8 +72,7 @@ PrognosticProcess* select_prognostic_process(ProcessType type,
 }
 
 DiagnosticProcess* select_diagnostic_process(ProcessType type,
-                                             const Parameterizations& selections)
-{
+                                             const Parameterizations& selections) {
   DiagnosticProcess* process = nullptr;
   if (type == ActivationProcess) {
     EKAT_REQUIRE_MSG(process != nullptr, "Activation is a prognostic aerosol process!");

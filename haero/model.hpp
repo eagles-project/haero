@@ -29,8 +29,9 @@ class Model final {
   ///                          species with an aerosol mode. The keys in this
   ///                          map are names of aerosol modes (corresponding to
   ///                          those found in `modes`), and the values are lists
-  ///                          of symbolic names of aerosol species (supplied in
-  ///                          `aerosol_species`) that belong to those modes.
+  ///                          of symbolic names (symbols) of aerosol species
+  ///                          (supplied in `aerosol_species`) that belong to
+  ///                          those modes.
   /// @param [in] gas_species a list of gas species supported by the Context
   /// @param [in] num_columns The number of columns in the Context's
   ///                         computational domain
@@ -43,6 +44,16 @@ class Model final {
         const std::vector<Species>& gas_species,
         int num_columns,
         int num_levels);
+
+  /// This factory function creates a model for use with unit tests. It
+  /// initializes the Fortran subsystem, but doesn't perform any process
+  /// initialization, and omits the selection of parameterizations.
+  static Model* ForUnitTests(const std::vector<Mode>& aerosol_modes,
+                             const std::vector<Species>& aerosol_species,
+                             const std::map<std::string, std::vector<std::string> >& mode_species,
+                             const std::vector<Species>& gas_species,
+                             int num_columns,
+                             int num_levels);
 
   /// Models are not deep-copyable. They should be passed by reference.
   Model(const Model&) = delete;
@@ -86,9 +97,9 @@ class Model final {
   /// @param [in] prognostics The prognostic variables used by this process.
   /// @param [inout] diagnostics The diagnostic variables used by and updated by
   ///                            this process.
-  void update_state(ProcessType type, Real t,
-                    const Prognostics& prognostics,
-                    Diagnostics& diagnostics);
+  void update_diagnostics(ProcessType type, Real t,
+                          const Prognostics& prognostics,
+                          Diagnostics& diagnostics);
 
   // Accessors
 
@@ -98,8 +109,15 @@ class Model final {
   /// Returns the list of aerosol modes associated with this aerosol model.
   const std::vector<Mode>& modes() const;
 
-  /// Returns the list of aerosol species associated with this aerosol model.
+  /// Returns the list of all aerosol species associated with this aerosol
+  /// model.
   const std::vector<Species>& aerosol_species() const;
+
+  /// Returns the list of aerosol species associated with the model with the
+  /// given mode index.
+  /// @param [in]mode_index An integer index identifying the mode in question. This
+  ///                       This index goes from 0 to num_modes-1.
+  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
 
   /// Returns the list of gas species associated with this aerosol model.
   const std::vector<Species>& gas_species() const;
@@ -112,6 +130,24 @@ class Model final {
 
   private:
 
+  // Default constructor--used only internally
+  Model();
+
+  // This validates the Model's given parameters, throwing an exception if an
+  // issue is encountered.
+  void validate();
+
+  // This sets mode->species indexing. Throws an exception if the mode_species
+  // mapping produces an inconsistent configuration.
+  void index_modal_species(const std::map<std::string, std::vector<std::string> >& mode_species);
+
+  // This gathers the set of processes based on selections, returning true if
+  // any are backed by Fortran, and false if not.
+  bool gather_processes();
+
+  // This initializes the Model's Fortran subsystem.
+  void init_fortran();
+
   // Parameterizations, modes, species...
   Parameterizations parameterizations_;
   std::vector<Mode> modes_;
@@ -120,7 +156,7 @@ class Model final {
 
   // The association of aerosol species with modes.
   // species_for_modes_[mode_name] = vector of species names
-  std::vector<std::vector<int> > species_for_modes_;
+  std::vector<std::vector<int> > species_for_mode_;
 
   // Grid parameters.
   int num_columns_;
@@ -131,6 +167,9 @@ class Model final {
 
   // Selected implementations of diagnostic processes used by this model.
   std::map<ProcessType, DiagnosticProcess*> diag_processes_;
+
+  // This flag is set if this model initializes the haero Fortran model.
+  bool uses_fortran_;
 };
 
 }

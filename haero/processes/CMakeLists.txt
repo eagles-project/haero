@@ -1,7 +1,7 @@
 # Add source files for prognostic and diagnostic processes here.
 set(PROCESS_SOURCES
-    mam4_water_uptake.cpp
-    mam4_water_uptake.f90
+#    mam4_water_uptake.cpp
+#    mam4_water_uptake.f90
 )
 
 # Prepend processes/ to each source file and transmit HAERO_PROCESSES upward.

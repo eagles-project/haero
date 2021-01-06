@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 
 
 # We declare the project right away.
+enable_language(CXX)
+enable_language(Fortran)
 project (haero)
 
 # Setup all installation folders for tpls.
@@ -118,7 +120,7 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SYS_FLAGS}")
 
 # Fortran compiler flags
-set(CMAKE_Fortran_FLAGS "-cpp")
+set(CMAKE_Fortran_FLAGS "-cpp -Dc_real=c_${HAERO_REAL_TYPE}")
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")
@@ -126,6 +128,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -ffree-form")
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-unused-dummy-argument")
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Werror=tabs")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-maybe-uninitialized")
   if (APPLE)
     # Mac-specific stuff goes here.
   endif()

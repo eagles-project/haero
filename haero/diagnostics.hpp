@@ -32,12 +32,12 @@ class Diagnostics final {
   /// responsibility for managing resources.
   using ColumnView = Kokkos::View<PackType**>;
 
-  /// This type represents a multidimensional array mapping a column, species,
-  /// and vertical level to a pack.
+  /// This type represents a multidimensional array mapping a column,
+  /// vertical level, and species to a pack.
   /// * The column is identified by the index i.
-  /// * The species is identified by the index s.
   /// * The vertical level identified by the index k.
-  /// So view[i][s][k] yields the desired pack.
+  /// * The species is identified by the index s.
+  /// So view[i][k][s] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
   using ColumnSpeciesView = Kokkos::View<PackType***>;
@@ -90,6 +90,11 @@ class Diagnostics final {
   //                                  Data
   // --------------------------------------------------------------------------
 
+  /// Returns true if the given (non-modal) variable exists within this object,
+  /// false otherwise.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  bool has_var(const std::string& name) const;
+
   /// Creates a diagnostic variable with the given name within this object.
   /// @param [in] name The name of the diagnostic variable to be created.
   void create_var(const std::string& name);
@@ -104,6 +109,58 @@ class Diagnostics final {
   /// @param [in] name The name of the diagnostic variable.
   const ColumnView& var(const std::string& name) const;
 
+  /// Returns true if the given modal aerosol variable exists within this object,
+  /// false otherwise.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  bool has_aerosol_var(const std::string& name) const;
+
+  /// Creates a diagnostic modal aerosol variable with the given name within this
+  /// object.
+  /// @param [in] name The name of the modal diagnostic variable to be created.
+  void create_aerosol_var(const std::string& name);
+
+  /// Returns the view storing the modal aerosol diagnostic variable with the
+  /// given name and mode index. If the variable does not yet exist, this throws
+  /// an exception.
+  /// @param [in] name The name of the diagnostic variable.
+  /// @param [in] modex_index The index of the desired mode.
+  ColumnSpeciesView& aerosol_var(const std::string& name, int mode_index);
+
+  /// Returns a const view storing the modal aerosol diagnostic variable with
+  /// the given name and mode index. If the variable does not yet exist, this
+  /// throws an exception.
+  /// @param [in] name The name of the diagnostic variable.
+  /// @param [in] modex_index The index of the desired mode.
+  const ColumnSpeciesView& aerosol_var(const std::string& name,
+                                       int mode_index) const;
+
+  /// Returns true if a variable defined for each gas species exists within
+  /// this object with the given name, false otherwise.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  bool has_gas_var(const std::string& name) const;
+
+  /// Creates a diagnostic gas species variable with the given name within this
+  /// object.
+  /// @param [in] name The name of the modal diagnostic variable to be created.
+  void create_gas_var(const std::string& name);
+
+  /// Returns the view storing a diagnostic variable, defined for each gas
+  /// species, with the given name. If the variable does not yet exist, this
+  /// throws an exception.
+  /// @param [in] name The name of the diagnostic variable.
+  ColumnSpeciesView& gas_var(const std::string& name);
+
+  /// Returns the const view storing a diagnostic variable, defined for each gas
+  /// species, with the given name. If the variable does not yet exist, this
+  /// throws an exception.
+  /// @param [in] name The name of the diagnostic variable.
+  const ColumnSpeciesView& gas_var(const std::string& name) const;
+
+  /// Returns true if the given modal variable exists within this object,
+  /// false otherwise.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  bool has_modal_var(const std::string& name) const;
+
   /// Creates a diagnostic modal variable with the given name within this object.
   /// @param [in] name The name of the modal diagnostic variable to be created.
   void create_modal_var(const std::string& name);
@@ -117,7 +174,6 @@ class Diagnostics final {
   /// the given name. If the variable does not yet exist, this throws an
   /// exception.
   /// @param [in] name The name of the diagnostic variable.
-  /// @param [in] mode_index The index of the desired mode.
   const ModalColumnView& modal_var(const std::string& name) const;
 
   private:
@@ -136,6 +192,8 @@ class Diagnostics final {
 
   // Named diagnostic variables.
   std::map<std::string, ColumnView> vars_;
+  std::map<std::string, std::vector<ColumnSpeciesView> > aero_vars_;
+  std::map<std::string, ColumnSpeciesView> gas_vars_;
   std::map<std::string, ModalColumnView> modal_vars_;
 };
 

@@ -17,15 +17,15 @@ int Prognostics::add_aerosol_mode(const Mode& mode,
                        std::string(")");
   auto int_aero_data = ManagedColumnSpeciesView(int_view_name,
                                                 num_columns_,
-                                                aero_species.size(),
-                                                num_levels_);
+                                                num_levels_,
+                                                aero_species.size());
   managed_column_species_views_.push_back(int_aero_data);
   auto cld_view_name = std::string("cloudborne_aerosols(") + mode.name +
                        std::string(")");
   auto cld_aero_data = ManagedColumnSpeciesView(cld_view_name,
                                                 num_columns_,
-                                                aero_species.size(),
-                                                num_levels_);
+                                                num_levels_,
+                                                aero_species.size());
   auto modal_data_name = std::string("num_density(") + mode.name +
                          std::string(")");
   auto modal_data = ManagedColumnView(modal_data_name,
@@ -57,8 +57,8 @@ void Prognostics::add_gas_species(const std::vector<Species>& gas_species) {
   int num_species = gas_species.size();
   auto gas_mole_fracs = ManagedColumnSpeciesView("gas_mole_fractions",
                                                  num_columns_,
-                                                 num_species,
-                                                 num_levels_);
+                                                 num_levels_,
+                                                 num_species);
   managed_column_species_views_.push_back(gas_mole_fracs);
   add_gas_species(gas_species, ColumnSpeciesView(gas_mole_fracs));
 }
@@ -104,6 +104,7 @@ int Prognostics::num_aerosol_modes() const {
 }
 
 int Prognostics::num_aerosol_species(int mode_index) const {
+  EKAT_REQUIRE_MSG(assembled_, "Prognostics must be assembled before querying!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return aero_species_names_[mode_index].size();
@@ -123,8 +124,8 @@ int Prognostics::num_levels() const {
 
 Prognostics::ColumnSpeciesView&
 Prognostics::interstitial_aerosols(int mode_index) {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in a unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
@@ -132,16 +133,16 @@ Prognostics::interstitial_aerosols(int mode_index) {
 
 const Prognostics::ColumnSpeciesView&
 Prognostics::interstitial_aerosols(int mode_index) const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return int_aero_species_[mode_index];
 }
 
 Prognostics::ColumnSpeciesView& Prognostics::cloudborne_aerosols(int mode_index) {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
@@ -149,34 +150,34 @@ Prognostics::ColumnSpeciesView& Prognostics::cloudborne_aerosols(int mode_index)
 
 const Prognostics::ColumnSpeciesView&
 Prognostics::cloudborne_aerosols(int mode_index) const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < aero_species_names_.size());
   return cld_aero_species_[mode_index];
 }
 
 Prognostics::ColumnSpeciesView& Prognostics::gas_mole_fractions() {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return gas_mole_fractions_;
 }
 
 const Prognostics::ColumnSpeciesView& Prognostics::gas_mole_fractions() const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return gas_mole_fractions_;
 }
 
 Prognostics::ModalColumnView& Prognostics::modal_num_densities() {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return modal_num_densities_;
 }
 
 const Prognostics::ModalColumnView& Prognostics::modal_num_densities() const {
-  EKAT_ASSERT_MSG(assembled_,
-                  "Cannot access data in an unassembled Prognostics!");
+  EKAT_REQUIRE_MSG(assembled_,
+                   "Cannot access data in an unassembled Prognostics!");
   return modal_num_densities_;
 }
 
@@ -184,5 +185,39 @@ void Prognostics::scale_and_add(Real scale_factor,
                                 const Tendencies& tendencies) {
 }
 
+// Interoperable C functions for providing data to Fortran.
+// See haero.F90 for details on how these functions are used.
+extern "C" {
+
+void* p_int_aero_mix_frac_c(void* p, int mode)
+{
+  Prognostics* progs = (Prognostics*)p;
+  auto& mix_fracs = progs->interstitial_aerosols(mode);
+  return (void*)mix_fracs.data();
 }
+
+void* p_cld_aero_mix_frac_c(void* p, int mode)
+{
+  Prognostics* progs = (Prognostics*)p;
+  auto& mix_fracs = progs->cloudborne_aerosols(mode);
+  return (void*)mix_fracs.data();
+}
+
+void* p_gas_mole_frac_c(void* p)
+{
+  Prognostics* progs = (Prognostics*)p;
+  auto& mole_fracs = progs->gas_mole_fractions();
+  return (void*)mole_fracs.data();
+}
+
+void* p_modal_num_densities_c(void* p)
+{
+  Prognostics* progs = (Prognostics*)p;
+  auto& num_densities = progs->modal_num_densities();
+  return (void*)num_densities.data();
+}
+
+} // extern "C"
+
+} // haero
 

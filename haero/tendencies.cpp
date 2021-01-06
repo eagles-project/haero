@@ -15,29 +15,31 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
                          std::string(")]");
     int_aero_species_.push_back(ColumnSpeciesView("dqi/dt",
                                                   num_columns,
-                                                  num_aero_species,
-                                                  num_levels));
+                                                  num_levels,
+                                                  num_aero_species));
     auto cld_view_name = std::string("d/dt[") +
                          prognostics.cloudborne_aerosols(m).label() +
                          std::string(")]");
     cld_aero_species_.push_back(ColumnSpeciesView(cld_view_name,
                                                   num_columns,
-                                                  num_aero_species,
-                                                  num_levels));
+                                                  num_levels,
+                                                  num_aero_species));
   }
+
   auto n_view_name = std::string("d/dt[") +
                      prognostics.modal_num_densities().label() +
                      std::string(")]");
   modal_num_densities_ = ModalColumnView(n_view_name, num_modes, num_columns,
                                          num_levels);
+
   int num_gas_species = prognostics.num_gas_species();
   auto gas_view_name = std::string("d/dt[") +
                        prognostics.gas_mole_fractions().label() +
                        std::string(")]");
   gas_mole_fractions_ = ColumnSpeciesView(gas_view_name,
                                           num_columns,
-                                          num_gas_species,
-                                          num_levels);
+                                          num_levels,
+                                          num_gas_species);
 }
 
 Tendencies::~Tendencies() {
@@ -50,19 +52,19 @@ int Tendencies::num_aerosol_modes() const {
 int Tendencies::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < int_aero_species_.size());
-  return int_aero_species_[mode_index].extent(1);
+  return int_aero_species_[mode_index].extent(2);
 }
 
 int Tendencies::num_gas_species() const {
-  return gas_mole_fractions_.extent(1);
+  return gas_mole_fractions_.extent(2);
 }
 
 int Tendencies::num_columns() const {
-  return gas_mole_fractions_.extent(0);
+  return modal_num_densities_.extent(1);
 }
 
 int Tendencies::num_levels() const {
-  return gas_mole_fractions_.extent(2);
+  return modal_num_densities_.extent(2);
 }
 
 Tendencies::ColumnSpeciesView&
@@ -118,5 +120,39 @@ Tendencies& Tendencies::scale(Real factor) {
 void Tendencies::accumulate(const Tendencies& tendencies) {
 }
 
+// Interoperable C functions for providing data to Fortran.
+// See haero.F90 for details on how these functions are used.
+extern "C" {
+
+void* t_int_aero_mix_frac_c(void* t, int mode)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto& mix_fracs = tends->interstitial_aerosols(mode);
+  return (void*)mix_fracs.data();
 }
+
+void* t_cld_aero_mix_frac_c(void* t, int mode)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto& mix_fracs = tends->cloudborne_aerosols(mode);
+  return (void*)mix_fracs.data();
+}
+
+void* t_gas_mole_frac_c(void* t)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto& mole_fracs = tends->gas_mole_fractions();
+  return (void*)mole_fracs.data();
+}
+
+void* t_modal_num_densities_c(void* t)
+{
+  Tendencies* tends = (Tendencies*)t;
+  auto& num_densities = tends->modal_num_densities();
+  return (void*)num_densities.data();
+}
+
+} // extern "C"
+
+} // haero
 

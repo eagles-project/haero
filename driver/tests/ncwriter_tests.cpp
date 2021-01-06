@@ -48,19 +48,8 @@ TEST_CASE("ncwriter", "") {
 
     @todo We may not keep this
   */
-  const int nmodes = 4;
-  const std::vector<std::string> mode_names = {"aitken", "accumulation", "black_carbon", "coarse"};
-  std::vector<std::pair<Real,Real>> diameter_minmax;
-  diameter_minmax.push_back(std::make_pair<Real>(10E-6, 30E-6));
-  diameter_minmax.push_back(std::make_pair<Real>(30E-6, 300E-6));
-  diameter_minmax.push_back(std::make_pair<Real>(20E-6, 200E-6));
-  diameter_minmax.push_back(std::make_pair<Real>(200E-6, 4000E-6));
-  const std::vector<Real> mode_std_devs = {1.6, 1.8, 1.8, 1.6};
-  std::vector<Mode> modes;
-  for (int i=0; i<nmodes; ++i) {
-    modes.push_back(Mode(mode_names[i],
-      diameter_minmax[i].first, diameter_minmax[i].second, mode_std_devs[i]));
-  }
+  std::vector<Mode> modes = create_mam4_modes();
+  int nmodes = modes.size();
   ncf.add_mode_dim(modes);
   REQUIRE (ncf.get_ndims() == 5);
 

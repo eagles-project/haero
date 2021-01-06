@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-# Generate a file containing our config parameters.
+# Generate files containing our config parameters.
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/haero_config.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
@@ -25,6 +25,7 @@ add_subdirectory(processes)
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
+            haero.F90
             chemistry.cpp
             diagnostics.cpp
             model.cpp

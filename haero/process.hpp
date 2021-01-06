@@ -25,7 +25,7 @@ enum ProcessType {
   WaterUptakeProcess
 };
 
-/// @class PrognosticProceess
+/// @class PrognosticProcess
 /// This type is an interface (base class) to an aerosol process quantified by
 /// a parametrization that computes a set of tendencies for prognostic variables
 /// within an aerosol system. Each subclass of this type implements a particular
@@ -60,7 +60,7 @@ class PrognosticProcess {
     type_(type), name_(name) {}
 
   /// Destructor.
-  virtual ~PrognosticProcess();
+  virtual ~PrognosticProcess() {}
 
   /// Default constructor is disabled.
   PrognosticProcess() = delete;
@@ -123,7 +123,8 @@ class PrognosticProcess {
 /// are computed. It can be used for all prognostic processes that have been
 /// disabled.
 class NullPrognosticProcess: public PrognosticProcess {
-public:
+  public:
+
   /// Constructor: constructs a null aerosol process of the given type.
   /// @param [in] type The type of aerosol process.
   explicit NullPrognosticProcess(ProcessType type):
@@ -135,6 +136,77 @@ public:
            const Prognostics& prognostics,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {}
+
+};
+
+/// @class FPrognosticProcess
+/// This PrognosticProcess makes it easier to implement an aerosol process in
+/// Fortran by wrapping the run method in a Fortran call that creates the
+/// proper Fortran proxies for the model, prognostics, diagnostics, and
+/// tendencies.
+class FPrognosticProcess: public PrognosticProcess
+{
+  public:
+
+  /// This type is a pointer to a Fortran function that initializes a process.
+  /// Since the model is already available to the Fortran process via Haero's
+  /// Fortran helper module, this type of function takes no arguments.
+  typedef void (*InitProcessFunction)(void);
+
+  /// This type is a pointer to a Fortran function that runs a process.
+  typedef void (*RunProcessFunction)(Real t, Real dt, void* progs, void* diags, void* tends);
+
+  /// This type is a pointer to a Fortran function that finalizes a process,
+  /// deallocating any resources allocated in the process's init function.
+  typedef void (*FinalizeProcessFunction)(void);
+
+  /// Constructor.
+  /// @param [in] type The type of aerosol process modeled by the subclass.
+  /// @param [in] name A descriptive name that captures the aerosol process,
+  ///                  its underlying parametrization, and its implementation.
+  /// @param [in] create_process A pointer to an interoperable Fortran function
+  ///                            that returns a C pointer to a newly allocated
+  ///                            Fortran-backed prognostic process.
+  FPrognosticProcess(ProcessType type,
+                     const std::string& name,
+                     InitProcessFunction init_process,
+                     RunProcessFunction run_process,
+                     FinalizeProcessFunction finalize_process):
+    PrognosticProcess(type, name), init_process_(init_process),
+    run_process_(run_process), finalize_process_(finalize_process),
+    initialized_(false) {}
+
+  /// Destructor.
+  ~FPrognosticProcess() {
+    if (initialized_) {
+      finalize_process_();
+    }
+  }
+
+  // Overrides.
+  void init(const Model& model) override {
+    init_process_();
+    initialized_ = true;
+  }
+
+  void run(const Model& model,
+           Real t, Real dt,
+           const Prognostics& prognostics,
+           const Diagnostics& diagnostics,
+           Tendencies& tendencies) const override {
+    run_process_(t, dt, (void*)&prognostics, (void*)&diagnostics,
+                 (void*)&tendencies);
+  }
+
+  private:
+
+  // Pointers to Fortran subroutines.
+  InitProcessFunction init_process_;
+  RunProcessFunction run_process_;
+  FinalizeProcessFunction finalize_process_;
+
+  // Has the process been initialized?
+  bool initialized_;
 };
 
 /// @class DiagnosticProcess
@@ -152,8 +224,30 @@ class DiagnosticProcess {
   DiagnosticProcess(ProcessType type, const std::string& name):
     type_(type), name_(name) {}
 
+  /// Constructor that accepts names of all modal and non-modal diagnostic
+  /// variables needed by this process.
+  /// @param [in] type The type of aerosol process modeled by the subclass.
+  /// @param [in] name A descriptive name that captures the aerosol process,
+  ///                  its underlying parametrization, and its implementation.
+  /// @param [in] variables The set of (non-modal) diagnostic variables
+  ///                       required by this process.
+  /// @param [in] aero_variables The set of per-aerosol-species diagnostic
+  ///                            variables required by this process.
+  /// @param [in] gas_variables The set of per-gas-species diagnostic
+  ///                            variables required by this process.
+  /// @param [in] modal_variables The set of modal diagnostic variables
+  ///                             required by this process.
+  DiagnosticProcess(ProcessType type, const std::string& name,
+                    const std::vector<std::string>& variables,
+                    const std::vector<std::string>& aero_variables,
+                    const std::vector<std::string>& gas_variables,
+                    const std::vector<std::string>& modal_variables):
+    type_(type), name_(name) {
+    set_diag_vars(variables, aero_variables, gas_variables, modal_variables);
+  }
+
   /// Destructor.
-  virtual ~DiagnosticProcess();
+  virtual ~DiagnosticProcess() {}
 
   /// Default constructor is disabled.
   DiagnosticProcess() = delete;
@@ -174,6 +268,38 @@ class DiagnosticProcess {
 
   /// Returns the name of this process/parametrization/realization.
   const std::string& name() const { return name_; }
+
+  //------------------------------------------------------------------------
+  //                Methods called during initialization
+  //------------------------------------------------------------------------
+
+  /// This method creates all necessary diagnostic variables within the
+  /// given Diagnostics object. It's called during the model initialization
+  /// process at the beginning of a simulation.
+  /// @param [inout] diagnostics The Diagnostics object in which the needed
+  ///                            variables are created.
+  void prepare(Diagnostics& diagnostics) const {
+    for (const auto& var: required_vars_) {
+      if (not diagnostics.has_var(var)) {
+        diagnostics.create_var(var);
+      }
+    }
+    for (const auto& var: required_aero_vars_) {
+      if (not diagnostics.has_aerosol_var(var)) {
+        diagnostics.create_aerosol_var(var);
+      }
+    }
+    for (const auto& var: required_gas_vars_) {
+      if (not diagnostics.has_gas_var(var)) {
+        diagnostics.create_gas_var(var);
+      }
+    }
+    for (const auto& var: required_modal_vars_) {
+      if (not diagnostics.has_modal_var(var)) {
+        diagnostics.create_modal_var(var);
+      }
+    }
+  }
 
   //------------------------------------------------------------------------
   //                Methods to be overridden by subclasses
@@ -197,10 +323,49 @@ class DiagnosticProcess {
                       const Prognostics& prognostics,
                       Diagnostics& diagnostics) const = 0;
 
+  protected:
+
+  //------------------------------------------------------------------------
+  //                Methods for constructing diagnostic processes
+  //------------------------------------------------------------------------
+
+  /// This method accepts the names of diagnostic variables required by this
+  /// process. These variables include those variables used by the process, as
+  /// well as variables computed by the process. The process ensures that any
+  /// Diagnostics object passed to it has storage for these variables. This
+  /// is usually called inside the constructor of a DiagnosticProcess subclass.
+  /// @param [in] vars A list of names of (non-mode-ѕpecific variables required
+  ///                  by the process
+  /// @param [in] aero_vars The set of per-aerosol-species diagnostic
+  ///                       variables required by this process.
+  /// @param [in] gas_vars The set of per-gas-species diagnostic
+  ///                      variables required by this process.
+  /// @param [in] modal_vars A list of names of mode-ѕpecific variables required
+  ///                        by the process
+  void set_diag_vars(const std::vector<std::string>& vars,
+                     const std::vector<std::string>& aero_vars,
+                     const std::vector<std::string>& gas_vars,
+                     const std::vector<std::string>& modal_vars) {
+    required_vars_ = vars;
+    required_aero_vars_ = aero_vars;
+    required_gas_vars_ = gas_vars;
+    required_modal_vars_ = modal_vars;
+  }
+
   private:
 
+  // The specific type of aerosol process.
   ProcessType type_;
+  // The name of this diagnostic process.
   std::string name_;
+  // The non-modal variables required by this process.
+  std::vector<std::string> required_vars_;
+  // The per-aerosol-species variables required by this process.
+  std::vector<std::string> required_aero_vars_;
+  // The per-gas-species variables required by this process.
+  std::vector<std::string> required_gas_vars_;
+  // The modal variables required by this process.
+  std::vector<std::string> required_modal_vars_;
 };
 
 /// @class NullDiagnosticProcess
@@ -208,7 +373,8 @@ class DiagnosticProcess {
 /// are performed. It can be used for all processes that
 /// have been disabled.
 class NullDiagnosticProcess: public DiagnosticProcess {
-public:
+  public:
+
   /// Constructor: constructs a null aerosol process of the given type.
   /// @param [in] type The type of aerosol process.
   explicit NullDiagnosticProcess(ProcessType type):
@@ -218,6 +384,101 @@ public:
   void update(const Model& model, Real t,
               const Prognostics& prognostics,
               Diagnostics& diagnostics) const override {}
+};
+
+extern "C" {
+
+/// Given a C pointer to a Fortran-backed diagnostic process, this function
+/// initializes the process with the given aerosol model.
+void fortran_diagnostic_process_init(void* process, void* model);
+
+/// Given a C pointer to a Fortran-backed diagnostic process, this function
+/// invokes the process to update diagnostic variables with the given arguments.
+void fortran_diagnostic_process_update(void* process, void* model, Real t,
+                                       void* prognostics, void* diagnostics);
+
+/// Given a C pointer to a Fortran-backed diagnostic process, this function
+/// frees all resources allocated within the process
+void fortran_diagnostic_process_destroy(void* process);
+
+} // extern "C"
+
+/// @class FDiagnosticProcess
+/// This DiagnosticProcess makes it easier to implement an aerosol process in
+/// Fortran by wrapping the update method in a Fortran call that creates the
+/// proper Fortran proxies for the model, prognostics, and diagnostics.
+class FDiagnosticProcess: public DiagnosticProcess {
+  public:
+
+  /// This type is a pointer to a Fortran function that initializes a process.
+  /// Since the model is already available to the Fortran process via Haero's
+  /// Fortran helper module, this type of function takes no arguments.
+  typedef void (*InitProcessFunction)(void);
+
+  /// This type is a pointer to a Fortran function that runs a process update.
+  typedef void (*UpdateProcessFunction)(Real t, void* progs, void* diags);
+
+  /// This type is a pointer to a Fortran function that finalizes a process,
+  /// deallocating any resources allocated in the process's init function.
+  typedef void (*FinalizeProcessFunction)(void);
+
+  /// Constructor.
+  /// @param [in] type The type of aerosol process modeled by the subclass.
+  /// @param [in] name A descriptive name that captures the aerosol process,
+  ///                  its underlying parametrization, and its implementation.
+  /// @param [in] variables The set of (non-modal) diagnostic variables
+  ///                       required by this process.
+  /// @param [in] aero_variables The set of per-aerosol-species diagnostic
+  ///                            variables required by this process.
+  /// @param [in] gas_variables The set of per-gas-species diagnostic
+  ///                            variables required by this process.
+  /// @param [in] modal_variables The set of modal diagnostic variables
+  ///                             required by this process.
+  /// @param [in] create_process A pointer to an interoperable Fortran function
+  ///                            that returns a C pointer to a newly allocated
+  ///                            Fortran-backed diagnostic process.
+  FDiagnosticProcess(ProcessType type,
+                     const std::string& name,
+                     const std::vector<std::string>& variables,
+                     const std::vector<std::string>& aero_variables,
+                     const std::vector<std::string>& gas_variables,
+                     const std::vector<std::string>& modal_variables,
+                     InitProcessFunction init_process,
+                     UpdateProcessFunction update_process,
+                     FinalizeProcessFunction finalize_process):
+    DiagnosticProcess(type, name, variables, aero_variables, gas_variables,
+                      modal_variables),
+    init_process_(init_process), update_process_(update_process),
+    finalize_process_(finalize_process), initialized_(false) {}
+
+  /// Destructor.
+  ~FDiagnosticProcess() {
+    if (initialized_) {
+      finalize_process_();
+    }
+  }
+
+  // Overrides.
+  void init(const Model& model) override {
+    init_process_();
+    initialized_ = true;
+  }
+
+  void update(const Model& model, Real t,
+              const Prognostics& prognostics,
+              Diagnostics& diagnostics) const override {
+    update_process_(t, (void*)&prognostics, (void*)&diagnostics);
+  }
+
+  private:
+
+  // Pointers to Fortran subroutines.
+  InitProcessFunction init_process_;
+  UpdateProcessFunction update_process_;
+  FinalizeProcessFunction finalize_process_;
+
+  // Has the process been initialized?
+  bool initialized_;
 };
 
 }
