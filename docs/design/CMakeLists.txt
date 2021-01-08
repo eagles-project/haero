@@ -40,4 +40,7 @@ add_latex_document(
          process_appendix.tex
   IMAGE_DIRS figures
   BIBFILES haero_design.bib
+  TARGET_NAME design_doc
+  EXCLUDE_FROM_ALL
 )
+set(DOC_TARGETS ${DOC_TARGETS} design_doc PARENT_SCOPE)
