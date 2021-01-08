@@ -18,20 +18,19 @@ MAM4 model, written in Fortran.
 \subsection{Nucleation Physics}
 \labelsubsection{nuc:physics}
 
-In the atmosphere, the gas molecules exist either independently or as small
-groups (i.e., as clusters that contain more than one molecule~\cite{seinfeld-2006-acp}).
-In general, the concentration of independent gas molecules is much higher than
-that of clusters. Therefore, the radius of a cluster is changed mainly due to the collision
-between an independent gas molecule and a cluster. If the radius of a cluster is larger
-than $r^*$, the radius of the so-called ``critical cluster'' or nucleus, this cluster tends to
-grow rapidly and nucleation happens; otherwise, this cluster tends to shrink and nucleation
-would not occur.
+In the atmosphere, gas molecules exist either independently or in small
+polymolecular clusters~\cite{seinfeld-2006-acp}. In general, the concentration
+of independent gas molecules is much higher than that of clusters. Therefore,
+the radius of a cluster is changed mainly due to the collision between an
+independent gas molecule and a cluster. If the radius of a cluster is larger
+than $r^*$, the radius of the so-called ``critical cluster'' or nucleus, this
+cluster tends to grow rapidly and nucleation happens; otherwise, this cluster
+tends to shrink and nucleation does not occur.
 
 Nucleation can occur {\em homogeneously} (in the absence of pre-existing
 particles) or {\em heterogeneously} (with pre-existing particles present).
 In either case, nucleation can involve a single species or more than one species.
-Based on these circumstances, a nucleation process can be classified
-accordingly:
+Based on these circumstances, we can classify any nucleation process:
 
 \begin{itemize}
   \item {\bf Type 1} nucleation is homogeneous and involves a single species.
@@ -55,8 +54,9 @@ aerosol mass and number mixing ratios. Their rates of change are
 where
 \begin{itemize}
   \item $q\dsub{m,\specidx}$ [kmol species / kmol dry air] is the aerosol mass
-        mixing ratio of species $\specidx$,
-  \item $q\dsub{n}$ [\# / kmol dry air] is the aerosol number mixing ratior)
+        mixing ratio of species $\specidx$
+  \item $q\dsub{n,\specidx}$ [\# / kmol dry air] is the aerosol number mixing
+        ratio for species $\specidx$
   \item $q\dsub{v,\specidx}$ [kmol species / kmol dry air] is the mass mixing
         ratio of gas species $\specidx$
   \item $m\dsub{d,\specidx}$ [kg] is the dry mass of a nucleus containing the
@@ -100,8 +100,8 @@ process breaks nucleation into two distinct stages.
 \end{assume}
 
 \begin{assume}
-  The mass densities of aerosol sulfuric acid and sulfate are assumed to be the
-  same (i.e., $\rm 1770~kg~m^{-3}$);
+  In the MAM4 nucleation process, the mass densities of aerosol sulfuric acid
+  and sulfate are assumed to be the same: $\rm 1770~kg~m^{-3}$
 \end{assume}
 
 \begin{assume}
@@ -255,7 +255,7 @@ parameterization that uses an empirical first-order estimation
 ~\cite{sihto-2006-acp,wang-2009-acp}. Here we make an additional assumption:
 
 \begin{assume}
-  New nuclei consist entirely of $\rsag$.
+  New aerosol nuclei consist entirely of $\rsag$.
 \end{assume}
 
 The empirical estimation is
@@ -282,8 +282,9 @@ If $J^* < 10^{-6}$ based on the previous calculations, nucleation does not
 occur.
 
 \begin{assume}
-  If $J^* < 10^{-6}$ based on binary nucleation and PBL effects, then
-  $J\dsub{nuc} = 0$ in \refeq{nuc:jnuc}.
+  If $J^*$, the intermediate nucleation rate, is less than $10^{-6}$ molecules
+  per cc per second, based on binary nucleation and PBL effects, then no
+  nucleation occurs.
 \end{assume}
 
 Otherwise, the nucleation calculation proceeds, and the following quantities are
@@ -330,9 +331,9 @@ parameterization to consider the growth of nuclei to a larger size
 %  The nuclei produced by the nucleation process have a uniform size;
 %\end{assume}
 \begin{assume}
-  The only significant ``sink'' mechanism for the nuclei is their coagulation
-  with pre-existing particles. In other words, the MAM4 model ignores
-  the self-coagulation of fresh nuclei.
+  The only significant ``sink'' mechanism for new aerosol nuclei is their
+  coagulation with pre-existing particles. In other words, the MAM4 model
+  ignores the self-coagulation of fresh aerosol nuclei.
 \end{assume}
 
 \begin{assume}
@@ -398,8 +399,8 @@ where
 
 The formula for $CS^\prime$ used in MAM4 comes from the condensation equation of
 $\rsag$ gas and differs from that in~\cite{kerminen-2002-jas}. According to Dick
-Easter, this is this difference is minor and produces no significant differences
-in nucleation results.
+Easter, this difference is minor and produces no significant changes in
+nucleation results.
 % and the detailed derivation can be found in the Appendix~\ref{cs_prime}.
 %Note that compared with the Eq. (22) in~\cite{kerminen-2002-jas},
 %Dick also dropped a term in \refeq{nuc:gamma}, which was
@@ -509,7 +510,7 @@ observations about output from the MAM4 process, given valid input:
         mode, which are zero or positive.
   \item All gas-phase species tendencies are non-positive. Any positive
         aerosol tendencies in the Aitken mode are associated with negative
-        tendencies in these gas-phase species.
+        tendencies in gas-phase species.
   \item All newly-formed aerosol nuclei are $\rsag$ and are 1 nm in diameter.
 \end{itemize}
 
