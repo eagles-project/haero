@@ -311,7 +311,7 @@ class DiagnosticProcess {
   ///                   which this process belongs.
   virtual void init(const Model& model) {}
 
-  /// Override this method to update the given aerosol state at the given time.
+  /// Override this method to update diagnostic variables at the given time.
   /// @param [in] model The aerosol model describing the aerosol system to
   ///                   which this process belongs.
   /// @param [in] t The simulation time at which this process is being invoked

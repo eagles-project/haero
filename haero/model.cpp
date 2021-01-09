@@ -56,14 +56,14 @@ const ProcessType diagProcessTypes[] = {
 } // anonymous namespace
 
 Model::Model(
-  const Parameterizations& parameterizations,
+  const SelectedProcesses& selected_processes,
   const std::vector<Mode>& aerosol_modes,
   const std::vector<Species>& aerosol_species,
   const std::map<std::string, std::vector<std::string> >& mode_species,
   const std::vector<Species>& gas_species,
   int num_columns,
   int num_levels):
-  parameterizations_(parameterizations),
+  selected_processes_(selected_processes),
   modes_(aerosol_modes),
   aero_species_(aerosol_species),
   gas_species_(gas_species),
@@ -217,8 +217,8 @@ void Model::update_diagnostics(ProcessType type,
   iter->second->update(*this, t, prognostics, diagnostics);
 }
 
-const Parameterizations& Model::parameterizations() const {
-  return parameterizations_;
+const SelectedProcesses& Model::selected_processes() const {
+  return selected_processes_;
 }
 
 const std::vector<Mode>& Model::modes() const {
@@ -330,7 +330,7 @@ bool Model::gather_processes() {
   // needs to be set up before that happens.
   bool have_fortran_processes = false;
   for (auto p: progProcessTypes) {
-    PrognosticProcess* process = select_prognostic_process(p, parameterizations_);
+    PrognosticProcess* process = select_prognostic_process(p, selected_processes_);
     if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
       have_fortran_processes = true;
     }
@@ -338,7 +338,7 @@ bool Model::gather_processes() {
   }
 
   for (auto p: diagProcessTypes) {
-    DiagnosticProcess* process = select_diagnostic_process(p, parameterizations_);
+    DiagnosticProcess* process = select_diagnostic_process(p, selected_processes_);
     if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
       have_fortran_processes = true;
     }
