@@ -103,20 +103,16 @@ practice, though, it's safest to always build from the top of the build tree.
 
 ## Generating Documentation
 
-Haero includes a design document that is automatically built in the
-`docs/design` subdirectory of your build directory when you type `make`.
+Documentation for Haero can be built using `make docs`.
+
+If you have Latex and ImageMagick installed, Haero builds a design document in
+the `docs/design` subdirectory of your build directory.
 
 In addition, if you have [Doxygen](https://www.doxygen.nl/index.html) installed,
-you can generate reference documentation for the C++ and Fortran library
-interface from your build directory with
-
-```
-make doc
-```
-
-This generates a directory, `<build_dir>/docs/html/`, containing a static website with
-documentation generated from code annotations. You can point your browser to
-`docs/html/index.html` to peruse this documentation.
+you can generate HTML reference documentation for the C++ and Fortran library
+interface from your build directory. This documentation gets built in the
+`docs/doxygen/html` ѕubdirectory of your build directory. You can point your
+browser to `docs/html/index.html` to peruse this documentation.
 
 # FAQ
 
