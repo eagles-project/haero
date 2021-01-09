@@ -1,9 +1,10 @@
 #ifndef HAERO_MODE_HPP
 #define HAERO_MODE_HPP
 
+#include "haero/haero.hpp"
+
 #include <string>
 #include <vector>
-#include "haero/haero.hpp"
 
 namespace haero {
 

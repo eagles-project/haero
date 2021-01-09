@@ -70,20 +70,20 @@ class Diagnostics final {
   //                                Metadata
   // --------------------------------------------------------------------------
 
-  /// Returns the number of aerosol modes in the state.
+  /// Returns the number of aerosol modes in the system.
   int num_aerosol_modes() const;
 
   /// Returns the number of aerosol species in the mode with the given index.
   /// @param [in] mode_index The index of the desired mode.
   int num_aerosol_species(int mode_index) const;
 
-  /// Returns the number of gas species in the state.
+  /// Returns the number of gas species in the system.
   int num_gas_species() const;
 
-  /// Returns the number of independent atmospheric columns in the state.
+  /// Returns the number of independent atmospheric columns in the system.
   int num_columns() const;
 
-  /// Returns the number of vertical levels per column in the state.
+  /// Returns the number of vertical levels per column in the system.
   int num_levels() const;
 
   // --------------------------------------------------------------------------
@@ -178,10 +178,10 @@ class Diagnostics final {
 
   private:
 
-  /// Number of columns in the state.
+  /// Number of columns in the system.
   int num_columns_;
 
-  /// Number of vertical levels per column in the state.
+  /// Number of vertical levels per column in the system.
   int num_levels_;
 
   /// Aerosol species names within each mode.

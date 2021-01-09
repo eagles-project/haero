@@ -1,6 +1,8 @@
 #include "haero/model.hpp"
 #include "ekat/util/ekat_units.hpp"
 
+#include <set>
+
 // Functions for intializing the haero Fortran module.
 extern "C" {
 
@@ -10,9 +12,11 @@ void haerotran_begin_init();
 void haerotran_set_num_modes(int);
 void haerotran_set_max_mode_species(int);
 void haerotran_set_mode(int, const char*, Real, Real, Real);
-void haerotran_set_aero_species(int, int, const char*, const char*);
+void haerotran_set_aero_species(int, int, const char*, const char*,
+                                Real, Real, Real);
 void haerotran_set_num_gas_species(int);
-void haerotran_set_gas_species(int, const char*, const char*);
+void haerotran_set_gas_species(int, const char*, const char*,
+                               Real, Real, Real);
 void haerotran_set_num_columns(int);
 void haerotran_set_num_levels(int);
 void haerotran_end_init();
@@ -28,6 +32,9 @@ namespace {
 // one model gets to do this, so if more than one model instance has
 // Fortran-backed processes, we encounter a fatal error.
 bool initialized_fortran_ = false;
+
+// Here are C strings that have been constructed from Fortran strings.
+std::set<std::string>* fortran_strings_ = nullptr;
 
 // Prognostic process types.
 const ProcessType progProcessTypes[] = {
@@ -133,6 +140,12 @@ Model::~Model() {
   if (uses_fortran_) {
     haerotran_finalize();
     initialized_fortran_ = false;
+
+    // Delete all relevant Fortran string instances.
+    if (fortran_strings_ != nullptr) {
+      delete fortran_strings_;
+      fortran_strings_ = nullptr;
+    }
   }
 }
 
@@ -284,7 +297,8 @@ void Model::init_fortran() {
     for (int j = 0; j < num_species; ++j) {
       const auto& species = aero_species_[species_for_mode_[i][j]];
       haerotran_set_aero_species(i+1, j+1, species.name.c_str(),
-          species.symbol.c_str());
+          species.symbol.c_str(), species.molecular_weight,
+          species.crystalization_point, species.deliquescence_point);
     }
   }
 
@@ -294,7 +308,8 @@ void Model::init_fortran() {
   for (int i = 0; i < num_gas_species; ++i) {
     const auto& species = gas_species_[i];
     haerotran_set_gas_species(i+1, species.name.c_str(),
-        species.symbol.c_str());
+        species.symbol.c_str(), species.molecular_weight,
+        species.crystalization_point, species.deliquescence_point);
   }
 
   // Set dimensions.
@@ -340,5 +355,30 @@ void Model::validate() {
   EKAT_REQUIRE_MSG((num_columns_ > 0), "Model: No columns were specified!");
   EKAT_REQUIRE_MSG((num_levels_ > 0), "Model: No vertical levels were specified!");
 }
+
+// Interoperable C functions for providing data to Fortran.
+// See haero.F90 for details on how these functions are used.
+extern "C" {
+
+// Returns a newly-allocated C string for the given Fortran string pointer with
+// the given length. Resources for this string are managed by the running model.
+const char* new_c_string(char* f_str_ptr, int f_str_len) {
+  if (fortran_strings_ == nullptr) {
+    fortran_strings_ = new std::set<std::string>();
+  }
+
+  // Before we allocate any more strings, check to see whether we've already
+  // got this one.
+  std::string f_str(f_str_ptr, f_str_len);
+  auto iter = fortran_strings_->find(f_str);
+  if (iter != fortran_strings_->end()) { // got it!
+    return iter->c_str();
+  } else { // we need a new one
+    auto inserted = fortran_strings_->insert(f_str);
+    return inserted.first->c_str();
+  }
+}
+
+} // extern "C"
 
 }

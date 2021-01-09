@@ -1,6 +1,8 @@
 #ifndef HAERO_SPECIES_HPP
 #define HAERO_SPECIES_HPP
 
+#include "haero/haero.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
@@ -23,6 +25,15 @@ struct Species final {
 
   /// Abbreviated symbolic name.
   std::string symbol;
+
+  // Molecular weight [g/mol]
+  Real molecular_weight;
+
+  // Crystalization point [?]
+  Real crystalization_point;
+
+  // Deliquescence point [?]
+  Real deliquescence_point;
 };
 
 /// This factory function constructs a set of aerosol species corresponding to

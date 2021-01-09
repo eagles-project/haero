@@ -34,6 +34,12 @@ module haero
     character(len=:), allocatable :: name
     !> Species symbol (abbreviation)
     character(len=:), allocatable :: symbol
+    !> Molecular weight [g/mol]
+    real(wp) :: molecular_wt
+    !> Crystalization point [?]
+    real(wp) :: crystal_pt
+    !> Deliquenscence point [?]
+    real(wp) :: deliques_pt
   end type
 
   !> This Fortran type is the equivalent of the C++ Model class. Exactly one
@@ -41,6 +47,8 @@ module haero
   type :: model_t
     !> The aerosol modes in the model, in indexed order.
     type(mode_t), dimension(:), allocatable :: modes
+    !> The number of modes in the model. Equal to size(modes).
+    integer :: num_modes
     !> The number of actual species that exist within each mode.
     integer, dimension(:), allocatable :: num_mode_species
     !> The aerosol species within each mode. Indexed as (mode, species).
@@ -204,7 +212,7 @@ contains
     integer(c_size_t)              :: c_string_len
 
     interface
-        function c_strlen(str_ptr) bind ( C, name = "strlen" ) result(len)
+        function c_strlen(str_ptr) bind (c, name = "strlen" ) result(len)
         use, intrinsic :: iso_c_binding
             type(c_ptr), value     :: str_ptr
             integer(kind=c_size_t) :: len
@@ -226,15 +234,16 @@ contains
     type(c_ptr) :: c_string
 
     interface
-        function c_strlen(str_ptr) bind ( C, name = "strlen" ) result(len)
+        function new_c_string(f_str_ptr, f_str_len) bind (c) result(c_string)
         use, intrinsic :: iso_c_binding
-            type(c_ptr), value     :: str_ptr
-            integer(kind=c_size_t) :: len
-        end function c_strlen
+            type(c_ptr), value :: f_str_ptr
+            integer(c_int), value :: f_str_len
+            type(c_ptr) :: c_string
+        end function new_c_string
     end interface
 
     f_ptr => f_string
-    c_string = c_loc(f_ptr)
+    c_string = new_c_string(c_loc(f_ptr), len(f_string))
   end function f_to_c_string
 
   ! Begin the process of initializing the Haero Fortran module.
@@ -249,6 +258,7 @@ contains
 
     integer(c_int), value, intent(in) :: num_modes
 
+    model%num_modes = num_modes
     allocate(model%modes(num_modes))
     allocate(model%num_mode_species(num_modes))
     model%num_mode_species(:) = 0
@@ -280,7 +290,8 @@ contains
 
   end subroutine
 
-  subroutine haerotran_set_aero_species(mode, species, name, symbol) bind(c)
+  subroutine haerotran_set_aero_species(mode, species, name, symbol, &
+    molecular_wt, crystal_pt, deliques_pt) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -288,9 +299,15 @@ contains
     integer(c_int), value, intent(in) :: species
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
+    real(c_real), value, intent(in) :: molecular_wt
+    real(c_real), value, intent(in) :: crystal_pt
+    real(c_real), value, intent(in) :: deliques_pt
 
     model%aero_species(mode, species)%name = c_to_f_string(name)
     model%aero_species(mode, species)%symbol = c_to_f_string(symbol)
+    model%aero_species(mode, species)%molecular_wt = molecular_wt
+    model%aero_species(mode, species)%crystal_pt = crystal_pt
+    model%aero_species(mode, species)%deliques_pt = deliques_pt
     model%num_mode_species(mode) = max(species, model%num_mode_species(mode))
   end subroutine
 
@@ -303,16 +320,23 @@ contains
     allocate(model%gas_species(num_species))
   end subroutine
 
-  subroutine haerotran_set_gas_species(species, name, symbol) bind(c)
+  subroutine haerotran_set_gas_species(species, name, symbol, &
+    molecular_wt, crystal_pt, deliques_pt) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
     integer(c_int), value, intent(in) :: species
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
+    real(c_real), value, intent(in) :: molecular_wt
+    real(c_real), value, intent(in) :: crystal_pt
+    real(c_real), value, intent(in) :: deliques_pt
 
     model%gas_species(species)%name = c_to_f_string(name)
     model%gas_species(species)%symbol = c_to_f_string(symbol)
+    model%gas_species(species)%molecular_wt = molecular_wt
+    model%gas_species(species)%crystal_pt = crystal_pt
+    model%gas_species(species)%deliques_pt = deliques_pt
   end subroutine
 
   subroutine haerotran_set_num_columns(num_columns) bind(c)
@@ -448,13 +472,13 @@ contains
   function d_var(d, name) result(retval)
     class(diagnostics_t), intent(in)  :: d
     character(len=*), intent(in) :: name
-    real(wp), dimension(:,:,:), pointer :: retval
+    real(wp), dimension(:,:), pointer :: retval
 
     type(c_ptr) :: c_name, v_ptr
 
     c_name = f_to_c_string(name)
     v_ptr = d_var_c(d%ptr, c_name)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_columns, size(model%modes)])
+    call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_columns])
   end function
 
   !> Returns true if the given diagnostics object contains a modal aerosol
@@ -490,7 +514,7 @@ contains
 
     c_name = f_to_c_string(name)
     v_ptr = d_aerosol_var_c(d%ptr, c_name, mode-1)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, model%num_mode_species(mode), model%num_columns])
+    call c_f_pointer(v_ptr, retval, shape=[model%num_mode_species(mode), model%num_levels, model%num_columns])
   end function
 
   !> Returns true if the given diagnostics object contains a (non-modal)
@@ -521,7 +545,7 @@ contains
 
     c_name = f_to_c_string(name)
     v_ptr = d_gas_var_c(d%ptr, c_name)
-    call c_f_pointer(v_ptr, retval, [model%num_levels, size(model%gas_species), model%num_columns])
+    call c_f_pointer(v_ptr, retval, shape=[size(model%gas_species), model%num_levels, model%num_columns])
   end function
 
   !> Returns true if the given diagnostics object contains a modal
