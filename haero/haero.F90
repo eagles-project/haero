@@ -63,6 +63,9 @@ module haero
     integer :: num_levels
   contains
     procedure :: get_mode_and_species => m_get_mode_and_species
+    procedure :: mode_index => m_get_mode_index
+    procedure :: aerosol_index => m_get_aerosol_index
+    procedure :: gas_index => m_get_gas_index
   end type
 
   !> The resident model instance, available to the single allowable C++ model
@@ -437,6 +440,74 @@ contains
       s = p - model%population_offsets(m)
     end if
   end subroutine
+
+  !> Returns the index of the mode with the given name, or 0 if no such mode
+  !> is found.
+  !> @param [in] m A pointer to a model object.
+  !> @param [in] mode_name The name of the desired mode
+  function m_get_mode_index(m, mode_name) result(m_index)
+    implicit none
+    class(model_t),   intent(in) :: m
+    character(len=*), intent(in) :: mode_name
+    integer :: m_index
+
+    do m_index = 1,m%num_modes
+      if (m%modes(m_index)%name == mode_name) then
+        return
+      end if
+    end do
+
+    ! No such mode
+    m_index = 0
+  end function
+
+  !> Returns the index of the aerosol species with the given (symbolic) name
+  !> within the mode with the given index, or 0 if no such species is found.
+  !> @param [in] m A pointer to a model object.
+  !> @param [in] mode_index The index of the mode for the desired species
+  !> @param [in] species_symbol The abbreviated symbolic name of the species
+  function m_get_aerosol_index(m, mode_index, species_symbol) result(a_index)
+    implicit none
+    class(model_t),   intent(in) :: m
+    integer,          intent(in) :: mode_index
+    character(len=*), intent(in) :: species_symbol
+    integer :: a_index
+
+    ! If our mode index is invalid, return an invalid aerosol index.
+    if (mode_index == 0) then
+      a_index = 0
+      return
+    else
+      do a_index = 1,size(m%aero_species, mode_index)
+        if (m%aero_species(mode_index, a_index)%symbol == species_symbol) then
+          return
+        end if
+      end do
+    end if
+
+    ! No such species
+    a_index = 0
+  end function
+
+  !> Returns the index of the gas species with the given (symbolic) name, or 0
+  !> if no such species is found.
+  !> @param [in] m A pointer to a model object.
+  !> @param [in] species_symbol The abbreviated symbolic name of the gas species
+  function m_get_gas_index(m, species_symbol) result(g_index)
+    implicit none
+    class(model_t),   intent(in) :: m
+    character(len=*), intent(in) :: species_symbol
+    integer :: g_index
+
+    do g_index = 1,size(m%gas_species)
+      if (m%gas_species(g_index)%symbol == species_symbol) then
+        return
+      end if
+    end do
+
+    ! No such species
+    g_index = 0
+  end function
 
   !> Provides access to the interstitial aerosol mixing fractions array
   !> for the given mode in the given prognostics object.
