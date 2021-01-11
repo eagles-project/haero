@@ -74,11 +74,58 @@ const Tendencies::ModalColumnView& Tendencies::modal_num_concs() const {
 
 Tendencies& Tendencies::scale(Real factor) {
   EKAT_REQUIRE_MSG(false, "Tendencies::scale is not yet implemented!");
+  // TODO: looks like we need a team/policy before we can do this.
+  /*
+  // Scale aerosol species mixing ratios
+  EKAT_ASSERT(int_aero_species_.size() == cld_aero_species_.size());
+  for (int m = 0; m < int_aero_species_.size(); ++m) {
+    Kokkos::RangePolicy<DeviceType, int> range(0, num_columns());
+    Kokkos::parallel_for("tendencies::scale (aero species)", range,
+      KOKKOS_LAMBDA (const int i) {
+        for (int k = 0; k < num_levels(); ++k) {
+          for (int s = 0; s < num_aerosol_species(m); ++s) {
+            int_aero_species_[m](i, k, s) *= factor;
+            cld_aero_species_[m](i, k, s) *= factor;
+          }
+        }
+      });
+  }
+
+  // Scale gas mole fractions.
+  {
+    Kokkos::RangePolicy<DeviceType, int> range(0, num_columns());
+    Kokkos::parallel_for("tendencies::scale (gas species)", range,
+      KOKKOS_LAMBDA (const int i) {
+        for (int k = 0; k < num_levels(); ++k) {
+          for (int s = 0; s < num_gas_species(); ++s) {
+            gas_mole_fractions_(i, k, s) *= factor;
+          }
+        }
+      });
+  }
+
+  // Scale modal number densities.
+  {
+    Kokkos::RangePolicy<DeviceType, int> range(0, num_aerosol_modes());
+    Kokkos::parallel_for("tendencies::scale (modal num densities)", range,
+      KOKKOS_LAMBDA (const int m) {
+        for (int i = 0; i < num_columns(); ++i) {
+          for (int k = 0; k < num_levels(); ++k) {
+            modal_num_densities_(m, i, k) *= factor;
+          }
+        }
+      });
+  }
+  */
+
   return *this;
 }
 
 void Tendencies::accumulate(const Tendencies& tendencies) {
   EKAT_REQUIRE_MSG(false, "Tendencies::accumulate is not yet implemented!");
+  // TODO: Need a team/policy before we can do this.
+  /*
+   */
 }
 
 // Interoperable C functions for providing data to Fortran.
