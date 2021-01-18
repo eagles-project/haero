@@ -45,9 +45,9 @@ set of coupled advection-diffusion-reaction (ADR) equations acting under the
 influence of a bulk velocity $\vec{v}$:
 
 \begin{equation}\labeleq{small_imer_dNdt}
-  \ddt{N_i} + \div{(N_i\vec{v})} = \mathcal{D}(\nabla N_i) +
-                                   \mathcal{R}(\{N_j\}) +
-                                   \mathcal{S}(N_i, t)
+  \partialt{N_i} + \div{(N_i\vec{v})} = \mathcal{D}(\nabla N_i) +
+                                        \mathcal{R}(\{N_j\}) +
+                                        \mathcal{S}(N_i, t)
 \end{equation}
 
 Here we represent terms on the right hand side by
@@ -73,9 +73,9 @@ the point $\vec{x}$ at time $t$. Then the evolution of all $i$-mers is described
 by a single ADR equation:
 
 \begin{equation}\labeleq{continuous_dndt}
-  \ddt{n} + \div{(n\vec{v})} = \mathcal{D}(\nabla n) +
-                               \mathcal{R}(n) +
-                               \mathcal{S}(n, t)
+  \partialt{n} + \div{(n\vec{v})} = \mathcal{D}(\nabla n) +
+                                    \mathcal{R}(n) +
+                                    \mathcal{S}(n, t)
 \end{equation}
 
 where $\mathcal{D}$, $\mathcal{R}$, and $\mathcal{S}$ have been expressed
@@ -100,7 +100,7 @@ of \refeq{continuous_dndt} with powers of $D_p$ to obtain the {\bf moment
 equations}
 
 \begin{equation}\labeleq{moments}
-  \ddt{\mathcal{M}_k} + \div{(\mathcal{M}_k\vec{v})} = \int_0^{\infty} D_p^k (\mathcal{D} + \mathcal{R} + \mathcal{S}) \d{D_p}
+  \partialt{\mathcal{M}_k} + \div{(\mathcal{M}_k\vec{v})} = \int_0^{\infty} D_p^k (\mathcal{D} + \mathcal{R} + \mathcal{S}) \d{D_p}
 \end{equation}
 
 where $\mathcal{M}_k(\vec{x}, t) = \int_0^{\infty} D_p^k n(\vec{x}, t; D_p) \d{D_p}$
@@ -263,7 +263,7 @@ In this language, the aerosol evolution equation for the $k$th moment of the
 $i$th mode is
 
 \begin{equation}\labeleq{modal_evolution}
-  \ddt\mathcal{M}_k^{(i)} = F_k^{(i)}(N_i, \overline{D}_i, \overline{A}_i, \overline{V}_i, T, p, \mathsf{...})
+  \partialt{\mathcal{M}_k^{(i)}} = F_k^{(i)}(N_i, \overline{D}_i, \overline{A}_i, \overline{V}_i, T, p, \mathsf{...})
 \end{equation}
 
 where the air temperature $T$ and the air pressure $p$ enter the moment
@@ -379,7 +379,7 @@ We assume that each particle is composed of several, potentially different, chem
 %Then the multi-species modal evolution equations are
 %
 %\begin{equation}\labeleq{modal_multi_species_evolution}
-%  \ddt\mathcal{M}_k^{(i,s)} = F_k^{(i,s)}(N_{i,s}, \overline{D}_{i,s}, \overline{A}_{i,s}, \overline{V}_{i,s}, T, p, \mathsf{...})
+%  \partialt\mathcal{M}_k^{(i,s)} = F_k^{(i,s)}(N_{i,s}, \overline{D}_{i,s}, \overline{A}_{i,s}, \overline{V}_{i,s}, T, p, \mathsf{...})
 %\end{equation}
 %
 %with species-specific equivalents of the quantities in \refeq{modal_evolution}.
