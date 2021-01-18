@@ -71,7 +71,7 @@ Although we have mentioned four types of aerosol nucleation, the MAM4 nucleation
 process treats only type 2. MAM4 makes several assumptions on top of the modal
 aerosol assumption to arrive at its governing equations for nucleation:
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: Aitken mode]
   There is no nucleation mode---instead, the Aitken mode is used to capture the
   smallest nucleated aerosol particles.
 \end{assume}
@@ -79,7 +79,7 @@ aerosol assumption to arrive at its governing equations for nucleation:
 Previous research~\cite{kerminen-2002-jas} suggests that the typical size
 range of newly formed nuclei are around 1 nm in diameter.
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: new nucleus size]
   Newly formed nuclei have a 1 nm diameter.
 \end{assume}
 
@@ -87,7 +87,7 @@ Particles of this size are too small to be represented directly by MAM4's Aitken
 mode. To reconcile this difficulty with its modal approximation, the MAM4
 process breaks nucleation into two distinct stages.
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: separate creation and growth stages]
   The nucleation process consists of two stages:
   \begin{enumerate}
     \item Fresh nuclei are formed from the vapors of gas species.
@@ -99,12 +99,12 @@ process breaks nucleation into two distinct stages.
   in the Aitken mode.
 \end{assume}
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: gas/aerosol density]
   In the MAM4 nucleation process, the mass densities of aerosol sulfuric acid
   and sulfate are assumed to be the same: $\rm 1770~kg~m^{-3}$
 \end{assume}
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: averaged $\rsag$ number concentration]
   To calculate the number concentration of $\rsag$ [\# / cc air], we use
   $c\dsub{n,\sag}$, the average mass mixing ratio of $\rsag$ over the
   condensation process. We use $c\dsub{n, \sag}$ instead of the mass mixing
@@ -118,7 +118,7 @@ process breaks nucleation into two distinct stages.
 researcher happens to remember. No need to be frivolous with the errors we
 introduce.}
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: homogeneous only]
   MAM4 treats only the homogeneous nucleation of $\rsag \mhyphen \rwater$
   (type 2).
 \end{assume}
@@ -254,7 +254,7 @@ a height of 100 meters, $J^*$ is compared with $J\dsub{PBL}$, an additional
 parameterization that uses an empirical first-order estimation
 ~\cite{sihto-2006-acp,wang-2009-acp}. Here we make an additional assumption:
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: new nucleus composition]
   New aerosol nuclei consist entirely of $\rsag$.
 \end{assume}
 
@@ -281,7 +281,7 @@ calculated by the first parameterization in \refparagraph{nuc:binary}.
 If $J^* < 10^{-6}$ based on the previous calculations, nucleation does not
 occur.
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: nucleation rate cutoff]
   If $J^*$, the intermediate nucleation rate, is less than $10^{-6}$ molecules
   per cc per second, based on binary nucleation and PBL effects, then no
   nucleation occurs.
@@ -327,27 +327,24 @@ the nuclei are too small for the Aitken mode. We use the following
 parameterization to consider the growth of nuclei to a larger size
 \cite{kerminen-2002-jas}. This parameterization makes the following assumptions:
 
-%\begin{assume}
-%  The nuclei produced by the nucleation process have a uniform size;
-%\end{assume}
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: no self-coagulation]
   The only significant ``sink'' mechanism for new aerosol nuclei is their
   coagulation with pre-existing particles. In other words, the MAM4 model
   ignores the self-coagulation of fresh aerosol nuclei.
 \end{assume}
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: growth by constant condensation]
   The only important source for the growth of nuclei is the condensation
   of vapors, and this condensation rate is assumed to be constant.
 \end{assume}
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: static growth process]
   The population of pre-existing particles and the concentration of
   condensible vapors remain unchanged during the growth process for new
   nuclei.
 \end{assume}
 
-\begin{assume}
+\begin{assume}[MAM4 Nucleation: non-volatile vapors]
   The condensable vapors responsible for nuclei growth are non-volatile.
 \end{assume}
 

@@ -318,8 +318,8 @@ a number of relevant physical properties. The fundamental description of a
 species includes
 
 \begin{itemize}
-  \item a symbolic name (e.g. \verb SO4 , for sulfate)
   \item a descriptive name (e.g. \verb "sulfate" )
+  \item a symbolic name (e.g. \verb SO4 , for sulfate)
   \item information about the chemical properties of the species
 \end{itemize}
 
@@ -361,12 +361,13 @@ create state variables for that system. The state of a system is defined by the
 following prognostic variables:
 
 \begin{itemize}
-  \item {\bf modal number densities}: the total number of particles per cubic
-        meter in each mode
-  \item {\bf aerosol modal mix fractions}: the fraction of a mode occupied
-        by each aerosol species present within that mode
-  \item {\bf gas mole fractions}: the number of moles of each gas species per
-        mole of air
+  \item {\bf modal number densities} $n_m$ [\# /m$^3$]: the total number of
+        particles per cubic meter in the mode $m$
+  \item {\bf aerosol modal mass mix fraction} $q_{m,s}$ [kg aerosol species $s$ /kg air]:
+        the ratio of aerosol mass to air mass for aerosol species $s$ occupying
+        mode $m$
+  \item {\bf gas mole fraction} $q_g$ [kmol gas species $g$/kmol air]: the
+        ratio of kilomoles of gas species $g$ to kilomoles of air
 \end{itemize}
 
 In addition, the model possesses a set of diagnostic variables that depend on
