@@ -218,10 +218,10 @@ following quantities in order:
         \end{align}
         where the coefficients $a(T,x^*) \dots j(T,x^*)$ are given in
         \refappendixsubsection{nuc:coeff_nucrate}.
-  \item $n\dsub{tot}$, the total number of molecules in a critical cluster,
+  \item $N\dsub{tot}$, the total number of molecules in a critical cluster,
         is calculated from $x^*$:
         \begin{align}
-          n\dsub{tot} &= \exp \Big[ A(T,x^*) + B(T,x^*) \ln RH
+          N\dsub{tot} &= \exp \Big[ A(T,x^*) + B(T,x^*) \ln RH
                          + C(T,x^*) (\ln RH)^2 + D(T,x^*) (\ln RH)^3 \nonumber \\
                       &+ E(T,x^*) \ln c\dsub{\sag} + F(T,x^*) \ln RH \ln c\dsub{\sag}
                          + G(T,x^*) (\ln RH)^2 \ln c\dsub{\sag} \nonumber \\
@@ -231,16 +231,16 @@ following quantities in order:
         \end{align}
         where the coefficients $A(T,x^*) \dots J(T,x^*)$ are given in
         \refappendixsubsection{nuc:coeff_ntot}.
-  \item $n\dsub{\sag}$, the total number of $\rsag$ molecules in a critical
-        cluster, is calculated from $x^*$ and $n\dsub{tot}$:
+  \item $N\dsub{\sag}$, the total number of $\rsag$ molecules in a critical
+        cluster, is calculated from $x^*$ and $N\dsub{tot}$:
         \begin{equation}
-          n\dsub{\sag} = n\dsub{tot} x^* \,.
+          N\dsub{\sag} = N\dsub{tot} x^* \,.
         \end{equation}
   \item $r^*$ [nm], the radius of a critical cluster, is calculated from
-        $x^*$ and $n\dsub{tot}$:
+        $x^*$ and $N\dsub{tot}$:
         \begin{equation}
           r^* = \exp \left[ -1.6524245 + 0.42316402 x^* +
-                0.3346648 \ln n\dsub{tot} \right] \,.
+                0.3346648 \ln N\dsub{tot} \right] \,.
         \end{equation}
 \end{enumerate}
 
@@ -261,13 +261,13 @@ The empirical estimation is
   J\dsub{PBL} = 10^{-6}~c\dsub{\sag} \,.
 \end{equation}
 
-If $J\dsub{PBL} > J^*$, the the following adjustments are made:
+If $J\dsub{PBL} > J^*$, the following adjustments are made:
 \begin{align}
   J^* &= J\dsub{PBL} \,, \\
   r^* &= 0.5~nm \,, \\
-  n\dsub{\sag} &= \frac{6.023 \times 10^{23} \pi (1~nm)^3
+  N\dsub{\sag} &= \frac{\pi N_A (1~{\rm nm})^3
                   \rho\dsub{\sag}}{6 \mu_{\sag}} \,, \\
-  n\dsub{tot} &= n\dsub{\sag} \,.
+  N\dsub{tot} &= N\dsub{\sag} \,.
 \end{align}
 
 Otherwise, $J^*$, $n\dsub{tot}$ and $n\dsub{\sag}$ remain the same values
@@ -453,9 +453,6 @@ Otherwise we continue with the following adjustments:
         decreased, and mass is reduced accordingly:
         $$\Delta \aitmass{\asf} = \frac{\frac{\pi}{6} \rho\dsub{\asf} D\dsub{p,hi}^3 \Delta q\dsub{n,2}}{\mu_{\asf}}$$
 \end{itemize}
-
-\jjc{This can't be the whole story---neither the number concentration nor the
-mass is altered above.}
 
 Dick commented that 1) the first ``if'' condition revealed the fact that
 there was not enough $\rsag$ gas for all the nuclei to grow to the size
