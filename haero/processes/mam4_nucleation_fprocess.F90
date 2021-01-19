@@ -23,11 +23,13 @@ module mam4_nucleation_mod
   !> Index of H2SO4 gas
   integer :: h2so4_index = 0
 
-  !> Density of SO4 aerosol [kg/m^3]
+  !> Density of SO4 aerosol (and sulfiric acid) [kg/m^3]
   real(wp), parameter :: dens_so4a_host = 1770_wp
 
   !> Gas constant [m^3 Pa / K / mol]
   real(wp), parameter :: R_gas = 8.31446261815324
+
+  real(wp), parameter :: one_third = 1.0_wp/3.0_wp
 
   !> Molecular weight of SO4 aerosol
   real(wp) :: mw_so4
@@ -192,9 +194,9 @@ end subroutine
 !   Analytical formulae connecting the "real" and the "apparent"
 !   nucleation rate and the nuclei number concentration
 !   for atmospheric nucleation events
-function h2so4_nuc_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon, &
-                        zmid, pblh, relhum, uptkrate_h2so4, &
-                        del_h2so4_gasprod, del_h2so4_aeruptk) result(J_nuc)
+function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon, &
+                               zmid, pblh, relhum, uptkrate_h2so4, &
+                               del_h2so4_gasprod, del_h2so4_aeruptk) result(J_nuc)
 
   implicit none
 
@@ -260,7 +262,7 @@ function h2so4_nuc_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon, &
       tmpb = log( tmp_q2/tmp_q3 )
     end if
   end if
-  ! d[ln(qh2so4)]/dt (1/s) from uptake (condensation) to aerosol
+  ! d[ln(qh2so4)]/dt [1/s] from uptake (condensation) to aerosol
   tmp_uptkrate = tmpb/dt
 
   ! qh2so4_avg = estimated average qh2so4
@@ -293,12 +295,62 @@ function h2so4_nuc_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon, &
   ! limit RH to between 0.1% and 99%
   relhumnn = max( 0.01_wp, min( 0.99_wp, relhum ) )
 
-  ! Compute nucleation rates
-  call mer07_veh02_nuc_mosaic_1box(dt, temp, relhumnn, pmid, zmid, pblh, &
-                                   qh2so4_cur, qh2so4_avg, &
-                                   tmp_uptkrate, mw_so4a_host, 1, 1, &
-                                   dplom_mode, dphim_mode, itmp, qnuma_del, &
-                                   qso4a_del, qh2so4_del)
+  ! Calc h2so4 in molecules/cm3
+  cair = press_in/(temp_in*rgas)
+  c_h2so4_in = qh2so4_avg * cair * avogad * 1.0e-6_wp
+
+  ! Compute the intermediate nucleation rate (Vehkamaki 2002).
+  J_star = 1.0e-38_wp
+  log_J_star = log(J_star)
+  if (so4vol_in >= 1.0e4_wp) then
+    temp_bb = max( 230.15_wp, min( 305.15_wp, temp_in ) )
+    rh_bb = max( 1.0e-4_wp, min( 1.0_wp, rh_in ) )
+    c_h2so4_bb = max( 1.0e4_wp, min( 1.0e11_wp, c_h2so4_in ) )
+    call binary_nuc_vehk2002(temp_bb, rh_bb, c_h2so4_bb, &
+      J_star, N_h2so4, N_tot, r_star)
+  end if
+
+  ! Update log(J_star)
+  log_J_star = log(J_star) + log( max( 1.0e-38_wp, adjust_factor_bin_tern_ratenucl ) )
+
+  ! Apply the planetary boundary layer correction where needed
+  if ( zm_in <= max(pblh_in, 100.0_wp) ) then
+    c_h2so4_bb = c_h2so4_in
+    call pbl_nuc_wang2008( c_h2so4_bb, J_star, log_J_star, N_tot, &
+                           N_h2so4, r_star )
+    log_J_star = log(J_star)
+  end if
+
+  ! if nucleation rate is less than 1e-6 #/cm3/s ~= 0.1 #/cm3/day,
+  ! exit with new particle formation = 0
+  if (log_J_star <= -13.82_wp) then
+    J_star = 0_wp
+    return
+  end if
+  J_star = exp(log_J_star)
+
+  ! Now grow the nuclei and adjust the nucleation rate accordingly.
+  J_nuc = growth_adjusted_nucleation_rate(J_star)
+
+  ! max production of aerosol dry mass (kg-aero/m3-air)
+  tmpa = max( 0.0_wp, (ratenuclt_kk*dt*mass_part) )
+  ! max production of aerosol so4 (mol-so4a/mol-air)
+  tmpe = tmpa/(kgaero_per_moleso4a*cair)
+  ! max production of aerosol so4 (mol/mol-air)
+  ! based on ratenuclt_kk and mass_part
+  qmolso4a_del_max = tmpe
+
+  ! check if max production exceeds available h2so4 vapor
+  freduce = 1.0_wp
+  if (qmolso4a_del_max > qh2so4_cur) then
+    freduce = qh2so4_cur/qmolso4a_del_max
+  end if
+
+  ! if adjusted nucleation rate is less than 1e-12 #/m3/s ~= 0.1 #/cm3/day,
+  ! exit with new particle formation = 0
+  if (J_nuc*freduce <= 1.0e-12_wp) then
+    return
+  end if
 
   ! convert qnuma_del from (#/mol-air) to (#/kmol-air)
   qnuma_del = qnuma_del*1.0e3_wp
@@ -330,7 +382,7 @@ function h2so4_nuc_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon, &
     dmdt_aitsv2 = dmdt_ait
 
     ! mirage2 code checked for complete h2so4 depletion here,
-    ! but this is now done in mer07_veh02_nuc_mosaic_1box
+    ! but this is now done in veh02_nuc_mosaic_1box
     mass1p = dmdt_ait/dndt_ait
     dndt_aitsv3 = dndt_ait
     dmdt_aitsv3 = dmdt_ait
@@ -364,7 +416,7 @@ subroutine mam4_nucleation_finalize() bind(c)
   ! Nothing to do here.
 end subroutine
 
-subroutine mer07_veh02_nuc_mosaic_1box(dtnuc, temp_in, rh_in, press_in,   &
+subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   zm_in, pblh_in, qh2so4_cur, qh2so4_avg, h2so4_uptkrate,   &
   mw_so4a_host, nsize, maxd_asize, dplom_sect, dphim_sect,   &
   isize_nuc, qnuma_del, qso4a_del, qh2so4_del)
@@ -376,7 +428,7 @@ subroutine mer07_veh02_nuc_mosaic_1box(dtnuc, temp_in, rh_in, press_in,   &
   implicit none
 
   ! subr arguments (in)
-  real(wp), intent(in) :: dtnuc             ! nucleation time step (s)
+  real(wp), intent(in) :: dt                ! nucleation time step (s)
   real(wp), intent(in) :: temp_in           ! temperature, in k
   real(wp), intent(in) :: rh_in             ! relative humidity, as fraction
   real(wp), intent(in) :: press_in          ! air pressure (pa)
@@ -396,26 +448,21 @@ subroutine mer07_veh02_nuc_mosaic_1box(dtnuc, temp_in, rh_in, press_in,   &
   real(wp), intent(in) :: dphim_sect(maxd_asize)  ! dry diameter at upper bnd of bin (m)
 
   ! subr arguments (out)
-  integer, intent(out) :: isize_nuc         ! size bin into which new particles go
-  real(wp), intent(out) :: qnuma_del        ! change to aerosol number mixing ratio (#/mol-air)
-  real(wp), intent(out) :: qso4a_del        ! change to aerosol so4 mixing ratio (mol/mol-air)
-  real(wp), intent(out) :: qh2so4_del       ! change to gas h2so4 mixing ratio (mol/mol-air)
+  integer, intent(out) :: isize_nuc   ! size bin into which new particles go
+  real(wp), intent(out) :: qnuma_del  ! change to aerosol number mixing ratio (#/mol-air)
+  real(wp), intent(out) :: qso4a_del  ! change to aerosol so4 mixing ratio (mol/mol-air)
+  real(wp), intent(out) :: qh2so4_del ! change to gas h2so4 mixing ratio (mol/mol-air)
   ! aerosol changes are > 0; gas changes are < 0
 
-  ! subr arguments (out) passed via common block
-  !    these are used to duplicate the outputs of yang zhang's original test driver
-  !    they are not really needed in wrf-chem
-  real(wp) :: ratenuclt        ! j = ternary nucleation rate from napari param. (cm-3 s-1)
-  real(wp) :: rateloge         ! ln (j)
-  real(wp) :: cnum_h2so4       ! number of h2so4 molecules in the critical nucleus
-  real(wp) :: cnum_tot         ! total number of molecules in the critical nucleus
-  real(wp) :: radius_cluster   ! the radius of cluster (nm)
+  real(wp) :: J_star     ! binary nucleation rate [#/cc/s]
+  real(wp) :: log_J_star ! ln (J_star)
+  real(wp) :: N_h2so4    ! # of H2SO4 molecules in the critical cluster [#]
+  real(wp) :: N_tot      ! total # of molecules in the critical cluster [#]
+  real(wp) :: r_star     ! radius of critical cluster [nm]
 
   ! local variables
   integer :: i
   integer :: igrow
-
-  real(wp), parameter :: onethird = 1.0_wp/3.0_wp
 
   real(wp), parameter :: accom_coef_h2so4 = 0.65_wp   ! accomodation coef for h2so4 conden
 
@@ -457,7 +504,7 @@ subroutine mer07_veh02_nuc_mosaic_1box(dtnuc, temp_in, rh_in, press_in,   &
   real(wp) kgaero_per_moleso4a      ! (kg dry aerosol)/(mol aerosol so4)
   real(wp) mass_part                ! "grown" single-particle dry mass (kg)
   real(wp) nu_kk                    ! kk2002 "nu" parameter (nm)
-  real(wp) qmolso4a_del_max         ! max production of aerosol so4 over dtnuc (mol/mol-air)
+  real(wp) qmolso4a_del_max         ! max production of aerosol so4 over dt (mol/mol-air)
   real(wp) ratenuclt_bb             ! nucleation rate (#/m3/s)
   real(wp) ratenuclt_kk             ! nucleation rate after kk2002 adjustment (#/m3/s)
   real(wp) rh_bb                    ! bounded value of rh_in
@@ -468,256 +515,7 @@ subroutine mer07_veh02_nuc_mosaic_1box(dtnuc, temp_in, rh_in, press_in,   &
   real(wp) voldry_part              ! "grown" single-particle dry volume (m3)
   real(wp) wetvol_dryvol            ! grown particle (wet-volume)/(dry-volume)
   real(wp) wet_volfrac_so4a         ! grown particle (dry-volume-from-so4)/(wet-volume)
-
-  isize_nuc = 1
-  qnuma_del = 0.0_wp
-  qso4a_del = 0.0_wp
-  qh2so4_del = 0.0_wp
-
-  ! calc h2so4 in molecules/cm3
-  cair = press_in/(temp_in*rgas)
-  so4vol_in = qh2so4_avg * cair * avogad * 1.0e-6_wp
-  ratenuclt = 1.0e-38_wp
-  rateloge = log( ratenuclt )
-
-  ! call vehkamaki binary parameterization routine
-  if (so4vol_in >= 1.0e4_wp) then
-    temp_bb = max( 230.15_wp, min( 305.15_wp, temp_in ) )
-    rh_bb = max( 1.0e-4_wp, min( 1.0_wp, rh_in ) )
-    so4vol_bb = max( 1.0e4_wp, min( 1.0e11_wp, so4vol_in ) )
-    call binary_nuc_vehk2002(   &
-      temp_bb, rh_bb, so4vol_bb,   &
-      ratenuclt, rateloge,   &
-      cnum_h2so4, cnum_tot, radius_cluster )
-  end if
-
-  rateloge = rateloge + log( max( 1.0e-38_wp, adjust_factor_bin_tern_ratenucl ) )
-
-  ! do boundary layer nuc
-  if ( zm_in <= max(pblh_in,100.0_wp) ) then
-    so4vol_bb = so4vol_in
-    call pbl_nuc_wang2008( so4vol_bb, ratenuclt, rateloge, cnum_tot, &
-                           cnum_h2so4, radius_cluster )
-  end if
-
-  ! if nucleation rate is less than 1e-6 #/cm3/s ~= 0.1 #/cm3/day,
-  ! exit with new particle formation = 0
-  if (rateloge .le. -13.82_wp) then
-    return
-  end if
-
-  ratenuclt = exp( rateloge )
-  ratenuclt_bb = ratenuclt*1.0e6_wp  ! ratenuclt_bb is #/m3/s; ratenuclt is #/cm3/s
-
-  ! wet/dry volume ratio - use simple kohler approx for ammsulf/ammbisulf
-  tmpa = max( 0.10_wp, min( 0.95_wp, rh_in ) )
-  wetvol_dryvol = 1.0_wp - 0.56_wp/log(tmpa)
-
-  ! determine size bin into which the new particles go
-  ! (probably it will always be bin #1, but ...)
-  voldry_clus = ( max(cnum_h2so4,1.0_wp)*mw_so4a) /   &
-    (1.0e3_wp*dens_sulfacid*avogad)
-  ! correction when host code sulfate is really ammonium bisulfate/sulfate
-  voldry_clus = voldry_clus * (mw_so4a_host/mw_so4a)
-  dpdry_clus = (voldry_clus*6.0_wp/pi)**onethird
-
-  isize_nuc = 1
-  dpdry_part = dplom_sect(1)
-  if (dpdry_clus <= dplom_sect(1)) then
-    igrow = 1   ! need to clusters to larger size
-  else if (dpdry_clus >= dphim_sect(nsize)) then
-    igrow = 0
-    isize_nuc = nsize
-    dpdry_part = dphim_sect(nsize)
-  else
-    igrow = 0
-    do i = 1, nsize
-      if (dpdry_clus < dphim_sect(i)) then
-        isize_nuc = i
-        dpdry_part = dpdry_clus
-        dpdry_part = min( dpdry_part, dphim_sect(i) )
-        dpdry_part = max( dpdry_part, dplom_sect(i) )
-        exit
-      end if
-    end do
-  end if
-  voldry_part = (pi/6.0_wp)*(dpdry_part**3)
-
-  ! All "grown particles" are SO4.
-  if (igrow .le. 0) then
-    ! no "growing" so pure sulfuric acid
-    tmp_n1 = 0.0_wp
-    tmp_n2 = 0.0_wp
-    tmp_n3 = 1.0_wp
-  else
-    ! combination of ammonium bisulfate and sulfuric acid
-    ! tmp_n2 & tmp_n3 = mole fractions of the ammbisulf & sulfacid
-    tmp_n1 = 0.0_wp
-    tmp_n2 = 0.0_wp ! (qnh3_cur/qh2so4_cur)
-    tmp_n2 = max( 0.0_wp, min( 1.0_wp, tmp_n2 ) )
-    tmp_n3 = 1.0_wp - tmp_n2
-  end if
-
-  tmp_m1 = tmp_n1*mw_ammsulf
-  tmp_m2 = tmp_n2*mw_ammbisulf
-  tmp_m3 = tmp_n3*mw_sulfacid
-  dens_part = (tmp_m1 + tmp_m2 + tmp_m3)/   &
-    ((tmp_m1/dens_ammsulf) + (tmp_m2/dens_ammbisulf)   &
-    + (tmp_m3/dens_sulfacid))
-  mass_part  = voldry_part*dens_part
-  ! (kg dry aerosol)/(mol aerosol so4)
-  kgaero_per_moleso4a = 1.0e-3_wp*(tmp_m1 + tmp_m2 + tmp_m3)
-  ! correction when host code sulfate is really ammonium bisulfate/sulfate
-  kgaero_per_moleso4a = kgaero_per_moleso4a * (mw_so4a_host/mw_so4a)
-
-  ! fraction of wet volume due to so4a
-  tmpb = 1.0_wp
-  wet_volfrac_so4a = 1.0_wp / wetvol_dryvol
-
-  ! calc kerminen & kulmala (2002) correction
-  if (igrow <=  0) then
-    factor_kk = 1.0_wp
-  else
-    ! "gr" parameter (nm/h) = condensation growth rate of new particles
-    ! use kk2002 eqn 21 for h2so4 uptake, and correct for nh3 & h2o uptake
-    tmp_spd = 14.7_wp*sqrt(temp_in)   ! h2so4 molecular speed (m/s)
-    gr_kk = 3.0e-9_wp*tmp_spd*mw_sulfacid*so4vol_in/(dens_part*wet_volfrac_so4a)
-
-    ! "gamma" parameter (nm2/m2/h)
-    ! use kk2002 eqn 22
-
-    ! dfin_kk = wet diam (nm) of grown particle having dry dia = dpdry_part (m)
-    dfin_kk = 1.0e9_wp * dpdry_part * (wetvol_dryvol**onethird)
-    ! dnuc_kk = wet diam (nm) of cluster
-    dnuc_kk = 2.0_wp*radius_cluster
-    dnuc_kk = max( dnuc_kk, 1.0_wp )
-    ! neglect (dmean/150)**0.048 factor,
-    ! which should be very close to 1.0 because of small exponent
-    gamma_kk = 0.23_wp * (dnuc_kk)**0.2_wp   &
-      * (dfin_kk/3.0_wp)**0.075_wp   &
-      * (dens_part*1.0e-3_wp)**(-0.33_wp)   &
-      * (temp_in/293.0_wp)**(-0.75_wp)
-
-    ! "cs_prime parameter" (1/m2)
-    ! instead kk2002 eqn 3, use
-    !     cs_prime ~= tmpa / (4*pi*tmpb * h2so4_accom_coef)
-    ! where
-    !     tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
-    !     tmpb = h2so4 vapor diffusivity (m2/h units)
-    ! this approx is generally within a few percent of the cs_prime
-    !     calculated directly from eqn 2,
-    !     which is acceptable, given overall uncertainties
-    ! tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
-    tmpa = h2so4_uptkrate * 3600.0_wp
-    tmpa1 = tmpa
-    tmpa = max( tmpa, 0.0_wp )
-    ! tmpb = h2so4 gas diffusivity (m2/s, then m2/h)
-    tmpb = 6.7037e-6_wp * (temp_in**0.75_wp) / cair
-    tmpb1 = tmpb         ! m2/s
-    tmpb = tmpb*3600.0_wp   ! m2/h
-    cs_prime_kk = tmpa/(4.0_wp*pi*tmpb*accom_coef_h2so4)
-    cs_kk = cs_prime_kk*4.0_wp*pi*tmpb1
-
-    ! "nu" parameter (nm) -- kk2002 eqn 11
-    nu_kk = gamma_kk*cs_prime_kk/gr_kk
-    ! nucleation rate adjustment factor (--) -- kk2002 eqn 13
-    factor_kk = exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) )
-  end if
-  ratenuclt_kk = ratenuclt_bb*factor_kk
-
-  ! max production of aerosol dry mass (kg-aero/m3-air)
-  tmpa = max( 0.0_wp, (ratenuclt_kk*dtnuc*mass_part) )
-  ! max production of aerosol so4 (mol-so4a/mol-air)
-  tmpe = tmpa/(kgaero_per_moleso4a*cair)
-  ! max production of aerosol so4 (mol/mol-air)
-  ! based on ratenuclt_kk and mass_part
-  qmolso4a_del_max = tmpe
-
-  ! check if max production exceeds available h2so4 vapor
-  freduce = 1.0_wp
-  if (qmolso4a_del_max .gt. qh2so4_cur) then
-    freduce = qh2so4_cur/qmolso4a_del_max
-  end if
-
-  ! if adjusted nucleation rate is less than 1e-12 #/m3/s ~= 0.1 #/cm3/day,
-  ! exit with new particle formation = 0
-  if (freduce*ratenuclt_kk .le. 1.0e-12_wp) then
-    return
-  end if
-
-  ! changes to h2so4 gas (in mol/mol-air), limited by amounts available
-  tmpa = 0.9999_wp
-  qh2so4_del = min( tmpa*qh2so4_cur, freduce*qmolso4a_del_max )
-  qh2so4_del = -qh2so4_del
-
-  ! changes to so4 aerosol (in mol/mol-air)
-  qso4a_del = -qh2so4_del
-  ! change to aerosol number (in #/mol-air)
-  qnuma_del = 1.0e-3_wp*(qso4a_del*mw_so4a)/mass_part
-
-  ! do the following (tmpa, tmpb, tmpc) calculations as a check
-  ! max production of aerosol number (#/mol-air)
-  tmpa = max( 0.0_wp, (ratenuclt_kk*dtnuc/cair) )
-  ! adjusted production of aerosol number (#/mol-air)
-  tmpb = tmpa*freduce
-  ! relative difference from qnuma_del
-  tmpc = (tmpb - qnuma_del)/max(tmpb, qnuma_del, 1.0e-35_wp)
-end subroutine mer07_veh02_nuc_mosaic_1box
-
-! calculates boundary nucleation nucleation rate
-! using the first or second-order parameterization in
-!     wang, m., and j.e. penner, 2008,
-!        aerosol indirect forcing in a global model with particle nucleation,
-!        atmos. chem. phys. discuss., 8, 13943-13998
-subroutine pbl_nuc_wang2008(so4vol, ratenucl, rateloge, cnum_tot, cnum_h2so4, &
-                            radius_cluster)
-
-  implicit none
-
-  ! subr arguments (in)
-  real(wp), intent(in) :: so4vol            ! concentration of h2so4 (molecules cm-3)
-  ! [11,12] value selects [first,second]-order parameterization
-
-  ! subr arguments (inout)
-  real(wp), intent(inout) :: ratenucl         ! binary nucleation rate, j (# cm-3 s-1)
-  real(wp), intent(inout) :: rateloge         ! log( ratenucl )
-
-  real(wp), intent(inout) :: cnum_tot         ! total number of molecules
-  ! in the critical nucleus
-  real(wp), intent(inout) :: cnum_h2so4       ! number of h2so4 molecules
-  real(wp), intent(inout) :: radius_cluster   ! the radius of cluster (nm)
-
-  ! local variables
-  real(wp) :: tmp_diam, tmp_mass, tmp_volu
-  real(wp) :: tmp_rateloge, tmp_ratenucl
-
-  ! nucleation rate
-  tmp_ratenucl = 1.0e-6_wp * so4vol
-  tmp_ratenucl = tmp_ratenucl * adjust_factor_pbl_ratenucl
-  tmp_rateloge = log( max( 1.0e-38_wp, tmp_ratenucl ) )
-
-  ! exit if pbl nuc rate is lower than (incoming) ternary/binary rate
-  if (tmp_rateloge <= rateloge) then
-    return
-  end if
-
-  rateloge = tmp_rateloge
-  ratenucl = tmp_ratenucl
-
-  ! following wang 2002, assume fresh nuclei are 1 nm diameter
-  !    subsequent code will "grow" them to aitken mode size
-  radius_cluster = 0.5_wp
-
-  ! assume fresh nuclei are pure h2so4
-  !    since aitken size >> initial size, the initial composition
-  !    has very little impact on the results
-  tmp_diam = radius_cluster * 2.0e-7_wp   ! diameter in cm
-  tmp_volu = (tmp_diam**3) * (pi/6.0_wp)  ! volume in cm^3
-  tmp_mass = tmp_volu * 1.8_wp            ! mass in g
-  cnum_h2so4 = (tmp_mass / 98.0_wp) * 6.023e23_wp   ! no. of h2so4 molec assuming pure h2so4
-  cnum_tot = cnum_h2so4
-
-end subroutine pbl_nuc_wang2008
+end subroutine veh02_nuc_mosaic_1box
 
 ! calculates binary nucleation rate and critical cluster size
 ! using the parameterization in
@@ -726,36 +524,31 @@ end subroutine pbl_nuc_wang2008
 !        an improved parameterization for sulfuric acid-water nucleation
 !        rates for tropospheric and stratospheric conditions,
 !        j. geophys. res., 107, 4622, doi:10.1029/2002jd002184
-subroutine binary_nuc_vehk2002( temp, rh, so4vol,   &
-  ratenucl, rateloge,   &
-  cnum_h2so4, cnum_tot, radius_cluster )
+subroutine binary_nuc_vehk2002(temp, rh, c_h2so4, &
+                               J_star, N_h2so4, N_tot, r_star)
 
   implicit none
 
   ! subr arguments (in)
-  real(wp), intent(in) :: temp              ! temperature (k)
-  real(wp), intent(in) :: rh                ! relative humidity (0-1)
-  real(wp), intent(in) :: so4vol            ! concentration of h2so4 (molecules cm-3)
+  real(wp), intent(in) :: temp      ! temperature [K]
+  real(wp), intent(in) :: rh        ! relative humidity (0-1) [-]
+  real(wp), intent(in) :: c_h2so4   ! concentration of h2so4 [#/cc]
 
   ! subr arguments (out)
-  real(wp), intent(out) :: ratenucl         ! binary nucleation rate, j (# cm-3 s-1)
-  real(wp), intent(out) :: rateloge         ! log( ratenucl )
-
-  real(wp), intent(out) :: cnum_h2so4       ! number of h2so4 molecules
-  ! in the critical nucleus
-  real(wp), intent(out) :: cnum_tot         ! total number of molecules
-  ! in the critical nucleus
-  real(wp), intent(out) :: radius_cluster   ! the radius of cluster (nm)
+  real(wp), intent(out) :: J_star   ! binary nucleation rate [#/cc/s]
+  real(wp), intent(out) :: N_h2so4  ! # h2so4 molecules in critical cluster [#]
+  real(wp), intent(out) :: N_tot    ! total # molecules in critical cluster [#]
+  real(wp), intent(out) :: r_star   ! radius of critical cluster [nm]
 
   ! local variables
   real(wp) :: crit_x
   real(wp) :: acoe, bcoe, ccoe, dcoe, ecoe, fcoe, gcoe, hcoe, icoe, jcoe
-  real(wp) :: tmpa, tmpb
+  real(wp) :: log_J_star
 
   ! calc sulfuric acid mole fraction in critical cluster
   crit_x = 0.740997_wp - 0.00266379_wp * temp   &
-    - 0.00349998_wp * log (so4vol)   &
-    + 0.0000504022_wp * temp * log (so4vol)   &
+    - 0.00349998_wp * log (c_h2so4l)   &
+    + 0.0000504022_wp * temp * log (c_h2so4)   &
     + 0.00201048_wp * log (rh)   &
     - 0.000183289_wp * temp * log (rh)   &
     + 0.00157407_wp * (log (rh)) ** 2.0_wp   &
@@ -812,23 +605,22 @@ subroutine binary_nuc_vehk2002( temp, rh, so4vol,   &
     + 5.00427e-9_wp * temp**3.0_wp   &
     - 0.0127081_wp/crit_x
 
-  tmpa     =     (   &
+  log_J_star = (   &
     acoe   &
     + bcoe * log (rh)   &
     + ccoe * ( log (rh))**2.0_wp   &
     + dcoe * ( log (rh))**3.0_wp   &
-    + ecoe * log (so4vol)   &
-    + fcoe * (log (rh)) * (log (so4vol))   &
+    + ecoe * log (c_h2so4)   &
+    + fcoe * (log (rh)) * (log (c_h2so4))   &
     + gcoe * ((log (rh) ) **2.0_wp)   &
-    * (log (so4vol))   &
-    + hcoe * (log (so4vol)) **2.0_wp   &
+    * (log (c_h2so4))   &
+    + hcoe * (log (c_h2so4)) **2.0_wp   &
     + icoe * log (rh)   &
-    * ((log (so4vol)) **2.0_wp)   &
-    + jcoe * (log (so4vol)) **3.0_wp   &
+    * ((log (c_h2so4)) **2.0_wp)   &
+    + jcoe * (log (c_h2so4)) **3.0_wp   &
     )
-  rateloge = tmpa
-  tmpa = min( tmpa, log(1.0e38_wp) )
-  ratenucl = exp ( tmpa )
+  log_J_star = min( log_J_star, log(1.0e38_wp) )
+  J_star = exp ( log_J_star )
 
   ! calc number of molecules in critical cluster
   acoe    = -0.00295413_wp - 0.0976834_wp*temp   &
@@ -879,28 +671,198 @@ subroutine binary_nuc_vehk2002( temp, rh, so4vol,   &
     - 1.4177e-11_wp * temp**3.0_wp   &
     + 0.000135751_wp/crit_x
 
-  cnum_tot = exp (   &
+  N_tot = exp (   &
     acoe   &
     + bcoe * log (rh)   &
     + ccoe * ( log (rh))**2.0_wp   &
     + dcoe * ( log (rh))**3.0_wp   &
-    + ecoe * log (so4vol)   &
-    + fcoe * (log (rh)) * (log (so4vol))   &
+    + ecoe * log (c_h2so4)   &
+    + fcoe * (log (rh)) * (log (c_h2so4))   &
     + gcoe * ((log (rh) ) **2.0_wp)   &
-    * (log (so4vol))   &
-    + hcoe * (log (so4vol)) **2.0_wp   &
+    * (log (c_h2so4))   &
+    + hcoe * (log (c_h2so4)) **2.0_wp   &
     + icoe * log (rh)   &
-    * ((log (so4vol)) **2.0_wp)   &
-    + jcoe * (log (so4vol)) **3.0_wp   &
+    * ((log (c_h2so4)) **2.0_wp)   &
+    + jcoe * (log (c_h2so4)) **3.0_wp   &
     )
 
-  cnum_h2so4 = cnum_tot * crit_x
+  N_h2so4 = N_tot * crit_x
 
   !   calc radius (nm) of critical cluster
-  radius_cluster = exp( -1.6524245_wp + 0.42316402_wp*crit_x   &
-    + 0.3346648_wp*log(cnum_tot) )
+  r_star = exp( -1.6524245_wp + 0.42316402_wp*crit_x   &
+    + 0.3346648_wp*log(N_tot) )
 
 end subroutine binary_nuc_vehk2002
+
+! calculates boundary nucleation nucleation rate
+! using the first or second-order parameterization in
+!     wang, m., and j.e. penner, 2008,
+!        aerosol indirect forcing in a global model with particle nucleation,
+!        atmos. chem. phys. discuss., 8, 13943-13998
+subroutine pbl_nuc_wang2008(c_h2so4, J_star, N_tot, N_h2so4, r_star)
+
+  implicit none
+
+  real(wp), intent(in)    :: c_h2so4 ! concentration of h2so4 [#/cc]
+  real(wp), intent(inout) :: J_star  ! binary nucleation rate [#/cc/s]
+  real(wp), intent(inout) :: N_tot   ! total # of molecules in critical cluster [#]
+  real(wp), intent(inout) :: N_h2so4 ! # of h2so4 molecules in critical cluster [#]
+  real(wp), intent(inout) :: r_star  ! radius of critical cluster [nm]
+
+  ! local variables
+  real(wp) :: tmp_diam, tmp_mass, tmp_volu
+  real(wp) :: J_pbl, log_J_pbl
+
+  ! empirical estimation of nucleation rate
+  J_pbl = 1.0e-6_wp * c_h2so4
+  J_pbl = J_pbl * adjust_factor_pbl_ratenucl
+  log_J_pbl = log(max( 1.0e-38_wp, J_pbl))
+
+  ! exit if pbl nuc rate is lower than (incoming) binary rate
+  if (log_J_pbl <= log(J_star)) then
+    return
+  end if
+
+  J_star = J_pbl
+
+  ! following wang 2002, assume fresh nuclei are 1 nm diameter
+  !    subsequent code will "grow" them to aitken mode size
+  r_star = 0.5_wp
+
+  ! assume fresh nuclei are pure h2so4
+  !    since aitken size >> initial size, the initial composition
+  !    has very little impact on the results
+  tmp_diam = r_star * 2.0e-7_wp   ! diameter in cm
+  tmp_volu = (tmp_diam**3) * (pi/6.0_wp)  ! volume in cm^3
+  tmp_mass = tmp_volu * 1.8_wp            ! mass in g
+  N_h2so4 = (tmp_mass / 98.0_wp) * 6.023e23_wp   ! no. of h2so4 molec assuming pure h2so4
+  N_tot = N_h2so4
+end subroutine pbl_nuc_wang2008
+
+! Computes the final nucleation rate J_nuc from the intermediate nucleation rate
+! J_star after having grown the SO4 nuclei so that they can fit into the
+! Aitken mode.
+function growth_adjusted_nucleation_rate(J_star, ) result (J_nuc)
+  J_star_bb = J_star*1.0e6_wp  ! J_star_bb is #/m3/s; J_star is #/cm3/s
+
+  ! wet/dry volume ratio - use simple kohler approx for ammsulf/ammbisulf
+  tmpa = max( 0.10_wp, min( 0.95_wp, rh_in ) )
+  wetvol_dryvol = 1.0_wp - 0.56_wp/log(tmpa)
+
+  ! determine size bin into which the new particles go
+  ! (probably it will always be bin #1, but ...)
+  voldry_clus = ( max(N_h2so4,1.0_wp)*mw_so4a) /   &
+    (1.0e3_wp*dens_sulfacid*avogad)
+  ! correction when host code sulfate is really ammonium bisulfate/sulfate
+  voldry_clus = voldry_clus * (mw_so4a_host/mw_so4a)
+  dpdry_clus = (voldry_clus*6.0_wp/pi)**one_third
+
+  isize_nuc = 1
+  dpdry_part = dplom_sect(1)
+  if (dpdry_clus <= dplom_sect(1)) then
+    igrow = 1   ! need to clusters to larger size
+  else if (dpdry_clus >= dphim_sect(nsize)) then
+    igrow = 0
+    isize_nuc = nsize
+    dpdry_part = dphim_sect(nsize)
+  else
+    igrow = 0
+    do i = 1, nsize
+      if (dpdry_clus < dphim_sect(i)) then
+        isize_nuc = i
+        dpdry_part = dpdry_clus
+        dpdry_part = min( dpdry_part, dphim_sect(i) )
+        dpdry_part = max( dpdry_part, dplom_sect(i) )
+        exit
+      end if
+    end do
+  end if
+  voldry_part = (pi/6.0_wp)*(dpdry_part**3)
+
+  ! All "grown particles" are SO4.
+  if (igrow <= 0) then
+    ! no "growing" so pure sulfuric acid
+    tmp_n1 = 0.0_wp
+    tmp_n2 = 0.0_wp
+    tmp_n3 = 1.0_wp
+  else
+    ! combination of ammonium bisulfate and sulfuric acid
+    ! tmp_n2 & tmp_n3 = mole fractions of the ammbisulf & sulfacid
+    tmp_n1 = 0.0_wp
+    tmp_n2 = 0.0_wp ! (qnh3_cur/qh2so4_cur)
+    tmp_n2 = max( 0.0_wp, min( 1.0_wp, tmp_n2 ) )
+    tmp_n3 = 1.0_wp - tmp_n2
+  end if
+
+  tmp_m1 = tmp_n1*mw_ammsulf
+  tmp_m2 = tmp_n2*mw_ammbisulf
+  tmp_m3 = tmp_n3*mw_sulfacid
+  dens_part = (tmp_m1 + tmp_m2 + tmp_m3)/   &
+    ((tmp_m1/dens_ammsulf) + (tmp_m2/dens_ammbisulf)   &
+    + (tmp_m3/dens_sulfacid))
+  mass_part  = voldry_part*dens_part
+  ! (kg dry aerosol)/(mol aerosol so4)
+  kgaero_per_moleso4a = 1.0e-3_wp*(tmp_m1 + tmp_m2 + tmp_m3)
+  ! correction when host code sulfate is really ammonium bisulfate/sulfate
+  kgaero_per_moleso4a = kgaero_per_moleso4a * (mw_so4a_host/mw_so4a)
+
+  ! fraction of wet volume due to so4a
+  tmpb = 1.0_wp
+  wet_volfrac_so4a = 1.0_wp / wetvol_dryvol
+
+  ! calc kerminen & kulmala (2002) correction
+  if (igrow <=  0) then
+    factor_kk = 1.0_wp
+  else
+    ! "gr" parameter (nm/h) = condensation growth rate of new particles
+    ! use kk2002 eqn 21 for h2so4 uptake, and correct for nh3 & h2o uptake
+    tmp_spd = 14.7_wp*sqrt(temp_in)   ! h2so4 molecular speed (m/s)
+    gr_kk = 3.0e-9_wp*tmp_spd*mw_sulfacid*so4vol_in/(dens_part*wet_volfrac_so4a)
+
+    ! "gamma" parameter (nm2/m2/h)
+    ! use kk2002 eqn 22
+
+    ! dfin_kk = wet diam (nm) of grown particle having dry dia = dpdry_part (m)
+    dfin_kk = 1.0e9_wp * dpdry_part * (wetvol_dryvol**one_third)
+    ! dnuc_kk = wet diam (nm) of cluster
+    dnuc_kk = 2.0_wp*radius_cluster
+    dnuc_kk = max( dnuc_kk, 1.0_wp )
+    ! neglect (dmean/150)**0.048 factor,
+    ! which should be very close to 1.0 because of small exponent
+    gamma_kk = 0.23_wp * (dnuc_kk)**0.2_wp   &
+      * (dfin_kk/3.0_wp)**0.075_wp   &
+      * (dens_part*1.0e-3_wp)**(-0.33_wp)   &
+      * (temp_in/293.0_wp)**(-0.75_wp)
+
+    ! "cs_prime parameter" (1/m2)
+    ! instead kk2002 eqn 3, use
+    !     cs_prime ~= tmpa / (4*pi*tmpb * h2so4_accom_coef)
+    ! where
+    !     tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
+    !     tmpb = h2so4 vapor diffusivity (m2/h units)
+    ! this approx is generally within a few percent of the cs_prime
+    !     calculated directly from eqn 2,
+    !     which is acceptable, given overall uncertainties
+    ! tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
+    tmpa = h2so4_uptkrate * 3600.0_wp
+    tmpa1 = tmpa
+    tmpa = max( tmpa, 0.0_wp )
+    ! tmpb = h2so4 gas diffusivity (m2/s, then m2/h)
+    tmpb = 6.7037e-6_wp * (temp_in**0.75_wp) / cair
+    tmpb1 = tmpb         ! m2/s
+    tmpb = tmpb*3600.0_wp   ! m2/h
+    cs_prime_kk = tmpa/(4.0_wp*pi*tmpb*accom_coef_h2so4)
+    cs_kk = cs_prime_kk*4.0_wp*pi*tmpb1
+
+    ! "nu" parameter (nm) -- kk2002 eqn 11
+    nu_kk = gamma_kk*cs_prime_kk/gr_kk
+    ! nucleation rate adjustment factor (--) -- kk2002 eqn 13
+    factor_kk = exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) )
+  end if
+  J_star_kk = J_star_bb*factor_kk
+
+
+end function
 
 end module
 
