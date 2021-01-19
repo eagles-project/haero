@@ -47,8 +47,8 @@ In all four cases, the nucleation process alters the vapor mixing ratios and
 aerosol mass and number mixing ratios. Their rates of change are
 
 \begin{align}
-\ddt{q_{m,s}} &= \ddt{q_n} \cdot \frac{m_{d,s}}{\mu_{s}} \,, \labeleq{nuc:aer}\\
-\ddt{q_g}     &= -\ddt{q_{m,s}} \,, \labeleq{nuc:gas}
+  \ddt{q_{m,s}} &= \ddt{q_{n,s}} \cdot \frac{m_{d,s}}{\mu_{s}} \,, \labeleq{nuc:aer}\\
+  \ddt{q_g}     &= -\ddt{q_{m,s}} \,, \labeleq{nuc:gas}
 \end{align}
 
 where
@@ -113,7 +113,8 @@ process breaks nucleation into two distinct stages.
 
   $$c\dsub{n,\sag} = 10^{-3} \cdot N_A \cdot \bar{q_{\sag}} c\dsub{air}$$
 
-  where $N_A$ is Avogadro's constant.
+  where $N_A$ is Avogadro's constant and $c\dsub{air}$ [kmol air / m$^3$ air] is
+  the air molar concentration.
 \end{assume}
 
 \begin{assume}[MAM4 Nucleation: homogeneous only]
@@ -133,8 +134,7 @@ are
 where $J\dsub{nuc}$ [\# / (cc $\cdot$ s)] is the nucleation rate describing the
 net number of clusters that grow past $r^*$ per unit time per cm$^{3}$ of
 air. $J\dsub{nuc}$ depends on the available amount of gas species, temperature
-and relative humidity. Meanwhile, $c\dsub{air}$ [kmol air / m$^3$ air] is
-the air molar concentration.
+and relative humidity.
 
 % parameterization
 \subsubsection{MAM4 nucleation parameterizations} \labelsubsubsection{nuc:paranuc}
