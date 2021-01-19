@@ -24,10 +24,13 @@ module mam4_nucleation_mod
   integer :: h2so4_index = 0
 
   !> Density of SO4 aerosol [kg/m^3]
-  real(wp) :: dens_so4a_host
+  real(wp), parameter :: dens_so4a_host = 1770_wp
+
+  !> Gas constant [m^3 Pa / K / mol]
+  real(wp), parameter :: R_gas = 8.31446261815324
 
   !> Molecular weight of SO4 aerosol
-  real(wp) :: mw_so4a
+  real(wp) :: mw_so4
 
   integer, public :: newnuc_h2so4_conc_flag = 1
 
@@ -58,8 +61,7 @@ subroutine mam4_nucleation_init() bind(c)
 
   ! Jot down some aerosol properties.
   so4 = model%aero_species(aitken_index, so4_aitken_index)
-  dens_so4a_host = so4%density
-  mw_so4a = model%aero_ѕpecies(aitken
+  mw_so4 = so4%molecular_wt
 
 end subroutine
 
@@ -92,8 +94,10 @@ subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
 
 
   real(wp) :: q_so4, q_h2so4, n_aitken
-  real(wp) :: dqdt_so4, dqdt_h2so4, dndt_aitken
-  real(wp) :: temp, pmid, aircon, zmid, pblh, relhum, &
+  real(wp) :: J_nuc ! nucleation rate [#/cc/s]
+  real(wp) :: dqndt_so4 ! tendency for SO4 number mixing ratio
+  real(wp) :: md_so4 ! Dry mass for SO4 nucleus
+  real(wp) :: temp, pmid, c_air, aircon, zmid, pblh, relhum, &
               uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk
 
   ! First of all, check to make sure our model has an aitken mode. If it
@@ -132,17 +136,30 @@ subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
   n => prognostics%modal_num_densities()
   dndt => tendencies%modal_num_densities()
 
+  ! Traverse the columns and levels, and compute tendencies from nucleation.
   do i = 1,model%num_columns
     do k = 1,model%num_levels
+      ! Compute the molar concentration of air at given pressure and
+      ! temperature [mol air/m^3].
+      aircon = pmid/(temp*R_gas)
+
+      ! Compute the dry mass of an SO4 nucleus.
+      md_so4 = 1_wp ! FIXME
+
+      ! Compute the nucleation rate of H2SO4.
       q_h2so4 = q_g(h2so4_index, k, i)
       q_so4 = q_i(so4_aitken_index, k, i)
       n_aitken = n(aitken_index, k, i)
-      compute_h2so4_nuc_rate(q_so4, q_h2so4, n_aitkin, dt, &
+      J_nuc = h2so4_nuc_rate(q_so4, q_h2so4, n_aitkin, dt, &
                              temp, pmid, aircon, zmid, pblh, relhum, &
                              uptkrate_h2so4, del_h2so4_gasprod, &
-                             del_h2so4_aeruptk, dqdt_so4, dqdt_h2so4, &
-                             dndt_aitken)
-      dqdt_i(so4_aitken_index, k, i) = dqdt_so4
+                             del_h2so4_aeruptk)
+
+      ! Compute tendencies given J_nuc.
+      dqndt_so4 = 1e6_wp * J_nuc / aircon
+      dqdt_i(so4_aitken_index, k, i) = dqndt_so4 * (md_so4 / mw_so4)
+      dqdt_g(h2so4_index, k, i) = -dqdt_i(so4_aitken_index, k, i)
+      dndt(k, i, aitken_index) = dqndt_so4 * aircon
     end do
   end do
 end subroutine
@@ -175,10 +192,9 @@ end subroutine
 !   Analytical formulae connecting the "real" and the "apparent"
 !   nucleation rate and the nuclei number concentration
 !   for atmospheric nucleation events
-subroutine compute_h2so4_nuc_rate(q_so4, q_h2so4, n, dt, temp, pmid, aircon, &
-                                  zmid, pblh, relhum, uptkrate_h2so4, &
-                                  del_h2so4_gasprod, del_h2so4_aeruptk, &
-                                  dqdt_so4, dqdt_h2so4, dndt_aitken)
+function h2so4_nuc_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon, &
+                        zmid, pblh, relhum, uptkrate_h2so4, &
+                        del_h2so4_gasprod, del_h2so4_aeruptk) result(J_nuc)
 
   implicit none
 
@@ -195,9 +211,6 @@ subroutine compute_h2so4_nuc_rate(q_so4, q_h2so4, n, dt, temp, pmid, aircon, &
   real(wp), intent(in) :: uptkrate_h2so4    ! H2SO4 gas uptake rate
   real(wp), intent(in) :: del_h2so4_gasprod
   real(wp), intent(in) :: del_h2so4_aeruptk
-  real(wp), intent(out) :: dqdt_so4         ! SO4 aerosol tendency [kg/kg/s]
-  real(wp), intent(out) :: dqdt_h2so4       ! H2SO4 gas tendency [mol/mol/s]
-  real(wp), intent(out) :: dndt_aitken      ! Aitken mode n tendency [#/m^3]
 
   integer :: itmp
   integer :: l
@@ -220,10 +233,10 @@ subroutine compute_h2so4_nuc_rate(q_so4, q_h2so4, n, dt, temp, pmid, aircon, &
   real(wp) :: tmp_frso4, tmp_uptkrate
 
   ! min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3,
-  real(wp), parameter :: qh2so4_cutoff = 4.0e-16_wp
+  real(wp), parameter :: q_h2so4_cutoff = 4.0e-16_wp
 
   ! skip if h2so4 vapor < qh2so4_cutoff
-  if (qh2so4_cur <= qh2so4_cutoff) then
+  if (q_h2so4 <= q_h2so4_cutoff) then
     return
   end if
 
@@ -343,7 +356,7 @@ subroutine compute_h2so4_nuc_rate(q_so4, q_h2so4, n, dt, temp, pmid, aircon, &
   ! Compute the tendency for expended H2SO4 gas
   dqdt_h2so4 = dmdt_ait*tmp_frso4/mw_so4a_host
 
-end subroutine
+end function
 
 subroutine mam4_nucleation_finalize() bind(c)
   implicit none
