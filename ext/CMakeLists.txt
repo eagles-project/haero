@@ -32,7 +32,7 @@ if (NOT APPLE)
   find_library(DL_LIBRARY libdl${CMAKE_SHARED_LIBRARY_SUFFIX} REQUIRED)
   add_library(dl SHARED IMPORTED GLOBAL)
   set_target_properties(dl PROPERTIES IMPORTED_LOCATION ${DL_LIBRARY})
-  set(HAERO_EXT_DRIVER_LIBRARIES dl)
+  set(HAERO_EXT_LIBRARIES dl) # Required by kokkoscore.
 endif()
 
 #----------------------------------------------------------------------------
