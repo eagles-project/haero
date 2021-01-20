@@ -103,16 +103,34 @@ practice, though, it's safest to always build from the top of the build tree.
 
 ## Generating Documentation
 
-Documentation for Haero can be built using `make docs`.
+Documentation for Haero can be built using `make docs`. In order to build
+documentation, you must install the following software:
 
-If you have Latex and ImageMagick installed, Haero builds a design document in
-the `docs/design` subdirectory of your build directory.
+* [LaTex](https://www.latex-project.org/help/documentation/), for building
+  Haero's technical documentation
+* [ImageMagick](https://imagemagick.org/index.php), for converting images to
+  the appropriate formats
+* [Doxygen](https://www.doxygen.nl/index.html), for generating the reference
+  API documentation
 
-In addition, if you have [Doxygen](https://www.doxygen.nl/index.html) installed,
-you can generate HTML reference documentation for the C++ and Fortran library
-interface from your build directory. This documentation gets built in the
-`docs/doxygen/html` ѕubdirectory of your build directory. You can point your
-browser to `docs/html/index.html` to peruse this documentation.
+All of these packages can be installed with a package manager like `apt` or
+`homebrew`. For example, to install them on a Mac using `homebrew`:
+
+```
+brew install mactex imagemagick doxygen
+```
+
+Haero's documentation includes
+
+* an extensive design document, which is built in the `docs/design` directory
+  within your build directory. This document describes the aerosol modeling
+  methodology used by Haero, as well as the library itself, and its various
+  representations of aerosol processes
+
+* HTML reference documentation for the Haero's C++/Fortran API, generated in
+  the `docs/doxygen/html` directory within your build directory. You can point
+  You can point your browser to `docs/html/index.html` to peruse the reference
+  documentation.
 
 # FAQ
 
