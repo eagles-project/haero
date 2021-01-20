@@ -37,7 +37,7 @@ module mam4_nucleation_mod
   integer, public :: newnuc_h2so4_conc_flag = 1
 
   ! adjustment factors
-  real(wp), parameter, public :: adjust_factor_bin_tern_ratenucl = 1.0_wp  !  applied to binary/ternary nucleation rate
+  real(wp), parameter, public :: adjust_factor_bin_ratenucl = 1.0_wp  ! applied to binary nucleation rate
   real(wp),            public :: adjust_factor_pbl_ratenucl = 1.0_wp  ! applied to boundary layer nucleation rate
                                                                       ! value reassigned in amicphys
 
@@ -237,6 +237,8 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   ! min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3,
   real(wp), parameter :: q_h2so4_cutoff = 4.0e-16_wp
 
+  J_nuc = 0_wp
+
   ! skip if h2so4 vapor < qh2so4_cutoff
   if (q_h2so4 <= q_h2so4_cutoff) then
     return
@@ -274,7 +276,7 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
     qh2so4_avg = (tmp_q3 - tmpc)*((exp(tmpb)-1.0_wp)/tmpb) + tmpc
   end if
 
-  ! If the average is too low, get out.
+  ! If the average is too low, there is no nucleation.
   if (qh2so4_avg <= qh2so4_cutoff) then
     return
   end if
@@ -311,7 +313,7 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   end if
 
   ! Update log(J_star)
-  log_J_star = log(J_star) + log( max( 1.0e-38_wp, adjust_factor_bin_tern_ratenucl ) )
+  log_J_star = log(J_star) + log( max( 1.0e-38_wp, adjust_factor_bin_ratenucl ) )
 
   ! Apply the planetary boundary layer correction where needed
   if ( zm_in <= max(pblh_in, 100.0_wp) ) then
@@ -324,7 +326,6 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   ! if nucleation rate is less than 1e-6 #/cm3/s ~= 0.1 #/cm3/day,
   ! exit with new particle formation = 0
   if (log_J_star <= -13.82_wp) then
-    J_star = 0_wp
     return
   end if
   J_star = exp(log_J_star)
@@ -349,6 +350,7 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   ! if adjusted nucleation rate is less than 1e-12 #/m3/s ~= 0.1 #/cm3/day,
   ! exit with new particle formation = 0
   if (J_nuc*freduce <= 1.0e-12_wp) then
+    J_nuc = 0_wp
     return
   end if
 
