@@ -28,9 +28,12 @@ if (HAERO_ENABLE_DRIVER)
 #----------------------------------------------------------------------------
 # Dynamic loading library
 #----------------------------------------------------------------------------
-find_library(DL_LIBRARY libdl${CMAKE_SHARED_LIBRARY_SUFFIX} REQUIRED)
-add_library(dl SHARED IMPORTED GLOBAL)
-set_target_properties(dl PROPERTIES IMPORTED_LOCATION ${DL_LIBRARY})
+if (NOT APPLE)
+  find_library(DL_LIBRARY libdl${CMAKE_SHARED_LIBRARY_SUFFIX} REQUIRED)
+  add_library(dl SHARED IMPORTED GLOBAL)
+  set_target_properties(dl PROPERTIES IMPORTED_LOCATION ${DL_LIBRARY})
+  set(HAERO_EXT_DRIVER_LIBRARIES dl)
+endif()
 
 #----------------------------------------------------------------------------
 # libz compression library
@@ -118,7 +121,7 @@ else()
     set(HAERO_EXT_DRIVER_LIBRARIES ${ZLIB_LIBRARIES};${HAERO_EXT_DRIVER_LIBRARIES})
   endif()
 endif()
-set(HAERO_EXT_DRIVER_LIBRARIES hdf5_hl;hdf5;dl;z;${HAERO_EXT_DRIVER_LIBRARIES})
+set(HAERO_EXT_DRIVER_LIBRARIES hdf5_hl;hdf5;z;${HAERO_EXT_DRIVER_LIBRARIES})
 set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
 
 #----------------------------------------------------------------------------

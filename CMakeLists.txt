@@ -5,7 +5,6 @@ cmake_minimum_required (VERSION 3.10.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/")
 
-
 # We declare the project right away.
 enable_language(CXX)
 enable_language(Fortran)
@@ -145,9 +144,6 @@ message(STATUS "Installation prefix is ${CMAKE_INSTALL_PREFIX}")
 
 # Basic libraries to be linked in.
 set(HAERO_LIBRARIES m)
-
-# NOTE: HDF5 requires dynamic loading as of v1.8.11, so we need libdl.
-set(HAERO_LIBRARIES ${HAERO_LIBRARIES};dl)
 
 # Process any additional linker flags supplied with EXTRA_LDFLAGS.
 if (HAERO_EXTRA_LDFLAGS)
