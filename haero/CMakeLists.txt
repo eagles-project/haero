@@ -23,9 +23,13 @@ add_custom_target(update_version_info ALL
 # Gather Haero process implementations
 add_subdirectory(processes)
 
+if (HAERO_FORTRAN)
+  set(HAERO_FORTRAN_SOURCES haero.F90)
+endif()
+
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-            haero.F90
+            ${HAERO_FORTRAN_SOURCES}
             chemistry.cpp
             diagnostics.cpp
             model.cpp

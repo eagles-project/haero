@@ -17,5 +17,8 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 #define HAERO_SINGLE_PRECISION 1
 #endif
 
+/// Are we building with Fortran support?
+#define HAERO_FORTRAN @HAERO_FORTRAN@
+
 }
 #endif

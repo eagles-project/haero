@@ -139,6 +139,8 @@ class NullPrognosticProcess: public PrognosticProcess {
 
 };
 
+#if HAERO_FORTRAN
+
 /// @class FPrognosticProcess
 /// This PrognosticProcess makes it easier to implement an aerosol process in
 /// Fortran by wrapping the run method in a Fortran call that creates the
@@ -208,6 +210,8 @@ class FPrognosticProcess: public PrognosticProcess
   // Has the process been initialized?
   bool initialized_;
 };
+
+#endif // HAERO_FORTRAN
 
 /// @class DiagnosticProcess
 /// This type is an interface (base class) to an aerosol process quantified by
@@ -386,6 +390,7 @@ class NullDiagnosticProcess: public DiagnosticProcess {
               Diagnostics& diagnostics) const override {}
 };
 
+#if HAERO_FORTRAN
 extern "C" {
 
 /// Given a C pointer to a Fortran-backed diagnostic process, this function
@@ -480,6 +485,8 @@ class FDiagnosticProcess: public DiagnosticProcess {
   // Has the process been initialized?
   bool initialized_;
 };
+
+#endif // HAERO_FORTRAN
 
 }
 

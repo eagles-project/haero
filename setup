@@ -85,9 +85,15 @@ PRECISION=double
 #PRECISION=single
 
 #-----------------------------------------------------------------------------
-#                                Scalar packs
+#                         Pack size for vectorization
 #-----------------------------------------------------------------------------
+
+# This controls how many floating point numbers we can operate on simultaneously
+# using SIMD vector operations. This is mostly for use on CPUs, but some newer
+# GPUs also support vectorization. NOTE: Fortran implementations of aerosol
+# processes are only supported for a PACK_SIZE of 1.
 PACK_SIZE=1
+
 #-----------------------------------------------------------------------------
 #                                Build type
 #-----------------------------------------------------------------------------
@@ -236,7 +242,7 @@ cmake \
  -DCMAKE_CXX_COMPILER=\$CXX \
  -DHAERO_PRECISION=\$PRECISION \
  -DHAERO_ENABLE_DRIVER=\$BUILD_DRIVER \
- -DHAERO_USE_PACK_SIZE=\$PACK_SIZE \
+ -DHAERO_PACK_SIZE=\$PACK_SIZE \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR
