@@ -9,6 +9,10 @@ if (NOT HAERO_PACK_SIZE)
   message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
 elseif(HAERO_PACK_SIZE LESS 1)
   message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
+elseif(HAERO_PACK_SIZE GREATER 1)
+  message(STATUS "========================================================")
+  message(STATUS "  HAERO_PACK_SIZE = ${HAERO_PACK_SIZE}: DISABLING ALL FORTRAN PROCESSES")
+  message(STATUS "========================================================")
 endif()
 
 # We declare the project right away.

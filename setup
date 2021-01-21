@@ -233,11 +233,14 @@ fi
 # Clear the build cache.
 rm -f CMakeCache.txt
 
+if [ "\$PACK_SIZE" = "1" ]; then
+  OPTIONS="\$OPTIONS -DCMAKE_Fortran_COMPILER=\$FC"
+fi
+
 # Configure the build.
 cmake \
  -DCMAKE_INSTALL_PREFIX:PATH=\$PREFIX \
  -DCMAKE_BUILD_TYPE=\$BUILD_TYPE \
- -DCMAKE_Fortran_COMPILER=\$FC \
  -DCMAKE_C_COMPILER=\$CC \
  -DCMAKE_CXX_COMPILER=\$CXX \
  -DHAERO_PRECISION=\$PRECISION \
