@@ -95,12 +95,19 @@ subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
   real(wp), pointer, dimension(:,:,:) :: dndt   ! modal number density tends
 
 
-  real(wp) :: q_so4, q_h2so4, n_aitken
-  real(wp) :: J_nuc ! nucleation rate [#/cc/s]
+  real(wp) :: q_so4     ! Mix fraction for sulfate aerosol [kg aerosol / kg air]
+  real(wp) :: q_h2so4   ! Mole fraction for sulphuric acid gas [kmol gas/kmol air]
+  real(wp) :: n_aitken  ! Number density for Aitken mode [#/m^3]
+  real(wp) :: J_nuc     ! nucleation rate [#/cc/s]
   real(wp) :: dqndt_so4 ! tendency for SO4 number mixing ratio
-  real(wp) :: md_so4 ! Dry mass for SO4 nucleus
-  real(wp) :: temp, pmid, c_air, aircon, zmid, pblh, relhum, &
-              uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk
+  real(wp) :: md_so4    ! Dry mass for SO4 nucleus
+  real(wp) :: temp      ! atmospheric temperature [K]
+  real(wp) :: press     ! atmospheric pressure [Pa]
+  real(wp) :: c_air     ! molar concentration of air [mol/m^3]
+  real(wp) :: z_k       ! Elevation at center of kth vertical level
+  real(wp) :: h_pbl     ! Planetary boundary layer height [m]
+  real(wp) :: rel_hum   ! Relative humidity (0-1) [-]
+  real(wp) :: uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk
 
   ! First of all, check to make sure our model has an aitken mode. If it
   ! doesn't, we can return immediately.
@@ -141,27 +148,27 @@ subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
   ! Traverse the columns and levels, and compute tendencies from nucleation.
   do i = 1,model%num_columns
     do k = 1,model%num_levels
-      ! Compute the molar concentration of air at given pressure and
-      ! temperature [mol air/m^3].
-      aircon = pmid/(temp*R_gas)
-
-      ! Compute the dry mass of an SO4 nucleus.
-      md_so4 = 1_wp ! FIXME
+      ! Compute the molar concentration of air at the given pressure and
+      ! temperature.
+      c_air = press/(temp*R_gas)
 
       ! Compute the nucleation rate of H2SO4.
       q_h2so4 = q_g(h2so4_index, k, i)
       q_so4 = q_i(so4_aitken_index, k, i)
       n_aitken = n(aitken_index, k, i)
       J_nuc = h2so4_nuc_rate(q_so4, q_h2so4, n_aitkin, dt, &
-                             temp, pmid, aircon, zmid, pblh, relhum, &
+                             temp, press, c_air, z_k, h_pbl, rel_hum, &
                              uptkrate_h2so4, del_h2so4_gasprod, &
                              del_h2so4_aeruptk)
 
+      ! Compute the dry mass of an SO4 nucleus.
+      md_so4 = 1_wp ! FIXME
+
       ! Compute tendencies given J_nuc.
-      dqndt_so4 = 1e6_wp * J_nuc / aircon
+      dqndt_so4 = 1e6_wp * J_nuc / c_air
       dqdt_i(so4_aitken_index, k, i) = dqndt_so4 * (md_so4 / mw_so4)
       dqdt_g(h2so4_index, k, i) = -dqdt_i(so4_aitken_index, k, i)
-      dndt(k, i, aitken_index) = dqndt_so4 * aircon
+      dndt(k, i, aitken_index) = dqndt_so4 * c_air
     end do
   end do
 end subroutine

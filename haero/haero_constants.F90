@@ -14,8 +14,8 @@ module haero_constants
   !> Universal molar gas constant [J/K/mol]
   real(wp), parameter :: R_gas = 8.31446261815324_wp
 
-  !> Avogadro's constant [molecules/mol]
-  real(wp), parameter :: Avogadro = 6.022e23_wp
+  !> Avogadro's constant [#/mol]
+  real(wp), parameter :: Avogadro = 6.02214076e23_wp
 
 end module
 
