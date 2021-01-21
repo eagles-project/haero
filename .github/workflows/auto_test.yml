@@ -21,6 +21,7 @@ jobs:
         os: [ubuntu-latest] #, macos-latest]
         build-type: [Debug, Release]
         fp-precision: [double] #[single, double]
+        pack-size: [1] #[1, 4]
 
     # Environment variables
     env:
@@ -53,6 +54,7 @@ jobs:
           -DCMAKE_C_COMPILER=mpicc \
           -DCMAKE_Fortran_COMPILER=mpif90 \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
+          -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
           -DHAERO_ENABLE_DRIVER=ON \
           -DHAERO_AUTOTESTER=ON \
           -G "Unix Makefiles" \

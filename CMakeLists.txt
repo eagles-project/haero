@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 
 if (NOT HAERO_PACK_SIZE)
   message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
+elseif(HAERO_PACK_SIZE LESS 1)
+  message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
 endif()
 
 # We declare the project right away.
