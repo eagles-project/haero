@@ -7,9 +7,15 @@ module mam4_nucleation_mod
                    prognostics_t, diagnostics_t, tendencies_t, &
                    prognostics_from_c_ptr, diagnostics_from_c_ptr, &
                    tendencies_from_c_ptr
+  use haero_constants, only: pi, R_gas, Avogadro
 
   implicit none
   private
+
+  ! Module functions
+  public :: mam4_nucleation_init, &
+            mam4_nucleation_run, &
+            mam4_nucleation_finalize
 
   ! Module global variables
   ! All index variables are set to 0 if they don't correspond to anything within
@@ -27,11 +33,6 @@ module mam4_nucleation_mod
   !> Density of SO4 aerosol (and sulfiric acid) [kg/m^3]
   real(wp), parameter :: dens_so4a_host = 1770_wp
 
-  ! Physical constants (where do they go??)
-  real(wp), parameter :: R_gas = 8.31446261815324
-  real(wp), parameter :: Avogadro = 6.022e23_wp
-  real(wp), parameter :: one_third = 1.0_wp/3.0_wp
-
   !> Molecular weight of SO4 aerosol
   real(wp) :: mw_so4
 
@@ -41,10 +42,8 @@ module mam4_nucleation_mod
   real(wp), parameter, public :: adjust_factor_bin_ratenucl = 1.0_wp  ! applied to binary nucleation rate
   real(wp),            public :: adjust_factor_pbl_ratenucl = 1.0_wp  ! applied to boundary layer nucleation rate
                                                                       ! value reassigned in amicphys
-
-  public :: mam4_nucleation_init, &
-            mam4_nucleation_run, &
-            mam4_nucleation_finalize
+  ! We use this a lot.
+  real(wp), parameter :: one_third = 1.0_wp/3.0_wp
 
 contains
 
