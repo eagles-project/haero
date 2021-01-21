@@ -3,7 +3,8 @@
 module mam4_nucleation_mod
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, prognostics_t, diagnostics_t, tendencies_t, &
+  use haero, only: wp, model, species_t, &
+                   prognostics_t, diagnostics_t, tendencies_t, &
                    prognostics_from_c_ptr, diagnostics_from_c_ptr, &
                    tendencies_from_c_ptr
 
@@ -26,9 +27,9 @@ module mam4_nucleation_mod
   !> Density of SO4 aerosol (and sulfiric acid) [kg/m^3]
   real(wp), parameter :: dens_so4a_host = 1770_wp
 
-  !> Gas constant [m^3 Pa / K / mol]
+  ! Physical constants (where do they go??)
   real(wp), parameter :: R_gas = 8.31446261815324
-
+  real(wp), parameter :: Avogadro = 6.022e23_wp
   real(wp), parameter :: one_third = 1.0_wp/3.0_wp
 
   !> Molecular weight of SO4 aerosol
@@ -214,6 +215,8 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   real(wp), intent(in) :: del_h2so4_gasprod
   real(wp), intent(in) :: del_h2so4_aeruptk
 
+  real(wp) :: J_nuc
+
   integer :: itmp
   integer :: l
   integer :: m
@@ -298,8 +301,8 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   relhumnn = max( 0.01_wp, min( 0.99_wp, relhum ) )
 
   ! Calc h2so4 in molecules/cm3
-  cair = press_in/(temp_in*rgas)
-  c_h2so4_in = qh2so4_avg * cair * avogad * 1.0e-6_wp
+  cair = press_in/(temp_in*R_gas)
+  c_h2so4_in = qh2so4_avg * cair * Avogadro * 1.0e-6_wp
 
   ! Compute the intermediate nucleation rate (Vehkamaki 2002).
   J_star = 1.0e-38_wp
@@ -424,7 +427,6 @@ subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   isize_nuc, qnuma_del, qso4a_del, qh2so4_del)
 
   use mo_constants, only: rgas, &               ! Gas constant (J/K/kmol)
-  avogad => avogadro    ! Avogadro's number (1/kmol)
   use physconst,    only: mw_so4a => mwso4, &   ! Molecular weight of sulfate
 
   implicit none
@@ -754,7 +756,7 @@ function growth_adjusted_nucleation_rate(J_star, ) result (J_nuc)
   ! determine size bin into which the new particles go
   ! (probably it will always be bin #1, but ...)
   voldry_clus = ( max(N_h2so4,1.0_wp)*mw_so4a) /   &
-    (1.0e3_wp*dens_sulfacid*avogad)
+    (1.0e3_wp*dens_sulfacid*Avogadro)
   ! correction when host code sulfate is really ammonium bisulfate/sulfate
   voldry_clus = voldry_clus * (mw_so4a_host/mw_so4a)
   dpdry_clus = (voldry_clus*6.0_wp/pi)**one_third
