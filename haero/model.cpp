@@ -3,6 +3,7 @@
 
 #include <set>
 
+#if HAERO_FORTRAN
 // Functions for intializing the haero Fortran module.
 extern "C" {
 
@@ -23,11 +24,13 @@ void haerotran_end_init();
 void haerotran_finalize();
 
 }
+#endif // HAERO_FORTRAN
 
 namespace haero {
 
 namespace {
 
+#if HAERO_FORTRAN
 // Indicates whether we have initialized the Haero Fortran helper module. Only
 // one model gets to do this, so if more than one model instance has
 // Fortran-backed processes, we encounter a fatal error.
@@ -35,6 +38,8 @@ bool initialized_fortran_ = false;
 
 // Here are C strings that have been constructed from Fortran strings.
 std::set<std::string>* fortran_strings_ = nullptr;
+
+#endif // HAERO_FORTRAN
 
 // Prognostic process types.
 const ProcessType progProcessTypes[] = {
@@ -86,7 +91,9 @@ Model::Model(
   // If we encountered a Fortran-backed process, attempt to initialize the
   // Haero Fortran helper module with our model data.
   if (have_fortran_processes) {
+#if HAERO_FORTRAN
     init_fortran();
+#endif // HAERO_FORTRAN
   }
 
   // Now we can initialize the processes.
@@ -136,6 +143,7 @@ Model::~Model() {
     delete p.second;
   }
 
+#if HAERO_FORTRAN
   // If we initialized the Haero Fortran module, we must finalize it.
   if (uses_fortran_) {
     haerotran_finalize();
@@ -147,6 +155,7 @@ Model::~Model() {
       fortran_strings_ = nullptr;
     }
   }
+#endif // HAERO_FORTRAN
 }
 
 Prognostics* Model::create_prognostics() const {
@@ -270,6 +279,7 @@ void Model::index_modal_species(const std::map<std::string, std::vector<std::str
 }
 
 void Model::init_fortran() {
+#if HAERO_FORTRAN
   // If we've already initialized the Fortran module, this means that this is
   // not the first C++ model instance that has Fortran-backed processes. We
   // đon't allow this, since we've made assumptions in order to simplify
@@ -320,6 +330,7 @@ void Model::init_fortran() {
   // Okay, the Fortran module is initialized.
   initialized_fortran_ = true;
   uses_fortran_ = true;
+#endif // HAERO_FORTRAN
 }
 
 bool Model::gather_processes() {
@@ -331,17 +342,21 @@ bool Model::gather_processes() {
   bool have_fortran_processes = false;
   for (auto p: progProcessTypes) {
     PrognosticProcess* process = select_prognostic_process(p, selected_processes_);
+#if HAERO_FORTRAN
     if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
       have_fortran_processes = true;
     }
+#endif // HAERO_FORTRAN
     prog_processes_[p] = process;
   }
 
   for (auto p: diagProcessTypes) {
     DiagnosticProcess* process = select_diagnostic_process(p, selected_processes_);
+#if HAERO_FORTRAN
     if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
       have_fortran_processes = true;
     }
+#endif // HAERO_FORTRAN
     diag_processes_[p] = process;
   }
 
@@ -356,6 +371,7 @@ void Model::validate() {
   EKAT_REQUIRE_MSG((num_levels_ > 0), "Model: No vertical levels were specified!");
 }
 
+#if HAERO_FORTRAN
 // Interoperable C functions for providing data to Fortran.
 // See haero.F90 for details on how these functions are used.
 extern "C" {
@@ -380,5 +396,6 @@ const char* new_c_string(char* f_str_ptr, int f_str_len) {
 }
 
 } // extern "C"
+#endif // HAERO_FORTRAN
 
 }

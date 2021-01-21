@@ -29,11 +29,12 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-# Process stub tests -- checks that data can be passed between C++ and Fortran
-add_library(haero_process_stubs
-            prog_process_stub.cpp prog_process_stub.F90
-            diag_process_stub.cpp diag_process_stub.F90)
-add_dependencies(haero_process_stubs haero)
-
-EkatCreateUnitTest(process_stub_tests process_stub_tests.cpp
-                   LIBS haero_process_stubs;${HAERO_LIBRARIES})
+if (HAERO_FORTRAN)
+  # Process stub tests -- checks that data can be passed between C++ and Fortran
+  add_library(haero_process_stubs
+              prog_process_stub.cpp prog_process_stub.F90
+              diag_process_stub.cpp diag_process_stub.F90)
+  add_dependencies(haero_process_stubs haero)
+  EkatCreateUnitTest(process_stub_tests process_stub_tests.cpp
+                     LIBS haero_process_stubs;${HAERO_LIBRARIES})
+endif()
