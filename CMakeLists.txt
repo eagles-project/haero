@@ -5,6 +5,10 @@ cmake_minimum_required (VERSION 3.10.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/")
 
+if (NOT HAERO_PACK_SIZE)
+  message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
+endif()
+
 # We declare the project right away.
 enable_language(CXX)
 if (HAERO_PACK_SIZE EQUAL 1)
