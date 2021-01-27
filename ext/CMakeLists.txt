@@ -263,6 +263,17 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
   add_dependencies(tchem tchem_proj)
+
+  # TChem has trouble finding the right KokkosConfig.cmake, and usually ends up
+  # ѕelecting the one left in EKAT's Kokkos build directory instead of the one
+  # installed in ${PROJECT_BINARY_DIR}/lib. We have to delete the bad one to
+  # help TChem out.
+  if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
+    ExternalProject_Add_Step(tchem_proj delete_bad_kokkos_config
+      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
+      DEPENDS ekat
+      DEPENDERS configure)
+  endif()
 endif()
 set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 
