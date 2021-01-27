@@ -195,7 +195,7 @@ set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY_DI
 # Check if we're supposed to build ekat internally
 get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
 if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
-  message(STATUS "Building EKAT locally.")
+  message(STATUS "EKAT library not found on system. Building locally.")
   update_submodules()
   ExternalProject_Add(ekat_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ekat
@@ -226,6 +226,46 @@ if (YAMLCPP_INDEX EQUAL -1)
   set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${YAMLCPP_INCLUDE_DIR})
 endif()
 
+#----------------------------------------------------------------------------
+# TChem chemical kinetics library
+#----------------------------------------------------------------------------
+if (TCHEM_LIBRARY MATCHES ".a")
+  add_library(tchem STATIC IMPORTED GLOBAL)
+else()
+  add_library(tchem SHARED IMPORTED GLOBAL)
+endif()
+set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY_DIR}/${TCHEM_LIBRARY})
+
+if (NOT EXISTS ${TCHEM_LIBRARY})
+  message(STATUS "TChem library not found on system. Building locally.")
+  update_submodules()
+  string(REPLACE "/lib" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
+  set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                       -DTCHEM_ENABLE_VERBOSE=ON
+                       -DTCHEM_ENABLE_KOKKOS=ON
+                       -DTCHEM_ENABLE_KOKKOSKERNELS=OFF
+                       -DTCHEM_ENABLE_TEST=OFF
+                       -DTCHEM_ENABLE_EXAMPLE=ON
+                       -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                     )
+  ExternalProject_Add(tchem_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/TChem
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/TChem/src
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/TChem
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${TCHEM_CMAKE_OPTS}
+                      DEPENDS ekat
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND make -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND make install
+                      LOG_INSTALL TRUE)
+  add_dependencies(tchem tchem_proj)
+endif()
+set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
+
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
 set(HAERO_INCDIRS ${HAERO_INCDIRS};${HAERO_EXT_INCDIRS} PARENT_SCOPE)
@@ -247,4 +287,7 @@ if (${EKAT_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
 endif()
 if (${YAMLCPP_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
+endif()
+if (${TCHEM_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
+  install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
 endif()
