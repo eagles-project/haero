@@ -261,10 +261,13 @@ if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
                       LOG_INSTALL TRUE)
   add_dependencies(kokkoskernels kokkoskernels_proj)
 
-  # kokkos-kernels has trouble finding the right KokkosConfig.cmake, and usually
-  # ends up ѕelecting the one left in EKAT's Kokkos build directory instead of
-  # the one installed in ${PROJECT_BINARY_DIR}/lib. We have to delete the bad
-  # one to help it out.
+  # Our version of Kokkos has an install process that's kind of broken:
+  # 1. It leaves a KokkosConfig.cmake file in its build directory in addition to
+  #    the installation path, and this confuses both kokkos-kernels and TChem.
+  # 2. For some reason, Kokkos_Sort.hpp and Kokkos_Random.hpp are left out of
+  #    the kokkos/ include path. This oddity likely indicates a version
+  #    mismatch.
+  # This custom step attempts to address these issues.
   if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
     ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkos_config
       COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
