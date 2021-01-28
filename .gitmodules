@@ -14,3 +14,6 @@
 [submodule "ext/TChem"]
 	path = ext/TChem
 	url = git@github.com:sandialabs/TChem.git
+[submodule "ext/kokkos-kernels"]
+	path = ext/kokkos-kernels
+	url = git@github.com:kokkos/kokkos-kernels.git

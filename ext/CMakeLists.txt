@@ -227,6 +227,54 @@ if (YAMLCPP_INDEX EQUAL -1)
 endif()
 
 #----------------------------------------------------------------------------
+# Kokkos-Kernels library
+#----------------------------------------------------------------------------
+if (KOKKOS_KERNELS_LIBRARY MATCHES ".a")
+  add_library(kokkoskernels STATIC IMPORTED GLOBAL)
+else()
+  add_library(kokkoskernels SHARED IMPORTED GLOBAL)
+endif()
+set_target_properties(kokkoskernels PROPERTIES IMPORTED_LOCATION ${KOKKOS_KERNELS_LIBRARY_DIR}/${KOKKOS_KERNELS_LIBRARY})
+
+if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
+  message(STATUS "kokkos-kernels library not found on system. Building locally.")
+  update_submodules()
+  string(REPLACE "/lib" "" KOKKOS_DIR ${EKAT_LIBRARY_DIR})
+  set(KK_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DKokkos_ROOT=${KOKKOS_DIR}
+                    -DKokosKernels_INST_LAYOUTRIGHT:BOOL=ON
+                    -DCMAKE_CXX_EXTENSIONS:BOOL=OFF
+                    )
+  ExternalProject_Add(kokkoskernels_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kokkos-kernels
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${KK_CMAKE_OPTS}
+                      DEPENDS ekat
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND make -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND make install
+                      LOG_INSTALL TRUE)
+  add_dependencies(kokkoskernels kokkoskernels_proj)
+
+  # kokkos-kernels has trouble finding the right KokkosConfig.cmake, and usually
+  # ends up ѕelecting the one left in EKAT's Kokkos build directory instead of
+  # the one installed in ${PROJECT_BINARY_DIR}/lib. We have to delete the bad
+  # one to help it out.
+  if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
+    ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkos_config
+      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
+      DEPENDS ekat
+      DEPENDERS configure)
+  endif()
+endif()
+set(HAERO_EXT_LIBRARIES kokkoskernels;${HAERO_EXT_LIBRARIES})
+
+#----------------------------------------------------------------------------
 # TChem chemical kinetics library
 #----------------------------------------------------------------------------
 if (TCHEM_LIBRARY MATCHES ".a")
@@ -245,7 +293,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                        -DTCHEM_ENABLE_VERBOSE=ON
                        -DTCHEM_ENABLE_KOKKOS=ON
-                       -DTCHEM_ENABLE_KOKKOSKERNELS=OFF
+                       -DTCHEM_ENABLE_KOKKOSKERNELS=ON
                        -DTCHEM_ENABLE_TEST=OFF
                        -DTCHEM_ENABLE_EXAMPLE=ON
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
@@ -256,24 +304,13 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/TChem
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${TCHEM_CMAKE_OPTS}
-                      DEPENDS ekat
+                      DEPENDS kokkoskernels
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
   add_dependencies(tchem tchem_proj)
-
-  # TChem has trouble finding the right KokkosConfig.cmake, and usually ends up
-  # ѕelecting the one left in EKAT's Kokkos build directory instead of the one
-  # installed in ${PROJECT_BINARY_DIR}/lib. We have to delete the bad one to
-  # help TChem out.
-  if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
-    ExternalProject_Add_Step(tchem_proj delete_bad_kokkos_config
-      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
-      DEPENDS ekat
-      DEPENDERS configure)
-  endif()
 endif()
 set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 
