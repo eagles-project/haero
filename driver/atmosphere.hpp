@@ -1,5 +1,5 @@
-#ifndef HAERO_ATMOSPHERE_HPP
-#define HAERO_ATMOSPHERE_HPP
+#ifndef HAERO_DRIVER_ATMOSPHERE_HPP
+#define HAERO_DRIVER_ATMOSPHERE_HPP
 
 #include "haero/haero_config.hpp"
 #include "haero/physical_constants.hpp"

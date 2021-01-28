@@ -200,6 +200,7 @@ Diagnostics* Model::create_diagnostics() const {
 void Model::run_process(ProcessType type,
                         Real t, Real dt,
                         const Prognostics& prognostics,
+                        const Atmosphere& atmosphere,
                         const Diagnostics& diagnostics,
                         Tendencies& tendencies) {
   auto iter = prog_processes_.find(type);
@@ -209,12 +210,14 @@ void Model::run_process(ProcessType type,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->run(*this, t, dt, prognostics, diagnostics, tendencies);
+  iter->second->run(*this, t, dt, prognostics, atmosphere, diagnostics,
+                    tendencies);
 }
 
 void Model::update_diagnostics(ProcessType type,
                                Real t,
                                const Prognostics& prognostics,
+                               const Atmosphere& atmosphere,
                                Diagnostics& diagnostics) {
   auto iter = diag_processes_.find(type);
   EKAT_REQUIRE_MSG(iter != diag_processes_.end(),
@@ -223,7 +226,7 @@ void Model::update_diagnostics(ProcessType type,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->update(*this, t, prognostics, diagnostics);
+  iter->second->update(*this, t, prognostics, atmosphere, diagnostics);
 }
 
 const SelectedProcesses& Model::selected_processes() const {

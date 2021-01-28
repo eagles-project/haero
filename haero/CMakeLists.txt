@@ -30,11 +30,12 @@ endif()
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             ${HAERO_FORTRAN_SOURCES}
+            atmosphere.cpp
             chemistry.cpp
             diagnostics.cpp
             model.cpp
-            selected_processes.cpp
             prognostics.cpp
+            selected_processes.cpp
             tendencies.cpp
             utils.cpp
             view_pack_helpers.cpp

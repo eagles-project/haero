@@ -7,7 +7,7 @@ extern "C" {
 
 // Fortran creation function.
 extern void diag_stub_init();
-extern void diag_stub_update(Real t, void* progs, void* diags);
+extern void diag_stub_update(Real t, void* progs, void* atm, void* diags);
 extern void diag_stub_finalize();
 
 } // extern "C"
