@@ -154,52 +154,52 @@ extern "C" {
 
 bool d_has_var_c(void* d, const char* name)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_var(name);
 }
 
 void* d_var_c(void* d, const char* name)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   auto& var = diags->var(name);
   return (void*)var.data();
 }
 
 bool d_has_aerosol_var_c(void* d, const char* name)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_aerosol_var(name);
 }
 
 void* d_aerosol_var_c(void* d, const char* name, int mode)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   auto& var = diags->aerosol_var(name, mode);
   return (void*)var.data();
 }
 
 bool d_has_gas_var_c(void* d, const char* name)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_gas_var(name);
 }
 
 void* d_gas_var_c(void* d, const char* name)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   auto& var = diags->gas_var(name);
   return (void*)var.data();
 }
 
 bool d_has_modal_var_c(void* d, const char* name)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_modal_var(name);
 }
 
 void* d_modal_var_c(void* d, const char* name)
 {
-  Diagnostics* diags = (Diagnostics*)d;
+  auto* diags = static_cast<Diagnostics*>(d);
   auto& var = diags->modal_var(name);
   return (void*)var.data();
 }
