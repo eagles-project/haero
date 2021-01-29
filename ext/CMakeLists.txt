@@ -261,18 +261,20 @@ if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
                       LOG_INSTALL TRUE)
   add_dependencies(kokkoskernels kokkoskernels_proj)
 
-  # Our version of Kokkos has an install process that's kind of broken:
-  # 1. It leaves a KokkosConfig.cmake file in its build directory in addition to
-  #    the installation path, and this confuses both kokkos-kernels and TChem.
-  # 2. For some reason, Kokkos_Sort.hpp and Kokkos_Random.hpp are left out of
-  #    the kokkos/ include path. This oddity likely indicates a version
-  #    mismatch.
-  # This custom step attempts to address these issues.
+  # Our version of Kokkos has an install process that's kind of broken. It
+  # leaves a KokkosConfig.cmake file in its build directory in addition to
+  # the installation path, and this confuses both kokkos-kernels and TChem.
+  # We delete it in this custom step.
   if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
     ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkos_config
       COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
       DEPENDS ekat
       DEPENDERS configure)
+    # We also have to delete KokkosKernelsConfig.cmake after installation.
+    ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkoskernels_config
+      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels/KokkosKernelsConfig.cmake
+      DEPENDS ekat
+      DEPENDEES install)
   endif()
 endif()
 set(HAERO_EXT_LIBRARIES kokkoskernels;${HAERO_EXT_LIBRARIES})
@@ -300,6 +302,8 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DTCHEM_ENABLE_TEST=OFF
                        -DTCHEM_ENABLE_EXAMPLE=ON
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                       -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                       -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                      )
   ExternalProject_Add(tchem_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/TChem
