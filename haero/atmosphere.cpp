@@ -2,6 +2,40 @@
 
 namespace haero {
 
+Atmosphere::Atmosphere(int num_columns,
+                       int num_levels,
+                       const Kokkos::View<PackType**>& temp,
+                       const Kokkos::View<PackType**>& press,
+                       const Kokkos::View<PackType**>& rel_hum,
+                       const Kokkos::View<PackType**>& ht):
+  num_columns_(num_columns),
+  num_levels_(num_levels),
+  temperature_(temp),
+  pressure_(press),
+  relative_humidity_(rel_hum),
+  height_(ht) {
+  // Make sure the views we're given are properly sized.
+  EKAT_REQUIRE_MSG(temp.extent(0) == num_columns,
+                   "Temperature view has wrong number of columns!");
+  EKAT_REQUIRE_MSG(temp.extent(1) == num_levels,
+                   "Temperature view has wrong number of vertical levels!");
+  EKAT_REQUIRE_MSG(press.extent(0) == num_columns,
+                   "Pressure view has wrong number of columns!");
+  EKAT_REQUIRE_MSG(press.extent(1) == num_levels,
+                   "Pressure view has wrong number of vertical levels!");
+  EKAT_REQUIRE_MSG(rel_hum.extent(0) == num_columns,
+                   "Relative humidity view has wrong number of columns!");
+  EKAT_REQUIRE_MSG(rel_hum.extent(1) == num_levels,
+                   "Relative humidity view has wrong number of vertical levels!");
+  EKAT_REQUIRE_MSG(ht.extent(0) == num_columns,
+                   "Height view has wrong number of columns!");
+  EKAT_REQUIRE_MSG(ht.extent(1) == num_levels+1,
+                   "Height view has wrong number of vertical interfaces!");
+}
+
+Atmosphere::~Atmosphere() {
+}
+
 // Interoperable C functions for providing data to Fortran.
 // See haero.F90 for details on how these functions are used.
 extern "C" {

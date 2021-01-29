@@ -24,7 +24,10 @@ TEST_CASE("prog_process_stub", "") {
   // Set up atmospheric data and populate it with some views. It's not
   // important for this data to be valid, since it's unused by these stubs.
   using PackType = Atmosphere::PackType;
-  Kokkos::View<PackType**> temp, press, rel_hum, ht;
+  Kokkos::View<PackType**> temp("temperature", num_columns, num_levels);
+  Kokkos::View<PackType**> press("pressure", num_columns, num_levels);
+  Kokkos::View<PackType**> rel_hum("relative humidity", num_columns, num_levels);
+  Kokkos::View<PackType**> ht("height", num_columns, num_levels+1);
   auto* atm = new Atmosphere(model->num_columns(), model->num_levels(),
                              temp, press, rel_hum, ht);
 
@@ -164,7 +167,10 @@ TEST_CASE("diag_process_stub", "") {
   // Set up atmospheric data and populate it with some views. It's not
   // important for this data to be valid, since it's unused by these stubs.
   using PackType = Atmosphere::PackType;
-  Kokkos::View<PackType**> temp, press, rel_hum, ht;
+  Kokkos::View<PackType**> temp("temperature", num_columns, num_levels);
+  Kokkos::View<PackType**> press("pressure", num_columns, num_levels);
+  Kokkos::View<PackType**> rel_hum("relative humidity", num_columns, num_levels);
+  Kokkos::View<PackType**> ht("height", num_columns, num_levels+1);
   auto* atm = new Atmosphere(model->num_columns(), model->num_levels(),
                              temp, press, rel_hum, ht);
 

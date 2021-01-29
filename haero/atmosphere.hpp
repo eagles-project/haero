@@ -46,16 +46,10 @@ class Atmosphere final {
              const Kokkos::View<PackType**>& temp,
              const Kokkos::View<PackType**>& press,
              const Kokkos::View<PackType**>& rel_hum,
-             const Kokkos::View<PackType**>& ht):
-    num_columns_(num_columns),
-    num_levels_(num_levels),
-    temperature_(temp),
-    pressure_(press),
-    relative_humidity_(rel_hum),
-    height_(ht) {}
+             const Kokkos::View<PackType**>& ht);
 
   /// Destructor.
-  ~Atmosphere() {}
+  ~Atmosphere();
 
   /// Returns the number of independent atmospheric columns in the system.
   int num_columns() const { return num_columns_; }
