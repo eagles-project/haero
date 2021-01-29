@@ -211,10 +211,10 @@ class Prognostics final {
   using ManagedModalColumnView = Kokkos::View<PackType***>;
 
   /// Number of columns.
-  int num_columns_;
+  const int num_columns_;
 
   /// Number of vertical levels.
-  int num_levels_;
+  const int num_levels_;
 
   /// Aerosol species names within each mode.
   std::vector<std::vector<std::string> > aero_species_names_;

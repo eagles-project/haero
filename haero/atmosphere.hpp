@@ -78,14 +78,14 @@ class Atmosphere final {
   private:
 
   // Number of columns / vertical levels.
-  int num_columns_;
-  int num_levels_;
+  const int num_columns_;
+  const int num_levels_;
 
   // Unmanaged views
-  ColumnView temperature_;
-  ColumnView pressure_;
-  ColumnView relative_humidity_;
-  ColumnView height_;
+  const ColumnView temperature_;
+  const ColumnView pressure_;
+  const ColumnView relative_humidity_;
+  const ColumnView height_;
 };
 
 }
