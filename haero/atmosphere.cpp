@@ -17,20 +17,20 @@ Atmosphere::Atmosphere(int num_columns,
   // Make sure the views we're given are properly sized.
   EKAT_REQUIRE_MSG(temp.extent(0) == num_columns,
                    "Temperature view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(temp.extent(1) == num_levels,
-                   "Temperature view has wrong number of vertical levels!");
+  EKAT_REQUIRE_MSG(temp.extent(1) == num_levels/HAERO_PACK_SIZE,
+                   "Temperature view has wrong number of vertical level packs!");
   EKAT_REQUIRE_MSG(press.extent(0) == num_columns,
                    "Pressure view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(press.extent(1) == num_levels,
-                   "Pressure view has wrong number of vertical levels!");
+  EKAT_REQUIRE_MSG(press.extent(1) == num_levels/HAERO_PACK_SIZE,
+                   "Pressure view has wrong number of vertical level packs!");
   EKAT_REQUIRE_MSG(rel_hum.extent(0) == num_columns,
                    "Relative humidity view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(rel_hum.extent(1) == num_levels,
-                   "Relative humidity view has wrong number of vertical levels!");
+  EKAT_REQUIRE_MSG(rel_hum.extent(1) == num_levels/HAERO_PACK_SIZE,
+                   "Relative humidity view has wrong number of vertical level packs!");
   EKAT_REQUIRE_MSG(ht.extent(0) == num_columns,
                    "Height view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(ht.extent(1) == num_levels+1,
-                   "Height view has wrong number of vertical interfaces!");
+  EKAT_REQUIRE_MSG(ht.extent(1) == (num_levels+1)/HAERO_PACK_SIZE,
+                   "Height view has wrong number of vertical interface packs!");
 }
 
 Atmosphere::~Atmosphere() {
