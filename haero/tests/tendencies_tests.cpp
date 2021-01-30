@@ -21,11 +21,7 @@ TEST_CASE("tendencies_ctor", "") {
   Prognostics progs(num_modes, {1}, num_gases, num_levels,
                     int_aerosols, cld_aerosols, gases, modal_concs);
 
-  // Try to create tendencies for these prognostics before assembly.
-  REQUIRE_THROWS(Tendencies(progs));
-
-  // Assemble the prognostic variables, create tendencies for it, and make sure
-  // the vitals match up.
+  // Now create tendencies for it, and make sure the vitals match up.
   Tendencies tends(progs);
   const auto& tends_int_aeros = tends.interstitial_aerosols();
   const auto& progs_int_aeros = progs.interstitial_aerosols();

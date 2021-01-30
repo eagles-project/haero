@@ -36,11 +36,11 @@ Prognostics::Prognostics(int num_aerosol_modes,
                   "int_aerosols must have extent(1) == " << num_vert_packs);
   EKAT_ASSERT_MSG(gases.extent(0) == num_gases_,
                   "gases must have extent(0) == " << num_gases_);
-  EKAT_ASSERT_MSG(gases.extent(0) == num_vert_packs,
+  EKAT_ASSERT_MSG(gases.extent(1) == num_vert_packs,
                   "gases must have extent(1) == " << num_vert_packs);
   EKAT_ASSERT_MSG(modal_num_concs.extent(0) == num_aerosol_modes,
                   "modal_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_ASSERT_MSG(modal_num_concs.extent(0) == num_vert_packs,
+  EKAT_ASSERT_MSG(modal_num_concs.extent(1) == num_vert_packs,
                   "modal_num_concs must have extent(1) == " << num_vert_packs);
 #endif
 }
