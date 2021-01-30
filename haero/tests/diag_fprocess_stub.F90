@@ -52,57 +52,52 @@ subroutine diag_stub_update(t, progs, atm, diags) bind(c)
   type(diagnostics_t) :: diagnostics
 
   ! Other local variables.
-  integer :: num_modes, num_gas_species, m, i, k, s
-  real(wp) :: mu_s, nu_s
-  real(wp), pointer, dimension(:,:,:) :: q_c  ! cloudborne aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_i  ! interstitial aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_g  ! gas mole fracs
-  real(wp), pointer, dimension(:,:,:) :: n    ! modal number densities
-  real(wp), pointer, dimension(:,:)   :: temp ! atmospheric temperature
-  real(wp), pointer, dimension(:,:,:) :: p_g  ! gas partial pressure
-  real(wp), pointer, dimension(:,:,:) :: p_a  ! modal aerosol partial pressure
+  integer :: num_modes, num_gases, m, k, s, p
+  real(wp) :: mu_p, nu_p
+  real(wp), pointer, dimension(:,:) :: q_c  ! cloudborne aerosol mix fracs
+  real(wp), pointer, dimension(:,:) :: q_i  ! interstitial aerosol mix fracs
+  real(wp), pointer, dimension(:,:) :: q_g  ! gas mole fracs
+  real(wp), pointer, dimension(:,:) :: n    ! modal number densities
+  real(wp), pointer, dimension(:)   :: temp ! atmospheric temperature
+  real(wp), pointer, dimension(:,:) :: p_g  ! gas partial pressure
+  real(wp), pointer, dimension(:,:) :: p_a  ! modal aerosol partial pressure
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
   atmosphere = atmosphere_from_c_ptr(atm)
   diagnostics = diagnostics_from_c_ptr(diags)
-  n => prognostics%modal_num_densities()
-  q_g => prognostics%gas_mole_fractions()
+  n => prognostics%modal_num_concs()
+  q_g => prognostics%gases()
   temp => diagnostics%var("temperature")
 
   ! Zero the partial pressures.
   p_a => diagnostics%modal_var("pressure")
-  p_a(:, :, :) = 0
+  p_a(:, :) = 0
   p_g => diagnostics%gas_var("pressure")
-  p_g(:, :, :) = 0
+  p_g(:, :) = 0
 
   ! Diagnose modal aerosol partial pressure using ideal gas law
   num_modes = size(model%modes)
-  do m=1,num_modes
-    q_c => prognostics%cloudborne_aerosols(m)
-    q_i => prognostics%interstitial_aerosols(m)
+  q_c => prognostics%cloudborne_aerosols()
+  q_i => prognostics%interstitial_aerosols()
 
-    do i=1,model%num_columns
-      do k=1,model%num_levels
-        do s=1,model%num_mode_species(m)
-          mu_s = model%aero_species(m, s)%molecular_wt ! species molecular weight
-          ! Compute the number of aerosol moles per unit volume
-          nu_s = (q_c(s, k, i) + q_i(s, k, i)) * n(k, i, m) / Avogadro
-          p_a(k, i, m) = p_a(k, i, m) + nu_s * R * temp(k, i)
-        end do
-      end do
+  do p=1,model%num_populations
+    do k=1,model%num_levels
+      call model%get_mode_and_species(p, m, s)
+      mu_p = model%aero_species(m, s)%molecular_wt ! species molecular weight
+      ! Compute the number of aerosol moles per unit volume
+      nu_p = (q_c(k, p) + q_i(k, p)) * n(k, p) / Avogadro
+      p_a(k, p) = p_a(k, p) + nu_p * R * temp(k)
     end do
   end do
 
   ! Diagnose gas partial pressure using ideal gas law
-  num_gas_species = size(model%gas_species)
-  do i=1,model%num_columns
+  num_gases = size(model%gas_species)
+  do s=1,num_gases
     do k=1,model%num_levels
-      do s=1,num_gas_species
-        ! Compute the number of gas moles per unit volume
-        nu_s = q_g(s, k, i) * dry_air_density / (kg_per_g * dry_air_mw)
-        p_g(s, k, i) = nu_s * R * temp(k, i)
-      end do
+      ! Compute the number of gas moles per unit volume
+      nu_p = q_g(k, s) * dry_air_density / (kg_per_g * dry_air_mw)
+      p_g(k, s) = nu_p * R * temp(k)
     end do
   end do
 
