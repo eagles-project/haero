@@ -19,6 +19,12 @@ namespace haero {
 class Model final {
   public:
 
+  /// This is the device on which the Prognostics stores its data.
+  using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
+
+  /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
+  using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
+
   /// Creates an aerosol model that supports the selected processes.
   /// @param [in] selected_processes the set of processes (including
   ///                                implementations) supported by the resulting
@@ -65,12 +71,13 @@ class Model final {
   /// Models are not assignable either.
   Model& operator=(const Model&) = delete;
 
-  /// Creates a new Prognostics object that can be used with this Model.
-  /// All fields within this new Prognostics are owned and managed by it. In
-  /// the general case, this might not be what you want--in particular, a host
-  /// model may demand to manage all of its own state information. Nevertheless,
-  /// this simplified state creation can be useful for testing.
-  Prognostics* create_prognostics() const;
+  /// Creates a new Prognostics object that can be used with this Model, given
+  /// a set of views representing aerosol data managed by a host model. See
+  /// the Prognostics class constructor for details on these views.
+  Prognostics* create_prognostics(Kokkos::View<PackType**>& int_aerosols,
+                                  Kokkos::View<PackType**>& cld_aerosols,
+                                  Kokkos::View<PackType**>& gases,
+                                  Kokkos::View<PackType**>& modal_num_concs) const;
 
   /// Creates a new Diagnostics object that can be used with this Model.
   /// All fields within this new Diagnostics are owned and managed by it.

@@ -2,34 +2,24 @@
 
 namespace haero {
 
-Atmosphere::Atmosphere(int num_columns,
-                       int num_levels,
-                       const Kokkos::View<PackType**>& temp,
-                       const Kokkos::View<PackType**>& press,
-                       const Kokkos::View<PackType**>& rel_hum,
-                       const Kokkos::View<PackType**>& ht):
-  num_columns_(num_columns),
+Atmosphere::Atmosphere(int num_levels,
+                       const Kokkos::View<PackType*>& temp,
+                       const Kokkos::View<PackType*>& press,
+                       const Kokkos::View<PackType*>& rel_hum,
+                       const Kokkos::View<PackType*>& ht):
   num_levels_(num_levels),
   temperature_(temp),
   pressure_(press),
   relative_humidity_(rel_hum),
   height_(ht) {
   // Make sure the views we're given are properly sized.
-  EKAT_REQUIRE_MSG(temp.extent(0) == num_columns,
-                   "Temperature view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(temp.extent(1) == num_levels/HAERO_PACK_SIZE,
+  EKAT_REQUIRE_MSG(temp.extent(0) == num_levels/HAERO_PACK_SIZE,
                    "Temperature view has wrong number of vertical level packs!");
-  EKAT_REQUIRE_MSG(press.extent(0) == num_columns,
-                   "Pressure view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(press.extent(1) == num_levels/HAERO_PACK_SIZE,
+  EKAT_REQUIRE_MSG(press.extent(0) == num_levels/HAERO_PACK_SIZE,
                    "Pressure view has wrong number of vertical level packs!");
-  EKAT_REQUIRE_MSG(rel_hum.extent(0) == num_columns,
-                   "Relative humidity view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(rel_hum.extent(1) == num_levels/HAERO_PACK_SIZE,
+  EKAT_REQUIRE_MSG(rel_hum.extent(0) == num_levels/HAERO_PACK_SIZE,
                    "Relative humidity view has wrong number of vertical level packs!");
-  EKAT_REQUIRE_MSG(ht.extent(0) == num_columns,
-                   "Height view has wrong number of columns!");
-  EKAT_REQUIRE_MSG(ht.extent(1) == (num_levels+1)/HAERO_PACK_SIZE,
+  EKAT_REQUIRE_MSG(ht.extent(0) == (num_levels+1)/HAERO_PACK_SIZE,
                    "Height view has wrong number of vertical interface packs!");
 }
 

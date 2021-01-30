@@ -158,25 +158,17 @@ Model::~Model() {
 #endif // HAERO_FORTRAN
 }
 
-Prognostics* Model::create_prognostics() const {
-
-  auto progs = new Prognostics(num_columns_, num_levels_);
-
-  // Add aerosol modes/species data.
-  for (size_t i = 0; i < modes_.size(); ++i) {
-    std::vector<Species> species;
-    for (size_t j = 0; j < species_for_mode_[i].size(); ++j) {
-      species.push_back(aero_species_[species_for_mode_[i][j]]);
-    }
-    progs->add_aerosol_mode(modes_[i], species);
+Prognostics* Model::create_prognostics(Kokkos::View<PackType**>& int_aerosols,
+                                       Kokkos::View<PackType**>& cld_aerosols,
+                                       Kokkos::View<PackType**>& gases,
+                                       Kokkos::View<PackType**>& modal_num_concs) const {
+  std::vector<int> num_aero_species(modes_.size());
+  for (size_t m = 0; m < modes_.size(); ++m) {
+    num_aero_species[m] = static_cast<int>(species_for_mode_[m].size());
   }
-
-  // Add gas species data.
-  progs->add_gas_species(gas_species_);
-
-  // Assemble the prognostics and return them.
-  progs->assemble();
-  return progs;
+  return new Prognostics(num_aero_species.size(), num_aero_species,
+                         gas_species_.size(), num_levels_,
+                         int_aerosols, cld_aerosols, gases, modal_num_concs);
 }
 
 Diagnostics* Model::create_diagnostics() const {
@@ -185,8 +177,8 @@ Diagnostics* Model::create_diagnostics() const {
   for (size_t m = 0; m < modes_.size(); ++m) {
     num_aero_species[m] = static_cast<int>(species_for_mode_[m].size());
   }
-  auto diags =  new Diagnostics(num_columns_, num_levels_,
-                                num_aero_species, gas_species_.size());
+  auto diags = new Diagnostics(num_aero_species.size(), num_aero_species,
+                               gas_species_.size(), num_levels_);
 
   // Make sure that all diagnostic variables needed by the model's processes
   // are present.

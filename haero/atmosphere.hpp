@@ -19,40 +19,32 @@ class Atmosphere final {
   /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
   using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
 
-  /// This type represents a multidimensional array mapping a column and
-  /// vertical level index to a pack.
-  /// * The column is identified by the index i.
-  /// * The vertical level(s) are identified by the index k.
-  /// So view[i][k] yields the desired pack.
+  /// This type represents an array mapping a vertical level index to a pack.
+  /// The vertical level(s) are identified by the index.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ColumnView = ekat::Unmanaged<Kokkos::View<PackType**> >;
+  using ColumnView = ekat::Unmanaged<Kokkos::View<PackType*> >;
 
   /// Creates an Atmosphere that stores unmanaged views of atmospheric column
   /// data owned and managed by the atmosphere host model.
-  /// @param [in] num_columns the number of vertical columns stored by the state
   /// @param [in] num_levels the number of vertical levels per column stored by
   ///                        the state
-  /// @param [in] temp A view of temperature data [K] managed by the host
+  /// @param [in] temp A view of temperature column data [K] managed by the host
   ///                  model
-  /// @param [in] press A view of pressure data [Pa] managed by the host
+  /// @param [in] press A view of pressure column data [Pa] managed by the host
   ///                   model
-  /// @param [in] rel_hum A view of relative_humidity data [-] managed
+  /// @param [in] rel_hum A view of relative_humidity column data [-] managed
   ///                     by the host model
-  /// @param [in] ht A view of height data [m] on level interfaces, managed
-  ///                by the host model
-  Atmosphere(int num_columns,
-             int num_levels,
-             const Kokkos::View<PackType**>& temp,
-             const Kokkos::View<PackType**>& press,
-             const Kokkos::View<PackType**>& rel_hum,
-             const Kokkos::View<PackType**>& ht);
+  /// @param [in] ht A view of height column data [m] on level interfaces,
+  ///                managed by the host model
+  Atmosphere(int num_levels,
+             const Kokkos::View<PackType*>& temp,
+             const Kokkos::View<PackType*>& press,
+             const Kokkos::View<PackType*>& rel_hum,
+             const Kokkos::View<PackType*>& ht);
 
   /// Destructor.
   ~Atmosphere();
-
-  /// Returns the number of independent atmospheric columns in the system.
-  int num_columns() const { return num_columns_; }
 
   /// Returns the number of vertical levels per column in the system.
   int num_levels() const { return num_levels_; }
@@ -71,11 +63,10 @@ class Atmosphere final {
 
   private:
 
-  // Number of columns / vertical levels.
-  const int num_columns_;
+  // Number of vertical levels.
   const int num_levels_;
 
-  // Unmanaged views
+  // Unmanaged views.
   const ColumnView temperature_;
   const ColumnView pressure_;
   const ColumnView relative_humidity_;
