@@ -7,7 +7,7 @@
 !> number of modes/species. Gases are ignored. Modal number densities are
 !> unaffected, as aerosol particles are simply transferred from one population
 !> to the other.
-module prog_process_stub
+module prog_fprocess_stub
 
   use iso_c_binding, only: c_ptr
   use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &

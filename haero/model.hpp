@@ -40,8 +40,6 @@ class Model final {
   ///                          (supplied in `aerosol_species`) that belong to
   ///                          those modes.
   /// @param [in] gas_species a list of gas species supported by the Context
-  /// @param [in] num_columns The number of columns in the Context's
-  ///                         computational domain
   /// @param [in] num_levels The number of vertical levels in each column within
   ///                        the Context's computational domain
   Model(const SelectedProcesses& selected_processes,
@@ -49,7 +47,6 @@ class Model final {
         const std::vector<Species>& aerosol_species,
         const std::map<std::string, std::vector<std::string> >& mode_species,
         const std::vector<Species>& gas_species,
-        int num_columns,
         int num_levels);
 
   /// This factory function creates a model for use with unit tests. It
@@ -59,7 +56,6 @@ class Model final {
                              const std::vector<Species>& aerosol_species,
                              const std::map<std::string, std::vector<std::string> >& mode_species,
                              const std::vector<Species>& gas_species,
-                             int num_columns,
                              int num_levels);
 
   /// Models are not deep-copyable. They should be passed by reference.
@@ -79,7 +75,7 @@ class Model final {
                                   Kokkos::View<PackType**>& gases,
                                   Kokkos::View<PackType**>& modal_num_concs) const;
 
-  /// Creates a new Diagnostics object that can be used with this Model.
+  /// Creates a new empty Diagnostics object that can be used with this Model.
   /// All fields within this new Diagnostics are owned and managed by it.
   Diagnostics* create_diagnostics() const;
 
@@ -131,11 +127,12 @@ class Model final {
   ///                       This index goes from 0 to num_modes-1.
   std::vector<Species> aerosol_species_for_mode(int mode_index) const;
 
+  /// Returns the total number of distinct aerosol species populations in the
+  /// model, counting appearances of one species in different modes separately.
+  int num_aerosol_populations() const { return num_aero_populations_; }
+
   /// Returns the list of gas species associated with this aerosol model.
   const std::vector<Species>& gas_species() const;
-
-  /// Returns the number of columns in the model.
-  int num_columns() const { return num_columns_; }
 
   /// Returns the number of vertical levels in the model.
   int num_levels() const { return num_levels_; }
@@ -170,8 +167,10 @@ class Model final {
   // species_for_modes_[mode_name] = vector of species names
   std::vector<std::vector<int> > species_for_mode_;
 
+  // The total number of modal aerosol populations.
+  int num_aero_populations_;
+
   // Grid parameters.
-  int num_columns_;
   int num_levels_;
 
   // Selected implementations of prognostic processes used by this model.

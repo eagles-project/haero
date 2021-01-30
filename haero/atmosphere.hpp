@@ -13,12 +13,6 @@ namespace haero {
 class Atmosphere final {
   public:
 
-  /// This is the device on which the Atmosphere stores its data.
-  using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
-
-  /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
-  using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
-
   /// This type represents an array mapping a vertical level index to a pack.
   /// The vertical level(s) are identified by the index.
   /// Our views are unmanaged in general, to allow a host model to assume

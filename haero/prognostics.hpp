@@ -6,7 +6,6 @@
 #include "ekat/ekat_pack.hpp"
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 #include <map>
 #include <vector>
@@ -25,12 +24,6 @@ class Tendencies;
 /// * mass mixing ratios for gas species
 class Prognostics final {
   public:
-
-  /// This is the device on which the Prognostics stores its data.
-  using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
-
-  /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
-  using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
 
   /// This type represents a multidimensional array mapping a species and
   /// vertical level index to a pack.
@@ -111,6 +104,10 @@ class Prognostics final {
   /// @param [in] mode_index The index of the desired mode.
   int num_aerosol_species(int mode_index) const;
 
+  /// Returns the total number of distinct aerosol species populations in the
+  /// model, counting appearances of one species in different modes separately.
+  int num_aerosol_populations() const;
+
   /// Returns the number of gas species in the system.
   int num_gases() const;
 
@@ -166,6 +163,9 @@ class Prognostics final {
 
   // Aerosol species names within each mode.
   std::vector<int> num_aero_species_;
+
+  // Number of distinct aerosol populations.
+  int num_aero_populations_;
 
   // Number of gas species.
   int num_gases_;

@@ -17,12 +17,6 @@ namespace haero {
 class Diagnostics final {
   public:
 
-  /// This is the device on which the Diagnostics stores its data.
-  using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
-
-  /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
-  using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
-
   /// This type represents an array mapping a vertical level index to a pack.
   /// The vertical level(s) are identified by the index.
   using ColumnView = Kokkos::View<PackType*>;
@@ -67,6 +61,10 @@ class Diagnostics final {
   /// Returns the number of aerosol species in the mode with the given index.
   /// @param [in] mode_index The index of the desired mode.
   int num_aerosol_species(int mode_index) const;
+
+  /// Returns the total number of distinct aerosol species populations in the
+  /// model, counting appearances of one species in different modes separately.
+  int num_aerosol_populations() const;
 
   /// Returns the number of gas species in the system.
   int num_gases() const;
@@ -163,8 +161,11 @@ class Diagnostics final {
 
   private:
 
-  // Numbers of aerosol species within each mode.
+  // Number of aerosol species in each mode.
   std::vector<int> num_aero_species_;
+
+  // Number of distinct aerosol populations.
+  int num_aero_populations_;
 
   // Number of gas species.
   int num_gases_;

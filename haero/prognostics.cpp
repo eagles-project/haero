@@ -10,29 +10,28 @@ Prognostics::Prognostics(int num_aerosol_modes,
                          Kokkos::View<PackType**>& cld_aerosols,
                          Kokkos::View<PackType**>& gases,
                          Kokkos::View<PackType**>& modal_num_concs):
-  num_aero_species_(num_aerosol_species), num_gases_(num_gases),
-  num_levels_(num_levels), int_aero_species_(int_aerosols),
-  cld_aero_species_(cld_aerosols), gases_(gases),
-  modal_num_concs_(modal_num_concs) {
+  num_aero_species_(num_aerosol_species), num_aero_populations_(0),
+  num_gases_(num_gases), num_levels_(num_levels),
+  int_aero_species_(int_aerosols), cld_aero_species_(cld_aerosols),
+  gases_(gases), modal_num_concs_(modal_num_concs) {
 #ifndef NDEBUG
   EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
                   "num_aerosol_species must be a vector of length " << num_aerosol_modes);
   // Count up the mode/species combinations to validate the extents of the
   // aerosol views.
-  int n = 0;
   for (int m = 0; m < num_aerosol_species.size(); ++m) {
-    n += num_aerosol_species[m];
+    num_aero_populations_ += num_aerosol_species[m];
   }
   int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
     num_vert_packs++;
   }
-  EKAT_ASSERT_MSG(int_aerosols.extent(0) == n,
-                  "int_aerosols must have extent(0) == " << n);
+  EKAT_ASSERT_MSG(int_aerosols.extent(0) == num_aero_populations_,
+                  "int_aerosols must have extent(0) == " << num_aero_populations_);
   EKAT_ASSERT_MSG(int_aerosols.extent(1) == num_vert_packs,
                   "int_aerosols must have extent(1) == " << num_vert_packs);
-  EKAT_ASSERT_MSG(cld_aerosols.extent(0) == n,
-                  "cld_aerosols must have extent(0) == " << n);
+  EKAT_ASSERT_MSG(cld_aerosols.extent(0) == num_aero_populations_,
+                  "cld_aerosols must have extent(0) == " << num_aero_populations_);
   EKAT_ASSERT_MSG(cld_aerosols.extent(1) == num_vert_packs,
                   "int_aerosols must have extent(1) == " << num_vert_packs);
   EKAT_ASSERT_MSG(gases.extent(0) == num_gases_,
@@ -57,6 +56,10 @@ int Prognostics::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_aero_species_.size());
   return num_aero_species_[mode_index];
+}
+
+int Prognostics::num_aerosol_populations() const {
+  return num_aero_populations_;
 }
 
 int Prognostics::num_gases() const {

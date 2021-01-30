@@ -16,13 +16,6 @@ namespace haero {
 class Tendencies final {
   public:
 
-  /// This is the device on which the Tendencies stores its data.
-  using DeviceType = Prognostics::DeviceType;
-
-  /// This type represents vectorizable packs compatible with those used by
-  /// the Prognostics class.
-  using PackType = Prognostics::PackType;
-
   /// This type represents a multidimensional array mapping a species and
   /// vertical level index to a pack.
   /// * The species is identified by the index s.

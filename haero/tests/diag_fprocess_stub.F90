@@ -5,7 +5,7 @@
 !> Given an ambient atmospheric temperature and a set of numbers describing
 !> (modal) aerosol and gas populations, this process computes their partial
 !> pressures using the ideal gas law.
-module diag_process_stub
+module diag_fprocess_stub
 
   use iso_c_binding, only: c_ptr
   use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &

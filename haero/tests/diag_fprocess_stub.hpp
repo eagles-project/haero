@@ -1,5 +1,5 @@
-#ifndef HAERO_DIAGPROCESSSTUB_HPP
-#define HAERO_DIAGPROCESSSTUB_HPP
+#ifndef HAERO_DIAG_FPROCESS_STUB_HPP
+#define HAERO_DIAG_FPROCESS_STUB_HPP
 
 #include "haero/process.hpp"
 
@@ -9,11 +9,11 @@ namespace haero {
 // aerosol modes and gases using the ideal gas law. It's not intended to be a
 // realistic description of a physical process--it's meant to illustrate how
 // Fortran-implemented diagnostic processes work.
-class DiagProcessStub: public FDiagnosticProcess {
+class DiagFProcessStub: public FDiagnosticProcess {
   public:
 
   // Constructor (no parameters needed).
-  DiagProcessStub();
+  DiagFProcessStub();
 };
 
 } // end haero namespace

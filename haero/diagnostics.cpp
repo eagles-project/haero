@@ -6,10 +6,13 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
                          const std::vector<int>& num_aerosol_species,
                          int num_gases,
                          int num_levels):
-  num_aero_species_(num_aerosol_species), num_gases_(num_gases),
-  num_levels_(num_levels) {
+  num_aero_species_(num_aerosol_species), num_aero_populations_(0),
+  num_gases_(num_gases), num_levels_(num_levels) {
   EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
                   "num_aerosol_species must be a vector of length " << num_aerosol_modes);
+  for (int m = 0; m < num_aerosol_modes; ++m) {
+    num_aero_populations_ += num_aerosol_species[m];
+  }
 }
 
 Diagnostics::~Diagnostics() {
@@ -23,6 +26,10 @@ int Diagnostics::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_aero_species_.size());
   return num_aero_species_[mode_index];
+}
+
+int Diagnostics::num_aerosol_populations() const {
+  return num_aero_populations_;
 }
 
 int Diagnostics::num_gases() const {
