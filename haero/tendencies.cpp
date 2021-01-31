@@ -3,11 +3,7 @@
 namespace haero {
 
 Tendencies::Tendencies(const Prognostics& prognostics) {
-  int num_modes = prognostics.num_aerosol_modes();
-  int num_mode_species_pairs = 0;
-  for (int m = 0; m < num_modes; ++m) {
-    num_mode_species_pairs += prognostics.num_aerosol_species(m);
-  }
+  int num_populations = prognostics.num_aerosol_populations();
   int num_levels = prognostics.num_levels();
   int num_vert_packs = num_levels/HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
@@ -16,12 +12,12 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
   auto int_view_name = std::string("d/dt[") +
                        prognostics.interstitial_aerosols().label() +
                        std::string(")]");
-  int_aero_species_ = SpeciesColumnView(int_view_name, num_mode_species_pairs,
+  int_aero_species_ = SpeciesColumnView(int_view_name, num_populations,
                                         num_vert_packs);
   auto cld_view_name = std::string("d/dt[") +
                        prognostics.cloudborne_aerosols().label() +
                        std::string(")]");
-  cld_aero_species_ = SpeciesColumnView(cld_view_name, num_mode_species_pairs,
+  cld_aero_species_ = SpeciesColumnView(cld_view_name, num_populations,
                                         num_vert_packs);
 
 
@@ -34,6 +30,7 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
   auto n_view_name = std::string("d/dt[") +
                      prognostics.modal_num_concs().label() +
                      std::string(")]");
+  int num_modes = prognostics.num_aerosol_modes();
   modal_num_concs_ = ModalColumnView(n_view_name, num_modes, num_vert_packs);
 }
 
@@ -106,15 +103,15 @@ void* t_cld_aero_mix_frac_c(void* t)
 void* t_gases_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& mole_fracs = tends->gases();
-  return (void*)mole_fracs.data();
+  auto& mix_fracs = tends->gases();
+  return (void*)mix_fracs.data();
 }
 
 void* t_modal_num_concs_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& num_densities = tends->modal_num_concs();
-  return (void*)num_densities.data();
+  auto& num_concs = tends->modal_num_concs();
+  return (void*)num_concs.data();
 }
 
 } // extern "C"

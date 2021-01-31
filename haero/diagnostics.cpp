@@ -77,16 +77,15 @@ void Diagnostics::create_aerosol_var(const std::string& name) {
     "Aerosol diagnostic variable " << name << " already exists!");
 
   // Figure out the dimensions of the view.
-  int num_mode_species_pairs = 0;
+  int num_populations = 0;
   for (int m = 0; m < num_aero_species_.size(); ++m) {
-    num_mode_species_pairs += num_aero_species_[m];
+    num_populations += num_aero_species_[m];
   }
   int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
     num_vert_packs++;
   }
-  aero_vars_[name] = SpeciesColumnView(name, num_mode_species_pairs,
-                                       num_vert_packs);
+  aero_vars_[name] = SpeciesColumnView(name, num_populations, num_vert_packs);
 }
 
 Diagnostics::SpeciesColumnView&

@@ -120,11 +120,11 @@ TEST_CASE("prog_fprocess_stub", "") {
       }
     }
 
-    // Aerosol modal number densities are unchanged.
+    // Aerosol modal number concentrations are unchanged.
     auto& dndt = tends->modal_num_concs();
-    for (int p = 0; p < num_aero_populations; ++p) {
+    for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
-        REQUIRE(FloatingPoint<Real>::equiv(dndt(p, k)[0], 0.0));
+        REQUIRE(FloatingPoint<Real>::equiv(dndt(m, k)[0], 0.0));
       }
     }
 
@@ -278,16 +278,16 @@ TEST_CASE("diag_process_stub", "") {
     // Check the diagnostic partial pressures.
     // ---------------------------------------
     const auto& p_m = diags->modal_var("pressure");
-    for (int p = 0; p < num_aero_populations; ++p) {
+    for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
-        REQUIRE(p_m(p, k)[0] > 0.0);
+        REQUIRE(p_m(m, k)[0] > 0.0);
       }
     }
 
     const auto& p_g = diags->gas_var("pressure");
-    for (int p = 0; p < num_aero_populations; ++p) {
+    for (int g = 0; g < num_gases; ++g) {
       for (int k = 0; k < num_levels; ++k) {
-        REQUIRE(p_g(p, k)[0] > 0.0);
+        REQUIRE(p_g(g, k)[0] > 0.0);
       }
     }
 

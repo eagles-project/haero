@@ -87,7 +87,7 @@ subroutine diag_stub_update(t, progs, atm, diags) bind(c)
       mu_p = model%aero_species(m, s)%molecular_wt ! species molecular weight
       ! Compute the number of aerosol moles per unit volume
       nu_p = (q_c(k, p) + q_i(k, p)) * n(k, p) / Avogadro
-      p_a(k, p) = p_a(k, p) + nu_p * R * temp(k)
+      p_a(k, m) = p_a(k, m) + nu_p * R * temp(k)
     end do
   end do
 

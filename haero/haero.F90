@@ -51,6 +51,8 @@ module haero
     integer :: num_modes
     !> The number of actual species that exist within each mode.
     integer, dimension(:), allocatable :: num_mode_species
+    !> population index offsets for modes.
+    integer, dimension(:), allocatable :: population_offsets
     !> The total number of distinct aerosol populations.
     integer :: num_populations
     !> The aerosol species within each mode. Indexed as (mode, species).
@@ -288,6 +290,7 @@ contains
     model%num_modes = num_modes
     allocate(model%modes(num_modes))
     allocate(model%num_mode_species(num_modes))
+    allocate(model%population_offsets(num_modes+1))
     model%num_mode_species(:) = 0
     model%num_populations = 0
   end subroutine
@@ -337,7 +340,6 @@ contains
     model%aero_species(mode, species)%crystal_pt = crystal_pt
     model%aero_species(mode, species)%deliques_pt = deliques_pt
     model%num_mode_species(mode) = max(species, model%num_mode_species(mode))
-    model%num_populations = model%num_populations + model%num_mode_species(mode)
   end subroutine
 
   subroutine haerotran_set_num_gas_species(num_species) bind(c)
@@ -379,7 +381,15 @@ contains
 
   ! Wrap up the process of initializing the Haero Fortran module.
   subroutine haerotran_end_init() bind(c)
-    ! Nothing here yet!
+    implicit none
+
+    integer :: m
+
+    model%population_offsets(1) = 0
+    do m=1,model%num_modes
+      model%population_offsets(m+1) = model%population_offsets(m) + model%num_mode_species(m)
+    end do
+    model%num_populations = model%population_offsets(model%num_modes+1)
   end subroutine
 
   ! This subroutine gets called when the C++ process exits.
@@ -389,6 +399,9 @@ contains
     end if
     if (allocated(model%gas_species)) then
       deallocate(model%gas_species)
+    end if
+    if (allocated(model%population_offsets)) then
+      deallocate(model%population_offsets)
     end if
     if (allocated(model%num_mode_species)) then
       deallocate(model%num_mode_species)
@@ -414,14 +427,15 @@ contains
     integer, intent(in)         :: p
     integer, intent(out)        :: m, s
 
-    integer :: offset
-    offset = 0
     m = 1
-    do while (offset < p)
-      offset = offset + model%num_mode_species(m)
+    do while (model%population_offsets(m+1) < p)
       m = m + 1
     end do
-    s = p - offset
+    if (m == 1) then
+      s = p
+    else
+      s = p - model%population_offsets(m)
+    end if
   end subroutine
 
   !> Provides access to the interstitial aerosol mixing fractions array
