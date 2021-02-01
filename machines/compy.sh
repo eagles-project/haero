@@ -22,7 +22,7 @@ export NETCDFF_LIBRARY_DIR=$NETCDF_LIBRARY_DIR
 export NETCDFF_LIBRARY=libnetcdff.a
 
 # Set relevant compilers.
-export FC=gfortran
+export FC=mpif90
 export CXX=mpicxx
 
 # Set extra LDFLAGS
