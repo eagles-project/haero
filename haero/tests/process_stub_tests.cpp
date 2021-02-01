@@ -21,6 +21,16 @@ TEST_CASE("prog_process_stub", "") {
   auto* model = Model::ForUnitTests(modes, aero_species, mode_species,
                                     gas_species, num_columns, num_levels);
 
+  // Set up atmospheric data and populate it with some views. It's not
+  // important for this data to be valid, since it's unused by these stubs.
+  using PackType = Atmosphere::PackType;
+  Kokkos::View<PackType**> temp("temperature", num_columns, num_levels);
+  Kokkos::View<PackType**> press("pressure", num_columns, num_levels);
+  Kokkos::View<PackType**> rel_hum("relative humidity", num_columns, num_levels);
+  Kokkos::View<PackType**> ht("height", num_columns, num_levels+1);
+  auto* atm = new Atmosphere(model->num_columns(), model->num_levels(),
+                             temp, press, rel_hum, ht);
+
   // Rate of decay from cloudborne to interstitial aerosols.
   Real decay_rate = -0.05;
 
@@ -85,7 +95,7 @@ TEST_CASE("prog_process_stub", "") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 0.01;
-    stub->run(*model, t, dt, *progs, *diags, *tends);
+    stub->run(*model, t, dt, *progs, *atm, *diags, *tends);
 
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
@@ -137,6 +147,7 @@ TEST_CASE("prog_process_stub", "") {
     delete stub;
   }
 
+  delete atm;
   delete model;
 }
 
@@ -152,6 +163,16 @@ TEST_CASE("diag_process_stub", "") {
   int num_levels = 72;
   auto* model = Model::ForUnitTests(modes, aero_species, mode_species,
                                     gas_species, num_columns, num_levels);
+
+  // Set up atmospheric data and populate it with some views. It's not
+  // important for this data to be valid, since it's unused by these stubs.
+  using PackType = Atmosphere::PackType;
+  Kokkos::View<PackType**> temp("temperature", num_columns, num_levels);
+  Kokkos::View<PackType**> press("pressure", num_columns, num_levels);
+  Kokkos::View<PackType**> rel_hum("relative humidity", num_columns, num_levels);
+  Kokkos::View<PackType**> ht("height", num_columns, num_levels+1);
+  auto* atm = new Atmosphere(model->num_columns(), model->num_levels(),
+                             temp, press, rel_hum, ht);
 
   // Test basic construction.
   SECTION("construct") {
@@ -244,7 +265,7 @@ TEST_CASE("diag_process_stub", "") {
 
     // Now update diagnostics at time 0.
     Real t = 0.0;
-    stub->update(*model, t, *progs, *diags);
+    stub->update(*model, t, *progs, *atm, *diags);
 
     // -------------------------------------------------
     // Make sure the temperature field was not affected.
@@ -283,6 +304,7 @@ TEST_CASE("diag_process_stub", "") {
     delete stub;
   }
 
+  delete atm;
   delete model;
 }
 

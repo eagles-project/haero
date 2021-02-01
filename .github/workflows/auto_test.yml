@@ -21,7 +21,7 @@ jobs:
         os: [ubuntu-latest] #, macos-latest]
         build-type: [Debug, Release]
         fp-precision: [double] #[single, double]
-        pack-size: [1] #[1, 4]
+        pack-size: [1, 4]
 
     # Environment variables
     env:

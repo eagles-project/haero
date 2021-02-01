@@ -10,9 +10,9 @@
 module prog_process_stub
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, prognostics_t, diagnostics_t, tendencies_t, &
-                   prognostics_from_c_ptr, diagnostics_from_c_ptr, &
-                   tendencies_from_c_ptr
+  use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &
+                   tendencies_t, prognostics_from_c_ptr, atmosphere_from_c_ptr,&
+                   diagnostics_from_c_ptr, tendencies_from_c_ptr
 
   implicit none
   private
@@ -43,7 +43,7 @@ end subroutine
 
 !> Calls the update for the process, computing tendencies for each affected
 !> prognostic variable.
-subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
+subroutine prog_stub_run(t, dt, progs, atm, diags, tends) bind(c)
   use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
@@ -51,11 +51,13 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
   real(wp), value, intent(in) :: t     ! simulation time
   real(wp), value, intent(in) :: dt    ! simulation time step
   type(c_ptr), value, intent(in) :: progs ! prognostic variables
+  type(c_ptr), value, intent(in) :: atm   ! atmosphere state variables
   type(c_ptr), value, intent(in) :: diags ! diagnostic variables
   type(c_ptr), value, intent(in) :: tends ! tendencies
 
   ! Fortran prognostics, diagnostics, tendencies types
   type(prognostics_t) :: prognostics
+  type(atmosphere_t)  :: atmosphere
   type(diagnostics_t) :: diagnostics
   type(tendencies_t)  :: tendencies
 
@@ -72,6 +74,7 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
+  atmosphere = atmosphere_from_c_ptr(atm)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 

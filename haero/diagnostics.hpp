@@ -179,10 +179,10 @@ class Diagnostics final {
   private:
 
   /// Number of columns in the system.
-  int num_columns_;
+  const int num_columns_;
 
   /// Number of vertical levels per column in the system.
-  int num_levels_;
+  const int num_levels_;
 
   /// Aerosol species names within each mode.
   std::vector<int> num_aero_species_;

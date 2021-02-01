@@ -3,10 +3,11 @@
 
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
-#include "haero/diagnostics.hpp"
 #include "haero/selected_processes.hpp"
 #include "haero/process.hpp"
 #include "haero/prognostics.hpp"
+#include "haero/atmosphere.hpp"
+#include "haero/diagnostics.hpp"
 #include "haero/tendencies.hpp"
 #include <map>
 
@@ -83,11 +84,13 @@ class Model final {
   /// @param [in] t The time at which the process runs.
   /// @param [in] dt The time interval over which the process runs.
   /// @param [in] prognostics The prognostic variables used by this process.
+  /// @param [in] atmosphere The atmospheric state variables used by this process.
   /// @param [in] diagnostics The diagnostic variables used by this process.
   /// @param [out] tendencies The aerosol tendencies computed.
   void run_process(ProcessType type,
                    Real t, Real dt,
                    const Prognostics& prognostics,
+                   const Atmosphere& atmosphere,
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies);
 
@@ -95,10 +98,12 @@ class Model final {
   /// @param [in] type The type of aerosol state to be updated.
   /// @param [in] t The time at which the process runs.
   /// @param [in] prognostics The prognostic variables used by this process.
+  /// @param [in] atmosphere The atmospheric state variables used by this process.
   /// @param [inout] diagnostics The diagnostic variables used by and updated by
   ///                            this process.
   void update_diagnostics(ProcessType type, Real t,
                           const Prognostics& prognostics,
+                          const Atmosphere& atmosphere,
                           Diagnostics& diagnostics);
 
   // Accessors

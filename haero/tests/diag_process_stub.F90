@@ -8,8 +8,9 @@
 module diag_process_stub
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, prognostics_t, diagnostics_t, &
-                   prognostics_from_c_ptr, diagnostics_from_c_ptr
+  use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &
+                   prognostics_from_c_ptr, atmosphere_from_c_ptr, &
+                   diagnostics_from_c_ptr
 
   implicit none
   private
@@ -35,17 +36,19 @@ subroutine diag_stub_init() bind(c)
 end subroutine
 
 !> Calls the update for the process.
-subroutine diag_stub_update(t, progs, diags) bind(c)
+subroutine diag_stub_update(t, progs, atm, diags) bind(c)
   use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
   ! Arguments
   real(wp), value, intent(in)    :: t     ! simulation time
   type(c_ptr), value, intent(in) :: progs ! prognostic variables
+  type(c_ptr), value, intent(in) :: atm   ! atmosphere state variables
   type(c_ptr), value, intent(in) :: diags ! diagnostic variables
 
   ! Fortran prognostics and diagnostics types
   type(prognostics_t) :: prognostics
+  type(atmosphere_t) :: atmosphere
   type(diagnostics_t) :: diagnostics
 
   ! Other local variables.
@@ -61,6 +64,7 @@ subroutine diag_stub_update(t, progs, diags) bind(c)
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
+  atmosphere = atmosphere_from_c_ptr(atm)
   diagnostics = diagnostics_from_c_ptr(diags)
   n => prognostics%modal_num_densities()
   q_g => prognostics%gas_mole_fractions()

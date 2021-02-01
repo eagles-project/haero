@@ -7,7 +7,7 @@ extern "C" {
 
 // Fortran subroutines that implement this process.
 extern void prog_stub_init();
-extern void prog_stub_run(Real t, Real dt, void* progs, void* diags, void* tends);
+extern void prog_stub_run(Real t, Real dt, void* progs, void* atm, void* diags, void* tends);
 extern void prog_stub_finalize();
 
 // Decay rate. Since Fortran-backed processes cannot be run in more than one

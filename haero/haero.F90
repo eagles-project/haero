@@ -9,9 +9,9 @@ module haero
   private
 
   public :: wp, mode_t, species_t, model_t, &
-            prognostics_t, diagnostics_t, tendencies_t, &
-            prognostics_from_c_ptr, diagnostics_from_c_ptr, &
-            tendencies_from_c_ptr, model
+            prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
+            prognostics_from_c_ptr, atmosphere_from_c_ptr, &
+            diagnostics_from_c_ptr, tendencies_from_c_ptr, model
 
   !> Working precision real kind
   integer, parameter :: wp = c_real
@@ -76,6 +76,17 @@ module haero
     procedure :: modal_num_densities => p_modal_num_densities
   end type
 
+  !> This type represents the set of atmospheric state variables for an
+  !> aerosol model.
+  type :: atmosphere_t
+    type(c_ptr) :: ptr
+  contains
+    procedure :: temperature => a_temperature
+    procedure :: pressure => a_pressure
+    procedure :: relative_humidity => a_relative_humidity
+    procedure :: height => a_height
+  end type
+
   !> This type represents the set of diagnostic variables for an aerosol
   !> model.
   type :: diagnostics_t
@@ -124,6 +135,26 @@ module haero
     type(c_ptr) function p_modal_num_densities_c(p) bind(c)
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: p
+    end function
+
+    type(c_ptr) function a_temperature_c(a) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: a
+    end function
+
+    type(c_ptr) function a_pressure_c(a) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: a
+    end function
+
+    type(c_ptr) function a_relative_humidity_c(a) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: a
+    end function
+
+    type(c_ptr) function a_height_c(a) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: a
     end function
 
     logical(c_bool) function d_has_var_c(d, name) bind(c)
@@ -439,6 +470,59 @@ contains
     type(c_ptr) :: v_ptr
     v_ptr = p_modal_num_densities_c(p%ptr)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_columns, size(model%modes)])
+  end function
+
+  !> Extracts an atmosphere_t variable from the given C pointer.
+  function atmosphere_from_c_ptr(ptr) result(retval)
+    implicit none
+    type(c_ptr), value, intent(in) :: ptr
+    type(atmosphere_t) :: retval
+
+    retval%ptr = ptr
+  end function
+
+  !> Provides access to atmosphere temperature column data [K].
+  !> @param [in] a A pointer to an atmosphere object.
+  function a_temperature(a) result(retval)
+    class(atmosphere_t), intent(in)  :: a
+    real(c_real), pointer, dimension(:,:) :: retval
+
+    type(c_ptr) :: v_ptr
+    v_ptr = a_temperature_c(a%ptr)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_columns, model%num_levels])
+  end function
+
+  !> Provides access to atmosphere pressure column data [Pa].
+  !> @param [in] a A pointer to an atmosphere object.
+  function a_pressure(a) result(retval)
+    class(atmosphere_t), intent(in)  :: a
+    real(c_real), pointer, dimension(:,:) :: retval
+
+    type(c_ptr) :: v_ptr
+    v_ptr = a_pressure_c(a%ptr)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_columns, model%num_levels])
+  end function
+
+  !> Provides access to atmosphere relative humidity column data [-].
+  !> @param [in] a A pointer to an atmosphere object.
+  function a_relative_humidity(a) result(retval)
+    class(atmosphere_t), intent(in)  :: a
+    real(c_real), pointer, dimension(:,:) :: retval
+
+    type(c_ptr) :: v_ptr
+    v_ptr = a_relative_humidity_c(a%ptr)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_columns, model%num_levels])
+  end function
+
+  !> Provides access to atmosphere height column data [Pa].
+  !> @param [in] a A pointer to an atmosphere object.
+  function a_height(a) result(retval)
+    class(atmosphere_t), intent(in)  :: a
+    real(c_real), pointer, dimension(:,:) :: retval
+
+    type(c_ptr) :: v_ptr
+    v_ptr = a_height_c(a%ptr)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_columns, model%num_levels+1])
   end function
 
   !> Extracts a diagnostics_t variable from the given C pointer.
