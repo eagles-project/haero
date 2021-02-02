@@ -1,4 +1,4 @@
-#include "atmosphere.hpp"
+#include "host_params.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "haero/floating_point.hpp"
 
