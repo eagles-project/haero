@@ -11,13 +11,16 @@ TEST_CASE("tendencies_ctor", "") {
 
   // Create a set of prognostics and add some modes and species to it.
   int num_levels = 72;
-  Kokkos::View<PackType**> int_aerosols("interstitial aerosols", 1, num_levels);
-  Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols", 1, num_levels);
+  int num_vert_packs = num_levels / HAERO_PACK_SIZE;
+  Kokkos::View<PackType**> int_aerosols("interstitial aerosols", 1,
+                                        num_vert_packs);
+  Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols", 1,
+                                        num_vert_packs);
   int num_gases = 1;
-  Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
+  Kokkos::View<PackType**> gases("gases", num_gases, num_vert_packs);
   int num_modes = 1;
   Kokkos::View<PackType**> modal_concs("modal number concs", num_modes,
-                                       num_levels);
+                                       num_vert_packs);
   Prognostics progs(num_modes, {1}, num_gases, num_levels,
                     int_aerosols, cld_aerosols, gases, modal_concs);
 
