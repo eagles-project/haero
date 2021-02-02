@@ -20,7 +20,6 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
   cld_aero_species_ = SpeciesColumnView(cld_view_name, num_populations,
                                         num_vert_packs);
 
-
   int num_gases = prognostics.num_gases();
   auto gas_view_name = std::string("d/dt[") +
                        prognostics.gases().label() +

@@ -12,6 +12,9 @@ TEST_CASE("tendencies_ctor", "") {
   // Create a set of prognostics and add some modes and species to it.
   int num_levels = 72;
   int num_vert_packs = num_levels / HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
+    num_vert_packs++;
+  }
   Kokkos::View<PackType**> int_aerosols("interstitial aerosols", 1,
                                         num_vert_packs);
   Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols", 1,
