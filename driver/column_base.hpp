@@ -45,15 +45,10 @@ class ColumnBase {
   /// A 2d view of packs for 2d variables
   using view_2d = kokkos_device_types::view_2d<real_pack_type>;
 
-  /** A view type that adds a dimension for number of modes.
-
-    @todo Should we keep this?
-  */
-  using modal_var_view = kokkos_device_types::view_2d<Real>;
   /// A view of masks. Currently unused.
   using mask_view = kokkos_device_types::view_1d<mask_type>;
 
-  /** @brief This is perhaps the most useful typedef in ColumnBase.
+  /** @brief Pack indexing helpers.
 
     To loop over packed views, you have to use 2 nested loops, one to index
       over packs, and one to index within packs.

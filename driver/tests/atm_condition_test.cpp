@@ -1,4 +1,4 @@
-#include "driver/atmosphere.hpp"
+#include "driver/host_params.hpp"
 #include "catch2/catch.hpp"
 #include "haero/physical_constants.hpp"
 #include <iostream>

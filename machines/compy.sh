@@ -3,8 +3,7 @@
 source /etc/profile.d/modules.sh
 
 # Load relevant modules
-module purge
-module load cmake/3.11.4 intel/19.0.5 netcdf/4.6.3
+module purge && module load cmake/3.11.4 gcc/8.1.0  mvapich2/2.3.1 netcdf/4.6.3
 
 
 # Set third-party library paths
@@ -23,7 +22,8 @@ export NETCDFF_LIBRARY_DIR=$NETCDF_LIBRARY_DIR
 export NETCDFF_LIBRARY=libnetcdff.a
 
 # Set relevant compilers.
-export FC=ifort
+export FC=mpif90
+export CXX=mpicxx
 
 # Set extra LDFLAGS
 export EXTRA_LDFLAGS=-lcurl
