@@ -19,7 +19,7 @@ else() # CPU -- use OpenMP as "device" for non-Apple architectures.
     set(USE_OPENMP ON)
   endif()
 endif()
-message(STATUS "Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
+message(STATUS "Configuring for Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
 
 # Check our pack size
 if (NOT HAERO_PACK_SIZE)
@@ -29,7 +29,7 @@ elseif(HAERO_PACK_SIZE LESS 1)
 elseif(HAERO_PACK_SIZE GREATER 1)
   set(ENABLE_FORTRAN OFF)
 endif()
-message(STATUS "Pack size: ${HAERO_PACK_SIZE}")
+message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
 
 if (NOT ENABLE_FORTRAN)
   message(STATUS "================================================================")
