@@ -223,6 +223,12 @@ endif()
 # Other third-party libraries.
 add_subdirectory(ext)
 
+# If we're building on a GPU, set the C++ compiler appropriately.
+if (HAERO_DEVICE STREQUAL CUDA)
+  set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
+endif()
+
 # Record the libraries we've gathered so far as the "base" libraries that
 # our box model needs. We use this for efficiently linking unit tests.
 set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
