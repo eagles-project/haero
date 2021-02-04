@@ -5,19 +5,41 @@ cmake_minimum_required (VERSION 3.10.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/")
 
+set(ENABLE_FORTRAN ON)
+
+# Check our device parameters
+if (NOT HAERO_DEVICE)
+  message(FATAL_ERROR "HAERO_DEVICE is not specified! (Must be CPU or CUDA).")
+elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
+  message(FATAL_ERROR "Invalid HAERO_DEVICE: ${HAERO_DEVICE} (Must be CPU or CUDA).")
+elseif(HAERO_DEVICE STREQUAL CUDA)
+  set(ENABLE_FORTRAN OFF)
+else() # CPU -- use OpenMP as "device" for non-Apple architectures.
+  if (NOT APPLE)
+    set(USE_OPENMP ON)
+  endif()
+endif()
+message(STATUS "Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
+
+# Check our pack size
 if (NOT HAERO_PACK_SIZE)
   message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
 elseif(HAERO_PACK_SIZE LESS 1)
   message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
 elseif(HAERO_PACK_SIZE GREATER 1)
-  message(STATUS "========================================================")
-  message(STATUS "  HAERO_PACK_SIZE = ${HAERO_PACK_SIZE}: DISABLING ALL FORTRAN PROCESSES")
-  message(STATUS "========================================================")
+  set(ENABLE_FORTRAN OFF)
+endif()
+message(STATUS "Pack size: ${HAERO_PACK_SIZE}")
+
+if (NOT ENABLE_FORTRAN)
+  message(STATUS "================================================================")
+  message(STATUS "  DISABLING FORTRAN PROCESSES: (GPU arch and/or pack size > 1)")
+  message(STATUS "================================================================")
 endif()
 
 # We declare the project right away.
 enable_language(CXX)
-if (HAERO_PACK_SIZE EQUAL 1)
+if (ENABLE_FORTRAN)
   set(HAERO_FORTRAN 1)
   enable_language(Fortran)
 else()
