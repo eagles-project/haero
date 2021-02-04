@@ -18,7 +18,6 @@ void haerotran_set_aero_species(int, int, const char*, const char*,
 void haerotran_set_num_gas_species(int);
 void haerotran_set_gas_species(int, const char*, const char*,
                                Real, Real, Real);
-void haerotran_set_num_columns(int);
 void haerotran_set_num_levels(int);
 void haerotran_end_init();
 void haerotran_finalize();
@@ -66,14 +65,13 @@ Model::Model(
   const std::vector<Species>& aerosol_species,
   const std::map<std::string, std::vector<std::string> >& mode_species,
   const std::vector<Species>& gas_species,
-  int num_columns,
   int num_levels):
   selected_processes_(selected_processes),
   modes_(aerosol_modes),
   aero_species_(aerosol_species),
   gas_species_(gas_species),
   species_for_mode_(),
-  num_columns_(num_columns),
+  num_aero_populations_(0),
   num_levels_(num_levels),
   prog_processes_(),
   diag_processes_(),
@@ -113,13 +111,11 @@ Model* Model::ForUnitTests(
   const std::vector<Species>& aerosol_species,
   const std::map<std::string, std::vector<std::string> >& mode_species,
   const std::vector<Species>& gas_species,
-  int num_columns,
   int num_levels) {
   Model* model = new Model();
   model->modes_ = aerosol_modes;
   model->aero_species_ = aerosol_species;
   model->gas_species_ = gas_species;
-  model->num_columns_ = num_columns;
   model->num_levels_ = num_levels;
   model->uses_fortran_ = false;
 
@@ -158,25 +154,17 @@ Model::~Model() {
 #endif // HAERO_FORTRAN
 }
 
-Prognostics* Model::create_prognostics() const {
-
-  auto progs = new Prognostics(num_columns_, num_levels_);
-
-  // Add aerosol modes/species data.
-  for (size_t i = 0; i < modes_.size(); ++i) {
-    std::vector<Species> species;
-    for (size_t j = 0; j < species_for_mode_[i].size(); ++j) {
-      species.push_back(aero_species_[species_for_mode_[i][j]]);
-    }
-    progs->add_aerosol_mode(modes_[i], species);
+Prognostics* Model::create_prognostics(Kokkos::View<PackType**>& int_aerosols,
+                                       Kokkos::View<PackType**>& cld_aerosols,
+                                       Kokkos::View<PackType**>& gases,
+                                       Kokkos::View<PackType**>& modal_num_concs) const {
+  std::vector<int> num_aero_species(modes_.size());
+  for (size_t m = 0; m < modes_.size(); ++m) {
+    num_aero_species[m] = static_cast<int>(species_for_mode_[m].size());
   }
-
-  // Add gas species data.
-  progs->add_gas_species(gas_species_);
-
-  // Assemble the prognostics and return them.
-  progs->assemble();
-  return progs;
+  return new Prognostics(num_aero_species.size(), num_aero_species,
+                         gas_species_.size(), num_levels_,
+                         int_aerosols, cld_aerosols, gases, modal_num_concs);
 }
 
 Diagnostics* Model::create_diagnostics() const {
@@ -185,8 +173,8 @@ Diagnostics* Model::create_diagnostics() const {
   for (size_t m = 0; m < modes_.size(); ++m) {
     num_aero_species[m] = static_cast<int>(species_for_mode_[m].size());
   }
-  auto diags =  new Diagnostics(num_columns_, num_levels_,
-                                num_aero_species, gas_species_.size());
+  auto diags = new Diagnostics(num_aero_species.size(), num_aero_species,
+                               gas_species_.size(), num_levels_);
 
   // Make sure that all diagnostic variables needed by the model's processes
   // are present.
@@ -258,17 +246,19 @@ const std::vector<Species>& Model::gas_species() const {
 
 void Model::index_modal_species(const std::map<std::string, std::vector<std::string> >& mode_species) {
   species_for_mode_.resize(modes_.size());
+  num_aero_populations_ = 0;
   for (auto iter = mode_species.begin(); iter != mode_species.end(); ++iter) {
     const auto& mode_name = iter->first;
-    const auto& mode_species = iter->second;
+    const auto& aero_species = iter->second;
+    num_aero_populations_ += aero_species.size();
 
     auto m_iter = std::find_if(modes_.begin(), modes_.end(),
       [&] (const Mode& mode) { return mode.name == mode_name; });
     int mode_index = m_iter - modes_.begin();
 
-    for (int s = 0; s < mode_species.size(); ++s) {
+    for (int s = 0; s < aero_species.size(); ++s) {
       auto s_iter = std::find_if(aero_species_.begin(), aero_species_.end(),
-        [&] (const Species& species) { return species.symbol == mode_species[s]; });
+        [&] (const Species& species) { return species.symbol == aero_species[s]; });
       int species_index = s_iter - aero_species_.begin();
       species_for_mode_[mode_index].push_back(species_index);
     }
@@ -278,6 +268,10 @@ void Model::index_modal_species(const std::map<std::string, std::vector<std::str
   for (int m = 0; m < species_for_mode_.size(); ++m) {
     EKAT_REQUIRE_MSG(not species_for_mode_[m].empty(),
       modes_[m].name.c_str() << " mode contains no aerosol species!");
+  }
+
+  // Count the distinct modal aerosol species populations.
+  for (int m = 0; m < species_for_mode_.size(); ++m) {
   }
 }
 
@@ -326,7 +320,6 @@ void Model::init_fortran() {
   }
 
   // Set dimensions.
-  haerotran_set_num_columns(num_columns_);
   haerotran_set_num_levels(num_levels_);
   haerotran_end_init();
 
@@ -370,7 +363,6 @@ void Model::validate() {
   EKAT_REQUIRE_MSG(not modes_.empty(), "Model: No modes were defined!");
   EKAT_REQUIRE_MSG(not aero_species_.empty(), "Model: No aerosol species were given!");
   EKAT_REQUIRE_MSG(not gas_species_.empty(), "Model: No gas species were given!");
-  EKAT_REQUIRE_MSG((num_columns_ > 0), "Model: No columns were specified!");
   EKAT_REQUIRE_MSG((num_levels_ > 0), "Model: No vertical levels were specified!");
 }
 

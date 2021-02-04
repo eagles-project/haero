@@ -1,5 +1,5 @@
 #include "haero/model.hpp"
-#include "diag_process_stub.hpp"
+#include "diag_fprocess_stub.hpp"
 
 using haero::Real;
 
@@ -14,7 +14,7 @@ extern void diag_stub_finalize();
 
 namespace haero {
 
-DiagProcessStub::DiagProcessStub():
+DiagFProcessStub::DiagFProcessStub():
   FDiagnosticProcess(haero::WaterUptakeProcess, "Diagnostic process stub (Fortran)",
                      {"temperature"}, // atm variables
                      {}, // modal aerosol-species-specific variables

@@ -2,11 +2,17 @@
 
 namespace haero {
 
-Diagnostics::Diagnostics(int num_columns, int num_levels,
-                         const std::vector<int>& num_aero_species,
-                         int num_gas_species):
-  num_columns_(num_columns), num_levels_(num_levels),
-  num_aero_species_(num_aero_species), num_gas_species_(num_gas_species) {
+Diagnostics::Diagnostics(int num_aerosol_modes,
+                         const std::vector<int>& num_aerosol_species,
+                         int num_gases,
+                         int num_levels):
+  num_aero_species_(num_aerosol_species), num_aero_populations_(0),
+  num_gases_(num_gases), num_levels_(num_levels) {
+  EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
+                  "num_aerosol_species must be a vector of length " << num_aerosol_modes);
+  for (int m = 0; m < num_aerosol_modes; ++m) {
+    num_aero_populations_ += num_aerosol_species[m];
+  }
 }
 
 Diagnostics::~Diagnostics() {
@@ -22,12 +28,12 @@ int Diagnostics::num_aerosol_species(int mode_index) const {
   return num_aero_species_[mode_index];
 }
 
-int Diagnostics::num_gas_species() const {
-  return num_gas_species_;
+int Diagnostics::num_aerosol_populations() const {
+  return num_aero_populations_;
 }
 
-int Diagnostics::num_columns() const {
-  return num_columns_;
+int Diagnostics::num_gases() const {
+  return num_gases_;
 }
 
 int Diagnostics::num_levels() const {
@@ -42,7 +48,7 @@ void Diagnostics::create_var(const std::string& name) {
   auto iter = vars_.find(name);
   EKAT_REQUIRE_MSG(iter == vars_.end(),
     "Diagnostic variable " << name << " already exists!");
-  vars_[name] = ColumnView(name, num_columns_, num_levels_);
+  vars_[name] = ColumnView(name, num_levels_);
 }
 
 Diagnostics::ColumnView&
@@ -69,28 +75,33 @@ void Diagnostics::create_aerosol_var(const std::string& name) {
   auto iter = aero_vars_.find(name);
   EKAT_REQUIRE_MSG(iter == aero_vars_.end(),
     "Aerosol diagnostic variable " << name << " already exists!");
-  aero_vars_[name] = std::vector<ColumnSpeciesView>();
-  for (int m = 0; m < num_aerosol_modes(); ++m) {
-    aero_vars_[name].push_back(ColumnSpeciesView(name, num_columns_,
-                                                 num_levels_,
-                                                 num_aero_species_[m]));
+
+  // Figure out the dimensions of the view.
+  int num_populations = 0;
+  for (int m = 0; m < num_aero_species_.size(); ++m) {
+    num_populations += num_aero_species_[m];
   }
+  int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
+    num_vert_packs++;
+  }
+  aero_vars_[name] = SpeciesColumnView(name, num_populations, num_vert_packs);
 }
 
-Diagnostics::ColumnSpeciesView&
-Diagnostics::aerosol_var(const std::string& name, int mode_index) {
+Diagnostics::SpeciesColumnView&
+Diagnostics::aerosol_var(const std::string& name) {
   auto iter = aero_vars_.find(name);
   EKAT_REQUIRE_MSG(iter != aero_vars_.end(),
     "Aerosol diagnostic variable " << name << " not found!");
-  return iter->second[mode_index];
+  return iter->second;
 }
 
-const Diagnostics::ColumnSpeciesView&
-Diagnostics::aerosol_var(const std::string& name, int mode_index) const {
+const Diagnostics::SpeciesColumnView&
+Diagnostics::aerosol_var(const std::string& name) const {
   auto iter = aero_vars_.find(name);
   EKAT_REQUIRE_MSG(iter != aero_vars_.end(),
     "Aerosol diagnostic variable " << name << " not found!");
-  return iter->second[mode_index];
+  return iter->second;
 }
 
 bool Diagnostics::has_gas_var(const std::string& name) const {
@@ -101,10 +112,14 @@ void Diagnostics::create_gas_var(const std::string& name) {
   auto iter = gas_vars_.find(name);
   EKAT_REQUIRE_MSG(iter == gas_vars_.end(),
     "Gas diagnostic variable " << name << " already exists!");
-  gas_vars_[name] = ColumnSpeciesView(name, num_columns_, num_levels_, num_gas_species_);
+  int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
+    num_vert_packs++;
+  }
+  gas_vars_[name] = SpeciesColumnView(name, num_gases_, num_vert_packs);
 }
 
-Diagnostics::ColumnSpeciesView&
+Diagnostics::SpeciesColumnView&
 Diagnostics::gas_var(const std::string& name) {
   auto iter = gas_vars_.find(name);
   EKAT_REQUIRE_MSG(iter != gas_vars_.end(),
@@ -112,7 +127,7 @@ Diagnostics::gas_var(const std::string& name) {
   return iter->second;
 }
 
-const Diagnostics::ColumnSpeciesView&
+const Diagnostics::SpeciesColumnView&
 Diagnostics::gas_var(const std::string& name) const {
   auto iter = gas_vars_.find(name);
   EKAT_REQUIRE_MSG(iter != gas_vars_.end(),
@@ -128,8 +143,12 @@ void Diagnostics::create_modal_var(const std::string& name) {
   auto iter = modal_vars_.find(name);
   EKAT_REQUIRE_MSG(iter == modal_vars_.end(),
     "Modal diagnostic variable " << name << " already exists!");
+  int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
+    num_vert_packs++;
+  }
   modal_vars_[name] = ModalColumnView(name, num_aero_species_.size(),
-                                      num_columns_, num_levels_);
+                                      num_vert_packs);
 }
 
 Diagnostics::ModalColumnView&
@@ -171,10 +190,10 @@ bool d_has_aerosol_var_c(void* d, const char* name)
   return diags->has_aerosol_var(name);
 }
 
-void* d_aerosol_var_c(void* d, const char* name, int mode)
+void* d_aerosol_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
-  auto& var = diags->aerosol_var(name, mode);
+  auto& var = diags->aerosol_var(name);
   return (void*)var.data();
 }
 

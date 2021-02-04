@@ -3,153 +3,114 @@
 namespace haero {
 
 Tendencies::Tendencies(const Prognostics& prognostics) {
-  EKAT_ASSERT_MSG(prognostics.is_assembled(),
-                  "Cannot construct Tendencies from unassembled Prognostics!");
-  int num_modes = prognostics.num_aerosol_modes();
-  int num_columns = prognostics.num_columns();
+  int num_populations = prognostics.num_aerosol_populations();
   int num_levels = prognostics.num_levels();
-  for (int m = 0; m < num_modes; ++m) {
-    int num_aero_species = prognostics.num_aerosol_species(m);
-    auto int_view_name = std::string("d/dt[") +
-                         prognostics.interstitial_aerosols(m).label() +
-                         std::string(")]");
-    int_aero_species_.push_back(ColumnSpeciesView("dqi/dt",
-                                                  num_columns,
-                                                  num_levels,
-                                                  num_aero_species));
-    auto cld_view_name = std::string("d/dt[") +
-                         prognostics.cloudborne_aerosols(m).label() +
-                         std::string(")]");
-    cld_aero_species_.push_back(ColumnSpeciesView(cld_view_name,
-                                                  num_columns,
-                                                  num_levels,
-                                                  num_aero_species));
+  int num_vert_packs = num_levels/HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
+    num_vert_packs++;
   }
+  auto int_view_name = std::string("d/dt[") +
+                       prognostics.interstitial_aerosols().label() +
+                       std::string(")]");
+  int_aero_species_ = SpeciesColumnView(int_view_name, num_populations,
+                                        num_vert_packs);
+  auto cld_view_name = std::string("d/dt[") +
+                       prognostics.cloudborne_aerosols().label() +
+                       std::string(")]");
+  cld_aero_species_ = SpeciesColumnView(cld_view_name, num_populations,
+                                        num_vert_packs);
+
+  int num_gases = prognostics.num_gases();
+  auto gas_view_name = std::string("d/dt[") +
+                       prognostics.gases().label() +
+                       std::string(")]");
+  gases_ = SpeciesColumnView(gas_view_name, num_gases, num_vert_packs);
 
   auto n_view_name = std::string("d/dt[") +
-                     prognostics.modal_num_densities().label() +
+                     prognostics.modal_num_concs().label() +
                      std::string(")]");
-  modal_num_densities_ = ModalColumnView(n_view_name, num_modes, num_columns,
-                                         num_levels);
-
-  int num_gas_species = prognostics.num_gas_species();
-  auto gas_view_name = std::string("d/dt[") +
-                       prognostics.gas_mole_fractions().label() +
-                       std::string(")]");
-  gas_mole_fractions_ = ColumnSpeciesView(gas_view_name,
-                                          num_columns,
-                                          num_levels,
-                                          num_gas_species);
+  int num_modes = prognostics.num_aerosol_modes();
+  modal_num_concs_ = ModalColumnView(n_view_name, num_modes, num_vert_packs);
 }
 
 Tendencies::~Tendencies() {
 }
 
-int Tendencies::num_aerosol_modes() const {
-  return modal_num_densities_.extent(0);
+Tendencies::SpeciesColumnView&
+Tendencies::interstitial_aerosols() {
+  return int_aero_species_;
 }
 
-int Tendencies::num_aerosol_species(int mode_index) const {
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < int_aero_species_.size());
-  return int_aero_species_[mode_index].extent(2);
+const Tendencies::SpeciesColumnView&
+Tendencies::interstitial_aerosols() const {
+  return int_aero_species_;
 }
 
-int Tendencies::num_gas_species() const {
-  return gas_mole_fractions_.extent(2);
+Tendencies::SpeciesColumnView&
+Tendencies::cloudborne_aerosols() {
+  return cld_aero_species_;
 }
 
-int Tendencies::num_columns() const {
-  return modal_num_densities_.extent(1);
+const Tendencies::SpeciesColumnView&
+Tendencies::cloudborne_aerosols() const {
+  return cld_aero_species_;
 }
 
-int Tendencies::num_levels() const {
-  return modal_num_densities_.extent(2);
+Tendencies::SpeciesColumnView& Tendencies::gases() {
+  return gases_;
 }
 
-Tendencies::ColumnSpeciesView&
-Tendencies::interstitial_aerosols(int mode_index) {
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < int_aero_species_.size());
-  return int_aero_species_[mode_index];
+const Tendencies::SpeciesColumnView& Tendencies::gases() const {
+  return gases_;
 }
 
-const Tendencies::ColumnSpeciesView&
-Tendencies::interstitial_aerosols(int mode_index) const {
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < int_aero_species_.size());
-  return int_aero_species_[mode_index];
+Tendencies::ModalColumnView& Tendencies::modal_num_concs() {
+  return modal_num_concs_;
 }
 
-Tendencies::ColumnSpeciesView&
-Tendencies::cloudborne_aerosols(int mode_index) {
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < cld_aero_species_.size());
-  return cld_aero_species_[mode_index];
-}
-
-const Tendencies::ColumnSpeciesView&
-Tendencies::cloudborne_aerosols(int mode_index) const {
-  EKAT_ASSERT(mode_index >= 0);
-  EKAT_ASSERT(mode_index < cld_aero_species_.size());
-  return cld_aero_species_[mode_index];
-}
-
-Tendencies::ColumnSpeciesView& Tendencies::gas_mole_fractions() {
-  return gas_mole_fractions_;
-}
-
-const Tendencies::ColumnSpeciesView& Tendencies::gas_mole_fractions() const {
-  return gas_mole_fractions_;
-}
-
-Tendencies::ModalColumnView&
-Tendencies::modal_num_densities() {
-  return modal_num_densities_;
-}
-
-const Tendencies::ModalColumnView&
-Tendencies::modal_num_densities() const {
-  return modal_num_densities_;
+const Tendencies::ModalColumnView& Tendencies::modal_num_concs() const {
+  return modal_num_concs_;
 }
 
 Tendencies& Tendencies::scale(Real factor) {
+  EKAT_REQUIRE_MSG(false, "Tendencies::scale is not yet implemented!");
   return *this;
 }
 
 void Tendencies::accumulate(const Tendencies& tendencies) {
+  EKAT_REQUIRE_MSG(false, "Tendencies::accumulate is not yet implemented!");
 }
 
 // Interoperable C functions for providing data to Fortran.
 // See haero.F90 for details on how these functions are used.
 extern "C" {
 
-void* t_int_aero_mix_frac_c(void* t, int mode)
+void* t_int_aero_mix_frac_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& mix_fracs = tends->interstitial_aerosols(mode);
+  auto& mix_fracs = tends->interstitial_aerosols();
   return (void*)mix_fracs.data();
 }
 
-void* t_cld_aero_mix_frac_c(void* t, int mode)
+void* t_cld_aero_mix_frac_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& mix_fracs = tends->cloudborne_aerosols(mode);
+  auto& mix_fracs = tends->cloudborne_aerosols();
   return (void*)mix_fracs.data();
 }
 
-void* t_gas_mole_frac_c(void* t)
+void* t_gases_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& mole_fracs = tends->gas_mole_fractions();
-  return (void*)mole_fracs.data();
+  auto& mix_fracs = tends->gases();
+  return (void*)mix_fracs.data();
 }
 
-void* t_modal_num_densities_c(void* t)
+void* t_modal_num_concs_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& num_densities = tends->modal_num_densities();
-  return (void*)num_densities.data();
+  auto& num_concs = tends->modal_num_concs();
+  return (void*)num_concs.data();
 }
 
 } // extern "C"

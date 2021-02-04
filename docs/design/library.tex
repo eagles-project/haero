@@ -20,6 +20,10 @@ couple with and interoperate with the other processes in the host model. In this
 sense, Haero is a set of building blocks you can use to construct the most
 appropriate modal aerosol representation for your host model.
 
+Haero provides an interface for running aerosol processes to evolve a set of
+state data within a single atmospheric column. You can evolve several columns
+in parallel, as long as state data is provided for each column.
+
 All quantities in Haero are specified using the International System of Units
 (SI) unless otherwise specified. In both code comments and documentation, we
 place square brackets indicating units after the description of a quantity
@@ -138,7 +142,6 @@ To model a specific aerosol system in Haero, we must answer some questions:
         interesting particle sizes?
   \item What species are present in the system, and in what modes are they
         allowed to appear?
-  \item How many atmospheric columns are needed to model the system?
   \item How many vertical levels are needed to resolve the profile of aerosols
         in the system?
   \item Which physical processes are relevant to a simulation of interest?
@@ -185,16 +188,19 @@ class Model final {
   public:
 
   // Constructor -- creates a new model given all relevant data.
-  Model(const Parameterizations& parameterizations,
+  Model(const SelectedProcesses& selected_processes,
         const std::vector<Mode>& aerosol_modes,
         const std::vector<Species>& aerosol_species,
         const std::map<std::string, std::vector<std::string> >& mode_species,
         const std::vector<Species>& gas_species,
-        int num_columns,
         int num_levels);
 
-  // Creates a set of prognostic variables for use with this model.
-  Prognostics* create_prognostics() const;
+  // Creates a new Prognostics object that can be used with this Model, given
+  // a set of views representing aerosol data managed by a host model.
+  Prognostics* create_prognostics(Kokkos::View<PackType**>& int_aerosols,
+                                  Kokkos::View<PackType**>& cld_aerosols,
+                                  Kokkos::View<PackType**>& gases,
+                                  Kokkos::View<PackType**>& modal_num_concs) const;
 
   // Creates a set of diagnostic variables for use with this model.
   Diagnostics* create_diagnostics() const;
@@ -215,21 +221,25 @@ class Model final {
                           const Atmosphere& atmosphere,
                           Diagnostics& diagnostics);
 
-  // Returns the parameterizations associated with this aerosol model.
-  const Parametrizations& parametrizations() const;
+  // Returns the selected set of processes associated with this aerosol model.
+  const SelectedProcesses& selected_processes() const;
 
   // Returns the list of modes for the context.
   const std::vector<Mode>& modes() const;
 
   // Returns the list of aerosol species for the context.
-  const std::vector<Species>& aero_species() const;
+  const std::vector<Species>& aerosol_species() const;
+
+  // Returns the list of aerosol species associated with the model with the
+  // given mode index.
+  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
+
+  // Returns the total number of distinct aerosol species populations in the
+  // model, counting appearances of one species in different modes separately.
+  int num_aerosol_populations() const { return num_aero_populations_; }
 
   // Returns the list of gas species for the context.
   const std::vector<Species>& gas_species() const;
-
-  // Returns the number of vertical atmospheric columns in a simulation
-  // associated with this context.
-  int num_columns() const;
 
   // Returns the number of vertical levels (cells) in each atmospheric column.
   int num_levels() const;
@@ -255,14 +265,19 @@ type :: model_t
   integer :: num_modes
   ! The number of actual species that exist within each mode.
   integer, dimension(:), allocatable :: num_mode_species
+  ! population index offsets for modes.
+  integer, dimension(:), allocatable :: population_offsets
+  ! The total number of distinct aerosol populations.
+  integer :: num_populations
   ! The aerosol species within each mode. Indexed as (mode, species).
   type(species_t), dimension(:,:), allocatable :: aero_species
   ! The gas species in the model.
   type(species_t), dimension(:), allocatable :: gas_species
-  ! The number of columns in the model.
-  integer :: num_columns
   ! The number of vertical levels in each column.
   integer :: num_levels
+contains
+  ! Given a population index, compute mode and species indices
+  procedure :: get_mode_and_species => m_get_mode_and_species
 end type
 \end{lstlisting}
 
@@ -443,7 +458,35 @@ column-major indexing. So for a rank-3 view \verb f  that you access in C++
 as \verb f(i,j,k) , you would access the corresponding array in Fortran as
 \verb f(k,j,i) .
 
-{\em TODO: try to make some sense of packs}
+\subsubsection*{Digression: Packs and Vectorization}
+\labelsubsubsection{lib:packs}
+
+Haero uses Views that consist of \verb Pack  objects instead of floating
+point numbers. A \verb Pack  (or just ``pack'') is a contiguous array of numbers
+that allows a modern CPU or GPU to vectorize calculations using special
+instructions.
+
+When executing a vector instruction, a processor performs arithmetic on more
+than one number at a time within a mathematical expression. In many cases,
+vectorizing expressions can produce significantly faster code. The cost of this
+optimization is that a pack represents several numbers, not one. This can make
+it tricky to reason about the physical quantities stored in a pack.
+
+Haero uses packs with a size (number of contiguously stored numbers) set at
+compile time by the CMake variable \verb HAERO_PACK_SIZE . To simplify the
+process of reasoning about packs, Haero uses these objects one way only:
+in Haero a pack stores data for \verb HAERO_PACK_SIZE  vertical levels in
+a column. Thus, a pack contains data for exactly one variable (with the same
+units and physical interpretation) whose values span one or more vertical
+levels.
+
+This is the easiest way for Haero to support vectorization. It does mean,
+however, that the number of vertical levels in a column differs in general from
+the number of packs spanning a vertical level. For example, a column of data
+with 72 vertical levels running in a Haero build with a \verb HAERO_PACK_SIZE  of
+2 contains $36 = 72 / 2 $ packs in its vertical extent.
+
+\subsubsection*{Haero Views}
 
 Because Haero is concerned with arrays having very specific dimensions, we
 define some named types that correspond to views/arrays that span specific
@@ -457,9 +500,9 @@ spaces:
   \toprule
   View Name & Rank & Description & C++ & Fortran \\
   \midrule
-  \verb ColumnView  & 2 & Maps a column $i$ and a vertical level $k$ to a pack & \verb v(i,k)  & \verb v(k,i) \\
-  \verb ColumnSpeciesView  & 3 & Maps a column $i$, a species index $l$, and a vertical level $k$ to a pack & \verb v(i,l,k)  & \verb v(k,l,i) \\
-  \verb ColumnModeView & 3 & Maps a column $i$, a mode index $m$, and a vertical level $k$ to a pack & \verb v(i,m,k)  & \verb v(k,m,i) \\
+  \verb ColumnView  & 1 & Maps a vertical level index $k$ to a pack & \verb v(k)  & \verb v(k) \\
+  \verb SpeciesColumnView  & 2 & Maps a population index $p$ and a vertical level index $k$ to a pack & \verb v(p,k)  & \verb v(k,p) \\
+  \verb ModalColumnView & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \verb v(m,k)  & \verb v(k,m) \\
   \bottomrule
 \end{tabular}
 \end{table}
@@ -487,25 +530,22 @@ class Prognostics final {
   // Returns the number of gas species in the system.
   int num_gas_species() const;
 
-  // Returns the number of independent atmospheric columns in the system.
-  int num_columns() const;
-
-  // Returns the number of vertical levels per column in the system.
+  // Returns the number of vertical levels in the system.
   int num_levels() const;
 
   // Returns the view storing interstitial aerosol species mass mixing fraction
   // data.
-  const ColumnSpeciesView& interstitial_aerosols() const;
+  const SpeciesColumnView& interstitial_aerosols() const;
 
   // Returns the view storing cloud-borne aerosol species mass mixing fraction
   // data.
-  const ColumnSpeciesView& cloudborne_aerosols() const;
+  const SpeciesColumnView& cloudborne_aerosols() const;
 
   // Returns the view storing mass mixing fraction data for gas species.
-  const ColumnSpeciesView& gases() const;
+  const SpeciesColumnView& gases() const;
 
   // Returns the view storing modal number concentrations.
-  const ColumnModeView& modes() const;
+  const ModalColumnView& modal_num_concs() const;
 
   // Scales the given set of tendencies and adds it into this state, summing
   // the values of the prognostic variables in place.
@@ -576,10 +616,7 @@ class Diagnostics final {
   // Returns the number of gas species in the system.
   int num_gas_species() const;
 
-  // Returns the number of independent atmospheric columns in the system.
-  int num_columns() const;
-
-  // Returns the number of vertical levels per column in the system.
+  // Returns the number of vertical levels in the system.
   int num_levels() const;
 
   // Returns true if the given (non-modal) variable exists within this object,
@@ -597,7 +634,7 @@ class Diagnostics final {
   // Returns the view storing the modal aerosol diagnostic variable with the
   // given name and mode index. If the variable does not yet exist, this throws
   // an exception.
-  ColumnSpeciesView& aerosol_var(const std::string& name, int mode_index);
+  SpeciesColumnView& aerosol_var(const std::string& name, int mode_index);
 
   // Returns true if a variable defined for each gas species exists within
   // this object with the given name, false otherwise.
@@ -606,7 +643,7 @@ class Diagnostics final {
   // Returns the view storing a diagnostic variable, defined for each gas
   // species, with the given name. If the variable does not yet exist, this
   // throws an exception.
-  ColumnSpeciesView& gas_var(const std::string& name);
+  SpeciesColumnView& gas_var(const std::string& name);
 
   // Returns true if the given modal variable exists within this object,
   // false otherwise.
