@@ -14,35 +14,33 @@ Prognostics::Prognostics(int num_aerosol_modes,
   num_gases_(num_gases), num_levels_(num_levels),
   int_aero_species_(int_aerosols), cld_aero_species_(cld_aerosols),
   gases_(gases), modal_num_concs_(modal_num_concs) {
-#ifndef NDEBUG
-  EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
-                  "num_aerosol_species must be a vector of length " << num_aerosol_modes);
-  // Count up the mode/species combinations to validate the extents of the
-  // aerosol views.
+
+  // Count up the mode/species combinations.
   for (int m = 0; m < num_aerosol_species.size(); ++m) {
     num_aero_populations_ += num_aerosol_species[m];
   }
+  EKAT_REQUIRE_MSG(num_aerosol_modes == num_aerosol_species.size(),
+                  "num_aerosol_species must be a vector of length " << num_aerosol_modes);
   int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
     num_vert_packs++;
   }
-  EKAT_ASSERT_MSG(int_aerosols.extent(0) == num_aero_populations_,
-                  "int_aerosols must have extent(0) == " << num_aero_populations_);
-  EKAT_ASSERT_MSG(int_aerosols.extent(1) == num_vert_packs,
-                  "int_aerosols must have extent(1) == " << num_vert_packs);
-  EKAT_ASSERT_MSG(cld_aerosols.extent(0) == num_aero_populations_,
-                  "cld_aerosols must have extent(0) == " << num_aero_populations_);
-  EKAT_ASSERT_MSG(cld_aerosols.extent(1) == num_vert_packs,
-                  "int_aerosols must have extent(1) == " << num_vert_packs);
-  EKAT_ASSERT_MSG(gases.extent(0) == num_gases_,
-                  "gases must have extent(0) == " << num_gases_);
-  EKAT_ASSERT_MSG(gases.extent(1) == num_vert_packs,
-                  "gases must have extent(1) == " << num_vert_packs);
-  EKAT_ASSERT_MSG(modal_num_concs.extent(0) == num_aerosol_modes,
-                  "modal_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_ASSERT_MSG(modal_num_concs.extent(1) == num_vert_packs,
-                  "modal_num_concs must have extent(1) == " << num_vert_packs);
-#endif
+  EKAT_REQUIRE_MSG(int_aerosols.extent(0) == num_aero_populations_,
+                   "int_aerosols must have extent(0) == " << num_aero_populations_);
+  EKAT_REQUIRE_MSG(int_aerosols.extent(1) == num_vert_packs,
+                   "int_aerosols must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(cld_aerosols.extent(0) == num_aero_populations_,
+                   "cld_aerosols must have extent(0) == " << num_aero_populations_);
+  EKAT_REQUIRE_MSG(cld_aerosols.extent(1) == num_vert_packs,
+                   "int_aerosols must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(gases.extent(0) == num_gases_,
+                   "gases must have extent(0) == " << num_gases_);
+  EKAT_REQUIRE_MSG(gases.extent(1) == num_vert_packs,
+                   "gases must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(modal_num_concs.extent(0) == num_aerosol_modes,
+                   "modal_num_concs must have extent(0) == " << num_aerosol_modes);
+  EKAT_REQUIRE_MSG(modal_num_concs.extent(1) == num_vert_packs,
+                   "modal_num_concs must have extent(1) == " << num_vert_packs);
 }
 
 Prognostics::~Prognostics() {
