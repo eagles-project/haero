@@ -6,4 +6,45 @@ life cycle. Here we describe the physics of each stage, the approximations
 made by the associated parametrizations, and the implementations of the
 underlying prognostic and diagnostic processes.
 
+In each of the processes, we assume the state of an aerosol system is specified
+by the following prognostic variables:
+
+\begin{itemize}
+  \item $ n_m(x_i, y_i, z_k, t)$ [\# /m$^3$]: the {\em number density} of mode $m$,
+        defined within the cell in column $i$ at vertical level $k$
+  \item $ q_{m,s}(x_i, y_i, z_k, t)$ [kg aerosol species $s$/kg air]: the
+        {\em mass mix fraction} of aerosol species $s$ within mode $m$, defined
+        within the cell in column $i$ at vertical level $k$
+  \item $ q_g(x_i, y_i, z_k, t)$ [kmol gas species $g$/mkol air]: the {\em mole
+        fraction} of gas species $g$, defined within the cell in column $i$ at
+        vertical level $k$
+\end{itemize}
+
+Further, each process is independent of all other processes. In other words,
+state variables are taken directly from the prognostics and diagostics passed
+to the process, and no assumptions are made about how these state variables
+were computed.
+
+\begin{assume}[Independent aerosol processes]
+  Every aerosol process is independent of other aerosol processes. Specifically:
+  a process takes a set of state variables and diagnostics, and {\em using only
+  these variables}, performs one of the following procedures, based on its
+  process type:
+  \begin{enumerate}
+    \item If the process is {\em prognostic}, it computes a set of tendencies
+          for the prognostic state variables at simulation time $t$.
+    \item If the process is {\em diagnostic}, it updates any relevant diagnostic
+          variables in place at simulation time $t$.
+  \end{enumerate}
+\end{assume}
+
+This process independence is a dramatic departure from prior implementations of
+aerosol physics in MAM. Any sequential coupling of processes must be performed
+by a host model.
+
+With this assumption, it's possible to recover the legacy MAM algorithms by
+constructing a coupling procedure that follows the relevant assumptions. But
+it's also possible to construct more sophisticated coupling processes that take
+advantage of advances in numerical analysis.
+
 \input{processes/nucleation.tex}

@@ -4,6 +4,9 @@
 #ifndef HAERO_CONFIG_HPP
 #define HAERO_CONFIG_HPP
 
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_types.hpp"
+
 namespace haero {
 /// Real-valued numbers are of this type.
 typedef @HAERO_REAL_TYPE@ Real;
@@ -16,6 +19,15 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 #else
 #define HAERO_SINGLE_PRECISION 1
 #endif
+
+/// This is the device on which the data is stored.
+using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
+
+/// Pack data structure for SIMD.
+using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
+
+/// Are we building with Fortran support?
+#define HAERO_FORTRAN @HAERO_FORTRAN@
 
 }
 #endif

@@ -20,6 +20,15 @@ couple with and interoperate with the other processes in the host model. In this
 sense, Haero is a set of building blocks you can use to construct the most
 appropriate modal aerosol representation for your host model.
 
+Haero provides an interface for running aerosol processes to evolve a set of
+state data within a single atmospheric column. You can evolve several columns
+in parallel, as long as state data is provided for each column.
+
+All quantities in Haero are specified using the International System of Units
+(SI) unless otherwise specified. In both code comments and documentation, we
+place square brackets indicating units after the description of a quantity
+(e.g. simulation time [s]).
+
 \subsection{Aerosol Systems}
 \labelsubsection{lib:systems}
 
@@ -66,11 +75,23 @@ diagnostic variable can be any variable whose state can be constructed at any
 instant in time, using only the relevant prognostic variables.
 
 Haero's aerosol state data lives in multi-dimensional arrays within ``smart
-containers'' called \verb Prognostics  and \verb Diagnostics , whose names
-indicate the types of variables they store. These arrays are stored in
-\verb View  data structures provided by the Kokkos C++ library. Aerosol state
-data is allocated in C++, but available for use in Fortran for implementing
-aerosol processes or for using Haero from within a Fortran host model.
+containers'':
+
+\begin{itemize}
+  \item The \verb Prognostics  container contains prognostic state variables
+        specific to aerosols
+  \item The \verb Atmosphere  container contains a thermodynamic description
+        of the atmosphere in which an aerosol system is embedded
+  \item The \verb Diagnostics  container contains a registry of diagnostic
+        variables shared amongst various aerosol processes, and made available
+        for output
+\end{itemize}
+
+The arrays in these data structures are stored in \verb View  objects provided
+by the Kokkos C++ library. Aerosol state data is allocated in C++, but available
+for use in Fortran for implementing aerosol processes or for using Haero
+from within a Fortran host model. Atmospheric state data is provided by the
+host model.
 
 \subsection{Aerosol Processes}
 \labelsubsection{lib:processes}
@@ -121,7 +142,6 @@ To model a specific aerosol system in Haero, we must answer some questions:
         interesting particle sizes?
   \item What species are present in the system, and in what modes are they
         allowed to appear?
-  \item How many atmospheric columns are needed to model the system?
   \item How many vertical levels are needed to resolve the profile of aerosols
         in the system?
   \item Which physical processes are relevant to a simulation of interest?
@@ -168,16 +188,19 @@ class Model final {
   public:
 
   // Constructor -- creates a new model given all relevant data.
-  Model(const Parameterizations& parameterizations,
+  Model(const SelectedProcesses& selected_processes,
         const std::vector<Mode>& aerosol_modes,
         const std::vector<Species>& aerosol_species,
         const std::map<std::string, std::vector<std::string> >& mode_species,
         const std::vector<Species>& gas_species,
-        int num_columns,
         int num_levels);
 
-  // Creates a set of prognostic variables for use with this model.
-  Prognostics* create_prognostics() const;
+  // Creates a new Prognostics object that can be used with this Model, given
+  // a set of views representing aerosol data managed by a host model.
+  Prognostics* create_prognostics(Kokkos::View<PackType**>& int_aerosols,
+                                  Kokkos::View<PackType**>& cld_aerosols,
+                                  Kokkos::View<PackType**>& gases,
+                                  Kokkos::View<PackType**>& modal_num_concs) const;
 
   // Creates a set of diagnostic variables for use with this model.
   Diagnostics* create_diagnostics() const;
@@ -187,6 +210,7 @@ class Model final {
   void run_process(ProcessType type,
                    Real t, Real dt,
                    const Prognostics& prognostics,
+                   const Atmosphere& atmosphere,
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies);
 
@@ -194,23 +218,28 @@ class Model final {
   // relevant diagnostic variables in place.
   void update_diagnostics(ProcessType type, Real t,
                           const Prognostics& prognostics,
+                          const Atmosphere& atmosphere,
                           Diagnostics& diagnostics);
 
-  // Returns the parameterizations associated with this aerosol model.
-  const Parametrizations& parametrizations() const;
+  // Returns the selected set of processes associated with this aerosol model.
+  const SelectedProcesses& selected_processes() const;
 
   // Returns the list of modes for the context.
   const std::vector<Mode>& modes() const;
 
   // Returns the list of aerosol species for the context.
-  const std::vector<Species>& aero_species() const;
+  const std::vector<Species>& aerosol_species() const;
+
+  // Returns the list of aerosol species associated with the model with the
+  // given mode index.
+  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
+
+  // Returns the total number of distinct aerosol species populations in the
+  // model, counting appearances of one species in different modes separately.
+  int num_aerosol_populations() const { return num_aero_populations_; }
 
   // Returns the list of gas species for the context.
   const std::vector<Species>& gas_species() const;
-
-  // Returns the number of vertical atmospheric columns in a simulation
-  // associated with this context.
-  int num_columns() const;
 
   // Returns the number of vertical levels (cells) in each atmospheric column.
   int num_levels() const;
@@ -236,14 +265,19 @@ type :: model_t
   integer :: num_modes
   ! The number of actual species that exist within each mode.
   integer, dimension(:), allocatable :: num_mode_species
+  ! population index offsets for modes.
+  integer, dimension(:), allocatable :: population_offsets
+  ! The total number of distinct aerosol populations.
+  integer :: num_populations
   ! The aerosol species within each mode. Indexed as (mode, species).
   type(species_t), dimension(:,:), allocatable :: aero_species
   ! The gas species in the model.
   type(species_t), dimension(:), allocatable :: gas_species
-  ! The number of columns in the model.
-  integer :: num_columns
   ! The number of vertical levels in each column.
   integer :: num_levels
+contains
+  ! Given a population index, compute mode and species indices
+  procedure :: get_mode_and_species => m_get_mode_and_species
 end type
 \end{lstlisting}
 
@@ -277,9 +311,9 @@ we represent an aerosol mode with the \verb|Mode| struct:
 \begin{lstlisting}
 struct Mode {
   std::string name;  // a unique identifier for the mode
-  Real min_diameter; // the mode's minimum particle diameter
-  Real max_diameter; // the mode's maximum particle diameter
-  Real mean_std_dev; // the geometric mean standard deviation for the mode
+  Real min_diameter; // the mode's minimum particle diameter [m]
+  Real max_diameter; // the mode's maximum particle diameter [m]
+  Real mean_std_dev; // the geometric mean standard deviation for the mode [m]
 };
 \end{lstlisting}
 
@@ -292,11 +326,11 @@ module:
 type :: mode_t
   ! Mode name
   character(len=:), allocatable :: name
-  ! Minimum particle diameter
+  ! Minimum particle diameter [m]
   real(wp) :: min_diameter
-  ! Maximum particle diameter
+  ! Maximum particle diameter [m]
   real(wp) :: max_diameter
-  ! Geometric mean standard deviation
+  ! Geometric mean standard deviation [m]
   real(wp) :: mean_std_dev
 end type
 \end{lstlisting}
@@ -318,8 +352,8 @@ a number of relevant physical properties. The fundamental description of a
 species includes
 
 \begin{itemize}
-  \item a symbolic name (e.g. \verb SO4 , for sulfate)
   \item a descriptive name (e.g. \verb "sulfate" )
+  \item a symbolic name (e.g. \verb SO4 , for sulfate)
   \item information about the chemical properties of the species
 \end{itemize}
 
@@ -357,34 +391,44 @@ end type
 \labelsection{lib:state}
 
 Once a model variable has been created that defines an aerosol system, you can
-create state variables for that system. The state of a system is defined by the
-following prognostic variables:
+create state variables for that system. The state of an aerosol system is
+defined by the following prognostic variables within the \verb Prognostics  data
+structure:
 
 \begin{itemize}
-  \item {\bf modal number densities}: the total number of particles per cubic
-        meter in each mode
-  \item {\bf aerosol modal mix fractions}: the fraction of a mode occupied
-        by each aerosol species present within that mode
-  \item {\bf gas mole fractions}: the number of moles of each gas species per
-        mole of air
+  \item {\bf aerosol modal mass mix fraction} $q_{m,s}$ [kg aerosol species $s$ /kg dry air]:
+        the ratio of aerosol mass to dry air mass for aerosol species $s$
+        occupying mode $m$
+  \item {\bf gas mass mix fraction} $q_g$ [kg gas species $g$/kg dry air]: the
+        ratio of the mass of gas species $g$ to dry air mass
+  \item {\bf modal number concentrations} $n_m$ [\# /kg dry air]: the total number of
+        particles per unit mass of dry air in the mode $m$
 \end{itemize}
 
-In addition, the model possesses a set of diagnostic variables that depend on
-its selected aerosol processes (which are discussed in a later section).
+The state of the atmosphere (expressed in averaged thermodynamic quantities
+like pressure and temperature) greatly affects the behavior of aerosols, so
+this atmosphere state information is made available in the \verb Atmosphere  data
+structure.
+
+Finally, the model possesses a set of diagnostic variables, stored in the
+\verb Diagnostics  data structure, that depend on its selected aerosol processes
+(which are discussed in a later section).
 
 How does one create a set of state variables given a model variable? Recall that
 the \verb Model  C++ class provides the following two functions, which you can
 call directly yourself, given a pointer to a C++ variable called \verb model :
 
 \begin{itemize}
-  \item \verb model->create_prognostics()  : returns a pointer to a C++
+  \item \verb model->create_prognostics()  : returns a pointer to a new C++
     \verb Prognostics  container
-  \item \verb model->create_diagnostics()  : returns a pointer to a C++
+  \item \verb model->create_diagnostics()  : returns a pointer to a new C++
     \verb Diagnostics  container
 \end{itemize}
 
 These functions don't take any parameters---they just use the information within
-the model variable.
+the model variable. A host model is responsible for creating its own
+\verb Atmosphere  objects, because it manages the memory within the underlying
+views.
 
 By the way, you don't always have to call these functions yourself. State
 variables are automatically created if you're using the Haero driver or
@@ -393,10 +437,10 @@ Haero within your own host model, or if you're writing a unit test for your
 parameterization, you must call these functions to obtain containers for your
 aerosol model's state data.
 
-The \verb Prognostics  and \verb Diagnostics  containers store prognostic and
-diagnostic state data, respectively, in multidimensional arrays allocated in C++
-but made available to both C++ and Fortran. The data for each array is stored
-within a Kokkos View.
+The \verb Prognostics , \verb Atmosphere , and \verb Diagnostics  containers
+store state data in multidimensional arrays allocated in C++ but made available
+to both C++ and Fortran. The data for each array is stored within a Kokkos
+\verb View .
 
 \subsection*{Kokkos Views}
 \labelsubsection{lib:views}
@@ -414,7 +458,35 @@ column-major indexing. So for a rank-3 view \verb f  that you access in C++
 as \verb f(i,j,k) , you would access the corresponding array in Fortran as
 \verb f(k,j,i) .
 
-{\em TODO: try to make some sense of packs}
+\subsubsection*{Digression: Packs and Vectorization}
+\labelsubsubsection{lib:packs}
+
+Haero uses Views that consist of \verb Pack  objects instead of floating
+point numbers. A \verb Pack  (or just ``pack'') is a contiguous array of numbers
+that allows a modern CPU or GPU to vectorize calculations using special
+instructions.
+
+When executing a vector instruction, a processor performs arithmetic on more
+than one number at a time within a mathematical expression. In many cases,
+vectorizing expressions can produce significantly faster code. The cost of this
+optimization is that a pack represents several numbers, not one. This can make
+it tricky to reason about the physical quantities stored in a pack.
+
+Haero uses packs with a size (number of contiguously stored numbers) set at
+compile time by the CMake variable \verb HAERO_PACK_SIZE . To simplify the
+process of reasoning about packs, Haero uses these objects one way only:
+in Haero a pack stores data for \verb HAERO_PACK_SIZE  vertical levels in
+a column. Thus, a pack contains data for exactly one variable (with the same
+units and physical interpretation) whose values span one or more vertical
+levels.
+
+This is the easiest way for Haero to support vectorization. It does mean,
+however, that the number of vertical levels in a column differs in general from
+the number of packs spanning a vertical level. For example, a column of data
+with 72 vertical levels running in a Haero build with a \verb HAERO_PACK_SIZE  of
+2 contains $36 = 72 / 2 $ packs in its vertical extent.
+
+\subsubsection*{Haero Views}
 
 Because Haero is concerned with arrays having very specific dimensions, we
 define some named types that correspond to views/arrays that span specific
@@ -428,15 +500,15 @@ spaces:
   \toprule
   View Name & Rank & Description & C++ & Fortran \\
   \midrule
-  \verb ColumnView  & 2 & Maps a column $i$ and a vertical level $k$ to a pack & \verb v(i,k)  & \verb v(k,i) \\
-  \verb ColumnSpeciesView  & 3 & Maps a column $i$, a vertical level $k$, and a species $s$ to a pack & \verb v(i,k,s)  & \verb v(s,k,i) \\
-  \verb ModalColumnView & 3 & Maps a mode index $m$, a column $i$, and a vertical level $k$ to a pack & \verb v(i,k,s)  & \verb v(s,k,i) \\
+  \verb ColumnView  & 1 & Maps a vertical level index $k$ to a pack & \verb v(k)  & \verb v(k) \\
+  \verb SpeciesColumnView  & 2 & Maps a population index $p$ and a vertical level index $k$ to a pack & \verb v(p,k)  & \verb v(k,p) \\
+  \verb ModalColumnView & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \verb v(m,k)  & \verb v(k,m) \\
   \bottomrule
 \end{tabular}
 \end{table}
 
-Both the \verb Prognostics  and \verb Diagnostics  containers described below
-make use of these named types.
+The \verb Prognostics , \verb Atmosphere , and \verb Diagnostics  containers
+described below make use of these named types.
 
 \subsection{Prognostics Type}
 \labelsubsection{lib:prognostics}
@@ -458,25 +530,22 @@ class Prognostics final {
   // Returns the number of gas species in the system.
   int num_gas_species() const;
 
-  // Returns the number of independent atmospheric columns in the system.
-  int num_columns() const;
-
-  // Returns the number of vertical levels per column in the system.
+  // Returns the number of vertical levels in the system.
   int num_levels() const;
 
-  // Returns the view storing interstitial aerosol species mixing fraction data
-  // for the mode with the given index.
-  const ColumnSpeciesView& interstitial_aerosols(int mode_index) const;
+  // Returns the view storing interstitial aerosol species mass mixing fraction
+  // data.
+  const SpeciesColumnView& interstitial_aerosols() const;
 
-  // Returns the view storing cloud-borne aerosol species mixing fraction data
-  // for the mode with the given index.
-  const ColumnSpeciesView& cloudborne_aerosols(int mode_index) const;
+  // Returns the view storing cloud-borne aerosol species mass mixing fraction
+  // data.
+  const SpeciesColumnView& cloudborne_aerosols() const;
 
-  // Returns the view storing the mole fractions of gas species in the state.
-  const ColumnSpeciesView& gas_mole_fractions() const;
+  // Returns the view storing mass mixing fraction data for gas species.
+  const SpeciesColumnView& gases() const;
 
-  // Returns the view storing the modal number densities.
-  const ModalColumnView& modal_num_densities() const;
+  // Returns the view storing modal number concentrations.
+  const ModalColumnView& modal_num_concs() const;
 
   // Scales the given set of tendencies and adds it into this state, summing
   // the values of the prognostic variables in place.
@@ -497,48 +566,35 @@ syntax, this type uses bound procedures to return pointers to its arrays.
 \begin{lstlisting}
   type :: prognostics_t
   contains
-    ! Access to interstitial aerosol mix fractions array
+    ! Access to interstitial aerosol mix fractions array (no dummy arguments)
     procedure :: interstitial_aerosols => p_int_aero_mix_frac
-    ! Access to cloudborne aerosol mix fractions array
+    ! Access to cloudborne aerosol mix fractions array (no dummy arguments)
     procedure :: cloudborne_aerosols => p_cld_aero_mix_frac
-    ! Access to gas mole fractions array
-    procedure :: gas_mole_fractions => p_gas_mole_frac
-    ! Access to modal number densities array
-    procedure :: modal_num_densities => p_modal_num_densities
+    ! Access to gas mix fractions array (no dummy arguments)
+    procedure :: gases => p_gas_mix_frac
+    ! Access to modal number concentrations array (no dummy arguments)
+    procedure :: modes => p_modal_num_concs
   end type
-
-  ! Provides access to the interstitial aerosol mixing fractions array
-  ! for the given mode in the given prognostics object p.
-  function p_int_aero_mix_frac(p, mode) result(retval)
-    class(prognostics_t), intent(in)  :: p
-    integer(c_int), value, intent(in) :: mode
-    real(c_real), pointer, dimension(:,:,:) :: retval
-  end function
-
-  ! Provides access to the cloud-borne aerosol mixing fractions array
-  ! for the given mode in the given prognostics object p.
-  function p_cld_aero_mix_frac(p, mode) result(retval)
-    class(prognostics_t), intent(in)  :: p
-    integer(c_int), value, intent(in) :: mode
-    real(c_real), pointer, dimension(:,:,:) :: retval
-  end function
-
-  ! Provides access to the gas mole fractions array for the given
-  ! prognostics object p.
-  function p_gas_mole_frac(p) result(retval)
-    use iso_c_binding, only: c_ptr, c_int
-    class(prognostics_t), intent(in) :: p
-    real(c_real), pointer, dimension(:,:,:) :: retval
-  end function
-
-  ! Provides access to the modal number fractions array for the given
-  ! prognostics object p.
-  function p_modal_num_densities(p) result(retval)
-    use iso_c_binding, only: c_ptr, c_int
-    class(prognostics_t), intent(in) :: p
-    real(c_real), pointer, dimension(:,:,:) :: retval
-  end function
 \end{lstlisting}
+
+\subsection{Atmosphere Type}
+\labelsubsection{lib:atmosphere}
+
+The \verb Atmosphere  C++ class stores a fixed set of state variables that
+describe the atmosphere, such as
+
+\begin{itemize}
+  \item temperature [K]
+  \item pressure [Pa]
+  \item relative humidity [-]
+  \item heights at level interfaces [m]
+\end{itemize}
+
+Each of these variables are stored in \verb ColumnView  objects whose memory
+is managed by the host model.
+
+{\em This data structure is new, so we'll be adding and changing these state
+variables a bit in the near future.}
 
 \subsection{Diagnostics Type}
 \labelsubsection{lib:diagnostics}
@@ -560,10 +616,7 @@ class Diagnostics final {
   // Returns the number of gas species in the system.
   int num_gas_species() const;
 
-  // Returns the number of independent atmospheric columns in the system.
-  int num_columns() const;
-
-  // Returns the number of vertical levels per column in the system.
+  // Returns the number of vertical levels in the system.
   int num_levels() const;
 
   // Returns true if the given (non-modal) variable exists within this object,
@@ -581,7 +634,7 @@ class Diagnostics final {
   // Returns the view storing the modal aerosol diagnostic variable with the
   // given name and mode index. If the variable does not yet exist, this throws
   // an exception.
-  ColumnSpeciesView& aerosol_var(const std::string& name, int mode_index);
+  SpeciesColumnView& aerosol_var(const std::string& name, int mode_index);
 
   // Returns true if a variable defined for each gas species exists within
   // this object with the given name, false otherwise.
@@ -590,7 +643,7 @@ class Diagnostics final {
   // Returns the view storing a diagnostic variable, defined for each gas
   // species, with the given name. If the variable does not yet exist, this
   // throws an exception.
-  ColumnSpeciesView& gas_var(const std::string& name);
+  SpeciesColumnView& gas_var(const std::string& name);
 
   // Returns true if the given modal variable exists within this object,
   // false otherwise.
@@ -604,91 +657,31 @@ class Diagnostics final {
 \end{lstlisting}
 
 The Fortran version of \verb Diagnostics , like its \verb Prognostics  counterpart,
-uses bound procedures to provide access to its array data:
+uses bound procedures to provide access to its array data. Each one of these
+bound procedures accepts a single dummy argument: the name of the desired
+diagnostic variable.
 
 \lstset{language=[03]{fortran}}
 \begin{lstlisting}
   type :: diagnostics_t
   contains
+    ! Returns true if the column variable with the given name exists.
     procedure :: has_var => d_has_var
+    ! Returns the column variable with the given name.
     procedure :: var => d_var
+    ! Returns true if an aerosol diagnostic variable with the given name exists.
     procedure :: has_aerosol_var => d_has_aerosol_var
+    ! Returns the aerosol diagnostic variable with the given name.
     procedure :: aerosol_var => d_aerosol_var
+    ! Returns true if a gas diagnostic variable with the given name exists.
     procedure :: has_gas_var => d_has_gas_var
+    ! Returns the gas diagnostic variable with the given name.
     procedure :: gas_var => d_gas_var
+    ! Returns true if a modal diagnostic variable with the given name exists.
     procedure :: has_modal_var => d_has_modal_var
+    ! Returns the modal diagnostic variable with the given name.
     procedure :: modal_var => d_modal_var
   end type
-
-  ! Returns true if the given diagnostics object d contains a (non-modal)
-  ! variable with the given name, false otherwise.
-  function d_has_var(d, name) result(retval)
-    use iso_c_binding, only: c_ptr, c_bool
-    class(diagnostics_t), intent(in) :: d
-    character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
-  end function
-
-  ! Provides access to the given (non-modal) variable in the given
-  ! diagnostics object d.
-  function d_var(d, name) result(retval)
-    class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
-    real(wp), dimension(:,:), pointer :: retval
-  end function
-
-  ! Returns true if the given diagnostics object d contains a modal aerosol
-  ! variable with the given name, false otherwise.
-  function d_has_aerosol_var(d, name, mode) result(retval)
-    use iso_c_binding, only: c_ptr, c_char, c_bool, c_int
-    class(diagnostics_t), intent(in) :: d
-    character(len=*), intent(in) :: name
-    integer(c_int), intent(in) :: mode
-    logical(c_bool) :: retval
-  end function
-
-  ! Provides access to the given (non-modal) variable in the given
-  ! diagnostics object d.
-  function d_aerosol_var(d, name, mode) result(retval)
-    class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
-    integer(c_int), intent(in) :: mode
-    real(wp), dimension(:,:,:), pointer :: retval
-  end function
-
-  ! Returns true if the given diagnostics object d contains a (non-modal)
-  ! variable with the given name, false otherwise.
-  function d_has_gas_var(d, name) result(retval)
-    use iso_c_binding, only: c_ptr, c_bool
-    class(diagnostics_t), intent(in) :: d
-    character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
-  end function
-
-  ! Provides access to the given (non-modal) variable in the given
-  ! diagnostics object d.
-  function d_gas_var(d, name) result(retval)
-    class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
-    real(wp), dimension(:,:,:), pointer :: retval
-  end function
-
-  ! Returns true if the given diagnostics object d contains a modal
-  ! variable with the given name, false otherwise.
-  function d_has_modal_var(d, name) result(retval)
-    use iso_c_binding, only: c_ptr, c_bool
-    class(diagnostics_t), intent(in) :: d
-    character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
-  end function
-
-  ! Provides access to the given modal variable in the given
-  ! diagnostics object d.
-  function d_modal_var(d, name) result(retval)
-    class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
-    real(wp), dimension(:,:,:), pointer :: retval
-  end function
 \end{lstlisting}
 
 At this point, you might wonder how a \verb Diagnostics  variable knows which
@@ -697,9 +690,9 @@ creating variables that it needs. The C++ \verb Model  variable used to create
 a \verb Diagnostics  variable knows this information, and automatically calls
 these functions for you.
 
-For examples of how these \verb Prognostics  and \verb Diagnostics  types are
-used in practice, take a look at one of the existing aerosol process
-implementations.
+For examples of how the \verb Prognostics , \verb Atmosphere , and
+\verb Diagnostics  types are used in practice, take a look at one of the
+existing aerosol process implementations.
 
 \section{Aerosol Processes in Haero}
 \labelsection{lib:processes}
@@ -784,6 +777,7 @@ class PrognosticProcess {
   virtual void run(const Model& model,
                    Real t, Real dt,
                    const Prognostics& prognostics,
+                   const Atmosphere& atmosphere,
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const = 0;
 };
@@ -985,6 +979,7 @@ class DiagnosticProcess {
   // Override this method to update diagnostic variables at the given time.
   virtual void update(const Model& model, Real t,
                       const Prognostics& prognostics,
+                      const Atmosphere& atmosphere,
                       Diagnostics& diagnostics) const = 0;
 
   // This function accepts the names of diagnostic variables required by this

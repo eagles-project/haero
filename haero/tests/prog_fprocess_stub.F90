@@ -7,12 +7,12 @@
 !> number of modes/species. Gases are ignored. Modal number densities are
 !> unaffected, as aerosol particles are simply transferred from one population
 !> to the other.
-module prog_process_stub
+module prog_fprocess_stub
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, prognostics_t, diagnostics_t, tendencies_t, &
-                   prognostics_from_c_ptr, diagnostics_from_c_ptr, &
-                   tendencies_from_c_ptr
+  use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &
+                   tendencies_t, prognostics_from_c_ptr, atmosphere_from_c_ptr,&
+                   diagnostics_from_c_ptr, tendencies_from_c_ptr
 
   implicit none
   private
@@ -43,7 +43,7 @@ end subroutine
 
 !> Calls the update for the process, computing tendencies for each affected
 !> prognostic variable.
-subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
+subroutine prog_stub_run(t, dt, progs, atm, diags, tends) bind(c)
   use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
@@ -51,58 +51,57 @@ subroutine prog_stub_run(t, dt, progs, diags, tends) bind(c)
   real(wp), value, intent(in) :: t     ! simulation time
   real(wp), value, intent(in) :: dt    ! simulation time step
   type(c_ptr), value, intent(in) :: progs ! prognostic variables
+  type(c_ptr), value, intent(in) :: atm   ! atmosphere state variables
   type(c_ptr), value, intent(in) :: diags ! diagnostic variables
   type(c_ptr), value, intent(in) :: tends ! tendencies
 
   ! Fortran prognostics, diagnostics, tendencies types
   type(prognostics_t) :: prognostics
+  type(atmosphere_t)  :: atmosphere
   type(diagnostics_t) :: diagnostics
   type(tendencies_t)  :: tendencies
 
   ! Other local variables.
-  integer :: num_modes, m, i, k, s
-  real(wp), pointer, dimension(:,:,:) :: q_c    ! cloudborne aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_i    ! interstitial aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_g    ! gas mole fracs
-  real(wp), pointer, dimension(:,:,:) :: n      ! modal number densities
-  real(wp), pointer, dimension(:,:,:) :: dqdt_c ! cloudborne aerosol tends
-  real(wp), pointer, dimension(:,:,:) :: dqdt_i ! interstitial aerosol tends
-  real(wp), pointer, dimension(:,:,:) :: dqdt_g ! gas mole frac tends
-  real(wp), pointer, dimension(:,:,:) :: dndt   ! modal number density tends
+  integer :: num_modes, p, k
+  real(wp), pointer, dimension(:,:) :: q_c    ! cloudborne aerosol mix fracs
+  real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix fracs
+  real(wp), pointer, dimension(:,:) :: q_g    ! gas mole fracs
+  real(wp), pointer, dimension(:,:) :: n      ! modal number densities
+  real(wp), pointer, dimension(:,:) :: dqdt_c ! cloudborne aerosol tends
+  real(wp), pointer, dimension(:,:) :: dqdt_i ! interstitial aerosol tends
+  real(wp), pointer, dimension(:,:) :: dqdt_g ! gas mole frac tends
+  real(wp), pointer, dimension(:,:) :: dndt   ! modal number density tends
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
+  atmosphere = atmosphere_from_c_ptr(atm)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 
   ! Iterate over modes and compute aerosol mix fraction tendencies.
   num_modes = size(model%modes)
-  do m=1,num_modes
-    q_c => prognostics%cloudborne_aerosols(m)
-    q_i => prognostics%interstitial_aerosols(m)
-    dqdt_c => tendencies%cloudborne_aerosols(m)
-    dqdt_i => tendencies%interstitial_aerosols(m)
+  q_c => prognostics%cloudborne_aerosols()
+  q_i => prognostics%interstitial_aerosols()
+  dqdt_c => tendencies%cloudborne_aerosols()
+  dqdt_i => tendencies%interstitial_aerosols()
 
-    ! Cloudborne aerosols decay exponentially into interstitial aerosols.
-    do i=1,model%num_columns
-      do k=1,model%num_levels
-        do s=1,model%num_mode_species(m)
-          dqdt_c(s, k, i) =  decay_rate * q_c(s, k, i)
-          dqdt_i(s, k, i) = -dqdt_c(s, k, i)
-        end do
-      end do
+  ! Cloudborne aerosols decay exponentially into interstitial aerosols.
+  do p=1,model%num_populations
+    do k=1,model%num_levels
+      dqdt_c(k, p) =  decay_rate * q_c(k, p)
+      dqdt_i(k, p) = -dqdt_c(k, p)
     end do
   end do
 
-  ! Gas mole fraction tendencies are zero.
-  q_g => prognostics%gas_mole_fractions()
-  dqdt_g => tendencies%gas_mole_fractions()
-  dqdt_g(:,:,:) = 0.0_wp
+  ! Gas mix ratio tendencies are zero.
+  q_g => prognostics%gases()
+  dqdt_g => tendencies%gases()
+  dqdt_g(:,:) = 0.0_wp
 
-  ! Modal number density tendencies are zero.
-  n => prognostics%modal_num_densities()
-  dndt => tendencies%modal_num_densities()
-  dndt(:,:,:) = 0.0_wp
+  ! Modal number concentration tendencies are zero.
+  n => prognostics%modal_num_concs()
+  dndt => tendencies%modal_num_concs()
+  dndt(:,:) = 0.0_wp
 
 end subroutine
 

@@ -2,6 +2,7 @@
 #define HAERO_PROCESS_HPP
 
 #include "haero/prognostics.hpp"
+#include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/tendencies.hpp"
 
@@ -102,6 +103,7 @@ class PrognosticProcess {
   ///                this process occurs.
   /// @param [in] prognostics The prognostic variables used by and affected by
   ///                         this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this process.
   /// @param [in] diagnostics The prognostic variables used by and affected by
   ///                         this process.
   /// @param [out] tendencies A container that stores time derivatives for
@@ -109,6 +111,7 @@ class PrognosticProcess {
   virtual void run(const Model& model,
                    Real t, Real dt,
                    const Prognostics& prognostics,
+                   const Atmosphere& atmosphere,
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const = 0;
 
@@ -134,10 +137,13 @@ class NullPrognosticProcess: public PrognosticProcess {
   void run(const Model& model,
            Real t, Real dt,
            const Prognostics& prognostics,
+           const Atmosphere& atmosphere,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {}
 
 };
+
+#if HAERO_FORTRAN
 
 /// @class FPrognosticProcess
 /// This PrognosticProcess makes it easier to implement an aerosol process in
@@ -154,7 +160,8 @@ class FPrognosticProcess: public PrognosticProcess
   typedef void (*InitProcessFunction)(void);
 
   /// This type is a pointer to a Fortran function that runs a process.
-  typedef void (*RunProcessFunction)(Real t, Real dt, void* progs, void* diags, void* tends);
+  typedef void (*RunProcessFunction)(Real t, Real dt, void* progs, void* atm,
+                                     void* diags, void* tends);
 
   /// This type is a pointer to a Fortran function that finalizes a process,
   /// deallocating any resources allocated in the process's init function.
@@ -192,10 +199,11 @@ class FPrognosticProcess: public PrognosticProcess
   void run(const Model& model,
            Real t, Real dt,
            const Prognostics& prognostics,
+           const Atmosphere& atmosphere,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {
-    run_process_(t, dt, (void*)&prognostics, (void*)&diagnostics,
-                 (void*)&tendencies);
+    run_process_(t, dt, (void*)&prognostics, (void*)&atmosphere,
+                 (void*)&diagnostics, (void*)&tendencies);
   }
 
   private:
@@ -208,6 +216,8 @@ class FPrognosticProcess: public PrognosticProcess
   // Has the process been initialized?
   bool initialized_;
 };
+
+#endif // HAERO_FORTRAN
 
 /// @class DiagnosticProcess
 /// This type is an interface (base class) to an aerosol process quantified by
@@ -317,10 +327,12 @@ class DiagnosticProcess {
   /// @param [in] t The simulation time at which this process is being invoked
   ///               (in seconds).
   /// @param [in] prognostics The prognostic variables used by this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this process.
   /// @param [inout] diagnostics The diagnostic variables used by and updated by
   ///                            this process.
   virtual void update(const Model& model, Real t,
                       const Prognostics& prognostics,
+                      const Atmosphere& atmosphere,
                       Diagnostics& diagnostics) const = 0;
 
   protected:
@@ -383,9 +395,11 @@ class NullDiagnosticProcess: public DiagnosticProcess {
   // Overrides
   void update(const Model& model, Real t,
               const Prognostics& prognostics,
+              const Atmosphere& atmosphere,
               Diagnostics& diagnostics) const override {}
 };
 
+#if HAERO_FORTRAN
 extern "C" {
 
 /// Given a C pointer to a Fortran-backed diagnostic process, this function
@@ -395,7 +409,8 @@ void fortran_diagnostic_process_init(void* process, void* model);
 /// Given a C pointer to a Fortran-backed diagnostic process, this function
 /// invokes the process to update diagnostic variables with the given arguments.
 void fortran_diagnostic_process_update(void* process, void* model, Real t,
-                                       void* prognostics, void* diagnostics);
+                                       void* prognostics, void* atmosphere,
+                                       void* diagnostics);
 
 /// Given a C pointer to a Fortran-backed diagnostic process, this function
 /// frees all resources allocated within the process
@@ -416,7 +431,8 @@ class FDiagnosticProcess: public DiagnosticProcess {
   typedef void (*InitProcessFunction)(void);
 
   /// This type is a pointer to a Fortran function that runs a process update.
-  typedef void (*UpdateProcessFunction)(Real t, void* progs, void* diags);
+  typedef void (*UpdateProcessFunction)(Real t, void* progs, void* atm,
+                                        void* diags);
 
   /// This type is a pointer to a Fortran function that finalizes a process,
   /// deallocating any resources allocated in the process's init function.
@@ -466,8 +482,10 @@ class FDiagnosticProcess: public DiagnosticProcess {
 
   void update(const Model& model, Real t,
               const Prognostics& prognostics,
+              const Atmosphere& atmosphere,
               Diagnostics& diagnostics) const override {
-    update_process_(t, (void*)&prognostics, (void*)&diagnostics);
+    update_process_(t, (void*)&prognostics, (void*)&atmosphere,
+                    (void*)&diagnostics);
   }
 
   private:
@@ -480,6 +498,8 @@ class FDiagnosticProcess: public DiagnosticProcess {
   // Has the process been initialized?
   bool initialized_;
 };
+
+#endif // HAERO_FORTRAN
 
 }
 

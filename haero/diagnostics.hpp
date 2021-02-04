@@ -17,51 +17,36 @@ namespace haero {
 class Diagnostics final {
   public:
 
-  /// This is the device on which the Diagnostics stores its data.
-  using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
+  /// This type represents an array mapping a vertical level index to a pack.
+  /// The vertical level(s) are identified by the index.
+  using ColumnView = Kokkos::View<PackType*>;
 
-  /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
-  using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
-
-  /// This type represents a multidimensional array mapping a column and
-  /// vertical level to a pack.
-  /// * The column is identified by the index i.
-  /// * The vertical level identified by the index k.
-  /// So view[i][k] yields the desired pack.
-  /// Our views are unmanaged in general, to allow a host model to assume
-  /// responsibility for managing resources.
-  using ColumnView = Kokkos::View<PackType**>;
-
-  /// This type represents a multidimensional array mapping a column,
-  /// vertical level, and species to a pack.
-  /// * The column is identified by the index i.
-  /// * The vertical level identified by the index k.
+  /// This type represents a multidimensional array mapping a species and
+  /// vertical level index to a pack.
   /// * The species is identified by the index s.
-  /// So view[i][k][s] yields the desired pack.
-  /// Our views are unmanaged in general, to allow a host model to assume
-  /// responsibility for managing resources.
-  using ColumnSpeciesView = Kokkos::View<PackType***>;
+  /// * The vertical level index is identified by the index k.
+  /// So view[s][k] yields the desired pack.
+  using SpeciesColumnView = Kokkos::View<PackType**>;
 
-  /// This type represents a multidimensional array mapping a mode, column, and
-  /// vertical level to a pack.
+  /// This type represents a multidimensional array mapping a mode and a
+  /// vertical level index to a pack.
   /// * The mode is identified by the index m.
-  /// * The column is identified by the index i.
-  /// * The vertical level identified by the index k.
-  /// So view[m][i][k] yields the desired pack.
-  /// Our views are unmanaged in general, to allow a host model to assume
-  /// responsibility for managing resources.
-  using ModalColumnView = Kokkos::View<PackType***>;
+  /// * The vertical level index is identified by the index k.
+  /// So view[m][k] yields the desired pack.
+  using ModalColumnView = Kokkos::View<PackType**>;
 
   /// Creates an empty Diagnostics to which data can be added.
-  /// @param [in] num_columns The number of vertical columns stored by the state
+  /// @param [in] num_aerosol_modes The number of aerosol modes in the system
+  /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
+  ///                                 ith entry is the number of aerosol species
+  ///                                 in the ith mode
+  /// @param [in] num_gases The number of gas species in the atmosphere
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
-  /// @param [in] num_aero_species A vector whose ith entry is the number of
-  ///                              aerosol species in the ith mode.
-  /// @param [in] num_gas_species The number of gas species in the atmosphere.
-  Diagnostics(int num_columns, int num_levels,
-              const std::vector<int>& num_aero_species,
-              int num_gas_species);
+  Diagnostics(int num_aerosol_modes,
+              const std::vector<int>& num_aerosol_species,
+              int num_gases,
+              int num_levels);
 
   /// Destructor.
   ~Diagnostics();
@@ -77,11 +62,12 @@ class Diagnostics final {
   /// @param [in] mode_index The index of the desired mode.
   int num_aerosol_species(int mode_index) const;
 
-  /// Returns the number of gas species in the system.
-  int num_gas_species() const;
+  /// Returns the total number of distinct aerosol species populations in the
+  /// model, counting appearances of one species in different modes separately.
+  int num_aerosol_populations() const;
 
-  /// Returns the number of independent atmospheric columns in the system.
-  int num_columns() const;
+  /// Returns the number of gas species in the system.
+  int num_gases() const;
 
   /// Returns the number of vertical levels per column in the system.
   int num_levels() const;
@@ -123,16 +109,13 @@ class Diagnostics final {
   /// given name and mode index. If the variable does not yet exist, this throws
   /// an exception.
   /// @param [in] name The name of the diagnostic variable.
-  /// @param [in] modex_index The index of the desired mode.
-  ColumnSpeciesView& aerosol_var(const std::string& name, int mode_index);
+  SpeciesColumnView& aerosol_var(const std::string& name);
 
   /// Returns a const view storing the modal aerosol diagnostic variable with
   /// the given name and mode index. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  /// @param [in] modex_index The index of the desired mode.
-  const ColumnSpeciesView& aerosol_var(const std::string& name,
-                                       int mode_index) const;
+  const SpeciesColumnView& aerosol_var(const std::string& name) const;
 
   /// Returns true if a variable defined for each gas species exists within
   /// this object with the given name, false otherwise.
@@ -148,13 +131,13 @@ class Diagnostics final {
   /// species, with the given name. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  ColumnSpeciesView& gas_var(const std::string& name);
+  SpeciesColumnView& gas_var(const std::string& name);
 
   /// Returns the const view storing a diagnostic variable, defined for each gas
   /// species, with the given name. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  const ColumnSpeciesView& gas_var(const std::string& name) const;
+  const SpeciesColumnView& gas_var(const std::string& name) const;
 
   /// Returns true if the given modal variable exists within this object,
   /// false otherwise.
@@ -178,22 +161,22 @@ class Diagnostics final {
 
   private:
 
-  /// Number of columns in the system.
-  int num_columns_;
-
-  /// Number of vertical levels per column in the system.
-  int num_levels_;
-
-  /// Aerosol species names within each mode.
+  // Number of aerosol species in each mode.
   std::vector<int> num_aero_species_;
 
-  /// Gas species names.
-  int num_gas_species_;
+  // Number of distinct aerosol populations.
+  int num_aero_populations_;
+
+  // Number of gas species.
+  int num_gases_;
+
+  /// Number of vertical levels per column in the system.
+  const int num_levels_;
 
   // Named diagnostic variables.
   std::map<std::string, ColumnView> vars_;
-  std::map<std::string, std::vector<ColumnSpeciesView> > aero_vars_;
-  std::map<std::string, ColumnSpeciesView> gas_vars_;
+  std::map<std::string, SpeciesColumnView> aero_vars_;
+  std::map<std::string, SpeciesColumnView> gas_vars_;
   std::map<std::string, ModalColumnView> modal_vars_;
 };
 

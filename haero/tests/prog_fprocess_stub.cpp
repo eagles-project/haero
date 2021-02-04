@@ -1,5 +1,5 @@
 #include "haero/model.hpp"
-#include "prog_process_stub.hpp"
+#include "prog_fprocess_stub.hpp"
 
 using haero::Real;
 
@@ -7,7 +7,7 @@ extern "C" {
 
 // Fortran subroutines that implement this process.
 extern void prog_stub_init();
-extern void prog_stub_run(Real t, Real dt, void* progs, void* diags, void* tends);
+extern void prog_stub_run(Real t, Real dt, void* progs, void* atm, void* diags, void* tends);
 extern void prog_stub_finalize();
 
 // Decay rate. Since Fortran-backed processes cannot be run in more than one
@@ -24,7 +24,7 @@ Real prog_stub_decay_rate() {
 
 namespace haero {
 
-ProgProcessStub::ProgProcessStub(Real decay_rate):
+ProgFProcessStub::ProgFProcessStub(Real decay_rate):
   FPrognosticProcess(haero::ActivationProcess, "Prognostic process stub (Fortran)",
                      prog_stub_init, prog_stub_run, prog_stub_finalize) {
   // No positive decay rates!
