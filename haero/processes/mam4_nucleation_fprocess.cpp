@@ -7,7 +7,7 @@ extern "C" {
 
 // Fortran subroutines that implement this process.
 extern void mam4_nucleation_init();
-extern void mam4_nucleation_run(Real t, Real dt, void* progs, void* diags, void* tends);
+extern void mam4_nucleation_run(Real t, Real dt, void* progs, void* atm, void* diags, void* tends);
 extern void mam4_nucleation_finalize();
 
 } // extern "C"

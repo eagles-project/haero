@@ -4,9 +4,9 @@ module mam4_nucleation_mod
 
   use iso_c_binding, only: c_ptr
   use haero, only: wp, model, species_t, &
-                   prognostics_t, diagnostics_t, tendencies_t, &
-                   prognostics_from_c_ptr, diagnostics_from_c_ptr, &
-                   tendencies_from_c_ptr
+                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
+                   prognostics_from_c_ptr, atmosphere_from_c_ptr, &
+                   diagnostics_from_c_ptr, tendencies_from_c_ptr
   use haero_constants, only: pi, R_gas, Avogadro
 
   implicit none
@@ -67,7 +67,7 @@ subroutine mam4_nucleation_init() bind(c)
 
 end subroutine
 
-subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
+subroutine mam4_nucleation_run(t, dt, progs, atm, diags, tends) bind(c)
   use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
@@ -75,29 +75,31 @@ subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
   real(wp), value, intent(in) :: t     ! simulation time
   real(wp), value, intent(in) :: dt    ! simulation time step
   type(c_ptr), value, intent(in) :: progs ! prognostic variables
+  type(c_ptr), value, intent(in) :: atm   ! atmospheric state
   type(c_ptr), value, intent(in) :: diags ! diagnostic variables
   type(c_ptr), value, intent(in) :: tends ! tendencies
 
-  ! Fortran prognostics, diagnostics, tendencies types
+  ! Fortran prognostics, atmosphere, diagnostics, tendencies types
   type(prognostics_t) :: prognostics
+  type(atmosphere_t)  :: atmosphere
   type(diagnostics_t) :: diagnostics
   type(tendencies_t)  :: tendencies
 
   ! Other local variables.
   integer :: i, k
-  real(wp), pointer, dimension(:,:,:) :: q_c    ! cloudborne aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_i    ! interstitial aerosol mix fracs
-  real(wp), pointer, dimension(:,:,:) :: q_g    ! gas mole fracs
-  real(wp), pointer, dimension(:,:,:) :: n      ! modal number densities
-  real(wp), pointer, dimension(:,:,:) :: dqdt_c ! cloudborne aerosol tends
-  real(wp), pointer, dimension(:,:,:) :: dqdt_i ! interstitial aerosol tends
-  real(wp), pointer, dimension(:,:,:) :: dqdt_g ! gas mole frac tends
-  real(wp), pointer, dimension(:,:,:) :: dndt   ! modal number density tends
+  real(wp), pointer, dimension(:,:) :: q_c    ! cloudborne aerosol mix ratios
+  real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios
+  real(wp), pointer, dimension(:,:) :: q_g    ! gas mix ratios
+  real(wp), pointer, dimension(:,:) :: n      ! modal number concentrations
+  real(wp), pointer, dimension(:,:) :: dqdt_c ! cloudborne aerosol tends
+  real(wp), pointer, dimension(:,:) :: dqdt_i ! interstitial aerosol tends
+  real(wp), pointer, dimension(:,:) :: dqdt_g ! gas mole frac tends
+  real(wp), pointer, dimension(:,:) :: dndt   ! modal number density tends
 
 
-  real(wp) :: q_so4     ! Mix fraction for sulfate aerosol [kg aerosol / kg air]
-  real(wp) :: q_h2so4   ! Mole fraction for sulphuric acid gas [kmol gas/kmol air]
-  real(wp) :: n_aitken  ! Number density for Aitken mode [#/m^3]
+  real(wp) :: q_so4     ! Mix ratio for sulfate aerosol [kg aerosol / kg dry air]
+  real(wp) :: q_h2so4   ! Mix ratio for sulphuric acid gas [kg gas/kg dry air]
+  real(wp) :: n_aitken  ! Number concentration for Aitken mode [#/kg dry air]
   real(wp) :: J_nuc     ! nucleation rate [#/cc/s]
   real(wp) :: dqndt_so4 ! tendency for SO4 number mixing ratio
   real(wp) :: md_so4    ! Dry mass for SO4 nucleus
@@ -129,12 +131,13 @@ subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
 
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
+  atmosphere = atmosphere_from_c_ptr(atm)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 
   ! Gas mole fraction tendencies.
-  q_g => prognostics%gas_mole_fractions()
-  dqdt_g => tendencies%gas_mole_fractions()
+  q_g => prognostics%gases()
+  dqdt_g => tendencies%gases()
 
   ! Mix fractions and tendencies for SO4 aerosol in the Aitken mode.
   ! All new nuclei are deposited into interstitial aerosols.
@@ -142,34 +145,32 @@ subroutine mam4_nucleation_run(t, dt, progs, diags, tends) bind(c)
   dqdt_i => tendencies%interstitial_aerosols(aitken_index)
 
   ! Modal number density tendencies.
-  n => prognostics%modal_num_densities()
-  dndt => tendencies%modal_num_densities()
+  n => prognostics%modal_num_concs()
+  dndt => tendencies%modal_num_concs()
 
-  ! Traverse the columns and levels, and compute tendencies from nucleation.
-  do i = 1,model%num_columns
-    do k = 1,model%num_levels
-      ! Compute the molar concentration of air at the given pressure and
-      ! temperature.
-      c_air = press/(temp*R_gas)
+  ! Traverse the vertical levels and compute tendencies from nucleation.
+  do k = 1,model%num_levels
+    ! Compute the molar concentration of air at the given pressure and
+    ! temperature.
+    c_air = press/(temp*R_gas)
 
-      ! Compute the nucleation rate of H2SO4.
-      q_h2so4 = q_g(h2so4_index, k, i)
-      q_so4 = q_i(so4_aitken_index, k, i)
-      n_aitken = n(aitken_index, k, i)
-      J_nuc = h2so4_nuc_rate(q_so4, q_h2so4, n_aitkin, dt, &
-                             temp, press, c_air, z_k, h_pbl, rel_hum, &
-                             uptkrate_h2so4, del_h2so4_gasprod, &
-                             del_h2so4_aeruptk)
+    ! Compute the nucleation rate of H2SO4.
+    q_h2so4 = q_g(k, h2so4_index)
+    q_so4 = q_i(k, so4_aitken_index)
+    n_aitken = n(k, aitken_index)
+    J_nuc = h2so4_nuc_rate(q_so4, q_h2so4, n_aitkin, dt, &
+                           temp, press, c_air, z_k, h_pbl, rel_hum, &
+                           uptkrate_h2so4, del_h2so4_gasprod, &
+                           del_h2so4_aeruptk)
 
-      ! Compute the dry mass of an SO4 nucleus.
-      md_so4 = 1_wp ! FIXME
+    ! Compute the dry mass of an SO4 nucleus.
+    md_so4 = 1_wp ! FIXME
 
-      ! Compute tendencies given J_nuc.
-      dqndt_so4 = 1e6_wp * J_nuc / c_air
-      dqdt_i(so4_aitken_index, k, i) = dqndt_so4 * (md_so4 / mw_so4)
-      dqdt_g(h2so4_index, k, i) = -dqdt_i(so4_aitken_index, k, i)
-      dndt(k, i, aitken_index) = dqndt_so4 * c_air
-    end do
+    ! Compute tendencies given J_nuc.
+    dqndt_so4 = 1e6_wp * J_nuc / c_air
+    dqdt_i(k, so4_aitken_index) = dqndt_so4 * (md_so4 / mw_so4)
+    dqdt_g(k, h2so4_index) = -dqdt_i(k, so4_aitken_index)
+    dndt(k, aitken_index) = dqndt_so4 * c_air
   end do
 end subroutine
 
