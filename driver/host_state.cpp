@@ -4,6 +4,7 @@
 #include "haero/physical_constants.hpp"
 #include <cmath>
 #include <algorithm>
+#include <sstream>
 
 namespace haero {
 namespace driver {
@@ -123,6 +124,52 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const Atm
   Kokkos::deep_copy(thetav,hthetav);
   Kokkos::deep_copy(qv,hqv);
   Kokkos::deep_copy(p,hp);
+}
+
+std::string HostDynamics::info_string(int tab_level) const {
+  std::string tabstr = indent_string(tab_level);
+  std::ostringstream ss;
+  ss << tabstr << "HostDynamics info:\n";
+  tabstr += "\t";
+  ss << "nlev = " << nlev_ << "\n";
+  return ss.str();
+}
+
+void HostDynamics::update(const Real t, const AtmosphericConditions& ac) {
+  // interface update
+  // set local variables for lambda
+  auto phi_local = phi;
+  auto phi0_local = phi0;
+  auto w_local = w;
+  Kokkos::parallel_for("HostDynamics::InterfaceUpdate", PackInfo::num_packs(nlev_+1), 
+    KOKKOS_LAMBDA (const int pack_idx) {
+    for (int vi=0; vi<PackInfo::vec_end(nlev_+1,pack_idx); ++vi) {
+      const Real geop = geopotential(t, phi0_local(pack_idx)[vi], ac);
+      phi_local(pack_idx)[vi] = geop;
+      w_local(pack_idx)[vi] = velocity(t, geop, ac);
+    }
+  });
+  
+  // midpoint update
+  //TODO: Phi0mid could be computed at init, then kept.
+  auto rho_local = rho;
+  auto rho0_local = rho0;
+  auto thetav_local = thetav;
+  auto p_local = p;
+  Kokkos::parallel_for("HostDynamics::MidpointUpdate", PackInfo::num_packs(nlev_), 
+    KOKKOS_LAMBDA (const int pack_idx) {
+    for (int vi=0; vi<PackInfo::vec_end(nlev_, pack_idx); ++vi) {
+      const int k = PackInfo::array_idx(pack_idx,vi);
+      const int kphalf_pack = PackInfo::pack_idx(k+1);
+      const int kphalf_vec = PackInfo::vec_idx(k+1);
+      
+      const Real phimid = 0.5*(phi_local(pack_idx)[vi] + phi_local(kphalf_pack)[kphalf_vec]);
+      const Real phi0mid = 0.5*(phi0_local(pack_idx)[vi] + phi0_local(kphalf_pack)[kphalf_vec]);
+      
+      rho_local(pack_idx)[vi] = density(t, phimid, phi0mid, rho0_local(pack_idx)[vi], ac);
+      p_local(pack_idx)[vi] = pressure(rho_local(pack_idx)[vi], thetav_local(pack_idx)[vi]);
+    }
+  });
 }
 
 } // namespace driver 

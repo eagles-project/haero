@@ -3,6 +3,7 @@
 
 #include "haero/haero_config.hpp"
 #include "haero/atmosphere.hpp"
+#include "haero/math_helpers.hpp"
 #include "host_params.hpp"
 #include "ncwriter.hpp"
 #include "Kokkos_Core.hpp"
@@ -12,7 +13,7 @@
 namespace haero {
 namespace driver {
 
-class HostDynamics {
+class HostDynamics final {
   public: 
     using ColumnView = Kokkos::View<PackType*>;
     
@@ -54,7 +55,7 @@ class HostDynamics {
     HostDynamics() = delete;
     
     /// Update dynamics to new time   
-    void update(const Real newt);
+    void update(const Real newt, const AtmosphericConditions& ac);
     
     /** Initialize column data at t=0 to stationary, hydrostatic balance
     
@@ -71,17 +72,10 @@ class HostDynamics {
     */
     void init_from_interface_pressures(std::vector<Real> p0, 
         const AtmosphericConditions& ac);
-        
-    /** Write column data to a new time index in a netcdf file.
-    
-      @param writer netcdf writer
-      @param time_idx index of time to add
-    */
-    void update_ncdata(NcWriter& writer, const size_t time_idx) const;
-    
+            
     /** Write basic information about *this to a string.
     */
-    std::string info_string() const;
+    std::string info_string(int tab_level=0) const;
     
   protected:
     /// number of levels in column
@@ -90,11 +84,35 @@ class HostDynamics {
     ColumnView phi0;
     /// initial density values
     ColumnView rho0;
-        
 };
 
-struct DynamicsUpdate {
-};
+KOKKOS_INLINE_FUNCTION
+Real geopotential(const Real t, const Real phi0, const AtmosphericConditions& ac) {
+  const Real tanarg = pi * phi0 / (2*gravity_m_per_s2*ac.ztop);
+  const Real exparg = ac.w0 * ac.tperiod * square(std::sin(2*pi*t/ac.tperiod))/(2*ac.ztop);
+  return 2*gravity_m_per_s2*ac.ztop*std::atan(std::tan(tanarg)*std::exp(exparg)) / pi;
+}
+
+KOKKOS_INLINE_FUNCTION
+Real velocity(const Real t, const Real phi, const AtmosphericConditions& ac) {
+  return ac.w0 * std::sin(phi/(gravity_m_per_s2*ac.ztop))*std::sin(2*pi *t / ac.tperiod);
+}
+
+KOKKOS_INLINE_FUNCTION
+Real density(const Real t, const Real phi, const Real phi0, const Real rho0, const AtmosphericConditions& ac) {
+  const Real cosarg1 = pi*phi/(gravity_m_per_s2*ac.ztop);
+  const Real cosarg2 = 2*pi*t/ac.tperiod;
+  const Real cosarg3 = pi*phi0/(gravity_m_per_s2*ac.ztop);
+  const Real exparg = std::cos(cosarg1)*std::cos(cosarg2)-std::cos(cosarg3);
+  return rho0*std::exp(ac.w0*ac.tperiod*exparg/(2*ac.ztop));
+}
+
+KOKKOS_INLINE_FUNCTION
+Real pressure(const Real rho, const Real thetav) {
+  const Real coeff = std::pow(AtmosphericConditions::pref, -AtmosphericConditions::kappa)*
+    r_gas_dry_air_joule_per_k_per_kg;
+  return std::pow(coeff*rho*thetav, 1/(1-AtmosphericConditions::kappa));
+}
 
 }
 }
