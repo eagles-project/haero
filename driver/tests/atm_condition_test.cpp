@@ -7,34 +7,19 @@ using namespace haero;
 using namespace haero::driver;
 
 TEST_CASE("atmosphere_conditions", "") {
-  SECTION("uniform") {
-    std::cout << "uniform\n";
-    AtmosphericConditions conds;
-    conds.params.uniform.mu = molec_weight_dry_air_g_per_mole;
-    conds.params.uniform.H = 20.0;
-    conds.params.uniform.p0 = p_std_pa;
-    conds.params.uniform.T0 = t_freeze_h2o_k;
-    conds.params.uniform.phi0 = 0.25;
-    conds.params.uniform.N0 = 0.1;
 
-    std::cout << "\tmu   = " << conds.params.uniform.mu << '\n'
-              << "\tH    = " << conds.params.uniform.H << '\n'
-              << "\tp0   = " << conds.params.uniform.p0 << '\n'
-              << "\tT0   = " << conds.params.uniform.T0 << '\n'
-              << "\tphi0 = " << conds.params.uniform.phi0 << '\n'
-              << "\tN0   = " << conds.params.uniform.N0 << '\n';
-  }
-
-  SECTION("hydrostatic") {
-    const Real p0 = 100000;
+  SECTION("dynamics") {
     const Real T0 = 300;
     const Real Gamma = 0.005;
+    const Real w0 = 1;
+    const Real ztop = 10E3;
+    const Real tperiod = 900;
     const Real qv0 = 0.015;
     const Real qv1 = 1E-3;
 
-    REQUIRE(FloatingPoint<Real>::in_bounds(p0, 100000, p_std_pa));
-
-    const auto conds = hydrostatic_conditions(p0, T0, Gamma, qv0, qv1);
+    const auto conds = AtmosphericConditions(T0,Gamma,w0,ztop,tperiod,qv0,qv1);
+    
+    std::cout << conds.info_string();
 
     const Real z1000 = 1000;
     const Real qv1000 = water_vapor_mixing_ratio(z1000, conds);

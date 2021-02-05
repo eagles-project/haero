@@ -60,16 +60,16 @@ physics:
   nucleation:           true
   coagulation:          true
 
-# mean ambient atmospheric conditions for each column. Possible models are
-# `uniform` and `hydrostatic`, each with their own set of parameters.
+# ambient atmospheric conditions for each column. 
 atmosphere:
-  model: uniform
-  mu:     0.02896 # mean molecular weight of air [kg/mol]
-  H:      3.e3    # scaled atmospheric height [m]
-  p0:     1.e5    # pressure [Pa]
-  T0:     273     # temperature [K]
-  phi0:   0.95    # clear-sky relative humidity [-]
-  N0:     0       # cloud fraction [-]
+  Tv0:      301.0
+  Gammav:   0.02
+  w0:       2.1
+  ztop:     12000
+  tperiod:  450
+  qv0:      0.002
+  qv1:      0.001
+  
 
 # Grid geometry
 grid:

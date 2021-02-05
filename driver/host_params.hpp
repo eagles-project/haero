@@ -7,11 +7,10 @@
 #include "ekat/ekat_assert.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 #include <cmath>
+#include <string>
 
 namespace haero {
 namespace driver {
-
-
 
 /** @defgroup ReferenceAtmosphere ReferenceAtmosphere
 
@@ -21,71 +20,52 @@ namespace driver {
 */
 
 /** @brief This type and its associated functions
-  define ambient atmospheric conditions for supported models.
-
-   The model used to generate the atmospheric conditions.
-   * uniform: all vertical levels have identical atmospheric conditions
-   * hydrostatic: the vertical profile of the atmospheric conditions is
-                  determined using the hydrostatic equilibrium approximation.
+  define ambient atmospheric conditions for the driver's dynamics model.
 */
 struct AtmosphericConditions {
+  static constexpr Real pref = 100000; /// Reference pressure at z=0, Tv=Tv0 [Pa]
+  /**  virtual temperature appx. factor [K]
 
-  enum { uniform, hydrostatic } model;
-  /// Parameters specific to each model.
-  union {
-    /// Uniform model.
-    struct {
-      /// Mean molecular weight of air [kg/mol].
-      Real mu;
-      /// Scaled atmospheric height [m].
-      Real H;
-      /// Pressure [Pa].
-      Real p0;
-      /// Temperature [K].
-      Real T0;
-      /// Clear-sky relative humidity [-]
-      Real phi0;
-      /// Cloud fraction [-]
-      Real N0;
-    } uniform;
-    /// Hydrostatic model (we assume a constant virtual temperature lapse rate).
-    struct {
-      /// Reference pressure at z = 0 [Pa].
-      Real p0;
-      /// Reference virtual temperature [K] at z = 0, p = p_0.
-      Real T0;
-      /// Virtual temperature lapse rate @f$ \Gamma = -\partial T_v / \partial z @f$ [K/m]
-      Real lapse_rate;
-      /// Water vapor mixing ratio [kg H<sub>2</sub>O / kg air] at surface
-      Real qv0;
-      /// Water vapor decay rate with height [1/m]
-      Real qv1;
-    } hydrostatic;
-  } params;
+    (equations (2.1) and (2.3) from Klemp & Wilhelmson, 1978, J. Atm. Sci. 35)
+  */
+  static constexpr Real alpha_v = 0.61;
+  /// dry air kappa [1]
+  static constexpr Real kappa = r_gas_dry_air_joule_per_k_per_kg/cp_dry_air_joule_per_k_per_kg;
+  /// reference virtual potential temperature [K]
+  Real Tv0; 
+  /// initial virtual temperature lapse rate [K/m]
+  Real Gammav; 
+  /// maximum magnitude of vertical velocity [m/s]
+  Real w0; 
+  /// top of model [m]
+  int ztop; 
+  /// period of velocity oscillation [s]
+  int tperiod; 
+  /// initial water vapor mass mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
+  Real qv0; 
+  /// initial decay rate of water vapor mass mixing ratio with height [per m]
+  Real qv1; 
+
+  /** Construct and return a hydrostatic instance of AtmosphericConditions
+
+    This method checks that the input arguments are within reasonably expected
+    bounds for the standard units listed below.
+
+    @param [in] Tv0_ reference virtual temperature [K]
+    @param [in] Gammav_ virtual temperature lapse rate [K/m]
+    @param [in] w0_ maximum vertical velocity [m/s]
+    @param [in] ztop_ model top [m]
+    @param [in] tperiod_ period of velocity oscillation [s]
+    @param [in] qv0_ water vapor mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
+    @param [in] qv1_ water vapor decay rate [1/m]
+  */
+  AtmosphericConditions(const Real Tv0_ = 300, const Real Gammav_ = 0.01, const Real w0_ = 1,
+   const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3);
+   
+  /// Write instance info to string 
+  std::string info_string(const int tab_level=0) const;
 };
 
-/** Construct and return a hydrostatic instance of AtmosphericConditions
-
-  This method checks that the input arguments are within reasonably expected
-  bounds for the standard units listed below.
-
-  @param [in] p0 reference pressure [Pa]
-  @param [in] T0 reference virtual temperature [K]
-  @param [in] Gamma virtual temperature lapse rate [K/m]
-  @param [in] qv0 water vapor mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
-  @param [in] qv1 water vapor decay rate [1/m]
-*/
-AtmosphericConditions hydrostatic_conditions(const Real p0, const Real T0, const Real Gamma,
-                                             const Real qv0, const Real qv1);
-
-/**  virtual temperature appx. factor [K]
-
-  (equations (2.1) and (2.3) from Klemp & Wilhelmson, 1978, J. Atm. Sci. 35)
-*/
-static constexpr Real alpha_v = 0.61;
-
-/// dry air kappa [1]
-static constexpr Real kappa = r_gas_dry_air_joule_per_k_per_kg/cp_dry_air_joule_per_k_per_kg;
 
 /** @brief Computes temperature from virtual temperature and water vapor mixing ratio,
 @f$ T(T_v, q_v) @f$.
@@ -96,7 +76,7 @@ static constexpr Real kappa = r_gas_dry_air_joule_per_k_per_kg/cp_dry_air_joule_
 */
 KOKKOS_INLINE_FUNCTION
 Real temperature_from_virtual_temperature(const Real Tv, const Real qv) {
-  return Tv / (1 + alpha_v * qv);
+  return Tv / (1 + AtmosphericConditions::alpha_v * qv);
 }
 
 /** @brief Virtual temperature profile, @f$T_v(z)@f$.
@@ -107,8 +87,8 @@ Real temperature_from_virtual_temperature(const Real Tv, const Real qv) {
   @return virtual temperature
 */
 KOKKOS_INLINE_FUNCTION
-Real virtual_temperature(const Real z, const Real T0, const Real Gamma) {
-  return T0 - Gamma * z;
+Real virtual_temperature(const Real z, const Real Tv0, const Real Gammav) {
+  return Tv0 - Gammav * z;
 }
 
 
@@ -120,8 +100,7 @@ Real virtual_temperature(const Real z, const Real T0, const Real Gamma) {
 */
 KOKKOS_INLINE_FUNCTION
 Real virtual_temperature(const Real z, const AtmosphericConditions& conds) {
-  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
-  return virtual_temperature(z, conds.params.hydrostatic.T0, conds.params.hydrostatic.lapse_rate);
+  return virtual_temperature(z, conds.Tv0, conds.Gammav);
 }
 
 /** @brief Water vapor mixing ratio profile, @f$ q_v(z) @f$
@@ -146,9 +125,7 @@ Real water_vapor_mixing_ratio(const Real z, const Real qv0, const Real qv1) {
 */
 KOKKOS_INLINE_FUNCTION
 Real water_vapor_mixing_ratio(const Real z, const AtmosphericConditions& conds) {
-  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
-  return water_vapor_mixing_ratio(z, conds.params.hydrostatic.qv0,
-                                     conds.params.hydrostatic.qv1);
+  return water_vapor_mixing_ratio(z, conds.qv0, conds.qv1);
 }
 
 /** @brief Computes the hydrostatic pressure at a given height, based on a virtual temperature
@@ -156,8 +133,8 @@ Real water_vapor_mixing_ratio(const Real z, const AtmosphericConditions& conds) 
 
   @param [in] z height [m]
   @param [in] p0 reference presssure [Pa]
-  @param [in] T0 reference virtual temperature [K]
-  @param [in] Gamma virtual temperature lapse rate [K/m]
+  @param [in] T0 reference temperature [K]
+  @param [in] Gamma temperature lapse rate [K/m]
   @return p [Pa]
 */
 KOKKOS_INLINE_FUNCTION
@@ -182,10 +159,9 @@ Real hydrostatic_pressure_at_height(const Real z, const Real p0, const Real T0, 
 */
 KOKKOS_INLINE_FUNCTION
 Real hydrostatic_pressure_at_height(const Real z, const AtmosphericConditions& conds) {
-  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
-  return hydrostatic_pressure_at_height(z, conds.params.hydrostatic.p0,
-                                           conds.params.hydrostatic.T0,
-                                           conds.params.hydrostatic.lapse_rate);
+  return hydrostatic_pressure_at_height(z, AtmosphericConditions::pref,
+                                           conds.Tv0,
+                                           conds.Gammav);
 }
 
 /** @brief Computes the height based on hydrostatic pressure.
@@ -217,9 +193,8 @@ Real height_at_pressure(const Real p, const Real p0, const Real T0, const Real G
 */
 KOKKOS_INLINE_FUNCTION
 Real height_at_pressure(const Real p, const AtmosphericConditions& conds) {
-  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
-  return height_at_pressure(p, conds.params.hydrostatic.p0,
-      conds.params.hydrostatic.T0, conds.params.hydrostatic.lapse_rate);
+  return height_at_pressure(p, AtmosphericConditions::pref,
+      conds.Tv0, conds.Gammav);
 }
 
 /** @brief Computes the potential temperature or virtual potential temperature
@@ -231,7 +206,7 @@ Real height_at_pressure(const Real p, const AtmosphericConditions& conds) {
 */
 KOKKOS_INLINE_FUNCTION
 Real potential_temperature(const Real T, const Real p, const Real p0) {
-  return T * std::pow(p0/p, kappa);
+  return T * std::pow(p0/p, AtmosphericConditions::kappa);
 }
 
 
@@ -244,20 +219,17 @@ Real potential_temperature(const Real T, const Real p, const Real p0) {
 */
 KOKKOS_INLINE_FUNCTION
 Real potential_temperature(const Real T, const Real p, const AtmosphericConditions& conds) {
-  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
-  return potential_temperature(T, p, conds.params.hydrostatic.p0);
+  return potential_temperature(T, p, AtmosphericConditions::pref);
 }
 
 /** @brief computes the Exner pressure function @f$ \Pi = \left(\frac{p}{p_0}\right)^{\kappa}@f$,
   where @f$\kappa = R_d/c_p@f$ is a dry-air constant.
 
   @param [in] p [Pa]
-  @param [in] conds
 */
 KOKKOS_INLINE_FUNCTION
-Real exner_function(const Real p, const AtmosphericConditions& conds) {
-  EKAT_KERNEL_ASSERT(conds.model == AtmosphericConditions::hydrostatic);
-  return std::pow(p/conds.params.hydrostatic.p0, kappa);
+Real exner_function(const Real p) {
+  return std::pow(p/AtmosphericConditions::pref, AtmosphericConditions::kappa);
 }
 
 /// @} group AtmosphericConditions
