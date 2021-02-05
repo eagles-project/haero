@@ -61,6 +61,10 @@ struct AtmosphericConditions {
   */
   AtmosphericConditions(const Real Tv0_ = 300, const Real Gammav_ = 0.01, const Real w0_ = 1,
    const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3);
+  
+  KOKKOS_INLINE_FUNCTION
+  AtmosphericConditions(const AtmosphericConditions& other) : Tv0(other.Tv0), Gammav(other.Gammav),
+    w0(other.w0), ztop(other.ztop), tperiod(other.tperiod), qv0(other.qv0), qv1(other.qv1) {}
    
   /// Write instance info to string 
   std::string info_string(const int tab_level=0) const;
