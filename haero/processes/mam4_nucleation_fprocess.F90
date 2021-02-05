@@ -51,12 +51,14 @@ subroutine mam4_nucleation_init() bind(c)
   implicit none
 
   type(species_t) so4
+  integer :: so4_index
 
   ! Record the aitken mode index.
   aitken_index = model%mode_index("aitken")
 
   ! Record the index for SO4 aerosol.
-  so4_aitken_index = model%aerosol_index(aitken_index, "SO4")
+  so4_index = model%aerosol_index(aitken_index, "SO4")
+  so4_aitken_index = model%population_index(aitken_index, so4_index)
 
   ! Record the index for H2SO4 gas (source of new nuclei).
   h2so4_index = model%gas_index("H2SO4")
@@ -141,8 +143,8 @@ subroutine mam4_nucleation_run(t, dt, progs, atm, diags, tends) bind(c)
 
   ! Mix fractions and tendencies for SO4 aerosol in the Aitken mode.
   ! All new nuclei are deposited into interstitial aerosols.
-  q_i => prognostics%interstitial_aerosols(aitken_index)
-  dqdt_i => tendencies%interstitial_aerosols(aitken_index)
+  q_i => prognostics%interstitial_aerosols()
+  dqdt_i => tendencies%interstitial_aerosols()
 
   ! Modal number density tendencies.
   n => prognostics%modal_num_concs()
@@ -158,10 +160,10 @@ subroutine mam4_nucleation_run(t, dt, progs, atm, diags, tends) bind(c)
     q_h2so4 = q_g(k, h2so4_index)
     q_so4 = q_i(k, so4_aitken_index)
     n_aitken = n(k, aitken_index)
-    J_nuc = h2so4_nuc_rate(q_so4, q_h2so4, n_aitkin, dt, &
-                           temp, press, c_air, z_k, h_pbl, rel_hum, &
-                           uptkrate_h2so4, del_h2so4_gasprod, &
-                           del_h2so4_aeruptk)
+    J_nuc = h2so4_nucleation_rate(q_so4, q_h2so4, n_aitkin, dt, &
+                                  temp, press, c_air, z_k, h_pbl, rel_hum, &
+                                  uptkrate_h2so4, del_h2so4_gasprod, &
+                                  del_h2so4_aeruptk)
 
     ! Compute the dry mass of an SO4 nucleus.
     md_so4 = 1_wp ! FIXME
@@ -433,8 +435,8 @@ subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   mw_so4a_host, nsize, maxd_asize, dplom_sect, dphim_sect,   &
   isize_nuc, qnuma_del, qso4a_del, qh2so4_del)
 
-  use mo_constants, only: rgas, &               ! Gas constant (J/K/kmol)
-  use physconst,    only: mw_so4a => mwso4, &   ! Molecular weight of sulfate
+  use haero_constants, only: R_gas          ! Gas constant (J/K/kmol)
+  use physconst,    only: mw_so4a => mwso4  ! Molecular weight of sulfate
 
   implicit none
 
@@ -507,9 +509,9 @@ subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   real(wp) tmp_spd                  ! h2so4 vapor molecular speed (m/s)
   real(wp) factor_kk
   real(wp) fogas, foso4a, fonuma
-  ! reduction factor applied to nucleation rate due to limited availability of
-  ! h2so4 gas
-  real(wp) freduce
+  real(wp) freduce                  ! reduction factor applied to nucleation
+                                    ! rate due to limited availability of
+                                    ! h2so4 gas
   real(wp) gamma_kk                 ! kk2002 "gamma" parameter (nm2*m2/h)
   real(wp) gr_kk                    ! kk2002 "gr" parameter (nm/h)
   real(wp) kgaero_per_moleso4a      ! (kg dry aerosol)/(mol aerosol so4)
@@ -753,7 +755,7 @@ end subroutine pbl_nuc_wang2008
 ! Computes the final nucleation rate J_nuc from the intermediate nucleation rate
 ! J_star after having grown the SO4 nuclei so that they can fit into the
 ! Aitken mode.
-function growth_adjusted_nucleation_rate(J_star, ) result (J_nuc)
+function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
   J_star_bb = J_star*1.0e6_wp  ! J_star_bb is #/m3/s; J_star is #/cm3/s
 
   ! wet/dry volume ratio - use simple kohler approx for ammsulf/ammbisulf

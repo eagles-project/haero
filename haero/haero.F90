@@ -62,10 +62,19 @@ module haero
     !> The number of vertical levels in an atmospheric column.
     integer :: num_levels
   contains
-    procedure :: get_mode_and_species => m_get_mode_and_species
-    procedure :: mode_index => m_get_mode_index
-    procedure :: aerosol_index => m_get_aerosol_index
-    procedure :: gas_index => m_get_gas_index
+    !> Given the index of an aerosol population, retrieve its mode and
+    !> (modal) species indices.
+    procedure :: get_mode_and_aerosol_indices => m_get_mode_and_aero_indices
+    !> Given the name of a mode, retrieve its index.
+    procedure :: mode_index => m_mode_index
+    !> Given a mode index and the symbolic name of an aerosol species, retrieve
+    !> its index within that mode
+    procedure :: aerosol_index => m_aerosol_index
+    !> Given mode and aerosol species indices, retrieve a population index
+    !> that can be used to access aerosol data.
+    procedure :: population_index => m_population_index
+    !> Given the symbolic name of a gas, retrieve its index.
+    procedure :: gas_index => m_gas_index
   end type
 
   !> The resident model instance, available to the single allowable C++ model
@@ -423,9 +432,9 @@ contains
     retval%ptr = ptr
   end function
 
-  !> Given an aerosol population index p, get the corresponding mode and species
-  !> indices m and s.
-  subroutine m_get_mode_and_species(model, p, m, s)
+  !> Given an aerosol population index p, get the corresponding mode and
+  !> aerosol species indices m and s.
+  subroutine m_get_mode_and_aero_indices(model, p, m, s)
     class(model_t), intent(in)  :: model
     integer, intent(in)         :: p
     integer, intent(out)        :: m, s
@@ -441,24 +450,21 @@ contains
     end if
   end subroutine
 
-  !> Returns the index of the mode with the given name, or 0 if no such mode
-  !> is found.
+  !> Given the name of a mode, returns its index within the model.
   !> @param [in] m A pointer to a model object.
   !> @param [in] mode_name The name of the desired mode
-  function m_get_mode_index(m, mode_name) result(m_index)
+  function m_mode_index(m, mode_name) result(mode_index)
     implicit none
     class(model_t),   intent(in) :: m
     character(len=*), intent(in) :: mode_name
-    integer :: m_index
+    integer :: mode_index
 
-    do m_index = 1,m%num_modes
-      if (m%modes(m_index)%name == mode_name) then
-        return
+    ! Find the mode index
+    do mode_index = 1,m%num_modes
+      if (m%modes(mode_index)%name == mode_name) then
+        exit
       end if
     end do
-
-    ! No such mode
-    m_index = 0
   end function
 
   !> Returns the index of the aerosol species with the given (symbolic) name
@@ -466,7 +472,7 @@ contains
   !> @param [in] m A pointer to a model object.
   !> @param [in] mode_index The index of the mode for the desired species
   !> @param [in] species_symbol The abbreviated symbolic name of the species
-  function m_get_aerosol_index(m, mode_index, species_symbol) result(a_index)
+  function m_aerosol_index(m, mode_index, species_symbol) result(a_index)
     implicit none
     class(model_t),   intent(in) :: m
     integer,          intent(in) :: mode_index
@@ -489,11 +495,26 @@ contains
     a_index = 0
   end function
 
+  !> Returns the index of the aerosol population corresponding to the given
+  !> mode and aerosol species indices.
+  !> @param [in] m A pointer to a model object.
+  !> @param [in] mode_index The index of an aerosol mode
+  !> @param [in] aero_index The index of an aerosol within the given mode
+  function m_population_index(m, mode_index, aero_index) result(pop_index)
+    implicit none
+    class(model_t),   intent(in) :: m
+    integer, intent(in) :: mode_index
+    integer, intent(in) :: aero_index
+    integer :: pop_index
+
+    pop_index = m%population_offsets(mode_index) + aero_index - 1
+  end function
+
   !> Returns the index of the gas species with the given (symbolic) name, or 0
   !> if no such species is found.
   !> @param [in] m A pointer to a model object.
   !> @param [in] species_symbol The abbreviated symbolic name of the gas species
-  function m_get_gas_index(m, species_symbol) result(g_index)
+  function m_gas_index(m, species_symbol) result(g_index)
     implicit none
     class(model_t),   intent(in) :: m
     character(len=*), intent(in) :: species_symbol
