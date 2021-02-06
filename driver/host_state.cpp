@@ -182,6 +182,14 @@ void HostDynamics::update(const Real t, const AtmosphericConditions& ac) {
   });
 }
 
+void HostDynamics::nc_init_dynamics_variables(NcWriter& writer) const {
+  using att_type = NcWriter::text_att_type;
+  using var_atts = std::vector<att_type>;
+
+  writer.add_level_dims(nlev_);
+  writer.define_time_var();
+}
+
 } // namespace driver 
 } // namespace haero
 

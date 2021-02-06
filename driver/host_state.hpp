@@ -77,6 +77,8 @@ class HostDynamics final {
     */
     std::string info_string(int tab_level=0) const;
     
+    void nc_init_dynamics_variables(NcWriter& writer) const;
+    
   protected:
     /// number of levels in column
     int nlev_;
