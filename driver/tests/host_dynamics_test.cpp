@@ -20,7 +20,7 @@ TEST_CASE("driver dynamics", "") {
     const int nlev = z_vals.size()-1;
     
     HostDynamics zdyn(nlev);
-    
+    zdyn.init_from_interface_heights(z_vals, conds);
     std::cout << zdyn.info_string();
   }
 
@@ -31,6 +31,7 @@ TEST_CASE("driver dynamics", "") {
     const int nlev = p_vals.size()-1;
     
     HostDynamics pdyn(nlev);
+    pdyn.init_from_interface_pressures(p_vals, conds);
     std::cout << pdyn.info_string();
   }
 }

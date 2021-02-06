@@ -1,6 +1,7 @@
 #include "host_state.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "haero/utils.hpp"
+#include "haero/floating_point.hpp"
 #include "haero/physical_constants.hpp"
 #include <cmath>
 #include <algorithm>
@@ -57,6 +58,10 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
     hqv(pack_idx)[vec_idx] = water_vapor_mixing_ratio(zmid, ac);
   }
   
+  ps = hydrostatic_pressure_at_height(0, ac);
+  EKAT_ASSERT_MSG(FloatingPoint<Real>::equiv(ps,AtmosphericConditions::pref),
+    "surface pressure must equal the reference pressure, 1000 hPa.");
+  
   Kokkos::deep_copy(w,hw);
   Kokkos::deep_copy(phi0,hphi0);
   Kokkos::deep_copy(phi,phi0);
@@ -73,6 +78,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const Atm
   
   const bool increasing = (p0[1]>p0[0]);
   if (!increasing) std::reverse(p0.begin(), p0.end());
+  EKAT_REQUIRE_MSG(p0.back()== AtmosphericConditions::pref, "surface pressure must initialize to 1000 hPa.");
   
   auto hphi0 = Kokkos::create_mirror_view(phi0);
   auto hrho0 = Kokkos::create_mirror_view(rho0);
@@ -116,6 +122,8 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const Atm
     hqv(pack_idx)[vec_idx] = water_vapor_mixing_ratio(zmid, ac);
   }
   
+  ps = p0.back();
+  
   Kokkos::deep_copy(w,hw);
   Kokkos::deep_copy(phi0,hphi0);
   Kokkos::deep_copy(phi,hphi0);
@@ -132,6 +140,8 @@ std::string HostDynamics::info_string(int tab_level) const {
   ss << tabstr << "HostDynamics info:\n";
   tabstr += "\t";
   ss << "nlev = " << nlev_ << "\n";
+  ss << "ps = " << ps << "\n";
+  ss << "t = " << t << "\n";
   return ss.str();
 }
 
