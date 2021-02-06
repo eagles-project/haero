@@ -5,6 +5,7 @@
 #include "haero/view_pack_helpers.hpp"
 #include "haero/utils.hpp"
 #include "haero/mode.hpp"
+#include "haero/species.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -18,15 +19,14 @@ namespace driver {
 
 /** @brief Class for writing netCDF data from driver
 
-  Combines definition and attribute steps, and sets all possible metadata.
+  Combines definition and attribute steps, and sets metadata.
 
   Assumes at most 1 file open per NcWriter instance.
       All values initialized to invalid data; they will be set to valid data by other
       member functions.
 
       Data model:
-        - Non-aerosol data have rank = 3, with dimensions (time, column, level)
-        - Aerosol data have rank = 4, with dimensions (time, column, mode, level)
+        - Non-aerosol data have rank = 2, with dimensions (time, level)
 
       Writes HAERO metadata (version, git revision) to file.
 */
@@ -34,6 +34,10 @@ class NcWriter {
   public:
     /// key-value pairs for metadata attributes
     typedef std::pair<std::string,std::string> text_att_type;
+    
+    using ColumnView = Kokkos::View<PackType*>;
+    using SpeciesColumnView = Kokkos::View<PackType**>;
+    using ModalColumnView = Kokkos::View<PackType**>;
 
     /// Use the correct netcdf real kind parameter
     static constexpr int NC_REAL_KIND = (std::is_same<Real,double>::value ? NC_DOUBLE : NC_FLOAT);
@@ -43,8 +47,8 @@ class NcWriter {
       @param [in] new_filename name of NetCDF data file to create.
     */
     NcWriter(const std::string& new_filename) : fname(new_filename),
-     ncid(NC_EBADID), col_dimid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
-     mode_dimid(NC_EBADID), time_dimid(NC_EBADID), ndims(0), name_varid_map() {
+     ncid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
+     mode_dimid(NC_EBADID), time_dimid(NC_EBADID), species_dimid(NC_EBADID), ndims(0), name_varid_map() {
       const auto fext = get_filename_ext(new_filename);
       EKAT_REQUIRE_MSG(fext == ".nc",
         "NcWriter error: filename extension (" + fext + ") must be .nc");
@@ -64,13 +68,6 @@ class NcWriter {
     */
     std::string info_string(const int& tab_level=0) const;
 
-    /** @brief Adds a dimension for columns
-    */
-    void add_column_dim(const int& ncol=1);
-
-
-    /// Return the size of the column dimension
-    int num_columns() const;
     /// return the size of the level dimension
     int num_levels() const;
     /// return the size of the interface dimension
@@ -79,6 +76,8 @@ class NcWriter {
     int num_modes() const;
     /// return the (current) size of the time dimension
     int num_timesteps() const;
+    /// return the number of species
+    int num_species() const;
 
     /** @brief Adds 2 dimensions to an existing NcWriter; one for level midpoints,
       one for level interfaces.
@@ -94,6 +93,11 @@ class NcWriter {
       @param [in] modes
     */
     void add_mode_dim(const std::vector<Mode>& modes);
+    
+    /** @brief Adds a dimension for the number of species.
+    
+    */
+    void add_species_dim(const std::vector<Species>& species);
 
     /** @brief Close the data file associated with this NcWriter.
 
@@ -150,6 +154,15 @@ class NcWriter {
     */
     void define_modal_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
+      
+    /** @brief defines a species variable at level midpoints.
+    
+      @param [in] name
+      @param [in] units
+      @param [in] atts
+    */
+    void define_species_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
     /** @brief defines a constant 1d variable (e.g., a coordinate variable)
 
@@ -176,14 +189,6 @@ class NcWriter {
     void define_level_var(const std::string& name, const ekat::units::Units& units, const ViewType& view,
       const std::vector<text_att_type>& var_atts=std::vector<text_att_type>());
 
-    /** @brief defines a modal aerosol variable on level midpoints.
-
-      @param [in] name
-      @param [in] units
-      @param [in] view
-    */
-    template <typename ViewType>
-    void define_modal_var(const std::string& name, const ekat::units::Units& units, const ViewType& view);
 
     /** @brief defines a constant scalar variable (dimension 0)
 
@@ -240,7 +245,7 @@ class NcWriter {
       @param [in] time_idx
       @param [in] column_values
     */
-    void add_time_dependent_scalar_values(const std::string& name, const size_t time_idx,
+    void add_time_dependent_scalar_value(const std::string& name, const size_t time_idx,
       const std::vector<Real>& column_values) const;
 
     /** @brief write one column's data from a std::vector to the nc file.
@@ -251,7 +256,7 @@ class NcWriter {
       @param [in] data
     */
     void add_level_variable_data(const std::string& varname, const size_t& time_index,
-      const size_t& col_index, const std::vector<Real>& data) const;
+      const std::vector<Real>& data) const;
 
     /** @brief write one column's variable data from a std::vector to the nc file.
 
@@ -261,7 +266,7 @@ class NcWriter {
       @param [in] data
     */
     void add_interface_variable_data(const std::string& varname, const size_t& time_index,
-      const size_t& col_index, const std::vector<Real>& data) const;
+      const std::vector<Real>& data) const;
 
 
     /** @brief Add data directly from a view
@@ -269,7 +274,7 @@ class NcWriter {
     */
     template <typename ViewType>
     void add_variable_data(const std::string& varname, const size_t& time_index,
-      const size_t& col_index, const ViewType& v) const;
+       const int mode_idx, const int spec_idx, const ViewType& v) const;
 
   protected:
 
@@ -303,8 +308,6 @@ class NcWriter {
     std::string fname;
     /// NetCDF file ID.  Assigned by `nc_create` during open()
     int ncid;
-    /// Column dimension ID.  Assigned by add_column_dim()
-    int col_dimid;
     /// Level dimension ID. Assigned by add_level_dims.
     int level_dimid;
     /// Interface dimension ID.  Assigned by add_level_dims.
@@ -313,6 +316,8 @@ class NcWriter {
     int mode_dimid;
     /// Time dimension ID.  Assigned by add_time_dim.
     int time_dimid;
+    /// Species dimension ID.  Assigned by add_species_dim.
+    int species_dimid;
     /// Tracks the number of NetCDF dimensions in the current file.
     int ndims;
     /// key = variable name, value = variable id

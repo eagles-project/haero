@@ -1,5 +1,6 @@
 #include "haero/haero_config.hpp"
 #include "haero/mode.hpp"
+#include "haero/species.hpp"
 #include "driver/ncwriter.hpp"
 #include "driver/ncwriter_impl.hpp"
 #include "ekat/ekat_pack.hpp"
@@ -14,7 +15,7 @@ using namespace haero::driver;
 using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
 using real_pack_type = ekat::Pack<Real, HAERO_PACK_SIZE>;
 using view_2d = kokkos_device_type::view_2d<real_pack_type>;
-using view_3d = kokkos_device_type::view_3d<real_pack_type>;
+using view_1d = kokkos_device_type::view_1d<real_pack_type>;
 
 TEST_CASE("ncwriter", "") {
 
@@ -32,26 +33,29 @@ TEST_CASE("ncwriter", "") {
   REQUIRE (ncf.get_ndims() == 1);
   REQUIRE (ncf.get_nvars() == 0);
 
-  const int ncol = 2;
-  ncf.add_column_dim(ncol);
-  REQUIRE (ncf.get_ndims() == 2);
-
   /**
     Add a dimension for level midpoints and a dimension for level interfaces.
   */
   const int nlev = 10;
   ncf.add_level_dims(nlev);
-  REQUIRE (ncf.get_ndims() == 4);
+  REQUIRE (ncf.get_ndims() == 3);
 
   /**
     Add a dimension for modes
-
-    @todo We may not keep this
   */
   std::vector<Mode> modes = create_mam4_modes();
   int nmodes = modes.size();
   ncf.add_mode_dim(modes);
-  REQUIRE (ncf.get_ndims() == 5);
+  REQUIRE (ncf.get_ndims() == 4);
+
+  /** 
+    Add a dimension for species
+  */
+  std::vector<Species> species = create_mam4_aerosol_species();
+  int nspec = species.size();
+  ncf.add_species_dim(species);
+  REQUIRE(ncf.get_ndims() == 5);
+  REQUIRE(ncf.num_species() == nspec);
 
   /**
     Define the coordinate variable for the time dimension.
@@ -72,8 +76,8 @@ TEST_CASE("ncwriter", "") {
     Note: No data is copied at this stage, so we don't have to worry about
     which memory space it's in.
   */
-  view_2d test_level_var("test_level_var", ncol, pack_info::num_packs(nlev));
-  view_2d test_interface_var("interface_var", ncol, pack_info::num_packs(nlev+1));
+  view_1d test_level_var("test_level_var", pack_info::num_packs(nlev));
+  view_1d test_interface_var("interface_var", pack_info::num_packs(nlev+1));
 
   ncf.define_level_var("level_test_var", ekat::units::Units::nondimensional(), test_level_var);
   REQUIRE (ncf.get_varid("level_test_var") != NC_EBADID);
@@ -84,26 +88,21 @@ TEST_CASE("ncwriter", "") {
   /**
     Create views for modal aerosols, and define corresponding netCDF variables.
   */
-  view_3d test_modal_var("plus_minus_modenum", ncol, nmodes, pack_info::num_packs(nlev));
-  ncf.define_modal_var("test_aerosol_from_view", ekat::units::pow(ekat::units::kg, -1), test_modal_var);
+  view_2d test_modal_var("plus_minus_modenum", nmodes, pack_info::num_packs(nlev));
   /**
     Initialize a single column's worth of data on the host, copy to device
   */
-  auto modal_col0 = Kokkos::subview(test_modal_var, 0, Kokkos::ALL, Kokkos::ALL);
-  auto hmodalc0 = Kokkos::create_mirror_view(modal_col0);
+  auto hmodal = Kokkos::create_mirror_view(test_modal_var);
   for (int i = 0; i<nmodes; ++i ) {
     for (int j = 0; j<nlev; ++j) {
-      hmodalc0(i, pack_info::pack_idx(j))[pack_info::vec_idx(j)] = i * std::pow(-1,j);
+      hmodal(i, pack_info::pack_idx(j))[pack_info::vec_idx(j)] = i * std::pow(-1,j);
     }
   }
-  Kokkos::deep_copy(modal_col0, hmodalc0);
-  /**
-    Add the data to each column in the netCDF file.
-  */
-  ncf.add_variable_data("test_aerosol_from_view", 0, 0, test_modal_var);
+  Kokkos::deep_copy(test_modal_var, hmodal);
 
   /// Test the stripped-down version of modal variable definition
-  ncf.define_modal_var("test_aerosol", ekat::units::pow(ekat::units::kg, -1));
+  ncf.define_level_var("level_var_subview0", ekat::units::Units::nondimensional(), 
+    Kokkos::subview(test_modal_var,0,Kokkos::ALL));
 
   /**
     The default data type for data arrays is a 1D std::vector; it's always on the host.
@@ -115,34 +114,34 @@ TEST_CASE("ncwriter", "") {
   for (int i=0; i<nlev; ++i) {
     pm1[i] = std::pow(-1, i);
   }
-  for (int i=0; i<ncol; ++i) {
-    ncf.add_level_variable_data("plus_minus_one", 0, i, pm1);
-  }
+  ncf.add_level_variable_data("plus_minus_one", 0, pm1);
 
   /**
     Test writing to netCDF file from a view
   */
+  int time_idx = 0;
+  int mode_idx = 0;
+  int spec_idx = 0;
   auto hpm2 = Kokkos::create_mirror_view(test_interface_var);
   for (int i=0; i<nlev+1; ++i) {
-    hpm2(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 2*std::pow(-1,i);
-    hpm2(1,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 2*std::pow(-1,i);
+    hpm2(pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 2*std::pow(-1,i);
   }
   Kokkos::deep_copy(test_interface_var, hpm2);
-  for (int i=0; i<ncol; ++i) {
-    ncf.add_variable_data("plus_minus_two", 0, i, test_interface_var);
-  }
+  ncf.add_variable_data("plus_minus_two", time_idx, mode_idx, spec_idx, test_interface_var);
 
 
   /**
     Here we try to add data to a time step index that is out of bounds.
   */
-  REQUIRE_THROWS (ncf.add_level_variable_data("plus_minus_one", 1, 0, pm1));
+  ++time_idx;
+  REQUIRE_THROWS (ncf.add_level_variable_data("plus_minus_one", time_idx, pm1));
   /**
     Add the time index and try again.
   */
   const Real t=1.0;
   ncf.add_time_value(t);
-  REQUIRE_NOTHROW (ncf.add_level_variable_data("plus_minus_one", 1, 0, pm1));
+  REQUIRE_NOTHROW (ncf.add_level_variable_data("plus_minus_one", time_idx,pm1));
+  ncf.add_variable_data("plus_minus_two", time_idx, mode_idx, spec_idx, test_interface_var);
 
   ncf.close();
   std::cout << ncf.info_string();
