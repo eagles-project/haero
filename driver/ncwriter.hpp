@@ -6,6 +6,7 @@
 #include "haero/utils.hpp"
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
+#include "haero/atmosphere.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -100,6 +101,15 @@ class NcWriter {
     
     */
     void add_species_dim(const std::vector<Species>& species);
+    
+    
+    /** @brief Defines netcdf variables for Haero::Atmosphere class.
+    
+    **Note:** Does not define pressure, as that variable is already defined by HostDynamics.
+    
+      @param [in] atm 
+    */
+    void define_atm_state_vars(const Atmosphere& atm);
 
     /** @brief Close the data file associated with this NcWriter.
 
@@ -245,7 +255,7 @@ class NcWriter {
 
       @param [in] name
       @param [in] time_idx
-      @param [in] column_values
+      @param [in] val
     */
     void add_time_dependent_scalar_value(const std::string& name, const size_t time_idx,
       const Real val) const;
@@ -253,17 +263,22 @@ class NcWriter {
     /** @brief write one column's data from a std::vector to the nc file.
 
       @param [in] varname name of variable to write
-      @param [in] col_index column containing data
       @param [in] time_index time index associated with data
       @param [in] data
     */
     void add_level_variable_data(const std::string& varname, const size_t& time_index,
       const std::vector<Real>& data) const;
 
+    /** @brief Adds Haero::Atmosphere data to netcdf file
+    
+      @param [in] atm
+      @param [in] time_idx
+    */
+    void add_atm_state_data(const Atmosphere& atm, const size_t time_idx);
+
     /** @brief write one column's variable data from a std::vector to the nc file.
 
       @param [in] varname name of variable to write
-      @param [in] col_index column containing data
       @param [in] time_index time index associated with data
       @param [in] data
     */

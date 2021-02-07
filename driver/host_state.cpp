@@ -300,33 +300,37 @@ void HostDynamics::nc_write_data(NcWriter& writer, const size_t time_idx) const 
   writer.add_time_dependent_scalar_value("surface_pressure", time_idx, ps);
 }
 
-Atmosphere HostDynamics::create_atmospheric_state() const {
-  Kokkos::View<PackType*> temperature("temperature", PackInfo::num_packs(nlev_));
-  Kokkos::View<PackType*> rel_humidity("relative_humidity", PackInfo::num_packs(nlev_));
-  Kokkos::View<PackType*> level_heights("level_heights", PackInfo::num_packs(nlev_));
-  
+Atmosphere HostDynamics::create_atmospheric_state(Kokkos::View<PackType*> temp, 
+      Kokkos::View<PackType*> relh, Kokkos::View<PackType*> z) const {
   const auto p_local = p;
   const auto phi_local = phi;
   const auto thetav_local = thetav;
   const auto qv_local = qv;
-  Kokkos::parallel_for(nlev_, KOKKOS_LAMBDA (const int k) {
+  Kokkos::parallel_for("HostDynamics:CreateAtmosphereLevels", nlev_, KOKKOS_LAMBDA (const int k) {
     const int pack_idx = PackInfo::pack_idx(k);
     const int vec_idx = PackInfo::vec_idx(k);
     
     const Real P = p_local(pack_idx)[vec_idx];
-    const Real T = thetav_local(pack_idx)[vec_idx] * exner_function(P);
-    const Real qvsat = qvsat_tetens(T,P);
-    temperature(pack_idx)[vec_idx] = T;
-    rel_humidity(pack_idx)[vec_idx] = qv_local(pack_idx)[vec_idx]/qvsat;
+    const Real Tv = thetav_local(pack_idx)[vec_idx] * exner_function(P);
+    const Real T = temperature_from_virtual_temperature(Tv, qv_local(pack_idx)[vec_idx]);
     
-    const int kphalf_pack_idx = PackInfo::pack_idx(k+1);
-    const int kphalf_vec_idx = PackInfo::vec_idx(k+1);
-    const Real phimid = 0.5*(phi_local(pack_idx)[vec_idx] + 
-                             phi_local(kphalf_pack_idx)[kphalf_vec_idx]);
-    level_heights(pack_idx)[vec_idx] = phimid / gravity_m_per_s2;
+    const Real qvsat = qvsat_tetens(T,P);
+//     const int kphalf_pack_idx = PackInfo::pack_idx(k+1);
+//     const int kphalf_vec_idx = PackInfo::vec_idx(k+1);
+//     const Real phimid = 0.5*(phi_local(pack_idx)[vec_idx] + 
+//                              phi_local(kphalf_pack_idx)[kphalf_vec_idx]);
+
+    relh(pack_idx)[vec_idx] = qv_local(pack_idx)[vec_idx] * FloatingPoint<>::safe_denominator(qvsat);
+    temp(pack_idx)[vec_idx] = T;
+  });
+  Kokkos::parallel_for("HostDynamics::CreateAtmosphereInterfaces", nlev_+1, KOKKOS_LAMBDA (const int k) {
+    const int pack_idx = PackInfo::pack_idx(k);
+    const int vec_idx = PackInfo::vec_idx(k);
+    
+    z(pack_idx)[vec_idx] = phi_local(pack_idx)[vec_idx] / gravity_m_per_s2;
   });
   
-  return Atmosphere(nlev_, temperature, p, rel_humidity, level_heights);
+  return Atmosphere(nlev_, temp, p, relh, z);
 }
 
 void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
@@ -338,21 +342,30 @@ void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
   auto temperature = atm.temperature();
   auto rel_humidity = atm.relative_humidity();
   auto level_heights = atm.height();
-  Kokkos::parallel_for(nlev_, KOKKOS_LAMBDA (const int k) {
+  Kokkos::parallel_for("HostDynamics:UpdateAtmosphereLevels", nlev_, KOKKOS_LAMBDA (const int k) {
     const int pack_idx = PackInfo::pack_idx(k);
     const int vec_idx = PackInfo::vec_idx(k);
     
     const Real P = p_local(pack_idx)[vec_idx];
-    const Real T = thetav_local(pack_idx)[vec_idx] * exner_function(P);
+    const Real Tv = thetav_local(pack_idx)[vec_idx] * exner_function(P);
+    const Real T = temperature_from_virtual_temperature(Tv, qv_local(pack_idx)[vec_idx]);
     const Real qvsat = qvsat_tetens(T,P);
-    temperature(pack_idx)[vec_idx] = T;
-    rel_humidity(pack_idx)[vec_idx] = qv_local(pack_idx)[vec_idx]/qvsat;
+  
     
-    const int kphalf_pack_idx = PackInfo::pack_idx(k+1);
-    const int kphalf_vec_idx = PackInfo::vec_idx(k+1);
-    const Real phimid = 0.5*(phi_local(pack_idx)[vec_idx] + 
-                             phi_local(kphalf_pack_idx)[kphalf_vec_idx]);
-    level_heights(pack_idx)[vec_idx] = phimid / gravity_m_per_s2;
+//     const int kphalf_pack_idx = PackInfo::pack_idx(k+1);
+//     const int kphalf_vec_idx = PackInfo::vec_idx(k+1);
+//     const Real phimid = 0.5*(phi_local(pack_idx)[vec_idx] + 
+//                              phi_local(kphalf_pack_idx)[kphalf_vec_idx]);
+                             
+    temperature(pack_idx)[vec_idx] = T;
+    rel_humidity(pack_idx)[vec_idx] = qv_local(pack_idx)[vec_idx] * FloatingPoint<>::safe_denominator(qvsat);
+  });
+  
+  Kokkos::parallel_for("HostDynamics::UpdateAtmosphereInterfaces", nlev_+1, KOKKOS_LAMBDA (const int k) {
+    const int pack_idx = PackInfo::pack_idx(k);
+    const int vec_idx = PackInfo::vec_idx(k);
+    
+    level_heights(pack_idx)[vec_idx] = phi_local(pack_idx)[vec_idx] / gravity_m_per_s2;
   });
 }
 

@@ -2,6 +2,7 @@
 #include "driver/host_params.hpp"
 #include "driver/ncwriter.hpp"
 #include "driver/ncwriter_impl.hpp"
+#include "haero/atmosphere.hpp"
 #include "catch2/catch.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "haero/math_helpers.hpp"
@@ -9,9 +10,6 @@
 
 using namespace haero;
 using namespace driver;
-
-using att_type = NcWriter::text_att_type;
-using var_atts = std::vector<att_type>;
 
 TEST_CASE("driver dynamics", "") {
   
@@ -21,7 +19,7 @@ TEST_CASE("driver dynamics", "") {
   const Real ztop = 20E3;
   const Real tperiod = 900;
   const Real qv0 = 0.015;
-  const Real qv1 = 1E-3;
+  const Real qv1 = 2.5E-3;
   const AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
   
   const int nlev = 20;
@@ -41,16 +39,24 @@ TEST_CASE("driver dynamics", "") {
     NcWriter writer(fname);
     writer.define_time_var();
     zdyn.nc_init_dynamics_variables(writer, conds);
-
+    
     size_t time_idx = 0;
     zdyn.nc_write_data(writer, time_idx);
+    Kokkos::View<PackType*> temperature("temperature", PackInfo::num_packs(nlev));
+    Kokkos::View<PackType*> rel_humidity("relative_humidity", PackInfo::num_packs(nlev));
+    Kokkos::View<PackType*> level_heights("level_heights", PackInfo::num_packs(nlev+1));
+    auto atm = zdyn.create_atmospheric_state(temperature, rel_humidity, level_heights);
+    writer.define_atm_state_vars(atm);
+    writer.add_atm_state_data(atm, time_idx);
     
     Real t = 0.5*conds.tperiod;
     ++time_idx;
     zdyn.update(t,conds);
+    zdyn.update_atmospheric_state(atm);
     
     writer.add_time_value(t);
     zdyn.nc_write_data(writer, time_idx);
+    writer.add_atm_state_data(atm, time_idx);
     
     writer.close();
   }

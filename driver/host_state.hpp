@@ -81,7 +81,8 @@ class HostDynamics final {
     
     void nc_write_data(NcWriter& writer, const size_t time_idx) const;
     
-    Atmosphere create_atmospheric_state() const;
+    Atmosphere create_atmospheric_state(Kokkos::View<PackType*> temp, 
+      Kokkos::View<PackType*> relh, Kokkos::View<PackType*> z) const;
     
     void update_atmospheric_state(Atmosphere& atm) const;
     
