@@ -36,7 +36,7 @@ AtmosphericConditions::AtmosphericConditions(const Real Tv0_, const Real Gammav_
     "unexpected water vapor mixing ratio; check units = kg/kg");
   qv0 = qv0_;
   
-  EKAT_REQUIRE_MSG(qv1 >= 0, "nonnegative decay rate required.");
+  EKAT_REQUIRE_MSG(qv1_ >= 0, "nonnegative decay rate required.");
   qv1 = qv1_;
 
 }
