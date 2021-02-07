@@ -70,5 +70,31 @@ TEST_CASE("driver dynamics", "") {
     HostDynamics pdyn(nlev);
     pdyn.init_from_interface_pressures(p_vals, conds);
     std::cout << pdyn.info_string();
+    
+    /// Create a new netcdf file
+    const std::string fname = "host_dynamics_test_pinit.nc";
+    NcWriter writer(fname);
+    writer.define_time_var();
+    pdyn.nc_init_dynamics_variables(writer, conds);
+    
+    size_t time_idx = 0;
+    pdyn.nc_write_data(writer, time_idx);
+    Kokkos::View<PackType*> temperature("temperature", PackInfo::num_packs(nlev));
+    Kokkos::View<PackType*> rel_humidity("relative_humidity", PackInfo::num_packs(nlev));
+    Kokkos::View<PackType*> level_heights("level_heights", PackInfo::num_packs(nlev+1));
+    auto atm = pdyn.create_atmospheric_state(temperature, rel_humidity, level_heights);
+    writer.define_atm_state_vars(atm);
+    writer.add_atm_state_data(atm, time_idx);
+    
+    Real t = 0.5*conds.tperiod;
+    ++time_idx;
+    pdyn.update(t,conds);
+    pdyn.update_atmospheric_state(atm);
+    
+    writer.add_time_value(t);
+    pdyn.nc_write_data(writer, time_idx);
+    writer.add_atm_state_data(atm, time_idx);
+    
+    writer.close();
   }
 }
