@@ -78,6 +78,8 @@ class NcWriter {
     int num_timesteps() const;
     /// return the number of species
     int num_species() const;
+    /// true if level and interface dimensions are assigned
+    inline bool levels_defined() const {return level_dimid != NC_EBADID;}
 
     /** @brief Adds 2 dimensions to an existing NcWriter; one for level midpoints,
       one for level interfaces.
@@ -246,8 +248,8 @@ class NcWriter {
       @param [in] column_values
     */
     void add_time_dependent_scalar_value(const std::string& name, const size_t time_idx,
-      const std::vector<Real>& column_values) const;
-
+      const Real val) const;
+  
     /** @brief write one column's data from a std::vector to the nc file.
 
       @param [in] varname name of variable to write

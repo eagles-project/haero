@@ -77,7 +77,13 @@ class HostDynamics final {
     */
     std::string info_string(int tab_level=0) const;
     
-    void nc_init_dynamics_variables(NcWriter& writer) const;
+    void nc_init_dynamics_variables(NcWriter& writer, const AtmosphericConditions& conds) const;
+    
+    void nc_write_data(NcWriter& writer, const size_t time_idx) const;
+    
+    Atmosphere create_atmospheric_state() const;
+    
+    void update_atmospheric_state(Atmosphere& atm) const;
     
   protected:
     /// number of levels in column
@@ -86,12 +92,14 @@ class HostDynamics final {
     ColumnView phi0;
     /// initial density values
     ColumnView rho0;
+    
+    Real rho0surf;
 };
 
 KOKKOS_INLINE_FUNCTION
 Real geopotential(const Real t, const Real phi0, const AtmosphericConditions& ac) {
   const Real tanarg = pi * phi0 / (2*gravity_m_per_s2*ac.ztop);
-  const Real exparg = ac.w0 * ac.tperiod * square(std::sin(2*pi*t/ac.tperiod))/(2*ac.ztop);
+  const Real exparg = ac.w0 * ac.tperiod * square(std::sin(pi*t/ac.tperiod))/(ac.ztop);
   return 2*gravity_m_per_s2*ac.ztop*std::atan(std::tan(tanarg)*std::exp(exparg)) / pi;
 }
 
@@ -116,6 +124,13 @@ Real pressure(const Real rho, const Real thetav) {
   return std::pow(coeff*rho*thetav, 1/(1-AtmosphericConditions::kappa));
 }
 
+KOKKOS_INLINE_FUNCTION
+Real qvsat_tetens(const Real T, const Real p) {
+  static constexpr Real half15ln10 = 17.269388197455342630;
+  static constexpr Real tetens_coeff = 380.042;
+  return tetens_coeff * std::exp(half15ln10*(T - 273)/(T-36)) / p;
 }
-}
+
+} // namespace driver
+} // namespace haero
 #endif

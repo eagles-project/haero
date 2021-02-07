@@ -231,16 +231,15 @@ void NcWriter::add_interface_variable_data(const std::string& varname, const siz
 }
 
 void NcWriter::add_time_dependent_scalar_value(const std::string& name,
-  const size_t time_idx, const std::vector<Real>& column_values) const {
+  const size_t time_idx, const Real val) const {
 
   EKAT_ASSERT(time_idx < num_timesteps());
   const int varid = name_varid_map.at(name);
-  size_t start[1] = {time_idx};
-  size_t count[1] = {1};
+
 #ifdef HAERO_DOUBLE_PRECISION
-  int retval = nc_put_vara_double(ncid, varid, start, count, &column_values[0]);
+  int retval = nc_put_var1_double(ncid, varid, &time_idx, &val);
 #else
-  int retval = nc_put_vara_float(ncid, varid, start, count, &column_values[0]);
+  int retval = nc_put_var1_float(ncid, varid, &time_idx, &val);
 #endif
   CHECK_NCERR(retval);
 }
