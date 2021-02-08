@@ -10,6 +10,7 @@
 \usepackage{amsthm,thmtools}
 \usepackage{xspace}
 \usepackage{listings}
+\usepackage{float}
 
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}
@@ -28,13 +29,13 @@
 
 %---------
 % Draft writing tools
-\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO:\xspace} #1}}
-\newcommand{\pbc}[1]{\textcolor{blue}{\textbf{PB comment:\xspace} #1}} % Pete
-\newcommand{\jjc}[1]{\textcolor{teal}{\textbf{JJ comment:\xspace} #1}} % Jeff
-\newcommand{\hwc}[1]{\textcolor{green}{\textbf{HW comment:\xspace} #1}} % Hui
-\newcommand{\bsc}[1]{\textcolor{orange}{\textbf{BS comment:\xspace} #1}} % Balwinder
-\newcommand{\msc}[1]{\textcolor{purple}{\textbf{MS comment:\xspace} #1}} % Mike
-\newcommand{\jsc}[1]{\textcolor{pink}{\textbf{JS comment:\xspace} #1}} % Jian
+\newcommand{\todo}[1]{\textcolor{Red}{\textbf{TODO:\xspace} #1}}
+\newcommand{\pbc}[1]{\textcolor{MidnightBlue}{\textbf{PB comment:\xspace} #1}} % Pete
+\newcommand{\jjc}[1]{\textcolor{Cerulean}{\textbf{JJ comment:\xspace} #1}} % Jeff
+\newcommand{\hwc}[1]{\textcolor{ForestGreen}{\textbf{HW comment:\xspace} #1}} % Hui
+\newcommand{\bsc}[1]{\textcolor{BlueViolet}{\textbf{BS comment:\xspace} #1}} % Balwinder
+\newcommand{\msc}[1]{\textcolor{Plum}{\textbf{MS comment:\xspace} #1}} % Mike
+\newcommand{\jsc}[1]{\textcolor{Violet}{\textbf{JS comment:\xspace} #1}} % Jian
 
 % Bibliography stuff
 \usepackage[sort, numbers]{natbib}
@@ -99,7 +100,7 @@
 \newcommand{\water}{H_{_2}O}
 \newcommand{\numc}{N_{_{t,i}}}
 \mathchardef\mhyphen="2D % Define a "math hyphen", make the dash shorter
-\DeclareMathOperator{\arccot}{arccot}
+
 % Norm and Absolute value
 	\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
 	\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
@@ -108,6 +109,7 @@
 	\newcommand{\partdn}[3]{\frac{\partial^#3 #1}{\partial #2 ^#3}}
 	\newcommand{\deriv}[2]{\frac{ d #1}{d #2}}
 	\newcommand{\derivn}[3]{\frac{d^#3 #1}{d #2^#3}}
+	\providecommand{\totd}[1]{\frac{D #1}{Dt}}
 
 \begin{document}
 \title{Haero Aerosol Model Design}
