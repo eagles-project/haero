@@ -21,200 +21,303 @@ for the driver is based on YAML and is described in \refappendix{driver_input}.
 
 \section{Column Dynamics}
 
-\subsection{Uniform atmosphere}
+We use a one-dimensional (vertical) atmosphere and tests of increasing complexity.
 
-This is the simplest possible simulation setting, with each level of a physics column containing the exact same environment.  
-It provides a means of testing aerosol-specific methods in isolation.
+Let $z=z(a,t)$ denote the trajectory of the particle labeled $a$ that arrives at physical position $z$ at time $t$.
+The label $a$ is the Lagrangian, or material, coordinate. 
+Particle trajectories are defined by
+\begin{equation}\label{eq:traj}
+\deriv{z}{t}(a,t) = w(z(a,t),t),
+\end{equation}
+where $w(z,t)$ is the vertical velocity.  
+In the following sections, it will be convenient to formulate \eqref{eq:traj} in terms of the geopotential $\phi(a,t) = gz(a,t)$, 
+\begin{equation}\label{eq:geo_traj}
+  \deriv{\phi}{t}(a,t) = gw\left(\frac{\phi(a,t)}{g},t\right).
+\end{equation}
 
-\subsection{Single-column}
 
-In this setting, we use a one-dimensional (vertical) atmosphere and tests of increasing complexity.
-Wherever possible, we choose the same variables, equations, and numerical methods as used by HOMME-NH \cite{Taylor2020}.
-
-\subsubsection{Column dynamics}
-
-We define dynamics by the vertically Lagrangian form of the HOMME $\theta$-model \cite[sec.~2.7]{Taylor2020}, using the vertical direction only,
-\begin{subequations}\label{eq:column_dynamics}
+Adiabatic column dynamics are described by the 1D Euler equations for a moist atmosphere,
+\begin{subequations}\label{eq:1d}
   \begin{align}
-    \deriv{w}{t} &= -g(1-\mu),\label{eq:vert_vel}\\
-    \deriv{\phi}{t} &= gw, \label{eq:geopotential}\\
-    \deriv{\Theta}{t} &= 0, \label{eq:theta_v} \\
-    \deriv{\partd{\pi}{s}}{t} &= 0, \label{eq:dpids}\\
-    \deriv{q_v}{t} &= 0,  \label{eq:q_v}   
+    \totd{w} &= -g\left(\frac{1}{\rho}\partd{p}{\phi} + 1\right), \label{eq:momentum}\\
+    \totd{\rho} &= - g\rho \partd{w}{\phi}, \label{eq:continuity}\\
+    \totd{\theta_v} &= 0, \label{eq:thermo},\\
+    \totd{q_v} &= 0, \label{eq:qv}
   \end{align}
-where $\partd{\pi}{s}$ is the pseudo-density, $\mu$ is the ratio of pressure to hydrostatic pressure, $\mu = \partd{p}{s}/\partd{\pi}{s}$. 
-In hydrostatic conditions, $\mu \equiv 1$.
-The water vapor mixing ratio is $q_v$.
-The conservative form of potential temperature $\Theta = \partd{\pi}{s}\theta_v$, where $\theta_v$ is the virtual potential temperature, is related by the equation of state to the geopotential $\phi$,
-\begin{equation}
-  \partd{\phi}{s} = -R\Theta \frac{\Pi}{p},
-\end{equation}
-where $\Pi$ is the Exner function,
-\begin{equation}
-  \Pi =\left(\frac{p}{p_0}\right)^{R/c_p}.%= \left(\frac{R_d}{p_0}\rho\theta_v\right)^{R_d/c_p}
-\end{equation}
-We have 6 equations for 6 unknowns: $w, \phi, \partd{\pi}{s}, q_v, \theta_v, p$.
 \end{subequations}
-
-
-\begin{rem} 
-The zeros on the RHS of equations \eqref{eq:column_dynamics} are due to the Lagrangian 1D setting. 
-In the full model, source terms come from the horizontal dynamics, which are excluded here and from flux across levels, which are zero in Lagrangian form.
-In the HAERO driver, source terms come from subgrid parameterizations of aerosols and water microphysics via physics/dynamics coupling.  
-\end{rem}
-
-These equations are based on a terrain-following vertical coordinate, $s$.
-In the context of a single column, the notion of ``terrain'' has no meaning and we may take 
-\begin{equation}\label{eq:s_coord}
-  s(z) = \frac{z_{top}-z}{z_{top}},
+where $\rho$ is density, $p$ is pressure, $\theta_v$ is the virtual potential temperature, and $q_v$ is the water vapor mass mixing ratio.
+As in \cite{Taylor2020}, we treat virtual potential temperature $\theta_v$ as a material invariant.
+The momentum, continuity, thermodynamic equation, and transport equation (respectfully) combine with \eqref{eq:geo_traj} and the equation of state,
+\begin{equation}\label{eq:eos}
+  \frac{p}{\Pi} = \rho R \theta_v,
 \end{equation}
-so that $s=0$ at the model top and increases monotonically to $s=1$ at the surface.
-In most settings (including the HOMME $\theta$-model), it is unnecessary to explicitly define $s$; here we do it for convenience only.
-The discrete vertical operators from \cite[sec.~4]{Taylor2020} are,
-\begin{subequations}
+to define the complete system.
+Above, $\Pi = (p/p_{ref})^{\kappa}$ is the nondimensional Exner pressure, with constant $\kappa = R/c_p$, where $R$ is the dry air gas constant and $c_p$ is the specific heat of dry air at constant pressure.
+We have 6 prognostic variables: $\phi, w, \rho, \theta_v, q_v, p$, and 6 equations in \eqref{eq:geo_traj}, \eqref{eq:1d}, \eqref{eq:eos}.
+The boundary conditions are $w(0,t) = w(z_{top},t) = 0$.
+
+The advantage of the Lagrangian frame of reference imposed by \eqref{eq:geo_traj} is that the material derivative becomes an ordinary time derivative, $D/Dt = d/dt$. 
+Hence, for the remainder of this note we simply use $d/dt$ in our notation.
+
+We begin with an ansatz that the velocity has a simple form,
+\begin{equation}\label{eq:z_vel}
+  w(z,t) = w_0\sin\frac{\pi z}{z_{top}}\sin \frac{2\pi t}{t_p},
+\end{equation}
+where we have introduced parameters for the maximum velocity, $w_0$, the top of the model column, $z_{top}$, and the period of oscillation $t_p$.  
+This velocity satisfies the boundary conditions and the initial condition, $w(z,0) = 0$.
+We assume that this velocity is valid for all time throughout the whole column, from $z=0$ to $z=z_{top}$.
+In terms of the geopotential, \eqref{eq:z_vel} becomes,
+\begin{equation}\label{eq:phi_vel}
+  w(\phi,t) = w_0 \sin \frac{\pi \phi}{g z_{top}}\sin\frac{2\pi t}{t_p}.
+\end{equation}
+Since velocity is prescribed, it does not need to be prognosed. 
+This eliminates \eqref{eq:momentum} from our system of equations \eqref{eq:1d}.
+Our goal is to derive the other variables associated with 1D motion in a non-hydrostatic column so that we have consistent dynamics and thermodynamics.
+
+Substituting \eqref{eq:phi_vel} in \eqref{eq:geo_traj} we discover a separable ODE,
+\begin{align}
+  \deriv{\phi}{t} &= gw_0\sin\frac{\pi \phi}{g z_{top}}\sin\frac{2\pi t}{t_p},\\
+  \Rightarrow \int \csc\frac{\pi \phi}{g z_{top}}\,d\phi &= g w_0\int\sin\frac{2\pi t}{t_p}\,dt,
+\end{align}
+whose solution is
+\begin{equation}\label{eq:phi_sol}
+\phi(t) = \frac{2gz_{top}}{\pi}\arctan\left[\tan\frac{\pi \phi_0}{2g z_{top}}\exp\left(\frac{w_0t_p}{z_{top}} \sin^2 \frac{\pi t}{t_p}\right)\right].
+  \end{equation}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/geopotential_plot}
+  \caption{Geopotential $\phi(t)$ for $\phi_0 = gz_0$ and $z_0$ values listed in the legend, with parameters $w_0=5$, $T_{v0}=300$, $\Gamma_v=0.01$, $z_{top}=20000$, $t_p=900$.}\label{fig:geopotential}
+\end{figure}
+
+We use \eqref{eq:phi_vel} to find the divergence, which is required by the continuity equation \eqref{eq:continuity},
+\begin{equation}\label{eq:div}
+  \partd{w}{\phi}(\phi,t) = \frac{\pi w_0}{g z_{top}}\cos\frac{\pi \phi(t)}{gz_{top}}\sin\frac{2\pi t}{t_p}.
+\end{equation}
+Substituting \eqref{eq:div} into \eqref{eq:continuity}, we find another separable ODE:
+\begin{align*}
+  \deriv{\rho}{t} &= -\rho \left(\frac{\pi w_0}{z_{top}}\cos\frac{\pi \phi(t)}{g z_{top}}\sin\frac{2\pi t}{t_p}\right)\\
+  \Rightarrow \int \frac{1}{\rho}\,d\rho &= -\frac{\pi w_0}{z_{top}}\cos\frac{\pi \phi(t)}{z_{top}}\int \sin \frac{2\pi t}{t_p}\,dt.
+\end{align*}
+The solution is
+\begin{align}\label{eq:density}
+  \rho(\phi(t),t) = \rho_0(\phi_0)\exp\left[\frac{ w_0 t_p}{2z_{top}}\left(\cos\frac{\pi {\phi}(t)}{gz_{top}}\cos\frac{2\pi t}{t_p}-\cos\frac{\pi {\phi_0}}{gz_{top}}\right)\right].
+\end{align} 
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/density_plot}
+  \caption{Density $\rho(\phi(t),t)$ for $\phi_0 = gz_0$ and $z_0$ values listed in the legend, with parameters $w_0=5$, $T_{v0}=300$, $\Gamma_v=0.01$, $z_{top}=20000$, $t_p=900$.}\label{fig:density}
+\end{figure}
+
+To find the pressure, we use \eqref{eq:density} in \eqref{eq:eos},
+\begin{align}
+  \frac{p}{\Pi} &= R\rho(\phi(t),t)\theta_v(\phi(t),t),\notag \\
+  p(\phi(t),t) &= \left(p_{ref}^{-\kappa} R \rho(\phi(t),t)\theta_v(\phi(t),t)\right)^{1/(1-\kappa)}.\label{eq:pressure}
+\end{align}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/pressure_plot}
+  \caption{Pressure $p(\phi(t),t)$ for $\phi_0 = gz_0$ and $z_0$ values listed in the legend, with parameters $w_0=5$, $T_{v0}=300$, $\Gamma_v=0.01$, $z_{top}=20000$, $t_p=900$.}\label{fig:pressure}
+\end{figure}
+
+\subsection{Physical interpretation}
+
+Physically, the ansatz \eqref{eq:z_vel} may be interpreted via \eqref{eq:momentum} as defining the balance between buoyancy, the pressure gradient force, and gravity to be,
+\begin{align}
+  -g\left(1 +  \frac{1}{\rho}\partd{p}{\phi}\right) &= \deriv{w}{t}(\phi,t), \notag \\
+  &= \frac{2\pi w_0}{t_p}\sin\frac{\pi\phi}{gz_{top}}\cos\frac{2\pi t}{t_p} + \frac{\pi w_0^2}{2z_{top}}\sin\frac{2\pi\phi}{gz_{top}}\sin^2\frac{2\pi t}{t_p},
+\end{align}
+where the right-hand side is the time derivative of \eqref{eq:phi_vel}.
+It is most straightforward to derive this interpretation by decomposing the pressure into a constant, hydrostatically balanced reference state with a superimposed perturbation \cite{Klemp1978,Srivastava1967,SoongOgura1973} so that $p = \overline{p} + p'$.
+Combining this decomposition (and similar treatment of temperature and density) with the equation of state leads to a formulation of the total pressure gradient as the background hydrostatic balance plus a perturbation due to nonhydrostatic buoyancy.  
+In \cite{Klemp1978,Srivastava1967,SoongOgura1973} this arises as quadratic terms of the perturbation variables are neglected.  
+It is interesting that a similar (though not equivalent\footnote{Taylor et.~al.~\cite{Taylor2020} retain the full form of the pressure gradient, without a linearization.}) term arises in \cite{Taylor2020} as a result of the choice of a vertical mass coordinate based on hydrostatic pressure.
+  
+\subsection{Initialization}
+
+Initial conditions are defined by stationary, $w(\phi(0),0) = 0,$ hydrostatic balance with a constant lapse rate in the virtual temperature profile, and exponential decay in the water vapor mixing ratio.
+
+The initial virtual temperature profile is defined by two parameters, $T_{0}$ and $\Gamma_v$ (with default values 300K and 0.01 K/m, respectively),
+\begin{equation}\label{eq:tv}
+  T_{v0}(z) = T_{0} - \Gamma_v z.
+\end{equation}
+Using \eqref{eq:tv} with $p=\rho R T_v$, an equivalent form of the equation of state \eqref{eq:eos}, the hydrostatic equation $\partd{p}{z} = -\rho g$, and separation of variables (again), we derive expressions that relate initial height to initial pressure,
+\begin{align}
+  p_0(z) = \begin{cases}
+          p_{ref}\exp\left(\frac{-g z}{R T_{0}}\right) & \Gamma_v = 0,\\[0.5em]
+          p_{ref}\, T_0^{-g/(R\Gamma_v)}\left(T_{0} - \Gamma_v z\right)^{g/(R\Gamma_v)} & \Gamma_v \ne 0,
+        \end{cases} \label{eq:p_of_z}\\[0.5em]
+  z_0(p) = \begin{cases}
+         -\frac{R T_{0}}{g}\log\frac{p}{p_{ref}} & \Gamma_v = 0,\\[0.5em]
+         \frac{T_{0}}{\Gamma_v}\left(1 - \left(\frac{p}{p_{ref}}\right)^{R\Gamma_v/g}\right) & \Gamma \ne 0.
+       \end{cases}\label{eq:z_of_p}
+\end{align}
+It follows that the initial virtual potential temperature profile is defined as
+\begin{equation}
+  \theta_{v0}(z) = T_{v0}(z)\left(\frac{p_{ref}}{p_0(z)}\right)^\kappa.
+\end{equation}
+The initial water vapor mixing ratio profile is also defined by two parameters, $q_0$ and $q_1$, with default values $q_0=0.015$ kg H$_2$O / kg air and $q_1 = $ 1E-3 m$^{-1}$, as
+\begin{equation}
+  q_{v0}(z) = q_0e^{-q_1 z}.
+\end{equation}
+Initial densities are defined as
+\begin{equation}
+  \rho_0(z) = \frac{p_0(z)}{R\,T_{v0}(z)}.
+\end{equation}
+
+\subsection{Discretized column}
+
+In the Haero driver, we emulate the vertical grid staggering used by the HOMME-NH dynamical core \cite{Taylor2020}, which has $n_{lev}$ levels and $n_{lev}+1$ interfaces.
+Levels are indexed by integer values $k$, for $k=1,\dotsc,n_{lev}$ and interfaces are indexed by $k+1/2$, for $k=0,\dotsc,n_{lev}$.
+
+Geopotential and vertical velocity are defined at interfaces;
+\begin{align}
+  \phi_{k+1/2}(t) &= \frac{2gz_{top}}{\pi}\arctan\left[\tan\frac{\pi \phi_{k+1/2}(0)}{2g z_{top}}\exp\left(\frac{w_0t_p}{2z_{top}} \sin^2 \frac{2\pi t}{t_p}\right)\right], \label{eq:phi_disc}\\
+  w_{k+1/2}(t) &= w_0 \sin \frac{\pi \phi_{k+1/2}(t)}{g z_{top}}\sin\frac{2\pi t}{t_p}. \label{eq:w_disc}
+\end{align}
+
+Density, virtual potential temperature, water vapor, and pressure are defined at level midpoints,
+\begin{align}
+  \rho_k(t) &= \rho_0(\overline{\phi_k}(0))\exp\left[\frac{ w_0 t_p}{2z_{top}}\left(\cos\frac{\pi \overline{\phi_k}(t)}{gz_{top}}\cos\frac{2\pi t}{t_p}-\cos\frac{\pi \overline{\phi_{k}}(0)}{gz_{top}}\right)\right], \label{eq:rho_disc}\\
+  \theta_{vk}(t) &= \theta_{v0}(\overline{\phi_k}(0)/g), \label{eq:thetav_disc} \\
+  q_{vk}(t) &= q_{v0}(\overline{\phi_k}(0)/g), \label{eq:qv_disc} \\
+  % p_k(t) &= \left(p_0^{-\kappa}R \, \rho_k(t)\,\left(\theta_v\right)_k(t)\right)^{1/(1-\kappa)}, 
+p_k(t) &=  \left(p_{ref}^{-\kappa} R \rho_k(t)\theta_{vk}(t)\right)^{1/(1-\kappa)}\label{eq:p_disc}
+\end{align}
+where the constants $g = 9.8$ m/s$^2$, $p_{ref} = 10^5$ Pa, and $\kappa = 0.286$; the overline denotes an average, $\overline{\phi_k}(t) = (\phi_{k-1/2}(t) + \phi_{k+1/2}(t))/2$.
+
+
+
+%Column data are initialized as follows:
+%\begin{enumerate}
+%  \item A set of levels and interfaces are defined in one of two ways:
+%  \begin{enumerate}
+%    \item Height level interfaces $z_{1/2}, z_{3/2}, \dotsc, z_{n_{lev}+1/2}$  are chosen such that $z_{1/2} = z_{top}$ and $z_{n_{lev}+1/2} = 0$.
+%        Geopotential $\phi(z_{i+1/2}) = g z_{i+1/2}$ is defined for $i=0,\dotsc,n_{lev}$.
+%    \begin{itemize}
+%      \item Level midpoints are initialized so that $z_i = (z_{i+1/2} + z_{i-1/2})/2$ for $i=1,\dotsc,n_{lev}$. 
+%      \item Level and interface values for $s$ and $\Delta s$ are computed using \eqref{eq:s_coord}.
+%      \item Given a user-specified lapse rate $\Gamma$, hydrostatic pressure $\pi$ is initialized at each level interface and pressure $p$ is initialized at level midpoints using \eqref{eq:hydrostatic_pressure_profile}.
+%    \end{itemize}
+%    \item Pressure level interfaces $\pi_{1/2}, \pi_{3/2}, \dotsc, \pi_{n_{lev}+1/2}$  are chosen such that $\pi_{1/2} = \pi_{top}$ and $\pi_{n_{lev}+1/2} = p_0$.
+%    \begin{itemize}
+%      \item Given a user-specified lapse rate $\Gamma$, geopotential $\phi=gz$ is initialized at each level interface using \eqref{eq:hydrostatic_height_profile}.
+%      \item Level midpoints are initialized so that $z_i = (z_{i+1/2} + z_{i-1/2})/2$ for $i=1,\dotsc,n_{lev}$, and level \& interface values for $s$ and $\Delta s$ are defined using \eqref{eq:s_coord}.
+%      \item Pressure $p$ is defined via \eqref{eq:hydrostatic_pressure_profile} at level midpoints. 
+%    \end{itemize}
+%  \end{enumerate}
+%  \item Pseudodensity is defined at each level midpoint,
+%    \begin{equation}
+%      \left(\partd{\pi}{s}\right)_i = -\frac{g(\pi_{i+1/2}-\pi_{i-1/2})}{z_{top}(\phi_{i+1/2}-\phi_{i-1/2})},
+%    \end{equation}
+%    where we have used $\partial s / \partial z = - 1 /z_{top}$ from \eqref{eq:s_coord}.
+%%    \begin{rem}
+%%    This is an example of the $s$-coordinate cancelling, which is why most models don't explicitly define it.
+%%    \end{rem}
+%  \item A water vapor profile is defined, by choosing constant values for $q_v^{(0)}$ and $q_v^{(1)}$ in \eqref{eq:qv_profile}, and its values are stored at level midpoints.
+%  \item Virtual potential temperature $\theta_v = T_v(p_0/p)^{\kappa}$, with the dry-air constant $\kappa = R_{dry}/c_p$, is defined at level midpoints.
+%  \item The initial velocity profile is defined, usually $w=0$.  
+%\end{enumerate}
+
+\subsection{Creating a Haero atmosphere}
+
+The above dynamics are motivated by the input requirements of the various parameterizations.  
+These are encapsulated by the \texttt{haero::Atmosphere} class, which requires temperature, pressure, height, and relative humidity data. 
+We already have pressure and height.
+Temperature may be diagnosed using the approximation given by \cite[eq.~(2.3)]{KlempWilhelmson1978},
+\begin{equation}
+  T_k(t) \approx \frac{\theta_{vk}(t) ~ \Pi_k(t)}{1+\alpha_q ~ q_{vk}(t)},
+\end{equation}
+with constant $\alpha_q = 0.61$.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/temperature_plot}
+  \caption{Temperature for the same parameters as in Figures \ref{fig:geopotential},\ref{fig:density}, and \ref{fig:pressure}, with the additional parameters $q_{0}=6$E-3, $q_1=2.5$E-3.}\label{fig:temperature}
+\end{figure}
+
+We compute relative humidity as $s = q_v/q_{vsat}$, where $q_{vsat}$ is the saturation mixing ratio.
+We use the Tetens equation to find $q_{vsat}$ \cite[eqn. (A1)]{SoongOgura1973},
+\begin{equation}\label{eq:tetens}
+  q_{vs}(T) = \frac{380.042}{p}\exp\left(\frac{15}{2}\log(10) \frac{T-273}{T-36}\right).
+\end{equation}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/relhumidity_plot}
+\caption{Temperature for the same parameters as in Figures \ref{fig:geopotential},\ref{fig:density}, and \ref{fig:pressure}, with the additional parameters $q_{0}=6$E-3, $q_1=2.5$E-3.}\label{fig:humidity}
+\end{figure}
+
+
+\subsection{Time stepping}
+
+The above dynamics are associated with the following \emph{tendencies}, the right-hand sides of \eqref{eq:geo_traj} and \eqref{eq:1d},
+\begin{subequations}\label{eq:tends}
   \begin{align}
-    \text{level midpoints: } s_i &= \frac{1}{2}\left(s(z_{i+1/2})+s(z_{i-1/2})\right),\\
-    \text{level thickness: } \Delta s_i&= s_{i+1/2}-s_{i-1/2},\quad \Delta s_{i+1/2} = s_{i+1}-s_i,\\
-    \text{average to level: } \overline{\phi}_i &=\frac{1}{2}\left(\phi_{i+1/2}+\phi_{i-1/2}\right),\\
-    \text{average to interface: } \overline{p}_{i+1/2} &= \frac{(p\Delta s)_{i+1}+(p\Delta s)_i}{2\Delta s_{i+1/2}},\\
-    \text{boundary averages: } p_{1/2}&=p_1, ~~p_{n_{lev}+1/2} = p_n,\\
-    \text{derivatives at levels: } \left(\partd{\phi}{s}\right)_i &= \frac{\phi_{i+1/2}-\phi_{i-1/2}}{\Delta s_i},\\
-    \text{deriavtives at interfaces: } \left(\partd{p}{s}\right)_{i+1/2} &= \frac{p_{i+1}-p_i}{\Delta s_{i+1/2}},\\
-    \text{boundary derivatives: } \left(\partd{p}{s}\right)_{1/2} &= \frac{p_1-p_{1/2}}{\frac{1}{2}\Delta s_{1/2}},~~\left(\partd{p}{s}\right)_{n_{lev}+1/2} = \frac{p_{n_{lev}+1/2}-p_n}{\frac{1}{2}\Delta s_{n_{lev}}},
+     \dot{w}(\phi,t) \equiv \totd{w}  &= \frac{2\pi w_0}{t_p}\sin\frac{\pi\phi}{gz_{top}}\cos\frac{2\pi t}{t_p} + \frac{\pi w_0^2}{2z_{top}}\sin\frac{2\pi\phi}{gz_{top}}\sin^2\frac{2\pi t}{t_p},\\
+    \dot{\phi}(\phi,t) \equiv \totd{\phi} &= gw_0 \sin \frac{\pi \phi}{g z_{top}}\sin\frac{2\pi t}{t_p},\\
+    \dot{\rho}(\phi, t, \rho) \equiv \totd{\rho} &= -\rho \frac{\pi w_0}{z_{top}}\cos\frac{\pi \phi}{g z_{top}}\sin\frac{2\pi t}{t_p},\\
+    \dot{\theta_v} \equiv \totd{\theta_v} &= 0,\\
+    \dot{q_v} \equiv \totd{q_v} &= 0.
   \end{align}
-  in our case, \eqref{eq:s_coord} is used in each one to compute $s$ and $\Delta s$.
-\end{subequations}
-
-
-\subsubsection{Initialization}
-
-To conform with the HOMME-NH dynamical core \cite{Taylor2020}, we use  virtual temperature $T_v$, instead of temperature $T$.
-Virtual temperature may be approximated by \cite[eqn.~(2.1)]{KlempWilhelmson1978},
-\begin{equation}\label{eq:virtual_temperature}
-  T_v(z) = T(z)(1+\alpha_q q_v(z)),
-\end{equation}
-where $q_v$ is the water vapor mass mixing ratio and the constant $\alpha_q = 0.61$ K.
-
-The initial water vapor profile can be characterized by exponential decay with height \cite{Hashimoto2005,Palchetti2008}; here it is defined by two parameters, $q_v^{(0)}$ and $q_v^{(1)}$, the mixing ratio value at $z=0$ and its decay rate with height, respectively;
-\begin{equation}\label{eq:qv_profile}
-  q_v(z) = q_v^{(0)}e^{-q_v^{(1)}z}.
-\end{equation}
-
-For simplicity we have assumed the equation of state implied by \eqref{eq:virtual_temperature}, from \cite{KlempWilhelmson1978}, which allows us to use the gas constant for dry air.  
-   HOMME-NH uses a slightly different approximation; see \cite[sec.~2.3]{Taylor2020}.
-   
-We assume a linear virtual temperature profile with constant lapse rate $\Gamma = -\partial T_v/\partial z$,
-\begin{equation}\label{eq:temperature_profile}
-  T_v(z) = T_0 - \Gamma z,
-\end{equation}
-where $T_0$ is the reference virtual temperature at $z=0$.  
-
-\begin{rem}
-  Due to the formulation of \eqref{eq:temperature_profile} in virtual temperature, standard notions of static stability via comparison of the environmental lapse rate with the dry adiabatic lapse rate are not applicable; conversion of virtual temperature to temperature using \eqref{eq:virtual_temperature} is required for this analysis.
-\end{rem}
-
-Using the ideal gas law for moist air, $p = \rho R_d T_v$ and the hydrostatic equation $\partial p/\partial z = -\rho g$, we derive the relations between pressure and height,
-\begin{equation}\label{eq:hydrostatic_pressure_profile}
-  p(z) = \begin{cases}
-          p_0\exp\left(\frac{-g z}{R_dT_0}\right) & \Gamma = 0,\\[0.5em]
-          p_0\, T_0^{-g/(R\Gamma)}\left(T_0 - \Gamma z\right)^{g/(R_d\Gamma)} & \Gamma \ne 0,
-        \end{cases}
-\end{equation}
-\begin{equation}\label{eq:hydrostatic_height_profile}
-  z(p) = \begin{cases}
-         -\frac{R T_0}{g}\log\frac{p}{p_0} & \Gamma = 0,\\[0.5em]
-         \frac{T_0}{\Gamma}\left(1 - \left(\frac{p}{p_0}\right)^{R\Gamma/g}\right) & \Gamma \ne 0,
-       \end{cases}
-\end{equation}
-where $p_0$ is the reference pressure at $z=0$ and $T=T_0$.
-
-Column data are initialized as follows:
-\begin{enumerate}
-  \item A set of levels and interfaces are defined in one of two ways:
-  \begin{enumerate}
-    \item Height level interfaces $z_{1/2}, z_{3/2}, \dotsc, z_{n_{lev}+1/2}$  are chosen such that $z_{1/2} = z_{top}$ and $z_{n_{lev}+1/2} = 0$.
-        Geopotential $\phi(z_{i+1/2}) = g z_{i+1/2}$ is defined for $i=0,\dotsc,n_{lev}$.
-    \begin{itemize}
-      \item Level midpoints are initialized so that $z_i = (z_{i+1/2} + z_{i-1/2})/2$ for $i=1,\dotsc,n_{lev}$. 
-      \item Level and interface values for $s$ and $\Delta s$ are computed using \eqref{eq:s_coord}.
-      \item Given a user-specified lapse rate $\Gamma$, hydrostatic pressure $\pi$ is initialized at each level interface and pressure $p$ is initialized at level midpoints using \eqref{eq:hydrostatic_pressure_profile}.
-    \end{itemize}
-    \item Pressure level interfaces $\pi_{1/2}, \pi_{3/2}, \dotsc, \pi_{n_{lev}+1/2}$  are chosen such that $\pi_{1/2} = \pi_{top}$ and $\pi_{n_{lev}+1/2} = p_0$.
-    \begin{itemize}
-      \item Given a user-specified lapse rate $\Gamma$, geopotential $\phi=gz$ is initialized at each level interface using \eqref{eq:hydrostatic_height_profile}.
-      \item Level midpoints are initialized so that $z_i = (z_{i+1/2} + z_{i-1/2})/2$ for $i=1,\dotsc,n_{lev}$, and level \& interface values for $s$ and $\Delta s$ are defined using \eqref{eq:s_coord}.
-      \item Pressure $p$ is defined via \eqref{eq:hydrostatic_pressure_profile} at level midpoints. 
-    \end{itemize}
-  \end{enumerate}
-  \item Pseudodensity is defined at each level midpoint,
-    \begin{equation}
-      \left(\partd{\pi}{s}\right)_i = -\frac{g(\pi_{i+1/2}-\pi_{i-1/2})}{z_{top}(\phi_{i+1/2}-\phi_{i-1/2})},
-    \end{equation}
-    where we have used $\partial s / \partial z = - 1 /z_{top}$ from \eqref{eq:s_coord}.
-%    \begin{rem}
-%    This is an example of the $s$-coordinate cancelling, which is why most models don't explicitly define it.
-%    \end{rem}
-  \item A water vapor profile is defined, by choosing constant values for $q_v^{(0)}$ and $q_v^{(1)}$ in \eqref{eq:qv_profile}, and its values are stored at level midpoints.
-  \item Virtual potential temperature $\theta_v = T_v(p_0/p)^{\kappa}$, with the dry-air constant $\kappa = R_{dry}/c_p$, is defined at level midpoints.
-  \item The initial velocity profile is defined, usually $w=0$.  
-\end{enumerate}
-
-\subsubsection{Time stepping}
+\end{subequations} 
 
 %We use an explicit 2nd order Runge-Kutta method, hereafter RK2, for advancing \eqref{eq:column_dynamics} forward in time \cite[\S 8.3.3]{DahlquistBjork}.
 
-\paragraph{Case 1: Prescribed velocity.} In this case we assume that vertical velocity $w$ is prescribed by a known function $w=w(z,t)$, for example,
-\begin{equation}\label{eq:presc_velocity}
-  w(z,t) = w_0 \sin \frac{2\pi t}{t_p}\sin \frac{m \pi z}{z_{top}},
-\end{equation}
-where the user-chosen parameters are $w_0$, the maximum vertical velocity [m/s], $t_p$, the period [s], and $m$, the vertical wave number (a dimensionless integer).
-%Equations \eqref{eq:column_dynamics} are separable in this case and we can solve them analytically by recalling that $z = \phi/g$.
-Using \eqref{eq:presc_velocity} in \eqref{eq:column_dynamics} and recalling that $\phi = gz$, the geopotential equation becomes,
-\begin{equation}
-  \deriv{\phi}{t} = gw_0\sin\frac{2\pi t}{t_p}\sin\frac{m\pi \phi(t)}{g z_{top}},
-\end{equation}
-which is a separable equation for $\phi(t)$ that can be solved analytically for each interface.
-\begin{subequations}
-We find that
-\begin{equation}
-  \phi_{i+1/2}(t_{n+1}) = \frac{2 g z_{top}}{m \pi}\arccot\left[ {\exp\left(-\frac{m t_p w_0}{z_{top}}\sin^2\frac{\pi t_{n+1}}{t_p}\right)}{{\cot\left(\frac{m \pi \phi_0}{2gz_{top}}\right)}}\right],
-\end{equation}
-where $\phi_0 = \phi_{i+1/2}(0)$.
-Vertical velocity is updated as
-\begin{equation}
-  w_{i+1/2}(t_{n+1}) = w(\phi_{i+1/2}(t_{n+1})/g, t_{n+1}).
-\end{equation}
-
-The level variables lack source/sink terms; hence,
-\begin{align}
-  \partd{\pi}{s}_i(t_{n+1}) &= \partd{\pi}{s}_i(t_n),\\
-  \theta_{v,i}(t_{n+1}) &= \theta_{v,i}(t_{n+1}),\\
-  q_{v,i}(t_{n+1}) &= q_{v,i}(t_{n+1}).
-\end{align}
-
-Substituting \eqref{eq:presc_velocity} into the momentum equation we find that
-\begin{equation}
-  \mu_{i+1/2}(t_{n+1})= 1 + \frac{2\pi w_0}{gt_p}\cos\frac{2\pi t_{n+1}}{t_p}\sin\frac{m\pi \phi_{i+1/2}(t_{n+1})}{gz_{top}}.
-\end{equation}
-
-At each level we can directly apply the vertical derivative operator to get
-\begin{equation}
-  \partd{\phi}{s}_i(t_{n+1}) = \frac{\phi_{i+1/2}(t_{n+1})-\phi_{i-1/2}(t_{n+1})}{\Delta s_i}.
-\end{equation}
-After averaging the pseudodensity to the interfaces, the definition of $\mu$ gives $\partd{p}{s}$,
-\begin{equation}
-  \partd{p}{s}_{i+1/2}(t_{n+1}) = \mu_{i+1/2}(t_{n+1})\overline{\partd{\pi}{s}}_{i+1/2}(t_{n+1}).
-\end{equation}
-Pressure at the levels follows from the equation of state,
-\begin{equation}
-  p_{i+1}(t_{n+1}) = \exp\left(\frac{1}{{R}/{c_p}-1}\right)\left(\frac{\partd{\phi}{s}_ip_0^{R/c_p}}{R \theta_{v,i}(t_{n+1}) \partd{\pi}{s}_i(t_{n+1})}\right).
-\end{equation}
-Finally, surface pressure is updated as \cite[eqn.~(35)]{Taylor2020},
-\begin{equation}
-  p_s(t_{n+1}) = p_{top} -\frac{1}{2}\left[\left(\partd{p}{s}\Delta s\right)_{1/2} + \left(\partd{p}{s}\Delta s\right)_{n_{lev}+1/2}\right] + \sum_{k=0}^{n_{lev}}\left(\partd{p}{s}\Delta s\right)_{k+1/2}.
-\end{equation}
-\end{subequations}
-
+%\paragraph{Case 1: Prescribed velocity.} In this case we assume that vertical velocity $w$ is prescribed by a known function $w=w(z,t)$, for example,
+%\begin{equation}\label{eq:presc_velocity}
+%  w(z,t) = w_0 \sin \frac{2\pi t}{t_p}\sin \frac{m \pi z}{z_{top}},
+%\end{equation}
+%where the user-chosen parameters are $w_0$, the maximum vertical velocity [m/s], $t_p$, the period [s], and $m$, the vertical wave number (a dimensionless integer).
+%%Equations \eqref{eq:column_dynamics} are separable in this case and we can solve them analytically by recalling that $z = \phi/g$.
+%Using \eqref{eq:presc_velocity} in \eqref{eq:column_dynamics} and recalling that $\phi = gz$, the geopotential equation becomes,
+%\begin{equation}
+%  \deriv{\phi}{t} = gw_0\sin\frac{2\pi t}{t_p}\sin\frac{m\pi \phi(t)}{g z_{top}},
+%\end{equation}
+%which is a separable equation for $\phi(t)$ that can be solved analytically for each interface.
+%\begin{subequations}
+%We find that
+%\begin{equation}
+%  \phi_{i+1/2}(t_{n+1}) = \frac{2 g z_{top}}{m \pi}\arccot\left[ {\exp\left(-\frac{m t_p w_0}{z_{top}}\sin^2\frac{\pi t_{n+1}}{t_p}\right)}{{\cot\left(\frac{m \pi \phi_0}{2gz_{top}}\right)}}\right],
+%\end{equation}
+%where $\phi_0 = \phi_{i+1/2}(0)$.
+%Vertical velocity is updated as
+%\begin{equation}
+%  w_{i+1/2}(t_{n+1}) = w(\phi_{i+1/2}(t_{n+1})/g, t_{n+1}).
+%\end{equation}
+%
+%The level variables lack source/sink terms; hence,
+%\begin{align}
+%  \partd{\pi}{s}_i(t_{n+1}) &= \partd{\pi}{s}_i(t_n),\\
+%  \theta_{v,i}(t_{n+1}) &= \theta_{v,i}(t_{n+1}),\\
+%  q_{v,i}(t_{n+1}) &= q_{v,i}(t_{n+1}).
+%\end{align}
+%
+%Substituting \eqref{eq:presc_velocity} into the momentum equation we find that
+%\begin{equation}
+%  \mu_{i+1/2}(t_{n+1})= 1 + \frac{2\pi w_0}{gt_p}\cos\frac{2\pi t_{n+1}}{t_p}\sin\frac{m\pi \phi_{i+1/2}(t_{n+1})}{gz_{top}}.
+%\end{equation}
+%
+%At each level we can directly apply the vertical derivative operator to get
+%\begin{equation}
+%  \partd{\phi}{s}_i(t_{n+1}) = \frac{\phi_{i+1/2}(t_{n+1})-\phi_{i-1/2}(t_{n+1})}{\Delta s_i}.
+%\end{equation}
+%After averaging the pseudodensity to the interfaces, the definition of $\mu$ gives $\partd{p}{s}$,
+%\begin{equation}
+%  \partd{p}{s}_{i+1/2}(t_{n+1}) = \mu_{i+1/2}(t_{n+1})\overline{\partd{\pi}{s}}_{i+1/2}(t_{n+1}).
+%\end{equation}
+%Pressure at the levels follows from the equation of state,
+%\begin{equation}
+%  p_{i+1}(t_{n+1}) = \exp\left(\frac{1}{{R}/{c_p}-1}\right)\left(\frac{\partd{\phi}{s}_ip_0^{R/c_p}}{R \theta_{v,i}(t_{n+1}) \partd{\pi}{s}_i(t_{n+1})}\right).
+%\end{equation}
+%Finally, surface pressure is updated as \cite[eqn.~(35)]{Taylor2020},
+%\begin{equation}
+%  p_s(t_{n+1}) = p_{top} -\frac{1}{2}\left[\left(\partd{p}{s}\Delta s\right)_{1/2} + \left(\partd{p}{s}\Delta s\right)_{n_{lev}+1/2}\right] + \sum_{k=0}^{n_{lev}}\left(\partd{p}{s}\Delta s\right)_{k+1/2}.
+%\end{equation}
+%\end{subequations}
+%
 
 
 \subsubsection{Simple microphysics}
@@ -248,10 +351,7 @@ Temperature $T$ and potential temperature $\theta$ are recovered from $\theta_v$
 \begin{equation}\label{eq:temperature}
   T = \frac{\theta_v}{1+\alpha_v q_v} \left(\frac{p_0}{p}\right)^{-\kappa}, \quad \theta = \frac{\theta_v}{1+\alpha_vq_v},
 \end{equation}
-and the saturation mixing ratio is given by the Tetens equation,
-\begin{equation}\label{eq:tetens}
-  q_{vs}(T) = \frac{380.042}{p}\exp\left(\frac{15}{2}\log(10) \frac{T-273}{T-36}\right).
-\end{equation}
+and 
 
   
 \paragraph{Evaporation and condensation.}
