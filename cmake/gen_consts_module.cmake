@@ -10,8 +10,8 @@ function(gen_consts_module cxx_header fortran_module)
   set(in_constants_ns FALSE)
 
   # Generate Fortran boilerplate.
-  list(APPEND fortran_lines "! This file was generated from ${cxx_header},")
-  list(APPEND fortran_lines "! Using cmake/gen_consts_module.cmake. PLEASE DO NOT EDIT.")
+  list(APPEND fortran_lines "! This file was generated from ${cxx_header}")
+  list(APPEND fortran_lines "! using cmake/gen_consts_module.cmake. PLEASE DO NOT EDIT.")
   list(APPEND fortran_lines "module haero_constants")
   list(APPEND fortran_lines "  use haero, only: wp")
   list(APPEND fortran_lines "  use iso_c_binding, only: c_double")
@@ -58,7 +58,7 @@ function(gen_consts_module cxx_header fortran_module)
 
               # Now we write it to our Fortran code list.
               if (comment)
-                list(APPEND fortran_lines "  ! ${comment}")
+                list(APPEND fortran_lines "  !${comment}")
                 unset(comment)
               endif()
               list(APPEND fortran_lines "  ${type}, parameter :: ${name} = ${value}")
