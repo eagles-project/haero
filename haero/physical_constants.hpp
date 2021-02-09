@@ -81,12 +81,7 @@ static constexpr Real r_gas_dry_air = r_gas / molec_weight_dry_air;
 /// Specific heat (at constant pressure) of dry air [J/kg/K]
 static constexpr Real cp_dry_air = 1.00464e3;
 
-/** Surface tension at water-air interface at 273K [N/m]
-
-   @todo
-   (Wikipedia)[https://en.wikipedia.org/wiki/Surface_tension]
-    gives additional significant figures: 75.64
-*/
+/// Surface tension at water-air interface at 273K [N/m]
 static constexpr Real surface_tension_h2o_air_273k = 0.07564;
 
 /// Dry adiabatic lapse rate [K/m]
