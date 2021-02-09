@@ -25,6 +25,7 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   TChem::host_exec_space::print_configuration(std::cout, detail);
 
   // construct kmd and use the view for testing
+  std::ofstream output(cfiles.thermFile);
   TChem::KineticModelData kmd(cfiles.chemFile, cfiles.thermFile);
   // create a const version
   kmcd = kmd.createConstData<TChem::exec_space>();
