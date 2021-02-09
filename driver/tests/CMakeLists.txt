@@ -1,7 +1,7 @@
 include(EkatCreateUnitTest)
 
 EkatCreateUnitTest(atm_conditions atm_condition_test.cpp LIBS haero_standalone ${HAERO_LIBRARIES}
- ${HAERO_DRIVER_LIBRARIES})
+ ${HAERO_DRIVER_LIBRARIES} PROPERTIES PASS_REGULAR_EXPRESSION "zp1000 = 1000")
 
 # YAML input tests.
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/read_yaml_test.cpp.in read_yaml_test.cpp)
