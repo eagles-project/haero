@@ -29,6 +29,15 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+#----------------------------------------------------
+# Unit tests for prognostic processes
+#----------------------------------------------------
+
+add_library(chemUtil chemUtil.cpp)
+add_dependencies(chemUtil tchem)
+EkatCreateUnitTest(tchem_batch_reactor tchem_batch_reactor.cpp
+                   LIBS ${HAERO_LIBRARIES};chemUtil)
+
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
   # Fortran
@@ -39,3 +48,6 @@ if (HAERO_FORTRAN)
   EkatCreateUnitTest(fprocess_stub_tests fprocess_stub_tests.cpp
                      LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
 endif()
+
+install(DIRECTORY data/ DESTINATION ${CMAKE_INSTALL_PREFIX}/haero/tests/data)
+

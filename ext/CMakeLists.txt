@@ -296,7 +296,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                       -DTCHEM_ENABLE_VERBOSE=ON
+                       -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
                        -DTCHEM_ENABLE_KOKKOSKERNELS=ON
                        -DTCHEM_ENABLE_TEST=OFF

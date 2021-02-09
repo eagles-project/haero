@@ -41,7 +41,7 @@ add_library(haero
             view_pack_helpers.cpp
             ${HAERO_PROCESSES} # populated by the processes/ ѕubdirectory
             )
-add_dependencies(haero ekat update_version_info)
+add_dependencies(haero ekat update_version_info tchem)
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 
