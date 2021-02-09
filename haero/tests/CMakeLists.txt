@@ -36,7 +36,7 @@ EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
 add_library(chemUtil chemUtil.cpp)
 add_dependencies(chemUtil tchem)
 EkatCreateUnitTest(tchem_batch_reactor tchem_batch_reactor.cpp
-                   LIBS ${HAERO_LIBRARIES};chemUtil)
+                   LIBS chemUtil;${HAERO_LIBRARIES})
 
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
