@@ -58,7 +58,7 @@ if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
+  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}${CMAKE_INSTALL_LIBDIR}z.a)
   set(HDF5_DEPS zlib_proj)
 else()
   message(STATUS "Found libz: ${Z_LIBRARY}")
@@ -268,7 +268,7 @@ set_target_properties(kokkoskernels PROPERTIES IMPORTED_LOCATION ${KOKKOS_KERNEL
 if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
   message(STATUS "kokkos-kernels library not found on system. Building locally.")
   update_submodules()
-  string(REPLACE "/lib" "" KOKKOS_DIR ${EKAT_LIBRARY_DIR})
+  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_DIR ${EKAT_LIBRARY_DIR})
   set(KK_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -321,17 +321,17 @@ set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY_DIR}/${
 if (NOT EXISTS ${TCHEM_LIBRARY})
   message(STATUS "TChem library not found on system. Building locally.")
   update_submodules()
-  string(REPLACE "/lib" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
+  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                       -DTCHEM_INSTALL_LIB_PATH=${CMAKE_INSTALL_LIBDIR}
                        -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
                        -DTCHEM_ENABLE_KOKKOSKERNELS=ON
                        -DTCHEM_ENABLE_TEST=OFF
                        -DTCHEM_ENABLE_EXAMPLE=ON
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
-                       -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                      )
   ExternalProject_Add(tchem_proj
