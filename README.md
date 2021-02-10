@@ -11,11 +11,9 @@ The short-term goal of Haero is to provide an aerosol model for
 [E3SM](https://github.com/E3SM-Project)'s state-of-the-science cloud-resolving
 atmospheric model, [SCREAM](https://github.com/E3SM-Project/scream).
 
-In addition to the Haero API, this repo also contains a standalone @ref driver that
-can be used to easily set up and run simple column physics simulations in a
-"box model" configuration. A box model consists of a set of independent columns
-in which aerosol-related quantities are evolved according to the modal aerosol
-equations. The source for the driver lives in the `driver/` directory.
+In addition to the Haero API, this repo also contains a standalone @ref driver
+that can be used to easily set up and run simple column physics simulations. The
+source for this driver lives in the `driver/` directory.
 
 ## Supported Platforms
 
@@ -60,7 +58,9 @@ To configure Haero:
    ```
 2. Change to your build directory and edit the `config.sh` file to select
    configuration options. Then run `./config.sh` to configure the model.
-3. From the build directory, type `make -j` to build the box model.
+3. From the build directory, type `make -j` to build the library. (If you've
+   configured your build for a GPU, place a number after the `-j` flag, as in
+   `make -j 8`).
 4. To run tests for the library (and the driver, if configured), type
    `make test`.
 5. To install the model to the location indicated by `PREFIX` in your

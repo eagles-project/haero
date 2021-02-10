@@ -21,14 +21,14 @@ struct FloatingPoint {
   /// Define floating point zero by @f$\lvert x \rvert < \epsilon_{tol}@f$
   KOKKOS_INLINE_FUNCTION
   static bool zero(const T x, const T tol=zero_tol) {
-    EKAT_ASSERT(tol>0);
+    EKAT_KERNEL_ASSERT(tol>0);
     return std::abs(x) < tol;
   }
 
   /// Define floating point equivalence by @f$\lvert x_0 - x_1 \rvert < \epsilon_{tol}@f$
   KOKKOS_INLINE_FUNCTION
   static bool equiv(const T x0, const T x1, const T tol=zero_tol) {
-    EKAT_ASSERT(tol>0);
+    EKAT_KERNEL_ASSERT(tol>0);
     return std::abs(x0-x1) < tol;
   }
 
@@ -41,7 +41,7 @@ struct FloatingPoint {
   */
   KOKKOS_INLINE_FUNCTION
   static bool in_bounds(const T x, const T lower, const T upper, const T tol = zero_tol) {
-    EKAT_ASSERT(tol>0);
+    EKAT_KERNEL_ASSERT(tol>0);
     return (x >= (lower - tol) && x <= (upper + tol));
   }
 
@@ -57,7 +57,7 @@ struct FloatingPoint {
   */
   KOKKOS_INLINE_FUNCTION
   static T safe_denominator(const T x, const T tol=zero_tol) {
-    EKAT_ASSERT(tol>0);
+    EKAT_KERNEL_ASSERT(tol>0);
     return x / (x*x + tol*tol);
   }
 };
