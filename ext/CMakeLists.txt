@@ -58,7 +58,7 @@ if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}${CMAKE_INSTALL_LIBDIR}z.a)
+  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
   set(HDF5_DEPS zlib_proj)
 else()
   message(STATUS "Found libz: ${Z_LIBRARY}")
