@@ -199,6 +199,7 @@ if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
   update_submodules()
   set(EKAT_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                      -DCMAKE_INSTALL_LIBDIR=lib64
                       -DKokkos_ENABLE_DEPRECATED_CODE=OFF
                       -DKokkos_ENABLE_PROFILING=OFF)
   if (CMAKE_BUILD_TYPE STREQUAL Release)
