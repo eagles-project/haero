@@ -58,7 +58,7 @@ PREFIX=$PWD/$1
 #YAMLCPP_LIBRARY=libyaml-cpp.a
 
 #-----------------------------------------------------------------------------
-#                                   MPI
+#                             Inter-Node Parallelism (MPI)
 #-----------------------------------------------------------------------------
 
 # Build with MPI for parallel simulations.
@@ -67,11 +67,53 @@ PREFIX=$PWD/$1
 MPI=ON
 
 #-----------------------------------------------------------------------------
-#                                  OPENMP
+#                             On-Node Parallelism (Kokkos)
 #-----------------------------------------------------------------------------
 
-# Enable OpenMP threading.
-#OPENMP=ON
+# Host = CPU, Device = CPU (with OpenMP on non-Apple machines)
+DEVICE=CPU
+
+# Host = CPU (serial), Device = CUDA GPU
+#DEVICE=CUDA
+
+# Select one of the following device architectures based on the above:
+# (These options are taken from kokkos_arch.cmake)
+DEVICE_ARCH=AMDAVX          # AMD chip (CPU)
+#DEVICE_ARCH=ARMV80          # ARMv8.0 Compatible CPU (CPU)
+#DEVICE_ARCH=ARMV81          # ARMv8.1 Compatible CPU (CPU)
+#DEVICE_ARCH=ARMV8_THUNDERX  # ARMv8 Cavium ThunderX CPU (CPU)
+#DEVICE_ARCH=ARMV8_THUNDERX2 # ARMv8 Cavium ThunderX2 CPU (CPU)
+#DEVICE_ARCH=A64FX           # ARMv8.2 with SVE Suport (CPU)
+#DEVICE_ARCH=WSM             # Intel Westmere CPU (CPU)
+#DEVICE_ARCH=SNB             # Intel Sandy/Ivy Bridge CPUs (CPU)
+#DEVICE_ARCH=HSW             # Intel Haswell CPUs (CPU)
+#DEVICE_ARCH=BDW             # Intel Broadwell Xeon E-class CPUs (CPU)
+#DEVICE_ARCH=SKX             # Intel Sky Lake Xeon E-class HPC CPUs (AVX512) (CPU)
+#DEVICE_ARCH=KNC             # Intel Knights Corner Xeon Phi (CPU)
+#DEVICE_ARCH=KNL             # Intel Knights Landing Xeon Phi (CPU)
+#DEVICE_ARCH=BGQ             # IBM Blue Gene Q (CPU)
+#DEVICE_ARCH=POWER7          # IBM POWER7 CPUs (CPU)
+#DEVICE_ARCH=POWER8          # IBM POWER8 CPUs (CPU)
+#DEVICE_ARCH=POWER9          # IBM POWER9 CPUs (CPU)
+#DEVICE_ARCH=KEPLER30        # NVIDIA Kepler generation CC 3.0 (CUDA)
+#DEVICE_ARCH=KEPLER32        # NVIDIA Kepler generation CC 3.2 (CUDA)
+#DEVICE_ARCH=KEPLER35        # NVIDIA Kepler generation CC 3.5 (CUDA)
+#DEVICE_ARCH=KEPLER37        # NVIDIA Kepler generation CC 3.7 (CUDA)
+#DEVICE_ARCH=MAXWELL50       # NVIDIA Maxwell generation CC 5.0 (CUDA)
+#DEVICE_ARCH=MAXWELL52       # NVIDIA Maxwell generation CC 5.2 (CUDA)
+#DEVICE_ARCH=MAXWELL53       # NVIDIA Maxwell generation CC 5.3 (CUDA)
+#DEVICE_ARCH=PASCAL60        # NVIDIA Pascal generation CC 6.0 (CUDA)
+#DEVICE_ARCH=PASCAL61        # NVIDIA Pascal generation CC 6.1 (CUDA)
+#DEVICE_ARCH=VOLTA70         # NVIDIA Volta generation CC 7.0 (CUDA)
+#DEVICE_ARCH=VOLTA72         # NVIDIA Volta generation CC 7.2 (CUDA)
+#DEVICE_ARCH=TURING75        # NVIDIA Turing generation CC 7.5 (CUDA)
+#DEVICE_ARCH=AMPERE80        # NVIDIA Ampere generation CC 8.0 (CUDA)
+#DEVICE_ARCH=ZEN             # AMD Zen architecture (CPU)
+#DEVICE_ARCH=ZEN2            # AMD Zen2 architecture (CPU)
+#DEVICE_ARCH=VEGA900         # AMD GPU MI25 GFX900 (HIP)
+#DEVICE_ARCH=VEGA906         # AMD GPU MI50/MI60 GFX906 (HIP)
+#DEVICE_ARCH=VEGA908         # AMD GPU (HIP)
+#DEVICE_ARCH=INTEL_GEN       # Intel GPUs Gen9+ (GPU)
 
 #-----------------------------------------------------------------------------
 #                             Floating Point Precision
@@ -171,9 +213,6 @@ OPTIONS=""
 if [ "\$MPI" = "ON" ]; then
   OPTIONS="-DHAVE_MPI=ON"
 fi
-if [ "\$OPENMP" = "ON" ]; then
-  OPTIONS="\$OPTIONS -DUSE_OPENMP=ON"
-fi
 if [ "\$VERBOSE" = "ON" ]; then
   OPTIONS="\$OPTIONS -DCMAKE_VERBOSE_MAKEFILE=ON"
 fi
@@ -245,6 +284,8 @@ cmake \
  -DCMAKE_CXX_COMPILER=\$CXX \
  -DHAERO_PRECISION=\$PRECISION \
  -DHAERO_ENABLE_DRIVER=\$BUILD_DRIVER \
+ -DHAERO_DEVICE=\$DEVICE \
+ -DHAERO_DEVICE_ARCH=\$DEVICE_ARCH \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \
  \$OPTIONS \
  -G "\$GENERATOR" \

@@ -5,19 +5,41 @@ cmake_minimum_required (VERSION 3.10.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/")
 
+set(ENABLE_FORTRAN ON)
+
+# Check our device parameters
+if (NOT HAERO_DEVICE)
+  message(FATAL_ERROR "HAERO_DEVICE is not specified! (Must be CPU or CUDA).")
+elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
+  message(FATAL_ERROR "Invalid HAERO_DEVICE: ${HAERO_DEVICE} (Must be CPU or CUDA).")
+elseif(HAERO_DEVICE STREQUAL CUDA)
+  set(ENABLE_FORTRAN OFF)
+else() # CPU -- use OpenMP as "device" for non-Apple architectures.
+  if (NOT APPLE)
+    set(USE_OPENMP ON)
+  endif()
+endif()
+message(STATUS "Configuring for Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
+
+# Check our pack size
 if (NOT HAERO_PACK_SIZE)
   message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
 elseif(HAERO_PACK_SIZE LESS 1)
   message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
 elseif(HAERO_PACK_SIZE GREATER 1)
-  message(STATUS "========================================================")
-  message(STATUS "  HAERO_PACK_SIZE = ${HAERO_PACK_SIZE}: DISABLING ALL FORTRAN PROCESSES")
-  message(STATUS "========================================================")
+  set(ENABLE_FORTRAN OFF)
+endif()
+message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
+
+if (NOT ENABLE_FORTRAN)
+  message(STATUS "================================================================")
+  message(STATUS "  DISABLING FORTRAN PROCESSES: (GPU arch and/or pack size > 1)")
+  message(STATUS "================================================================")
 endif()
 
 # We declare the project right away.
 enable_language(CXX)
-if (HAERO_PACK_SIZE EQUAL 1)
+if (ENABLE_FORTRAN)
   set(HAERO_FORTRAN 1)
   enable_language(Fortran)
 else()
@@ -25,9 +47,8 @@ else()
 endif()
 project (haero)
 
-# Setup all installation folders for tpls.
-# This will also be used to figure out whether haero
-# hass to build them as external projects
+# Set all installation folders for third-party libraries, and figure out which
+# ones have to be built for Haero.
 include(set_up_platform)
 set_up_platform()
 
@@ -200,6 +221,12 @@ endif()
 
 # Other third-party libraries.
 add_subdirectory(ext)
+
+# If we're building on a GPU, set the C++ compiler appropriately.
+if (HAERO_DEVICE STREQUAL CUDA)
+  set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
+endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
 # our box model needs. We use this for efficiently linking unit tests.

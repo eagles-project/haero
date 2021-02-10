@@ -197,12 +197,41 @@ get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
 if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
   message(STATUS "EKAT library not found on system. Building locally.")
   update_submodules()
+  set(EKAT_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                      -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+                      -DKokkos_ENABLE_DEPRECATED_CODE=OFF
+                      -DKokkos_ENABLE_PROFILING=OFF)
+  if (CMAKE_BUILD_TYPE STREQUAL Release)
+    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                        -DKokkos_ENABLE_DEBUG=FALSE
+                        -DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=ON)
+  else()
+    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                        -DKokkos_ENABLE_DEBUG=TRUE
+                        -DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=OFF)
+  endif()
+  if (HAERO_DEVICE STREQUAL CPU)
+    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                        -DKokkos_ENABLE_CUDA=OFF)
+    if (NOT APPLE)
+      set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                          -DKokkos_ENABLE_OPENMP=ON)
+    endif()
+  elseif (HAERO_DEVICE STREQUAL CUDA)
+    set(KOKKOS_ARCH_FLAG "Kokkos_ARCH_${HAERO_DEVICE_ARCH}")
+    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                        -DKokkos_ENABLE_SERIAL=ON
+                        -DKokkos_ENABLE_CUDA=ON
+                        -DKokkos_ENABLE_CUDA_LAMBDA=ON
+                        -DKokkos_${KOKKOS_ARCH_FLAG}:BOOL=ON)
+  endif()
   ExternalProject_Add(ekat_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ekat
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ekat
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                      CMAKE_ARGS ${EKAT_CMAKE_OPTS}
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
