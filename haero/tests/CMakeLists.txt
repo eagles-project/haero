@@ -29,6 +29,9 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(kokkos_team_execute kokkos_team_execute.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
   # Fortran
