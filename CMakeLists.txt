@@ -47,9 +47,8 @@ else()
 endif()
 project (haero)
 
-# Setup all installation folders for tpls.
-# This will also be used to figure out whether haero
-# hass to build them as external projects
+# Set all installation folders for third-party libraries, and figure out which
+# ones have to be built for Haero.
 include(set_up_platform)
 set_up_platform()
 
