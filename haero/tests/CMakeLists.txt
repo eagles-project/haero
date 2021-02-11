@@ -29,16 +29,17 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-#----------------------------------------------------
-# Unit tests for prognostic processes
-#----------------------------------------------------
-
 add_library(chemUtil chemUtil.cpp)
 add_dependencies(chemUtil tchem)
 EkatCreateUnitTest(tchem_batch_reactor tchem_batch_reactor.cpp
                    LIBS chemUtil;${HAERO_LIBRARIES})
+
 EkatCreateUnitTest(kokkos_team_execute kokkos_team_execute.cpp
                    LIBS ${HAERO_LIBRARIES})
+
+#----------------------------------------------------
+# Unit tests for prognostic processes
+#----------------------------------------------------
 
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
