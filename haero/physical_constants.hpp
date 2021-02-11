@@ -58,7 +58,7 @@ static constexpr Real pressure_stp = 101325.0;
 static constexpr Real freezing_pt_h2o = 273.15;
 
 /// Melting point of water [K]
-static constexpr Real melting_pt_h2o = freezing_pt_h2o + 100.0;
+static constexpr Real melting_pt_h2o = freezing_pt_h2o;
 
 /// Molecular diffusion volume of dry air [dimensionless]
 static constexpr Real molec_diffusion_dry_air = 20.1;
