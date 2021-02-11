@@ -23,18 +23,18 @@ add_custom_target(update_version_info ALL
 # Gather Haero process implementations
 add_subdirectory(processes)
 
-# Generate a Fortran module with physical constants, from our C++ header.
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
-  COMMAND ${CMAKE_COMMAND}
-    -DCPP_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/physical_constants.hpp
-    -DF90_MODULE=${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
-    -P ${PROJECT_SOURCE_DIR}/cmake/gen_consts_module.cmake
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/physical_constants.hpp
-          ${PROJECT_SOURCE_DIR}/cmake/gen_consts_module.cmake
-  COMMENT "Generating haero_constants.F90..."
-)
-
 if (HAERO_FORTRAN)
+  # Generate a Fortran module with physical constants, from our C++ header.
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
+    COMMAND ${CMAKE_COMMAND}
+      -DCPP_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/physical_constants.hpp
+      -DF90_MODULE=${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
+      -P ${PROJECT_SOURCE_DIR}/cmake/gen_consts_module.cmake
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/physical_constants.hpp
+            ${PROJECT_SOURCE_DIR}/cmake/gen_consts_module.cmake
+    COMMENT "Generating haero_constants.F90..."
+  )
+
   set(HAERO_FORTRAN_SOURCES
       haero.F90
       ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90)
