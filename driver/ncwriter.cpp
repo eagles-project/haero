@@ -8,20 +8,21 @@
 namespace haero {
 namespace driver {
 
+using att_type = NcWriter::text_att_type;
+using var_atts = std::vector<att_type>;
+
 void NcWriter::open() {
   int retval = nc_create(fname.c_str(), NC_NETCDF4 | NC_CLOBBER, &ncid);
   CHECK_NCERR(retval);
-  const std::string haero_str = "High-performance AEROsols standalone driver";
-  retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO", haero_str.size(),
-    haero_str.c_str());
-  CHECK_NCERR(retval);
-  const std::string version_string(version());
-  retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO_version",
-    version_string.size(), version_string.c_str());
-  CHECK_NCERR(retval);
-  const std::string revision_str(revision());
-  retval = nc_put_att_text(ncid, NC_GLOBAL, "HAERO_revision",
-    revision_str.size(), revision_str.c_str());
+  
+  text_att_type att = std::make_pair("HAERO","High-performance AEROsols standalone driver");
+  add_file_attribute(att);
+
+  att = std::make_pair("HAERO_version", std::string(version()));
+  add_file_attribute(att);
+  
+  att = std::make_pair("HAERO_revision", std::string(revision()));
+  add_file_attribute(att);
 }
 
 void NcWriter::add_file_attribute(const text_att_type& att_pair) const {
@@ -39,23 +40,85 @@ void NcWriter::add_level_dims(const int& nlev) {
   int retval = nc_def_dim(ncid, "level_midpts", nlev, &level_dimid);
   CHECK_NCERR(retval);
   retval = nc_def_dim(ncid, "level_interfaces", nlev+1, &interface_dimid);
+  CHECK_NCERR(retval);
   ndims += 2;
 }
 
-void NcWriter::add_column_dim(const int& ncol) {
-  EKAT_ASSERT(ncid != NC_EBADID);
-  EKAT_REQUIRE_MSG(col_dimid == NC_EBADID, "column dimension already defined.");
-
-  int retval = nc_def_dim(ncid, "ncol", ncol, &col_dimid);
+void NcWriter::add_species_dim(const std::vector<Species>& species) {
+  EKAT_ASSERT(ncid != NC_EBADID); // file is open
+  EKAT_REQUIRE_MSG(species_dimid == NC_EBADID, "species dimension already defined.");
+  /// Define species dimension
+  const int nspec = species.size();
+  int retval = nc_def_dim(ncid, "species", nspec, &species_dimid);
   CHECK_NCERR(retval);
   ++ndims;
+  
+  /// Define coordinate variables for Species dimension
+  int species_name_var_id = NC_EBADID;
+  retval = nc_def_var(ncid, "species_name", NC_STRING, 1, &species_dimid, &species_name_var_id);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("species_name", species_name_var_id);
+  
+  int species_symbol_var_id = NC_EBADID;
+  retval = nc_def_var(ncid, "species_symbol", NC_STRING, 1, &species_dimid, &species_symbol_var_id);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("species_symbol", species_symbol_var_id);
+  
+  int species_molec_weight_var_id = NC_EBADID;
+  retval = nc_def_var(ncid, "species_molecular_weight", NC_REAL_KIND, 1, &species_dimid,
+     &species_molec_weight_var_id);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("species_molecular_weight", species_molec_weight_var_id);
+  
+  int species_cryst_varid = NC_EBADID;
+  retval = nc_def_var(ncid, "species_crystallization_rh", NC_REAL_KIND, 1, &species_dimid,
+    &species_cryst_varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("species_crystallization_rh", species_cryst_varid);
+  
+  int species_deliq_varid = NC_EBADID;
+  retval = nc_def_var(ncid, "species_deliquiesence_rh", NC_REAL_KIND, 1, &species_dimid, 
+    &species_deliq_varid);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("species_deliquesence_rh", species_deliq_varid);
+  
+  const auto mwstr = ekat::units::to_string(ekat::units::kg / ekat::units::mol);
+  retval = nc_put_att_text(ncid, species_molec_weight_var_id, "units", mwstr.size(), mwstr.c_str());
+  CHECK_NCERR(retval);
+  const auto rhstr = ekat::units::to_string(ekat::units::Units::nondimensional());
+  retval = nc_put_att_text(ncid, species_cryst_varid, "units", rhstr.size(), rhstr.c_str());
+  CHECK_NCERR(retval);
+  retval = nc_put_att_text(ncid, species_deliq_varid, "units", rhstr.size(), rhstr.c_str());
+  
+  for (int i=0; i<nspec; ++i) {
+    const size_t idx = i;
+    auto name = species[i].name.c_str();
+    auto symb = species[i].symbol.c_str();
+    retval = nc_put_var1_string(ncid, species_name_var_id, &idx, &name);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_string(ncid, species_symbol_var_id, &idx, &symb);
+    CHECK_NCERR(retval);
+#ifdef HAERO_DOUBLE_PRECISION
+    retval = nc_put_var1_double(ncid, species_molec_weight_var_id, &idx, &species[i].molecular_weight);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_double(ncid, species_cryst_varid, &idx, &species[i].crystalization_point);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_double(ncid, species_deliq_varid, &idx, &species[i].deliquescence_point);
+    CHECK_NCERR(retval);
+#else
+    retval = nc_put_var1_float(ncid, species_molec_weight_var_id, &idx, &species[i].molecular_weight);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_float(ncid, species_cryst_varid, &idx, &species[i].crystalization_point);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_float(ncid, species_deliq_varid, &idx, &species[i].deliquescence_point):
+    CHECK_NCERR(retval);
+#endif
+  }
 }
 
 void NcWriter::add_mode_dim(const std::vector<Mode>& modes){
   EKAT_ASSERT(ncid != NC_EBADID); // file is open
   EKAT_REQUIRE_MSG(mode_dimid == NC_EBADID, "mode dimension already defined.");
-
-
   /// Define mode dimension
   const int nmodes = modes.size();
   int retval = nc_def_dim(ncid, "modes", nmodes, &mode_dimid);
@@ -115,6 +178,28 @@ void NcWriter::add_mode_dim(const std::vector<Mode>& modes){
   }
 }
 
+void NcWriter::define_atm_state_vars(const Atmosphere& atm) {
+  const var_atts Tatts = {std::make_pair("cf_long_name", "air_temperature"),
+      std::make_pair("amip_short_name", "ta"), 
+      std::make_pair("short_name", "T")};
+  define_level_var("temperature", ekat::units::K, atm.temperature(), Tatts);
+  const var_atts rhatts = {std::make_pair("cf_long_name","relative_humidity"),
+    std::make_pair("amip_short_name", "hur"),
+    std::make_pair("haero_short_name", "rel_humidity")};
+  define_level_var("relative_humidity", ekat::units::Units::nondimensional(), 
+    atm.relative_humidity(), rhatts);
+  const var_atts hatts = {std::make_pair("cf_long_name", "geopotential_height"),
+    std::make_pair("haero_short_name", "z")};
+  define_interface_var("geopotential_height", ekat::units::m,
+    atm.height(), hatts);
+}
+
+void NcWriter::add_atm_state_data(const Atmosphere& atm, const size_t time_idx) {
+  const int null_idx = -1;
+  add_variable_data("temperature", time_idx, null_idx, null_idx, atm.temperature());
+  add_variable_data("relative_humidity", time_idx, null_idx, null_idx, atm.relative_humidity());
+  add_variable_data("geopotential_height", time_idx, null_idx, null_idx, atm.height());
+}
 
 void NcWriter::add_time_value(const Real& t) const {
   EKAT_ASSERT(time_dimid != NC_EBADID);
@@ -131,7 +216,7 @@ void NcWriter::add_time_value(const Real& t) const {
 }
 
 void NcWriter::add_level_variable_data(const std::string& varname, const size_t& time_index,
-  const size_t& col_index, const std::vector<Real>& data) const {
+  const std::vector<Real>& data) const {
   const int varid = name_varid_map.at(varname);
   size_t nlev = 0;
   int retval = nc_inq_dimlen(ncid, level_dimid, &nlev);
@@ -141,8 +226,8 @@ void NcWriter::add_level_variable_data(const std::string& varname, const size_t&
   retval = nc_inq_dimlen(ncid, time_dimid, &nsteps);
   CHECK_NCERR(retval);
   EKAT_REQUIRE_MSG(time_index < nsteps, "add_level_variable_data called for out-of-bounds time index");
-  size_t start[3] = {time_index, col_index, 0};
-  size_t count[3] = {1, 1, nlev};
+  size_t start[2] = {time_index, 0};
+  size_t count[2] = {1, nlev};
 #ifdef HAERO_DOUBLE_PRECISION
   retval = nc_put_vara_double(ncid, varid, start, count, &data[0]);
 #else
@@ -152,7 +237,7 @@ void NcWriter::add_level_variable_data(const std::string& varname, const size_t&
 }
 
 void NcWriter::add_interface_variable_data(const std::string& varname, const size_t& time_index,
-  const size_t& col_index, const std::vector<Real>& data) const {
+  const std::vector<Real>& data) const {
   const int varid = name_varid_map.at(varname);
   size_t ninterfaces = 0;
   int retval = nc_inq_dimlen(ncid, interface_dimid, &ninterfaces);
@@ -161,8 +246,8 @@ void NcWriter::add_interface_variable_data(const std::string& varname, const siz
   size_t nsteps = 0;
   retval = nc_inq_dimlen(ncid, time_dimid, &nsteps);
   EKAT_REQUIRE_MSG(time_index < nsteps, "add_interface_variable_data called for out-of-bounds time index");
-  size_t start[3] = {time_index, col_index, 0};
-  size_t count[3] = {1, 1, ninterfaces};
+  size_t start[2] = {time_index, 0};
+  size_t count[2] = {1, ninterfaces};
 #ifdef HAERO_DOUBLE_PRECISION
   retval = nc_put_vara_double(ncid, varid, start, count, &data[0]);
 #else
@@ -171,18 +256,16 @@ void NcWriter::add_interface_variable_data(const std::string& varname, const siz
   CHECK_NCERR(retval);
 }
 
-void NcWriter::add_time_dependent_scalar_values(const std::string& name,
-  const size_t time_idx, const std::vector<Real>& column_values) const {
+void NcWriter::add_time_dependent_scalar_value(const std::string& name,
+  const size_t time_idx, const Real val) const {
 
-  EKAT_REQUIRE(column_values.size() == num_columns());
   EKAT_ASSERT(time_idx < num_timesteps());
   const int varid = name_varid_map.at(name);
-  size_t start[2] = {time_idx, 0};
-  size_t count[2] = {1, static_cast<size_t>(num_columns())};
+
 #ifdef HAERO_DOUBLE_PRECISION
-  int retval = nc_put_vara_double(ncid, varid, start, count, &column_values[0]);
+  int retval = nc_put_var1_double(ncid, varid, &time_idx, &val);
 #else
-  int retval = nc_put_vara_float(ncid, varid, start, count, &column_values[0]);
+  int retval = nc_put_var1_float(ncid, varid, &time_idx, &val);
 #endif
   CHECK_NCERR(retval);
 }
@@ -224,8 +307,7 @@ void NcWriter::define_time_dependent_scalar_var(const std::string& name,
   EKAT_ASSERT(ncid != NC_EBADID);
   EKAT_REQUIRE(time_dimid != NC_EBADID);
   int varid = NC_EBADID;
-  int dimids[2] = {time_dimid, col_dimid};
-  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, 2, &dimids[0], &varid);
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, 1, &time_dimid, &varid);
   CHECK_NCERR(retval);
   name_varid_map.emplace(name, varid);
 
@@ -258,8 +340,8 @@ void NcWriter::define_level_var(const std::string& name, const ekat::units::Unit
   EKAT_ASSERT(time_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
-  const int m_ndims = 3;
-  const int dimids[3] = {time_dimid, col_dimid, level_dimid};
+  const int m_ndims = 2;
+  const int dimids[2] = {time_dimid, level_dimid};
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);
   const std::string unit_str = ekat::units::to_string(units);
@@ -292,11 +374,11 @@ void NcWriter::define_time_var(const ekat::units::Units& units, const Real t0) {
 void NcWriter::define_interface_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts) {
 
-  EKAT_ASSERT(time_dimid != NC_EBADID and col_dimid != NC_EBADID and interface_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID and interface_dimid != NC_EBADID);
 
   int varid = NC_EBADID;
-  const int m_ndims = 3;
-  const int dimids[3] = {time_dimid, col_dimid, interface_dimid};
+  const int m_ndims = 2;
+  const int dimids[2] = {time_dimid, interface_dimid};
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);
   const std::string unit_str = ekat::units::to_string(units);
@@ -341,13 +423,6 @@ void NcWriter::define_const_1dvar(const std::string& name, const ekat::units::Un
   CHECK_NCERR(retval);
 }
 
-int NcWriter::num_columns() const {
-  size_t nc;
-  int retval = nc_inq_dimlen(ncid, col_dimid, &nc);
-  CHECK_NCERR(retval);
-  return int(nc);
-}
-
 int NcWriter::num_levels() const {
   size_t nl;
   int retval = nc_inq_dimlen(ncid, level_dimid, &nl);
@@ -367,6 +442,18 @@ int NcWriter::num_modes() const {
   return int(nm);
 }
 
+int NcWriter::num_species() const {
+  size_t ns;
+  int retval = nc_inq_dimlen(ncid, species_dimid, &ns);
+  if (retval == NC_EBADDIM) {
+    ns = 0;
+  }
+  else {
+    CHECK_NCERR(retval);
+  }
+  return int(ns);
+}
+
 int NcWriter::num_timesteps() const {
   size_t ns;
   int retval = nc_inq_dimlen(ncid, time_dimid, &ns);
@@ -377,15 +464,37 @@ int NcWriter::num_timesteps() const {
 void NcWriter::define_modal_var(const std::string& name, const ekat::units::Units& units,
   const std::vector<text_att_type>& atts) {
 
-  EKAT_ASSERT(time_dimid != NC_EBADID && col_dimid != NC_EBADID &&
-              mode_dimid != NC_EBADID && level_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID && mode_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
-  const int m_ndims = 4;
-  const int dimids[4] = {time_dimid, col_dimid, mode_dimid, level_dimid};
+  const int m_ndims = 3;
+  const int dimids[3] = {time_dimid, mode_dimid, level_dimid};
   int varid = NC_EBADID;
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);
   const std::string unit_str = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
+  CHECK_NCERR(retval);
+  if (!atts.empty()) {
+    for (int i=0; i<atts.size(); ++i) {
+      retval = nc_put_att_text(ncid, varid, atts[i].first.c_str(),
+        atts[i].second.size(), atts[i].second.c_str());
+      CHECK_NCERR(retval);
+    }
+  }
+  name_varid_map.emplace(name, varid);
+}
+
+void NcWriter::define_species_var(const std::string& name, const ekat::units::Units& units,
+  const std::vector<text_att_type>& atts) {
+  
+  EKAT_ASSERT(time_dimid != NC_EBADID && species_dimid != NC_EBADID && level_dimid != NC_EBADID);
+  
+  const int m_ndims = 3;
+  const int dimids[3] = {time_dimid, species_dimid, level_dimid};
+  int varid = NC_EBADID;
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
+  CHECK_NCERR(retval);
+  const auto unit_str = ekat::units::to_string(units);
   retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
   CHECK_NCERR(retval);
   if (!atts.empty()) {

@@ -4,7 +4,7 @@
 #include "haero/haero_config.hpp"
 #include "driver/ncwriter.hpp"
 #include "column_base.hpp"
-#include "atmosphere.hpp"
+#include "host_params.hpp"
 #include <map>
 #include <string>
 #include <vector>

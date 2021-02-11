@@ -9,7 +9,7 @@
 #include "haero/species.hpp"
 #include "haero/haero_config.hpp"
 #include "haero/physical_constants.hpp"
-#include "atmosphere.hpp"
+#include "host_params.hpp"
 
 namespace haero {
 namespace driver {
