@@ -26,10 +26,10 @@ struct Species final {
   /// Abbreviated symbolic name.
   std::string symbol;
 
-  // Molecular weight [g/mol]
+  // Molecular weight [kg/mol]
   Real molecular_weight;
 
-  // Crystalization point [?]
+  // Crystalization point [K]
   Real crystalization_point;
 
   // Deliquescence point [?]
