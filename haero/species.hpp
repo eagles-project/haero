@@ -29,10 +29,10 @@ struct Species final {
   // Molecular weight [kg/mol]
   Real molecular_weight;
 
-  // Crystalization point [K]
+  // Crystalization point (relative humidity threshold) [-]
   Real crystalization_point;
 
-  // Deliquescence point [?]
+  // Deliquescence point (relative humidity threshold) [-]
   Real deliquescence_point;
 };
 
