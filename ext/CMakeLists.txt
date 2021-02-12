@@ -81,7 +81,6 @@ set_target_properties(hdf5 PROPERTIES IMPORTED_LOCATION ${HDF5_LIBRARY})
 set_target_properties(hdf5_hl PROPERTIES IMPORTED_LOCATION ${HDF5_HL_LIBRARY})
 if (NOT EXISTS ${HDF5_LIBRARY})
   if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
-    message(STATUS "HDF5 not found on system. Building locally.")
     update_submodules()
 
     set(HDF5_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
@@ -130,7 +129,6 @@ set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
 add_library(netcdf STATIC IMPORTED GLOBAL)
 set_target_properties(netcdf PROPERTIES IMPORTED_LOCATION ${NETCDF_LIBRARY})
 if (NOT EXISTS ${NETCDF_LIBRARY})
-  message(STATUS "NetCDF not found on system. Building locally.")
   update_submodules()
   set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -184,7 +182,7 @@ if (EKAT_LIBRARY MATCHES ".a")
 else()
   add_library(ekat SHARED IMPORTED GLOBAL)
 endif()
-set_target_properties(ekat PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/${EKAT_LIBRARY})
+set_target_properties(ekat PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY})
 if (YAMLCPP_LIBRARY MATCHES ".a")
   add_library(yaml_cpp STATIC IMPORTED GLOBAL)
 else()
@@ -194,8 +192,7 @@ set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY_DI
 
 # Check if we're supposed to build ekat internally
 get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
-if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
-  message(STATUS "EKAT library not found on system. Building locally.")
+if (NOT EXISTS ${EKAT_LIBRARY})
   update_submodules()
   set(EKAT_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -267,7 +264,6 @@ endif()
 set_target_properties(kokkoskernels PROPERTIES IMPORTED_LOCATION ${KOKKOS_KERNELS_LIBRARY_DIR}/${KOKKOS_KERNELS_LIBRARY})
 
 if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
-  message(STATUS "kokkos-kernels library not found on system. Building locally.")
   update_submodules()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_DIR ${EKAT_LIBRARY_DIR})
   set(KK_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
@@ -320,7 +316,6 @@ endif()
 set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY_DIR}/${TCHEM_LIBRARY})
 
 if (NOT EXISTS ${TCHEM_LIBRARY})
-  message(STATUS "TChem library not found on system. Building locally.")
   update_submodules()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
@@ -358,21 +353,24 @@ set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
 set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
 # Installation targets
-if (${Z_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
+if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
   install(FILES ${Z_LIBRARY} DESTINATION lib)
 endif()
-if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
+if (${HDF5_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
   install(FILES ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION lib)
 endif()
-if (${NETCDF_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
+if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
 endif()
-if (${EKAT_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
+if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
   install(FILES ${EKAT_LIBRARY} DESTINATION lib)
 endif()
-if (${YAMLCPP_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
+if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
 endif()
-if (${TCHEM_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
+if (${KOKKOS_KERNELS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built kokkos-kernels
+  install(FILES ${KOKKOS_KERNELS_LIBRARY} DESTINATION lib)
+endif()
+if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
   install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
 endif()
