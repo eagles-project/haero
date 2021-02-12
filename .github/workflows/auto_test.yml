@@ -43,12 +43,35 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
+    - name: Configuring third-party library cache
+      uses: actions/cache@v2
+      id: cache
+      with:
+        path: |
+          build/include/catch2
+          build/include/ekat*
+          build/include/generated_specializations_hpp
+          build/include/H5*
+          build/include/hdf5*
+          build/include/kokkos
+          build/include/Kokkos*
+          build/include/netcdf*
+          build/include/tchem
+          build/include/yaml-cpp
+          build/lib/libhdf5*
+          build/lib/libekat*
+          build/lib/libkokkos*
+          build/lib/libnetcdf*
+          build/lib/libtchemcore*
+          build/lib/libyaml-cpp*
+        key: ${{ matrix.os }}-${{ matrix.build-type }}¬${{ matrix.fp-precision }}
+
+    - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision, pack size ${{ matrix.pack-size }})
       run: |
         ./setup build
         cd build
         cmake \
-          -DCMAKE_INSTALL_PREFIX=`pwd`/build \
+          -DCMAKE_INSTALL_PREFIX=`pwd` \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
           -DCMAKE_CXX_COMPILER=mpicxx \
           -DCMAKE_C_COMPILER=mpicc \
