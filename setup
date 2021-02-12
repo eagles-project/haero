@@ -264,6 +264,20 @@ if [ ! "\$YAMLCPP_LIBRARY_DIR" = "" -o ! "\$YAMLCPP_INCLUDE_DIR" = "" -o ! "\$YA
   OPTIONS="\$OPTIONS -DYAMLCPP_INCLUDE_DIR=\$YAMLCPP_INCLUDE_DIR"
 fi
 
+# Configure ekat if needed.
+if [ ! "\$EKAT_LIBRARY_DIR" = "" -o ! "\$EKAT_INCLUDE_DIR" = "" -o ! "\$EKAT_LIBRARY" = "" ]; then
+  if [ "\$EKAT_LIBRARY" = "" ]; then
+    echo "Error: EKAT_LIBRARY must be specified for a custom EKAT library."
+    exit 1
+  fi
+  if [ "\$EKAT_INCLUDE_DIR" = "" ]; then
+    echo "Error: EKAT_INCLUDE_DIR must be specified for a custom EKAT library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DEKAT_LIBRARY=\$EKAT_LIBRARY_DIR/\$EKAT_LIBRARY"
+  OPTIONS="\$OPTIONS -DEKAT_INCLUDE_DIR=\$EKAT_INCLUDE_DIR"
+fi
+
 # Add extra linker flags if needed.
 if [ ! "\$EXTRA_LDFLAGS" = "" ]; then
   OPTIONS="\$OPTIONS -DHAERO_EXTRA_LDFLAGS=\$EXTRA_LDFLAGS"
