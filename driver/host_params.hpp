@@ -29,22 +29,22 @@ struct AtmosphericConditions {
     (equations (2.1) and (2.3) from Klemp & Wilhelmson, 1978, J. Atm. Sci. 35)
   */
   static constexpr Real alpha_v = 0.61;
-  /// dry air kappa [1]
-  static constexpr Real kappa = r_gas_dry_air_joule_per_k_per_kg/cp_dry_air_joule_per_k_per_kg;
+  /// dry air kappa [-]
+  static constexpr Real kappa = haero::constants::r_gas_dry_air/haero::constants::cp_dry_air;
   /// reference virtual potential temperature [K]
-  Real Tv0; 
+  Real Tv0;
   /// initial virtual temperature lapse rate [K/m]
-  Real Gammav; 
+  Real Gammav;
   /// maximum magnitude of vertical velocity [m/s]
-  Real w0; 
+  Real w0;
   /// top of model [m]
-  int ztop; 
+  int ztop;
   /// period of velocity oscillation [s]
-  int tperiod; 
+  int tperiod;
   /// initial water vapor mass mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
-  Real qv0; 
+  Real qv0;
   /// initial decay rate of water vapor mass mixing ratio with height [per m]
-  Real qv1; 
+  Real qv1;
 
   /** Construct and return a hydrostatic instance of AtmosphericConditions
 
@@ -61,12 +61,12 @@ struct AtmosphericConditions {
   */
   AtmosphericConditions(const Real Tv0_ = 300, const Real Gammav_ = 0.01, const Real w0_ = 1,
    const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3);
-  
+
   KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const AtmosphericConditions& other) : Tv0(other.Tv0), Gammav(other.Gammav),
     w0(other.w0), ztop(other.ztop), tperiod(other.tperiod), qv0(other.qv0), qv1(other.qv1) {}
-   
-  /// Write instance info to string 
+
+  /// Write instance info to string
   std::string info_string(const int tab_level=0) const;
 };
 
@@ -144,11 +144,12 @@ Real water_vapor_mixing_ratio(const Real z, const AtmosphericConditions& conds) 
 KOKKOS_INLINE_FUNCTION
 Real hydrostatic_pressure_at_height(const Real z, const Real p0, const Real T0, const Real Gamma) {
   Real result = 0;
+  using namespace constants;
   if (FloatingPoint<Real>::zero(Gamma)) {
-    result = p0 * std::exp(-gravity_m_per_s2 * z / (r_gas_dry_air_joule_per_k_per_kg * T0));
+    result = p0 * std::exp(-gravity * z / (r_gas_dry_air * T0));
   }
   else {
-    const Real pwr = gravity_m_per_s2 / (r_gas_dry_air_joule_per_k_per_kg * Gamma);
+    const Real pwr = gravity / (r_gas_dry_air * Gamma);
     result = p0 * std::pow(T0, -pwr)*std::pow(T0 - Gamma*z, pwr);
   }
   return result;
@@ -178,12 +179,13 @@ Real hydrostatic_pressure_at_height(const Real z, const AtmosphericConditions& c
 */
 KOKKOS_INLINE_FUNCTION
 Real height_at_pressure(const Real p, const Real p0, const Real T0, const Real Gamma) {
+  using namespace constants;
   Real result = 0;
   if (FloatingPoint<Real>::zero(Gamma)) {
-    result = -r_gas_dry_air_joule_per_k_per_kg * T0 * std::log(p/p0)/gravity_m_per_s2;
+    result = -r_gas_dry_air * T0 * std::log(p/p0)/gravity;
   }
   else {
-    const Real pwr = r_gas_dry_air_joule_per_k_per_kg*Gamma/gravity_m_per_s2;
+    const Real pwr = r_gas_dry_air * Gamma/gravity;
     result = (T0/Gamma)*(1 - std::pow(p/p0, pwr));
   }
   return result;
