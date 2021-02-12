@@ -12,6 +12,26 @@ module mam4_nucleation_mod
   implicit none
   private
 
+  ! Module parameters
+  real(wp), parameter :: accom_coef_h2so4 = 0.65_wp ! accomodation coef for h2so4 conden
+
+  ! dry densities (kg/m3) molecular weights of aerosol
+  ! ammsulf, ammbisulf, and sulfacid (from mosaic  dens_electrolyte values)
+  !       real(wp), parameter :: dens_ammsulf   = 1.769e3
+  !       real(wp), parameter :: dens_ammbisulf = 1.78e3
+  !       real(wp), parameter :: dens_sulfacid  = 1.841e3
+  ! use following to match cam3 modal_aero densities
+  real(wp), parameter :: dens_ammsulf   = 1.770e3_wp
+  real(wp), parameter :: dens_ammbisulf = 1.770e3_wp
+  real(wp), parameter :: dens_sulfacid  = 1.770e3_wp
+
+  ! molecular weights (g/mol) of aerosol ammsulf, ammbisulf, and sulfacid
+  !    for ammbisulf and sulfacid, use 114 & 96 here rather than 115 & 98
+  !    because we don't keep track of aerosol hion mass
+  real(wp), parameter :: mw_ammsulf   = 132.0_wp
+  real(wp), parameter :: mw_ammbisulf = 114.0_wp
+  real(wp), parameter :: mw_sulfacid  =  96.0_wp
+
   ! Module functions
   public :: mam4_nucleation_init, &
             mam4_nucleation_run, &
@@ -241,7 +261,6 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   real(wp) :: qnuma_del
   real(wp) :: qso4a_del
   real(wp) :: relhumnn
-  real(wp) :: tmpa, tmpb, tmpc
   real(wp) :: tmp_q2, tmp_q3
   real(wp) :: tmp_q_del
   real(wp) :: tmp_frso4, tmp_uptkrate
@@ -435,8 +454,9 @@ subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   mw_so4a_host, nsize, maxd_asize, dplom_sect, dphim_sect,   &
   isize_nuc, qnuma_del, qso4a_del, qh2so4_del)
 
-  use haero_constants, only: R_gas          ! Gas constant (J/K/kmol)
-  use physconst,    only: mw_so4a => mwso4  ! Molecular weight of sulfate
+  use haero_constants, only: &
+    R_gas, &
+    mw_so4a => molec_weight_so4
 
   implicit none
 
@@ -477,32 +497,11 @@ subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   integer :: i
   integer :: igrow
 
-  real(wp), parameter :: accom_coef_h2so4 = 0.65_wp   ! accomodation coef for h2so4 conden
-
-  ! dry densities (kg/m3) molecular weights of aerosol
-  ! ammsulf, ammbisulf, and sulfacid (from mosaic  dens_electrolyte values)
-  !       real(wp), parameter :: dens_ammsulf   = 1.769e3
-  !       real(wp), parameter :: dens_ammbisulf = 1.78e3
-  !       real(wp), parameter :: dens_sulfacid  = 1.841e3
-  ! use following to match cam3 modal_aero densities
-  real(wp), parameter :: dens_ammsulf   = 1.770e3_wp
-  real(wp), parameter :: dens_ammbisulf = 1.770e3_wp
-  real(wp), parameter :: dens_sulfacid  = 1.770e3_wp
-
-  ! molecular weights (g/mol) of aerosol ammsulf, ammbisulf, and sulfacid
-  !    for ammbisulf and sulfacid, use 114 & 96 here rather than 115 & 98
-  !    because we don't keep track of aerosol hion mass
-  real(wp), parameter :: mw_ammsulf   = 132.0_wp
-  real(wp), parameter :: mw_ammbisulf = 114.0_wp
-  real(wp), parameter :: mw_sulfacid  =  96.0_wp
-
   real(wp) cair                     ! dry-air molar density (mol/m3)
   real(wp) cs_prime_kk              ! kk2002 "cs_prime" parameter (1/m2)
   real(wp) cs_kk                    ! kk2002 "cs" parameter (1/s)
   real(wp) dens_part                ! "grown" single-particle dry density (kg/m3)
   real(wp) dfin_kk, dnuc_kk         ! kk2002 final/initial new particle wet diameter (nm)
-  real(wp) dpdry_clus               ! critical cluster diameter (m)
-  real(wp) dpdry_part               ! "grown" single-particle dry diameter (m)
   real(wp) tmpa, tmpb, tmpc, tmpe, tmpq
   real(wp) tmpa1, tmpb1
   real(wp) tmp_m1, tmp_m2, tmp_m3, tmp_n1, tmp_n2, tmp_n3
@@ -512,7 +511,6 @@ subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   real(wp) freduce                  ! reduction factor applied to nucleation
                                     ! rate due to limited availability of
                                     ! h2so4 gas
-  real(wp) gamma_kk                 ! kk2002 "gamma" parameter (nm2*m2/h)
   real(wp) gr_kk                    ! kk2002 "gr" parameter (nm/h)
   real(wp) kgaero_per_moleso4a      ! (kg dry aerosol)/(mol aerosol so4)
   real(wp) mass_part                ! "grown" single-particle dry mass (kg)
@@ -524,11 +522,9 @@ subroutine veh02_nuc_mosaic_1box(dt, temp_in, rh_in, press_in,   &
   real(wp) so4vol_in                ! concentration of h2so4 for nucl. calc., molecules cm-3
   real(wp) so4vol_bb                ! bounded value of so4vol_in
   real(wp) temp_bb                  ! bounded value of temp_in
-  real(wp) voldry_clus              ! critical-cluster dry volume (m3)
   real(wp) voldry_part              ! "grown" single-particle dry volume (m3)
-  real(wp) wetvol_dryvol            ! grown particle (wet-volume)/(dry-volume)
   real(wp) wet_volfrac_so4a         ! grown particle (dry-volume-from-so4)/(wet-volume)
-end subroutine veh02_nuc_mosaic_1box
+end subroutine
 
 ! calculates binary nucleation rate and critical cluster size
 ! using the parameterization in
@@ -705,7 +701,7 @@ subroutine binary_nuc_vehk2002(temp, rh, c_h2so4, &
   r_star = exp( -1.6524245_wp + 0.42316402_wp*crit_x   &
     + 0.3346648_wp*log(N_tot) )
 
-end subroutine binary_nuc_vehk2002
+end subroutine
 
 ! calculates boundary nucleation nucleation rate
 ! using the first or second-order parameterization in
@@ -750,12 +746,23 @@ subroutine pbl_nuc_wang2008(c_h2so4, J_star, N_tot, N_h2so4, r_star)
   tmp_mass = tmp_volu * 1.8_wp            ! mass in g
   N_h2so4 = (tmp_mass / 98.0_wp) * 6.023e23_wp   ! no. of h2so4 molec assuming pure h2so4
   N_tot = N_h2so4
-end subroutine pbl_nuc_wang2008
+end subroutine
 
 ! Computes the final nucleation rate J_nuc from the intermediate nucleation rate
 ! J_star after having grown the SO4 nuclei so that they can fit into the
 ! Aitken mode.
 function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
+  real(wp), intent(in) :: J_star
+  real(wp)             :: J_nuc
+
+  real(wp) :: J_star_bb
+  real(wp) :: tmpa, tmpb, tmpc
+  real(wp) :: wetvol_dryvol    ! grown particle (wet-volume)/(dry-volume)
+  real(wp) :: voldry_clus      ! critical-cluster dry volume (m3)
+  real(wp) :: dpdry_clus       ! critical cluster diameter (m)
+  real(wp) :: dpdry_part       ! "grown" single-particle dry diameter (m)
+  real(wp) :: gamma_kk         ! kk2002 "gamma" parameter (nm2*m2/h)
+
   J_star_bb = J_star*1.0e6_wp  ! J_star_bb is #/m3/s; J_star is #/cm3/s
 
   ! wet/dry volume ratio - use simple kohler approx for ammsulf/ammbisulf
@@ -873,7 +880,6 @@ function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
     factor_kk = exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) )
   end if
   J_star_kk = J_star_bb*factor_kk
-
 
 end function
 
