@@ -25,6 +25,7 @@ using pack_info = ekat::PackInfo<HAERO_PACK_SIZE>;
 
 /// View definitions
 using view_1d_scalar_type = kokkos_device_type::view_1d<Real>;
+using view_1d_int_type    = kokkos_device_type::view_1d<int>;
 using view_1d_pack_type = kokkos_device_type::view_1d<real_pack_type>;
 using mask_view_1d_type = kokkos_device_type::view_1d<pack_mask_type>;
 
@@ -53,6 +54,14 @@ view1d_to_vector_impl(const VT& v, const int& array_length);
   @return Kokkos view + deep copied data
 */
 view_1d_scalar_type vector_to_basic_1dview(const std::vector<Real>& vector, const std::string& view_name);
+
+/** @brief Convert a std::vector<int> to Kokkos::View<int*>.
+
+  @param [in] vector
+  @param [in] view_name
+  @return Kokkos view + deep copied data
+*/
+view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector, const std::string& view_name);
 
 
 /** @brief Convert a std::vector<Real> to Kokkos::View<Pack<Real,HAERO_PACK_SIZE>*>

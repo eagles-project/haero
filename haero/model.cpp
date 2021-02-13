@@ -154,10 +154,10 @@ Model::~Model() {
 #endif // HAERO_FORTRAN
 }
 
-Prognostics* Model::create_prognostics(Kokkos::View<PackType**>& int_aerosols,
-                                       Kokkos::View<PackType**>& cld_aerosols,
-                                       Kokkos::View<PackType**>& gases,
-                                       Kokkos::View<PackType**>& modal_num_concs) const {
+Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
+                                       SpeciesColumnView cld_aerosols,
+                                       SpeciesColumnView gases,
+                                       ModalColumnView   modal_num_concs) const {
   std::vector<int> num_aero_species(modes_.size());
   for (size_t m = 0; m < modes_.size(); ++m) {
     num_aero_species[m] = static_cast<int>(species_for_mode_[m].size());

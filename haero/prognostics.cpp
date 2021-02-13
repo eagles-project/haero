@@ -6,14 +6,19 @@ Prognostics::Prognostics(int num_aerosol_modes,
                          const std::vector<int>& num_aerosol_species,
                          int num_gases,
                          int num_levels,
-                         Kokkos::View<PackType**>& int_aerosols,
-                         Kokkos::View<PackType**>& cld_aerosols,
-                         Kokkos::View<PackType**>& gases,
-                         Kokkos::View<PackType**>& modal_num_concs):
-  num_aero_species_(num_aerosol_species), num_aero_populations_(0),
-  num_gases_(num_gases), num_levels_(num_levels),
-  int_aero_species_(int_aerosols), cld_aero_species_(cld_aerosols),
-  gases_(gases), modal_num_concs_(modal_num_concs) {
+                         kokkos_device_type::view_2d<PackType> int_aerosols,
+                         kokkos_device_type::view_2d<PackType> cld_aerosols,
+                         kokkos_device_type::view_2d<PackType> gases,
+                         kokkos_device_type::view_2d<PackType> modal_num_concs):
+  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Prognostics::num_aerosol_species")), 
+  num_aero_populations_(0),
+  num_gases_(num_gases), 
+  num_levels_(num_levels),
+  int_aero_species_(int_aerosols),
+  cld_aero_species_(cld_aerosols),
+  gases_(gases),
+  modal_num_concs_(modal_num_concs) 
+  {
 
   // Count up the mode/species combinations.
   for (int m = 0; m < num_aerosol_species.size(); ++m) {
@@ -66,16 +71,6 @@ int Prognostics::num_gases() const {
 
 int Prognostics::num_levels() const {
   return num_levels_;
-}
-
-Prognostics::SpeciesColumnView&
-Prognostics::interstitial_aerosols() {
-  return int_aero_species_;
-}
-
-const Prognostics::SpeciesColumnView&
-Prognostics::interstitial_aerosols() const {
-  return int_aero_species_;
 }
 
 Prognostics::SpeciesColumnView& Prognostics::cloudborne_aerosols() {

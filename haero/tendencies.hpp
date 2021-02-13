@@ -38,6 +38,7 @@ class Tendencies final {
   explicit Tendencies(const Prognostics& prognostics);
 
   /// Destructor.
+  KOKKOS_FUNCTION
   ~Tendencies();
 
   /// Returns the view storing interstitial aerosol mass mixing ratio

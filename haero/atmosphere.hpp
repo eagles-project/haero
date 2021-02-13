@@ -38,6 +38,7 @@ class Atmosphere final {
              const Kokkos::View<PackType*>& ht);
 
   /// Destructor.
+  KOKKOS_FUNCTION
   ~Atmosphere();
 
   /// Returns the number of vertical levels per column in the system.

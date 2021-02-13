@@ -49,6 +49,7 @@ class Diagnostics final {
               int num_levels);
 
   /// Destructor.
+  KOKKOS_FUNCTION
   ~Diagnostics();
 
   // --------------------------------------------------------------------------
