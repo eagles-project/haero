@@ -111,10 +111,37 @@ Tendencies& Tendencies::scale(Real factor) {
 }
 
 void Tendencies::accumulate(const Tendencies& tendencies) {
-  EKAT_REQUIRE_MSG(false, "Tendencies::accumulate is not yet implemented!");
-  // TODO: Need a team/policy before we can do this.
-  /*
-   */
+  int num_populations = int_aero_species_.extent(0);
+  int num_levels = int_aero_species_.extent(1);
+  int num_vert_packs = PackInfo::num_packs(num_levels);
+  int num_gases = gases_.extent(0);
+  int num_modes = modal_num_concs_.extent(0);
+
+  // Accumulate aerosol species mixing ratios
+  Kokkos::parallel_for("Tendencies::scale (aero mixіng ratios)", num_vert_packs,
+    KOKKOS_LAMBDA (const int k) {
+      for (int p = 0; p < num_populations; ++p) {
+        int_aero_species_(p, k) += tendencies.int_aero_species_(p, k);
+        cld_aero_species_(p, k) += tendencies.cld_aero_species_(p, k);
+      }
+    });
+
+  // Scale gas mole fractions.
+  Kokkos::parallel_for("tendencies::scale (gas species)", num_vert_packs,
+    KOKKOS_LAMBDA (const int k) {
+      for (int g = 0; g < num_gases; ++g) {
+        gases_(g, k) += tendencies.gases_(g, k);
+      }
+    });
+
+  // Scale modal number densities.
+  Kokkos::parallel_for("tendencies::scale (modal num concs)", num_vert_packs,
+    KOKKOS_LAMBDA (const int k) {
+      for (int m = 0; m < num_modes; ++m) {
+        modal_num_concs_(m, k) += tendencies.modal_num_concs_(m, k);
+      }
+    });
+
 }
 
 // Interoperable C functions for providing data to Fortran.

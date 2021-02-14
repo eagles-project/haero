@@ -15,9 +15,9 @@ extern void mam4_nucleation_finalize();
 namespace haero {
 
 Mam4NucleationFProcess::Mam4NucleationFProcess():
-  FPrognosticProcess(haero::NucleationProcess, "MAM4 Nucleation (Fortran)",
-                     mam4_nucleation_init, mam4_nucleation_run,
-                     mam4_nucleation_finalize) {
+  haero::FPrognosticProcess(haero::NucleationProcess, "MAM4 Nucleation (Fortran)",
+                            mam4_nucleation_init, mam4_nucleation_run,
+                            mam4_nucleation_finalize) {
 }
 
 } // end haero namespace
