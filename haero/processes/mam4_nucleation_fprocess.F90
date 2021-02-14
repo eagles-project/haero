@@ -12,32 +12,59 @@ module mam4_nucleation_mod
   implicit none
   private
 
-  ! Module parameters
-  real(wp), parameter :: accom_coef_h2so4 = 0.65_wp ! accomodation coef for h2so4 conden
-
-  ! dry densities (kg/m3) molecular weights of aerosol
-  ! ammsulf, ammbisulf, and sulfacid (from mosaic  dens_electrolyte values)
-  !       real(wp), parameter :: dens_ammsulf   = 1.769e3
-  !       real(wp), parameter :: dens_ammbisulf = 1.78e3
-  !       real(wp), parameter :: dens_sulfacid  = 1.841e3
-  ! use following to match cam3 modal_aero densities
-  real(wp), parameter :: dens_ammsulf   = 1.770e3_wp
-  real(wp), parameter :: dens_ammbisulf = 1.770e3_wp
-  real(wp), parameter :: dens_sulfacid  = 1.770e3_wp
-
-  ! molecular weights (g/mol) of aerosol ammsulf, ammbisulf, and sulfacid
-  !    for ammbisulf and sulfacid, use 114 & 96 here rather than 115 & 98
-  !    because we don't keep track of aerosol hion mass
-  real(wp), parameter :: mw_ammsulf   = 132.0_wp
-  real(wp), parameter :: mw_ammbisulf = 114.0_wp
-  real(wp), parameter :: mw_sulfacid  =  96.0_wp
-
   ! Module functions
   public :: mam4_nucleation_init, &
             mam4_nucleation_run, &
             mam4_nucleation_finalize
 
+  !-------------------
+  ! Module parameters
+  !-------------------
+
+  !> accomodation coef for h2so4 condensation
+  real(wp), parameter :: accom_coef_h2so4 = 0.65_wp
+
+  !> dry density for ammonium sulfate [kg/m^3]
+  !real(wp), parameter :: dens_amm_sulf   = 1.769e3_wp ! <- MOSAIC
+  real(wp), parameter :: dens_amm_sulf   = 1.770e3_wp ! <- CAM
+
+  !> dry density for ammonium bisulfate [kg/m^3]
+  !real(wp), parameter :: dens_ammbi_sulf = 1.78e3_wp  ! <- MOSAIC
+  real(wp), parameter :: dens_amm_bisulf = 1.770e3_wp ! <- CAM
+
+  !> Density of SO4 aerosol (and sulfiric acid) [kg/m^3]
+  real(wp), parameter :: dens_so4a_host = 1770_wp
+
+  !> dry density for sulfuric acid [kg/m^3]
+  !real(wp), parameter :: dens_sulf_acid  = 1.841e3_wp ! <- MOSAIC
+  real(wp), parameter :: dens_sulf_acid  = 1.770e3_wp ! <- CAM
+
+  !> molecular weight of ammonium sulfate [kg/mol]
+  real(wp), parameter :: mw_amm_sulf   = 0.132_wp
+
+  !> molecular weight of ammonium bisulfate [kg/mol]
+  !> (We use 0.114 instead of 0.115 here because we don't track aerosol H+
+  !>  mass.)
+  real(wp), parameter :: mw_amm_bisulf = 0.114_wp
+
+  !> molecular weight of sulfuric acid [kg/mol]
+  !> (We use 0.096 instead of 0.098 here because we don't track aerosol H+
+  !>  mass.)
+  real(wp), parameter :: mw_sulf_acid  =  0.096_wp
+
+  !> adjustment factor applied to binary nucleation rate
+  real(wp), parameter :: adjust_factor_bin_ratenucl = 1.0_wp
+
+  !> adjustment factor applied to boundary layer nucleation rate
+  real(wp), parameter :: adjust_factor_pbl_ratenucl = 1.0_wp
+
+  ! We use this a lot.
+  real(wp), parameter :: one_third = 1.0_wp/3.0_wp
+
+  !-------------------------
   ! Module global variables
+  !-------------------------
+
   ! All index variables are set to 0 if they don't correspond to anything within
   ! our aerosol model configuration.
 
@@ -50,20 +77,10 @@ module mam4_nucleation_mod
   !> Index of H2SO4 gas
   integer :: h2so4_index = 0
 
-  !> Density of SO4 aerosol (and sulfiric acid) [kg/m^3]
-  real(wp), parameter :: dens_so4a_host = 1770_wp
-
   !> Molecular weight of SO4 aerosol
   real(wp) :: mw_so4
 
   integer, public :: newnuc_h2so4_conc_flag = 1
-
-  ! adjustment factors
-  real(wp), parameter, public :: adjust_factor_bin_ratenucl = 1.0_wp  ! applied to binary nucleation rate
-  real(wp),            public :: adjust_factor_pbl_ratenucl = 1.0_wp  ! applied to boundary layer nucleation rate
-                                                                      ! value reassigned in amicphys
-  ! We use this a lot.
-  real(wp), parameter :: one_third = 1.0_wp/3.0_wp
 
 contains
 
@@ -180,7 +197,7 @@ subroutine mam4_nucleation_run(t, dt, progs, atm, diags, tends) bind(c)
     q_h2so4 = q_g(k, h2so4_index)
     q_so4 = q_i(k, so4_aitken_index)
     n_aitken = n(k, aitken_index)
-    J_nuc = h2so4_nucleation_rate(q_so4, q_h2so4, n_aitkin, dt, &
+    J_nuc = h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, &
                                   temp, press, c_air, z_k, h_pbl, rel_hum, &
                                   uptkrate_h2so4, del_h2so4_gasprod, &
                                   del_h2so4_aeruptk)
@@ -264,10 +281,14 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
   real(wp) :: tmp_q2, tmp_q3
   real(wp) :: tmp_q_del
   real(wp) :: tmp_frso4, tmp_uptkrate
+  real(wp) :: temp_bb
+  real(wp) :: rh_bb
+  real(wp) :: c_h2so4_bb
 
   ! min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3,
   real(wp), parameter :: q_h2so4_cutoff = 4.0e-16_wp
 
+#if 0
   J_nuc = 0_wp
 
   ! skip if h2so4 vapor < qh2so4_cutoff
@@ -440,7 +461,7 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
 
   ! Compute the tendency for expended H2SO4 gas
   dqdt_h2so4 = dmdt_ait*tmp_frso4/mw_so4a_host
-
+#endif
 end function
 
 subroutine mam4_nucleation_finalize() bind(c)
@@ -556,7 +577,7 @@ subroutine binary_nuc_vehk2002(temp, rh, c_h2so4, &
 
   ! calc sulfuric acid mole fraction in critical cluster
   crit_x = 0.740997_wp - 0.00266379_wp * temp   &
-    - 0.00349998_wp * log (c_h2so4l)   &
+    - 0.00349998_wp * log (c_h2so4)   &
     + 0.0000504022_wp * temp * log (c_h2so4)   &
     + 0.00201048_wp * log (rh)   &
     - 0.000183289_wp * temp * log (rh)   &
@@ -755,6 +776,7 @@ function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
   real(wp), intent(in) :: J_star
   real(wp)             :: J_nuc
 
+#if 0
   real(wp) :: J_star_bb
   real(wp) :: tmpa, tmpb, tmpc
   real(wp) :: wetvol_dryvol    ! grown particle (wet-volume)/(dry-volume)
@@ -765,14 +787,14 @@ function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
 
   J_star_bb = J_star*1.0e6_wp  ! J_star_bb is #/m3/s; J_star is #/cm3/s
 
-  ! wet/dry volume ratio - use simple kohler approx for ammsulf/ammbisulf
+  ! wet/dry volume ratio - use simple kohler approx for amm_sulf/amm_bisulf
   tmpa = max( 0.10_wp, min( 0.95_wp, rh_in ) )
   wetvol_dryvol = 1.0_wp - 0.56_wp/log(tmpa)
 
   ! determine size bin into which the new particles go
   ! (probably it will always be bin #1, but ...)
   voldry_clus = ( max(N_h2so4,1.0_wp)*mw_so4a) /   &
-    (1.0e3_wp*dens_sulfacid*Avogadro)
+    (1.0e3_wp*dens_sulf_acid*Avogadro)
   ! correction when host code sulfate is really ammonium bisulfate/sulfate
   voldry_clus = voldry_clus * (mw_so4a_host/mw_so4a)
   dpdry_clus = (voldry_clus*6.0_wp/pi)**one_third
@@ -807,19 +829,19 @@ function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
     tmp_n3 = 1.0_wp
   else
     ! combination of ammonium bisulfate and sulfuric acid
-    ! tmp_n2 & tmp_n3 = mole fractions of the ammbisulf & sulfacid
+    ! tmp_n2 & tmp_n3 = mole fractions of the amm_bisulf & sulf_acid
     tmp_n1 = 0.0_wp
     tmp_n2 = 0.0_wp ! (qnh3_cur/qh2so4_cur)
     tmp_n2 = max( 0.0_wp, min( 1.0_wp, tmp_n2 ) )
     tmp_n3 = 1.0_wp - tmp_n2
   end if
 
-  tmp_m1 = tmp_n1*mw_ammsulf
-  tmp_m2 = tmp_n2*mw_ammbisulf
-  tmp_m3 = tmp_n3*mw_sulfacid
+  tmp_m1 = tmp_n1*mw_amm_sulf
+  tmp_m2 = tmp_n2*mw_amm_bisulf
+  tmp_m3 = tmp_n3*mw_sulf_acid
   dens_part = (tmp_m1 + tmp_m2 + tmp_m3)/   &
-    ((tmp_m1/dens_ammsulf) + (tmp_m2/dens_ammbisulf)   &
-    + (tmp_m3/dens_sulfacid))
+    ((tmp_m1/dens_amm_sulf) + (tmp_m2/dens_amm_bisulf)   &
+    + (tmp_m3/dens_sulf_acid))
   mass_part  = voldry_part*dens_part
   ! (kg dry aerosol)/(mol aerosol so4)
   kgaero_per_moleso4a = 1.0e-3_wp*(tmp_m1 + tmp_m2 + tmp_m3)
@@ -837,7 +859,7 @@ function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
     ! "gr" parameter (nm/h) = condensation growth rate of new particles
     ! use kk2002 eqn 21 for h2so4 uptake, and correct for nh3 & h2o uptake
     tmp_spd = 14.7_wp*sqrt(temp_in)   ! h2so4 molecular speed (m/s)
-    gr_kk = 3.0e-9_wp*tmp_spd*mw_sulfacid*so4vol_in/(dens_part*wet_volfrac_so4a)
+    gr_kk = 3.0e-9_wp*tmp_spd*mw_sulf_acid*so4vol_in/(dens_part*wet_volfrac_so4a)
 
     ! "gamma" parameter (nm2/m2/h)
     ! use kk2002 eqn 22
@@ -880,6 +902,7 @@ function growth_adjusted_nucleation_rate(J_star) result (J_nuc)
     factor_kk = exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) )
   end if
   J_star_kk = J_star_bb*factor_kk
+#endif
 
 end function
 

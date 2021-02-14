@@ -64,7 +64,7 @@ module haero
   contains
     !> Given the index of an aerosol population, retrieve its mode and
     !> (modal) species indices.
-    procedure :: get_mode_and_aerosol_indices => m_get_mode_and_aero_indices
+    procedure :: get_mode_and_species => m_get_mode_and_species
     !> Given the name of a mode, retrieve its index.
     procedure :: mode_index => m_mode_index
     !> Given a mode index and the symbolic name of an aerosol species, retrieve
@@ -434,7 +434,7 @@ contains
 
   !> Given an aerosol population index p, get the corresponding mode and
   !> aerosol species indices m and s.
-  subroutine m_get_mode_and_aero_indices(model, p, m, s)
+  subroutine m_get_mode_and_species(model, p, m, s)
     class(model_t), intent(in)  :: model
     integer, intent(in)         :: p
     integer, intent(out)        :: m, s
