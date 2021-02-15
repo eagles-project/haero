@@ -11,23 +11,25 @@
 # <pack-size> - a positive integer (size of SIMD packs)
 #
 # For this script to work, Docker must be installed on your machine.
-BUILD_TYPE=$2
-PRECISION=$3
-PACK_SIZE=$4
-
-TAG=$BUILD_TYPE-$PRECISION-$PACK_SIZE
+BUILD_TYPE=$1
+PRECISION=$2
+PACK_SIZE=$3
 
 if [[ "$1" == "" || "$2" == "" || "$3" == "" ]]; then
   echo "Usage: $0 <build-type> <precision> <pack-size>"
   exit
 fi
 
+TAG=$BUILD_TYPE-$PRECISION-pack-size-$PACK_SIZE
+
 # Build the image locally.
+cp Dockerfile ..
 docker build -t haero-tpl:$TAG --network=host \
   --build-arg BUILD_TYPE=$BUILD_TYPE \
   --build-arg PRECISION=$PRECISION \
   --build-arg PACK_SIZE=$PACK_SIZE \
-  .
+  ..
+rm ../Dockerfile
 
 # Tag the image.
 docker image tag haero-tpl:$TAG coherellc/haero-tpl:$TAG
