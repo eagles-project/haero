@@ -34,3 +34,7 @@ rm ../Dockerfile
 # Tag the image.
 docker image tag haero-tpl:$TAG coherellc/haero-tpl:$TAG
 
+echo "To upload this image to DockerHub, use the following:"
+echo "docker login"
+echo "docker image push coherellc/haero-tpl:$TAG"
+echo "docker logout"

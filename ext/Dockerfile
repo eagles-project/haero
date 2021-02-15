@@ -3,6 +3,21 @@
 # directory.
 FROM ubuntu:20.10
 
+# Process build-time arguments.
+ARG BUILD_TYPE=Debug
+ARG PRECISION=double
+ARG PACK_SIZE=1
+
+# We build Haero in /haero
+WORKDIR /haero
+COPY ext ext
+COPY haero haero
+COPY driver driver
+COPY docs docs
+COPY cmake cmake
+COPY tools tools
+COPY CMakeLists.txt setup ./
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
   autoconf \
   cmake \
@@ -14,24 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   make \
   pkg-config \
   zlib1g-dev \
-  && rm -rf /var/lib/apt/lists/*
-
-# Process build-time arguments.
-ARG BUILD_TYPE=Debug
-ARG PRECISION=double
-ARG PACK_SIZE=1
-
-# We build Haero in /haero
-WORKDIR /haero
-RUN mkdir -p ext haero driver docs cmake tools
-COPY ext ext
-COPY haero haero
-COPY driver driver
-COPY docs docs
-COPY cmake cmake
-COPY tools tools
-COPY CMakeLists.txt setup ./
-RUN \
+  && rm -rf /var/lib/apt/lists/* && \
   ls -R cmake/ && \
   ./setup build && \
   cd build && \
@@ -49,15 +47,11 @@ RUN \
     -G "Unix Makefiles" \
     .. && \
   make -j && \
-  make install
-
-# Get rid of Haero source and unwanted assets.
-WORKDIR /
-RUN \
-  rm -rf /haero \
-  rm -rf /opt/haero/bin \
-  rm -f /opt/haero/lib/libhaero.a \
-  rm -f /opt/haero/lib/libhaero_standalone.a
+  make install && \
+  rm -rf * && \
+  rm -rf /opt/haero/bin && \
+  rm -rf /opt/haero/include/haero && \
+  rm -f /opt/haero/lib/libhaero*
 
 LABEL maintainer='Jeffrey N. Johnson <jeff@cohere-llc.com>'
 LABEL description='Ubuntu with HAERO third-party libraries'
