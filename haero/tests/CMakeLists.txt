@@ -52,5 +52,3 @@ if (HAERO_FORTRAN)
                      LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
 endif()
 
-install(DIRECTORY data/ DESTINATION ${CMAKE_INSTALL_PREFIX}/haero/tests/data)
-
