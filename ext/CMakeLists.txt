@@ -353,6 +353,10 @@ set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
 set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
 # Installation targets
+file(GLOB HAERO_EXT_HEADERS
+     ${PROJECT_BINARY_DIR}/include/*.h*)
+install(FILES ${HAERO_EXT_HEADERS} DESTINATION include)
+
 if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
   install(FILES ${Z_LIBRARY} DESTINATION lib)
 endif()
@@ -363,14 +367,21 @@ if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
 endif()
 if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/include/catch2 DESTINATION include)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/include/kokkos DESTINATION include)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/include/generated_specializations_hpp DESTINATION include)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ekat DESTINATION include)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ekat_f90_modules DESTINATION include)
   install(FILES ${EKAT_LIBRARY} DESTINATION lib)
 endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/include/yaml-cpp DESTINATION include)
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
 endif()
 if (${KOKKOS_KERNELS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built kokkos-kernels
   install(FILES ${KOKKOS_KERNELS_LIBRARY} DESTINATION lib)
 endif()
 if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/include/tchem DESTINATION include)
   install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
 endif()
