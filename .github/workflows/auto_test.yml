@@ -13,8 +13,6 @@ on:
 jobs:
   # This job builds the box model and runs our test suite.
   build:
-    runs-on: ${{ matrix.os }}
-
     # A build matrix storing all desired configurations.
     strategy:
       matrix:
@@ -23,9 +21,16 @@ jobs:
         fp-precision: [double] #[single, double]
         pack-size: [1, 4]
 
+    runs-on: ${{ matrix.os }}
+
+    # Pre-fab container with third-party libs installed.
+    container: coherellc/haero-tpl:${{ build-type }}-${{ fp-precision }}-pack-size-${{ pack-size }}
+
     # Environment variables
     env:
       FC: gfortran
+      HDF5_LIBRARY_NAME=libhdf5.a
+      HDF5_HL_LIBRARY_NAME=libhdf5_hl.a
 
     # Steps for building and running tests.
     steps:
@@ -37,6 +42,12 @@ jobs:
     - name: Installing MPI (Mac)
       if: contains(matrix.os, 'macos')
       run: brew install gfortran open-mpi
+
+    - name: Setting HDF5 library names (Debug)
+      if: contains(matrix.build-type, 'Debug')
+      run: |
+        echo "HDF5_LIBRARY_NAME=libhdf5_debug.a" >> $GITHUB_ENV
+        echo "HDF5_HL_LIBRARY_NAME=libhdf5_hl_debug.a" >> $GITHUB_ENV
 
     - name: Checking out repository
       uses: actions/checkout@v2
@@ -59,6 +70,19 @@ jobs:
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
           -DHAERO_ENABLE_DRIVER=ON \
           -DHAERO_AUTOTESTER=ON \
+          -DEKAT_LIBRARY=/opt/haero/lib/libekat.a \
+          -DEKAT_INCLUDE_DIR=/opt/haero/include \
+          -DYAMLCPP_LIBRARY=/opt/haero/lib/libyaml-cpp.a \
+          -DYAMLCPP_INCLUDE_DIR=/opt/haero/include \
+          -DHDF5_LIBRARY=/opt/haero/lib/${HDF5_LIBRARY_NAME} \
+          -DHDF5_HL_LIBRARY=/opt/haero/lib/${HDF5_HL_LIBRARY_NAME} \
+          -DHDF5_INCLUDE_DIR=/opt/haero/include \
+          -DNETCDF_LIBRARY=/opt/haero/lib/libnetcdf.a \
+          -DNETCDF_INCLUDE_DIR=/opt/haero/include \
+          -DKOKKOS_KERNELS_LIBRARY=/opt/haero/lib/libkokkoskernels.a \
+          -DKOKKOS_KERNELS_INCLUDE_DIR=/opt/haero/include \
+          -DTCHEM_LIBRARY=/opt/haero/lib/libtchemcore.a \
+          -DTCHEM_INCLUDE_DIR=/opt/haero/include \
           -G "Unix Makefiles" \
           ..
 
