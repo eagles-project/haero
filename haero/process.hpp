@@ -297,22 +297,22 @@ class DiagnosticProcess {
   ///                            variables are created.
   void prepare(Diagnostics& diagnostics) const {
     for (const auto& var: required_vars_) {
-      if (not diagnostics.has_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.has_var(var)) {
         diagnostics.create_var(var);
       }
     }
     for (const auto& var: required_aero_vars_) {
-      if (not diagnostics.has_aerosol_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.has_aerosol_var(var)) {
         diagnostics.create_aerosol_var(var);
       }
     }
     for (const auto& var: required_gas_vars_) {
-      if (not diagnostics.has_gas_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.has_gas_var(var)) {
         diagnostics.create_gas_var(var);
       }
     }
     for (const auto& var: required_modal_vars_) {
-      if (not diagnostics.has_modal_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.has_modal_var(var)) {
         diagnostics.create_modal_var(var);
       }
     }

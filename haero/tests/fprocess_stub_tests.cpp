@@ -1,5 +1,6 @@
 #include "haero/model.hpp"
 #include "haero/floating_point.hpp"
+#include "haero/diagnostics.hpp"
 #include "prog_fprocess_stub.hpp"
 #include "diag_fprocess_stub.hpp"
 #include "catch2/catch.hpp"
@@ -200,9 +201,10 @@ TEST_CASE("diag_process_stub", "") {
     Diagnostics diags(num_modes, num_aero_species, num_gases, num_levels);
     auto* stub = new DiagFProcessStub();
     stub->prepare(diags);
-    REQUIRE(diags.has_var("temperature"));
-    REQUIRE(diags.has_gas_var("pressure"));
-    REQUIRE(diags.has_modal_var("pressure"));
+    const int NOT_FOUND = Diagnostics::NOT_FOUND;
+    REQUIRE(NOT_FOUND != diags.has_var("temperature"));
+    REQUIRE(NOT_FOUND == diags.has_gas_var("pressure"));
+    REQUIRE(NOT_FOUND == diags.has_modal_var("pressure"));
     delete stub;
   }
 
@@ -253,14 +255,15 @@ TEST_CASE("diag_process_stub", "") {
 
     // Set the atmospheric temperature.
     {
-      auto& T = diags->var("temperature");
+      const int token = diags->has_var("temperature");
+      auto T = diags->var(token);
       for (int k = 0; k < num_levels; ++k) {
         T(k) = 273.15;
       }
     }
 
     // Make a copy of the temperature field.
-    auto T0 = diags->var("temperature");
+    auto T0 = diags->var(diags->has_var("temperature"));
 
     // Now update diagnostics at time 0.
     Real t = 0.0;
@@ -269,7 +272,7 @@ TEST_CASE("diag_process_stub", "") {
     // -------------------------------------------------
     // Make sure the temperature field was not affected.
     // -------------------------------------------------
-    const auto& T = diags->var("temperature");
+    const auto T = diags->var(diags->has_var("temperature"));
     for (int k = 0; k < num_levels; ++k) {
       REQUIRE(FloatingPoint<Real>::equiv(T(k)[0], T0(k)[0]));
     }

@@ -159,20 +159,20 @@ module haero
       type(c_ptr), value, intent(in) :: a
     end function
 
-    logical(c_bool) function d_has_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr
+    integer(8) function d_has_var_c(d, name) bind(c)
+      use iso_c_binding, only: c_int, c_ptr
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    type(c_ptr) function d_var_c(p, name) bind(c)
-      use iso_c_binding, only: c_ptr, c_char, c_int
+    type(c_ptr) function d_var_c(p, token) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: p
-      type(c_ptr), value, intent(in) :: name
+      integer(8), value, intent(in) :: token
     end function
 
     logical(c_bool) function d_has_aerosol_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_int
+      use iso_c_binding, only: c_bool, c_ptr
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
@@ -560,7 +560,7 @@ contains
     use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer :: retval
 
     type(c_ptr) :: c_name
     c_name = f_to_c_string(name)
@@ -575,11 +575,13 @@ contains
     class(diagnostics_t), intent(in)  :: d
     character(len=*), intent(in) :: name
     real(wp), dimension(:), pointer :: retval
+    integer(c_size_t) :: token
 
     type(c_ptr) :: c_name, v_ptr
 
     c_name = f_to_c_string(name)
-    v_ptr = d_var_c(d%ptr, c_name)
+    token = d_has_var_c(d%ptr, c_name)
+    v_ptr = d_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels])
   end function
 

@@ -1,15 +1,19 @@
 #ifndef HAERO_PROGNOSTICS_HPP
 #define HAERO_PROGNOSTICS_HPP
 
+#include <map>
+#include <vector>
+
+#include "kokkos/Kokkos_Core.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_types.hpp"
+
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
 #include "haero/view_pack_helpers.hpp"
-#include "ekat/ekat_pack.hpp"
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
-#include "kokkos/Kokkos_Core.hpp"
-#include <map>
-#include <vector>
 
 namespace haero {
 
@@ -17,7 +21,7 @@ namespace haero {
 class Tendencies;
 
 /// @class Prognostics
-/// This type stores the prognosusing SpeciesColumnView = ekat::Unmanaged<kokkos_device_type::view_2d<PackType>>;tic variables for an atmospheric column in an
+/// This type stores the prognostic variables for an atmospheric column in an 
 /// aerosol system. Specifically,It stores
 /// * mass mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species

@@ -95,23 +95,38 @@ TEST_CASE("process_tests", "prognostic_process") {
   using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
   using SpeciesColumnView  = kokkos_device_type::view_2d<PackType>;
   using ModalColumnView    = kokkos_device_type::view_2d<PackType>;
+
+  SpeciesColumnView dev_gases;
+  {
+    // example of filling a device view from a std::vector
+    std::vector<std::vector<Real>> host_gases(num_gases, std::vector<Real>(num_vert_packs));
+    for (int i=0; i<num_vert_packs; ++i) {
+      for (int j=0; j<num_gases; ++j) {
+        host_gases[j][i] = i+j;
+      }
+    }
+    dev_gases = vectors_to_row_packed_2dview(host_gases, "gases");
+  }
+
   SpeciesColumnView dev_int_aerosols("interstitial aerosols", 1, num_vert_packs);
+  {
+    // example of filling a device view from a host view
+    auto host_int_aerosols  =  Kokkos::create_mirror_view(dev_int_aerosols);
+    for (int i=0; i<num_vert_packs; ++i) {
+      host_int_aerosols(0,i) = i;
+    }
+    Kokkos::deep_copy(dev_int_aerosols, host_int_aerosols);
+  }
+
   SpeciesColumnView dev_cld_aerosols("cloudborne aerosols",   1, num_vert_packs);
-  SpeciesColumnView dev_gases("gases", num_gases, num_vert_packs);
   ModalColumnView   dev_modal_concs("modal number concs", num_modes, num_vert_packs);
-  auto host_int_aerosols  =  Kokkos::create_mirror_view(dev_int_aerosols);
   auto host_cld_aerosols  =  Kokkos::create_mirror_view(dev_cld_aerosols);
-  auto host_gases         =  Kokkos::create_mirror_view(dev_gases);
   auto host_modal_concs   =  Kokkos::create_mirror_view(dev_modal_concs);
   for (int i=0; i<num_vert_packs; ++i) {
-    host_int_aerosols(0,i) = i;
     host_cld_aerosols(0,i) = i;
-    host_gases(0,i) = i;
     host_modal_concs(0,i) = i;
   }
-  Kokkos::deep_copy(dev_int_aerosols, host_int_aerosols);
   Kokkos::deep_copy(dev_cld_aerosols, host_cld_aerosols);
-  Kokkos::deep_copy(dev_gases,        host_gases);
   Kokkos::deep_copy(dev_modal_concs,  host_modal_concs);
 
   Prognostics progs(num_modes, {1}, num_gases, num_levels, 

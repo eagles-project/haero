@@ -1,10 +1,12 @@
 #ifndef HAERO_ATMOSPHERE_HPP
 #define HAERO_ATMOSPHERE_HPP
 
-#include "haero/haero.hpp"
+#include "kokkos/Kokkos_Core.hpp"
+
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include "kokkos/Kokkos_Core.hpp"
+
+#include "haero/haero.hpp"
 
 namespace haero {
 
@@ -13,11 +15,12 @@ namespace haero {
 class Atmosphere final {
   public:
 
+   using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
   /// This type represents an array mapping a vertical level index to a pack.
   /// The vertical level(s) are identified by the index.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ColumnView = ekat::Unmanaged<Kokkos::View<PackType*> >;
+  using ColumnView = ekat::Unmanaged<kokkos_device_type::view_1d<PackType>>;
 
   /// Creates an Atmosphere that stores unmanaged views of atmospheric column
   /// data owned and managed by the atmosphere host model.
@@ -32,10 +35,10 @@ class Atmosphere final {
   /// @param [in] ht A view of height column data [m] on level interfaces,
   ///                managed by the host model
   Atmosphere(int num_levels,
-             const Kokkos::View<PackType*>& temp,
-             const Kokkos::View<PackType*>& press,
-             const Kokkos::View<PackType*>& rel_hum,
-             const Kokkos::View<PackType*>& ht);
+             const kokkos_device_type::view_1d<PackType>& temp,
+             const kokkos_device_type::view_1d<PackType>& press,
+             const kokkos_device_type::view_1d<PackType>& rel_hum,
+             const kokkos_device_type::view_1d<PackType>& ht);
 
   /// Destructor.
   KOKKOS_FUNCTION

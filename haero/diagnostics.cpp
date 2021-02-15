@@ -6,7 +6,8 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
                          const std::vector<int>& num_aerosol_species,
                          int num_gases,
                          int num_levels):
-  num_aero_species_(num_aerosol_species), num_aero_populations_(0),
+  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Diagnostics::num_aerosol_species")), 
+  num_aero_populations_(0),
   num_gases_(num_gases), num_levels_(num_levels) {
   EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
                   "num_aerosol_species must be a vector of length " << num_aerosol_modes);
@@ -40,35 +41,38 @@ int Diagnostics::num_levels() const {
   return num_levels_;
 }
 
-bool Diagnostics::has_var(const std::string& name) const {
-  return (vars_.find(name) != vars_.end());
+int Diagnostics::has_var(const std::string& name) const {
+  return get_string_to_token_vars (name);
 }
 
-void Diagnostics::create_var(const std::string& name) {
-  auto iter = vars_.find(name);
-  EKAT_REQUIRE_MSG(iter == vars_.end(),
+int Diagnostics::create_var(const std::string& name) {
+  int return_val = has_var (name);
+  EKAT_REQUIRE_MSG(NOT_FOUND == return_val,
     "Diagnostic variable " << name << " already exists!");
-  vars_[name] = ColumnView(name, num_levels_);
+  return_val = vars_.extent(0);
+  set_string_to_token_vars (name, return_val);
+  Kokkos::resize(vars_, return_val+1, num_levels_);
+  return return_val;
 }
 
-Diagnostics::ColumnView&
-Diagnostics::var(const std::string& name) {
-  auto iter = vars_.find(name);
-  EKAT_REQUIRE_MSG(iter != vars_.end(),
-    "Diagnostic variable " << name << " not found!");
-  return iter->second;
+Diagnostics::ColumnView
+Diagnostics::var(const int token) {
+  EKAT_REQUIRE_MSG(token < vars_.extent(0),
+    "Diagnostic variable " << token << " not found!");
+  ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
+  return vars;
 }
 
-const Diagnostics::ColumnView&
-Diagnostics::var(const std::string& name) const {
-  auto iter = vars_.find(name);
-  EKAT_REQUIRE_MSG(iter != vars_.end(),
-    "Diagnostic variable " << name << " not found!");
-  return iter->second;
+const Diagnostics::ColumnView
+Diagnostics::var(const int token) const {
+  EKAT_REQUIRE_MSG(token < vars_.extent(0),
+    "Diagnostic variable " << token << " not found!");
+  const ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
+  return vars;
 }
 
-bool Diagnostics::has_aerosol_var(const std::string& name) const {
-  return (aero_vars_.find(name) != aero_vars_.end());
+int Diagnostics::has_aerosol_var(const std::string& name) const {
+  return get_string_to_token_aero (name);
 }
 
 void Diagnostics::create_aerosol_var(const std::string& name) {
@@ -104,8 +108,8 @@ Diagnostics::aerosol_var(const std::string& name) const {
   return iter->second;
 }
 
-bool Diagnostics::has_gas_var(const std::string& name) const {
-  return (gas_vars_.find(name) != gas_vars_.end());
+int Diagnostics::has_gas_var(const std::string& name) const {
+  return get_string_to_token_gas  (name);
 }
 
 void Diagnostics::create_gas_var(const std::string& name) {
@@ -135,8 +139,8 @@ Diagnostics::gas_var(const std::string& name) const {
   return iter->second;
 }
 
-bool Diagnostics::has_modal_var(const std::string& name) const {
-  return (modal_vars_.find(name) != modal_vars_.end());
+int Diagnostics::has_modal_var(const std::string& name) const {
+  return get_string_to_token_modal(name);
 }
 
 void Diagnostics::create_modal_var(const std::string& name) {
@@ -167,24 +171,72 @@ Diagnostics::modal_var(const std::string& name) const {
   return iter->second;
 }
 
+int  Diagnostics::set_string_to_token(std::map<std::string,int> &registered_strings,
+                                      const std::string &name, 
+                                      const int token) {
+  int return_val=get_string_to_token(registered_strings, name);
+
+  if (NOT_FOUND != token && NOT_FOUND==return_val) {
+    return_val = registered_strings.size();
+    const std::pair<std::string,int> value(name, return_val);
+    registered_strings.insert( value );
+  }
+  return return_val;
+}
+
+int  Diagnostics::get_string_to_token(const std::map<std::string,int> &registered_strings,
+                                      const std::string &name) {
+  int return_val=NOT_FOUND;
+  const auto iter = registered_strings.find(name);
+  if (registered_strings.end() != iter) 
+    return_val = iter->second;
+  return return_val;
+}
+
+int Diagnostics::set_string_to_token_vars(const std::string &name, const int token) {
+  return set_string_to_token(registered_strings_vars, name, token);
+}
+int Diagnostics::set_string_to_token_aero(const std::string &name, const int token) {
+  return set_string_to_token(registered_strings_aero, name, token);
+}
+int Diagnostics::set_string_to_token_gas (const std::string &name, const int token) {
+  return set_string_to_token(registered_strings_gas , name, token);
+}
+int Diagnostics::set_string_to_token_modal(const std::string &name, const int token) {
+  return set_string_to_token(registered_strings_modal, name, token);
+}
+
+int Diagnostics::get_string_to_token_vars(const std::string &name) const {
+  return get_string_to_token(registered_strings_vars, name);
+}
+int Diagnostics::get_string_to_token_aero(const std::string &name) const {
+  return get_string_to_token(registered_strings_aero, name);
+}
+int Diagnostics::get_string_to_token_gas (const std::string &name) const {
+  return get_string_to_token(registered_strings_gas , name);
+}
+int Diagnostics::get_string_to_token_modal(const std::string &name) const {
+  return get_string_to_token(registered_strings_modal, name);
+}
+
 // Interoperable C functions for providing data to Fortran.
 // See haero.F90 for details on how these functions are used.
 extern "C" {
 
-bool d_has_var_c(void* d, const char* name)
+int d_has_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_var(name);
 }
 
-void* d_var_c(void* d, const char* name)
+void* d_var_c(void* d, const int token)
 {
   auto* diags = static_cast<Diagnostics*>(d);
-  auto& var = diags->var(name);
+  auto var = diags->var(token);
   return (void*)var.data();
 }
 
-bool d_has_aerosol_var_c(void* d, const char* name)
+int d_has_aerosol_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_aerosol_var(name);
@@ -197,7 +249,7 @@ void* d_aerosol_var_c(void* d, const char* name)
   return (void*)var.data();
 }
 
-bool d_has_gas_var_c(void* d, const char* name)
+int d_has_gas_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_gas_var(name);
@@ -210,7 +262,7 @@ void* d_gas_var_c(void* d, const char* name)
   return (void*)var.data();
 }
 
-bool d_has_modal_var_c(void* d, const char* name)
+int d_has_modal_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
   return diags->has_modal_var(name);
