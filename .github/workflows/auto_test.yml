@@ -52,6 +52,7 @@ jobs:
     - name: Checking out repository
       uses: actions/checkout@v2
       with:
+        token: ${{ secrets.ACCESS_TOKEN }}
         submodules: recursive
 
     - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision, pack size=${{ matrix.pack-size }})
