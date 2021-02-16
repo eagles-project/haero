@@ -1,4 +1,5 @@
 include(EkatCreateUnitTest)
+link_directories(${EKAT_LIBRARY_DIR}) # Needed to link unit tests.
 
 # This simple unit test gets us off the ground.
 EkatCreateUnitTest(hello_world hello_world.cpp
@@ -51,6 +52,4 @@ if (HAERO_FORTRAN)
   EkatCreateUnitTest(fprocess_stub_tests fprocess_stub_tests.cpp
                      LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
 endif()
-
-install(DIRECTORY data/ DESTINATION ${CMAKE_INSTALL_PREFIX}/haero/tests/data)
 

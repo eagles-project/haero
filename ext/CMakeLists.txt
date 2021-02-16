@@ -120,6 +120,7 @@ else()
     set(HAERO_EXT_DRIVER_LIBRARIES ${ZLIB_LIBRARIES};${HAERO_EXT_DRIVER_LIBRARIES})
   endif()
 endif()
+list(APPEND HAERO_EXT_INCDIRS ${HDF5_INCLUDE_DIR})
 set(HAERO_EXT_DRIVER_LIBRARIES hdf5_hl;hdf5;z;${HAERO_EXT_DRIVER_LIBRARIES})
 set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
 
@@ -169,6 +170,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                       LOG_INSTALL TRUE)
   add_dependencies(netcdf netcdf_proj)
 endif()
+list(APPEND HAERO_EXT_INCDIRS ${NETCDF_INCLUDE_DIR})
 set(HAERO_EXT_DRIVER_LIBRARIES netcdf;${HAERO_EXT_DRIVER_LIBRARIES})
 set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${NETCDF_INCLUDE_DIR})
 
@@ -188,7 +190,7 @@ if (YAMLCPP_LIBRARY MATCHES ".a")
 else()
   add_library(yaml_cpp SHARED IMPORTED GLOBAL)
 endif()
-set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY_DIR}/${YAMLCPP_LIBRARY})
+set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY})
 
 # Check if we're supposed to build ekat internally
 get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
@@ -244,14 +246,10 @@ add_library(kokkoscontainers STATIC IMPORTED GLOBAL)
 set_target_properties(kokkoscontainers PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a)
 set(HAERO_EXT_LIBRARIES ekat;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
 set(HAERO_EXT_DRIVER_LIBRARIES yaml_cpp;${HAERO_EXT_DRIVER_LIBRARIES})
-list(FIND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR} EKAT_INDEX)
-if (EKAT_INDEX EQUAL -1)
-  set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${EKAT_INCLUDE_DIR};${EKAT_INCLUDE_DIR}/ekat;${EKAT_INCLUDE_DIR}/kokkos)
-endif()
-list(FIND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR} YAMLCPP_INDEX)
-if (YAMLCPP_INDEX EQUAL -1)
-  set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${YAMLCPP_INCLUDE_DIR})
-endif()
+list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR})
+list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/ekat)
+list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/kokkos)
+list(APPEND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR})
 
 #----------------------------------------------------------------------------
 # Kokkos-Kernels library
@@ -261,7 +259,7 @@ if (KOKKOS_KERNELS_LIBRARY MATCHES ".a")
 else()
   add_library(kokkoskernels SHARED IMPORTED GLOBAL)
 endif()
-set_target_properties(kokkoskernels PROPERTIES IMPORTED_LOCATION ${KOKKOS_KERNELS_LIBRARY_DIR}/${KOKKOS_KERNELS_LIBRARY})
+set_target_properties(kokkoskernels PROPERTIES IMPORTED_LOCATION ${KOKKOS_KERNELS_LIBRARY})
 
 if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
   update_submodules()
@@ -303,6 +301,7 @@ if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
       DEPENDEES install)
   endif()
 endif()
+list(APPEND HAERO_EXT_INCDIRS ${KOKKOS_KERNELS_INCLUDE_DIR})
 set(HAERO_EXT_LIBRARIES kokkoskernels;${HAERO_EXT_LIBRARIES})
 
 #----------------------------------------------------------------------------
@@ -313,7 +312,7 @@ if (TCHEM_LIBRARY MATCHES ".a")
 else()
   add_library(tchem SHARED IMPORTED GLOBAL)
 endif()
-set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY_DIR}/${TCHEM_LIBRARY})
+set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY})
 
 if (NOT EXISTS ${TCHEM_LIBRARY})
   update_submodules()
@@ -344,15 +343,19 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                       LOG_INSTALL TRUE)
   add_dependencies(tchem tchem_proj)
 endif()
+list(APPEND HAERO_EXT_INCDIRS ${TCHEM_INCLUDE_DIR})
 set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
+list(REMOVE_DUPLICATES HAERO_EXT_INCDIRS)
 set(HAERO_INCDIRS ${HAERO_INCDIRS};${HAERO_EXT_INCDIRS} PARENT_SCOPE)
 set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
 set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
 # Installation targets
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include)
+
 if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
   install(FILES ${Z_LIBRARY} DESTINATION lib)
 endif()
@@ -363,7 +366,12 @@ if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
 endif()
 if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
-  install(FILES ${EKAT_LIBRARY} DESTINATION lib)
+  install(FILES       ${EKAT_LIBRARY}
+                      ${EKAT_LIBRARY_DIR}/libekat_test_main.a
+                      ${EKAT_LIBRARY_DIR}/libekat_test_session.a
+                      ${EKAT_LIBRARY_DIR}/libkokkoscore.a
+                      ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
+          DESTINATION lib)
 endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
@@ -373,4 +381,7 @@ if (${KOKKOS_KERNELS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built kokk
 endif()
 if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
   install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
+endif()
+if (${PROJECT_BINARY_DIR}/share)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION share)
 endif()
