@@ -7,7 +7,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, mschmidt271/tchem ]
 
 # Below are jobs, each of which runs sequentially.
 jobs:
