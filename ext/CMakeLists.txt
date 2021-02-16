@@ -367,6 +367,8 @@ if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
 endif()
 if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
   install(FILES       ${EKAT_LIBRARY}
+                      ${EKAT_LIBRARY_DIR}/libekat_test_main.a
+                      ${EKAT_LIBRARY_DIR}/libekat_test_session.a
                       ${EKAT_LIBRARY_DIR}/libkokkoscore.a
                       ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
           DESTINATION lib)
