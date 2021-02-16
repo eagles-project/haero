@@ -1,4 +1,5 @@
 include(EkatCreateUnitTest)
+link_directories(${EKAT_LIBRARY_DIR})
 
 # This simple unit test gets us off the ground.
 EkatCreateUnitTest(hello_world hello_world.cpp
