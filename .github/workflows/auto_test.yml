@@ -5,9 +5,9 @@ name: auto_test
 # 2. when changes are merged into the main branch (via a pull request)
 on:
   push:
-    branches: [ main, mschmidt271/tchem ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, mschmidt271/tchem ]
+    branches: [ main ]
 
 # Below are jobs, each of which runs sequentially.
 jobs:
