@@ -366,7 +366,10 @@ if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
 endif()
 if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
-  install(FILES ${EKAT_LIBRARY} DESTINATION lib)
+  install(FILES       ${EKAT_LIBRARY}
+                      ${EKAT_LIBRARY_DIR}/libkokkoscore.a
+                      ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
+          DESTINATION lib)
 endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
