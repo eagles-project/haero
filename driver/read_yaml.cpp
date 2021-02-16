@@ -413,64 +413,54 @@ AtmosphericConditions read_atmosphere(const YAML::Node& root) {
   AtmosphericConditions atm;
   if (root["atmosphere"] and root["atmosphere"].IsMap()) {
     auto a = root["atmosphere"];
-
-    // Which model are we using?
-    if (a["model"]) {
-      auto model = a["model"].as<std::string>();
-      if (model == "uniform") {
-        atm.model = AtmosphericConditions::uniform;
-      }
-      else if (model != "hydrostatic") {
-        atm.model = AtmosphericConditions::hydrostatic;
-      }
-      else {
-        throw YamlException("Invalid model for atmospheric conditions: %s",
-                            model.c_str());
-      }
+    
+    if (a["Tv0"]) {
+      atm.Tv0 = a["Tv0"].as<Real>();
     }
     else {
-      throw YamlException("No model found in atmosphere section!");
+      throw YamlException("Missing virtual temperature reference value!");
     }
-
-    // Now fetch the relevant parameters.
-    if (atm.model == AtmosphericConditions::uniform) {
-      if (a["mu"]) {
-        atm.params.uniform.mu = a["mu"].as<Real>();
-      }
-      else {
-        throw YamlException("Missing mean molecular weight (mu) for uniform atm!");
-      }
-      if (a["H"]) {
-        atm.params.uniform.H = a["H"].as<Real>();
-      } else {
-        throw YamlException("Missing scaled height (H) for uniform atm!");
-      }
-      if (a["p0"]) {
-        atm.params.uniform.p0 = a["p0"].as<Real>();
-      }
-      else {
-        throw YamlException("Missing pressure (p0) for uniform atm!");
-      }
-      if (a["T0"]) {
-        atm.params.uniform.T0 = a["T0"].as<Real>();
-      }
-      else {
-        throw YamlException("Missing temperature (T0) for uniform atm!");
-      }
-      if (a["phi0"]) {
-        atm.params.uniform.phi0 = a["phi0"].as<Real>();
-      }
-      else {
-        throw YamlException("Missing relative humidity (phi0) for uniform atm!");
-      }
-      if (a["N0"]) {
-        atm.params.uniform.N0 = a["N0"].as<Real>();
-      }
-      else {
-        throw YamlException("Missing cloud fraction (N0) for uniform atm!");
-      }
-    } else if (atm.model == AtmosphericConditions::hydrostatic) {
-      // TODO
+    
+    if (a["Gammav"]) {
+      atm.Gammav = a["Gammav"].as<Real>();
+    }
+    else {
+      throw YamlException("Missing virtual temperature lapse rate!");
+    }
+  
+    if (a["w0"]) {
+      atm.w0 = a["w0"].as<Real>();
+    }
+    else {
+      throw YamlException("Missing maximum vertical velocity!");
+    }
+    
+    if (a["ztop"]) {
+      atm.ztop = a["ztop"].as<int>();
+    }
+    else {
+      throw YamlException("Missing model top!");
+    }
+  
+    if (a["tperiod"]) {
+      atm.tperiod = a["tperiod"].as<int>();
+    }
+    else {
+      throw YamlException("Missing oscillation period!");
+    }
+    
+    if (a["qv0"]) {
+      atm.qv0 = a["qv0"].as<Real>();
+    }
+    else {
+      throw YamlException("Missing surface water vapor mixing ratio!");
+    }
+    
+    if (a["qv1"]) {
+      atm.qv1 = a["qv1"].as<Real>();
+    }
+    else {
+      throw YamlException("Missing water vapor mixing ratio decay rate!");
     }
   }
   else {
