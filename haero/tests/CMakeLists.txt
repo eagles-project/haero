@@ -1,5 +1,5 @@
 include(EkatCreateUnitTest)
-link_directories(${EKAT_LIBRARY_DIR})
+link_directories(${EKAT_LIBRARY_DIR}) # Needed to link unit tests.
 
 # This simple unit test gets us off the ground.
 EkatCreateUnitTest(hello_world hello_world.cpp
