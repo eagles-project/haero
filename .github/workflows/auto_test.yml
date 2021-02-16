@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     # Pre-fab container with third-party libs installed.
-    container: coherellc/haero-tpl:${{ build-type }}-${{ fp-precision }}-pack-size-${{ pack-size }}
+    container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
 
     # Environment variables
     env:
@@ -54,7 +54,7 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
+    - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision, pack size=${{ matrix.pack-size }})
       run: |
         ./setup build
         cd build
