@@ -24,13 +24,13 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     # Pre-fab container with third-party libs installed.
-    #    container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
+        container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
 
     # Environment variables
     env:
       FC: gfortran
-      HDF5_LIBRARY_NAME=libhdf5.a
-      HDF5_HL_LIBRARY_NAME=libhdf5_hl.a
+      HDF5_LIBRARY_NAME: libhdf5.a
+      HDF5_HL_LIBRARY_NAME: libhdf5_hl.a
 
     # Steps for building and running tests.
     steps:
