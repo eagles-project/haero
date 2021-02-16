@@ -60,10 +60,10 @@ static constexpr Real freezing_pt_h2o = 273.15;
 /// Melting point of water [K]
 static constexpr Real melting_pt_h2o = freezing_pt_h2o;
 
-/// Molecular diffusion volume of dry air [dimensionless]
+/// Molecular diffusion volume of dry air [-]
 static constexpr Real molec_diffusion_dry_air = 20.1;
 
-/// Water-to-dry-air weight ratio [dimensionless]
+/// Water-to-dry-air weight ratio [-]
 static constexpr Real weight_ratio_h2o_air = molec_weight_h2o / molec_weight_dry_air;
 
 /// Latent heat of evaporation [J/kg]

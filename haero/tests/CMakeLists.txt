@@ -42,3 +42,12 @@ if (HAERO_FORTRAN)
   EkatCreateUnitTest(fprocess_stub_tests fprocess_stub_tests.cpp
                      LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
 endif()
+
+#---------------------------
+# Aerosol process unit tests
+#---------------------------
+
+if (HAERO_FORTRAN)
+#EkatCreateUnitTest(mam4_nucleation_fprocess_tests mam4_nucleation_fprocess_tests.cpp
+#                 LIBS ${HAERO_LIBRARIES})
+endif()

@@ -202,6 +202,10 @@ class FPrognosticProcess: public PrognosticProcess
            const Atmosphere& atmosphere,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {
+    // Set tendencies to zero.
+    tendencies.scale(0.0);
+
+    // Call the Fortran subroutine for the process.
     run_process_(t, dt, (void*)&prognostics, (void*)&atmosphere,
                  (void*)&diagnostics, (void*)&tendencies);
   }
