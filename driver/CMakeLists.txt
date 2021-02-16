@@ -2,7 +2,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${HAERO_INCDIRS} ${HAERO_DRIVER_
 
 add_library(haero_standalone host_params.cpp
                              host_state.cpp
-#                             dyn_column.cpp
                              read_yaml.cpp
                              driver.cpp
                              ncwriter.cpp
