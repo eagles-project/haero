@@ -3,7 +3,7 @@
 # This script builds a Docker image that contains Haero's third-party libraries
 # in /opt/haero, on top of a recent Ubuntu image. Run it like so:
 #
-# `./build-docker-image.sh <build-type> <precision> <pack-size>`
+# `./build-ext-docker-image.sh <build-type> <precision> <pack-size>`
 #
 # The arguments are:
 # <build-type> - Debug or Release (determines build optimization level)
@@ -23,7 +23,7 @@ fi
 TAG=$BUILD_TYPE-$PRECISION-pack-size-$PACK_SIZE
 
 # Build the image locally.
-cp Dockerfile ..
+cp Dockerfile.ext ../Dockerfile
 docker build -t haero-tpl:$TAG --network=host \
   --build-arg BUILD_TYPE=$BUILD_TYPE \
   --build-arg PRECISION=$PRECISION \
