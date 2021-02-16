@@ -385,3 +385,6 @@ if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
   install(DIRECTORY ${PROJECT_BINARY_DIR}/include/tchem DESTINATION include)
   install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
 endif()
+if (${PROJECT_BINARY_DIR}/share)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION share)
+endif()
