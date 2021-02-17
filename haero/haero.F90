@@ -238,7 +238,7 @@ contains
     type(c_ptr), value, intent(in) :: c_string
     character(len=:), pointer      :: f_ptr
     character(len=:), allocatable  :: f_string
-    integer(c_int)                 :: c_string_len
+    integer(kind=c_size_t)         :: c_string_len
 
     interface
         function c_strlen(str_ptr) bind (c, name = "strlen" ) result(len)
@@ -594,7 +594,7 @@ contains
     use iso_c_binding, only: c_ptr, c_char, c_bool, c_int
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
 
@@ -662,7 +662,7 @@ contains
     use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
 
