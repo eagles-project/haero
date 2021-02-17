@@ -265,12 +265,24 @@ if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
   update_submodules()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_DIR ${EKAT_LIBRARY_DIR})
   set(KK_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                     -DKokkos_ROOT=${KOKKOS_DIR}
                     -DKokosKernels_INST_LAYOUTRIGHT:BOOL=ON
                     -DCMAKE_CXX_EXTENSIONS:BOOL=OFF
                     )
+  if (HAERO_DEVICE STREQUAL "CUDA")
+    # We use EKAT's C++ compiler helper script.
+    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
+                      -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+
+    # There are some pitfalls with some outdated cusparse symbols that we ѕhould
+    # avoid till kokkos-kernels fixes them.
+    # (See https://github.com/trilinos/Trilinos/issues/8281)
+    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
+                      -DKokkosKernels_ENABLE_TPL_CUSPARSE:BOOL=OFF)
+  else()
+    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
+                      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+  endif()
   ExternalProject_Add(kokkoskernels_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kokkos-kernels
@@ -318,7 +330,6 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
   update_submodules()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                        -DTCHEM_INSTALL_LIB_PATH=${CMAKE_INSTALL_LIBDIR}
                        -DTCHEM_ENABLE_VERBOSE=OFF
@@ -329,6 +340,15 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                      )
+  if (HAERO_DEVICE STREQUAL "CUDA")
+    # We use EKAT's C++ compiler helper script.
+    set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+  else()
+    set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
+                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+  endif()
+
   ExternalProject_Add(tchem_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/TChem
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/TChem/src

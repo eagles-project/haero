@@ -322,7 +322,7 @@ fi
 # Clear the build cache.
 rm -f CMakeCache.txt
 
-if [ "\$PACK_SIZE" = "1" ]; then
+if [ "\$PACK_SIZE" = "1" -a "\$DEVICE" = "CPU" ]; then
   OPTIONS="\$OPTIONS -DCMAKE_Fortran_COMPILER=\$FC"
 fi
 
