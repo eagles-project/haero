@@ -159,7 +159,7 @@ module haero
       type(c_ptr), value, intent(in) :: a
     end function
 
-    integer(8) function d_has_var_c(d, name) bind(c)
+    integer(c_int) function d_has_var_c(d, name) bind(c)
       use iso_c_binding, only: c_int, c_ptr
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
@@ -168,43 +168,43 @@ module haero
     type(c_ptr) function d_var_c(p, token) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: p
-      integer(8), value, intent(in) :: token
+      integer(c_int), value, intent(in) :: token
     end function
 
-    logical(c_bool) function d_has_aerosol_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr
+    integer(c_int) function d_has_aerosol_var_c(d, name) bind(c)
+      use iso_c_binding, only: c_bool, c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    type(c_ptr) function d_aerosol_var_c(d, name) bind(c)
+    type(c_ptr) function d_aerosol_var_c(d, token) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
-      type(c_ptr), value, intent(in) :: name
+      integer(c_int), value, intent(in) :: token
     end function
 
-    logical(c_bool) function d_has_gas_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr
+    integer(c_int) function d_has_gas_var_c(d, name) bind(c)
+      use iso_c_binding, only: c_bool, c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    type(c_ptr) function d_gas_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_ptr
+    type(c_ptr) function d_gas_var_c(d, token) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: d
+      integer(c_int), value, intent(in) :: token
+    end function
+
+    integer(c_int) function d_has_modal_var_c(d, name) bind(c)
+      use iso_c_binding, only: c_bool, c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    logical(c_bool) function d_has_modal_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr
+    type(c_ptr) function d_modal_var_c(d, token) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
-      type(c_ptr), value, intent(in) :: name
-    end function
-
-    type(c_ptr) function d_modal_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_ptr
-      type(c_ptr), value, intent(in) :: d
-      type(c_ptr), value, intent(in) :: name
+      integer(c_int), value, intent(in) :: token
     end function
 
     type(c_ptr) function t_int_aero_mix_frac_c(t) bind(c)
@@ -238,7 +238,7 @@ contains
     type(c_ptr), value, intent(in) :: c_string
     character(len=:), pointer      :: f_ptr
     character(len=:), allocatable  :: f_string
-    integer(c_size_t)              :: c_string_len
+    integer(c_int)                 :: c_string_len
 
     interface
         function c_strlen(str_ptr) bind (c, name = "strlen" ) result(len)
@@ -575,7 +575,7 @@ contains
     class(diagnostics_t), intent(in)  :: d
     character(len=*), intent(in) :: name
     real(wp), dimension(:), pointer :: retval
-    integer(c_size_t) :: token
+    integer(c_int) :: token
 
     type(c_ptr) :: c_name, v_ptr
 
@@ -611,11 +611,13 @@ contains
     class(diagnostics_t), intent(in)  :: d
     character(len=*), intent(in) :: name
     real(wp), dimension(:,:), pointer :: retval
+    integer(c_int) :: token
 
     type(c_ptr) :: c_name, v_ptr
 
     c_name = f_to_c_string(name)
-    v_ptr = d_aerosol_var_c(d%ptr, c_name)
+    token = d_has_aerosol_var_c(d%ptr, c_name)
+    v_ptr = d_aerosol_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_populations])
   end function
 
@@ -627,7 +629,7 @@ contains
     use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
     c_name = f_to_c_string(name)
@@ -642,11 +644,13 @@ contains
     class(diagnostics_t), intent(in)  :: d
     character(len=*), intent(in) :: name
     real(wp), dimension(:,:), pointer :: retval
+    integer(c_int) :: token
 
     type(c_ptr) :: c_name, v_ptr
 
     c_name = f_to_c_string(name)
-    v_ptr = d_gas_var_c(d%ptr, c_name)
+    token = d_has_gas_var_c(d%ptr, c_name)
+    v_ptr = d_gas_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, size(model%gas_species)])
   end function
 
@@ -674,11 +678,13 @@ contains
     class(diagnostics_t), intent(in)  :: d
     character(len=*), intent(in) :: name
     real(wp), dimension(:,:), pointer :: retval
+    integer(c_int) :: token
 
     type(c_ptr) :: c_name, v_ptr
 
     c_name = f_to_c_string(name)
-    v_ptr = d_modal_var_c(d%ptr, c_name)
+    token = d_has_gas_var_c(d%ptr, c_name)
+    v_ptr = d_modal_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, [model%num_levels, size(model%modes)])
   end function
 
