@@ -1,4 +1,5 @@
 include(EkatCreateUnitTest)
+link_directories(${EKAT_LIBRARY_DIR}) # Needed to link unit tests.
 
 EkatCreateUnitTest(atm_conditions atm_condition_test.cpp LIBS haero_standalone ${HAERO_LIBRARIES}
  ${HAERO_DRIVER_LIBRARIES} PROPERTIES PASS_REGULAR_EXPRESSION "zp1000 = 1000")

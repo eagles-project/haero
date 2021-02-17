@@ -81,7 +81,6 @@ set_target_properties(hdf5 PROPERTIES IMPORTED_LOCATION ${HDF5_LIBRARY})
 set_target_properties(hdf5_hl PROPERTIES IMPORTED_LOCATION ${HDF5_HL_LIBRARY})
 if (NOT EXISTS ${HDF5_LIBRARY})
   if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
-    message(STATUS "HDF5 not found on system. Building locally.")
     update_submodules()
 
     set(HDF5_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
@@ -121,6 +120,7 @@ else()
     set(HAERO_EXT_DRIVER_LIBRARIES ${ZLIB_LIBRARIES};${HAERO_EXT_DRIVER_LIBRARIES})
   endif()
 endif()
+list(APPEND HAERO_EXT_INCDIRS ${HDF5_INCLUDE_DIR})
 set(HAERO_EXT_DRIVER_LIBRARIES hdf5_hl;hdf5;z;${HAERO_EXT_DRIVER_LIBRARIES})
 set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
 
@@ -130,7 +130,6 @@ set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
 add_library(netcdf STATIC IMPORTED GLOBAL)
 set_target_properties(netcdf PROPERTIES IMPORTED_LOCATION ${NETCDF_LIBRARY})
 if (NOT EXISTS ${NETCDF_LIBRARY})
-  message(STATUS "NetCDF not found on system. Building locally.")
   update_submodules()
   set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -171,6 +170,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                       LOG_INSTALL TRUE)
   add_dependencies(netcdf netcdf_proj)
 endif()
+list(APPEND HAERO_EXT_INCDIRS ${NETCDF_INCLUDE_DIR})
 set(HAERO_EXT_DRIVER_LIBRARIES netcdf;${HAERO_EXT_DRIVER_LIBRARIES})
 set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${NETCDF_INCLUDE_DIR})
 
@@ -184,18 +184,17 @@ if (EKAT_LIBRARY MATCHES ".a")
 else()
   add_library(ekat SHARED IMPORTED GLOBAL)
 endif()
-set_target_properties(ekat PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/${EKAT_LIBRARY})
+set_target_properties(ekat PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY})
 if (YAMLCPP_LIBRARY MATCHES ".a")
   add_library(yaml_cpp STATIC IMPORTED GLOBAL)
 else()
   add_library(yaml_cpp SHARED IMPORTED GLOBAL)
 endif()
-set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY_DIR}/${YAMLCPP_LIBRARY})
+set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY})
 
 # Check if we're supposed to build ekat internally
 get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
-if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
-  message(STATUS "Building EKAT locally.")
+if (NOT EXISTS ${EKAT_LIBRARY})
   update_submodules()
   set(EKAT_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -216,7 +215,8 @@ if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
                         -DKokkos_ENABLE_CUDA=OFF)
     if (NOT APPLE)
       set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                          -DKokkos_ENABLE_OPENMP=ON)
+                          -DKokkos_ENABLE_OPENMP=ON
+                          -DKokkos_ENABLE_SERIAL=ON)
     endif()
   elseif (HAERO_DEVICE STREQUAL CUDA)
     set(KOKKOS_ARCH_FLAG "Kokkos_ARCH_${HAERO_DEVICE_ARCH}")
@@ -246,34 +246,165 @@ add_library(kokkoscontainers STATIC IMPORTED GLOBAL)
 set_target_properties(kokkoscontainers PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a)
 set(HAERO_EXT_LIBRARIES ekat;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
 set(HAERO_EXT_DRIVER_LIBRARIES yaml_cpp;${HAERO_EXT_DRIVER_LIBRARIES})
-list(FIND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR} EKAT_INDEX)
-if (EKAT_INDEX EQUAL -1)
-  set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${EKAT_INCLUDE_DIR};${EKAT_INCLUDE_DIR}/ekat;${EKAT_INCLUDE_DIR}/kokkos)
+list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR})
+list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/ekat)
+list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/kokkos)
+list(APPEND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR})
+
+#----------------------------------------------------------------------------
+# Kokkos-Kernels library
+#----------------------------------------------------------------------------
+if (KOKKOS_KERNELS_LIBRARY MATCHES ".a")
+  add_library(kokkoskernels STATIC IMPORTED GLOBAL)
+else()
+  add_library(kokkoskernels SHARED IMPORTED GLOBAL)
 endif()
-list(FIND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR} YAMLCPP_INDEX)
-if (YAMLCPP_INDEX EQUAL -1)
-  set(HAERO_EXT_INCDIRS ${HAERO_EXT_INCDIRS};${YAMLCPP_INCLUDE_DIR})
+set_target_properties(kokkoskernels PROPERTIES IMPORTED_LOCATION ${KOKKOS_KERNELS_LIBRARY})
+
+if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
+  update_submodules()
+  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_DIR ${EKAT_LIBRARY_DIR})
+  set(KK_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                    -DKokkos_ROOT=${KOKKOS_DIR}
+                    -DKokosKernels_INST_LAYOUTRIGHT:BOOL=ON
+                    -DCMAKE_CXX_EXTENSIONS:BOOL=OFF
+                    )
+  if (HAERO_DEVICE STREQUAL "CUDA")
+    # We use EKAT's C++ compiler helper script.
+    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
+                      -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+
+    # There are some pitfalls with some outdated cusparse symbols that we ѕhould
+    # avoid till kokkos-kernels fixes them.
+    # (See https://github.com/trilinos/Trilinos/issues/8281)
+    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
+                      -DKokkosKernels_ENABLE_TPL_CUSPARSE:BOOL=OFF)
+  else()
+    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
+                      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+  endif()
+  ExternalProject_Add(kokkoskernels_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kokkos-kernels
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${KK_CMAKE_OPTS}
+                      DEPENDS ekat
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND make -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND make install
+                      LOG_INSTALL TRUE)
+  add_dependencies(kokkoskernels kokkoskernels_proj)
+
+  # Our version of Kokkos has an install process that's kind of broken. It
+  # leaves a KokkosConfig.cmake file in its build directory in addition to
+  # the installation path, and this confuses both kokkos-kernels and TChem.
+  # We delete it in this custom step.
+  if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
+    ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkos_config
+      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
+      DEPENDS ekat
+      DEPENDERS configure)
+    # We also have to delete KokkosKernelsConfig.cmake after installation.
+    ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkoskernels_config
+      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels/KokkosKernelsConfig.cmake
+      DEPENDS ekat
+      DEPENDEES install)
+  endif()
 endif()
+list(APPEND HAERO_EXT_INCDIRS ${KOKKOS_KERNELS_INCLUDE_DIR})
+set(HAERO_EXT_LIBRARIES kokkoskernels;${HAERO_EXT_LIBRARIES})
+
+#----------------------------------------------------------------------------
+# TChem chemical kinetics library
+#----------------------------------------------------------------------------
+if (TCHEM_LIBRARY MATCHES ".a")
+  add_library(tchem STATIC IMPORTED GLOBAL)
+else()
+  add_library(tchem SHARED IMPORTED GLOBAL)
+endif()
+set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY})
+
+if (NOT EXISTS ${TCHEM_LIBRARY})
+  update_submodules()
+  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
+  set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                       -DTCHEM_INSTALL_LIB_PATH=${CMAKE_INSTALL_LIBDIR}
+                       -DTCHEM_ENABLE_VERBOSE=OFF
+                       -DTCHEM_ENABLE_KOKKOS=ON
+                       -DTCHEM_ENABLE_KOKKOSKERNELS=ON
+                       -DTCHEM_ENABLE_TEST=OFF
+                       -DTCHEM_ENABLE_EXAMPLE=ON
+                       -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                       -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                     )
+  if (HAERO_DEVICE STREQUAL "CUDA")
+    # We use EKAT's C++ compiler helper script. Also, we need to nudge TChem
+    # toward the kokkos/ subdirectory of our include path in this case (for some
+    # reason).
+    set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx
+                         -DCMAKE_CXX_FLAGS=-I${EKAT_LIBRARY_DIR}/../include/kokkos)
+  else()
+    set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
+                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+  endif()
+
+  ExternalProject_Add(tchem_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/TChem
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/TChem/src
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/TChem
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${TCHEM_CMAKE_OPTS}
+                      DEPENDS kokkoskernels
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND make -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND make install
+                      LOG_INSTALL TRUE)
+  add_dependencies(tchem tchem_proj)
+endif()
+list(APPEND HAERO_EXT_INCDIRS ${TCHEM_INCLUDE_DIR})
+set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
+list(REMOVE_DUPLICATES HAERO_EXT_INCDIRS)
 set(HAERO_INCDIRS ${HAERO_INCDIRS};${HAERO_EXT_INCDIRS} PARENT_SCOPE)
 set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
 set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
 # Installation targets
-if (${Z_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include)
+
+if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
   install(FILES ${Z_LIBRARY} DESTINATION lib)
 endif()
-if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
+if (${HDF5_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
   install(FILES ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION lib)
 endif()
-if (${NETCDF_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
+if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
 endif()
-if (${EKAT_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
-  install(FILES ${EKAT_LIBRARY} DESTINATION lib)
+if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
+  install(FILES       ${EKAT_LIBRARY}
+                      ${EKAT_LIBRARY_DIR}/libekat_test_main.a
+                      ${EKAT_LIBRARY_DIR}/libekat_test_session.a
+                      ${EKAT_LIBRARY_DIR}/libkokkoscore.a
+                      ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
+          DESTINATION lib)
 endif()
-if (${YAMLCPP_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
+if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
+endif()
+if (${KOKKOS_KERNELS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built kokkos-kernels
+  install(FILES ${KOKKOS_KERNELS_LIBRARY} DESTINATION lib)
+endif()
+if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
+  install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
+endif()
+if (${PROJECT_BINARY_DIR}/share)
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION share)
 endif()
