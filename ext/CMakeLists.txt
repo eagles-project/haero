@@ -341,9 +341,12 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                      )
   if (HAERO_DEVICE STREQUAL "CUDA")
-    # We use EKAT's C++ compiler helper script.
+    # We use EKAT's C++ compiler helper script. Also, we need to nudge TChem
+    # toward the kokkos/ subdirectory of our include path in this case (for some
+    # reason).
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx
+                         -DCMAKE_CXX_FLAGS=-I${EKAT_LIBRARY_DIR}/../include/kokkos)
   else()
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
