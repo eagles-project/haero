@@ -224,7 +224,7 @@ if (NOT EXISTS ${EKAT_LIBRARY})
                         -DKokkos_ENABLE_SERIAL=ON
                         -DKokkos_ENABLE_CUDA=ON
                         -DKokkos_ENABLE_CUDA_LAMBDA=ON
-                        -DKokkos_${KOKKOS_ARCH_FLAG}:BOOL=ON)
+                        -D${KOKKOS_ARCH_FLAG}:BOOL=ON)
   endif()
   ExternalProject_Add(ekat_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ekat
