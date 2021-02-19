@@ -3,9 +3,7 @@
 module mam4_nucleation
 
   use haero, only: wp, model_t, species_t, &
-                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
-                   prognostics_from_c_ptr, atmosphere_from_c_ptr, &
-                   diagnostics_from_c_ptr, tendencies_from_c_ptr
+                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
   use haero_constants, only: pi, R_gas, Avogadro
 
   implicit none
