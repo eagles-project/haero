@@ -1,9 +1,6 @@
 #include "haero/process.hpp"
 #include "haero/selected_processes.hpp"
-
-#if HAERO_FORTRAN
-#include "haero/processes/mam4_nucleation_fprocess.hpp"
-#endif
+#include "haero/available_processes.hpp"
 
 namespace haero {
 
@@ -61,7 +58,7 @@ PrognosticProcess* select_prognostic_process(ProcessType type,
   else if (type == NucleationProcess) {
 #if HAERO_FORTRAN
     if (selections.nucleation == SelectedProcesses::MAM4FNucleation) {
-      process = new Mam4NucleationFProcess();
+      process = new MAM4NucleationFProcess();
     } else
 #endif
     if (selections.nucleation == SelectedProcesses::NoNucleation) {

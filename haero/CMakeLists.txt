@@ -20,7 +20,7 @@ add_custom_target(update_version_info ALL
   COMMENT "Updating haero version information..."
 )
 
-# Gather Haero process implementations
+# Gather Haero process implementations (placed in HAERO_PROCESSES).
 add_subdirectory(processes)
 
 if (HAERO_FORTRAN)
@@ -39,6 +39,24 @@ if (HAERO_FORTRAN)
       haero.F90
       ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90)
 endif()
+
+# Generate a header file that brings in all C++ process headers.
+set(available_processes_hpp ${CMAKE_CURRENT_BINARY_DIR}/available_processes.hpp)
+file(WRITE ${available_processes_hpp} "#ifndef HAERO_AVAILABLE_PROCESSES_HPP\n#define HAERO_AVAILABLE_PROCESSES_HPP\n\n")
+foreach(src ${HAERO_PROCESSES})
+  if (${src} MATCHES ".cpp")
+    get_filename_component(filename ${src} NAME)
+    string(REPLACE ".cpp" ".hpp" header ${filename})
+    if (${header} MATCHES "fprocess")
+      file(APPEND ${available_processes_hpp} "#include \"processes/${header}\"\n")
+    endif()
+    file(APPEND ${available_processes_hpp} "#if HAERO_FORTRAN\n")
+    if (${header} MATCHES "fprocess")
+      file(APPEND ${available_processes_hpp} "#endif\n")
+    endif()
+  endif()
+endforeach()
+file(APPEND ${available_processes_hpp} "#endif\n")
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp

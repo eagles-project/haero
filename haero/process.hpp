@@ -221,6 +221,26 @@ class FPrognosticProcess: public PrognosticProcess
   bool initialized_;
 };
 
+/// @def HAERO_CREATE_PROGNOSTIC_FORTRAN_BRIDGE(module_name)
+/// This macro generates C declarations for three interoperable Fortran
+/// subroutines that correspond to the init, run, and finalize behaviors
+/// for an FPrognosticProcess.
+#define CREATE_PROGNOSTIC_FORTRAN_BRIDGE(module_name) \
+extern "C" { \
+extern void module_name##_bridge_init(void); \
+extern void module_name##_bridge_run(Real, Real, void*, void*, void*, void*); \
+extern void module_name##_bridge_finalize(void); \
+}
+
+/// @def PROGNOSTIC_FORTRAN_BRIDGE(module_name)
+/// Use this in place of the last three arguments to the FPrognosticProcess
+/// base class constructor. You must use @ref CREATE_PROGNOSTIC_FORTRAN_BRIDGE
+/// to declare the interfaces for the interoperable bridge functions first.
+#define PROGNOSTIC_FORTRAN_BRIDGE(module_name) \
+  module_name##_bridge_init, \
+  module_name##_bridge_run, \
+  module_name##_bridge_finalize
+
 #endif // HAERO_FORTRAN
 
 /// @class DiagnosticProcess
@@ -502,6 +522,26 @@ class FDiagnosticProcess: public DiagnosticProcess {
   // Has the process been initialized?
   bool initialized_;
 };
+
+/// @def HAERO_CREATE_DIAGNOSTIC_FORTRAN_BRIDGE(module_name)
+/// This macro generates C declarations for three interoperable Fortran
+/// subroutines that correspond to the init, update, and finalize behaviors
+/// for an FDiagnosticProcess.
+#define CREATE_DIAGNOSTIC_FORTRAN_BRIDGE(module_name) \
+extern "C" { \
+extern void module_name##_bridge_init(void); \
+extern void module_name##_bridge_update(Real, void*, void*, void*); \
+extern void module_name##_bridge_finalize(void); \
+}
+
+/// @def DIAGNOSTIC_FORTRAN_BRIDGE(module_name)
+/// Use this in place of the last three arguments to the FDiagnosticProcess
+/// base class constructor. You must use @ref CREATE_DIAGNOSTIC_FORTRAN_BRIDGE
+/// to declare the interfaces for the interoperable bridge functions first.
+#define DIAGNOSTIC_FORTRAN_BRIDGE(module_name) \
+  module_name##_bridge_init, \
+  module_name##_bridge_update, \
+  module_name##_bridge_finalize
 
 #endif // HAERO_FORTRAN
 
