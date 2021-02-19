@@ -35,9 +35,18 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   // output: omega, reaction rates
   omega = real_type_2d_view("NetProductionRate", nBatch, kmcd.nSpec);
 
-  // assign the constructor arguments to the corresponding views
-  theta(0) = itheta;
-  lambda(0) = ilambda;
+  // create mirror views on host to set the initial values of theta/lambda,
+  // then deep copy to device
+  auto theta_host = Kokkos::create_mirror_view(theta);
+  auto lambda_host = Kokkos::create_mirror_view(lambda);
+
+  // assign the constructor arguments to the corresponding mirror views
+  theta_host(0) = itheta;
+  lambda_host(0) = ilambda;
+
+  // deep copy to device
+  Kokkos::deep_copy(theta, theta_host);
+  Kokkos::deep_copy(lambda, lambda_host);
 
   /// create a mirror view to store input from a file
   auto state_host = Kokkos::create_mirror_view(state);
