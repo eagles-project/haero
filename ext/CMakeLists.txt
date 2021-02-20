@@ -215,8 +215,11 @@ if (NOT EXISTS ${EKAT_LIBRARY})
                         -DKokkos_ENABLE_CUDA=OFF)
     if (NOT APPLE)
       set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                          -DKokkos_ENABLE_OPENMP=ON
                           -DKokkos_ENABLE_SERIAL=ON)
+    endif()
+    if (HAVE_OPENMP)
+      set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                          -DKokkos_ENABLE_OPENMP=ON)
     endif()
   elseif (HAERO_DEVICE STREQUAL CUDA)
     set(KOKKOS_ARCH_FLAG "Kokkos_ARCH_${HAERO_DEVICE_ARCH}")
