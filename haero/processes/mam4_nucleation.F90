@@ -1,21 +1,16 @@
 !> This module implements MAM4's nucleation process. For details, see the
 !> appropriate section in the Processes chapter of the Haero design document.
-module mam4_nucleation_mod
+module mam4_nucleation
 
-  use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, species_t, &
-                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
-                   prognostics_from_c_ptr, atmosphere_from_c_ptr, &
-                   diagnostics_from_c_ptr, tendencies_from_c_ptr
+  use haero, only: wp, model_t, species_t, &
+                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
   use haero_constants, only: pi, R_gas, Avogadro
 
   implicit none
   private
 
   ! Module functions
-  public :: mam4_nucleation_init, &
-            mam4_nucleation_run, &
-            mam4_nucleation_finalize
+  public :: init, run, finalize
 
   !-------------------
   ! Module parameters
@@ -84,8 +79,11 @@ module mam4_nucleation_mod
 
 contains
 
-subroutine mam4_nucleation_init() bind(c)
+subroutine init(model)
   implicit none
+
+  ! Arguments
+  type(model_t), intent(in) :: model
 
   type(species_t) so4
   integer :: so4_index
@@ -106,23 +104,17 @@ subroutine mam4_nucleation_init() bind(c)
 
 end subroutine
 
-subroutine mam4_nucleation_run(t, dt, progs, atm, diags, tends) bind(c)
-  use iso_c_binding, only: c_ptr, c_f_pointer
+subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   implicit none
 
   ! Arguments
-  real(wp), value, intent(in) :: t     ! simulation time
-  real(wp), value, intent(in) :: dt    ! simulation time step
-  type(c_ptr), value, intent(in) :: progs ! prognostic variables
-  type(c_ptr), value, intent(in) :: atm   ! atmospheric state
-  type(c_ptr), value, intent(in) :: diags ! diagnostic variables
-  type(c_ptr), value, intent(in) :: tends ! tendencies
-
-  ! Fortran prognostics, atmosphere, diagnostics, tendencies types
-  type(prognostics_t) :: prognostics
-  type(atmosphere_t)  :: atmosphere
-  type(diagnostics_t) :: diagnostics
-  type(tendencies_t)  :: tendencies
+  type(model_t), intent(in)         :: model
+  real(wp), value, intent(in)       :: t
+  real(wp), value, intent(in)       :: dt
+  type(prognostics_t), intent(in)   :: prognostics
+  type(atmosphere_t), intent(in)    :: atmosphere
+  type(diagnostics_t), intent(in)   :: diagnostics
+  type(tendencies_t), intent(inout) :: tendencies
 
   ! Other local variables.
   integer :: i, k
@@ -167,12 +159,6 @@ subroutine mam4_nucleation_run(t, dt, progs, atm, diags, tends) bind(c)
   if (so4_aitken_index == 0) then
     return
   end if
-
-  ! Get Fortran data types from our C pointers.
-  prognostics = prognostics_from_c_ptr(progs)
-  atmosphere = atmosphere_from_c_ptr(atm)
-  diagnostics = diagnostics_from_c_ptr(diags)
-  tendencies = tendencies_from_c_ptr(tends)
 
   ! Gas mole fraction tendencies.
   q_g => prognostics%gases()
@@ -464,8 +450,11 @@ function h2so4_nucleation_rate(q_so4, q_h2so4, n_aitken, dt, temp, pmid, aircon,
 #endif
 end function
 
-subroutine mam4_nucleation_finalize() bind(c)
+subroutine finalize(model)
   implicit none
+
+  ! Arguments
+  type(model_t), intent(in) :: model
 
   ! Nothing to do here.
 end subroutine
