@@ -159,10 +159,12 @@ void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
   auto phi_local = phi;
   auto phi0_local = phi0;
   auto w_local = w;
-  Kokkos::parallel_for("HostDynamics::InterfaceUpdate", PackInfo::num_packs(nlev_+1),
+  auto nlev_p1 = nlev_+1;
+  Kokkos::parallel_for("HostDynamics::InterfaceUpdate", PackInfo::num_packs(nlev_p1), 
     KOKKOS_LAMBDA (const int pack_idx) {
-    for (int vi=0; vi<PackInfo::vec_end(nlev_+1,pack_idx); ++vi) {
-      const Real geop = geopotential(newt, phi0_local(pack_idx)[vi], ac);
+    for (int vi=0; vi<PackInfo::vec_end(nlev_p1,pack_idx); ++vi) {
+      const Real phi0 = phi0_local(pack_idx)[vi];
+      const Real geop = geopotential(newt, phi0, ac);
       phi_local(pack_idx)[vi] = geop;
       w_local(pack_idx)[vi] = velocity(newt, geop, ac);
     }
@@ -174,9 +176,10 @@ void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
   auto rho0_local = rho0;
   auto thetav_local = thetav;
   auto p_local = p;
-  Kokkos::parallel_for("HostDynamics::MidpointUpdate", PackInfo::num_packs(nlev_),
+  auto nlev_local = nlev_;
+  Kokkos::parallel_for("HostDynamics::MidpointUpdate", PackInfo::num_packs(nlev_local), 
     KOKKOS_LAMBDA (const int pack_idx) {
-    for (int vi=0; vi<PackInfo::vec_end(nlev_, pack_idx); ++vi) {
+    for (int vi=0; vi<PackInfo::vec_end(nlev_local, pack_idx); ++vi) {
       const int k = PackInfo::array_idx(pack_idx,vi);
       const int kphalf_pack = PackInfo::pack_idx(k+1);
       const int kphalf_vec = PackInfo::vec_idx(k+1);

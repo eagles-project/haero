@@ -1,14 +1,19 @@
 #ifndef HAERO_PROGNOSTICS_HPP
 #define HAERO_PROGNOSTICS_HPP
 
-#include "haero/mode.hpp"
-#include "haero/species.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "haero/mode.hpp"
-#include "haero/species.hpp"
-#include "kokkos/Kokkos_Core.hpp"
 #include <map>
 #include <vector>
+
+#include "kokkos/Kokkos_Core.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_types.hpp"
+
+#include "haero/mode.hpp"
+#include "haero/species.hpp"
+#include "haero/view_pack_helpers.hpp"
+#include "haero/mode.hpp"
+#include "haero/species.hpp"
 
 namespace haero {
 
@@ -16,7 +21,7 @@ namespace haero {
 class Tendencies;
 
 /// @class Prognostics
-/// This type stores the prognostic variables for an atmospheric column in an
+/// This type stores the prognostic variables for an atmospheric column in an 
 /// aerosol system. Specifically,It stores
 /// * mass mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
@@ -25,6 +30,10 @@ class Tendencies;
 class Prognostics final {
   public:
 
+  /// This type is used to define Kokkos views on device which might
+  /// be either the host or the device if there is one.
+  using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
+
   /// This type represents a multidimensional array mapping a species and
   /// vertical level index to a pack.
   /// * The species is identified by the index s.
@@ -32,7 +41,8 @@ class Prognostics final {
   /// So view[s][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using SpeciesColumnView = ekat::Unmanaged<Kokkos::View<PackType**> >;
+  using ManagedSpeciesColumnView = kokkos_device_type::view_2d<PackType>;
+  using SpeciesColumnView = ekat::Unmanaged<ManagedSpeciesColumnView>;
 
   /// This type represents a multidimensional array mapping a mode and a
   /// vertical level index to a pack.
@@ -41,7 +51,8 @@ class Prognostics final {
   /// So view[m][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ModalColumnView = ekat::Unmanaged<Kokkos::View<PackType**> >;
+  using ManagedModalColumnView = kokkos_device_type::view_2d<PackType>;
+  using ModalColumnView = ekat::Unmanaged<ManagedModalColumnView>;
 
   /// Creates a Prognostics object that can store aerosol data can be added.
   /// This constructor accepts a number of Kokkos View objects that are managed
@@ -85,12 +96,13 @@ class Prognostics final {
               const std::vector<int>& num_aerosol_species,
               int num_gases,
               int num_levels,
-              Kokkos::View<PackType**>& int_aerosols,
-              Kokkos::View<PackType**>& cld_aerosols,
-              Kokkos::View<PackType**>& gases,
-              Kokkos::View<PackType**>& modal_num_concs);
+              ManagedSpeciesColumnView int_aerosols,
+              ManagedSpeciesColumnView cld_aerosols,
+              ManagedSpeciesColumnView gases,
+              ManagedModalColumnView   modal_num_concs);
 
   /// Destructor.
+  KOKKOS_FUNCTION
   ~Prognostics();
 
   // --------------------------------------------------------------------------
@@ -120,34 +132,40 @@ class Prognostics final {
 
   /// Returns the view storing interstitial aerosol mass mixing ratios
   /// [kg aerosol / kg dry air].
-  SpeciesColumnView& interstitial_aerosols();
+  KOKKOS_INLINE_FUNCTION
+  SpeciesColumnView interstitial_aerosols() {
+    return int_aero_species_;
+  }
 
   /// Returns the view storing interstitial aerosol mass mixing ratios
   /// [kg aerosol / kg dry air] (const).
-  const SpeciesColumnView& interstitial_aerosols() const;
+  KOKKOS_INLINE_FUNCTION
+  const SpeciesColumnView interstitial_aerosols() const {
+    return int_aero_species_;
+  }
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratios
   /// [kg aerosol / kg dry air].
-  SpeciesColumnView& cloudborne_aerosols();
+  SpeciesColumnView cloudborne_aerosols();
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratios
   /// [kg aerosol / kg dry air] (const).
-  const SpeciesColumnView& cloudborne_aerosols() const;
+  const SpeciesColumnView cloudborne_aerosols() const;
 
   /// Returns the view storing the mass mixing ratios of gas species
   /// [kg gas / kg dry air].
-  SpeciesColumnView& gases();
+  SpeciesColumnView gases();
 
   /// Returns the view storing the mass mixing ratios of gas species
   /// [kg gas / kg dry air] (const).
-  const SpeciesColumnView& gases() const;
+  const SpeciesColumnView gases() const;
 
   /// Returns the view storing the modal number concentrations [# / kg dry air].
-  ModalColumnView& modal_num_concs();
+  ModalColumnView modal_num_concs();
 
   /// Returns the view storing the modal number concentrations [# / kg dry air]
   /// (const).
-  const ModalColumnView& modal_num_concs() const;
+  const ModalColumnView modal_num_concs() const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
@@ -162,13 +180,13 @@ class Prognostics final {
   private:
 
   // Aerosol species names within each mode.
-  std::vector<int> num_aero_species_;
+  const view_1d_int_type num_aero_species_;
 
   // Number of distinct aerosol populations.
   int num_aero_populations_;
 
   // Number of gas species.
-  int num_gases_;
+  const int num_gases_;
 
   // Number of vertical levels.
   const int num_levels_;

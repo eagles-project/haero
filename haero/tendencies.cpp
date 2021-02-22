@@ -6,7 +6,7 @@
 namespace haero {
 
 Tendencies::Tendencies(const Prognostics& prognostics) {
-  int num_populations = prognostics.num_aerosol_populations();
+  int num_aerosol_populations = prognostics.num_aerosol_populations();
   int num_levels = prognostics.num_levels();
   int num_vert_packs = num_levels/HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
@@ -15,12 +15,12 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
   auto int_view_name = std::string("d/dt[") +
                        prognostics.interstitial_aerosols().label() +
                        std::string(")]");
-  int_aero_species_ = SpeciesColumnView(int_view_name, num_populations,
+  int_aero_species_ = SpeciesColumnView(int_view_name, num_aerosol_populations,
                                         num_vert_packs);
   auto cld_view_name = std::string("d/dt[") +
                        prognostics.cloudborne_aerosols().label() +
                        std::string(")]");
-  cld_aero_species_ = SpeciesColumnView(cld_view_name, num_populations,
+  cld_aero_species_ = SpeciesColumnView(cld_view_name, num_aerosol_populations,
                                         num_vert_packs);
 
   int num_gases = prognostics.num_gases();
@@ -39,39 +39,39 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
 Tendencies::~Tendencies() {
 }
 
-Tendencies::SpeciesColumnView&
+Tendencies::SpeciesColumnView
 Tendencies::interstitial_aerosols() {
   return int_aero_species_;
 }
 
-const Tendencies::SpeciesColumnView&
+const Tendencies::SpeciesColumnView
 Tendencies::interstitial_aerosols() const {
   return int_aero_species_;
 }
 
-Tendencies::SpeciesColumnView&
+Tendencies::SpeciesColumnView
 Tendencies::cloudborne_aerosols() {
   return cld_aero_species_;
 }
 
-const Tendencies::SpeciesColumnView&
+const Tendencies::SpeciesColumnView
 Tendencies::cloudborne_aerosols() const {
   return cld_aero_species_;
 }
 
-Tendencies::SpeciesColumnView& Tendencies::gases() {
+Tendencies::SpeciesColumnView Tendencies::gases() {
   return gases_;
 }
 
-const Tendencies::SpeciesColumnView& Tendencies::gases() const {
+const Tendencies::SpeciesColumnView Tendencies::gases() const {
   return gases_;
 }
 
-Tendencies::ModalColumnView& Tendencies::modal_num_concs() {
+Tendencies::ModalColumnView Tendencies::modal_num_concs() {
   return modal_num_concs_;
 }
 
-const Tendencies::ModalColumnView& Tendencies::modal_num_concs() const {
+const Tendencies::ModalColumnView Tendencies::modal_num_concs() const {
   return modal_num_concs_;
 }
 
@@ -151,28 +151,28 @@ extern "C" {
 void* t_int_aero_mix_frac_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& mix_fracs = tends->interstitial_aerosols();
+  auto mix_fracs = tends->interstitial_aerosols();
   return (void*)mix_fracs.data();
 }
 
 void* t_cld_aero_mix_frac_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& mix_fracs = tends->cloudborne_aerosols();
+  auto mix_fracs = tends->cloudborne_aerosols();
   return (void*)mix_fracs.data();
 }
 
 void* t_gases_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& mix_fracs = tends->gases();
+  auto mix_fracs = tends->gases();
   return (void*)mix_fracs.data();
 }
 
 void* t_modal_num_concs_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
-  auto& num_concs = tends->modal_num_concs();
+  auto num_concs = tends->modal_num_concs();
   return (void*)num_concs.data();
 }
 

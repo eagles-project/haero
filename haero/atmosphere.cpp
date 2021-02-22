@@ -3,10 +3,10 @@
 namespace haero {
 
 Atmosphere::Atmosphere(int num_levels,
-                       const Kokkos::View<PackType*>& temp,
-                       const Kokkos::View<PackType*>& press,
-                       const Kokkos::View<PackType*>& rel_hum,
-                       const Kokkos::View<PackType*>& ht):
+                       const ManagedColumnView temp,
+                       const ManagedColumnView press,
+                       const ManagedColumnView rel_hum,
+                       const ManagedColumnView ht):
   num_levels_(num_levels),
   temperature_(temp),
   pressure_(press),

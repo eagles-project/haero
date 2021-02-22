@@ -70,10 +70,13 @@ class Model final {
   /// Creates a new Prognostics object that can be used with this Model, given
   /// a set of views representing aerosol data managed by a host model. See
   /// the Prognostics class constructor for details on these views.
-  Prognostics* create_prognostics(Kokkos::View<PackType**>& int_aerosols,
-                                  Kokkos::View<PackType**>& cld_aerosols,
-                                  Kokkos::View<PackType**>& gases,
-                                  Kokkos::View<PackType**>& modal_num_concs) const;
+  using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
+  using SpeciesColumnView  = kokkos_device_type::view_2d<PackType>;
+  using ModalColumnView    = kokkos_device_type::view_2d<PackType>;
+  Prognostics* create_prognostics(SpeciesColumnView int_aerosols,
+                                  SpeciesColumnView cld_aerosols,
+                                  SpeciesColumnView gases,
+                                  ModalColumnView   modal_num_concs) const;
 
   /// Creates a new empty Diagnostics object that can be used with this Model.
   /// All fields within this new Diagnostics are owned and managed by it.
