@@ -24,30 +24,6 @@ typedef Kokkos::CudaSpace MemSpace;
 #else
 typedef Kokkos::HostSpace MemSpace;
 #endif
-#if 0
-template <class T> inline T *allocate_on_device() {
-  const std::string debuggingName(typeid(T).name());
-  T *t = static_cast<T *>(
-      Kokkos::kokkos_malloc<MemSpace>(debuggingName + "_malloc", sizeof(T)));
-  Kokkos::parallel_for(debuggingName + "_format", 1,
-                       KOKKOS_LAMBDA(const int) { new (t) T(); });
-  return t;
-}
-
-template <class T> inline T *allocate_on_device(const T &s) {
-  const std::string debuggingName(typeid(T).name());
-  T *t = static_cast<T *>(
-      Kokkos::kokkos_malloc<MemSpace>(debuggingName + "_malloc", sizeof(T)));
-  const T &S = s; // Suck into lambda capture space.
-  Kokkos::parallel_for(debuggingName + "_format", 1,
-                       KOKKOS_LAMBDA(const int) { new (t) T(S); });
-  return t;
-}
-
-inline void free_on_device(void *t) { Kokkos::kokkos_free<MemSpace>(t); }
-#endif
-
-
 
 class MyPrognosticProcess : public PrognosticProcess {
 public :
@@ -88,35 +64,32 @@ public :
     const Diagnostics::ColumnView        generic_var   = diagnostics.var(generic_0);
     Tendencies::SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
 
-    const int num_vert_packs  = int_aerosols.extent(1);
     const int num_levels      = temp.extent(0);
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
-    // int_aerosols 1 x num_vert_packs
-    // temp  num_levels
-    // first_aersol num_populations x num_vert_packs
-    // second_aersol num_populations x num_vert_packs
-    // generic_var num_levels
-    // aero_tend num_aerosol_populations x num_vert_packs 
     for (int k=0; k<num_levels; ++k) {
-      generic_var(k) = 0;
+      generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0;
     }
-    for (int i=0; i<num_vert_packs; ++i) {
+    for (int i=0; i<num_levels; ++i) {
       for (int k=0; k<num_levels; ++k) {
-        generic_var(k) += temp(k);
+        generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)] += 
+          temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
       }
       for (int j=0; j<num_aerosol_populations; ++j) {
-        aero_tend(j,i) = 0;
+        aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
         for (int k=0; k<num_levels; ++k) {
-          aero_tend(j,i) += int_aerosols(0,i) * temp(k);
+          aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] += 
+             int_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] * 
+             temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         }
       }
       for (int j=0; j<num_populations; ++j) {
-        first_aersol(j,i) = 0;
+        first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
         for (int k=0; k<num_levels; ++k) {
-          first_aersol(j,i) += temp(k) * i * j;
+          first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] += 
+            i * j * temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         }
-        second_aersol(j,i) = j*i;
+        second_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = j*i;
       }
     }
   };
@@ -156,8 +129,8 @@ TEST_CASE("process_tests", "prognostic_process") {
   SpeciesColumnView dev_gases;
   {
     // example of filling a device view from a std::vector
-    std::vector<std::vector<Real>> host_gases(num_gases, std::vector<Real>(num_vert_packs));
-    for (int i=0; i<num_vert_packs; ++i) {
+    std::vector<std::vector<Real>> host_gases(num_gases, std::vector<Real>(num_levels));
+    for (int i=0; i<num_levels; ++i) {
       for (int j=0; j<num_gases; ++j) {
         host_gases[j][i] = i+j;
       }
@@ -169,8 +142,8 @@ TEST_CASE("process_tests", "prognostic_process") {
   {
     // example of filling a device view from a host view
     auto host_int_aerosols  =  Kokkos::create_mirror_view(dev_int_aerosols);
-    for (int i=0; i<num_vert_packs; ++i) {
-      host_int_aerosols(0,i) = i;
+    for (int i=0; i<num_levels; ++i) {
+      host_int_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
     }
     Kokkos::deep_copy(dev_int_aerosols, host_int_aerosols);
   }
@@ -179,9 +152,9 @@ TEST_CASE("process_tests", "prognostic_process") {
   ModalColumnView   dev_modal_concs("modal number concs", num_modes, num_vert_packs);
   auto host_cld_aerosols  =  Kokkos::create_mirror_view(dev_cld_aerosols);
   auto host_modal_concs   =  Kokkos::create_mirror_view(dev_modal_concs);
-  for (int i=0; i<num_vert_packs; ++i) {
-    host_cld_aerosols(0,i) = i;
-    host_modal_concs(0,i) = i;
+  for (int i=0; i<num_levels; ++i) {
+    host_cld_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
+    host_modal_concs (0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
   }
   Kokkos::deep_copy(dev_cld_aerosols, host_cld_aerosols);
   Kokkos::deep_copy(dev_modal_concs,  host_modal_concs);
@@ -192,14 +165,18 @@ TEST_CASE("process_tests", "prognostic_process") {
                     dev_gases, 
                     dev_modal_concs);
 
-  Kokkos::View<PackType*> temp("temperature", num_levels);
-  Kokkos::View<PackType*> press("pressure", num_levels);
-  Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
-  Kokkos::View<PackType*> ht("height", num_levels+1);
+  Kokkos::View<PackType*> temp("temperature", num_vert_packs);
+  Kokkos::View<PackType*> press("pressure", num_vert_packs);
+  Kokkos::View<PackType*> rel_hum("relative humidity", num_vert_packs);
+  int num_iface_packs = (num_levels+1)/HAERO_PACK_SIZE;
+  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels+1)) {
+    num_iface_packs++;
+  }
+  Kokkos::View<PackType*> ht("height", num_iface_packs);
   {
     auto host_temp  =  Kokkos::create_mirror_view(temp);
     for (int i=0; i<num_levels; ++i) {
-      host_temp(i) = i;
+      host_temp(pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
     }
     Kokkos::deep_copy(temp, host_temp);
   }
@@ -263,35 +240,32 @@ TEST_CASE("process_tests", "prognostic_process") {
     const Diagnostics::ColumnView        generic_var   = diags.var(generic_0);
     Tendencies::SpeciesColumnView aero_tend = tends.interstitial_aerosols();
 
-    const int num_vert_packs  = int_aerosols.extent(1);
     const int num_levels      = temp.extent(0);
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
-    // int_aerosols 1 x num_vert_packs
-    // temp  num_levels
-    // first_aersol num_populations x num_vert_packs
-    // second_aersol num_populations x num_vert_packs
-    // generic_var num_levels
-    // aero_tend num_aerosol_populations x num_vert_packs 
-    for (int i=0; i<num_vert_packs; ++i) {
+    for (int i=0; i<num_levels; ++i) {
       for (int k=0; k<num_levels; ++k) {
-        const Real val = num_vert_packs*k;
-        REQUIRE(fp_helper::equiv(generic_var(k)[0], val));
+        const Real val = num_levels*k;
+        const Real tst = generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
+        REQUIRE(fp_helper::equiv(tst, val));
       }
       for (int j=0; j<num_aerosol_populations; ++j) {
-        for (int k=0; k<num_levels; ++k) {
-          const Real val = j + 2556*i;
-          REQUIRE(fp_helper::equiv(aero_tend(j,i)[0], val));
+        for (int i=0; i<num_levels; ++i) {
+          const Real val = 153*i;
+          const Real tst = aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          REQUIRE(fp_helper::equiv(tst, val));
         }
       }
       for (int j=0; j<num_populations; ++j) {
         {
-          const Real val =  2556*(i*j);
-          REQUIRE(fp_helper::equiv(first_aersol(j,i)[0], val));
+          const Real val =  153*(i*j);
+          const Real tst = first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          REQUIRE(fp_helper::equiv(tst, val));
         }
         {
           const Real val = j*i;
-          REQUIRE(fp_helper::equiv(second_aersol(j,i)[0], val));
+          const Real tst = second_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          REQUIRE(fp_helper::equiv(tst, val));
         }
       }
     }

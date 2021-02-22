@@ -30,21 +30,29 @@ Prognostics::Prognostics(int num_aerosol_modes,
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
     num_vert_packs++;
   }
-  EKAT_REQUIRE_MSG(int_aerosols.extent(0) == num_aero_populations_,
+  const int int_aerosols_extent_0 = int_aerosols.extent(0);
+  const int int_aerosols_extent_1 = int_aerosols.extent(1);
+  const int cld_aerosols_extent_0 = cld_aerosols.extent(0);
+  const int cld_aerosols_extent_1 = cld_aerosols.extent(1);
+  const int gases_extent_0 = gases.extent(0);
+  const int gases_extent_1 = gases.extent(1);
+  const int modal_num_concs_extent_0 = modal_num_concs.extent(0);
+  const int modal_num_concs_extent_1 = modal_num_concs.extent(1);
+  EKAT_REQUIRE_MSG(int_aerosols_extent_0 == num_aero_populations_,
                    "int_aerosols must have extent(0) == " << num_aero_populations_);
-  EKAT_REQUIRE_MSG(int_aerosols.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(int_aerosols_extent_1 == num_vert_packs,
                    "int_aerosols must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(cld_aerosols.extent(0) == num_aero_populations_,
+  EKAT_REQUIRE_MSG(cld_aerosols_extent_0 == num_aero_populations_,
                    "cld_aerosols must have extent(0) == " << num_aero_populations_);
-  EKAT_REQUIRE_MSG(cld_aerosols.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(cld_aerosols_extent_1 == num_vert_packs,
                    "int_aerosols must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(gases.extent(0) == num_gases_,
+  EKAT_REQUIRE_MSG(gases_extent_0 == num_gases_,
                    "gases must have extent(0) == " << num_gases_);
-  EKAT_REQUIRE_MSG(gases.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(gases_extent_1 == num_vert_packs,
                    "gases must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(modal_num_concs.extent(0) == num_aerosol_modes,
+  EKAT_REQUIRE_MSG(modal_num_concs_extent_0 == num_aerosol_modes,
                    "modal_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_REQUIRE_MSG(modal_num_concs.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(modal_num_concs_extent_1 == num_vert_packs,
                    "modal_num_concs must have extent(1) == " << num_vert_packs);
 }
 

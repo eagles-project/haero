@@ -55,7 +55,12 @@ Diagnostics::TOKEN Diagnostics::create_var(const std::string& name) {
     "Diagnostic variable " << name << " already exists!");
   return_val = vars_.extent(0);
   set_string_to_token_vars (name, return_val);
-  Kokkos::resize(vars_, return_val+1, num_levels_);
+
+  int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
+    num_vert_packs++;
+  }
+  Kokkos::resize(vars_, return_val+1, num_vert_packs);
   return return_val;
 }
 
