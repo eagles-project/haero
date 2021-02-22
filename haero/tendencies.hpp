@@ -16,7 +16,10 @@ namespace haero {
 class Tendencies final {
   public:
 
+  /// This type is used to define Kokkos views on device which might
+  /// be either the host or the device if there is one.
   using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
+
   /// This type represents a multidimensional array mapping a species and
   /// vertical level index to a pack.
   /// * The species is identified by the index s.

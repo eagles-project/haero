@@ -184,7 +184,7 @@ module haero
     end function
 
     integer(c_int) function d_has_aerosol_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_int
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
@@ -196,7 +196,7 @@ module haero
     end function
 
     integer(c_int) function d_has_gas_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_int
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
@@ -208,7 +208,7 @@ module haero
     end function
 
     integer(c_int) function d_has_modal_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_int
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
@@ -250,13 +250,13 @@ contains
     type(c_ptr), value, intent(in) :: c_string
     character(len=:), pointer      :: f_ptr
     character(len=:), allocatable  :: f_string
-    integer(kind=c_size_t)         :: c_string_len
+    integer(c_size_t)              :: c_string_len
 
     interface
         function c_strlen(str_ptr) bind (c, name = "strlen" ) result(len)
         use, intrinsic :: iso_c_binding
             type(c_ptr), value     :: str_ptr
-            integer(kind=c_size_t) :: len
+            integer(c_size_t)      :: len
         end function c_strlen
     end interface
 
@@ -652,7 +652,7 @@ contains
     use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    integer :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
     c_name = f_to_c_string(name)

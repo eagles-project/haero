@@ -30,7 +30,10 @@ class Tendencies;
 class Prognostics final {
   public:
 
+  /// This type is used to define Kokkos views on device which might
+  /// be either the host or the device if there is one.
   using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
+
   /// This type represents a multidimensional array mapping a species and
   /// vertical level index to a pack.
   /// * The species is identified by the index s.
@@ -38,7 +41,8 @@ class Prognostics final {
   /// So view[s][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using SpeciesColumnView = ekat::Unmanaged<kokkos_device_type::view_2d<PackType>>;
+  using ManagedSpeciesColumnView = kokkos_device_type::view_2d<PackType>;
+  using SpeciesColumnView = ekat::Unmanaged<ManagedSpeciesColumnView>;
 
   /// This type represents a multidimensional array mapping a mode and a
   /// vertical level index to a pack.
@@ -47,7 +51,8 @@ class Prognostics final {
   /// So view[m][k] yields the desired pack.
   /// Our views are unmanaged in general, to allow a host model to assume
   /// responsibility for managing resources.
-  using ModalColumnView = ekat::Unmanaged<kokkos_device_type::view_2d<PackType>>;
+  using ManagedModalColumnView = kokkos_device_type::view_2d<PackType>;
+  using ModalColumnView = ekat::Unmanaged<ManagedModalColumnView>;
 
   /// Creates a Prognostics object that can store aerosol data can be added.
   /// This constructor accepts a number of Kokkos View objects that are managed
@@ -91,10 +96,10 @@ class Prognostics final {
               const std::vector<int>& num_aerosol_species,
               int num_gases,
               int num_levels,
-              kokkos_device_type::view_2d<PackType> int_aerosols,
-              kokkos_device_type::view_2d<PackType> cld_aerosols,
-              kokkos_device_type::view_2d<PackType> gases,
-              kokkos_device_type::view_2d<PackType> modal_num_concs);
+              ManagedSpeciesColumnView int_aerosols,
+              ManagedSpeciesColumnView cld_aerosols,
+              ManagedSpeciesColumnView gases,
+              ManagedModalColumnView   modal_num_concs);
 
   /// Destructor.
   KOKKOS_FUNCTION

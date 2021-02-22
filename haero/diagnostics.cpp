@@ -8,7 +8,8 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
                          int num_levels):
   num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Diagnostics::num_aerosol_species")), 
   num_aero_populations_(0),
-  num_gases_(num_gases), num_levels_(num_levels) {
+  num_gases_(num_gases), 
+  num_levels_(num_levels) {
 
   EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
                   "num_aerosol_species must be a vector of length " << num_aerosol_modes);

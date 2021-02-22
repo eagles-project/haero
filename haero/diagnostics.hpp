@@ -18,10 +18,18 @@ namespace haero {
 class Diagnostics final {
   public:
 
+  /// Diagnostic variables are retrieved with at TOKEN.  A token is returned
+  /// when the field is created or can be retrieved given the name of a field.
+  /// The token is useful when retrieving a field on device since std::string
+  /// is not usable on device.  A TOKEN can be obtained on host and then passed
+  /// to device.
   typedef int TOKEN;
   static const TOKEN NOT_FOUND = -1;
 
+  /// This type is used to define Kokkos views on device which might
+  /// be either the host or the device if there is one.
   using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
+
   /// This type represents an array mapping a vertical level index to a pack.
   /// The vertical level(s) are identified by the index.
   using ColumnView = kokkos_device_type::view_1d<PackType>;
@@ -166,17 +174,23 @@ class Diagnostics final {
   const ModalColumnView modal_var(const TOKEN token) const;
 
   private:
+  // Views that store arrays of views
   using ColumnViewArray        = kokkos_device_type::view_2d<PackType>;
   using SpeciesColumnViewArray = kokkos_device_type::view_3d<PackType>;
   using ModalColumnViewArray   = kokkos_device_type::view_3d<PackType>;
 
+  // Set named string into map and return corresponding token.
   static TOKEN
   set_string_to_token(std::map<std::string,TOKEN> &registered_strings,
                       const std::string &name,
                       const TOKEN token);
+
+  // Given named string search map and return corresponding token.
   static TOKEN
   get_string_to_token(const std::map<std::string,TOKEN> &registered_strings,
                       const std::string &name);
+
+  // Functions that call the two functions above with the correct map.
   TOKEN set_string_to_token_vars (const std::string &name, const TOKEN token) ;
   TOKEN set_string_to_token_aero (const std::string &name, const TOKEN token) ;
   TOKEN set_string_to_token_gas  (const std::string &name, const TOKEN token) ;
@@ -186,6 +200,8 @@ class Diagnostics final {
   TOKEN get_string_to_token_gas  (const std::string &name) const;
   TOKEN get_string_to_token_modal(const std::string &name) const;
 
+  // Maps of Diagnostic variable names to the assigned tokens which are just
+  // indexes into the array of views.
   std::map<std::string,TOKEN> registered_strings_vars;
   std::map<std::string,TOKEN> registered_strings_aero;
   std::map<std::string,TOKEN> registered_strings_gas;
@@ -203,7 +219,8 @@ class Diagnostics final {
   /// Number of vertical levels per column in the system.
   const int num_levels_;
 
-  // Named diagnostic variables.
+  // Named diagnostic variables.  These are arrays of views in which the
+  // assigned token can be used to index to the proper sub-view.
   ColumnViewArray        vars_;
   SpeciesColumnViewArray aero_vars_;
   SpeciesColumnViewArray gas_vars_;

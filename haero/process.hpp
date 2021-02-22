@@ -67,13 +67,12 @@ class PrognosticProcess {
   /// Default constructor is disabled.
   PrognosticProcess() = delete;
 
-  /// PrognosticProcess objects are not deep-copyable. They should be passed
-  /// by reference or as pointers.
+  /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   PrognosticProcess(const PrognosticProcess& pp) :
     type_(pp.type_), name_(pp.name_) {}
 
-  /// PrognosticProcess objects are not assignable either.
+  /// PrognosticProcess objects are not assignable.
   PrognosticProcess& operator=(const PrognosticProcess&) = delete;
 
   //------------------------------------------------------------------------
@@ -123,7 +122,7 @@ class PrognosticProcess {
 
   const ProcessType type_;
   // Use View as a struct to store a string and allows copy to device.
-  // Since std::string can not be used, it was either this or a raw char *
+  // Since std::string can not be used, it was either this or a char *
   const Kokkos::View<int>  name_;
 };
 
@@ -300,22 +299,22 @@ class DiagnosticProcess {
   /// @param [inout] diagnostics The Diagnostics object in which the needed
   ///                            variables are created.
   void prepare(Diagnostics& diagnostics) const {
-    for (const auto& var: required_vars_) {
+    for (const std::string& var: required_vars_) {
       if (Diagnostics::NOT_FOUND == diagnostics.has_var(var)) {
         diagnostics.create_var(var);
       }
     }
-    for (const auto& var: required_aero_vars_) {
+    for (const std::string& var: required_aero_vars_) {
       if (Diagnostics::NOT_FOUND == diagnostics.has_aerosol_var(var)) {
         diagnostics.create_aerosol_var(var);
       }
     }
-    for (const auto& var: required_gas_vars_) {
+    for (const std::string& var: required_gas_vars_) {
       if (Diagnostics::NOT_FOUND == diagnostics.has_gas_var(var)) {
         diagnostics.create_gas_var(var);
       }
     }
-    for (const auto& var: required_modal_vars_) {
+    for (const std::string& var: required_modal_vars_) {
       if (Diagnostics::NOT_FOUND == diagnostics.has_modal_var(var)) {
         diagnostics.create_modal_var(var);
       }
