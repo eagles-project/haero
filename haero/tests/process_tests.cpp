@@ -29,10 +29,12 @@ class MyPrognosticProcess : public PrognosticProcess {
 public :
   MyPrognosticProcess(ProcessType type, 
                       const std::string& name,
+                      const int num_lev,
                       const Diagnostics::TOKEN aer_0,
                       const Diagnostics::TOKEN aer_1,
                       const Diagnostics::TOKEN gen_0) : 
    PrognosticProcess(type, name),
+   num_levels (num_lev),
    aersol_0 (aer_0),
    aersol_1 (aer_1),
    generic_0 (gen_0)
@@ -44,6 +46,7 @@ public :
   KOKKOS_INLINE_FUNCTION
   MyPrognosticProcess(const MyPrognosticProcess& pp) : 
    PrognosticProcess(pp),
+   num_levels (pp.num_levels),
    aersol_0 (pp.aersol_0),
    aersol_1 (pp.aersol_1),
    generic_0 (pp.generic_0)
@@ -64,7 +67,6 @@ public :
     const Diagnostics::ColumnView        generic_var   = diagnostics.var(generic_0);
     Tendencies::SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
 
-    const int num_levels      = temp.extent(0);
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
     for (int k=0; k<num_levels; ++k) {
@@ -104,6 +106,7 @@ public :
     return pp;
   }
 private:
+  const int num_levels;
   const Diagnostics::TOKEN aersol_0;
   const Diagnostics::TOKEN aersol_1;
   const Diagnostics::TOKEN generic_0;
@@ -199,9 +202,9 @@ TEST_CASE("process_tests", "prognostic_process") {
     const int num_populations = progs.num_aerosol_populations();
     Tendencies::SpeciesColumnView aero_tend = tends.interstitial_aerosols();
     auto host_aero_tend  =  Kokkos::create_mirror_view(aero_tend);
-    for (int i=0; i<num_vert_packs; ++i) {
+    for (int i=0; i<num_levels; ++i) {
       for (int j=0; j<num_populations; ++j) {
-        host_aero_tend(j,i) = .1*i + .1*j;
+        host_aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = .1*i + .1*j;
       }
     }
     Kokkos::deep_copy(aero_tend, host_aero_tend);
@@ -209,7 +212,7 @@ TEST_CASE("process_tests", "prognostic_process") {
 
   ProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudPrognosticProcess";
-  MyPrognosticProcess pp(type, name, aersol_0, aersol_1, generic_0);
+  MyPrognosticProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
   MyPrognosticProcess *device_pp = pp.copy_to_device();
 
   std::vector<Species> aero_species = create_mam4_aerosol_species();
@@ -240,7 +243,6 @@ TEST_CASE("process_tests", "prognostic_process") {
     const Diagnostics::ColumnView        generic_var   = diags.var(generic_0);
     Tendencies::SpeciesColumnView aero_tend = tends.interstitial_aerosols();
 
-    const int num_levels      = temp.extent(0);
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
     for (int i=0; i<num_levels; ++i) {
@@ -251,14 +253,14 @@ TEST_CASE("process_tests", "prognostic_process") {
       }
       for (int j=0; j<num_aerosol_populations; ++j) {
         for (int i=0; i<num_levels; ++i) {
-          const Real val = 153*i;
+          const Real val = 2556*i;
           const Real tst = aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
       }
       for (int j=0; j<num_populations; ++j) {
         {
-          const Real val =  153*(i*j);
+          const Real val =  2556*(i*j);
           const Real tst = first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
