@@ -128,39 +128,39 @@ class Prognostics final {
   /// Returns the view storing interstitial aerosol mass mixing ratios
   /// [kg aerosol / kg dry air].
   KOKKOS_INLINE_FUNCTION
-  SpeciesColumnView& interstitial_aerosols() {
+  SpeciesColumnView interstitial_aerosols() {
     return int_aero_species_;
   }
 
   /// Returns the view storing interstitial aerosol mass mixing ratios
   /// [kg aerosol / kg dry air] (const).
   KOKKOS_INLINE_FUNCTION
-  const SpeciesColumnView& interstitial_aerosols() const {
+  const SpeciesColumnView interstitial_aerosols() const {
     return int_aero_species_;
   }
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratios
   /// [kg aerosol / kg dry air].
-  SpeciesColumnView& cloudborne_aerosols();
+  SpeciesColumnView cloudborne_aerosols();
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratios
   /// [kg aerosol / kg dry air] (const).
-  const SpeciesColumnView& cloudborne_aerosols() const;
+  const SpeciesColumnView cloudborne_aerosols() const;
 
   /// Returns the view storing the mass mixing ratios of gas species
   /// [kg gas / kg dry air].
-  SpeciesColumnView& gases();
+  SpeciesColumnView gases();
 
   /// Returns the view storing the mass mixing ratios of gas species
   /// [kg gas / kg dry air] (const).
-  const SpeciesColumnView& gases() const;
+  const SpeciesColumnView gases() const;
 
   /// Returns the view storing the modal number concentrations [# / kg dry air].
-  ModalColumnView& modal_num_concs();
+  ModalColumnView modal_num_concs();
 
   /// Returns the view storing the modal number concentrations [# / kg dry air]
   /// (const).
-  const ModalColumnView& modal_num_concs() const;
+  const ModalColumnView modal_num_concs() const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations

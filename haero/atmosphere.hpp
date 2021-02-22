@@ -48,16 +48,16 @@ class Atmosphere final {
   int num_levels() const { return num_levels_; }
 
   /// Returns atmospheric temperature data [K], defined at each vertical level
-  const ColumnView& temperature() const { return temperature_; }
+  const ColumnView temperature() const { return temperature_; }
 
   /// Returns atmospheric pressure data [Pa], defined at each vertical level.
-  const ColumnView& pressure() const { return pressure_; }
+  const ColumnView pressure() const { return pressure_; }
 
   /// Returns relative humidity data [-], defined at each vertical level.
-  const ColumnView& relative_humidity() const { return relative_humidity_; }
+  const ColumnView relative_humidity() const { return relative_humidity_; }
 
   /// Returns height data [m], defined at interfaces between vertical levels.
-  const ColumnView& height() const { return height_; }
+  const ColumnView height() const { return height_; }
 
   private:
 

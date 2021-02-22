@@ -18,7 +18,8 @@ namespace haero {
 class Diagnostics final {
   public:
 
-  static const int NOT_FOUND = -1;
+  typedef int TOKEN;
+  static const TOKEN NOT_FOUND = -1;
 
   using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
   /// This type represents an array mapping a vertical level index to a pack.
@@ -84,109 +85,111 @@ class Diagnostics final {
   /// Returns token if the given (non-modal) variable exists within this object,
   /// NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  int has_var(const std::string& name) const;
+  TOKEN has_var(const std::string& name) const;
 
   /// Creates a diagnostic variable with the given name within this object.
   /// @param [in] name The name of the diagnostic variable to be created.
-  int create_var(const std::string& name);
+  TOKEN create_var(const std::string& name);
 
   /// Returns the view storing the diagnostic variable with the given name.
   /// If the variable does not yet exist, this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  ColumnView var(const int token);
+  ColumnView var(const TOKEN token);
 
   /// Returns a const view storing the diagnostic variable with the given name.
   /// If the variable does not yet exist, this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  const ColumnView var(const int token) const;
+  const ColumnView var(const TOKEN token) const;
 
   /// Returns token if the given modal aerosol variable exists within this object,
   /// NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  int has_aerosol_var(const std::string& name) const;
+  TOKEN has_aerosol_var(const std::string& name) const;
 
   /// Creates a diagnostic modal aerosol variable with the given name within this
   /// object.
   /// @param [in] name The name of the modal diagnostic variable to be created.
-  void create_aerosol_var(const std::string& name);
+  TOKEN create_aerosol_var(const std::string& name);
 
   /// Returns the view storing the modal aerosol diagnostic variable with the
   /// given name and mode index. If the variable does not yet exist, this throws
   /// an exception.
   /// @param [in] name The name of the diagnostic variable.
-  SpeciesColumnView& aerosol_var(const std::string& name);
+  SpeciesColumnView aerosol_var(const TOKEN token);
 
   /// Returns a const view storing the modal aerosol diagnostic variable with
   /// the given name and mode index. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  const SpeciesColumnView& aerosol_var(const std::string& name) const;
+  const SpeciesColumnView aerosol_var(const TOKEN token) const;
 
   /// Returns token if a variable defined for each gas species exists within
   /// this object with the given name, NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  int has_gas_var(const std::string& name) const;
+  TOKEN has_gas_var(const std::string& name) const;
 
   /// Creates a diagnostic gas species variable with the given name within this
   /// object.
   /// @param [in] name The name of the modal diagnostic variable to be created.
-  void create_gas_var(const std::string& name);
+  TOKEN create_gas_var(const std::string& name);
 
   /// Returns the view storing a diagnostic variable, defined for each gas
   /// species, with the given name. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  SpeciesColumnView& gas_var(const std::string& name);
+  SpeciesColumnView gas_var(const TOKEN token);
 
   /// Returns the const view storing a diagnostic variable, defined for each gas
   /// species, with the given name. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  const SpeciesColumnView& gas_var(const std::string& name) const;
+  const SpeciesColumnView gas_var(const TOKEN token) const;
 
   /// Returns token if the given modal variable exists within this object,
   /// NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  int has_modal_var(const std::string& name) const;
+  TOKEN has_modal_var(const std::string& name) const;
 
   /// Creates a diagnostic modal variable with the given name within this object.
   /// @param [in] name The name of the modal diagnostic variable to be created.
-  void create_modal_var(const std::string& name);
+  TOKEN create_modal_var(const std::string& name);
 
   /// Returns the view storing the mode-specific diagnostic variable with the
   /// given name. If the variable does not yet exist, this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  ModalColumnView& modal_var(const std::string& name);
+  ModalColumnView modal_var(const TOKEN token);
 
   /// Returns a const view storing the mode-specific diagnostic variable with
   /// the given name. If the variable does not yet exist, this throws an
   /// exception.
   /// @param [in] name The name of the diagnostic variable.
-  const ModalColumnView& modal_var(const std::string& name) const;
+  const ModalColumnView modal_var(const TOKEN token) const;
 
   private:
-  using ColumnViewArray = kokkos_device_type::view_2d<PackType>;
+  using ColumnViewArray        = kokkos_device_type::view_2d<PackType>;
+  using SpeciesColumnViewArray = kokkos_device_type::view_3d<PackType>;
+  using ModalColumnViewArray   = kokkos_device_type::view_3d<PackType>;
 
-  static int
-  set_string_to_token(std::map<std::string,int> &registered_strings,
+  static TOKEN
+  set_string_to_token(std::map<std::string,TOKEN> &registered_strings,
                       const std::string &name,
-                      const int token);
-  static int
-  get_string_to_token(const std::map<std::string,int> &registered_strings,
+                      const TOKEN token);
+  static TOKEN
+  get_string_to_token(const std::map<std::string,TOKEN> &registered_strings,
                       const std::string &name);
-  int set_string_to_token_vars (const std::string &name, const int token) ;
-  int set_string_to_token_aero (const std::string &name, const int token) ;
-  int set_string_to_token_gas  (const std::string &name, const int token) ;
-  int set_string_to_token_modal(const std::string &name, const int token) ;
-  int get_string_to_token_vars (const std::string &name) const;
-  int get_string_to_token_aero (const std::string &name) const;
-  int get_string_to_token_gas  (const std::string &name) const;
-  int get_string_to_token_modal(const std::string &name) const;
+  TOKEN set_string_to_token_vars (const std::string &name, const TOKEN token) ;
+  TOKEN set_string_to_token_aero (const std::string &name, const TOKEN token) ;
+  TOKEN set_string_to_token_gas  (const std::string &name, const TOKEN token) ;
+  TOKEN set_string_to_token_modal(const std::string &name, const TOKEN token) ;
+  TOKEN get_string_to_token_vars (const std::string &name) const;
+  TOKEN get_string_to_token_aero (const std::string &name) const;
+  TOKEN get_string_to_token_gas  (const std::string &name) const;
+  TOKEN get_string_to_token_modal(const std::string &name) const;
 
-  std::map<std::string,int> registered_strings_vars;
-  std::map<std::string,int> registered_strings_aero;
-  std::map<std::string,int> registered_strings_gas;
-  std::map<std::string,int> registered_strings_modal;
+  std::map<std::string,TOKEN> registered_strings_vars;
+  std::map<std::string,TOKEN> registered_strings_aero;
+  std::map<std::string,TOKEN> registered_strings_gas;
+  std::map<std::string,TOKEN> registered_strings_modal;
 
   // Number of aerosol species in each mode.
   const view_1d_int_type num_aero_species_;
@@ -201,10 +204,10 @@ class Diagnostics final {
   const int num_levels_;
 
   // Named diagnostic variables.
-  ColumnViewArray vars_;
-  std::map<std::string, SpeciesColumnView> aero_vars_;
-  std::map<std::string, SpeciesColumnView> gas_vars_;
-  std::map<std::string, ModalColumnView> modal_vars_;
+  ColumnViewArray        vars_;
+  SpeciesColumnViewArray aero_vars_;
+  SpeciesColumnViewArray gas_vars_;
+  ModalColumnViewArray   modal_vars_;
 };
 
 }

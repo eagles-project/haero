@@ -44,35 +44,35 @@ class Tendencies final {
 
   /// Returns the view storing interstitial aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s].
-  SpeciesColumnView& interstitial_aerosols();
+  SpeciesColumnView interstitial_aerosols();
 
   /// Returns the view storing interstitial aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s] (const).
-  const SpeciesColumnView& interstitial_aerosols() const;
+  const SpeciesColumnView interstitial_aerosols() const;
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s].
-  SpeciesColumnView& cloudborne_aerosols();
+  SpeciesColumnView cloudborne_aerosols();
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s] (const).
-  const SpeciesColumnView& cloudborne_aerosols() const;
+  const SpeciesColumnView cloudborne_aerosols() const;
 
   /// Returns the view storing the mass mixing ratio tendencies for gas species
   /// [kg gas / kg dry air / s].
-  SpeciesColumnView& gases();
+  SpeciesColumnView gases();
 
   /// Returns the view storing the mass mixing ratio tendencies for gas species
   /// [kg gas / kg dry air / s] (const).
-  const SpeciesColumnView& gases() const;
+  const SpeciesColumnView gases() const;
 
   /// Returns the view storing the modal number concentration tendencies
   /// [# / kg dry air / s].
-  ModalColumnView& modal_num_concs();
+  ModalColumnView modal_num_concs();
 
   /// Returns the view storing the modal number concentration tendencies
   /// [# / kg dry air / s] (const).
-  const ModalColumnView& modal_num_concs() const;
+  const ModalColumnView modal_num_concs() const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations

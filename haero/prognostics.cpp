@@ -73,28 +73,28 @@ int Prognostics::num_levels() const {
   return num_levels_;
 }
 
-Prognostics::SpeciesColumnView& Prognostics::cloudborne_aerosols() {
+Prognostics::SpeciesColumnView Prognostics::cloudborne_aerosols() {
   return cld_aero_species_;
 }
 
-const Prognostics::SpeciesColumnView&
+const Prognostics::SpeciesColumnView
 Prognostics::cloudborne_aerosols() const {
   return cld_aero_species_;
 }
 
-Prognostics::SpeciesColumnView& Prognostics::gases() {
+Prognostics::SpeciesColumnView Prognostics::gases() {
   return gases_;
 }
 
-const Prognostics::SpeciesColumnView& Prognostics::gases() const {
+const Prognostics::SpeciesColumnView Prognostics::gases() const {
   return gases_;
 }
 
-Prognostics::ModalColumnView& Prognostics::modal_num_concs() {
+Prognostics::ModalColumnView Prognostics::modal_num_concs() {
   return modal_num_concs_;
 }
 
-const Prognostics::ModalColumnView& Prognostics::modal_num_concs() const {
+const Prognostics::ModalColumnView Prognostics::modal_num_concs() const {
   return modal_num_concs_;
 }
 
@@ -110,28 +110,28 @@ extern "C" {
 void* p_int_aero_mix_frac_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& mix_fracs = progs->interstitial_aerosols();
+  auto mix_fracs = progs->interstitial_aerosols();
   return (void*)mix_fracs.data();
 }
 
 void* p_cld_aero_mix_frac_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& mix_fracs = progs->cloudborne_aerosols();
+  auto mix_fracs = progs->cloudborne_aerosols();
   return (void*)mix_fracs.data();
 }
 
 void* p_gases_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& mix_fracs = progs->gases();
+  auto mix_fracs = progs->gases();
   return (void*)mix_fracs.data();
 }
 
 void* p_modal_num_concs_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& num_concs = progs->modal_num_concs();
+  auto num_concs = progs->modal_num_concs();
   return (void*)num_concs.data();
 }
 

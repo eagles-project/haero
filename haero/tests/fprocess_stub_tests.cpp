@@ -110,8 +110,8 @@ TEST_CASE("prog_fprocess_stub", "") {
 
     // Cloudborne aerosol mix fractions have negative tendencies, interstitial
     // mix fractions have positive tendencies, and their sums are zero.
-    auto& dqdt_c = tends->cloudborne_aerosols();
-    auto& dqdt_i = tends->interstitial_aerosols();
+    auto dqdt_c = tends->cloudborne_aerosols();
+    auto dqdt_i = tends->interstitial_aerosols();
     for (int p = 0; p < num_aero_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(dqdt_c(p, k)[0] < 0.0);
@@ -122,7 +122,7 @@ TEST_CASE("prog_fprocess_stub", "") {
     }
 
     // Aerosol modal number concentrations are unchanged.
-    auto& dndt = tends->modal_num_concs();
+    auto dndt = tends->modal_num_concs();
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(FloatingPoint<Real>::equiv(dndt(m, k)[0], 0.0));
@@ -203,8 +203,8 @@ TEST_CASE("diag_process_stub", "") {
     stub->prepare(diags);
     const int NOT_FOUND = Diagnostics::NOT_FOUND;
     REQUIRE(NOT_FOUND != diags.has_var("temperature"));
-    REQUIRE(NOT_FOUND == diags.has_gas_var("pressure"));
-    REQUIRE(NOT_FOUND == diags.has_modal_var("pressure"));
+    REQUIRE(NOT_FOUND != diags.has_gas_var("pressure"));
+    REQUIRE(NOT_FOUND != diags.has_modal_var("pressure"));
     delete stub;
   }
 
@@ -280,14 +280,14 @@ TEST_CASE("diag_process_stub", "") {
     // ---------------------------------------
     // Check the diagnostic partial pressures.
     // ---------------------------------------
-    const auto& p_m = diags->modal_var("pressure");
+    const auto& p_m = diags->modal_var(diags->has_modal_var("pressure"));
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(p_m(m, k)[0] > 0.0);
       }
     }
 
-    const auto& p_g = diags->gas_var("pressure");
+    const auto& p_g = diags->gas_var(diags->has_gas_var("pressure"));
     for (int g = 0; g < num_gases; ++g) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(p_g(g, k)[0] > 0.0);
