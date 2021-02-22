@@ -1,4 +1,5 @@
 include(EkatCreateUnitTest)
+link_directories(${EKAT_LIBRARY_DIR}) # Needed to link unit tests.
 
 # This simple unit test gets us off the ground.
 EkatCreateUnitTest(hello_world hello_world.cpp
@@ -29,11 +30,17 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+add_library(chemUtil chemUtil.cpp)
+add_dependencies(chemUtil tchem)
+EkatCreateUnitTest(tchem_batch_reactor tchem_batch_reactor.cpp
+                   LIBS chemUtil;${HAERO_LIBRARIES})
+
 EkatCreateUnitTest(kokkos_team_execute kokkos_team_execute.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-EkatCreateUnitTest(process_tests process_tests.cpp
-                   LIBS ${HAERO_LIBRARIES})
+#----------------------------------------------------
+# Unit tests for prognostic processes
+#----------------------------------------------------
 
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
@@ -44,4 +51,13 @@ if (HAERO_FORTRAN)
   add_dependencies(haero_fprocess_stubs haero)
   EkatCreateUnitTest(fprocess_stub_tests fprocess_stub_tests.cpp
                      LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
+endif()
+
+#---------------------------
+# Aerosol process unit tests
+#---------------------------
+
+if (HAERO_FORTRAN)
+#EkatCreateUnitTest(mam4_nucleation_fprocess_tests mam4_nucleation_fprocess_tests.cpp
+#                 LIBS ${HAERO_LIBRARIES})
 endif()
