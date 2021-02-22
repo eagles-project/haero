@@ -1,15 +1,18 @@
 #include "catch2/catch.hpp"
 #include <cstdio>
 
+#include "ekat/ekat_pack_utils.hpp"
+#include "ekat/ekat_pack.hpp"
+
+#include "kokkos/Kokkos_Core.hpp"
+
 #include "haero/model.hpp"
 #include "haero/prognostics.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_utils.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "haero/process.hpp"
-#include "kokkos/Kokkos_Core.hpp"
+#include "haero/floating_point.hpp"
 
 using namespace haero;
 
@@ -95,22 +98,25 @@ public :
     // second_aersol num_populations x num_vert_packs
     // generic_var num_levels
     // aero_tend num_aerosol_populations x num_vert_packs 
-    for (int k=0; k<num_levels; ++k) generic_var(k) = 0;
+    for (int k=0; k<num_levels; ++k) {
+      generic_var(k) = 0;
+    }
     for (int i=0; i<num_vert_packs; ++i) {
+      for (int k=0; k<num_levels; ++k) {
+        generic_var(k) += temp(k);
+      }
       for (int j=0; j<num_aerosol_populations; ++j) {
+        aero_tend(j,i) = 0;
         for (int k=0; k<num_levels; ++k) {
           aero_tend(j,i) += int_aerosols(0,i) * temp(k);
         }
       }
-      for (int k=0; k<num_levels; ++k) {
-        generic_var(k) += temp(k);
-      }
-     for (int j=0; j<num_populations; ++j) {
+      for (int j=0; j<num_populations; ++j) {
         first_aersol(j,i) = 0;
         for (int k=0; k<num_levels; ++k) {
-          first_aersol(j,i) += temp(k) * aero_tend(j,i);
+          first_aersol(j,i) += temp(k) * i * j;
         }
-        second_aersol(j,i) = aero_tend(j,i);
+        second_aersol(j,i) = j*i;
       }
     }
   };
@@ -193,7 +199,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   {
     auto host_temp  =  Kokkos::create_mirror_view(temp);
     for (int i=0; i<num_levels; ++i) {
-      host_temp(i) = 100*i;
+      host_temp(i) = i;
     }
     Kokkos::deep_copy(temp, host_temp);
   }
@@ -247,6 +253,49 @@ TEST_CASE("process_tests", "prognostic_process") {
   });
 
   Kokkos::kokkos_free<MemSpace>(device_pp);
+
+  {
+    using fp_helper = FloatingPoint<float>;
+    const Prognostics::SpeciesColumnView int_aerosols = progs.interstitial_aerosols();
+    const Atmosphere::ColumnView temp = atmos.temperature();
+    const Diagnostics::SpeciesColumnView first_aersol = diags.aerosol_var(aersol_0);
+    const Diagnostics::SpeciesColumnView second_aersol = diags.aerosol_var(aersol_1);
+    const Diagnostics::ColumnView        generic_var   = diags.var(generic_0);
+    Tendencies::SpeciesColumnView aero_tend = tends.interstitial_aerosols();
+
+    const int num_vert_packs  = int_aerosols.extent(1);
+    const int num_levels      = temp.extent(0);
+    const int num_populations = first_aersol.extent(0);
+    const int num_aerosol_populations = aero_tend.extent(0);
+    // int_aerosols 1 x num_vert_packs
+    // temp  num_levels
+    // first_aersol num_populations x num_vert_packs
+    // second_aersol num_populations x num_vert_packs
+    // generic_var num_levels
+    // aero_tend num_aerosol_populations x num_vert_packs 
+    for (int i=0; i<num_vert_packs; ++i) {
+      for (int k=0; k<num_levels; ++k) {
+        const Real val = num_vert_packs*k;
+        REQUIRE(fp_helper::equiv(generic_var(k)[0], val));
+      }
+      for (int j=0; j<num_aerosol_populations; ++j) {
+        for (int k=0; k<num_levels; ++k) {
+          const Real val = j + 2556*i;
+          REQUIRE(fp_helper::equiv(aero_tend(j,i)[0], val));
+        }
+      }
+      for (int j=0; j<num_populations; ++j) {
+        {
+          const Real val =  2556*(i*j);
+          REQUIRE(fp_helper::equiv(first_aersol(j,i)[0], val));
+        }
+        {
+          const Real val = j*i;
+          REQUIRE(fp_helper::equiv(second_aersol(j,i)[0], val));
+        }
+      }
+    }
+  }
 }
 
 
