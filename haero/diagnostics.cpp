@@ -45,12 +45,12 @@ int Diagnostics::num_levels() const {
   return num_levels_;
 }
 
-Diagnostics::TOKEN Diagnostics::has_var(const std::string& name) const {
+Diagnostics::TOKEN Diagnostics::find_var(const std::string& name) const {
   return get_string_to_token_vars (name);
 }
 
 Diagnostics::TOKEN Diagnostics::create_var(const std::string& name) {
-  TOKEN return_val = has_var (name);
+  TOKEN return_val = find_var (name);
   EKAT_REQUIRE_MSG(NOT_FOUND == return_val,
     "Diagnostic variable " << name << " already exists!");
   return_val = vars_.extent(0);
@@ -80,12 +80,12 @@ Diagnostics::var(const TOKEN token) const {
   return vars;
 }
 
-Diagnostics::TOKEN Diagnostics::has_aerosol_var(const std::string& name) const {
+Diagnostics::TOKEN Diagnostics::find_aerosol_var(const std::string& name) const {
   return get_string_to_token_aero (name);
 }
 
 Diagnostics::TOKEN Diagnostics::create_aerosol_var(const std::string& name) {
-  TOKEN return_val = has_aerosol_var (name);
+  TOKEN return_val = find_aerosol_var (name);
   EKAT_REQUIRE_MSG(NOT_FOUND == return_val,
     "Aerosol diagnostic variable " << name << " already exists!");
 
@@ -122,12 +122,12 @@ Diagnostics::aerosol_var(const TOKEN token) const {
   return vars;
 }
 
-Diagnostics::TOKEN Diagnostics::has_gas_var(const std::string& name) const {
+Diagnostics::TOKEN Diagnostics::find_gas_var(const std::string& name) const {
   return get_string_to_token_gas  (name);
 }
 
 Diagnostics::TOKEN Diagnostics::create_gas_var(const std::string& name) {
-  TOKEN return_val = has_gas_var (name);
+  TOKEN return_val = find_gas_var (name);
   EKAT_REQUIRE_MSG(NOT_FOUND == return_val,
     "Gas diagnostic variable " << name << " already exists!");
   int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
@@ -156,12 +156,12 @@ Diagnostics::gas_var(const TOKEN token) const {
   return vars;
 }
 
-Diagnostics::TOKEN Diagnostics::has_modal_var(const std::string& name) const {
+Diagnostics::TOKEN Diagnostics::find_modal_var(const std::string& name) const {
   return get_string_to_token_modal(name);
 }
 
 Diagnostics::TOKEN Diagnostics::create_modal_var(const std::string& name) {
-  TOKEN return_val = has_modal_var (name);
+  TOKEN return_val = find_modal_var (name);
   EKAT_REQUIRE_MSG(NOT_FOUND == return_val,
     "Modal diagnostic variable " << name << " already exists!");
   int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
@@ -242,10 +242,10 @@ Diagnostics::TOKEN Diagnostics::get_string_to_token_modal(const std::string &nam
 // See haero.F90 for details on how these functions are used.
 extern "C" {
 
-Diagnostics::TOKEN d_has_var_c(void* d, const char* name)
+Diagnostics::TOKEN d_find_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
-  return diags->has_var(name);
+  return diags->find_var(name);
 }
 
 void* d_var_c(void* d, const Diagnostics::TOKEN token)
@@ -255,10 +255,10 @@ void* d_var_c(void* d, const Diagnostics::TOKEN token)
   return (void*)var.data();
 }
 
-Diagnostics::TOKEN d_has_aerosol_var_c(void* d, const char* name)
+Diagnostics::TOKEN d_find_aerosol_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
-  return diags->has_aerosol_var(name);
+  return diags->find_aerosol_var(name);
 }
 
 void* d_aerosol_var_c(void* d, const Diagnostics::TOKEN token)
@@ -268,10 +268,10 @@ void* d_aerosol_var_c(void* d, const Diagnostics::TOKEN token)
   return (void*)var.data();
 }
 
-Diagnostics::TOKEN d_has_gas_var_c(void* d, const char* name)
+Diagnostics::TOKEN d_find_gas_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
-  return diags->has_gas_var(name);
+  return diags->find_gas_var(name);
 }
 
 void* d_gas_var_c(void* d, const Diagnostics::TOKEN token)
@@ -281,10 +281,10 @@ void* d_gas_var_c(void* d, const Diagnostics::TOKEN token)
   return (void*)var.data();
 }
 
-Diagnostics::TOKEN d_has_modal_var_c(void* d, const char* name)
+Diagnostics::TOKEN d_find_modal_var_c(void* d, const char* name)
 {
   auto* diags = static_cast<Diagnostics*>(d);
-  return diags->has_modal_var(name);
+  return diags->find_modal_var(name);
 }
 
 void* d_modal_var_c(void* d, const Diagnostics::TOKEN token)

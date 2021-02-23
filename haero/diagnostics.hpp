@@ -93,7 +93,7 @@ class Diagnostics final {
   /// Returns token if the given (non-modal) variable exists within this object,
   /// NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  TOKEN has_var(const std::string& name) const;
+  TOKEN find_var(const std::string& name) const;
 
   /// Creates a diagnostic variable with the given name within this object.
   /// @param [in] name The name of the diagnostic variable to be created.
@@ -112,7 +112,7 @@ class Diagnostics final {
   /// Returns token if the given modal aerosol variable exists within this object,
   /// NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  TOKEN has_aerosol_var(const std::string& name) const;
+  TOKEN find_aerosol_var(const std::string& name) const;
 
   /// Creates a diagnostic modal aerosol variable with the given name within this
   /// object.
@@ -134,7 +134,7 @@ class Diagnostics final {
   /// Returns token if a variable defined for each gas species exists within
   /// this object with the given name, NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  TOKEN has_gas_var(const std::string& name) const;
+  TOKEN find_gas_var(const std::string& name) const;
 
   /// Creates a diagnostic gas species variable with the given name within this
   /// object.
@@ -156,7 +156,7 @@ class Diagnostics final {
   /// Returns token if the given modal variable exists within this object,
   /// NOT_FOUND otherwise.
   /// @param [in] name The name of the diagnostic variable of interest.
-  TOKEN has_modal_var(const std::string& name) const;
+  TOKEN find_modal_var(const std::string& name) const;
 
   /// Creates a diagnostic modal variable with the given name within this object.
   /// @param [in] name The name of the modal diagnostic variable to be created.

@@ -300,22 +300,22 @@ class DiagnosticProcess {
   ///                            variables are created.
   void prepare(Diagnostics& diagnostics) const {
     for (const std::string& var: required_vars_) {
-      if (Diagnostics::NOT_FOUND == diagnostics.has_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.find_var(var)) {
         diagnostics.create_var(var);
       }
     }
     for (const std::string& var: required_aero_vars_) {
-      if (Diagnostics::NOT_FOUND == diagnostics.has_aerosol_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.find_aerosol_var(var)) {
         diagnostics.create_aerosol_var(var);
       }
     }
     for (const std::string& var: required_gas_vars_) {
-      if (Diagnostics::NOT_FOUND == diagnostics.has_gas_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.find_gas_var(var)) {
         diagnostics.create_gas_var(var);
       }
     }
     for (const std::string& var: required_modal_vars_) {
-      if (Diagnostics::NOT_FOUND == diagnostics.has_modal_var(var)) {
+      if (Diagnostics::NOT_FOUND == diagnostics.find_modal_var(var)) {
         diagnostics.create_modal_var(var);
       }
     }
