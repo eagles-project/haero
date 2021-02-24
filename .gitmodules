@@ -11,6 +11,12 @@
 [submodule "ext/ekat"]
 	path = ext/ekat
 	url = git@github.com:E3SM-Project/EKAT
+[submodule "ext/OpenBLAS"]
+	path = ext/OpenBLAS
+	url = git@github.com:xianyi/OpenBLAS.git
+[submodule "ext/Tines"]
+	path = ext/Tines
+	url = git@github.com:sandialabs/Tines.git
 [submodule "ext/TChem"]
 	path = ext/TChem
 	url = git@github.com:sandialabs/TChem.git
