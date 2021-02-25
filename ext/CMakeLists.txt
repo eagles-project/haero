@@ -327,7 +327,7 @@ if (NOT EXISTS ${TINES_LIBRARY})
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Tines
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${TINES_CMAKE_OPTS}
-                      DEPENDS openblas
+                      DEPENDS openblas ekat
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
@@ -386,7 +386,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/TChem
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${TCHEM_CMAKE_OPTS}
-                      DEPENDS tines
+                      DEPENDS tines ekat
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
