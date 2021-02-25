@@ -14,8 +14,8 @@ endforeach()
 # Keep track of whether we've updated our submodules.
 set(SUBMODULES_UPDATED FALSE)
 macro(update_submodules)
-  message(STATUS "Updating git submodules recursively...")
   if (NOT SUBMODULES_UPDATED)
+    message(STATUS "Updating git submodules recursively...")
     execute_process(COMMAND ${GIT} submodule update --init --recursive
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     set(SUBMODULES_UPDATED TRUE)
@@ -240,6 +240,14 @@ if (NOT EXISTS ${EKAT_LIBRARY})
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
+
+  # The above install process leaves a KokkosConfig.cmake file in its build
+  # directory in addition to the installation path, and this confuses subsequent
+  # libraries, so we add a custom step to get rid of it.
+  ExternalProject_Add_Step(ekat_proj delete_bad_kokkos_config
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
+    DEPENDEES install)
+
   add_dependencies(yaml_cpp ekat_proj)
   add_dependencies(ekat ekat_proj)
 endif()
@@ -298,23 +306,14 @@ if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-  add_dependencies(kokkoskernels kokkoskernels_proj)
 
-  # Our version of Kokkos has an install process that's kind of broken. It
-  # leaves a KokkosConfig.cmake file in its build directory in addition to
-  # the installation path, and this confuses both kokkos-kernels and TChem.
-  # We delete it in this custom step.
-  if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
-    ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkos_config
-      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
-      DEPENDS ekat
-      DEPENDERS configure)
-    # We also have to delete KokkosKernelsConfig.cmake after installation.
-    ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkoskernels_config
-      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels/KokkosKernelsConfig.cmake
-      DEPENDS ekat
-      DEPENDEES install)
-  endif()
+  # Delete KokkosKernelsConfig.cmake after installation.
+  ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkoskernels_config
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels/KokkosKernelsConfig.cmake
+    DEPENDS ekat
+    DEPENDEES install)
+
+  add_dependencies(kokkoskernels kokkoskernels_proj)
 endif()
 list(APPEND HAERO_EXT_INCDIRS ${KOKKOS_KERNELS_INCLUDE_DIR})
 set(HAERO_EXT_LIBRARIES kokkoskernels;${HAERO_EXT_LIBRARIES})
