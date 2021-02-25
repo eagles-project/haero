@@ -1,6 +1,6 @@
-!> This module implements MAM4's nucleation process. For details, see the
+!> This module implements MAM's nucleation process. For details, see the
 !> appropriate section in the Processes chapter of the Haero design document.
-module mam4_nucleation
+module mam_nucleation
 
   use haero, only: wp, model_t, species_t, &
                    prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
@@ -16,46 +16,45 @@ module mam4_nucleation
   ! Module parameters
   !-------------------
 
-  !> accomodation coef for h2so4 condensation
+  real(wp), parameter :: onethird = 1.0_wp/3.0_wp
+
+  ! accomodation coefficient for h2so4 condensation
   real(wp), parameter :: accom_coef_h2so4 = 0.65_wp
 
-  !> dry density for ammonium sulfate [kg/m^3]
-  !real(wp), parameter :: dens_amm_sulf   = 1.769e3_wp ! <- MOSAIC
-  real(wp), parameter :: dens_amm_sulf   = 1.770e3_wp ! <- CAM
+  ! dry densities (kg/m3) molecular weights of aerosol
+  ! ammsulf, ammbisulf, and sulfacid (from mosaic  dens_electrolyte values)
+  !       real(wp), parameter :: dens_ammsulf   = 1.769e3
+  !       real(wp), parameter :: dens_ammbisulf = 1.78e3
+  !       real(wp), parameter :: dens_sulfacid  = 1.841e3
+  ! use following to match cam3 modal_aero densities
+  real(wp), parameter :: dens_ammsulf   = 1.770e3_wp
+  real(wp), parameter :: dens_ammbisulf = 1.770e3_wp
+  real(wp), parameter :: dens_sulfacid  = 1.770e3_wp
 
-  !> dry density for ammonium bisulfate [kg/m^3]
-  !real(wp), parameter :: dens_ammbi_sulf = 1.78e3_wp  ! <- MOSAIC
-  real(wp), parameter :: dens_amm_bisulf = 1.770e3_wp ! <- CAM
+  ! molecular weights (g/mol) of aerosol ammsulf, ammbisulf, and sulfacid
+  !    for ammbisulf and sulfacid, use 114 & 96 here rather than 115 & 98
+  !    because we don't keep track of aerosol hion mass
+  real(wp), parameter :: mw_ammsulf   = 132.0_wp
+  real(wp), parameter :: mw_ammbisulf = 114.0_wp
+  real(wp), parameter :: mw_sulfacid  =  96.0_wp
 
-  !> Density of SO4 aerosol (and sulfiric acid) [kg/m^3]
-  real(wp), parameter :: dens_so4a_host = 1770_wp
+  ! Nucleation method parameter.
+  !  1=merikanto et al (2007) ternary   2=vehkamaki et al (2002) binary
+  ! 11=merikanto ternary + first-order boundary layer
+  ! 12=merikanto ternary + second-order boundary layer
+  integer, parameter :: newnuc_method_flagaa = 11
+  ! integer, parameter :: newnuc_method_flagaa = 12
 
-  !> dry density for sulfuric acid [kg/m^3]
-  !real(wp), parameter :: dens_sulf_acid  = 1.841e3_wp ! <- MOSAIC
-  real(wp), parameter :: dens_sulf_acid  = 1.770e3_wp ! <- CAM
+  ! min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3,
+  real(wp), public, parameter :: qh2so4_cutoff = 4.0e-16_wp
 
-  !> molecular weight of ammonium sulfate [kg/mol]
-  real(wp), parameter :: mw_amm_sulf   = 0.132_wp
+  ! adjustment factors
+!!!  real(wp), parameter, public :: adjust_factor_dnaitdt = 1.0_wp       ! applied to final dnait/dt. Redefined in modal_aero_amicphys
 
-  !> molecular weight of ammonium bisulfate [kg/mol]
-  !> (We use 0.114 instead of 0.115 here because we don't track aerosol H+
-  !>  mass.)
-  real(wp), parameter :: mw_amm_bisulf = 0.114_wp
-
-  !> molecular weight of sulfuric acid [kg/mol]
-  !> (We use 0.096 instead of 0.098 here because we don't track aerosol H+
-  !>  mass.)
-  real(wp), parameter :: mw_sulf_acid  =  0.096_wp
-
-  !> adjustment factor applied to binary nucleation rate
-  real(wp), parameter :: adjust_factor_bin_ratenucl = 1.0_wp
-
-  !> adjustment factor applied to boundary layer nucleation rate
-  real(wp), parameter :: adjust_factor_pbl_ratenucl = 1.0_wp
-
-  ! We use this a lot.
-  real(wp), parameter :: one_third = 1.0_wp/3.0_wp
-
+  real(wp), parameter, public :: adjust_factor_bin_tern_ratenucl = 1.0_wp  !  applied to binary/ternary nucleation rate
+  ! real(wp), parameter, public :: adjust_factor_pbl_ratenucl = 1.0_wp  ! applied to boundary layer nucleation rate
+  real(wp),            public :: adjust_factor_pbl_ratenucl = 1.0_wp  ! applied to boundary layer nucleation rate
+                                                                      ! value reassigned in amicphys
   !-------------------------
   ! Module global variables
   !-------------------------
