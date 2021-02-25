@@ -391,7 +391,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
   add_dependencies(tchem tchem_proj)
 
   # Apparently Tines also has a config file that confuses TChem.
-  if (TINES_INSTALL_PATH STREQUAL PROJECT_BINARY_DIR)
+  if (TINES_LIBRARY MATCHES ${PROJECT_BINARY_DIR})
     ExternalProject_Add_Step(tchem_proj delete_bad_tines_config
       COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/Tines/core/TinesConfig.cmake
       DEPENDS tines
@@ -433,6 +433,9 @@ if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
 endif()
 if (${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
   install(FILES ${OPENBLAS_LIBRARY} DESTINATION lib)
+endif()
+if (${TINES_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Tines
+  install(FILES ${TINES_LIBRARY} DESTINATION lib)
 endif()
 if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
   install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
