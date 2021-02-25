@@ -240,6 +240,14 @@ if (NOT EXISTS ${EKAT_LIBRARY})
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
+
+  # The above install process leaves a KokkosConfig.cmake file in its build
+  # directory in addition to the installation path, and this confuses subsequent
+  # libraries, so we add a custom step to get rid of it.
+  ExternalProject_Add_Step(ekat_proj delete_bad_kokkos_config
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
+    DEPENDEES install)
+
   add_dependencies(yaml_cpp ekat_proj)
   add_dependencies(ekat ekat_proj)
 endif()
@@ -325,18 +333,14 @@ if (NOT EXISTS ${TINES_LIBRARY})
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-  add_dependencies(tines tines_proj)
 
-  # Our version of Kokkos has an install process that's kind of broken. It
-  # leaves a KokkosConfig.cmake file in its build directory in addition to
-  # the installation path, and this confuses both kokkos-kernels and TChem.
-  # We delete it in this custom step.
-  if (EKAT_INSTALL_ROOT STREQUAL PROJECT_BINARY_DIR)
-    ExternalProject_Add_Step(tines_proj delete_bad_kokkos_config
-      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
-      DEPENDS ekat
-      DEPENDERS configure)
-  endif()
+  # Apparently Tines also leaves a config file that confuses TChem, so we
+  # delete it.
+  ExternalProject_Add_Step(tines_proj delete_bad_tines_config
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/Tines/core/TinesConfig.cmake
+    DEPENDEES install)
+
+  add_dependencies(tines tines_proj)
 endif()
 list(APPEND HAERO_EXT_INCDIRS ${TINES_INCLUDE_DIR})
 set(HAERO_EXT_LIBRARIES tines;${HAERO_EXT_LIBRARIES})
@@ -389,14 +393,6 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
   add_dependencies(tchem tchem_proj)
-
-  # Apparently Tines also has a config file that confuses TChem.
-  if (TINES_LIBRARY MATCHES ${PROJECT_BINARY_DIR})
-    ExternalProject_Add_Step(tchem_proj delete_bad_tines_config
-      COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/Tines/core/TinesConfig.cmake
-      DEPENDS tines
-      DEPENDERS configure)
-  endif()
 endif()
 list(APPEND HAERO_EXT_INCDIRS ${TCHEM_INCLUDE_DIR})
 set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
