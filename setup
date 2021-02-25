@@ -61,6 +61,10 @@ PREFIX=$PWD/$1
 #OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
 #OPENBLAS_LIBRARY=libopenblas.a
 
+#TINES_INCLUDE_DIR=/path/to/tines/includes
+#TINES_LIBRARY_DIR=/path/to/tines/library
+#TINES_LIBRARY=libtines.a
+
 #TCHEM_INCLUDE_DIR=/path/to/tchem/includes
 #TCHEM_LIBRARY_DIR=/path/to/tchem/library
 #TCHEM_LIBRARY=libtchemcore.a
@@ -298,6 +302,20 @@ if [ ! "\$OPENBLAS_LIBRARY_DIR" = "" -o ! "\$OPENBLAS_INCLUDE_DIR" = "" -o ! "\$
   fi
   OPTIONS="\$OPTIONS -DOPENBLAS_LIBRARY=\$OPENBLAS_LIBRARY_DIR/\$OPENBLAS_LIBRARY"
   OPTIONS="\$OPTIONS -DOPENBLAS_INCLUDE_DIR=\$OPENBLAS_INCLUDE_DIR"
+fi
+
+# Configure Tines if needed.
+if [ ! "\$TINES_LIBRARY_DIR" = "" -o ! "\$TINES_INCLUDE_DIR" = "" -o ! "\$TINES_LIBRARY" = "" ]; then
+  if [ "\$TINES_LIBRARY" = "" ]; then
+    echo "Error: TINES_LIBRARY must be specified for a custom Tines library."
+    exit 1
+  fi
+  if [ "\$TINES_INCLUDE_DIR" = "" ]; then
+    echo "Error: TINES_INCLUDE_DIR must be specified for a custom Tines library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DTINES_LIBRARY=\$TINES_LIBRARY_DIR/\$TINES_LIBRARY"
+  OPTIONS="\$OPTIONS -DTINES_INCLUDE_DIR=\$TINES_INCLUDE_DIR"
 fi
 
 # Configure TChem if needed.
