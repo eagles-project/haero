@@ -69,6 +69,21 @@ module mam_nucleation
   !> The maximum particle diameters for all aerosol modes
   real(wp), dimension(:), allocatable :: dgnumhi_aer
 
+  !> Gas mixing ratios buffer
+  real(wp), dimension(:), allocatable :: qgas_cur
+
+  !> Time-averaged gas mixing ratios buffer
+  real(wp), dimension(:), allocatable :: qgas_avg
+
+  !> Modal number concentration buffer
+  real(wp), dimension(:), allocatable :: qnum_cur
+
+  !> Modal aerosol mixing ratios buffer.
+  real(wp), dimension(:,:), allocatable :: qaer_cur
+
+  !> Modal water content buffer.
+  real(wp), dimension(:), allocatable :: qwtr_cur
+
   !> This is an option flag for H2SO4 uptake.
   integer :: gaexch_h2so4_uptake_optaa
 
@@ -117,7 +132,7 @@ subroutine init(model)
   ! Arguments
   type(model_t), intent(in) :: model
 
-  type(species_t) so4
+  type(species_t) so4, nh4
   integer :: m
   integer :: so4_index, nh4_index
 
@@ -131,27 +146,45 @@ subroutine init(model)
     dgnumhi_aer(m) = model%modes(m)%max_diameter
   end do
 
+  ! Allocate gas and aerosol state buffers.
+  allocate(qgas_cur(model%num_gases))
+  allocate(qgas_avg(model%num_gases))
+  allocate(qnum_cur(model%num_modes))
+  allocate(qaer_cur(maxval(model%num_mode_species), model%num_modes))
+  allocate(qwtr_cur(model%num_modes))
+
   ! Record the aitken mode index.
   nait = model%mode_index("aitken")
 
-  ! Record the index for SO4 aerosol within the Aitken mode.
+  ! Record the index for SO4 aerosol within the Aitken mode and fetch some
+  ! properties.
   so4_index = model%aerosol_index(nait, "SO4")
-  iaer_so4 = model%population_index(nait, so4_index)
+  if (so4_index > 0) then
+    iaer_so4 = model%population_index(nait, so4_index)
+    so4 = model%aero_species(nait, iaer_so4)
+    mw_so4a_host = so4%molecular_wt
+  else
+    iaer_so4 = 0
+  end if
 
-  ! Record the index for NH4 aerosol within the Aitken mode.
+  ! Record the index for NH4 aerosol within the Aitken mode and fetch some
+  ! properties.
   nh4_index = model%aerosol_index(nait, "NH4")
-  iaer_nh4 = model%population_index(nait, nh4_index)
+  if (nh4_index > 0) then
+    iaer_nh4 = model%population_index(nait, nh4_index)
+    nh4 = model%aero_species(nait, iaer_nh4)
+    mw_nh4a_host = nh4%molecular_wt
+  else
+    iaer_nh4 = 0
+  end if
 
   ! Record the index for H2SO4 gas (source of new nuclei).
   igas_h2so4 = model%gas_index("H2SO4")
 
-  ! Jot down some aerosol properties.
-  so4 = model%aero_species(nait, iaer_so4)
-  ! FIXME: Anything we need here?
-
   ! Set some defaults
   gaexch_h2so4_uptake_optaa = 2
   newnuc_h2so4_conc_optaa = 2
+  dens_so4a_host = 1.0_wp ! FIXME
 
 end subroutine
 
@@ -168,32 +201,27 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   type(tendencies_t), intent(inout) :: tendencies
 
   ! Other local variables.
-  integer :: k
-  real(wp), pointer, dimension(:,:) :: q_c    ! cloudborne aerosol mix ratios
+  integer :: k, p, m, s
   real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios
   real(wp), pointer, dimension(:,:) :: q_g    ! gas mix ratios
   real(wp), pointer, dimension(:,:) :: n      ! modal number concentrations
-  real(wp), pointer, dimension(:,:) :: dqdt_c ! cloudborne aerosol tends
+
+  real(wp), pointer, dimension(:) :: temp     ! atmospheric temperature
+  real(wp), pointer, dimension(:) :: press    ! atmospheric pressure
+  real(wp), pointer, dimension(:) :: rel_hum  ! atmospheric relative humidity
+  real(wp), pointer, dimension(:) :: height   ! atmospheric height
+
   real(wp), pointer, dimension(:,:) :: dqdt_i ! interstitial aerosol tends
   real(wp), pointer, dimension(:,:) :: dqdt_g ! gas mole frac tends
   real(wp), pointer, dimension(:,:) :: dndt   ! modal number density tends
 
 
-  real(wp) :: q_so4     ! Mix ratio for sulfate aerosol [kg aerosol / kg dry air]
-  real(wp) :: q_h2so4   ! Mix ratio for sulphuric acid gas [kg gas/kg dry air]
-  real(wp) :: n_aitken  ! Number concentration for Aitken mode [#/kg dry air]
-  real(wp) :: J_nuc     ! nucleation rate [#/cc/s]
-  real(wp) :: dqndt_so4 ! tendency for SO4 number mixing ratio
-  real(wp) :: md_so4    ! Dry mass for SO4 nucleus
-  real(wp) :: temp      ! atmospheric temperature [K]
-  real(wp) :: press     ! atmospheric pressure [Pa]
-  real(wp) :: c_air     ! molar concentration of air [mol/m^3]
-  real(wp) :: z_k       ! Elevation at center of kth vertical level
-  real(wp) :: h_pbl     ! Planetary boundary layer height [m]
-  real(wp) :: rel_hum   ! Relative humidity (0-1) [-]
+  real(wp) :: aircon    ! molar concentration of air [mol/m^3]
+  real(wp) :: pblh      ! Planetary boundary layer height [m]
   real(wp) :: uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk
 
-  real(wp) :: delta_q, dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait
+  real(wp) :: dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait
+  real(wp) :: dnclusterdt ! diagnostic cluster nucleation rate (#/m3/s)
 
   ! First of all, check to make sure our model has an aitken mode. If it
   ! doesn't, we can return immediately.
@@ -222,18 +250,37 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   q_i => prognostics%interstitial_aerosols()
   dqdt_i => tendencies%interstitial_aerosols()
 
-  ! Modal number density tendencies.
+  ! Modal number density and tendencies.
   n => prognostics%modal_num_concs()
   dndt => tendencies%modal_num_concs()
+
+  ! Atmospheric state variables.
+  press => atmosphere%pressure()
+  temp => atmosphere%temperature()
+  rel_hum => atmosphere%relative_humidity()
+  height => atmosphere%height()
 
   ! Traverse the vertical levels and compute tendencies from nucleation.
   do k = 1,model%num_levels
     ! Compute the molar concentration of air at the given pressure and
     ! temperature.
-    c_air = press/(temp*R_gas)
+    aircon = press(k)/(temp(k)*R_gas)
+    ! FIXME: Compute planetary boundary height pblh
 
-    call compute_tendencies(deltat, &
-      temp, pmid, aircon, zmid, pblh, relhum, &
+    ! Extract prognostic state data.
+    qgas_cur(:) = q_g(k, :)
+    qgas_avg(:) = q_g(k, :) ! FIXME: Need to compute time average!
+    qnum_cur(:) = n(k, :)
+    qwtr_cur(:) = n(k, :) ! FIXME: Need to compute water content.
+    do p = 1,model%num_populations
+      call model%get_mode_and_species(p, m, s)
+      qaer_cur(s,m) = q_i(k, p)
+    end do
+
+    ! FIXME: Compute uptake and gas production rates.
+
+    call compute_tendencies(dt, &
+      temp(k), press(k), aircon, height(k), pblh, rel_hum(k), &
       uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk, &
       qgas_cur, qgas_avg, qnum_cur, qaer_cur, qwtr_cur, &
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
@@ -250,6 +297,13 @@ subroutine finalize(model)
 
   ! Arguments
   type(model_t), intent(in) :: model
+
+  ! Deallocate gas and aerosol state buffers
+  deallocate(qgas_cur)
+  deallocate(qgas_avg)
+  deallocate(qnum_cur)
+  deallocate(qaer_cur)
+  deallocate(qwtr_cur)
 
   ! Deallocate mode metadata.
   deallocate(dgnum_aer)

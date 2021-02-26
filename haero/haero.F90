@@ -59,6 +59,8 @@ module haero
     type(species_t), dimension(:,:), allocatable :: aero_species
     !> The gas species in the model.
     type(species_t), dimension(:), allocatable :: gas_species
+    !> The number of gases in the model. Equal to size(gas_species).
+    integer :: num_gases
     !> The number of vertical levels in an atmospheric column.
     integer :: num_levels
   contains
@@ -360,6 +362,7 @@ contains
 
     integer(c_int), value, intent(in) :: num_species
 
+    model%num_gases = num_species
     allocate(model%gas_species(num_species))
   end subroutine
 
