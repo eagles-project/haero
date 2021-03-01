@@ -202,7 +202,7 @@ class FPrognosticProcess: public PrognosticProcess
     initialized_ = true;
   }
 
-  void run(const Model& model,
+  void run(const Model* model,
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
