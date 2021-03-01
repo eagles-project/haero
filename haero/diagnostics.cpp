@@ -16,6 +16,7 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
   for (int m = 0; m < num_aerosol_modes; ++m) {
     num_aero_populations_ += num_aerosol_species[m];
   }
+  clear_maps();
 }
 
 Diagnostics::~Diagnostics() {
@@ -230,6 +231,12 @@ namespace {
     static std::map<std::string,Diagnostics::TOKEN> registered_strings;
     return registered_strings;
   }
+}
+void Diagnostics::clear_maps() {
+  registered_strings_vars().clear();
+  registered_strings_aero().clear();
+  registered_strings_gas ().clear();
+  registered_strings_modal().clear();
 }
 Diagnostics::TOKEN Diagnostics::set_string_to_token_vars(const std::string &name, const TOKEN token) {
   return set_string_to_token(registered_strings_vars(), name, token);

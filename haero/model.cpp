@@ -211,7 +211,7 @@ void Model::run_process(ProcessType type,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->run(this, t, dt, prognostics, atmosphere, diagnostics,
+  iter->second->run(*this, t, dt, prognostics, atmosphere, diagnostics,
                     tendencies);
 }
 

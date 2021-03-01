@@ -111,7 +111,7 @@ class PrognosticProcess {
   /// @param [out] tendencies A container that stores time derivatives for
   ///                         prognostic variables evolved by this process.
   KOKKOS_FUNCTION
-  virtual void run(const Model* model,
+  virtual void run(const Model& model,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
@@ -140,7 +140,7 @@ class NullPrognosticProcess: public PrognosticProcess {
 
   // Overrides
   KOKKOS_FUNCTION
-  void run(const Model* model,
+  void run(const Model& model,
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
@@ -202,7 +202,7 @@ class FPrognosticProcess: public PrognosticProcess
     initialized_ = true;
   }
 
-  void run(const Model* model,
+  void run(const Model& model,
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,

@@ -208,6 +208,7 @@ class Diagnostics final {
   get_string_to_token(const std::map<std::string,TOKEN> &registered_strings,
                       const std::string &name);
 
+  void clear_maps();
   // Functions that call the two functions above with the correct map.
   TOKEN set_string_to_token_vars (const std::string &name, const TOKEN token) ;
   TOKEN set_string_to_token_aero (const std::string &name, const TOKEN token) ;

@@ -53,7 +53,7 @@ public :
  {}
 
   KOKKOS_FUNCTION
-  virtual void run(const Model* model,
+  virtual void run(const Model& model,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
@@ -228,7 +228,7 @@ TEST_CASE("process_tests", "prognostic_process") {
                          [&](const int &i) {
      // Const cast because everything in lambda is const. Need to google how to fix.
      Tendencies* tendency = const_cast<Tendencies*>(&tends);
-     device_pp->run(model, t, dt, progs, atmos, diagnostics, *tendency);
+     device_pp->run(*model, t, dt, progs, atmos, diagnostics, *tendency);
     });
   });
 
