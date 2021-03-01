@@ -49,18 +49,23 @@ class Atmosphere final {
   ~Atmosphere();
 
   /// Returns the number of vertical levels per column in the system.
+  KOKKOS_INLINE_FUNCTION
   int num_levels() const { return num_levels_; }
 
   /// Returns atmospheric temperature data [K], defined at each vertical level
+  KOKKOS_INLINE_FUNCTION
   const ColumnView temperature() const { return temperature_; }
 
   /// Returns atmospheric pressure data [Pa], defined at each vertical level.
+  KOKKOS_INLINE_FUNCTION
   const ColumnView pressure() const { return pressure_; }
 
   /// Returns relative humidity data [-], defined at each vertical level.
+  KOKKOS_INLINE_FUNCTION
   const ColumnView relative_humidity() const { return relative_humidity_; }
 
   /// Returns height data [m], defined at interfaces between vertical levels.
+  KOKKOS_INLINE_FUNCTION
   const ColumnView height() const { return height_; }
 
   private:

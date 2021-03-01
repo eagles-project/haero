@@ -53,7 +53,7 @@ public :
  {}
 
   KOKKOS_FUNCTION
-  virtual void run(const Model& model,
+  virtual void run(const Model* model,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
@@ -62,7 +62,7 @@ public :
 
     const Prognostics::SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols();
     const Atmosphere::ColumnView temp = atmosphere.temperature();
-    const Diagnostics::SpeciesColumnView first_aersol = diagnostics.aerosol_var(aersol_0);
+    const Diagnostics::SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
     const Diagnostics::SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
     const Diagnostics::ColumnView        generic_var   = diagnostics.var(generic_0);
     Tendencies::SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
@@ -192,10 +192,10 @@ TEST_CASE("process_tests", "prognostic_process") {
     num_aero_species[m] = mode_species[modes[m].name].size();
   }
 
-  Diagnostics diags(num_modes, num_aero_species, num_gases, num_levels);
-  const Diagnostics::TOKEN aersol_0 = diags.create_aerosol_var("First Aerosol");
-  const Diagnostics::TOKEN aersol_1 = diags.create_aerosol_var("Second Aerosol");
-  const Diagnostics::TOKEN generic_0 = diags.create_var("Generic Aerosol");
+  Diagnostics diagnostics(num_modes, num_aero_species, num_gases, num_levels);
+  const Diagnostics::TOKEN aersol_0 = diagnostics.create_aerosol_var("First Aerosol");
+  const Diagnostics::TOKEN aersol_1 = diagnostics.create_aerosol_var("Second Aerosol");
+  const Diagnostics::TOKEN generic_0 = diagnostics.create_var("Generic Aerosol");
 
   Tendencies tends(progs);
   {
@@ -217,7 +217,7 @@ TEST_CASE("process_tests", "prognostic_process") {
 
   std::vector<Species> aero_species = create_mam4_aerosol_species();
   std::vector<Species> gas_species  = create_mam4_gas_species();
-  Model* model = Model::ForUnitTests(modes, aero_species, mode_species, gas_species, num_levels);
+  Model *model = Model::ForUnitTests(modes, aero_species, mode_species, gas_species, num_levels);
 
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
@@ -228,7 +228,7 @@ TEST_CASE("process_tests", "prognostic_process") {
                          [&](const int &i) {
      // Const cast because everything in lambda is const. Need to google how to fix.
      Tendencies* tendency = const_cast<Tendencies*>(&tends);
-     device_pp->run(*model, t, dt, progs, atmos, diags, *tendency);
+     device_pp->run(model, t, dt, progs, atmos, diagnostics, *tendency);
     });
   });
 
@@ -238,35 +238,43 @@ TEST_CASE("process_tests", "prognostic_process") {
     using fp_helper = FloatingPoint<float>;
     const Prognostics::SpeciesColumnView int_aerosols = progs.interstitial_aerosols();
     const Atmosphere::ColumnView temp = atmos.temperature();
-    const Diagnostics::SpeciesColumnView first_aersol = diags.aerosol_var(aersol_0);
-    const Diagnostics::SpeciesColumnView second_aersol = diags.aerosol_var(aersol_1);
-    const Diagnostics::ColumnView        generic_var   = diags.var(generic_0);
+    const Diagnostics::SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
+    const Diagnostics::SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
+    const Diagnostics::ColumnView        generic_var   = diagnostics.var(generic_0);
     Tendencies::SpeciesColumnView aero_tend = tends.interstitial_aerosols();
 
+    auto host_first_aersol  =  Kokkos::create_mirror_view(first_aersol);
+    auto host_second_aersol =  Kokkos::create_mirror_view(second_aersol);
+    auto host_generic_var   =  Kokkos::create_mirror_view(generic_var);
+    auto host_aero_tend     =  Kokkos::create_mirror_view(aero_tend);
+    Kokkos::deep_copy(host_first_aersol,  first_aersol);
+    Kokkos::deep_copy(host_second_aersol, second_aersol);
+    Kokkos::deep_copy(host_generic_var,   generic_var);
+    Kokkos::deep_copy(host_aero_tend,     aero_tend);
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
     for (int i=0; i<num_levels; ++i) {
       for (int k=0; k<num_levels; ++k) {
         const Real val = num_levels*k;
-        const Real tst = generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
+        const Real tst = host_generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         REQUIRE(fp_helper::equiv(tst, val));
       }
       for (int j=0; j<num_aerosol_populations; ++j) {
         for (int i=0; i<num_levels; ++i) {
           const Real val = 2556*i;
-          const Real tst = aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          const Real tst = host_aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
       }
       for (int j=0; j<num_populations; ++j) {
         {
           const Real val =  2556*(i*j);
-          const Real tst = first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          const Real tst = host_first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
         {
           const Real val = j*i;
-          const Real tst = second_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          const Real tst = host_second_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
       }

@@ -58,8 +58,7 @@ class Model final {
                              const std::vector<Species>& gas_species,
                              int num_levels);
 
-  /// Models are not deep-copyable. They should be passed by reference.
-  Model(const Model&) = delete;
+  Model(const Model&);
 
   /// Destructor.
   ~Model();

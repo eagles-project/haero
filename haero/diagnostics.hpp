@@ -102,12 +102,19 @@ class Diagnostics final {
   /// Returns the view storing the diagnostic variable with the given name.
   /// If the variable does not yet exist, this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
+  KOKKOS_FUNCTION
   ColumnView var(const TOKEN token);
 
   /// Returns a const view storing the diagnostic variable with the given name.
   /// If the variable does not yet exist, this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  const ColumnView var(const TOKEN token) const;
+  KOKKOS_INLINE_FUNCTION
+  const ColumnView var(const TOKEN token) const {
+    EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
+      "Diagnostic variable token not found!");
+    const ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
+    return vars;
+  }
 
   /// Returns token if the given modal aerosol variable exists within this object,
   /// NOT_FOUND otherwise.
@@ -123,13 +130,20 @@ class Diagnostics final {
   /// given name and mode index. If the variable does not yet exist, this throws
   /// an exception.
   /// @param [in] name The name of the diagnostic variable.
+  KOKKOS_FUNCTION
   SpeciesColumnView aerosol_var(const TOKEN token);
 
   /// Returns a const view storing the modal aerosol diagnostic variable with
   /// the given name and mode index. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
-  const SpeciesColumnView aerosol_var(const TOKEN token) const;
+  KOKKOS_INLINE_FUNCTION
+  const SpeciesColumnView aerosol_var(const TOKEN token) const {
+    EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
+      "Aerosol diagnostic variable token  not found!");
+    const SpeciesColumnView vars = Kokkos::subview(aero_vars_, token, Kokkos::ALL, Kokkos::ALL);
+    return vars;
+  }
 
   /// Returns token if a variable defined for each gas species exists within
   /// this object with the given name, NOT_FOUND otherwise.
@@ -145,12 +159,14 @@ class Diagnostics final {
   /// species, with the given name. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
+  KOKKOS_FUNCTION
   SpeciesColumnView gas_var(const TOKEN token);
 
   /// Returns the const view storing a diagnostic variable, defined for each gas
   /// species, with the given name. If the variable does not yet exist, this
   /// throws an exception.
   /// @param [in] name The name of the diagnostic variable.
+  KOKKOS_FUNCTION
   const SpeciesColumnView gas_var(const TOKEN token) const;
 
   /// Returns token if the given modal variable exists within this object,
@@ -165,12 +181,14 @@ class Diagnostics final {
   /// Returns the view storing the mode-specific diagnostic variable with the
   /// given name. If the variable does not yet exist, this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
+  KOKKOS_FUNCTION
   ModalColumnView modal_var(const TOKEN token);
 
   /// Returns a const view storing the mode-specific diagnostic variable with
   /// the given name. If the variable does not yet exist, this throws an
   /// exception.
   /// @param [in] name The name of the diagnostic variable.
+  KOKKOS_FUNCTION
   const ModalColumnView modal_var(const TOKEN token) const;
 
   private:
@@ -202,10 +220,10 @@ class Diagnostics final {
 
   // Maps of Diagnostic variable names to the assigned tokens which are just
   // indexes into the array of views.
-  std::map<std::string,TOKEN> registered_strings_vars;
-  std::map<std::string,TOKEN> registered_strings_aero;
-  std::map<std::string,TOKEN> registered_strings_gas;
-  std::map<std::string,TOKEN> registered_strings_modal;
+//  std::map<std::string,TOKEN> registered_strings_vars;
+//  std::map<std::string,TOKEN> registered_strings_aero;
+//  std::map<std::string,TOKEN> registered_strings_gas;
+//  std::map<std::string,TOKEN> registered_strings_modal;
 
   // Number of aerosol species in each mode.
   const view_1d_int_type num_aero_species_;

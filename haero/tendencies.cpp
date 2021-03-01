@@ -39,10 +39,10 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
 Tendencies::~Tendencies() {
 }
 
-Tendencies::SpeciesColumnView
-Tendencies::interstitial_aerosols() {
-  return int_aero_species_;
-}
+//Tendencies::SpeciesColumnView
+//Tendencies::interstitial_aerosols() {
+//  return int_aero_species_;
+//}
 
 const Tendencies::SpeciesColumnView
 Tendencies::interstitial_aerosols() const {

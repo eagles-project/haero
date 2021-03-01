@@ -47,34 +47,44 @@ class Tendencies final {
 
   /// Returns the view storing interstitial aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s].
-  SpeciesColumnView interstitial_aerosols();
+  KOKKOS_INLINE_FUNCTION
+  SpeciesColumnView interstitial_aerosols() {
+    return int_aero_species_;
+  }
 
   /// Returns the view storing interstitial aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s] (const).
+  KOKKOS_FUNCTION
   const SpeciesColumnView interstitial_aerosols() const;
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s].
+  KOKKOS_FUNCTION
   SpeciesColumnView cloudborne_aerosols();
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s] (const).
+  KOKKOS_FUNCTION
   const SpeciesColumnView cloudborne_aerosols() const;
 
   /// Returns the view storing the mass mixing ratio tendencies for gas species
   /// [kg gas / kg dry air / s].
+  KOKKOS_FUNCTION
   SpeciesColumnView gases();
 
   /// Returns the view storing the mass mixing ratio tendencies for gas species
   /// [kg gas / kg dry air / s] (const).
+  KOKKOS_FUNCTION
   const SpeciesColumnView gases() const;
 
   /// Returns the view storing the modal number concentration tendencies
   /// [# / kg dry air / s].
+  KOKKOS_FUNCTION
   ModalColumnView modal_num_concs();
 
   /// Returns the view storing the modal number concentration tendencies
   /// [# / kg dry air / s] (const).
+  KOKKOS_FUNCTION
   const ModalColumnView modal_num_concs() const;
 
   // --------------------------------------------------------------------------

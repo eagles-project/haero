@@ -106,6 +106,19 @@ Model::Model(
 Model::Model() {
 }
 
+Model::Model(const Model &model):
+  selected_processes_(model.selected_processes_),
+  modes_(model.modes_),
+  aero_species_(model.aero_species_),
+  gas_species_(model.gas_species_),
+  species_for_mode_(model.species_for_mode_),
+  num_aero_populations_(model.num_aero_populations_),
+  num_levels_(model.num_levels_),
+  prog_processes_(model.prog_processes_),
+  diag_processes_(model.diag_processes_),
+  uses_fortran_(model.uses_fortran_)
+{}
+
 Model* Model::ForUnitTests(
   const std::vector<Mode>& aerosol_modes,
   const std::vector<Species>& aerosol_species,
@@ -198,7 +211,7 @@ void Model::run_process(ProcessType type,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->run(*this, t, dt, prognostics, atmosphere, diagnostics,
+  iter->second->run(this, t, dt, prognostics, atmosphere, diagnostics,
                     tendencies);
 }
 
