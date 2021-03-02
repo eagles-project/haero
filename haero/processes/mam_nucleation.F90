@@ -3,7 +3,8 @@
 module mam_nucleation
 
   use haero, only: wp, model_t, species_t, &
-                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
+                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
+                   var_not_found
   use haero_constants, only: pi, R_gas, Avogadro
 
   implicit none
@@ -201,7 +202,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   type(tendencies_t), intent(inout) :: tendencies
 
   ! Other local variables.
-  integer :: k, p, m, s
+  integer :: k, p, m, s, token
   real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios
   real(wp), pointer, dimension(:,:) :: q_g    ! gas mix ratios
   real(wp), pointer, dimension(:,:) :: n      ! modal number concentrations
@@ -265,25 +266,32 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   height => atmosphere%height()
 
   ! Diagnostics
-  if (diagnostics%has_gas_var("qgas_averaged")) then
-    qgas_averaged => diagnostics%gas_var("qgas_averaged")
-  else
+  token = diagnostics%find_gas_var("qgas_averaged")
+  if (token == var_not_found) then
     qgas_averaged => null()
-  end if
-  if (diagnostics%has_var("uptkrate_h2so4")) then
-    uptkrate_h2so4 => diagnostics%var("uptkrate_h2so4")
   else
+    qgas_averaged => diagnostics%gas_var(token)
+  end if
+
+  token = diagnostics%find_var("uptkrate_h2so4")
+  if (token == var_not_found) then
     uptkrate_h2so4 => null()
-  end if
-  if (diagnostics%has_var("del_h2so4_gasprod")) then
-    del_h2so4_gasprod => diagnostics%var("del_h2so4_gasprod")
   else
+    uptkrate_h2so4 => diagnostics%var(token)
+  end if
+
+  token = diagnostics%find_var("del_h2so4_gasprod")
+  if (token == var_not_found) then
     del_h2so4_gasprod => null()
-  end if
-  if (diagnostics%has_var("del_h2so4_aeruptk")) then
-    del_h2so4_aeruptk => diagnostics%var("del_h2so4_aeruptk")
   else
+    del_h2so4_gasprod => diagnostics%var(token)
+  end if
+
+  token = diagnostics%find_var("del_h2so4_aeruptk")
+  if (token == var_not_found) then
     del_h2so4_aeruptk => null()
+  else
+    del_h2so4_aeruptk => diagnostics%var(token)
   end if
 
   ! Traverse the vertical levels and compute tendencies from nucleation.

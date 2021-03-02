@@ -11,7 +11,7 @@ module haero
   public :: wp, mode_t, species_t, model_t, &
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
-            diagnostics_from_c_ptr, tendencies_from_c_ptr, model
+            diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
 
   !> Working precision real kind
   integer, parameter :: wp = c_real
@@ -122,7 +122,7 @@ module haero
 
   !> This parameter represents a token indicating that a given variable was
   !> not found in a diagnostics container.
-  integer(c_int), parameter :: not_found = -1
+  integer(c_int), parameter :: var_not_found = -1
 
   !> This type represents a set of tendencies to be computed by a prognostic
   !> process.
@@ -652,7 +652,7 @@ contains
   end function
 
   !> Returns a token that can be used to retrieve a variable with the given
-  !> name from a diagnostics object, or not_found (-1) if no such variable
+  !> name from a diagnostics object, or var_not_found (-1) if no such variable
   !> exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired variable.
@@ -671,7 +671,7 @@ contains
   !> diagnostics object.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_var(name). Must not equal
-  !>                   not_found (-1).
+  !>                   var_not_found (-1).
   function d_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
     integer(c_int), intent(in) :: token
@@ -685,7 +685,7 @@ contains
   end function
 
   !> Returns a token that can be used to retrieve an aerosol variable with the
-  !> given name and mode from a diagnostics object, or not_found (-1) if no such
+  !> given name and mode from a diagnostics object, or var_not_found (-1) if no such
   !> variable exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired aerosol variable.
@@ -706,7 +706,7 @@ contains
   !> diagnostics object.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_aerosol_var(name). Must not
-  !>                   equal not_found (-1).
+  !>                   equal var_not_found (-1).
   !> @param [in] mode The index of the desired mode.
   function d_aerosol_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
@@ -720,7 +720,7 @@ contains
   end function
 
   !> Returns a token that can be used to retrieve a gas variable with the
-  !> given name from a diagnostics object, or not_found (-1) if no such
+  !> given name from a diagnostics object, or var_not_found (-1) if no such
   !> variable exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
@@ -738,7 +738,7 @@ contains
   !> Provides access to the given gas variable in the given diagnostics object.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_gas_var(name). Must not equal
-  !>                   not_found (-1).
+  !>                   var_not_found (-1).
   function d_gas_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
     integer(c_int), intent(in) :: token
@@ -751,7 +751,7 @@ contains
   end function
 
   !> Returns a token that can be used to retrieve a modal variable with the
-  !> given name from a diagnostics object, or not_found (-1) if no such
+  !> given name from a diagnostics object, or var_not_found (-1) if no such
   !> variable exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
@@ -771,7 +771,7 @@ contains
   !> diagnostics object.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_modal_var(name). Must not
-  !>                   equal not_found (-1).
+  !>                   equal var_not_found (-1).
   function d_modal_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
     integer(c_int), intent(in) :: token

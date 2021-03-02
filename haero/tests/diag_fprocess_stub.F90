@@ -10,7 +10,7 @@ module diag_fprocess_stub
   use iso_c_binding, only: c_ptr
   use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &
                    prognostics_from_c_ptr, atmosphere_from_c_ptr, &
-                   diagnostics_from_c_ptr
+                   diagnostics_from_c_ptr, var_not_found
 
   implicit none
   private
@@ -52,7 +52,7 @@ subroutine diag_stub_update(t, progs, atm, diags) bind(c)
   type(diagnostics_t) :: diagnostics
 
   ! Other local variables.
-  integer :: num_modes, num_gases, m, k, s, p
+  integer :: num_modes, num_gases, m, k, s, p, token
   real(wp) :: mu_p, nu_p
   real(wp), pointer, dimension(:,:) :: q_c  ! cloudborne aerosol mix fracs
   real(wp), pointer, dimension(:,:) :: q_i  ! interstitial aerosol mix fracs
@@ -68,12 +68,15 @@ subroutine diag_stub_update(t, progs, atm, diags) bind(c)
   diagnostics = diagnostics_from_c_ptr(diags)
   n => prognostics%modal_num_concs()
   q_g => prognostics%gases()
-  temp => diagnostics%var("temperature")
+  token = diagnostics%find_var("temperature")
+  if (token /= var_not_found) temp => diagnostics%var(token)
 
   ! Zero the partial pressures.
-  p_a => diagnostics%modal_var("pressure")
+  token = diagnostics%find_modal_var("pressure")
+  if (token /= var_not_found) p_a => diagnostics%modal_var(token)
   p_a(:, :) = 0
-  p_g => diagnostics%gas_var("pressure")
+  token = diagnostics%find_gas_var("pressure")
+  if (token /= var_not_found) p_g => diagnostics%gas_var(token)
   p_g(:, :) = 0
 
   ! Diagnose modal aerosol partial pressure using ideal gas law
