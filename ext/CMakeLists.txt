@@ -263,26 +263,28 @@ list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/kokkos)
 list(APPEND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR})
 
 #----------------------------------------------------------------------------
-# OpenBLAS linear algebra library
+# OpenBLAS linear algebra library: needed by Tines on CPU builds
 #----------------------------------------------------------------------------
-add_library(openblas STATIC IMPORTED GLOBAL)
-set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
-if (NOT EXISTS ${OPENBLAS_LIBRARY})
-  update_submodules()
-  ExternalProject_Add(openblas_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
-                      BUILD_COMMAND make PREFIX=${PROJECT_BINARY_DIR}
-                      LOG_BUILD TRUE
-                      INSTALL_COMMAND make PREFIX=${PROJECT_BINARY_DIR} install
-                      LOG_INSTALL TRUE)
-  add_dependencies(openblas openblas_proj)
+if (HAERO_DEVICE STREQUAL "CPU")
+  add_library(openblas STATIC IMPORTED GLOBAL)
+  set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
+  if (NOT EXISTS ${OPENBLAS_LIBRARY})
+    update_submodules()
+    ExternalProject_Add(openblas_proj
+                        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
+                        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS
+                        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
+                        INSTALL_DIR ${PROJECT_BINARY_DIR}
+                        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
+                        BUILD_COMMAND make PREFIX=${PROJECT_BINARY_DIR}
+                        LOG_BUILD TRUE
+                        INSTALL_COMMAND make PREFIX=${PROJECT_BINARY_DIR} install
+                        LOG_INSTALL TRUE)
+    add_dependencies(openblas openblas_proj)
+  endif()
+  list(APPEND HAERO_EXT_INCDIRS ${OPENBLAS_INCLUDE_DIR})
+  set(HAERO_EXT_LIBRARIES openblas;${HAERO_EXT_LIBRARIES})
 endif()
-list(APPEND HAERO_EXT_INCDIRS ${OPENBLAS_INCLUDE_DIR})
-set(HAERO_EXT_LIBRARIES openblas;${HAERO_EXT_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # Tines solver library
@@ -295,6 +297,11 @@ endif()
 set_target_properties(tines PROPERTIES IMPORTED_LOCATION ${TINES_LIBRARY})
 if (NOT EXISTS ${TINES_LIBRARY})
   update_submodules()
+  if (HAERO_DEVICE STREQUAL "CPU")
+    set(TINES_DEPENDS openblas ekat)
+  else()
+    set(TINES_DEPENDS ekat)
+  endif()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR})
   set(TINES_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
@@ -303,7 +310,6 @@ if (NOT EXISTS ${TINES_LIBRARY})
                        -DTINES_ENABLE_TEST=OFF
                        -DTINES_ENABLE_EXAMPLE=OFF
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
-                       -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH}
                      )
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
@@ -317,8 +323,10 @@ if (NOT EXISTS ${TINES_LIBRARY})
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
   else()
+    # We need OpenBLAS for non-GPU builds.
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                         -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH})
   endif()
 
   ExternalProject_Add(tines_proj
@@ -327,7 +335,7 @@ if (NOT EXISTS ${TINES_LIBRARY})
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Tines
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${TINES_CMAKE_OPTS}
-                      DEPENDS openblas ekat
+                      DEPENDS ${TINES_DEPENDS}
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
@@ -427,7 +435,8 @@ endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
 endif()
-if (${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
+if (HAERO_DEVICE STREQUAL "CPU" AND
+    ${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
   install(FILES ${OPENBLAS_LIBRARY} DESTINATION lib)
 endif()
 if (${TINES_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Tines
