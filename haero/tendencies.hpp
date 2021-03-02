@@ -16,19 +16,23 @@ namespace haero {
 class Tendencies final {
   public:
 
+  /// This type is used to define Kokkos views on device which might
+  /// be either the host or the device if there is one.
+  using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
+
   /// This type represents a multidimensional array mapping a species and
   /// vertical level index to a pack.
   /// * The species is identified by the index s.
   /// * The vertical level index is identified by the index k.
   /// So view[s][k] yields the desired pack.
-  using SpeciesColumnView = Kokkos::View<PackType**>;
+  using SpeciesColumnView = kokkos_device_type::view_2d<PackType>;
 
   /// This type represents a multidimensional array mapping a mode and a
   /// vertical level index to a pack.
   /// * The mode is identified by the index m.
   /// * The vertical level index is identified by the index k.
   /// So view[m][k] yields the desired pack.
-  using ModalColumnView = Kokkos::View<PackType**>;
+  using ModalColumnView = kokkos_device_type::view_2d<PackType>;
 
   /// Creates a fully-functional set of tendencies that work with the given
   /// aerosol state. All tendencie views are managed
@@ -38,39 +42,50 @@ class Tendencies final {
   explicit Tendencies(const Prognostics& prognostics);
 
   /// Destructor.
+  KOKKOS_FUNCTION
   ~Tendencies();
 
   /// Returns the view storing interstitial aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s].
-  SpeciesColumnView& interstitial_aerosols();
+  KOKKOS_INLINE_FUNCTION
+  SpeciesColumnView interstitial_aerosols() {
+    return int_aero_species_;
+  }
 
   /// Returns the view storing interstitial aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s] (const).
-  const SpeciesColumnView& interstitial_aerosols() const;
+  KOKKOS_FUNCTION
+  const SpeciesColumnView interstitial_aerosols() const;
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s].
-  SpeciesColumnView& cloudborne_aerosols();
+  KOKKOS_FUNCTION
+  SpeciesColumnView cloudborne_aerosols();
 
   /// Returns the view storing cloud-borne aerosol mass mixing ratio
   /// tendencies [kg aerosol / kg dry air / s] (const).
-  const SpeciesColumnView& cloudborne_aerosols() const;
+  KOKKOS_FUNCTION
+  const SpeciesColumnView cloudborne_aerosols() const;
 
   /// Returns the view storing the mass mixing ratio tendencies for gas species
   /// [kg gas / kg dry air / s].
-  SpeciesColumnView& gases();
+  KOKKOS_FUNCTION
+  SpeciesColumnView gases();
 
   /// Returns the view storing the mass mixing ratio tendencies for gas species
   /// [kg gas / kg dry air / s] (const).
-  const SpeciesColumnView& gases() const;
+  KOKKOS_FUNCTION
+  const SpeciesColumnView gases() const;
 
   /// Returns the view storing the modal number concentration tendencies
   /// [# / kg dry air / s].
-  ModalColumnView& modal_num_concs();
+  KOKKOS_FUNCTION
+  ModalColumnView modal_num_concs();
 
   /// Returns the view storing the modal number concentration tendencies
   /// [# / kg dry air / s] (const).
-  const ModalColumnView& modal_num_concs() const;
+  KOKKOS_FUNCTION
+  const ModalColumnView modal_num_concs() const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations

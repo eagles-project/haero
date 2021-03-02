@@ -2,15 +2,14 @@
 #include <cstdio>
 
 #include "haero/view_pack_helpers.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 
 using namespace haero;
 
 TEST_CASE("kokkos_teams", "simple_loop") {
-  typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
-      TeamHandleType;
-  const auto &teamPolicy =
-      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(9u, Kokkos::AUTO);
+  typedef ekat::ExeSpaceUtils<>::TeamPolicy::member_type TeamHandleType;
+  const auto &teamPolicy = ekat::ExeSpaceUtils<>::get_default_team_policy (2,0);
   Kokkos::parallel_for(teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, 3u),
                          [&](const int &i) {});

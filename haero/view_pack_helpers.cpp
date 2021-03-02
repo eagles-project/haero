@@ -12,6 +12,16 @@ view_1d_scalar_type vector_to_basic_1dview(const std::vector<Real>& vector, cons
   return result;
 }
 
+view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector, const std::string& view_name) {
+  view_1d_int_type result(view_name, vector.size());
+  auto hm = Kokkos::create_mirror_view(result);
+  for (int i=0; i<vector.size(); ++i) {
+    hm(i) = vector[i];
+  }
+  Kokkos::deep_copy(result, hm);
+  return result;
+}
+
 view_1d_pack_type vector_to_packed_1dview(const std::vector<Real>& vector, const std::string& view_name) {
   const int nn = vector.size();
   view_1d_pack_type result(view_name, pack_info::num_packs(nn));

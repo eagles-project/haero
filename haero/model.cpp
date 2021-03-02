@@ -106,6 +106,19 @@ Model::Model(
 Model::Model() {
 }
 
+Model::Model(const Model &model):
+  selected_processes_(model.selected_processes_),
+  modes_(model.modes_),
+  aero_species_(model.aero_species_),
+  gas_species_(model.gas_species_),
+  species_for_mode_(model.species_for_mode_),
+  num_aero_populations_(model.num_aero_populations_),
+  num_levels_(model.num_levels_),
+  prog_processes_(model.prog_processes_),
+  diag_processes_(model.diag_processes_),
+  uses_fortran_(model.uses_fortran_)
+{}
+
 Model* Model::ForUnitTests(
   const std::vector<Mode>& aerosol_modes,
   const std::vector<Species>& aerosol_species,
@@ -154,10 +167,10 @@ Model::~Model() {
 #endif // HAERO_FORTRAN
 }
 
-Prognostics* Model::create_prognostics(Kokkos::View<PackType**>& int_aerosols,
-                                       Kokkos::View<PackType**>& cld_aerosols,
-                                       Kokkos::View<PackType**>& gases,
-                                       Kokkos::View<PackType**>& modal_num_concs) const {
+Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
+                                       SpeciesColumnView cld_aerosols,
+                                       SpeciesColumnView gases,
+                                       ModalColumnView   modal_num_concs) const {
   std::vector<int> num_aero_species(modes_.size());
   for (size_t m = 0; m < modes_.size(); ++m) {
     num_aero_species[m] = static_cast<int>(species_for_mode_[m].size());

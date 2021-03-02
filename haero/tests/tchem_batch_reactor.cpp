@@ -67,9 +67,11 @@ END
   Kokkos::deep_copy(results_host, results);
 
   // verify that known inputs result in known outputs
-  REQUIRE(FloatingPoint<Real>::equiv(results_host(0, 0), 3.27585e-11,
+  const Real val00 = results_host(0, 0);
+  const Real val01 = results_host(0, 1);
+  REQUIRE(FloatingPoint<Real>::equiv(val00, 3.27585e-11,
                                      FloatingPoint<Real>::zero_tol));
-  REQUIRE(FloatingPoint<Real>::equiv(results_host(0, 1), -1.63793e-11,
+  REQUIRE(FloatingPoint<Real>::equiv(val01, -1.63793e-11,
                                      FloatingPoint<Real>::zero_tol));
 
   } // kokkos scope
