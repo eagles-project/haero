@@ -215,10 +215,14 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   real(wp), pointer, dimension(:,:) :: dqdt_g ! gas mole frac tends
   real(wp), pointer, dimension(:,:) :: dndt   ! modal number density tends
 
+  ! Diagnostics computed by other processes.
+  real(wp), pointer, dimension(:,:) :: qgas_averaged
+  real(wp), pointer, dimension(:) :: uptkrate_h2so4
+  real(wp), pointer, dimension(:) :: del_h2so4_gasprod
+  real(wp), pointer, dimension(:) :: del_h2so4_aeruptk
 
   real(wp) :: aircon    ! molar concentration of air [mol/m^3]
   real(wp) :: pblh      ! Planetary boundary layer height [m]
-  real(wp) :: uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk
 
   real(wp) :: dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait
   real(wp) :: dnclusterdt ! diagnostic cluster nucleation rate (#/m3/s)
@@ -241,24 +245,46 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     return
   end if
 
-  ! Gas mole fraction tendencies.
+  ! Gas mole fraction tendencies
   q_g => prognostics%gases()
   dqdt_g => tendencies%gases()
 
-  ! Mix fractions and tendencies for SO4 aerosol in the Aitken mode.
+  ! Mix fractions and tendencies for SO4 aerosol in the Aitken mode
   ! All new nuclei are deposited into interstitial aerosols.
   q_i => prognostics%interstitial_aerosols()
   dqdt_i => tendencies%interstitial_aerosols()
 
-  ! Modal number density and tendencies.
+  ! Modal number density and tendencies
   n => prognostics%modal_num_concs()
   dndt => tendencies%modal_num_concs()
 
-  ! Atmospheric state variables.
+  ! Atmospheric state variables
   press => atmosphere%pressure()
   temp => atmosphere%temperature()
   rel_hum => atmosphere%relative_humidity()
   height => atmosphere%height()
+
+  ! Diagnostics
+  if (diagnostics%has_gas_var("qgas_averaged")) then
+    qgas_averaged => diagnostics%gas_var("qgas_averaged")
+  else
+    qgas_averaged => null()
+  end if
+  if (diagnostics%has_var("uptkrate_h2so4")) then
+    uptkrate_h2so4 => diagnostics%var("uptkrate_h2so4")
+  else
+    uptkrate_h2so4 => null()
+  end if
+  if (diagnostics%has_var("del_h2so4_gasprod")) then
+    del_h2so4_gasprod => diagnostics%var("del_h2so4_gasprod")
+  else
+    del_h2so4_gasprod => null()
+  end if
+  if (diagnostics%has_var("del_h2so4_aeruptk")) then
+    del_h2so4_aeruptk => diagnostics%var("del_h2so4_aeruptk")
+  else
+    del_h2so4_aeruptk => null()
+  end if
 
   ! Traverse the vertical levels and compute tendencies from nucleation.
   do k = 1,model%num_levels
@@ -269,7 +295,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 
     ! Extract prognostic state data.
     qgas_cur(:) = q_g(k, :)
-    qgas_avg(:) = q_g(k, :) ! FIXME: Need to compute time average!
+    qgas_avg(:) = qgas_averaged(k, :)
     qnum_cur(:) = n(k, :)
     qwtr_cur(:) = n(k, :) ! FIXME: Need to compute water content.
     do p = 1,model%num_populations
@@ -277,11 +303,9 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
       qaer_cur(s,m) = q_i(k, p)
     end do
 
-    ! FIXME: Compute uptake and gas production rates.
-
     call compute_tendencies(dt, &
       temp(k), press(k), aircon, height(k), pblh, rel_hum(k), &
-      uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk, &
+      uptkrate_h2so4(k), del_h2so4_gasprod(k), del_h2so4_aeruptk(k), &
       qgas_cur, qgas_avg, qnum_cur, qaer_cur, qwtr_cur, &
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
       dnclusterdt)
