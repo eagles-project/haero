@@ -16,7 +16,7 @@
 	url = git@github.com:xianyi/OpenBLAS.git
 [submodule "ext/Tines"]
 	path = ext/Tines
-	url = git@github.com:sandialabs/Tines.git
+	url = git@github.com:mschmidt271/Tines.git
 [submodule "ext/TChem"]
 	path = ext/TChem
 	url = git@github.com:sandialabs/TChem.git
