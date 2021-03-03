@@ -11,7 +11,7 @@ module haero
   public :: wp, mode_t, species_t, model_t, &
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
-            diagnostics_from_c_ptr, tendencies_from_c_ptr, model
+            diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
 
   !> Working precision real kind
   integer, parameter :: wp = c_real
@@ -59,6 +59,8 @@ module haero
     type(species_t), dimension(:,:), allocatable :: aero_species
     !> The gas species in the model.
     type(species_t), dimension(:), allocatable :: gas_species
+    !> The number of gases in the model. Equal to size(gas_species).
+    integer :: num_gases
     !> The number of vertical levels in an atmospheric column.
     integer :: num_levels
   contains
@@ -108,15 +110,19 @@ module haero
   type :: diagnostics_t
     type(c_ptr) :: ptr
   contains
-    procedure :: has_var => d_has_var
+    procedure :: find_var => d_find_var
     procedure :: var => d_var
-    procedure :: has_aerosol_var => d_has_aerosol_var
+    procedure :: find_aerosol_var => d_find_aerosol_var
     procedure :: aerosol_var => d_aerosol_var
-    procedure :: has_gas_var => d_has_gas_var
+    procedure :: find_gas_var => d_find_gas_var
     procedure :: gas_var => d_gas_var
-    procedure :: has_modal_var => d_has_modal_var
+    procedure :: find_modal_var => d_find_modal_var
     procedure :: modal_var => d_modal_var
   end type
+
+  !> This parameter represents a token indicating that a given variable was
+  !> not found in a diagnostics container.
+  integer(c_int), parameter :: var_not_found = -1
 
   !> This type represents a set of tendencies to be computed by a prognostic
   !> process.
@@ -171,52 +177,52 @@ module haero
       type(c_ptr), value, intent(in) :: a
     end function
 
-    logical(c_bool) function d_has_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr
+    integer(c_int) function d_find_var_c(d, name) bind(c)
+      use iso_c_binding, only: c_int, c_ptr
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    type(c_ptr) function d_var_c(p, name) bind(c)
-      use iso_c_binding, only: c_ptr, c_char, c_int
+    type(c_ptr) function d_var_c(p, token) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: p
-      type(c_ptr), value, intent(in) :: name
+      integer(c_int), value, intent(in) :: token
     end function
 
-    logical(c_bool) function d_has_aerosol_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr, c_int
-      type(c_ptr), value, intent(in) :: d
-      type(c_ptr), value, intent(in) :: name
-    end function
-
-    type(c_ptr) function d_aerosol_var_c(d, name) bind(c)
+    integer(c_int) function d_find_aerosol_var_c(d, name) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    logical(c_bool) function d_has_gas_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr
+    type(c_ptr) function d_aerosol_var_c(d, token) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: d
+      integer(c_int), value, intent(in) :: token
+    end function
+
+    integer(c_int) function d_find_gas_var_c(d, name) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    type(c_ptr) function d_gas_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_ptr
+    type(c_ptr) function d_gas_var_c(d, token) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: d
+      integer(c_int), value, intent(in) :: token
+    end function
+
+    integer(c_int) function d_find_modal_var_c(d, name) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
       type(c_ptr), value, intent(in) :: name
     end function
 
-    logical(c_bool) function d_has_modal_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_bool, c_ptr
+    type(c_ptr) function d_modal_var_c(d, token) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: d
-      type(c_ptr), value, intent(in) :: name
-    end function
-
-    type(c_ptr) function d_modal_var_c(d, name) bind(c)
-      use iso_c_binding, only: c_ptr
-      type(c_ptr), value, intent(in) :: d
-      type(c_ptr), value, intent(in) :: name
+      integer(c_int), value, intent(in) :: token
     end function
 
     type(c_ptr) function t_int_aero_mix_frac_c(t) bind(c)
@@ -256,7 +262,7 @@ contains
         function c_strlen(str_ptr) bind (c, name = "strlen" ) result(len)
         use, intrinsic :: iso_c_binding
             type(c_ptr), value     :: str_ptr
-            integer(kind=c_size_t) :: len
+            integer(c_size_t)      :: len
         end function c_strlen
     end interface
 
@@ -360,6 +366,7 @@ contains
 
     integer(c_int), value, intent(in) :: num_species
 
+    model%num_gases = num_species
     allocate(model%gas_species(num_species))
   end subroutine
 
@@ -644,131 +651,136 @@ contains
     retval%ptr = ptr
   end function
 
-  !> Returns true if the given diagnostics object contains a (non-modal)
-  !> variable with the given name, false otherwise.
+  !> Returns a token that can be used to retrieve a variable with the given
+  !> name from a diagnostics object, or var_not_found (-1) if no such variable
+  !> exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired variable.
-  function d_has_var(d, name) result(retval)
+  function d_find_var(d, name) result(retval)
     use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
     c_name = f_to_c_string(name)
-    retval = d_has_var_c(d%ptr, c_name)
+    retval = d_find_var_c(d%ptr, c_name)
   end function
 
   !> Provides access to the given (non-modal) variable in the given
-  !> diagnostics object.
+  !> diagnostics object, given its token.
   !> @param [in] d A pointer to a diagnostics object.
-  !> @param [in] name The name of the desired variable.
-  function d_var(d, name) result(retval)
+  !> @param [in] token A token obtained from find_var(name). Must not equal
+  !>                   var_not_found (-1).
+  function d_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
+    integer(c_int), intent(in) :: token
+
     real(wp), dimension(:), pointer :: retval
 
-    type(c_ptr) :: c_name, v_ptr
+    type(c_ptr) :: v_ptr
 
-    c_name = f_to_c_string(name)
-    v_ptr = d_var_c(d%ptr, c_name)
+    v_ptr = d_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels])
   end function
 
-  !> Returns true if the given diagnostics object contains a modal aerosol
-  !> variable with the given name, false otherwise.
+  !> Returns a token that can be used to retrieve an aerosol variable with the
+  !> given name and mode from a diagnostics object, or var_not_found (-1) if no such
+  !> variable exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired aerosol variable.
   !> @param [in] mode The index of the desired mode.
-  function d_has_aerosol_var(d, name) result(retval)
+  function d_find_aerosol_var(d, name) result(retval)
     use iso_c_binding, only: c_ptr, c_char, c_bool, c_int
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
 
     c_name = f_to_c_string(name)
-    retval = d_has_aerosol_var_c(d%ptr, c_name)
+    retval = d_find_aerosol_var_c(d%ptr, c_name)
   end function
 
   !> Provides access to the given (non-modal) variable in the given
-  !> diagnostics object.
+  !> diagnostics object, given its token.
   !> @param [in] d A pointer to a diagnostics object.
-  !> @param [in] name The name of the desired aerosol variable.
+  !> @param [in] token A token obtained from find_aerosol_var(name). Must not
+  !>                   equal var_not_found (-1).
   !> @param [in] mode The index of the desired mode.
-  function d_aerosol_var(d, name) result(retval)
+  function d_aerosol_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
+    integer(c_int), intent(in) :: token
     real(wp), dimension(:,:), pointer :: retval
 
-    type(c_ptr) :: c_name, v_ptr
+    type(c_ptr) :: v_ptr
 
-    c_name = f_to_c_string(name)
-    v_ptr = d_aerosol_var_c(d%ptr, c_name)
+    v_ptr = d_aerosol_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_populations])
   end function
 
-  !> Returns true if the given diagnostics object contains a (non-modal)
-  !> variable with the given name, false otherwise.
+  !> Returns a token that can be used to retrieve a gas variable with the
+  !> given name from a diagnostics object, or var_not_found (-1) if no such
+  !> variable exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
-  function d_has_gas_var(d, name) result(retval)
+  function d_find_gas_var(d, name) result(retval)
     use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
     c_name = f_to_c_string(name)
-    retval = d_has_gas_var_c(d%ptr, c_name)
+    retval = d_find_gas_var_c(d%ptr, c_name)
   end function
 
-  !> Provides access to the given (non-modal) variable in the given
-  !> diagnostics object.
+  !> Provides access to the given gas variable in the given diagnostics object,
+  !> given its token.
   !> @param [in] d A pointer to a diagnostics object.
-  !> @param [in] name The name of the desired modal variable.
-  function d_gas_var(d, name) result(retval)
+  !> @param [in] token A token obtained from find_gas_var(name). Must not equal
+  !>                   var_not_found (-1).
+  function d_gas_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
+    integer(c_int), intent(in) :: token
     real(wp), dimension(:,:), pointer :: retval
 
-    type(c_ptr) :: c_name, v_ptr
+    type(c_ptr) :: v_ptr
 
-    c_name = f_to_c_string(name)
-    v_ptr = d_gas_var_c(d%ptr, c_name)
+    v_ptr = d_gas_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, size(model%gas_species)])
   end function
 
-  !> Returns true if the given diagnostics object contains a modal
-  !> variable with the given name, false otherwise.
+  !> Returns a token that can be used to retrieve a modal variable with the
+  !> given name from a diagnostics object, or var_not_found (-1) if no such
+  !> variable exists.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] name The name of the desired modal variable.
-  function d_has_modal_var(d, name) result(retval)
+  function d_find_modal_var(d, name) result(retval)
     use iso_c_binding, only: c_ptr, c_bool
     class(diagnostics_t), intent(in) :: d
     character(len=*), intent(in) :: name
-    logical(c_bool) :: retval
+    integer(c_int) :: retval
 
     type(c_ptr) :: c_name
 
     c_name = f_to_c_string(name)
-    retval = d_has_modal_var_c(d%ptr, c_name)
+    retval = d_find_modal_var_c(d%ptr, c_name)
   end function
 
   !> Provides access to the given modal variable in the given
-  !> diagnostics object.
+  !> diagnostics object, given its token.
   !> @param [in] d A pointer to a diagnostics object.
-  !> @param [in] name The name of the desired modal variable.
-  function d_modal_var(d, name) result(retval)
+  !> @param [in] token A token obtained from find_modal_var(name). Must not
+  !>                   equal var_not_found (-1).
+  function d_modal_var(d, token) result(retval)
     class(diagnostics_t), intent(in)  :: d
-    character(len=*), intent(in) :: name
+    integer(c_int), intent(in) :: token
     real(wp), dimension(:,:), pointer :: retval
 
-    type(c_ptr) :: c_name, v_ptr
+    type(c_ptr) :: v_ptr
 
-    c_name = f_to_c_string(name)
-    v_ptr = d_modal_var_c(d%ptr, c_name)
+    v_ptr = d_modal_var_c(d%ptr, token)
     call c_f_pointer(v_ptr, retval, [model%num_levels, size(model%modes)])
   end function
 

@@ -57,8 +57,8 @@ PrognosticProcess* select_prognostic_process(ProcessType type,
   }
   else if (type == NucleationProcess) {
 #if HAERO_FORTRAN
-    if (selections.nucleation == SelectedProcesses::MAM4FNucleation) {
-      process = new MAM4NucleationFProcess();
+    if (selections.nucleation == SelectedProcesses::MAMFNucleation) {
+      process = new MAMNucleationFProcess();
     } else
 #endif
     if (selections.nucleation == SelectedProcesses::NoNucleation) {

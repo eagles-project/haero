@@ -1,5 +1,6 @@
 #include "haero/model.hpp"
 #include "haero/floating_point.hpp"
+#include "haero/diagnostics.hpp"
 #include "prog_fprocess_stub.hpp"
 #include "diag_fprocess_stub.hpp"
 #include "catch2/catch.hpp"
@@ -109,8 +110,8 @@ TEST_CASE("prog_fprocess_stub", "") {
 
     // Cloudborne aerosol mix fractions have negative tendencies, interstitial
     // mix fractions have positive tendencies, and their sums are zero.
-    auto& dqdt_c = tends->cloudborne_aerosols();
-    auto& dqdt_i = tends->interstitial_aerosols();
+    auto dqdt_c = tends->cloudborne_aerosols();
+    auto dqdt_i = tends->interstitial_aerosols();
     for (int p = 0; p < num_aero_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(dqdt_c(p, k)[0] < 0.0);
@@ -121,7 +122,7 @@ TEST_CASE("prog_fprocess_stub", "") {
     }
 
     // Aerosol modal number concentrations are unchanged.
-    auto& dndt = tends->modal_num_concs();
+    auto dndt = tends->modal_num_concs();
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(FloatingPoint<Real>::equiv(dndt(m, k)[0], 0.0));
@@ -200,9 +201,10 @@ TEST_CASE("diag_process_stub", "") {
     Diagnostics diags(num_modes, num_aero_species, num_gases, num_levels);
     auto* stub = new DiagFProcessStub();
     stub->prepare(diags);
-    REQUIRE(diags.has_var("temperature"));
-    REQUIRE(diags.has_gas_var("pressure"));
-    REQUIRE(diags.has_modal_var("pressure"));
+    auto VAR_NOT_FOUND = Diagnostics::VAR_NOT_FOUND;
+    REQUIRE(VAR_NOT_FOUND != diags.find_var("temperature"));
+    REQUIRE(VAR_NOT_FOUND != diags.find_gas_var("pressure"));
+    REQUIRE(VAR_NOT_FOUND != diags.find_modal_var("pressure"));
     delete stub;
   }
 
@@ -253,14 +255,15 @@ TEST_CASE("diag_process_stub", "") {
 
     // Set the atmospheric temperature.
     {
-      auto& T = diags->var("temperature");
+      auto token = diags->find_var("temperature");
+      auto T = diags->var(token);
       for (int k = 0; k < num_levels; ++k) {
         T(k) = 273.15;
       }
     }
 
     // Make a copy of the temperature field.
-    auto T0 = diags->var("temperature");
+    auto T0 = diags->var(diags->find_var("temperature"));
 
     // Now update diagnostics at time 0.
     Real t = 0.0;
@@ -269,7 +272,7 @@ TEST_CASE("diag_process_stub", "") {
     // -------------------------------------------------
     // Make sure the temperature field was not affected.
     // -------------------------------------------------
-    const auto& T = diags->var("temperature");
+    const auto T = diags->var(diags->find_var("temperature"));
     for (int k = 0; k < num_levels; ++k) {
       REQUIRE(FloatingPoint<Real>::equiv(T(k)[0], T0(k)[0]));
     }
@@ -277,14 +280,14 @@ TEST_CASE("diag_process_stub", "") {
     // ---------------------------------------
     // Check the diagnostic partial pressures.
     // ---------------------------------------
-    const auto& p_m = diags->modal_var("pressure");
+    const auto& p_m = diags->modal_var(diags->find_modal_var("pressure"));
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(p_m(m, k)[0] > 0.0);
       }
     }
 
-    const auto& p_g = diags->gas_var("pressure");
+    const auto& p_g = diags->gas_var(diags->find_gas_var("pressure"));
     for (int g = 0; g < num_gases; ++g) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(p_g(g, k)[0] > 0.0);

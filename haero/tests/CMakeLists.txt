@@ -38,6 +38,9 @@ EkatCreateUnitTest(tchem_batch_reactor tchem_batch_reactor.cpp
 EkatCreateUnitTest(kokkos_team_execute kokkos_team_execute.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(process_tests process_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 #----------------------------------------------------
 # Unit tests for prognostic processes
 #----------------------------------------------------

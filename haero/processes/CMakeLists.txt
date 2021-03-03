@@ -3,7 +3,7 @@
 # C++ process implementations go here. These are just names of C++ source
 # files that implement aerosol prognostic and diagnostic processes.
 set(CXX_PROCESS_SOURCES
-#    mam4_nucleation_process.cpp
+#    mam_nucleation_process.cpp
 )
 
 # Prepend processes/ to each source file and transmit HAERO_PROCESSES upward.
@@ -24,11 +24,11 @@ if (HAERO_FORTRAN)
   #   nucleation). For valid enum types, see ProcessType in haero/process.hpp.
   # * The name of the Fortran module that implements the process (without
   #   the .F90 suffix). The source code for this module must be located in a
-  #   file named after the module, with an .F90 suffix. E.g.: mam4_nucleation
-  #   refers to a Fortran module named mam4_nucleation whose source lives in
-  #   mam4_nucleation.F90, within this directory.
-  prognostic_fprocess(MAM4NucleationFProcess NucleationProcess mam4_nucleation)
-  #diagnostic_fprocess(MAM4WaterUptakeFProcess WaterUptakeProcess mam4_water_uptake)
+  #   file named after the module, with an .F90 suffix. E.g.: mam_nucleation
+  #   refers to a Fortran module named mam_nucleation whose source lives in
+  #   mam_nucleation.F90, within this directory.
+  prognostic_fprocess(MAMNucleationFProcess NucleationProcess mam_nucleation)
+  #diagnostic_fprocess(MAMWaterUptakeFProcess WaterUptakeProcess mam_water_uptake)
 
 endif()
 

@@ -6,14 +6,19 @@ Prognostics::Prognostics(int num_aerosol_modes,
                          const std::vector<int>& num_aerosol_species,
                          int num_gases,
                          int num_levels,
-                         Kokkos::View<PackType**>& int_aerosols,
-                         Kokkos::View<PackType**>& cld_aerosols,
-                         Kokkos::View<PackType**>& gases,
-                         Kokkos::View<PackType**>& modal_num_concs):
-  num_aero_species_(num_aerosol_species), num_aero_populations_(0),
-  num_gases_(num_gases), num_levels_(num_levels),
-  int_aero_species_(int_aerosols), cld_aero_species_(cld_aerosols),
-  gases_(gases), modal_num_concs_(modal_num_concs) {
+                         ManagedSpeciesColumnView int_aerosols,
+                         ManagedSpeciesColumnView cld_aerosols,
+                         ManagedSpeciesColumnView gases,
+                         ManagedModalColumnView   modal_num_concs):
+  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Prognostics::num_aerosol_species")), 
+  num_aero_populations_(0),
+  num_gases_(num_gases), 
+  num_levels_(num_levels),
+  int_aero_species_(int_aerosols),
+  cld_aero_species_(cld_aerosols),
+  gases_(gases),
+  modal_num_concs_(modal_num_concs) 
+  {
 
   // Count up the mode/species combinations.
   for (int m = 0; m < num_aerosol_species.size(); ++m) {
@@ -25,21 +30,29 @@ Prognostics::Prognostics(int num_aerosol_modes,
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
     num_vert_packs++;
   }
-  EKAT_REQUIRE_MSG(int_aerosols.extent(0) == num_aero_populations_,
+  const int int_aerosols_extent_0 = int_aerosols.extent(0);
+  const int int_aerosols_extent_1 = int_aerosols.extent(1);
+  const int cld_aerosols_extent_0 = cld_aerosols.extent(0);
+  const int cld_aerosols_extent_1 = cld_aerosols.extent(1);
+  const int gases_extent_0 = gases.extent(0);
+  const int gases_extent_1 = gases.extent(1);
+  const int modal_num_concs_extent_0 = modal_num_concs.extent(0);
+  const int modal_num_concs_extent_1 = modal_num_concs.extent(1);
+  EKAT_REQUIRE_MSG(int_aerosols_extent_0 == num_aero_populations_,
                    "int_aerosols must have extent(0) == " << num_aero_populations_);
-  EKAT_REQUIRE_MSG(int_aerosols.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(int_aerosols_extent_1 == num_vert_packs,
                    "int_aerosols must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(cld_aerosols.extent(0) == num_aero_populations_,
+  EKAT_REQUIRE_MSG(cld_aerosols_extent_0 == num_aero_populations_,
                    "cld_aerosols must have extent(0) == " << num_aero_populations_);
-  EKAT_REQUIRE_MSG(cld_aerosols.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(cld_aerosols_extent_1 == num_vert_packs,
                    "int_aerosols must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(gases.extent(0) == num_gases_,
+  EKAT_REQUIRE_MSG(gases_extent_0 == num_gases_,
                    "gases must have extent(0) == " << num_gases_);
-  EKAT_REQUIRE_MSG(gases.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(gases_extent_1 == num_vert_packs,
                    "gases must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(modal_num_concs.extent(0) == num_aerosol_modes,
+  EKAT_REQUIRE_MSG(modal_num_concs_extent_0 == num_aerosol_modes,
                    "modal_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_REQUIRE_MSG(modal_num_concs.extent(1) == num_vert_packs,
+  EKAT_REQUIRE_MSG(modal_num_concs_extent_1 == num_vert_packs,
                    "modal_num_concs must have extent(1) == " << num_vert_packs);
 }
 
@@ -68,38 +81,29 @@ int Prognostics::num_levels() const {
   return num_levels_;
 }
 
-Prognostics::SpeciesColumnView&
-Prognostics::interstitial_aerosols() {
-  return int_aero_species_;
-}
-
-const Prognostics::SpeciesColumnView&
-Prognostics::interstitial_aerosols() const {
-  return int_aero_species_;
-}
-
-Prognostics::SpeciesColumnView& Prognostics::cloudborne_aerosols() {
+Prognostics::SpeciesColumnView 
+Prognostics::cloudborne_aerosols() {
   return cld_aero_species_;
 }
 
-const Prognostics::SpeciesColumnView&
+const Prognostics::SpeciesColumnView
 Prognostics::cloudborne_aerosols() const {
   return cld_aero_species_;
 }
 
-Prognostics::SpeciesColumnView& Prognostics::gases() {
+Prognostics::SpeciesColumnView Prognostics::gases() {
   return gases_;
 }
 
-const Prognostics::SpeciesColumnView& Prognostics::gases() const {
+const Prognostics::SpeciesColumnView Prognostics::gases() const {
   return gases_;
 }
 
-Prognostics::ModalColumnView& Prognostics::modal_num_concs() {
+Prognostics::ModalColumnView Prognostics::modal_num_concs() {
   return modal_num_concs_;
 }
 
-const Prognostics::ModalColumnView& Prognostics::modal_num_concs() const {
+const Prognostics::ModalColumnView Prognostics::modal_num_concs() const {
   return modal_num_concs_;
 }
 
@@ -115,28 +119,28 @@ extern "C" {
 void* p_int_aero_mix_frac_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& mix_fracs = progs->interstitial_aerosols();
+  auto mix_fracs = progs->interstitial_aerosols();
   return (void*)mix_fracs.data();
 }
 
 void* p_cld_aero_mix_frac_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& mix_fracs = progs->cloudborne_aerosols();
+  auto mix_fracs = progs->cloudborne_aerosols();
   return (void*)mix_fracs.data();
 }
 
 void* p_gases_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& mix_fracs = progs->gases();
+  auto mix_fracs = progs->gases();
   return (void*)mix_fracs.data();
 }
 
 void* p_modal_num_concs_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto& num_concs = progs->modal_num_concs();
+  auto num_concs = progs->modal_num_concs();
   return (void*)num_concs.data();
 }
 

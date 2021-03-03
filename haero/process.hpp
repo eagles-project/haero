@@ -61,16 +61,18 @@ class PrognosticProcess {
     type_(type), name_(name) {}
 
   /// Destructor.
+  KOKKOS_INLINE_FUNCTION
   virtual ~PrognosticProcess() {}
 
   /// Default constructor is disabled.
   PrognosticProcess() = delete;
 
-  /// PrognosticProcess objects are not deep-copyable. They should be passed
-  /// by reference or as pointers.
-  PrognosticProcess(const PrognosticProcess&) = delete;
+  /// Default copy constructor. For use in moving host instance to device.
+  KOKKOS_INLINE_FUNCTION
+  PrognosticProcess(const PrognosticProcess& pp) :
+    type_(pp.type_), name_(pp.name_) {}
 
-  /// PrognosticProcess objects are not assignable either.
+  /// PrognosticProcess objects are not assignable.
   PrognosticProcess& operator=(const PrognosticProcess&) = delete;
 
   //------------------------------------------------------------------------
@@ -81,7 +83,7 @@ class PrognosticProcess {
   ProcessType type() const { return type_; }
 
   /// Returns the name of this process/parametrization/realization.
-  const std::string& name() const { return name_; }
+  std::string name() const { return name_.label(); }
 
   //------------------------------------------------------------------------
   //                Methods to be overridden by subclasses
@@ -108,6 +110,7 @@ class PrognosticProcess {
   ///                         this process.
   /// @param [out] tendencies A container that stores time derivatives for
   ///                         prognostic variables evolved by this process.
+  KOKKOS_FUNCTION
   virtual void run(const Model& model,
                    Real t, Real dt,
                    const Prognostics& prognostics,
@@ -117,8 +120,10 @@ class PrognosticProcess {
 
   private:
 
-  ProcessType type_;
-  std::string name_;
+  const ProcessType type_;
+  // Use View as a struct to store a string and allows copy to device.
+  // Since std::string can not be used, it was either this or a char *
+  const Kokkos::View<int>  name_;
 };
 
 /// @class NullPrognosticProcess
@@ -134,6 +139,7 @@ class NullPrognosticProcess: public PrognosticProcess {
     PrognosticProcess(type, "Null prognostic aerosol process") {}
 
   // Overrides
+  KOKKOS_FUNCTION
   void run(const Model& model,
            Real t, Real dt,
            const Prognostics& prognostics,
@@ -293,23 +299,23 @@ class DiagnosticProcess {
   /// @param [inout] diagnostics The Diagnostics object in which the needed
   ///                            variables are created.
   void prepare(Diagnostics& diagnostics) const {
-    for (const auto& var: required_vars_) {
-      if (not diagnostics.has_var(var)) {
+    for (const std::string& var: required_vars_) {
+      if (Diagnostics::VAR_NOT_FOUND == diagnostics.find_var(var)) {
         diagnostics.create_var(var);
       }
     }
-    for (const auto& var: required_aero_vars_) {
-      if (not diagnostics.has_aerosol_var(var)) {
+    for (const std::string& var: required_aero_vars_) {
+      if (Diagnostics::VAR_NOT_FOUND == diagnostics.find_aerosol_var(var)) {
         diagnostics.create_aerosol_var(var);
       }
     }
-    for (const auto& var: required_gas_vars_) {
-      if (not diagnostics.has_gas_var(var)) {
+    for (const std::string& var: required_gas_vars_) {
+      if (Diagnostics::VAR_NOT_FOUND == diagnostics.find_gas_var(var)) {
         diagnostics.create_gas_var(var);
       }
     }
-    for (const auto& var: required_modal_vars_) {
-      if (not diagnostics.has_modal_var(var)) {
+    for (const std::string& var: required_modal_vars_) {
+      if (Diagnostics::VAR_NOT_FOUND == diagnostics.find_modal_var(var)) {
         diagnostics.create_modal_var(var);
       }
     }

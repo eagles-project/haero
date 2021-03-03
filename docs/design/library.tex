@@ -72,7 +72,9 @@ The concept of a ``diagnostic'' variable is more general than its name suggests.
 The word "diagnostic" suggests that the variable is used only as an indicator
 by a human attempting to ``diagnose'' some atmospheric condition. In fact, a
 diagnostic variable can be any variable whose state can be constructed at any
-instant in time, using only the relevant prognostic variables.
+instant in time, using only the relevant prognostic variables. In this sense,
+a diagnostic variable serves as a ``shared'' variable that can be computed at
+the appropriate time, and used by one or more prognostic processes.
 
 Haero's aerosol state data lives in multi-dimensional arrays within ``smart
 containers'':
@@ -419,8 +421,8 @@ the \verb Model  C++ class provides the following two functions, which you can
 call directly yourself, given a pointer to a C++ variable called \verb model :
 
 \begin{itemize}
-  \item \verb model->create_prognostics()  : returns a pointer to a new C++
-    \verb Prognostics  container
+  \item \verb model->create_prognostics(...)  : returns a pointer to a new C++
+    \verb Prognostics  container, given views that store aerosol prognostics
   \item \verb model->create_diagnostics()  : returns a pointer to a new C++
     \verb Diagnostics  container
 \end{itemize}
@@ -601,7 +603,8 @@ variables a bit in the near future.}
 
 The \verb Diagnostics  C++ class stores a dynamically-determined set of
 diagnostic variables that correspond to the specific parameterizations available
-to the aerosol model that created it.
+to the aerosol model that created it. The variables are identified by unique
+tokens that can be retrieved by name.
 
 \lstset{language=[11]c++}
 \begin{lstlisting}
@@ -619,68 +622,82 @@ class Diagnostics final {
   // Returns the number of vertical levels in the system.
   int num_levels() const;
 
-  // Returns true if the given (non-modal) variable exists within this object,
-  // false otherwise.
-  bool has_var(const std::string& name) const;
+  // Returns a unique token that identifies the given (non-modal) variable
+  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_var(const std::string& name) const;
 
-  // Returns the view storing the diagnostic variable with the given name.
-  // If the variable does not yet exist, this throws an exception.
-  ColumnView& var(const std::string& name);
+  // Returns the view storing the diagnostic variable with a name corresponding
+  // to the given token. If such a variable does not exist, this throws an
+  // exception.
+  ColumnView& var(const Token token);
 
-  // Returns true if the given modal aerosol variable exists within this object,
-  // false otherwise.
-  bool has_aerosol_var(const std::string& name) const;
+  // Returns a unique token that identifies the given modal aerosol variable
+  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_aerosol_var(const std::string& name) const;
 
-  // Returns the view storing the modal aerosol diagnostic variable with the
-  // given name and mode index. If the variable does not yet exist, this throws
-  // an exception.
-  SpeciesColumnView& aerosol_var(const std::string& name, int mode_index);
-
-  // Returns true if a variable defined for each gas species exists within
-  // this object with the given name, false otherwise.
-  bool has_gas_var(const std::string& name) const;
-
-  // Returns the view storing a diagnostic variable, defined for each gas
-  // species, with the given name. If the variable does not yet exist, this
+  // Returns the view storing the modal aerosol diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
   // throws an exception.
-  SpeciesColumnView& gas_var(const std::string& name);
+  SpeciesColumnView& aerosol_var(const Token token);
 
-  // Returns true if the given modal variable exists within this object,
-  // false otherwise.
-  bool has_modal_var(const std::string& name) const;
+  // Returns a unique token that identifies the given gas variable within this
+  // object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_gas_var(const std::string& name) const;
 
-  // Returns the view storing the mode-specific diagnostic variable with the
-  // given name. If the variable does not yet exist, this throws an exception.
-  // @param [in] name The name of the diagnostic variable.
-  ModalColumnView& modal_var(const std::string& name);
+  // Returns the view storing the gas diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
+  // throws an exception.
+  SpeciesColumnView& gas_var(const Token token);
+
+  // Returns a unique token that identifies the given modal variable within
+  // this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_modal_var(const std::string& name) const;
+
+  // Returns the view storing the mode-specific diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
+  // throws an exception.
+  ModalColumnView& modal_var(const Token token);
 };
 \end{lstlisting}
 
 The Fortran version of \verb Diagnostics , like its \verb Prognostics  counterpart,
 uses bound procedures to provide access to its array data. Each one of these
 bound procedures accepts a single dummy argument: the name of the desired
-diagnostic variable.
+diagnostic variable. This Fortran pseudocode illustrates the interface for the
+\verb Diagnostics  derived-type \verb diagnostics_t .
 
 \lstset{language=[03]{fortran}}
 \begin{lstlisting}
   type :: diagnostics_t
   contains
-    ! Returns true if the column variable with the given name exists.
-    procedure :: has_var => d_has_var
-    ! Returns the column variable with the given name.
-    procedure :: var => d_var
-    ! Returns true if an aerosol diagnostic variable with the given name exists.
-    procedure :: has_aerosol_var => d_has_aerosol_var
-    ! Returns the aerosol diagnostic variable with the given name.
-    procedure :: aerosol_var => d_aerosol_var
-    ! Returns true if a gas diagnostic variable with the given name exists.
-    procedure :: has_gas_var => d_has_gas_var
-    ! Returns the gas diagnostic variable with the given name.
-    procedure :: gas_var => d_gas_var
-    ! Returns true if a modal diagnostic variable with the given name exists.
-    procedure :: has_modal_var => d_has_modal_var
-    ! Returns the modal diagnostic variable with the given name.
-    procedure :: modal_var => d_modal_var
+    ! Returns a token that can be used to retrieve a variable with the given
+    ! name from a diagnostics object, or var_not_found (-1) if no such variable
+    ! exists.
+    procedure :: find_var(name) -> token
+    ! Provides access to the given (non-modal) variable in the given
+    ! diagnostics object, given its token
+    procedure :: var(token) -> array pointer
+    ! Returns a token that can be used to retrieve an aerosol variable with the
+    ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: find_aerosol_var(name) -> token
+    ! Provides access to the given (non-modal) variable in the given
+    ! diagnostics object, given its token.
+    procedure :: aerosol_var(token) -> array pointer
+    ! Returns a token that can be used to retrieve a gas variable with the
+    ! given name from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: find_gas_var(name) -> token
+    ! Provides access to the given gas variable in the given diagnostics object,
+    ! given its token.
+    procedure :: gas_var(token) -> array pointer
+    ! Returns a token that can be used to retrieve a modal variable with the
+    ! given name from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: has_modal_var(name) -> token
+    ! Provides access to the given modal variable in the given
+    ! diagnostics object, given its token.
+    procedure :: modal_var(token) -> array pointer
   end type
 \end{lstlisting}
 
@@ -821,9 +838,9 @@ In C++, all you have to do in order to implement a prognostic process is to
 define a class with a specific name, derived from the
 \verb PrognosticProcess  base class. For example, the MAM4 implementation of the
 nucleation process, described in \refsubsection{nuc:mam4}, is defined in a C++
-class named \verb MAM4NucleationProcess . A C++ class derived from a base class
+class named \verb MAMNucleationProcess . A C++ class derived from a base class
 is called a {\bf subclass} of that base class, so
-\verb MAM4NucleationProcess  is a subclass of \verb PrognosticProcess .
+\verb MAMNucleationProcess  is a subclass of \verb PrognosticProcess .
 
 To create a C++ implemention for a prognostic process:
 
@@ -832,12 +849,12 @@ To create a C++ implemention for a prognostic process:
         \verb PrognosticProcess . This header file must declare a constructor,
         a destructor, the \verb init  function, and the \verb run  function.
         This file lives in the \verb haero/processes  subdirectory within the
-        repository. See \verb haero/processes/MAM4NucleationProcess.hpp  for an
+        repository. See \verb haero/processes/MAMNucleationProcess.hpp  for an
         example.
   \item Create a source file containing implementations for the constructor, the
         destructor, the \verb init  functon, and the \verb run  function for
         your subclass. This lives alongside the header file you just created.
-        See \verb haero/processes/MAM4NucleationProcess.cpp for an example.
+        See \verb haero/processes/MAMNucleationProcess.cpp for an example.
         In particular, select the \verb ProcessType  value that reflects the
         proper stage of the aerosol lifecycle for your process.
   \item Add your source file to the set of source files in the
@@ -849,61 +866,89 @@ To create a C++ implemention for a prognostic process:
 \subsubsection{Fortran prognostic processes}
 \labelsubsubsection{lib:prognostic_f90}
 
-A Fortran prognostic process implementation consists of a C++ class derived
-from the \verb FPrognosticProcess  base class. Here, your C++ subclass is a
-very thin wrapper around three Fortran subroutines that live in their own
-module. For an example of how this looks in practice, take a look at the
-\verb MAM4NucleationFProcess  defined in the following files:
+A Fortran prognostic process implementation consists of a Fortran module that
+contains \verb init , \verb run , and \verb finalize  subroutines that implement
+the same functionality as their C++ counterparts:
 
-\begin{itemize}
-  \item \verb haero/processes/MAM4NucleationFProcess.hpp : the C++ wrapper class
-        declaration
-  \item \verb haero/processes/MAM4NucleationFProcess.cpp : the C++ wrapper class
-        implementation, which calls the subroutines in the associated
-        Fortran module. This source file must declare the names of the Fortran
-        subroutines in an {\verb extern "C"} block in order for them to be
-        visible to the C++ compiler.
-  \item \verb haero/processes/mam4_nucleation.F90 : the Fortran submodule, which
-        defines the three subroutines called by the C++ wrapper class. These
-        subroutines must be declared with the {\verb bind(c) } attribute, and
-        must have the same name as those declared in the {\verb extern "C"}
-        block in the C++ wrapper class implementation.
-\end{itemize}
+\begin{lstlisting}
+module <module_name>
+  use haero, only: wp, model_t, prognostics_t, atmosphere_t, &
+                   diagnostics_t, tendencies_t
+  ...
+  implicit none
+  public :: init, run, finalize
 
-In other words, an aerosol process implemented in Fortran must have a C++ class
-that calls a set of Fortran subroutines. The \verb FPrognosticProcess  C++ class
-takes care of most of the work needed for C++ and Fortran to communicate with
-each other---all you have to do is supply the Fortran subroutines in a module,
-and declare these subroutines in your class implementation.
+contains
 
-In this sense, the procedure for creating a Fortran implementation of an aerosol
-process is very similar to that for a C++ implementation:
+subroutine init(model)
+  implicit none
+
+  ! Arguments
+  type(model_t), intent(in) :: model
+
+  ...
+end subroutine
+
+subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+  implicit none
+
+  ! Arguments
+  type(model_t), intent(in)         :: model
+  real(wp), value, intent(in)       :: t
+  real(wp), value, intent(in)       :: dt
+  type(prognostics_t), intent(in)   :: prognostics
+  type(atmosphere_t), intent(in)    :: atmosphere
+  type(diagnostics_t), intent(in)   :: diagnostics
+  type(tendencies_t), intent(inout) :: tendencies
+
+  ...
+end subroutine
+
+subroutine finalize(model)
+  implicit none
+
+  ! Arguments
+  type(model_t), intent(in) :: model
+
+  ...
+end subroutine
+
+...
+
+end module
+\end{lstlisting}
+
+To implement a prognostic process in Fortran, you create such a module in a
+Fortran source file and then declare it as a \verb prognostic_fprocess in the
+\verb CMakeLists.txt  file within the \verb haero/processes subdirectory. There
+are instructions on how to declare your process in that file.
+
+For example, the Fortran MAM nucleation process is implemented in a Fortran
+module named \verb mam_nucleation , implemented in the source file
+\verb haero/processes/mam_nucleation.F90 . In \verb haero/processes/CMakeLists.txt ,
+it's declared as a Fortran prognostic process the following way:
+
+\begin{lstlisting}
+if (HAERO_FORTRAN)
+  ...
+  prognostic_fprocess(MAMNucleationFProcess NucleationProcess mam_nucleation)
+  ...
+endif()
+\end{lstlisting}
+
+The declaration takes three arguments:
 
 \begin{enumerate}
-  \item Create a header file that declares your subclass of
-        \verb FPrognosticProcess . Unlike a C++ implementation, this subclass
-        only needs a constructor function---the rest of the interface is handled
-        by logic in the \verb FPrognosticProcess  class. Like a C++
-        implementation, this header file lives in the
-        \verb haero/processes  subdirectory within the repository.
-  \item Create a Fortran module in which you define three subroutines that
-        implement the \verb init , \verb run , and \verb finalize  behaviors
-        for your process. Make sure these subroutines are public, and declare
-        them with the \verb bind(c)  attribute to make them accessible to C++.
-        This module lives in \verb haero/processes  with your C++ header file.
-  \item Create a source that contains an implementation for the constructor
-        function you declared in the header file above. In this constructor,
-        you must call the constructor for the \verb FPrognosticProcess  class.
-        The arguments to this constructor include the type and name of the
-        process, and the three Fortran subroutines you defined in your module.
-        behaviors. These subroutines must be declared in an {\verb extern "C"}
-        block within this file. The source file lives alongside the header file
-        and the Fortran module you created.
-  \item Add your C++ source file and Fortran module to the set of source files
-        in the \verb PROCESS_SOURCES  variable in
-        \verb haero/processes/CMakeLists.txt .
-  \item Write one or more tests for your new aerosol process.
+  \item The name of a C++ class that will be created that exposes the Fortran
+        implementation of the process
+  \item The C++ enumerated type that identifies what kind of aerosol process
+        is being implemented
+  \item The name of the Fortran module that implements the process.
 \end{enumerate}
+
+The build system automatically generates a C++ class for the Fortran module that
+allows the process to be used in a Haero simulation. The name of this C++ class
+is important for exposing it to the Haero library.
 
 \subsubsection{Making your prognostic process available to Haero}
 
@@ -917,8 +962,10 @@ do before Haero can construct a model that includes your new process type:
         type that corresponds to the \verb ProcessType  value you selected in
         Step 2 of your implementation procedure above.
   \item Edit the \verb select_prognostic_process  function in
-        \verb haero/selected_processes.cpp  to create a new pointer to your
-        process type.
+        \verb haero/selected_processes.cpp  to create a new pointer to the C++
+        class that implements or wraps your process type. You don't have to
+        \verb #include  the C++ header file for your process--it should be
+        included for you in the generated file \verb available_processes.hpp .
   \item Update the driver YAML input parser to add an option for a user
         to select your new process.
   \item Update this document with a description of your process in the
@@ -1016,12 +1063,12 @@ To create a C++ implemention for a diagnostic process:
         \verb DiagnosticProcess . This header file must declare a constructor,
         a destructor, the \verb init  function, and the \verb run  function.
         This file lives in the \verb haero/processes  subdirectory within the
-        repository. See \verb haero/processes/MAM4WaterUptakeProcess.hpp  for an
+        repository. See \verb haero/processes/MAMWaterUptakeProcess.hpp  for an
         example.
   \item Create a source file containing implementations for the constructor, the
         destructor, the \verb init  functon, and the \verb run  function for
         your subclass. This lives alongside the header file you just created.
-        See \verb haero/processes/MAM4WaterUptakeProcess.cpp for an example.
+        See \verb haero/processes/MAMWaterUptakeProcess.cpp for an example.
         In particular, select the \verb ProcessType  value that reflects the
         proper stage of the aerosol lifecycle for your process.
   \item If your diagnostic process requires the presence of specific diagnostic
@@ -1036,58 +1083,77 @@ To create a C++ implemention for a diagnostic process:
 \subsubsection{Implementing a diagnostic process in Fortran}
 \labelsubsubsection{lib:diagnostic_f90}
 
-A Fortran diagnostic process implementation consists of a C++ class derived
-from the \verb FDiagnosticProcess  base class. As in the case of prognostic
-processes, your C++ subclass is a thin wrapper around three Fortran subroutines
-that live in their own module. This is illustrated in the
-\verb MAM4WaterUptakeFProcess  defined in the following files:
+A Fortran diagnostic process implementation consists of a Fortran module that
+contains \verb init , \verb update , and \verb finalize  subroutines that implement
+the same functionality as their C++ counterparts:
 
-\begin{itemize}
-  \item \verb haero/processes/MAM4WaterUptakeFProcess.hpp : the C++ wrapper class
-        declaration
-  \item \verb haero/processes/MAM4WaterUptakeFProcess.cpp : the C++ wrapper class
-        implementation, which calls the subroutines in the associated
-        Fortran module. This source file must declare the names of the Fortran
-        subroutines in an {\verb extern "C"} block in order for them to be
-        visible to the C++ compiler.
-  \item \verb haero/processes/mam4_water_uptake.F90 : the Fortran submodule, which
-        defines the three subroutines called by the C++ wrapper class. These
-        subroutines must be declared with the {\verb bind(c) } attribute, and
-        must have the same name as those declared in the {\verb extern "C"}
-        block in the C++ wrapper class implementation.
-\end{itemize}
+\begin{lstlisting}
+module <module_name>
+  use haero, only: wp, model_t, prognostics_t, atmosphere_t, diagnostics_t
+  ...
+  implicit none
+  public :: init, update, finalize
 
-Again, the \verb FDiagnosticProcess  C++ class takes care of most of the work
-needed for the C++/Fortran bridge. You simply supply the Fortran subroutines in
-a module, and declare these subroutines in your class implementation.
+contains
 
-So, to create a Fortran implementation for a diagnostic process:
+subroutine init(model)
+  implicit none
 
-\begin{enumerate}
-  \item Create a header file that declares your subclass of
-        \verb FDiagnosticProcess . Once again, this subclass needs only a
-        constructor function. This header file lives in the
-        \verb haero/processes  subdirectory within the repository.
-  \item Create a Fortran module in which you define three subroutines that
-        implement the \verb init , \verb update , and \verb finalize  behaviors
-        for your process. Make sure these subroutines are public, and declare
-        them with the \verb bind(c)  attribute to make them accessible to C++.
-        This module lives in \verb haero/processes  with your C++ header file.
-  \item Create a source that contains an implementation for the constructor
-        function you declared in the header file above. In this constructor,
-        you must call the constructor for the \verb FDiagnosticProcess  class.
-        The arguments to this constructor include the type and name of the
-        process, and the three Fortran subroutines you defined in your module.
-        behaviors. These subroutines must be declared in an {\verb extern "C"}
-        block within this file. The source file lives alongside the header file
-        and the Fortran module you created.
-  \item Make sure you call \verb set_diag_vars  in your C++ class's constructor
-        function to list the diagnostic variables needed by your process.
-  \item Add your C++ source file and Fortran module to the set of source files
-        in the \verb PROCESS_SOURCES  variable in
-        \verb haero/processes/CMakeLists.txt .
-  \item Write one or more tests for your new aerosol process.
-\end{enumerate}
+  ! Arguments
+  type(model_t), intent(in) :: model
+
+  ...
+end subroutine
+
+subroutine update(model, t, prognostics, atmosphere, diagnostics)
+  implicit none
+
+  ! Arguments
+  type(model_t), intent(in)          :: model
+  real(wp), value, intent(in)        :: t
+  type(prognostics_t), intent(in)    :: prognostics
+  type(atmosphere_t), intent(in)     :: atmosphere
+  type(diagnostics_t), intent(inout) :: diagnostics
+
+  ...
+end subroutine
+
+subroutine finalize(model)
+  implicit none
+
+  ! Arguments
+  type(model_t), intent(in) :: model
+
+  ...
+end subroutine
+
+...
+
+end module
+\end{lstlisting}
+
+To implement a diagnostic process in Fortran, you create such a module in a
+Fortran source file and then declare it as a \verb diagnostic_fprocess in the
+\verb CMakeLists.txt  file within the \verb haero/processes subdirectory. There
+are instructions on how to declare your process in that file.
+
+For example, the Fortran MAM water uptake process is implemented in a Fortran
+module named \verb mam_water_uptake , implemented in the source file
+\verb haero/processes/mam_water_uptake.F90 . In
+\verb haero/processes/CMakeLists.txt , it's declared as a Fortran diagnostic
+process the following way:
+
+\begin{lstlisting}
+if (HAERO_FORTRAN)
+  ...
+  diagnostic_fprocess(MAMWaterUptake WaterUptakeProcess mam_water_uptake)
+  ...
+endif()
+\end{lstlisting}
+
+This declaration takes three arguments that have the same meaning as those for
+Fortran prognostic processes. As in the case of prognostic processes, the build
+system generates a C++ class for the Fortran module.
 
 \subsubsection{Making your diagnostic process available to Haero}
 
@@ -1100,8 +1166,8 @@ to those for prognostic processes:
         type that corresponds to the \verb ProcessType  value you selected in
         Step 2 of your implementation procedure above.
   \item Edit the \verb select_diagnostic_process  function in
-        \verb haero/selected_processes.cpp  to create a new pointer to your
-        process type.
+        \verb haero/selected_processes.cpp  to create a new pointer to the C++
+        class for your process type.
   \item Update the driver YAML input parser to add an option for a user
         to select your new process.
   \item Update this document with a description of your process in the
