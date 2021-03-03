@@ -668,7 +668,7 @@ contains
   end function
 
   !> Provides access to the given (non-modal) variable in the given
-  !> diagnostics object.
+  !> diagnostics object, given its token.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_var(name). Must not equal
   !>                   var_not_found (-1).
@@ -703,7 +703,7 @@ contains
   end function
 
   !> Provides access to the given (non-modal) variable in the given
-  !> diagnostics object.
+  !> diagnostics object, given its token.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_aerosol_var(name). Must not
   !>                   equal var_not_found (-1).
@@ -735,7 +735,8 @@ contains
     retval = d_find_gas_var_c(d%ptr, c_name)
   end function
 
-  !> Provides access to the given gas variable in the given diagnostics object.
+  !> Provides access to the given gas variable in the given diagnostics object,
+  !> given its token.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_gas_var(name). Must not equal
   !>                   var_not_found (-1).
@@ -768,7 +769,7 @@ contains
   end function
 
   !> Provides access to the given modal variable in the given
-  !> diagnostics object.
+  !> diagnostics object, given its token.
   !> @param [in] d A pointer to a diagnostics object.
   !> @param [in] token A token obtained from find_modal_var(name). Must not
   !>                   equal var_not_found (-1).
