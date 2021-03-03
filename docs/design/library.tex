@@ -421,8 +421,8 @@ the \verb Model  C++ class provides the following two functions, which you can
 call directly yourself, given a pointer to a C++ variable called \verb model :
 
 \begin{itemize}
-  \item \verb model->create_prognostics()  : returns a pointer to a new C++
-    \verb Prognostics  container
+  \item \verb model->create_prognostics(...)  : returns a pointer to a new C++
+    \verb Prognostics  container, given views that store aerosol prognostics
   \item \verb model->create_diagnostics()  : returns a pointer to a new C++
     \verb Diagnostics  container
 \end{itemize}
@@ -603,7 +603,8 @@ variables a bit in the near future.}
 
 The \verb Diagnostics  C++ class stores a dynamically-determined set of
 diagnostic variables that correspond to the specific parameterizations available
-to the aerosol model that created it.
+to the aerosol model that created it. The variables are identified by unique
+tokens that can be retrieved by name.
 
 \lstset{language=[11]c++}
 \begin{lstlisting}
@@ -621,40 +622,41 @@ class Diagnostics final {
   // Returns the number of vertical levels in the system.
   int num_levels() const;
 
-  // Returns true if the given (non-modal) variable exists within this object,
-  // false otherwise.
-  bool has_var(const std::string& name) const;
+  // Returns a unique token that identifies the given (non-modal) variable
+  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_var(const std::string& name) const;
 
-  // Returns the view storing the diagnostic variable with the given name.
-  // If the variable does not yet exist, this throws an exception.
-  ColumnView& var(const std::string& name);
+  // Returns the view storing the diagnostic variable with a name corresponding
+  // to the given token. If such a variable does not exist, this throws an
+  // exception.
+  ColumnView& var(const Token token);
 
-  // Returns true if the given modal aerosol variable exists within this object,
-  // false otherwise.
-  bool has_aerosol_var(const std::string& name) const;
+  // Returns a unique token that identifies the given modal aerosol variable
+  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_aerosol_var(const std::string& name) const;
 
-  // Returns the view storing the modal aerosol diagnostic variable with the
-  // given name and mode index. If the variable does not yet exist, this throws
-  // an exception.
-  SpeciesColumnView& aerosol_var(const std::string& name, int mode_index);
-
-  // Returns true if a variable defined for each gas species exists within
-  // this object with the given name, false otherwise.
-  bool has_gas_var(const std::string& name) const;
-
-  // Returns the view storing a diagnostic variable, defined for each gas
-  // species, with the given name. If the variable does not yet exist, this
+  // Returns the view storing the modal aerosol diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
   // throws an exception.
-  SpeciesColumnView& gas_var(const std::string& name);
+  SpeciesColumnView& aerosol_var(const Token token);
 
-  // Returns true if the given modal variable exists within this object,
-  // false otherwise.
-  bool has_modal_var(const std::string& name) const;
+  // Returns a unique token that identifies the given gas variable within this
+  // object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_gas_var(const std::string& name) const;
 
-  // Returns the view storing the mode-specific diagnostic variable with the
-  // given name. If the variable does not yet exist, this throws an exception.
-  // @param [in] name The name of the diagnostic variable.
-  ModalColumnView& modal_var(const std::string& name);
+  // Returns the view storing the gas diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
+  // throws an exception.
+  SpeciesColumnView& gas_var(const Token token);
+
+  // Returns a unique token that identifies the given modal variable within
+  // this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_modal_var(const std::string& name) const;
+
+  // Returns the view storing the mode-specific diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
+  // throws an exception.
+  ModalColumnView& modal_var(const Token token);
 };
 \end{lstlisting}
 
