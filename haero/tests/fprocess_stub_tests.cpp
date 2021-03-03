@@ -201,10 +201,10 @@ TEST_CASE("diag_process_stub", "") {
     Diagnostics diags(num_modes, num_aero_species, num_gases, num_levels);
     auto* stub = new DiagFProcessStub();
     stub->prepare(diags);
-    const int NOT_FOUND = Diagnostics::NOT_FOUND;
-    REQUIRE(NOT_FOUND != diags.find_var("temperature"));
-    REQUIRE(NOT_FOUND != diags.find_gas_var("pressure"));
-    REQUIRE(NOT_FOUND != diags.find_modal_var("pressure"));
+    auto VAR_NOT_FOUND = Diagnostics::VAR_NOT_FOUND;
+    REQUIRE(VAR_NOT_FOUND != diags.find_var("temperature"));
+    REQUIRE(VAR_NOT_FOUND != diags.find_gas_var("pressure"));
+    REQUIRE(VAR_NOT_FOUND != diags.find_modal_var("pressure"));
     delete stub;
   }
 
@@ -255,7 +255,7 @@ TEST_CASE("diag_process_stub", "") {
 
     // Set the atmospheric temperature.
     {
-      const Diagnostics::TOKEN token = diags->find_var("temperature");
+      auto token = diags->find_var("temperature");
       auto T = diags->var(token);
       for (int k = 0; k < num_levels; ++k) {
         T(k) = 273.15;

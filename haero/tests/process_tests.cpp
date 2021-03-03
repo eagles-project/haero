@@ -27,12 +27,12 @@ typedef Kokkos::HostSpace MemSpace;
 
 class MyPrognosticProcess : public PrognosticProcess {
 public :
-  MyPrognosticProcess(ProcessType type, 
+  MyPrognosticProcess(ProcessType type,
                       const std::string& name,
                       const int num_lev,
-                      const Diagnostics::TOKEN aer_0,
-                      const Diagnostics::TOKEN aer_1,
-                      const Diagnostics::TOKEN gen_0) : 
+                      const Diagnostics::Token aer_0,
+                      const Diagnostics::Token aer_1,
+                      const Diagnostics::Token gen_0) :
    PrognosticProcess(type, name),
    num_levels (num_lev),
    aersol_0 (aer_0),
@@ -44,7 +44,7 @@ public :
   virtual ~MyPrognosticProcess() {}
 
   KOKKOS_INLINE_FUNCTION
-  MyPrognosticProcess(const MyPrognosticProcess& pp) : 
+  MyPrognosticProcess(const MyPrognosticProcess& pp) :
    PrognosticProcess(pp),
    num_levels (pp.num_levels),
    aersol_0 (pp.aersol_0),
@@ -74,21 +74,21 @@ public :
     }
     for (int i=0; i<num_levels; ++i) {
       for (int k=0; k<num_levels; ++k) {
-        generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)] += 
+        generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)] +=
           temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
       }
       for (int j=0; j<num_aerosol_populations; ++j) {
         aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
         for (int k=0; k<num_levels; ++k) {
-          aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] += 
-             int_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] * 
+          aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] +=
+             int_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] *
              temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         }
       }
       for (int j=0; j<num_populations; ++j) {
         first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
         for (int k=0; k<num_levels; ++k) {
-          first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] += 
+          first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] +=
             i * j * temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         }
         second_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = j*i;
@@ -107,15 +107,15 @@ public :
   }
 private:
   const int num_levels;
-  const Diagnostics::TOKEN aersol_0;
-  const Diagnostics::TOKEN aersol_1;
-  const Diagnostics::TOKEN generic_0;
+  const Diagnostics::Token aersol_0;
+  const Diagnostics::Token aersol_1;
+  const Diagnostics::Token generic_0;
 };
 
 
 TEST_CASE("process_tests", "prognostic_process") {
 
-  
+
   const int num_levels = 72;
   const int num_gases  = 1;
   const int num_modes  = 1;
@@ -162,10 +162,10 @@ TEST_CASE("process_tests", "prognostic_process") {
   Kokkos::deep_copy(dev_cld_aerosols, host_cld_aerosols);
   Kokkos::deep_copy(dev_modal_concs,  host_modal_concs);
 
-  Prognostics progs(num_modes, {1}, num_gases, num_levels, 
-                    dev_int_aerosols, 
-                    dev_cld_aerosols, 
-                    dev_gases, 
+  Prognostics progs(num_modes, {1}, num_gases, num_levels,
+                    dev_int_aerosols,
+                    dev_cld_aerosols,
+                    dev_gases,
                     dev_modal_concs);
 
   Kokkos::View<PackType*> temp("temperature", num_vert_packs);
@@ -193,9 +193,9 @@ TEST_CASE("process_tests", "prognostic_process") {
   }
 
   Diagnostics diagnostics(num_modes, num_aero_species, num_gases, num_levels);
-  const Diagnostics::TOKEN aersol_0 = diagnostics.create_aerosol_var("First Aerosol");
-  const Diagnostics::TOKEN aersol_1 = diagnostics.create_aerosol_var("Second Aerosol");
-  const Diagnostics::TOKEN generic_0 = diagnostics.create_var("Generic Aerosol");
+  auto aersol_0 = diagnostics.create_aerosol_var("First Aerosol");
+  auto aersol_1 = diagnostics.create_aerosol_var("Second Aerosol");
+  auto generic_0 = diagnostics.create_var("Generic Aerosol");
 
   Tendencies tends(progs);
   {
