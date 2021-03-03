@@ -663,28 +663,41 @@ class Diagnostics final {
 The Fortran version of \verb Diagnostics , like its \verb Prognostics  counterpart,
 uses bound procedures to provide access to its array data. Each one of these
 bound procedures accepts a single dummy argument: the name of the desired
-diagnostic variable.
+diagnostic variable. This Fortran pseudocode illustrates the interface for the
+\verb Diagnostics  derived-type \verb diagnostics_t .
 
 \lstset{language=[03]{fortran}}
 \begin{lstlisting}
   type :: diagnostics_t
   contains
-    ! Returns true if the column variable with the given name exists.
-    procedure :: has_var => d_has_var
-    ! Returns the column variable with the given name.
-    procedure :: var => d_var
-    ! Returns true if an aerosol diagnostic variable with the given name exists.
-    procedure :: has_aerosol_var => d_has_aerosol_var
-    ! Returns the aerosol diagnostic variable with the given name.
-    procedure :: aerosol_var => d_aerosol_var
-    ! Returns true if a gas diagnostic variable with the given name exists.
-    procedure :: has_gas_var => d_has_gas_var
-    ! Returns the gas diagnostic variable with the given name.
-    procedure :: gas_var => d_gas_var
-    ! Returns true if a modal diagnostic variable with the given name exists.
-    procedure :: has_modal_var => d_has_modal_var
-    ! Returns the modal diagnostic variable with the given name.
-    procedure :: modal_var => d_modal_var
+    ! Returns a token that can be used to retrieve a variable with the given
+    ! name from a diagnostics object, or var_not_found (-1) if no such variable
+    ! exists.
+    procedure :: find_var(name) -> token
+    ! Provides access to the given (non-modal) variable in the given
+    ! diagnostics object, given its token
+    procedure :: var(token) -> array pointer
+    ! Returns a token that can be used to retrieve an aerosol variable with the
+    ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: find_aerosol_var(name) -> token
+    ! Provides access to the given (non-modal) variable in the given
+    ! diagnostics object, given its token.
+    procedure :: aerosol_var(token) -> array pointer
+    ! Returns a token that can be used to retrieve a gas variable with the
+    ! given name from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: find_gas_var(name) -> token
+    ! Provides access to the given gas variable in the given diagnostics object,
+    ! given its token.
+    procedure :: gas_var(token) -> array pointer
+    ! Returns a token that can be used to retrieve a modal variable with the
+    ! given name from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: has_modal_var(name) -> token
+    ! Provides access to the given modal variable in the given
+    ! diagnostics object, given its token.
+    procedure :: modal_var(token) -> array pointer
   end type
 \end{lstlisting}
 
