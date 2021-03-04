@@ -236,7 +236,7 @@ set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 # since it's where we place the third-party libraries.
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_BINARY_DIR}/include")
-include_directories("${PROJECT_BINARY_DIR}/include/tines")
+include_directories("${TINES_INCLUDE_DIR}/tines")
 
 include(GNUInstallDirs)
 link_directories("${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
