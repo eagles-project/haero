@@ -15,7 +15,7 @@ namespace haero {
 /// This type stores a set of named diagnostic variables an aerosol system.
 /// The set of diagnostic variables for such a system is determined by the
 /// parameterizations selected for that system.
-class Diagnostics final {
+class DiagnosticsGPU {
   public:
 
   /// Diagnostic variables are identified by a unique token. This token is
@@ -59,49 +59,44 @@ class Diagnostics final {
   /// @param [in] num_gases The number of gas species in the atmosphere
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
-  Diagnostics(int num_aerosol_modes,
-              const std::vector<int>& num_aerosol_species,
-              int num_gases,
-              int num_levels);
+  DiagnosticsGPU(int num_aerosol_modes,
+                 const std::vector<int>& num_aerosol_species,
+                 int num_gases,
+                 int num_levels);
 
   /// Destructor.
   KOKKOS_FUNCTION
-  ~Diagnostics();
+  ~DiagnosticsGPU();
 
   // --------------------------------------------------------------------------
   //                                Metadata
   // --------------------------------------------------------------------------
 
   /// Returns the number of aerosol modes in the system.
+  KOKKOS_FUNCTION
   int num_aerosol_modes() const;
 
   /// Returns the number of aerosol species in the mode with the given index.
   /// @param [in] mode_index The index of the desired mode.
+  KOKKOS_IMPL_DEVICE_FUNCTION
   int num_aerosol_species(int mode_index) const;
 
   /// Returns the total number of distinct aerosol species populations in the
   /// model, counting appearances of one species in different modes separately.
+  KOKKOS_FUNCTION
   int num_aerosol_populations() const;
 
   /// Returns the number of gas species in the system.
+  KOKKOS_FUNCTION
   int num_gases() const;
 
   /// Returns the number of vertical levels per column in the system.
+  KOKKOS_FUNCTION
   int num_levels() const;
 
   // --------------------------------------------------------------------------
   //                                  Data
   // --------------------------------------------------------------------------
-
-  /// Returns a unique token that identifies the given (non-modal) variable
-  /// within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_var(const std::string& name) const;
-
-  /// Creates a diagnostic variable with the given name within this object,
-  /// returning a unique token for the new variable.
-  /// @param [in] name The name of the diagnostic variable to be created.
-  Token create_var(const std::string& name);
 
   /// Returns the view storing the diagnostic variable with a name corresponding
   /// to the given token. If such a variable does not exist, this throws an
@@ -124,16 +119,6 @@ class Diagnostics final {
     return vars;
   }
 
-  /// Returns a unique token that identifies the given modal aerosol variable
-  /// within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_aerosol_var(const std::string& name) const;
-
-  /// Creates a diagnostic modal aerosol variable with the given name within this
-  /// object, returning a unique token for the new variable.
-  /// @param [in] name The name of the modal diagnostic variable to be created.
-  Token create_aerosol_var(const std::string& name);
-
   /// Returns the view storing the modal aerosol diagnostic variable with a name
   /// corresponding to the given token. If such a variable does not exist, this
   /// throws an exception.
@@ -153,16 +138,6 @@ class Diagnostics final {
     return vars;
   }
 
-  /// Returns a unique token that identifies the given gas variable within this
-  /// object. Returns VAR_NOT_FOUND if this variable does not exist.
-  /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_gas_var(const std::string& name) const;
-
-  /// Creates a diagnostic gas species variable with the given name within this
-  /// object, returning a unique token for the new variable.
-  /// @param [in] name The name of the modal diagnostic variable to be created.
-  Token create_gas_var(const std::string& name);
-
   /// Returns the view storing the gas diagnostic variable with a name
   /// corresponding to the given token. If such a variable does not exist, this
   /// throws an exception.
@@ -177,16 +152,6 @@ class Diagnostics final {
   KOKKOS_FUNCTION
   const SpeciesColumnView gas_var(const Token token) const;
 
-  /// Returns a unique token that identifies the given modal variable within
-  /// this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_modal_var(const std::string& name) const;
-
-  /// Creates a diagnostic modal variable with the given name within this
-  /// object, returning a unique token for the new variable.
-  /// @param [in] name The name of the modal diagnostic variable to be created.
-  Token create_modal_var(const std::string& name);
-
   /// Returns the view storing the mode-specific diagnostic variable with a name
   /// corresponding to the given token. If such a variable does not exist, this
   /// throws an exception.
@@ -200,6 +165,104 @@ class Diagnostics final {
   /// @param [in] token A unique token identifying a diagnostic variable.
   KOKKOS_FUNCTION
   const ModalColumnView modal_var(const Token token) const;
+
+  protected:
+
+  // Views that store arrays of views
+  using ColumnViewArray        = kokkos_device_type::view_2d<PackType>;
+  using SpeciesColumnViewArray = kokkos_device_type::view_3d<PackType>;
+  using ModalColumnViewArray   = kokkos_device_type::view_3d<PackType>;
+
+  // Number of aerosol species in each mode.
+  const view_1d_int_type num_aero_species_;
+
+  // Number of distinct aerosol populations.
+  const int num_aero_populations_;
+
+  // Number of gas species.
+  const int num_gases_;
+
+  /// Number of vertical levels per column in the system.
+  const int num_levels_;
+
+  // Named diagnostic variables.  These are arrays of views in which the
+  // assigned token can be used to index to the proper sub-view.
+  ColumnViewArray        vars_;
+  SpeciesColumnViewArray aero_vars_;
+  SpeciesColumnViewArray gas_vars_;
+  ModalColumnViewArray   modal_vars_;
+};
+
+/// @class Diagnostics
+/// This type stores a set of named diagnostic variables an aerosol system.
+/// The set of diagnostic variables for such a system is determined by the
+/// parameterizations selected for that system.
+class Diagnostics final : public DiagnosticsGPU {
+  public:
+
+  /// Creates an empty Diagnostics to which data can be added.
+  /// @param [in] num_aerosol_modes The number of aerosol modes in the system
+  /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
+  ///                                 ith entry is the number of aerosol species
+  ///                                 in the ith mode
+  /// @param [in] num_gases The number of gas species in the atmosphere
+  /// @param [in] num_levels The number of vertical levels per column stored by
+  ///                        the state
+  Diagnostics(int num_aerosol_modes,
+              const std::vector<int>& num_aerosol_species,
+              int num_gases,
+              int num_levels);
+
+  /// Destructor.
+  ~Diagnostics();
+
+  // --------------------------------------------------------------------------
+  //                                  Data
+  // --------------------------------------------------------------------------
+
+  /// Returns the number of aerosol species in the mode with the given index.
+  /// @param [in] mode_index The index of the desired mode.
+  int num_aerosol_species(int mode_index) const;
+
+  /// Returns a unique token that identifies the given (non-modal) variable
+  /// within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  Token find_var(const std::string& name) const;
+
+  /// Creates a diagnostic variable with the given name within this object,
+  /// returning a unique token for the new variable.
+  /// @param [in] name The name of the diagnostic variable to be created.
+  Token create_var(const std::string& name);
+
+  /// Returns a unique token that identifies the given modal aerosol variable
+  /// within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  Token find_aerosol_var(const std::string& name) const;
+
+  /// Creates a diagnostic modal aerosol variable with the given name within this
+  /// object, returning a unique token for the new variable.
+  /// @param [in] name The name of the modal diagnostic variable to be created.
+  Token create_aerosol_var(const std::string& name);
+
+  /// Returns a unique token that identifies the given gas variable within this
+  /// object. Returns VAR_NOT_FOUND if this variable does not exist.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  Token find_gas_var(const std::string& name) const;
+
+  /// Creates a diagnostic gas species variable with the given name within this
+  /// object, returning a unique token for the new variable.
+  /// @param [in] name The name of the modal diagnostic variable to be created.
+  Token create_gas_var(const std::string& name);
+
+  /// Returns a unique token that identifies the given modal variable within
+  /// this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  /// @param [in] name The name of the diagnostic variable of interest.
+  Token find_modal_var(const std::string& name) const;
+
+  /// Creates a diagnostic modal variable with the given name within this
+  /// object, returning a unique token for the new variable.
+  /// @param [in] name The name of the modal diagnostic variable to be created.
+  Token create_modal_var(const std::string& name);
 
   private:
 
@@ -232,29 +295,11 @@ class Diagnostics final {
 
   // Maps of Diagnostic variable names to the assigned tokens which are just
   // indexes into the array of views.
-//  std::map<std::string,Token> registered_strings_vars;
-//  std::map<std::string,Token> registered_strings_aero;
-//  std::map<std::string,Token> registered_strings_gas;
-//  std::map<std::string,Token> registered_strings_modal;
+  std::map<std::string,Token> registered_strings_vars;
+  std::map<std::string,Token> registered_strings_aero;
+  std::map<std::string,Token> registered_strings_gas;
+  std::map<std::string,Token> registered_strings_modal;
 
-  // Number of aerosol species in each mode.
-  const view_1d_int_type num_aero_species_;
-
-  // Number of distinct aerosol populations.
-  int num_aero_populations_;
-
-  // Number of gas species.
-  int num_gases_;
-
-  /// Number of vertical levels per column in the system.
-  const int num_levels_;
-
-  // Named diagnostic variables.  These are arrays of views in which the
-  // assigned token can be used to index to the proper sub-view.
-  ColumnViewArray        vars_;
-  SpeciesColumnViewArray aero_vars_;
-  SpeciesColumnViewArray gas_vars_;
-  ModalColumnViewArray   modal_vars_;
 };
 
 }

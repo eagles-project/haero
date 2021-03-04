@@ -57,15 +57,15 @@ public :
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics,
+                   const DiagnosticsGPU& diagnostics,
                    Tendencies& tendencies) const {
 
-    const Prognostics::SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols();
-    const Atmosphere::ColumnView temp = atmosphere.temperature();
-    const Diagnostics::SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
+    const Prognostics::SpeciesColumnView  int_aerosols = prognostics.interstitial_aerosols();
+    const Atmosphere::ColumnView                  temp = atmosphere.temperature();
+    const Diagnostics::SpeciesColumnView  first_aersol = diagnostics.aerosol_var(aersol_0);
     const Diagnostics::SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
-    const Diagnostics::ColumnView        generic_var   = diagnostics.var(generic_0);
-    Tendencies::SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
+    const Diagnostics::ColumnView          generic_var = diagnostics.var(generic_0);
+    const Tendencies::SpeciesColumnView      aero_tend = tendencies.interstitial_aerosols();
 
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
@@ -219,6 +219,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   std::vector<Species> gas_species  = create_mam4_gas_species();
   Model *model = Model::ForUnitTests(modes, aero_species, mode_species, gas_species, num_levels);
 
+  DiagnosticsGPU &diagnosticsgpu = diagnostics;
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
   const auto &teamPolicy =
@@ -228,7 +229,7 @@ TEST_CASE("process_tests", "prognostic_process") {
                          [&](const int &i) {
      // Const cast because everything in lambda is const. Need to google how to fix.
      Tendencies* tendency = const_cast<Tendencies*>(&tends);
-     device_pp->run(*model, t, dt, progs, atmos, diagnostics, *tendency);
+     device_pp->run(*model, t, dt, progs, atmos, diagnosticsgpu, *tendency);
     });
   });
 

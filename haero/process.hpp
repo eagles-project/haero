@@ -115,7 +115,7 @@ class PrognosticProcess {
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics,
+                   const DiagnosticsGPU& diagnostics,
                    Tendencies& tendencies) const = 0;
 
   private:
@@ -144,7 +144,7 @@ class NullPrognosticProcess: public PrognosticProcess {
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
-           const Diagnostics& diagnostics,
+           const DiagnosticsGPU& diagnostics,
            Tendencies& tendencies) const override {}
 
 };
@@ -206,7 +206,7 @@ class FPrognosticProcess: public PrognosticProcess
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
-           const Diagnostics& diagnostics,
+           const DiagnosticsGPU& diagnostics,
            Tendencies& tendencies) const override {
     // Set tendencies to zero.
     tendencies.scale(0.0);

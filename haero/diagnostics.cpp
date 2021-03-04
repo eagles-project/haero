@@ -1,29 +1,42 @@
+#include "numeric"
 #include "haero/diagnostics.hpp"
 
 namespace haero {
 
-Diagnostics::Diagnostics(int num_aerosol_modes,
-                         const std::vector<int>& num_aerosol_species,
-                         int num_gases,
-                         int num_levels):
+DiagnosticsGPU::DiagnosticsGPU(int num_aerosol_modes,
+                               const std::vector<int>& num_aerosol_species,
+                               int num_gases,
+                               int num_levels):
   num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Diagnostics::num_aerosol_species")), 
-  num_aero_populations_(0),
+  num_aero_populations_(std::accumulate(num_aerosol_species.begin(), num_aerosol_species.end(), 0)),
   num_gases_(num_gases), 
   num_levels_(num_levels) {
 
   EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
                   "num_aerosol_species must be a vector of length " << num_aerosol_modes);
-  for (int m = 0; m < num_aerosol_modes; ++m) {
-    num_aero_populations_ += num_aerosol_species[m];
-  }
-  clear_maps();
+}
+
+Diagnostics::Diagnostics(int num_aerosol_modes,
+                               const std::vector<int>& num_aerosol_species,
+                               int num_gases,
+                               int num_levels) :
+  DiagnosticsGPU(num_aerosol_modes, num_aerosol_species, num_gases, num_levels) { 
+}
+
+DiagnosticsGPU::~DiagnosticsGPU() {
 }
 
 Diagnostics::~Diagnostics() {
 }
 
-int Diagnostics::num_aerosol_modes() const {
+int DiagnosticsGPU::num_aerosol_modes() const {
   return num_aero_species_.size();
+}
+
+int DiagnosticsGPU::num_aerosol_species(int mode_index) const {
+  EKAT_KERNEL_ASSERT(mode_index >= 0);
+  EKAT_KERNEL_ASSERT(mode_index < num_aero_species_.size());
+  return num_aero_species_[mode_index];
 }
 
 int Diagnostics::num_aerosol_species(int mode_index) const {
@@ -34,15 +47,15 @@ int Diagnostics::num_aerosol_species(int mode_index) const {
   return T[mode_index];
 }
 
-int Diagnostics::num_aerosol_populations() const {
+int DiagnosticsGPU::num_aerosol_populations() const {
   return num_aero_populations_;
 }
 
-int Diagnostics::num_gases() const {
+int DiagnosticsGPU::num_gases() const {
   return num_gases_;
 }
 
-int Diagnostics::num_levels() const {
+int DiagnosticsGPU::num_levels() const {
   return num_levels_;
 }
 
@@ -66,7 +79,7 @@ Diagnostics::Token Diagnostics::create_var(const std::string& name) {
 }
 
 Diagnostics::ColumnView
-Diagnostics::var(const Token token) {
+DiagnosticsGPU::var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
     "Diagnostic variable token not found!");
   ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
@@ -108,7 +121,7 @@ Diagnostics::Token Diagnostics::create_aerosol_var(const std::string& name) {
 }
 
 Diagnostics::SpeciesColumnView
-Diagnostics::aerosol_var(const Token token) {
+DiagnosticsGPU::aerosol_var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
     "Aerosol diagnostic variable token not found!");
   SpeciesColumnView vars = Kokkos::subview(aero_vars_, token, Kokkos::ALL, Kokkos::ALL);
@@ -143,7 +156,7 @@ Diagnostics::Token Diagnostics::create_gas_var(const std::string& name) {
 }
 
 Diagnostics::SpeciesColumnView
-Diagnostics::gas_var(const Token token) {
+DiagnosticsGPU::gas_var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
     "Gas diagnostic variable token not found!");
   SpeciesColumnView vars = Kokkos::subview(gas_vars_, token, Kokkos::ALL, Kokkos::ALL);
@@ -151,7 +164,7 @@ Diagnostics::gas_var(const Token token) {
 }
 
 const Diagnostics::SpeciesColumnView
-Diagnostics::gas_var(const Token token) const {
+DiagnosticsGPU::gas_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
     "Gas diagnostic variable token not found!");
   const SpeciesColumnView vars = Kokkos::subview(gas_vars_, token, Kokkos::ALL, Kokkos::ALL);
@@ -177,7 +190,7 @@ Diagnostics::Token Diagnostics::create_modal_var(const std::string& name) {
 }
 
 Diagnostics::ModalColumnView
-Diagnostics::modal_var(const Token token) {
+DiagnosticsGPU::modal_var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
     "Modal diagnostic variable token not found!");
   SpeciesColumnView vars = Kokkos::subview(modal_vars_, token, Kokkos::ALL, Kokkos::ALL);
@@ -185,7 +198,7 @@ Diagnostics::modal_var(const Token token) {
 }
 
 const Diagnostics::ModalColumnView
-Diagnostics::modal_var(const Token token) const {
+DiagnosticsGPU::modal_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
     "Modal diagnostic variable token not found!");
   const SpeciesColumnView vars = Kokkos::subview(modal_vars_, token, Kokkos::ALL, Kokkos::ALL);
@@ -214,54 +227,30 @@ Diagnostics::Token  Diagnostics::get_string_to_token(const std::map<std::string,
   return return_val;
 }
 
-namespace {
-  std::map<std::string,Diagnostics::Token> &registered_strings_vars() {
-    static std::map<std::string,Diagnostics::Token> registered_strings;
-    return registered_strings;
-  }
-  std::map<std::string,Diagnostics::Token> &registered_strings_aero() {
-    static std::map<std::string,Diagnostics::Token> registered_strings;
-    return registered_strings;
-  }
-  std::map<std::string,Diagnostics::Token> &registered_strings_gas() {
-    static std::map<std::string,Diagnostics::Token> registered_strings;
-    return registered_strings;
-  }
-  std::map<std::string,Diagnostics::Token> &registered_strings_modal() {
-    static std::map<std::string,Diagnostics::Token> registered_strings;
-    return registered_strings;
-  }
-}
-void Diagnostics::clear_maps() {
-  registered_strings_vars().clear();
-  registered_strings_aero().clear();
-  registered_strings_gas ().clear();
-  registered_strings_modal().clear();
-}
 Diagnostics::Token Diagnostics::set_string_to_token_vars(const std::string &name, const Token token) {
-  return set_string_to_token(registered_strings_vars(), name, token);
+  return set_string_to_token(registered_strings_vars, name, token);
 }
 Diagnostics::Token Diagnostics::set_string_to_token_aero(const std::string &name, const Token token) {
-  return set_string_to_token(registered_strings_aero(), name, token);
+  return set_string_to_token(registered_strings_aero, name, token);
 }
 Diagnostics::Token Diagnostics::set_string_to_token_gas (const std::string &name, const Token token) {
-  return set_string_to_token(registered_strings_gas (), name, token);
+  return set_string_to_token(registered_strings_gas , name, token);
 }
 Diagnostics::Token Diagnostics::set_string_to_token_modal(const std::string &name, const Token token) {
-  return set_string_to_token(registered_strings_modal(), name, token);
+  return set_string_to_token(registered_strings_modal, name, token);
 }
 
 Diagnostics::Token Diagnostics::get_string_to_token_vars(const std::string &name) const {
-  return get_string_to_token(registered_strings_vars(), name);
+  return get_string_to_token(registered_strings_vars, name);
 }
 Diagnostics::Token Diagnostics::get_string_to_token_aero(const std::string &name) const {
-  return get_string_to_token(registered_strings_aero(), name);
+  return get_string_to_token(registered_strings_aero, name);
 }
 Diagnostics::Token Diagnostics::get_string_to_token_gas (const std::string &name) const {
-  return get_string_to_token(registered_strings_gas (), name);
+  return get_string_to_token(registered_strings_gas , name);
 }
 Diagnostics::Token Diagnostics::get_string_to_token_modal(const std::string &name) const {
-  return get_string_to_token(registered_strings_modal(), name);
+  return get_string_to_token(registered_strings_modal, name);
 }
 
 // Interoperable C functions for providing data to Fortran.
