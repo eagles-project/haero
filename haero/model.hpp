@@ -77,9 +77,9 @@ class Model final {
                                   SpeciesColumnView gases,
                                   ModalColumnView   modal_num_concs) const;
 
-  /// Creates a new empty Diagnostics object that can be used with this Model.
-  /// All fields within this new Diagnostics are owned and managed by it.
-  Diagnostics* create_diagnostics() const;
+  /// Creates a new empty DiagnosticsRegister object that can be used with this Model.
+  /// All fields within this new DiagnosticsRegister are owned and managed by it.
+  DiagnosticsRegister* create_diagnostics() const;
 
   // Processes
 

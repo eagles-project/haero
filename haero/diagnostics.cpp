@@ -127,7 +127,7 @@ Diagnostics::Token DiagnosticsRegister::create_gas_var(const std::string& name) 
 }
 
 Diagnostics::SpeciesColumnView
-DiagnosticsGPU::gas_var(const Token token) const {
+Diagnostics::gas_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
     "Gas diagnostic variable token not found!");
   const SpeciesColumnView vars = Kokkos::subview(gas_vars_, token, Kokkos::ALL, Kokkos::ALL);
@@ -153,7 +153,7 @@ Diagnostics::Token DiagnosticsRegister::create_modal_var(const std::string& name
 }
 
 Diagnostics::ModalColumnView
-DiagnosticsGPU::modal_var(const Token token) const {
+Diagnostics::modal_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
     "Modal diagnostic variable token not found!");
   const SpeciesColumnView vars = Kokkos::subview(modal_vars_, token, Kokkos::ALL, Kokkos::ALL);

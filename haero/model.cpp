@@ -180,14 +180,14 @@ Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
                          int_aerosols, cld_aerosols, gases, modal_num_concs);
 }
 
-Diagnostics* Model::create_diagnostics() const {
+DiagnosticsRegister* Model::create_diagnostics() const {
   // Create an empty Diagnostics object.
   std::vector<int> num_aero_species(modes_.size());
   for (size_t m = 0; m < modes_.size(); ++m) {
     num_aero_species[m] = static_cast<int>(species_for_mode_[m].size());
   }
-  auto diags = new Diagnostics(num_aero_species.size(), num_aero_species,
-                               gas_species_.size(), num_levels_);
+  auto diags = new DiagnosticsRegister(num_aero_species.size(), num_aero_species,
+                                       gas_species_.size(), num_levels_);
 
   // Make sure that all diagnostic variables needed by the model's processes
   // are present.

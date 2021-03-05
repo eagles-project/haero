@@ -57,7 +57,7 @@ public :
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
-                   const DiagnosticsGPU& diagnostics,
+                   const Diagnostics& diagnostics,
                    Tendencies& tendencies) const {
 
     const Prognostics::SpeciesColumnView  int_aerosols = prognostics.interstitial_aerosols();
@@ -219,7 +219,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   std::vector<Species> gas_species  = create_mam4_gas_species();
   Model *model = Model::ForUnitTests(modes, aero_species, mode_species, gas_species, num_levels);
 
-  Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
+  const Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
   const auto &teamPolicy =

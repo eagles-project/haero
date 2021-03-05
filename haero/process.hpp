@@ -115,7 +115,7 @@ class PrognosticProcess {
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
-                   const DiagnosticsGPU& diagnostics,
+                   const Diagnostics& diagnostics,
                    Tendencies& tendencies) const = 0;
 
   private:
@@ -144,7 +144,7 @@ class NullPrognosticProcess: public PrognosticProcess {
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
-           const DiagnosticsGPU& diagnostics,
+           const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {}
 
 };
@@ -298,7 +298,7 @@ class DiagnosticProcess {
   /// process at the beginning of a simulation.
   /// @param [inout] diagnostics The Diagnostics object in which the needed
   ///                            variables are created.
-  void prepare(Diagnostics& diagnostics) const {
+  void prepare(DiagnosticsRegister& diagnostics) const {
     for (const std::string& var: required_vars_) {
       if (Diagnostics::VAR_NOT_FOUND == diagnostics.find_var(var)) {
         diagnostics.create_var(var);
