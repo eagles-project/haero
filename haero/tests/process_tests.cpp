@@ -192,10 +192,10 @@ TEST_CASE("process_tests", "prognostic_process") {
     num_aero_species[m] = mode_species[modes[m].name].size();
   }
 
-  Diagnostics diagnostics(num_modes, num_aero_species, num_gases, num_levels);
-  auto aersol_0 = diagnostics.create_aerosol_var("First Aerosol");
-  auto aersol_1 = diagnostics.create_aerosol_var("Second Aerosol");
-  auto generic_0 = diagnostics.create_var("Generic Aerosol");
+  DiagnosticsRegister diagnostics_register(num_modes, num_aero_species, num_gases, num_levels);
+  auto aersol_0 = diagnostics_register.create_aerosol_var("First Aerosol");
+  auto aersol_1 = diagnostics_register.create_aerosol_var("Second Aerosol");
+  auto generic_0 = diagnostics_register.create_var("Generic Aerosol");
 
   Tendencies tends(progs);
   {
@@ -219,7 +219,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   std::vector<Species> gas_species  = create_mam4_gas_species();
   Model *model = Model::ForUnitTests(modes, aero_species, mode_species, gas_species, num_levels);
 
-  DiagnosticsGPU &diagnosticsgpu = diagnostics;
+  Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
   const auto &teamPolicy =
@@ -229,7 +229,7 @@ TEST_CASE("process_tests", "prognostic_process") {
                          [&](const int &i) {
      // Const cast because everything in lambda is const. Need to google how to fix.
      Tendencies* tendency = const_cast<Tendencies*>(&tends);
-     device_pp->run(*model, t, dt, progs, atmos, diagnosticsgpu, *tendency);
+     device_pp->run(*model, t, dt, progs, atmos, diagnostics, *tendency);
     });
   });
 
