@@ -270,16 +270,27 @@ if (HAERO_DEVICE STREQUAL "CPU")
   set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
   if (NOT EXISTS ${OPENBLAS_LIBRARY})
     update_submodules()
+    set(OPENBLAS_OPTS NO_SHARED=1 PREFIX=${PROJECT_BINARY_DIR})
     ExternalProject_Add(openblas_proj
                         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS
                         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         INSTALL_DIR ${PROJECT_BINARY_DIR}
                         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
-                        BUILD_COMMAND make PREFIX=${PROJECT_BINARY_DIR}
+                        BUILD_COMMAND make -j ${OPENBLAS_OPTS}
                         LOG_BUILD TRUE
-                        INSTALL_COMMAND make PREFIX=${PROJECT_BINARY_DIR} install
+                        INSTALL_COMMAND make -j ${OPENBLAS_OPTS} install
                         LOG_INSTALL TRUE)
+
+    # Because the OpenBLAS people feel that life isn't complicated enough, they
+    # insist on creating libopenblas.a as a symlink. Here we crudely undo this
+    # needlessly overcomplicated operation.
+    ExternalProject_Add_Step(openblas_proj remove_stupid_openblas_symlink
+      COMMAND ${CMAKE_COMMAND} -E rename libopenblas.a libopenblas.a.symlink
+      COMMAND ${CMAKE_COMMAND} -E copy libopenblas.a.symlink libopenblas.a
+      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+      DEPENDEES install)
+
     add_dependencies(openblas openblas_proj)
   endif()
   list(APPEND HAERO_EXT_INCDIRS ${OPENBLAS_INCLUDE_DIR})

@@ -49,7 +49,6 @@ jobs:
 
     - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision, pack size=${{ matrix.pack-size }})
       run: |
-        ls -l /opt/haero/lib
         ./setup build
         cd build
         cmake \
