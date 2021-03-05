@@ -15,7 +15,7 @@ namespace haero {
 /// This type stores a set of named diagnostic variables an aerosol system.
 /// The set of diagnostic variables for such a system is determined by the
 /// parameterizations selected for that system.
-class DiagnosticsGPU {
+class Diagnostics {
   public:
 
   /// Diagnostic variables are identified by a unique token. This token is
@@ -59,14 +59,14 @@ class DiagnosticsGPU {
   /// @param [in] num_gases The number of gas species in the atmosphere
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
-  DiagnosticsGPU(int num_aerosol_modes,
-                 const std::vector<int>& num_aerosol_species,
-                 int num_gases,
-                 int num_levels);
+  Diagnostics(int num_aerosol_modes,
+              const std::vector<int>& num_aerosol_species,
+              int num_gases,
+              int num_levels);
 
   /// Destructor.
   KOKKOS_FUNCTION
-  ~DiagnosticsGPU();
+  ~Diagnostics();
 
   // --------------------------------------------------------------------------
   //                                Metadata
@@ -98,13 +98,6 @@ class DiagnosticsGPU {
   //                                  Data
   // --------------------------------------------------------------------------
 
-  /// Returns the view storing the diagnostic variable with a name corresponding
-  /// to the given token. If such a variable does not exist, this throws an
-  /// exception.
-  /// @param [in] token A unique token identifying a diagnostic variable.
-  KOKKOS_FUNCTION
-  ColumnView var(const Token token);
-
   /// Returns a const view storing the diagnostic variable with the given name.
   /// If the variable does not yet exist, this throws an exception.
   /// Returns a const view storing the diagnostic variable with a name
@@ -112,59 +105,38 @@ class DiagnosticsGPU {
   /// throws an exception.
   /// @param [in] token A unique token identifying a diagnostic variable.
   KOKKOS_INLINE_FUNCTION
-  const ColumnView var(const Token token) const {
+  ColumnView var(const Token token) const {
     EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
       "Diagnostic variable token not found!");
     const ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
     return vars;
   }
 
-  /// Returns the view storing the modal aerosol diagnostic variable with a name
-  /// corresponding to the given token. If such a variable does not exist, this
-  /// throws an exception.
-  /// @param [in] token A unique token identifying a diagnostic variable.
-  KOKKOS_FUNCTION
-  SpeciesColumnView aerosol_var(const Token token);
-
   /// Returns a const view storing the modal aerosol diagnostic variable with a
   /// name corresponding to the given token. If such a variable does not exist,
   /// this throws an exception.
   /// @param [in] name The name of the diagnostic variable.
   KOKKOS_INLINE_FUNCTION
-  const SpeciesColumnView aerosol_var(const Token token) const {
+  SpeciesColumnView aerosol_var(const Token token) const {
     EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
       "Aerosol diagnostic variable token not found!");
     const SpeciesColumnView vars = Kokkos::subview(aero_vars_, token, Kokkos::ALL, Kokkos::ALL);
     return vars;
   }
 
-  /// Returns the view storing the gas diagnostic variable with a name
-  /// corresponding to the given token. If such a variable does not exist, this
-  /// throws an exception.
-  /// @param [in] token A unique token identifying a diagnostic variable.
-  KOKKOS_FUNCTION
-  SpeciesColumnView gas_var(const Token token);
-
   /// Returns a const view storing the gas diagnostic variable with a name
   /// corresponding to the given token. If such a variable does not exist, this
   /// throws an exception.
   /// @param [in] token A unique token identifying a diagnostic variable.
   KOKKOS_FUNCTION
-  const SpeciesColumnView gas_var(const Token token) const;
-
-  /// Returns the view storing the mode-specific diagnostic variable with a name
-  /// corresponding to the given token. If such a variable does not exist, this
-  /// throws an exception.
-  /// @param [in] token A unique token identifying a diagnostic variable.
-  KOKKOS_FUNCTION
-  ModalColumnView modal_var(const Token token);
+  SpeciesColumnView gas_var(const Token token) const;
 
   /// Returns a const view storing the mode-specific diagnostic variable with a name
   /// corresponding to the given token. If such a variable does not exist, this
   /// throws an exception.
   /// @param [in] token A unique token identifying a diagnostic variable.
   KOKKOS_FUNCTION
-  const ModalColumnView modal_var(const Token token) const;
+  ModalColumnView modal_var(const Token token) const;
 
   protected:
 
@@ -193,14 +165,14 @@ class DiagnosticsGPU {
   ModalColumnViewArray   modal_vars_;
 };
 
-/// @class Diagnostics
+/// @class DiagnosticsRegister
 /// This type stores a set of named diagnostic variables an aerosol system.
 /// The set of diagnostic variables for such a system is determined by the
 /// parameterizations selected for that system.
-class Diagnostics final : public DiagnosticsGPU {
+class DiagnosticsRegister final : public Diagnostics {
   public:
 
-  /// Creates an empty Diagnostics to which data can be added.
+  /// Creates an empty DiagnosticsRegister to which data can be added.
   /// @param [in] num_aerosol_modes The number of aerosol modes in the system
   /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
   ///                                 ith entry is the number of aerosol species
@@ -208,17 +180,22 @@ class Diagnostics final : public DiagnosticsGPU {
   /// @param [in] num_gases The number of gas species in the atmosphere
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
-  Diagnostics(int num_aerosol_modes,
+  DiagnosticsRegister(int num_aerosol_modes,
               const std::vector<int>& num_aerosol_species,
               int num_gases,
               int num_levels);
 
   /// Destructor.
-  ~Diagnostics();
+  ~DiagnosticsRegister();
 
   // --------------------------------------------------------------------------
   //                                  Data
   // --------------------------------------------------------------------------
+
+  /// Returns the Diagnostics class in which all of the diagnostic views can
+  /// be accessed using Tokens. Since Token is a POD, it is usable on device.
+  /// Therefore the Diagnostics class can be copied to device without error.
+  const Diagnostics &GetDiagnostics();
 
   /// Returns the number of aerosol species in the mode with the given index.
   /// @param [in] mode_index The index of the desired mode.
