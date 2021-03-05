@@ -72,9 +72,11 @@ jobs:
           -DHDF5_INCLUDE_DIR=/opt/haero/include \
           -DNETCDF_LIBRARY=/opt/haero/lib/libnetcdf.a \
           -DNETCDF_INCLUDE_DIR=/opt/haero/include \
-          -DKOKKOS_KERNELS_LIBRARY=/opt/haero/lib/libkokkoskernels.a \
-          -DKOKKOS_KERNELS_INCLUDE_DIR=/opt/haero/include \
-          -DTCHEM_LIBRARY=/opt/haero/lib/libtchemcore.a \
+          -DOPENBLAS_LIBRARY=/opt/haero/lib/libopenblas.a \
+          -DOPENBLAS_INCLUDE_DIR=/opt/haero/include \
+          -DTINES_LIBRARY=/opt/haero/lib/libtines.a \
+          -DTINES_INCLUDE_DIR=/opt/haero/include \
+          -DTCHEM_LIBRARY=/opt/haero/lib/libtchem.a \
           -DTCHEM_INCLUDE_DIR=/opt/haero/include \
           -G "Unix Makefiles" \
           ..

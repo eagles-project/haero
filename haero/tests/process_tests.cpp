@@ -223,9 +223,9 @@ TEST_CASE("process_tests", "prognostic_process") {
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
   const auto &teamPolicy =
-      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(9u, Kokkos::AUTO);
+      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
   Kokkos::parallel_for(teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, 3u),
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, 1u),
                          [&](const int &i) {
      // Const cast because everything in lambda is const. Need to google how to fix.
      Tendencies* tendency = const_cast<Tendencies*>(&tends);
