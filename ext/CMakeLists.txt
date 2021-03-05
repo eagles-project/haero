@@ -384,7 +384,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
                        -DTCHEM_ENABLE_TEST=OFF
-                       -DTCHEM_ENABLE_EXAMPLE=ON
+                       -DTCHEM_ENABLE_EXAMPLE=OFF
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DTINES_INSTALL_PATH=${TINES_INSTALL_PATH}
                      )
