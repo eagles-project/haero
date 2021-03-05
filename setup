@@ -57,9 +57,13 @@ PREFIX=$PWD/$1
 #NETCDF_LIBRARY_DIR=/path/to/netcdf-c/library
 #NETCDF_LIBRARY=libnetcdf.a
 
-#KOKKOS_KERNELS_INCLUDE_DIR=/path/to/kokkos-kernels/includes
-#KOKKOS_KERNELS_LIBRARY_DIR=/path/to/kokkos-kernels/library
-#KOKKOS_KERNELS_LIBRARY=libkokkoskernels.a
+#OPENBLAS_INCLUDE_DIR=/path/to/openblas/includes
+#OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
+#OPENBLAS_LIBRARY=libopenblas.a
+
+#TINES_INCLUDE_DIR=/path/to/tines/includes
+#TINES_LIBRARY_DIR=/path/to/tines/library
+#TINES_LIBRARY=libtines.a
 
 #TCHEM_INCLUDE_DIR=/path/to/tchem/includes
 #TCHEM_LIBRARY_DIR=/path/to/tchem/library
@@ -286,18 +290,32 @@ if [ ! "\$EKAT_LIBRARY_DIR" = "" -o ! "\$EKAT_INCLUDE_DIR" = "" -o ! "\$EKAT_LIB
   OPTIONS="\$OPTIONS -DEKAT_INCLUDE_DIR=\$EKAT_INCLUDE_DIR"
 fi
 
-# Configure kokkos-kernels if needed.
-if [ ! "\$KOKKOS_KERNELS_LIBRARY_DIR" = "" -o ! "\$KOKKOS_KERNELS_INCLUDE_DIR" = "" -o ! "\$KOKKOS_KERNELS_LIBRARY" = "" ]; then
-  if [ "\$KOKKOS_KERNELS_LIBRARY" = "" ]; then
-    echo "Error: KOKKOS_KERNELS_LIBRARY must be specified for a custom kokkos-kernels library."
+# Configure OpenBLAS if needed.
+if [ ! "\$OPENBLAS_LIBRARY_DIR" = "" -o ! "\$OPENBLAS_INCLUDE_DIR" = "" -o ! "\$OPENBLAS_LIBRARY" = "" ]; then
+  if [ "\$OPENBLAS_LIBRARY" = "" ]; then
+    echo "Error: OPENBLAS_LIBRARY must be specified for a custom OpenBLAS library."
     exit 1
   fi
-  if [ "\$KOKKOS_KERNELS_INCLUDE_DIR" = "" ]; then
-    echo "Error: KOKKOS_KERNELS_INCLUDE_DIR must be specified for a custom kokkos-kernels library."
+  if [ "\$OPENBLAS_INCLUDE_DIR" = "" ]; then
+    echo "Error: OPENBLAS_INCLUDE_DIR must be specified for a custom OpenBLAS library."
     exit 1
   fi
-  OPTIONS="\$OPTIONS -DKOKKOS_KERNELS_LIBRARY=\$KOKKOS_KERNELS_LIBRARY_DIR/\$KOKKOS_KERNELS_LIBRARY"
-  OPTIONS="\$OPTIONS -DKOKKOS_KERNELS_INCLUDE_DIR=\$KOKKOS_KERNELS_INCLUDE_DIR"
+  OPTIONS="\$OPTIONS -DOPENBLAS_LIBRARY=\$OPENBLAS_LIBRARY_DIR/\$OPENBLAS_LIBRARY"
+  OPTIONS="\$OPTIONS -DOPENBLAS_INCLUDE_DIR=\$OPENBLAS_INCLUDE_DIR"
+fi
+
+# Configure Tines if needed.
+if [ ! "\$TINES_LIBRARY_DIR" = "" -o ! "\$TINES_INCLUDE_DIR" = "" -o ! "\$TINES_LIBRARY" = "" ]; then
+  if [ "\$TINES_LIBRARY" = "" ]; then
+    echo "Error: TINES_LIBRARY must be specified for a custom Tines library."
+    exit 1
+  fi
+  if [ "\$TINES_INCLUDE_DIR" = "" ]; then
+    echo "Error: TINES_INCLUDE_DIR must be specified for a custom Tines library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DTINES_LIBRARY=\$TINES_LIBRARY_DIR/\$TINES_LIBRARY"
+  OPTIONS="\$OPTIONS -DTINES_INCLUDE_DIR=\$TINES_INCLUDE_DIR"
 fi
 
 # Configure TChem if needed.

@@ -263,60 +263,107 @@ list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/kokkos)
 list(APPEND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR})
 
 #----------------------------------------------------------------------------
-# Kokkos-Kernels library
+# OpenBLAS linear algebra library: needed by Tines on CPU builds
 #----------------------------------------------------------------------------
-if (KOKKOS_KERNELS_LIBRARY MATCHES ".a")
-  add_library(kokkoskernels STATIC IMPORTED GLOBAL)
-else()
-  add_library(kokkoskernels SHARED IMPORTED GLOBAL)
-endif()
-set_target_properties(kokkoskernels PROPERTIES IMPORTED_LOCATION ${KOKKOS_KERNELS_LIBRARY})
+if (HAERO_DEVICE STREQUAL "CPU")
+  add_library(openblas STATIC IMPORTED GLOBAL)
+  set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
+  if (NOT EXISTS ${OPENBLAS_LIBRARY})
+    update_submodules()
+    set(OPENBLAS_OPTS NO_SHARED=1 PREFIX=${PROJECT_BINARY_DIR})
+    ExternalProject_Add(openblas_proj
+                        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
+                        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS
+                        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
+                        INSTALL_DIR ${PROJECT_BINARY_DIR}
+                        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
+                        BUILD_COMMAND make -j ${OPENBLAS_OPTS}
+                        LOG_BUILD TRUE
+                        INSTALL_COMMAND make -j ${OPENBLAS_OPTS} install
+                        LOG_INSTALL TRUE)
 
-if (NOT EXISTS ${KOKKOS_KERNELS_LIBRARY})
-  update_submodules()
-  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_DIR ${EKAT_LIBRARY_DIR})
-  set(KK_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                    -DKokkos_ROOT=${KOKKOS_DIR}
-                    -DKokosKernels_INST_LAYOUTRIGHT:BOOL=ON
-                    -DCMAKE_CXX_EXTENSIONS:BOOL=OFF
-                    )
-  if (HAERO_DEVICE STREQUAL "CUDA")
-    # We use EKAT's C++ compiler helper script.
-    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
-                      -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+    # Because the OpenBLAS people feel that life isn't complicated enough, they
+    # insist on creating libopenblas.a as a symlink. Here we crudely undo this
+    # needlessly overcomplicated operation.
+    ExternalProject_Add_Step(openblas_proj remove_stupid_openblas_symlink
+      COMMAND ${CMAKE_COMMAND} -E rename libopenblas.a libopenblas.a.symlink
+      COMMAND ${CMAKE_COMMAND} -E copy libopenblas.a.symlink libopenblas.a
+      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+      DEPENDEES install)
 
-    # There are some pitfalls with some outdated cusparse symbols that we ѕhould
-    # avoid till kokkos-kernels fixes them.
-    # (See https://github.com/trilinos/Trilinos/issues/8281)
-    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
-                      -DKokkosKernels_ENABLE_TPL_CUSPARSE:BOOL=OFF)
-  else()
-    set(KK_CMAKE_OPTS ${KK_CMAKE_OPTS}
-                      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+    add_dependencies(openblas openblas_proj)
   endif()
-  ExternalProject_Add(kokkoskernels_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kokkos-kernels
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels
+  list(APPEND HAERO_EXT_INCDIRS ${OPENBLAS_INCLUDE_DIR})
+  set(HAERO_EXT_LIBRARIES openblas;${HAERO_EXT_LIBRARIES})
+endif()
+
+#----------------------------------------------------------------------------
+# Tines solver library
+#----------------------------------------------------------------------------
+if (TINES_LIBRARY MATCHES ".a")
+  add_library(tines STATIC IMPORTED GLOBAL)
+else()
+  add_library(tines SHARED IMPORTED GLOBAL)
+endif()
+set_target_properties(tines PROPERTIES IMPORTED_LOCATION ${TINES_LIBRARY})
+if (NOT EXISTS ${TINES_LIBRARY})
+  update_submodules()
+  if (HAERO_DEVICE STREQUAL "CPU")
+    set(TINES_DEPENDS openblas ekat)
+  else()
+    set(TINES_DEPENDS ekat)
+  endif()
+  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
+  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR})
+  set(TINES_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                       -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+                       -DCMAKE_CXX_FLAGS=-I${EKAT_LIBRARY_DIR}/../include/kokkos
+                       -DTINES_ENABLE_VERBOSE=OFF
+                       -DTINES_ENABLE_TEST=OFF
+                       -DTINES_ENABLE_EXAMPLE=OFF
+                       -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                     )
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+                         -DTINES_ENABLE_DEBUG=ON)
+  else()
+    set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+                         -DTINES_ENABLE_DEBUG=OFF)
+  endif()
+  if (HAERO_DEVICE STREQUAL "CUDA")
+    # We use EKAT's C++ compiler helper script for CUDA.
+    set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+  else()
+    # We need OpenBLAS for non-GPU builds.
+    set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                         -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH})
+  endif()
+
+  ExternalProject_Add(tines_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/Tines
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Tines/src
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Tines
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${KK_CMAKE_OPTS}
-                      DEPENDS ekat
+                      CMAKE_ARGS ${TINES_CMAKE_OPTS}
+                      DEPENDS ${TINES_DEPENDS}
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
 
-  # Delete KokkosKernelsConfig.cmake after installation.
-  ExternalProject_Add_Step(kokkoskernels_proj delete_bad_kokkoskernels_config
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/kokkos-kernels/KokkosKernelsConfig.cmake
-    DEPENDS ekat
+  # Apparently Tines also leaves a config file that confuses TChem, so we
+  # delete it.
+  ExternalProject_Add_Step(tines_proj delete_bad_tines_config
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/Tines/core/TinesConfig.cmake
     DEPENDEES install)
 
-  add_dependencies(kokkoskernels kokkoskernels_proj)
+  add_dependencies(tines tines_proj)
 endif()
-list(APPEND HAERO_EXT_INCDIRS ${KOKKOS_KERNELS_INCLUDE_DIR})
-set(HAERO_EXT_LIBRARIES kokkoskernels;${HAERO_EXT_LIBRARIES})
+list(APPEND HAERO_EXT_INCDIRS ${TINES_INCLUDE_DIR})
+set(HAERO_EXT_LIBRARIES tines;${HAERO_EXT_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # TChem chemical kinetics library
@@ -327,20 +374,19 @@ else()
   add_library(tchem SHARED IMPORTED GLOBAL)
 endif()
 set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY})
-
 if (NOT EXISTS ${TCHEM_LIBRARY})
   update_submodules()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
+  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" TINES_INSTALL_PATH ${TINES_LIBRARY_DIR})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                        -DTCHEM_INSTALL_LIB_PATH=${CMAKE_INSTALL_LIBDIR}
                        -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
-                       -DTCHEM_ENABLE_KOKKOSKERNELS=ON
                        -DTCHEM_ENABLE_TEST=OFF
-                       -DTCHEM_ENABLE_EXAMPLE=ON
+                       -DTCHEM_ENABLE_EXAMPLE=OFF
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
-                       -DKOKKOSKERNELS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                       -DTINES_INSTALL_PATH=${TINES_INSTALL_PATH}
                      )
   if (HAERO_DEVICE STREQUAL "CUDA")
     # We use EKAT's C++ compiler helper script. Also, we need to nudge TChem
@@ -360,7 +406,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/TChem
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${TCHEM_CMAKE_OPTS}
-                      DEPENDS kokkoskernels
+                      DEPENDS tines ekat
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
@@ -401,8 +447,12 @@ endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
 endif()
-if (${KOKKOS_KERNELS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built kokkos-kernels
-  install(FILES ${KOKKOS_KERNELS_LIBRARY} DESTINATION lib)
+if (HAERO_DEVICE STREQUAL "CPU" AND
+    ${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
+  install(FILES ${OPENBLAS_LIBRARY} DESTINATION lib)
+endif()
+if (${TINES_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Tines
+  install(FILES ${TINES_LIBRARY} DESTINATION lib)
 endif()
 if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
   install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
