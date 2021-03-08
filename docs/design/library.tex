@@ -157,6 +157,57 @@ different answers to these questions will have very different behavior. When we
 define a Haero simulation, we encode the answers to these decisions in an
 {\bf aerosol model} variable.
 
+\subsection{The Modal Aerosol Configuration Type}
+\labelsubsection{lib:modal_aerosol_config}
+
+Before we discuss an aerosol model itself, we have to define a representation
+for the aerosol system of interest. We distinguish between the aerosol system
+and the model in order to make more clear our assumptions about the composition
+of aerosol systems, versus our assumptions about the underlying processes that
+affect them.
+
+In the past, aerosol models have often elected to fix the modes and aerosol/gas
+species that they treat, in order to simplify code development. Haero instead
+allows a researcher to select these modes and species at runtime, allowing a
+far greater family of aerosol models to be represented.
+
+\lstset{language=[11]{c++}}
+\begin{lstlisting}
+class ModalAerosolConfig final {
+  public:
+  // Constructor -- creates a new modal aerosol configuration given all relevant
+  // data.
+  ModalAerosolConfig(const std::vector<Mode>& aerosol_modes,
+                     const std::vector<Species>& aerosol_species,
+                     const std::map<std::string, std::vector<std::string> >& mode_species,
+                     const std::vector<Species>& gas_species);
+
+  // The list of aerosol modes.
+  std::vector<Mode> aerosol_modes;
+
+  // The list of aerosol species.
+  std::vector<Species> aerosol_species;
+
+  // The list of gas species.
+  std::vector<Species> gas_species;
+
+  // The total number of distinct aerosol species populations in the
+  // model, counting appearances of one species in different modes separately.
+  int num_aerosol_populations;
+
+  // Returns the list of aerosol species associated with the model with the
+  // given mode index.
+  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
+};
+\end{lstlisting}
+
+\subsection{The Model Type}
+\labelsubsection{lib:model}
+
+In Haero, an aerosol model is defined by the \verb Model  type, defined within
+the \verb haero  namespace. Interfaces to this type are provided in both C++ and
+Fortran.
+
 What do we mean by an ``aerosol model'', exactly? One can think about it in a
 few different ways.
 
@@ -171,13 +222,6 @@ few different ways.
         time. In this sense, all of its information is ``timeless''.
 \end{itemize}
 
-\subsection{The Model Type}
-\labelsubsection{lib:model}
-
-In Haero, an aerosol model is defined by the \verb Model  type, defined within
-the \verb haero  namespace. Interfaces to this type are provided in both C++ and
-Fortran.
-
 Below is an abbreviated look at the \verb Model  C++ class. The source code for
 this class can be found in the \verb haero/model.hpp  and
 \verb haero/model.cpp files within the repository. Reading through this class,
@@ -189,12 +233,10 @@ structures in subsequent sections.
 class Model final {
   public:
 
-  // Constructor -- creates a new model given all relevant data.
-  Model(const SelectedProcesses& selected_processes,
-        const std::vector<Mode>& aerosol_modes,
-        const std::vector<Species>& aerosol_species,
-        const std::map<std::string, std::vector<std::string> >& mode_species,
-        const std::vector<Species>& gas_species,
+  // Constructor -- creates a new model given a modal aerosol configuration,
+  // a set of selected processes, and a number of vertical levels per column.
+  Model(const ModalAerosolConfig& modal_aerosol_config,
+        const SelectedProcesses& selected_processes,
         int num_levels);
 
   // Creates a new Prognostics object that can be used with this Model, given
@@ -226,22 +268,12 @@ class Model final {
   // Returns the selected set of processes associated with this aerosol model.
   const SelectedProcesses& selected_processes() const;
 
-  // Returns the list of modes for the context.
-  const std::vector<Mode>& modes() const;
-
-  // Returns the list of aerosol species for the context.
-  const std::vector<Species>& aerosol_species() const;
-
-  // Returns the list of aerosol species associated with the model with the
-  // given mode index.
-  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
+  // Returns the modal aerosol configuration associated with this aerosol model.
+  const ModalAerosolConfig& modal_aerosol_config() const;
 
   // Returns the total number of distinct aerosol species populations in the
   // model, counting appearances of one species in different modes separately.
-  int num_aerosol_populations() const { return num_aero_populations_; }
-
-  // Returns the list of gas species for the context.
-  const std::vector<Species>& gas_species() const;
+  int num_aerosol_populations() const;
 
   // Returns the number of vertical levels (cells) in each atmospheric column.
   int num_levels() const;
@@ -253,10 +285,11 @@ there's usually no reason to do so, unless you're running an ensemble of
 simulations whose underlying assumptions differ beyond their initial states.
 
 Haero's Fortran interface provides a \verb model_t  derived type with a subset
-of the information available to the C++ \verb Model  type. While the Fortran
-interface doesn't have ``feature parity'' with its C++ counterpart, we argue
-that it provides ample information for implementing aerosol processes in
-Fortran.
+of the information available to the C++ \verb Model  type. The Fortran
+interface doesn't have ``feature parity'' with its C++ counterpart. In fact,
+it really only provides information equivalent to that in the
+\verb ModalAerosolConfig  C++ class. Nevertheless, we argue that it provides
+ample information for implementing aerosol processes in Fortran.
 
 \lstset{language=[03]{fortran}}
 \begin{lstlisting}
