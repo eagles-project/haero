@@ -20,23 +20,26 @@ using PackInfo = ekat::PackInfo<HAERO_PACK_SIZE>;
 
 /// Views of this type store packs in a vertical column, with
 /// ceil(num_levels/HAERO_PACK_SIZE) packs spanning the column's vertical
-/// levels.
+/// levels. If k identifies a vertical level, the corresponding data is
+/// accessible at `view(pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
+/// See Chapter 3 of the design document for an explanation of packs.
 using ColumnView = DeviceType::view_1d<PackType>;
 
 /// Views of this type store packs defined for each species population (for
 /// aerosols or gases), with ceil(num_levels/HAERO_PACK_SIZE) packs spanning
-/// the column's vertical levels.
-/// * The species population is identified by an index p.
-/// * The vertical pack index is identified by the index k.
-/// So view(p, k) yields the desired pack.
+/// the column's vertical levels. If p identifies a species population (aerosol
+/// or gas), and k identifies a vertical level,
+/// the corresponding data is accessible at
+/// `view(p, pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
+/// See Chapter 3 of the design document for an explanation of packs.
 using SpeciesColumnView = DeviceType::view_2d<PackType>;
 
 /// Views of this type store packs defined for each mode, with
 /// ceil(num_levels/HAERO_PACK_SIZE) packs spanning the column's vertical
-/// levels.
-/// * The mode is identified by the index m.
-/// * The vertical pack index is identified by the index k.
-/// So view(m, k) yields the desired pack.
+/// levels. If m identifies a mode and k identifies a vertical level,
+/// the corresponding data is accessible at
+/// `view(m, pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
+/// See Chapter 3 of the design document for an explanation of packs.
 using ModalColumnView = DeviceType::view_2d<PackType>;
 
 // Returns haero's version string.
