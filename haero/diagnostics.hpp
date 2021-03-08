@@ -29,28 +29,6 @@ class Diagnostics final {
   /// This token indicates that a requested variable was not found.
   static const Token VAR_NOT_FOUND = -1;
 
-  /// This type is used to define Kokkos views on device which might
-  /// be either the host or the device if there is one.
-  using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
-
-  /// This type represents an array mapping a vertical level index to a pack.
-  /// The vertical level(s) are identified by the index.
-  using ColumnView = kokkos_device_type::view_1d<PackType>;
-
-  /// This type represents a multidimensional array mapping a species and
-  /// vertical level index to a pack.
-  /// * The species is identified by the index s.
-  /// * The vertical level index is identified by the index k.
-  /// So view[s][k] yields the desired pack.
-  using SpeciesColumnView = kokkos_device_type::view_2d<PackType>;
-
-  /// This type represents a multidimensional array mapping a mode and a
-  /// vertical level index to a pack.
-  /// * The mode is identified by the index m.
-  /// * The vertical level index is identified by the index k.
-  /// So view[m][k] yields the desired pack.
-  using ModalColumnView = kokkos_device_type::view_2d<PackType>;
-
   /// Creates an empty Diagnostics to which data can be added.
   /// @param [in] num_aerosol_modes The number of aerosol modes in the system
   /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose

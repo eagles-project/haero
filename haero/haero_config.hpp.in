@@ -30,6 +30,23 @@ using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
 /// Helpers for pack/array indexing
 using PackInfo = ekat::PackInfo<HAERO_PACK_SIZE>;
 
+/// Views of this type store packs defined at every vertical level of a column.
+using ColumnView  = DeviceType::view_1d<PackType>;
+
+/// Views of this type store packs defined for each species population (for
+/// aerosols or gases) at every vertical level of a column.
+/// * The species population is identified by an index p.
+/// * The vertical level index is identified by the index k.
+/// So view[p][k] yields the desired pack.
+using SpeciesColumnView  = DeviceType::view_2d<PackType>;
+
+/// Views of this type store packs defined for each mode at every vertical level
+/// of a column.
+/// * The mode is identified by the index m.
+/// * The vertical level index is identified by the index k.
+/// So view[m][k] yields the desired pack.
+using ModalColumnView    = DeviceType::view_2d<PackType>;
+
 /// Are we building with Fortran support?
 #define HAERO_FORTRAN @HAERO_FORTRAN@
 

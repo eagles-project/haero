@@ -4,16 +4,10 @@
 #include <map>
 #include <vector>
 
-#include "kokkos/Kokkos_Core.hpp"
-
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
-
+#include "haero/haero.hpp"
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
 #include "haero/view_pack_helpers.hpp"
-#include "haero/mode.hpp"
-#include "haero/species.hpp"
 
 namespace haero {
 
@@ -21,7 +15,7 @@ namespace haero {
 class Tendencies;
 
 /// @class Prognostics
-/// This type stores the prognostic variables for an atmospheric column in an 
+/// This type stores the prognostic variables for an atmospheric column in an
 /// aerosol system. Specifically,It stores
 /// * mass mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
@@ -30,34 +24,10 @@ class Tendencies;
 class Prognostics final {
   public:
 
-  /// This type is used to define Kokkos views on device which might
-  /// be either the host or the device if there is one.
-  using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
-
-  /// This type represents a multidimensional array mapping a species and
-  /// vertical level index to a pack.
-  /// * The species is identified by the index s.
-  /// * The vertical level index is identified by the index k.
-  /// So view[s][k] yields the desired pack.
-  /// Our views are unmanaged in general, to allow a host model to assume
-  /// responsibility for managing resources.
-  using ManagedSpeciesColumnView = kokkos_device_type::view_2d<PackType>;
-  using SpeciesColumnView = ekat::Unmanaged<ManagedSpeciesColumnView>;
-
-  /// This type represents a multidimensional array mapping a mode and a
-  /// vertical level index to a pack.
-  /// * The mode is identified by the index m.
-  /// * The vertical level index is identified by the index k.
-  /// So view[m][k] yields the desired pack.
-  /// Our views are unmanaged in general, to allow a host model to assume
-  /// responsibility for managing resources.
-  using ManagedModalColumnView = kokkos_device_type::view_2d<PackType>;
-  using ModalColumnView = ekat::Unmanaged<ManagedModalColumnView>;
-
   /// Creates a Prognostics object that can store aerosol data can be added.
-  /// This constructor accepts a number of Kokkos View objects that are managed
-  /// by the host model and that store aerosol data. The Prognostics object
-  /// creates its own unmanaged views for these views.
+  /// This constructor accepts a number of Kokkos View objects, managed by the
+  /// host model, that store aerosol data. The Prognostics object
+  /// creates its own views for these views.
   /// @param [in] num_aerosol_modes The number of aerosol modes in the system
   /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
   ///                                 ith entry is the number of aerosol species
@@ -96,10 +66,10 @@ class Prognostics final {
               const std::vector<int>& num_aerosol_species,
               int num_gases,
               int num_levels,
-              ManagedSpeciesColumnView int_aerosols,
-              ManagedSpeciesColumnView cld_aerosols,
-              ManagedSpeciesColumnView gases,
-              ManagedModalColumnView   modal_num_concs);
+              SpeciesColumnView int_aerosols,
+              SpeciesColumnView cld_aerosols,
+              SpeciesColumnView gases,
+              ModalColumnView   modal_num_concs);
 
   /// Destructor.
   KOKKOS_FUNCTION

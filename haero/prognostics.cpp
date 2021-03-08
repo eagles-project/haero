@@ -6,18 +6,18 @@ Prognostics::Prognostics(int num_aerosol_modes,
                          const std::vector<int>& num_aerosol_species,
                          int num_gases,
                          int num_levels,
-                         ManagedSpeciesColumnView int_aerosols,
-                         ManagedSpeciesColumnView cld_aerosols,
-                         ManagedSpeciesColumnView gases,
-                         ManagedModalColumnView   modal_num_concs):
-  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Prognostics::num_aerosol_species")), 
+                         SpeciesColumnView int_aerosols,
+                         SpeciesColumnView cld_aerosols,
+                         SpeciesColumnView gases,
+                         ModalColumnView   modal_num_concs):
+  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Prognostics::num_aerosol_species")),
   num_aero_populations_(0),
-  num_gases_(num_gases), 
+  num_gases_(num_gases),
   num_levels_(num_levels),
   int_aero_species_(int_aerosols),
   cld_aero_species_(cld_aerosols),
   gases_(gases),
-  modal_num_concs_(modal_num_concs) 
+  modal_num_concs_(modal_num_concs)
   {
 
   // Count up the mode/species combinations.
@@ -81,29 +81,29 @@ int Prognostics::num_levels() const {
   return num_levels_;
 }
 
-Prognostics::SpeciesColumnView 
+SpeciesColumnView
 Prognostics::cloudborne_aerosols() {
   return cld_aero_species_;
 }
 
-const Prognostics::SpeciesColumnView
+const SpeciesColumnView
 Prognostics::cloudborne_aerosols() const {
   return cld_aero_species_;
 }
 
-Prognostics::SpeciesColumnView Prognostics::gases() {
+SpeciesColumnView Prognostics::gases() {
   return gases_;
 }
 
-const Prognostics::SpeciesColumnView Prognostics::gases() const {
+const SpeciesColumnView Prognostics::gases() const {
   return gases_;
 }
 
-Prognostics::ModalColumnView Prognostics::modal_num_concs() {
+ModalColumnView Prognostics::modal_num_concs() {
   return modal_num_concs_;
 }
 
-const Prognostics::ModalColumnView Prognostics::modal_num_concs() const {
+const ModalColumnView Prognostics::modal_num_concs() const {
   return modal_num_concs_;
 }
 

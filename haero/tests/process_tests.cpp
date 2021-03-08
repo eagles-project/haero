@@ -60,11 +60,11 @@ public :
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const {
 
-    const Prognostics::SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols();
-    const Atmosphere::ColumnView temp = atmosphere.temperature();
-    const Diagnostics::SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
-    const Diagnostics::SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
-    const Diagnostics::ColumnView        generic_var   = diagnostics.var(generic_0);
+    const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols();
+    const ColumnView temp = atmosphere.temperature();
+    const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
+    const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
+    const ColumnView        generic_var   = diagnostics.var(generic_0);
     Tendencies::SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
 
     const int num_populations = first_aersol.extent(0);
@@ -236,12 +236,12 @@ TEST_CASE("process_tests", "prognostic_process") {
 
   {
     using fp_helper = FloatingPoint<float>;
-    const Prognostics::SpeciesColumnView int_aerosols = progs.interstitial_aerosols();
-    const Atmosphere::ColumnView temp = atmos.temperature();
-    const Diagnostics::SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
-    const Diagnostics::SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
-    const Diagnostics::ColumnView        generic_var   = diagnostics.var(generic_0);
-    Tendencies::SpeciesColumnView aero_tend = tends.interstitial_aerosols();
+    const SpeciesColumnView int_aerosols = progs.interstitial_aerosols();
+    const ColumnView temp = atmos.temperature();
+    const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
+    const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
+    const ColumnView        generic_var   = diagnostics.var(generic_0);
+    SpeciesColumnView aero_tend = tends.interstitial_aerosols();
 
     auto host_first_aersol  =  Kokkos::create_mirror_view(first_aersol);
     auto host_second_aersol =  Kokkos::create_mirror_view(second_aersol);

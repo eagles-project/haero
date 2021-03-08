@@ -6,9 +6,9 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
                          const std::vector<int>& num_aerosol_species,
                          int num_gases,
                          int num_levels):
-  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Diagnostics::num_aerosol_species")), 
+  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Diagnostics::num_aerosol_species")),
   num_aero_populations_(0),
-  num_gases_(num_gases), 
+  num_gases_(num_gases),
   num_levels_(num_levels) {
 
   EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
@@ -65,7 +65,7 @@ Diagnostics::Token Diagnostics::create_var(const std::string& name) {
   return return_val;
 }
 
-Diagnostics::ColumnView
+ColumnView
 Diagnostics::var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
     "Diagnostic variable token not found!");
@@ -73,7 +73,7 @@ Diagnostics::var(const Token token) {
   return vars;
 }
 
-//const Diagnostics::ColumnView
+//const ColumnView
 //Diagnostics::var(const Token token) const {
 //  EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
 //    "Diagnostic variable token not found!");
@@ -107,7 +107,7 @@ Diagnostics::Token Diagnostics::create_aerosol_var(const std::string& name) {
   return return_val;
 }
 
-Diagnostics::SpeciesColumnView
+SpeciesColumnView
 Diagnostics::aerosol_var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
     "Aerosol diagnostic variable token not found!");
@@ -116,7 +116,7 @@ Diagnostics::aerosol_var(const Token token) {
 }
 
 //KOKKOS_FUNCTION
-//const Diagnostics::SpeciesColumnView
+//const SpeciesColumnView
 //Diagnostics::aerosol_var(const Token token) const {
 //  EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
 //    "Aerosol diagnostic variable token  not found!");
@@ -142,7 +142,7 @@ Diagnostics::Token Diagnostics::create_gas_var(const std::string& name) {
   return return_val;
 }
 
-Diagnostics::SpeciesColumnView
+SpeciesColumnView
 Diagnostics::gas_var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
     "Gas diagnostic variable token not found!");
@@ -150,7 +150,7 @@ Diagnostics::gas_var(const Token token) {
   return vars;
 }
 
-const Diagnostics::SpeciesColumnView
+const SpeciesColumnView
 Diagnostics::gas_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
     "Gas diagnostic variable token not found!");
@@ -176,7 +176,7 @@ Diagnostics::Token Diagnostics::create_modal_var(const std::string& name) {
   return return_val;
 }
 
-Diagnostics::ModalColumnView
+ModalColumnView
 Diagnostics::modal_var(const Token token) {
   EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
     "Modal diagnostic variable token not found!");
@@ -184,7 +184,7 @@ Diagnostics::modal_var(const Token token) {
   return vars;
 }
 
-const Diagnostics::ModalColumnView
+const ModalColumnView
 Diagnostics::modal_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
     "Modal diagnostic variable token not found!");
@@ -193,7 +193,7 @@ Diagnostics::modal_var(const Token token) const {
 }
 
 Diagnostics::Token  Diagnostics::set_string_to_token(std::map<std::string,Token> &registered_strings,
-                                      const std::string &name, 
+                                      const std::string &name,
                                       const Token token) {
   Token return_val=get_string_to_token(registered_strings, name);
 
@@ -209,7 +209,7 @@ Diagnostics::Token  Diagnostics::get_string_to_token(const std::map<std::string,
                                       const std::string &name) {
   Token return_val=VAR_NOT_FOUND;
   const auto iter = registered_strings.find(name);
-  if (registered_strings.end() != iter) 
+  if (registered_strings.end() != iter)
     return_val = iter->second;
   return return_val;
 }

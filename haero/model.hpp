@@ -19,12 +19,6 @@ namespace haero {
 class Model final {
   public:
 
-  /// This is the device on which the Prognostics stores its data.
-  using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
-
-  /// This type represents vectorizable packs of Reals of length HAERO_PACK_SIZE.
-  using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
-
   /// Creates an aerosol model that supports the selected processes.
   /// @param [in] selected_processes the set of processes (including
   ///                                implementations) supported by the resulting
@@ -58,20 +52,18 @@ class Model final {
                              const std::vector<Species>& gas_species,
                              int num_levels);
 
+  /// Copy constructor.
   Model(const Model&);
 
   /// Destructor.
   ~Model();
 
-  /// Models are not assignable either.
+  /// Models are not assignable.
   Model& operator=(const Model&) = delete;
 
   /// Creates a new Prognostics object that can be used with this Model, given
   /// a set of views representing aerosol data managed by a host model. See
   /// the Prognostics class constructor for details on these views.
-  using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
-  using SpeciesColumnView  = kokkos_device_type::view_2d<PackType>;
-  using ModalColumnView    = kokkos_device_type::view_2d<PackType>;
   Prognostics* create_prognostics(SpeciesColumnView int_aerosols,
                                   SpeciesColumnView cld_aerosols,
                                   SpeciesColumnView gases,
