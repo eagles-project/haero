@@ -3,10 +3,10 @@
 namespace haero {
 
 Atmosphere::Atmosphere(int num_levels,
-                       const ManagedColumnView temp,
-                       const ManagedColumnView press,
-                       const ManagedColumnView rel_hum,
-                       const ManagedColumnView ht):
+                       const ColumnView temp,
+                       const ColumnView press,
+                       const ColumnView rel_hum,
+                       const ColumnView ht):
   num_levels_(num_levels),
   temperature_(temp),
   pressure_(press),
