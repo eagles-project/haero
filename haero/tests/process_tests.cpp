@@ -65,7 +65,7 @@ public :
     const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
     const ColumnView        generic_var   = diagnostics.var(generic_0);
-    Tendencies::SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
+    SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
 
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
@@ -200,7 +200,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   Tendencies tends(progs);
   {
     const int num_populations = progs.num_aerosol_populations();
-    Tendencies::SpeciesColumnView aero_tend = tends.interstitial_aerosols();
+    SpeciesColumnView aero_tend = tends.interstitial_aerosols();
     auto host_aero_tend  =  Kokkos::create_mirror_view(aero_tend);
     for (int i=0; i<num_levels; ++i) {
       for (int j=0; j<num_populations; ++j) {
