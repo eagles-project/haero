@@ -1,7 +1,7 @@
 #ifndef HAERO_DIAGNOSTICS_HPP
 #define HAERO_DIAGNOSTICS_HPP
 
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
