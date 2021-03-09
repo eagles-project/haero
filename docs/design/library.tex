@@ -820,11 +820,11 @@ class PrognosticProcess {
 
   // Override this method if your aerosol process needs to be initialized
   // with information about the model. The default implementation does nothing.
-  virtual void init(const Model& model) {}
+  virtual void init(const ModalAerosolConfig& modal_aerosol_config) {}
 
   // Override this method to implement the aerosol process using the specific
   // parameterization for the subclass.
-  virtual void run(const Model& model,
+  virtual void run(const ModalAerosolConfig& modal_aerosol_config,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
@@ -1054,10 +1054,10 @@ class DiagnosticProcess {
 
   // Override this method if your aerosol process needs to be initialized
   // with information about the model. The default implementation does nothing.
-  virtual void init(const Model& model) {}
+  virtual void init(const ModalAerosolConfig& modal_aerosol_config) {}
 
   // Override this method to update diagnostic variables at the given time.
-  virtual void update(const Model& model, Real t,
+  virtual void update(const ModalAerosolConfig& modal_aerosol_config, Real t,
                       const Prognostics& prognostics,
                       const Atmosphere& atmosphere,
                       Diagnostics& diagnostics) const = 0;
