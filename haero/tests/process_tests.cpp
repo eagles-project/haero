@@ -53,7 +53,7 @@ public :
  {}
 
   KOKKOS_FUNCTION
-  virtual void run(const Model& model,
+  virtual void run(const ModalAerosolConfig& modal_aerosol_config,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
@@ -217,7 +217,8 @@ TEST_CASE("process_tests", "prognostic_process") {
 
   std::vector<Species> aero_species = create_mam4_aerosol_species();
   std::vector<Species> gas_species  = create_mam4_gas_species();
-  Model *model = Model::ForUnitTests(modes, aero_species, mode_species, gas_species, num_levels);
+  ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
+  Model *model = Model::ForUnitTests(aero_config, num_levels);
 
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
@@ -228,7 +229,7 @@ TEST_CASE("process_tests", "prognostic_process") {
                          [&](const int &i) {
      // Const cast because everything in lambda is const. Need to google how to fix.
      Tendencies* tendency = const_cast<Tendencies*>(&tends);
-     device_pp->run(*model, t, dt, progs, atmos, diagnostics, *tendency);
+     device_pp->run(model->modal_aerosol_config(), t, dt, progs, atmos, diagnostics, *tendency);
     });
   });
 

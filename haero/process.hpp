@@ -1,15 +1,13 @@
 #ifndef HAERO_PROCESS_HPP
 #define HAERO_PROCESS_HPP
 
+#include "haero/modal_aerosol_config.hpp"
 #include "haero/prognostics.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/tendencies.hpp"
 
 namespace haero {
-
-/// This is a forward declaration, since we refer to Model below.
-class Model;
 
 /// @enum ProcessType
 /// This enumerated type lists all relevant physical aerosol processes.
@@ -91,14 +89,16 @@ class PrognosticProcess {
 
   /// Override this method if your aerosol process needs to be initialized
   /// with information about the model. The default implementation does nothing.
-  /// @param [in] model The aerosol model describing the aerosol system to
-  ///                   which this process belongs.
-  virtual void init(const Model& model) {}
+  /// @param [in] modal_aerosol_config The aerosol configuration describing the
+  ///                                  aerosol system to which this process
+  ///                                  belongs.
+  virtual void init(const ModalAerosolConfig& modal_aerosol_config) {}
 
   /// Override this method to implement the aerosol process using the specific
   /// parameterization for the subclass.
-  /// @param [in] model The aerosol model describing the aerosol system to
-  ///                   which this process belongs.
+  /// @param [in] modal_aerosol_config The aerosol configuration describing the
+  ///                                  aerosol system to which this process
+  ///                                  belongs.
   /// @param [in] t The simulation time at which this process is being invoked
   ///               (in seconds).
   /// @param [in] dt The simulation time interval ("timestep size") over which
@@ -111,7 +111,7 @@ class PrognosticProcess {
   /// @param [out] tendencies A container that stores time derivatives for
   ///                         prognostic variables evolved by this process.
   KOKKOS_FUNCTION
-  virtual void run(const Model& model,
+  virtual void run(const ModalAerosolConfig& modal_aerosol_config,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
@@ -140,7 +140,7 @@ class NullPrognosticProcess: public PrognosticProcess {
 
   // Overrides
   KOKKOS_FUNCTION
-  void run(const Model& model,
+  void run(const ModalAerosolConfig& modal_aerosol_config,
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
@@ -197,12 +197,12 @@ class FPrognosticProcess: public PrognosticProcess
   }
 
   // Overrides.
-  void init(const Model& model) override {
+  void init(const ModalAerosolConfig& modal_aerosol_config) override {
     init_process_();
     initialized_ = true;
   }
 
-  void run(const Model& model,
+  void run(const ModalAerosolConfig& modal_aerosol_config,
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
@@ -327,20 +327,23 @@ class DiagnosticProcess {
 
   /// Override this method if your aerosol process needs to be initialized
   /// with information about the model. The default implementation does nothing.
-  /// @param [in] model The aerosol model describing the aerosol system to
-  ///                   which this process belongs.
-  virtual void init(const Model& model) {}
+  /// @param [in] modal_aerosol_config The aerosol configuration describing the
+  ///                                  aerosol system to which this process
+  ///                                  belongs.
+  virtual void init(const ModalAerosolConfig& modal_aerosol_config) {}
 
   /// Override this method to update diagnostic variables at the given time.
-  /// @param [in] model The aerosol model describing the aerosol system to
-  ///                   which this process belongs.
+  /// @param [in] modal_aerosol_config The aerosol configuration describing the
+  ///                                  aerosol system to which this process
+  ///                                  belongs.
   /// @param [in] t The simulation time at which this process is being invoked
   ///               (in seconds).
   /// @param [in] prognostics The prognostic variables used by this process.
   /// @param [in] atmosphere The atmosphere state variables used by this process.
   /// @param [inout] diagnostics The diagnostic variables used by and updated by
   ///                            this process.
-  virtual void update(const Model& model, Real t,
+  virtual void update(const ModalAerosolConfig& modal_aerosol_config,
+                      Real t,
                       const Prognostics& prognostics,
                       const Atmosphere& atmosphere,
                       Diagnostics& diagnostics) const = 0;
@@ -403,7 +406,8 @@ class NullDiagnosticProcess: public DiagnosticProcess {
     DiagnosticProcess(type, "Null diagnostic aerosol process") {}
 
   // Overrides
-  void update(const Model& model, Real t,
+  void update(const ModalAerosolConfig& modal_aerosol_config,
+              Real t,
               const Prognostics& prognostics,
               const Atmosphere& atmosphere,
               Diagnostics& diagnostics) const override {}
@@ -414,13 +418,13 @@ extern "C" {
 
 /// Given a C pointer to a Fortran-backed diagnostic process, this function
 /// initializes the process with the given aerosol model.
-void fortran_diagnostic_process_init(void* process, void* model);
+void fortran_diagnostic_process_init(void* process, void* modal_aero_config);
 
 /// Given a C pointer to a Fortran-backed diagnostic process, this function
 /// invokes the process to update diagnostic variables with the given arguments.
-void fortran_diagnostic_process_update(void* process, void* model, Real t,
-                                       void* prognostics, void* atmosphere,
-                                       void* diagnostics);
+void fortran_diagnostic_process_update(void* process, void* modal_aero_config,
+                                       Real t, void* prognostics,
+                                       void* atmosphere, void* diagnostics);
 
 /// Given a C pointer to a Fortran-backed diagnostic process, this function
 /// frees all resources allocated within the process
@@ -485,12 +489,13 @@ class FDiagnosticProcess: public DiagnosticProcess {
   }
 
   // Overrides.
-  void init(const Model& model) override {
+  void init(const ModalAerosolConfig& modal_aerosol_config) override {
     init_process_();
     initialized_ = true;
   }
 
-  void update(const Model& model, Real t,
+  void update(const ModalAerosolConfig& modal_aerosol_config,
+              Real t,
               const Prognostics& prognostics,
               const Atmosphere& atmosphere,
               Diagnostics& diagnostics) const override {
