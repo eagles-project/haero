@@ -73,6 +73,12 @@ void* a_height_c(void* a)
   return (void*)h.data();
 }
 
+Real a_pblh_c(void* a)
+{
+  auto* atm = static_cast<Atmosphere*>(a);
+  return atm->planetary_boundary_height();
+}
+
 } // extern "C"
 
 } // haero
