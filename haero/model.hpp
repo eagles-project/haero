@@ -89,6 +89,7 @@ class Model final {
   // Accessors
 
   /// Returns the modal aerosol configuration associated with this aerosol modeļ.
+  KOKKOS_INLINE_FUNCTION
   const ModalAerosolConfig& modal_aerosol_config() const {
     return modal_aerosol_config_;
   }

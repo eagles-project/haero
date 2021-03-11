@@ -14,11 +14,12 @@ namespace haero {
 struct Mode final {
   public:
 
+  KOKKOS_INLINE_FUNCTION
   Mode():
     min_diameter(0), 
     max_diameter(0),
     mean_std_dev(0),
-    name_view("devault") {}
+    name_view() {}
   /// Creates a new aerosol particle mode.
   /// @param [in] name A unique name for this mode.
   /// @param [in] min_diameter The minimum diameter for particles that belong
