@@ -22,11 +22,14 @@ class Atmosphere final {
   ///                     by the host model
   /// @param [in] ht A view of height column data [m] on level interfaces,
   ///                managed by the host model
+  /// @param [in] pblh The column-specific planetary boundary height [m],
+  ///                  computed by the host model
   Atmosphere(int num_levels,
              const ColumnView temp,
              const ColumnView press,
              const ColumnView rel_hum,
-             const ColumnView ht);
+             const ColumnView ht,
+             Real pblh);
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -52,6 +55,10 @@ class Atmosphere final {
   KOKKOS_INLINE_FUNCTION
   const ColumnView height() const { return height_; }
 
+  /// Returns the planetary boundary height [m].
+  KOKKOS_INLINE_FUNCTION
+  const Real planetary_boundary_height() const { return pblh_; }
+
   private:
 
   // Number of vertical levels.
@@ -62,6 +69,9 @@ class Atmosphere final {
   const ColumnView pressure_;
   const ColumnView relative_humidity_;
   const ColumnView height_;
+
+  // Planetary boundary height.
+  Real pblh_;
 };
 
 }

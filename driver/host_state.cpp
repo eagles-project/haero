@@ -337,8 +337,9 @@ Atmosphere HostDynamics::create_atmospheric_state(Kokkos::View<PackType*> temp,
 
     z(pack_idx)[vec_idx] = phi_local(pack_idx)[vec_idx] / gravity;
   });
+  Real pblh = 100.0;
 
-  return Atmosphere(nlev_, temp, p, relh, z);
+  return Atmosphere(nlev_, temp, p, relh, z, pblh);
 }
 
 void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
