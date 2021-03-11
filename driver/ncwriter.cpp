@@ -159,7 +159,7 @@ void NcWriter::add_mode_dim(const std::vector<Mode>& modes){
   /// add variable data
   for (int i=0; i<nmodes; ++i) {
     const size_t idx = i;
-    auto name = modes[i].name.c_str();
+    auto name = modes[i].name().c_str();
     retval = nc_put_var1_string(ncid, mode_name_var_id, &idx, &name);
     CHECK_NCERR(retval);
 #ifdef HAERO_DOUBLE_PRECISION

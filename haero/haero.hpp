@@ -11,6 +11,7 @@ namespace haero {
 
 /// This is the device on which the data is stored.
 using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
+using HostType   = ekat::KokkosTypes<ekat::HostDevice>;
 
 /// Pack data structure for SIMD.
 using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;

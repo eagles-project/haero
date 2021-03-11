@@ -184,7 +184,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
           // Fetch the variable and its initial condition.
           std::string mode_name = a_iter->first.as<std::string>();
           auto mode_iter = std::find_if(modes.begin(), modes.end(),
-              [&](const Mode& m) { return m.name == mode_name; });
+              [&](const Mode& m) { return m.name() == mode_name; });
           if (mode_iter == modes.end()) {
             throw YamlException("Invalid mode specified in aerosol initial conditions: %s", mode_name.c_str());
           }
@@ -320,7 +320,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
         for (auto m_iter = m.begin(); m_iter != m.end(); ++m_iter) {
           auto mode_name = m_iter->first.as<std::string>();
           auto mode_iter = std::find_if(modes.begin(), modes.end(),
-              [&](const Mode& mm) { return mm.name == mode_name; });
+              [&](const Mode& mm) { return mm.name() == mode_name; });
           if (mode_iter == modes.end()) {
             throw YamlException("Invalid mode found in initial conditions: %s",
                                 mode_name.c_str());

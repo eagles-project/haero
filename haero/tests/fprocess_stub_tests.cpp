@@ -196,7 +196,7 @@ TEST_CASE("diag_process_stub", "") {
   SECTION("prepare_diagnostic_vars") {
     std::vector<int> num_aero_species(num_modes);
     for (int m = 0; m < num_modes; ++m) {
-      num_aero_species[m] = mode_species[modes[m].name].size();
+      num_aero_species[m] = mode_species[modes[m].name()].size();
     }
     Diagnostics diags(num_modes, num_aero_species, num_gases, num_levels);
     auto* stub = new DiagFProcessStub();

@@ -3,6 +3,7 @@
 
 #include "haero/mode.hpp"
 #include "haero/species.hpp"
+#include "haero/view_pack_helpers.hpp"
 #include <map>
 
 namespace haero {
@@ -36,10 +37,16 @@ class ModalAerosolConfig final {
                      const std::vector<Species>& aerosol_species,
                      const std::map<std::string, std::vector<std::string> >& mode_species,
                      const std::vector<Species>& gas_species):
-    aerosol_modes(aerosol_modes), aerosol_species(aerosol_species),
-    num_aerosol_populations(0), gas_species(gas_species)
+    d_aerosol_modes(vector_to_1dview(aerosol_modes, "aerosol_modes")),
+    aerosol_species(aerosol_species),
+    num_aerosol_populations(0), 
+    gas_species(gas_species)
   {
-    EKAT_REQUIRE_MSG(not this->aerosol_modes.empty(),
+    HostType::view_1d<Mode> t_aerosol_modes = Kokkos::create_mirror_view(d_aerosol_modes);
+    Kokkos::deep_copy(t_aerosol_modes, d_aerosol_modes);
+    h_aerosol_modes = t_aerosol_modes;
+
+    EKAT_REQUIRE_MSG(this->h_aerosol_modes.size(),
       "ModalAerosolConfig: No modes were defined!");
     EKAT_REQUIRE_MSG(not this->aerosol_species.empty(),
       "ModalAerosolConfig: No aerosol species were given!");
@@ -58,7 +65,8 @@ class ModalAerosolConfig final {
   ModalAerosolConfig& operator=(const ModalAerosolConfig&) = default;
 
   /// The list of aerosol modes associated with this aerosol model.
-  std::vector<Mode> aerosol_modes;
+  DeviceType::view_1d<const Mode> d_aerosol_modes;
+  HostType::view_1d<const Mode>   h_aerosol_modes;
 
   /// The list of all aerosol species associated with this aerosol
   /// model.
@@ -80,17 +88,20 @@ class ModalAerosolConfig final {
     EKAT_ASSERT(mode_index < species_for_mode_.size());
     // Construct this vector from our association data.
     std::vector<Species> species;
-    for (int s = 0; s < species_for_mode_[mode_index].size(); ++s) {
-      species.push_back(aerosol_species[species_for_mode_[mode_index][s]]);
+    const std::vector<int> &species_for_mode =  species_for_mode_[mode_index];
+    for (int s = 0; s < species_for_mode.size(); ++s) {
+      species.push_back(aerosol_species[species_for_mode[s]]);
     }
     return species;
   }
 
   private:
 
+
   // This sets mode->species indexing. Throws an exception if the mode_species
   // mapping produces an inconsistent configuration.
   void index_modal_species(const std::map<std::string, std::vector<std::string> >& mode_species) {
+    HostType::view_1d<const Mode> aerosol_modes = h_aerosol_modes;
     species_for_mode_.resize(aerosol_modes.size());
     num_aerosol_populations = 0;
     for (auto iter = mode_species.begin(); iter != mode_species.end(); ++iter) {
@@ -98,10 +109,10 @@ class ModalAerosolConfig final {
       const auto& aero_species = iter->second;
       num_aerosol_populations += aero_species.size();
 
-      auto m_iter = std::find_if(aerosol_modes.begin(), aerosol_modes.end(),
-          [&] (const Mode& mode) { return mode.name == mode_name; });
-      int mode_index = m_iter - aerosol_modes.begin();
-
+      int mode_index = -1;
+      for (unsigned i=0; i<aerosol_modes.size(); ++i) 
+        if (aerosol_modes[i].name() == mode_name) mode_index = i;
+      
       for (int s = 0; s < aero_species.size(); ++s) {
         auto s_iter = std::find_if(aerosol_species.begin(), aerosol_species.end(),
             [&] (const Species& species) {
@@ -115,7 +126,7 @@ class ModalAerosolConfig final {
     // Make sure each mode contains at least one species.
     for (int m = 0; m < species_for_mode_.size(); ++m) {
       EKAT_REQUIRE_MSG(not species_for_mode_[m].empty(),
-        aerosol_modes[m].name.c_str() << " mode contains no aerosol species!");
+        aerosol_modes[m].name().c_str() << " mode contains no aerosol species!");
     }
   }
 

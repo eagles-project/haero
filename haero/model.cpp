@@ -149,8 +149,8 @@ Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
                                        SpeciesColumnView cld_aerosols,
                                        SpeciesColumnView gases,
                                        ModalColumnView   modal_num_concs) const {
-  std::vector<int> num_aero_species(modal_aerosol_config_.aerosol_modes.size());
-  for (size_t m = 0; m < modal_aerosol_config_.aerosol_modes.size(); ++m) {
+  std::vector<int> num_aero_species(modal_aerosol_config_.h_aerosol_modes.size());
+  for (size_t m = 0; m < modal_aerosol_config_.h_aerosol_modes.size(); ++m) {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
@@ -161,7 +161,7 @@ Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
 
 Diagnostics* Model::create_diagnostics() const {
   // Create an empty Diagnostics object.
-  std::vector<int> num_aero_species(modal_aerosol_config_.aerosol_modes.size());
+  std::vector<int> num_aero_species(modal_aerosol_config_.h_aerosol_modes.size());
   for (size_t m = 0; m < num_aero_species.size(); ++m) {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
@@ -226,7 +226,7 @@ void Model::init_fortran() {
 
   // This series of calls sets things up in Haero's Fortran module.
   haerotran_begin_init();
-  int num_modes = modal_aerosol_config_.aerosol_modes.size();
+  int num_modes = modal_aerosol_config_.h_aerosol_modes.size();
   haerotran_set_num_modes(num_modes);
   size_t max_species = 0;
   for (int m = 0; m < num_modes; ++m) {
@@ -238,8 +238,8 @@ void Model::init_fortran() {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
 
     // Set the properties of mode i+1 (as indexed in Fortran).
-    const auto& mode = modal_aerosol_config_.aerosol_modes[m];
-    haerotran_set_mode(m+1, mode.name.c_str(), mode.min_diameter,
+    const auto& mode = modal_aerosol_config_.h_aerosol_modes[m];
+    haerotran_set_mode(m+1, mode.name().c_str(), mode.min_diameter,
         mode.max_diameter, mode.mean_std_dev);
 
     // Set up aerosol species for this mode.
@@ -303,7 +303,7 @@ bool Model::gather_processes() {
 }
 
 void Model::validate() {
-  EKAT_REQUIRE_MSG(not modal_aerosol_config_.aerosol_modes.empty(),
+  EKAT_REQUIRE_MSG(modal_aerosol_config_.h_aerosol_modes.size(),
     "Model: No modes were defined!");
   EKAT_REQUIRE_MSG(not modal_aerosol_config_.aerosol_species.empty(),
     "Model: No aerosol species were given!");

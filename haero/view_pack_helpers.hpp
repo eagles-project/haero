@@ -2,6 +2,7 @@
 #define HAERO_VIEW_HELPERS_HPP
 
 #include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
@@ -9,14 +10,15 @@
 #include "kokkos/Kokkos_Core.hpp"
 #include <vector>
 #include <iostream>
+#include <type_traits>
 
 namespace haero {
 
 //---------------------- Compile-time stuff ---------------//
 
 /// Kokkos device definitions
-using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
-using kokkos_host_type   = ekat::KokkosTypes<ekat::HostDevice>;
+using kokkos_device_type = DeviceType;
+using kokkos_host_type   = HostType;
 
 /// Ekat Pack definitions
 using real_pack_type = ekat::Pack<Real, HAERO_PACK_SIZE>;
@@ -63,6 +65,17 @@ view_1d_scalar_type vector_to_basic_1dview(const std::vector<Real>& vector, cons
 */
 view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector, const std::string& view_name);
 
+template <typename T>
+kokkos_device_type::view_1d<T> vector_to_1dview(const std::vector<T>& vector, const std::string& view_name) {
+  typedef typename std::remove_const<T>::type S;
+  kokkos_device_type::view_1d<S> result(view_name, vector.size());
+  auto hm = Kokkos::create_mirror_view(result);
+  for (int i=0; i<vector.size(); ++i) {
+    hm(i) = vector[i];
+  }
+  Kokkos::deep_copy(result, hm);
+  return result;
+}
 
 /** @brief Convert a std::vector<Real> to Kokkos::View<Pack<Real,HAERO_PACK_SIZE>*>
 
