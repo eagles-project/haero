@@ -42,7 +42,8 @@ TEST_CASE("prog_fprocess_stub", "") {
   Kokkos::View<PackType*> press("pressure", num_levels);
   Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
   Kokkos::View<PackType*> ht("height", num_levels+1);
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht);
+  Real pblh = 100.0;
+  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
 
   // Rate of decay from cloudborne to interstitial aerosols.
   Real decay_rate = -0.05;
@@ -182,7 +183,8 @@ TEST_CASE("diag_process_stub", "") {
   Kokkos::View<PackType*> press("pressure", num_levels);
   Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
   Kokkos::View<PackType*> ht("height", num_levels+1);
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht);
+  Real pblh = 100.0;
+  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
 
   // Test basic construction.
   SECTION("construct") {

@@ -183,7 +183,8 @@ TEST_CASE("process_tests", "prognostic_process") {
     }
     Kokkos::deep_copy(temp, host_temp);
   }
-  Atmosphere atmos(num_levels, temp, press, rel_hum, ht);
+  Real pblh = 100.0;
+  Atmosphere atmos(num_levels, temp, press, rel_hum, ht, pblh);
 
   std::vector<int> num_aero_species(num_modes);
   std::vector<Mode> modes = create_mam4_modes();
