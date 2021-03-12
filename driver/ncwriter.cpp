@@ -92,8 +92,8 @@ void NcWriter::add_species_dim(const std::vector<Species>& species) {
   
   for (int i=0; i<nspec; ++i) {
     const size_t idx = i;
-    auto name = species[i].name.c_str();
-    auto symb = species[i].symbol.c_str();
+    auto name = species[i].name().c_str();
+    auto symb = species[i].symbol().c_str();
     retval = nc_put_var1_string(ncid, species_name_var_id, &idx, &name);
     CHECK_NCERR(retval);
     retval = nc_put_var1_string(ncid, species_symbol_var_id, &idx, &symb);

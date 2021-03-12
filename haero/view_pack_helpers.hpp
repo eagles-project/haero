@@ -67,8 +67,7 @@ view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector, const st
 
 template <typename T>
 kokkos_device_type::view_1d<T> vector_to_1dview(const std::vector<T>& vector, const std::string& view_name) {
-  typedef typename std::remove_const<T>::type S;
-  kokkos_device_type::view_1d<S> result(view_name, vector.size());
+  kokkos_device_type::view_1d<T> result(view_name, vector.size());
   auto hm = Kokkos::create_mirror_view(result);
   for (int i=0; i<vector.size(); ++i) {
     hm(i) = vector[i];
@@ -116,6 +115,20 @@ view_2d_scalar_type vector_to_basic_2dview(const std::vector<std::vector<Real>>&
 */
 view_2d_pack_type vectors_to_row_packed_2dview(const std::vector<std::vector<Real>>& vectors, const std::string& view_name);
 
+template <typename T>
+kokkos_device_type::view_2d<T> vector_to_2dview(const std::vector<std::vector<T>>& vectors, const std::string& view_name) {
+  const int mm = vectors.size();
+  const int nn = vectors[0].size();
+  kokkos_device_type::view_2d<T> result(view_name, mm, nn);
+  auto hm = Kokkos::create_mirror_view(result);
+  for (int i=0; i<mm; ++i) {
+    for (int j=0; j<nn; ++j) {
+      hm(i,j) = vectors[i][j];
+    }
+  }
+  Kokkos::deep_copy(result, hm);
+  return result;
+}
 
 //---------------------- Impl details (don't call these directly) ---------------//
 

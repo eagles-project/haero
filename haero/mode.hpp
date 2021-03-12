@@ -14,8 +14,9 @@ namespace haero {
 struct Mode final {
   public:
 
+  // Default constructor needed to resize Kokkos Views on device before deep copy.
   KOKKOS_INLINE_FUNCTION
-  Mode():
+  Mode() :
     min_diameter(0), 
     max_diameter(0),
     mean_std_dev(0),
@@ -38,6 +39,18 @@ struct Mode final {
     mean_std_dev(mean_std_dev),
     name_view(name) {}
 
+  KOKKOS_INLINE_FUNCTION
+  Mode(const Mode &m):
+    min_diameter(m.min_diameter), 
+    max_diameter(m.max_diameter),
+    mean_std_dev(m.mean_std_dev),
+    name_view(m.name_view) {}
+
+  /// Cconstructor can be called on device.
+  KOKKOS_INLINE_FUNCTION
+  ~Mode() {}
+
+  /// A unique name for this mode.
   std::string name() const { return name_view.label(); }
 
   /// The minimum diameter for particles that belong to this mode.
@@ -50,7 +63,6 @@ struct Mode final {
   Real mean_std_dev;
 
 private:
-  /// A unique name for this mode.
   Kokkos::View<int>  name_view;
 };
 
