@@ -113,11 +113,11 @@ class ModalAerosolConfig final {
   ///                       species as may be found.
   KOKKOS_INLINE_FUNCTION
   void aerosol_species_for_mode(const int mode_index, DeviceType::view_1d<Species> aerosol_species) const {
-    EKAT_ASSERT(mode_index >= 0);
-    EKAT_ASSERT(mode_index < d_species_for_mode.extent(0));
+    EKAT_KERNEL_ASSERT(mode_index >= 0);
+    EKAT_KERNEL_ASSERT(mode_index < d_species_for_mode.extent(0));
     // Construct this vector from our association data.
     for (int s = 0; s < d_species_for_mode.extent(1) && 0 <= d_species_for_mode(mode_index,s); ++s) {
-      EKAT_ASSERT(s < aerosol_species.extent(0));
+      EKAT_KERNEL_ASSERT(s < aerosol_species.extent(0));
       aerosol_species[s] = d_aerosol_species[d_species_for_mode(mode_index,s)];
     }
   }
