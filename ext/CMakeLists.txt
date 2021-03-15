@@ -54,9 +54,9 @@ if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/zlib/configure ${ZLIB_CONFIG_OPTS}
                       LOG_CONFIGURE TRUE
-                      BUILD_COMMAND make -j
+                      BUILD_COMMAND ${MAKE} -j
                       LOG_BUILD TRUE
-                      INSTALL_COMMAND make install
+                      INSTALL_COMMAND ${MAKE} install
                       LOG_INSTALL TRUE)
   set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
   set(HDF5_DEPS zlib_proj)
@@ -166,7 +166,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                       DEPENDS hdf5
                       LOG_CONFIGURE TRUE
                       LOG_BUILD TRUE
-                      BUILD_COMMAND make
+                      BUILD_COMMAND ${MAKE}
                       LOG_INSTALL TRUE)
   add_dependencies(netcdf netcdf_proj)
 endif()
@@ -236,9 +236,9 @@ if (NOT EXISTS ${EKAT_LIBRARY})
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${EKAT_CMAKE_OPTS}
                       LOG_CONFIGURE TRUE
-                      BUILD_COMMAND make -j
+                      BUILD_COMMAND ${MAKE} -j
                       LOG_BUILD TRUE
-                      INSTALL_COMMAND make install
+                      INSTALL_COMMAND ${MAKE} install
                       LOG_INSTALL TRUE)
 
   # The above install process leaves a KokkosConfig.cmake file in its build
@@ -277,9 +277,9 @@ if (HAERO_DEVICE STREQUAL "CPU")
                         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         INSTALL_DIR ${PROJECT_BINARY_DIR}
                         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
-                        BUILD_COMMAND make -j ${OPENBLAS_OPTS}
+                        BUILD_COMMAND ${MAKE} -j ${OPENBLAS_OPTS}
                         LOG_BUILD TRUE
-                        INSTALL_COMMAND make -j ${OPENBLAS_OPTS} install
+                        INSTALL_COMMAND ${MAKE} -j ${OPENBLAS_OPTS} install
                         LOG_INSTALL TRUE)
 
     # Because the OpenBLAS people feel that life isn't complicated enough, they
@@ -349,9 +349,9 @@ if (NOT EXISTS ${TINES_LIBRARY})
                       CMAKE_ARGS ${TINES_CMAKE_OPTS}
                       DEPENDS ${TINES_DEPENDS}
                       LOG_CONFIGURE TRUE
-                      BUILD_COMMAND make -j
+                      BUILD_COMMAND ${MAKE} -j
                       LOG_BUILD TRUE
-                      INSTALL_COMMAND make install
+                      INSTALL_COMMAND ${MAKE} install
                       LOG_INSTALL TRUE)
 
   # Apparently Tines also leaves a config file that confuses TChem, so we
@@ -408,9 +408,9 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                       CMAKE_ARGS ${TCHEM_CMAKE_OPTS}
                       DEPENDS tines ekat
                       LOG_CONFIGURE TRUE
-                      BUILD_COMMAND make -j
+                      BUILD_COMMAND ${MAKE} -j
                       LOG_BUILD TRUE
-                      INSTALL_COMMAND make install
+                      INSTALL_COMMAND ${MAKE} install
                       LOG_INSTALL TRUE)
   add_dependencies(tchem tchem_proj)
 endif()

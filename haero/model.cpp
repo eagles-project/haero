@@ -149,25 +149,25 @@ Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
                                        SpeciesColumnView cld_aerosols,
                                        SpeciesColumnView gases,
                                        ModalColumnView   modal_num_concs) const {
-  std::vector<int> num_aero_species(modal_aerosol_config_.aerosol_modes.size());
-  for (size_t m = 0; m < modal_aerosol_config_.aerosol_modes.size(); ++m) {
+  std::vector<int> num_aero_species(modal_aerosol_config_.h_aerosol_modes.size());
+  for (size_t m = 0; m < modal_aerosol_config_.h_aerosol_modes.size(); ++m) {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
   return new Prognostics(num_aero_species.size(), num_aero_species,
-                         modal_aerosol_config_.gas_species.size(), num_levels_,
+                         modal_aerosol_config_.h_gas_species.size(), num_levels_,
                          int_aerosols, cld_aerosols, gases, modal_num_concs);
 }
 
 Diagnostics* Model::create_diagnostics() const {
   // Create an empty Diagnostics object.
-  std::vector<int> num_aero_species(modal_aerosol_config_.aerosol_modes.size());
+  std::vector<int> num_aero_species(modal_aerosol_config_.h_aerosol_modes.size());
   for (size_t m = 0; m < num_aero_species.size(); ++m) {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
   auto diags = new Diagnostics(num_aero_species.size(), num_aero_species,
-                               modal_aerosol_config_.gas_species.size(),
+                               modal_aerosol_config_.h_gas_species.size(),
                                num_levels_);
 
   // Make sure that all diagnostic variables needed by the model's processes
@@ -226,7 +226,7 @@ void Model::init_fortran() {
 
   // This series of calls sets things up in Haero's Fortran module.
   haerotran_begin_init();
-  int num_modes = modal_aerosol_config_.aerosol_modes.size();
+  int num_modes = modal_aerosol_config_.h_aerosol_modes.size();
   haerotran_set_num_modes(num_modes);
   size_t max_species = 0;
   for (int m = 0; m < num_modes; ++m) {
@@ -238,27 +238,27 @@ void Model::init_fortran() {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
 
     // Set the properties of mode i+1 (as indexed in Fortran).
-    const auto& mode = modal_aerosol_config_.aerosol_modes[m];
-    haerotran_set_mode(m+1, mode.name.c_str(), mode.min_diameter,
+    const auto& mode = modal_aerosol_config_.h_aerosol_modes[m];
+    haerotran_set_mode(m+1, mode.name().c_str(), mode.min_diameter,
         mode.max_diameter, mode.mean_std_dev);
 
     // Set up aerosol species for this mode.
     int num_species = mode_species.size();
     for (int s = 0; s < num_species; ++s) {
-      const auto& species = modal_aerosol_config_.aerosol_species[s];
-      haerotran_set_aero_species(m+1, s+1, species.name.c_str(),
-        species.symbol.c_str(), species.molecular_weight,
+      const auto& species = modal_aerosol_config_.h_aerosol_species[s];
+      haerotran_set_aero_species(m+1, s+1, species.name().c_str(),
+        species.symbol().c_str(), species.molecular_weight,
         species.crystalization_point, species.deliquescence_point);
     }
   }
 
   // Set up gas species.
-  int num_gas_species = modal_aerosol_config_.gas_species.size();
+  int num_gas_species = modal_aerosol_config_.h_gas_species.size();
   haerotran_set_num_gas_species(num_gas_species);
   for (int i = 0; i < num_gas_species; ++i) {
-    const auto& species = modal_aerosol_config_.gas_species[i];
-    haerotran_set_gas_species(i+1, species.name.c_str(),
-        species.symbol.c_str(), species.molecular_weight,
+    const auto& species = modal_aerosol_config_.h_gas_species[i];
+    haerotran_set_gas_species(i+1, species.name().c_str(),
+        species.symbol().c_str(), species.molecular_weight,
         species.crystalization_point, species.deliquescence_point);
   }
 
@@ -303,11 +303,11 @@ bool Model::gather_processes() {
 }
 
 void Model::validate() {
-  EKAT_REQUIRE_MSG(not modal_aerosol_config_.aerosol_modes.empty(),
+  EKAT_REQUIRE_MSG(modal_aerosol_config_.h_aerosol_modes.size(),
     "Model: No modes were defined!");
-  EKAT_REQUIRE_MSG(not modal_aerosol_config_.aerosol_species.empty(),
+  EKAT_REQUIRE_MSG(modal_aerosol_config_.h_aerosol_species.size(),
     "Model: No aerosol species were given!");
-  EKAT_REQUIRE_MSG(not modal_aerosol_config_.gas_species.empty(),
+  EKAT_REQUIRE_MSG(modal_aerosol_config_.h_gas_species.size(),
     "Model: No gas species were given!");
   EKAT_REQUIRE_MSG((num_levels_ > 0), "Model: No vertical levels were specified!");
 }

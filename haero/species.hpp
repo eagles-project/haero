@@ -13,18 +13,22 @@ namespace haero {
 /// This type represents an aerosol or gas species.
 struct Species final {
 
+  // Default constructor needed to resize Kokkos Views on device before deep copy.
+  KOKKOS_INLINE_FUNCTION
+  Species(): name_view(), symbol_view() {}
+
   /// Creates a new (aerosol or gas) species.
   /// @param [in] name A unique descriptive name for this species.
   /// @param [in] symbol A unique short, symbolic name for this species.
   Species(const std::string& name,
           const std::string& symbol):
-    name(name), symbol(symbol) {}
+    name_view(name), symbol_view(symbol) {}
 
   /// Full species name.
-  std::string name;
+  std::string name() const { return name_view.label(); }
 
   /// Abbreviated symbolic name.
-  std::string symbol;
+  std::string symbol() const { return symbol_view.label(); }
 
   // Molecular weight [kg/mol]
   Real molecular_weight;
@@ -34,6 +38,9 @@ struct Species final {
 
   // Deliquescence point (relative humidity threshold) [-]
   Real deliquescence_point;
+private:
+  Kokkos::View<int> name_view;
+  Kokkos::View<int> symbol_view;
 };
 
 /// This factory function constructs a set of aerosol species corresponding to

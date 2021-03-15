@@ -190,7 +190,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   std::vector<Mode> modes = create_mam4_modes();
   std::map<std::string, std::vector<std::string>> mode_species = create_mam4_mode_species();
   for (int m = 0; m < num_modes; ++m) {
-    num_aero_species[m] = mode_species[modes[m].name].size();
+    num_aero_species[m] = mode_species[modes[m].name()].size();
   }
 
   Diagnostics diagnostics(num_modes, num_aero_species, num_gases, num_levels);
