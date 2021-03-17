@@ -12,10 +12,8 @@ TEST_CASE("mam_nucleation_fprocess", "") {
 
   // We create a phony model to be used for these tests.
   auto modal_aero_config = create_mam4_modal_aerosol_config();
-  SelectedProcesses selected_processes;
-  selected_processes.nucleation = SelectedProcesses::MAMFNucleation;
   int num_levels = 72;
-  auto* model = new Model(modal_aero_config, selected_processes, num_levels);
+  auto* model = Model::ForUnitTests(modal_aero_config, num_levels);
   int num_gases = modal_aero_config.h_gas_species.size();
   int num_modes = modal_aero_config.h_aerosol_modes.size();
 
@@ -41,7 +39,7 @@ TEST_CASE("mam_nucleation_fprocess", "") {
   SECTION("construct") {
     auto* process = new MAMNucleationFProcess();
     REQUIRE(process->type() == haero::NucleationProcess);
-    REQUIRE(process->name() == "MAM Nucleation (Fortran)");
+    REQUIRE(process->name() == "MAMNucleationFProcess (Fortran prognostic NucleationProcess)");
     delete process;
   }
 

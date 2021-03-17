@@ -162,8 +162,10 @@ subroutine init(model)
   so4_index = model%aerosol_index(nait, "SO4")
   if (so4_index > 0) then
     iaer_so4 = model%population_index(nait, so4_index)
-    so4 = model%aero_species(nait, iaer_so4)
-    mw_so4a_host = so4%molecular_wt
+    if (iaer_so4 > 0) then
+      so4 = model%aero_species(nait, iaer_so4)
+      mw_so4a_host = so4%molecular_wt
+    end if
   else
     iaer_so4 = 0
   end if
@@ -173,8 +175,10 @@ subroutine init(model)
   nh4_index = model%aerosol_index(nait, "NH4")
   if (nh4_index > 0) then
     iaer_nh4 = model%population_index(nait, nh4_index)
-    nh4 = model%aero_species(nait, iaer_nh4)
-    mw_nh4a_host = nh4%molecular_wt
+    if (iaer_nh4 > 0) then
+      nh4 = model%aero_species(nait, iaer_nh4)
+      mw_nh4a_host = nh4%molecular_wt
+    end if
   else
     iaer_nh4 = 0
   end if
