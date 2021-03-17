@@ -82,6 +82,7 @@ TEST_CASE("mam_nucleation_fprocess", "") {
 
     // gases
     int h2so4_index = aero_config.gas_index("H2SO4");
+    printf("h2so4 index: %d\n", h2so4_index);
     for (int k = 0; k < num_levels; ++k) {
       gases(h2so4_index, k) = 1e-13;
     }
