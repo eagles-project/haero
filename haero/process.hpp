@@ -189,17 +189,26 @@ class FPrognosticProcess: public PrognosticProcess
     run_process_(run_process), finalize_process_(finalize_process),
     initialized_(false) {}
 
+  /// Copy constructor.
+  FPrognosticProcess(const FPrognosticProcess& pp) :
+    PrognosticProcess(pp), init_process_(pp.init_process_),
+    run_process_(pp.run_process_), finalize_process_(pp.finalize_process_),
+    initialized_(false) {}
+
   /// Destructor.
   ~FPrognosticProcess() {
     if (initialized_) {
       finalize_process_();
+      initialized_ = false;
     }
   }
 
   // Overrides.
   void init(const ModalAerosolConfig& modal_aerosol_config) override {
-    init_process_();
-    initialized_ = true;
+    if (not initialized_) {
+      init_process_();
+      initialized_ = true;
+    }
   }
 
   void run(const ModalAerosolConfig& modal_aerosol_config,
@@ -266,17 +275,18 @@ class DiagnosticProcess {
     set_diag_vars(variables, aero_variables, gas_variables, modal_variables);
   }
 
+  /// Default copy constructor. For use in moving host instance to device.
+  KOKKOS_INLINE_FUNCTION
+  DiagnosticProcess(const DiagnosticProcess& pp) :
+    type_(pp.type_), name_(pp.name_) {}
+
   /// Destructor.
   virtual ~DiagnosticProcess() {}
 
   /// Default constructor is disabled.
   DiagnosticProcess() = delete;
 
-  /// DiagnosticProcess objects are not deep-copyable. They should be
-  /// passed by reference or as pointers.
-  DiagnosticProcess(const DiagnosticProcess&) = delete;
-
-  /// DiagnosticProcess objects are not assignable either.
+  /// DiagnosticProcess objects are not assignable.
   DiagnosticProcess& operator=(const DiagnosticProcess&) = delete;
 
   //------------------------------------------------------------------------
@@ -481,17 +491,26 @@ class FDiagnosticProcess: public DiagnosticProcess {
     init_process_(init_process), update_process_(update_process),
     finalize_process_(finalize_process), initialized_(false) {}
 
+  /// Copy constructor.
+  FDiagnosticProcess(const FDiagnosticProcess& dp) :
+    DiagnosticProcess(dp), init_process_(dp.init_process_),
+    update_process_(dp.update_process_), finalize_process_(dp.finalize_process_),
+    initialized_(false) {}
+
   /// Destructor.
   ~FDiagnosticProcess() {
     if (initialized_) {
       finalize_process_();
+      initialized_ = false;
     }
   }
 
   // Overrides.
   void init(const ModalAerosolConfig& modal_aerosol_config) override {
-    init_process_();
-    initialized_ = true;
+    if (not initialized_) {
+      init_process_();
+      initialized_ = true;
+    }
   }
 
   void update(const ModalAerosolConfig& modal_aerosol_config,
