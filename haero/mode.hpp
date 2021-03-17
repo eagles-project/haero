@@ -17,7 +17,7 @@ struct Mode final {
   // Default constructor needed to resize Kokkos Views on device before deep copy.
   KOKKOS_INLINE_FUNCTION
   Mode() :
-    min_diameter(0), 
+    min_diameter(0),
     max_diameter(0),
     mean_std_dev(0),
     name_view() {}
@@ -34,19 +34,19 @@ struct Mode final {
        Real min_diameter,
        Real max_diameter,
        Real mean_std_dev):
-    min_diameter(min_diameter), 
+    min_diameter(min_diameter),
     max_diameter(max_diameter),
     mean_std_dev(mean_std_dev),
     name_view(name) {}
 
   KOKKOS_INLINE_FUNCTION
   Mode(const Mode &m):
-    min_diameter(m.min_diameter), 
+    min_diameter(m.min_diameter),
     max_diameter(m.max_diameter),
     mean_std_dev(m.mean_std_dev),
     name_view(m.name_view) {}
 
-  /// Cconstructor can be called on device.
+  /// Constructor can be called on device.
   KOKKOS_INLINE_FUNCTION
   ~Mode() {}
 

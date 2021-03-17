@@ -11,6 +11,7 @@
 namespace haero {
 
 /// @struct ModalAerosolConfig
+
 /// This type represents the configuration of mode-based aerosols and gas
 /// species that define a physical system of aerosols in the atmosphere. It's
 /// used to convey information to aerosol processes that run within a
@@ -102,6 +103,72 @@ class ModalAerosolConfig final {
       species.push_back(h_aerosol_species[h_species_for_mode(mode_index,s)]);
     }
     return species;
+  }
+
+  /// On host: returns the index of a specific aerosol mode, or -1 if the
+  /// desired mode is not found.
+  /// @param [in] mode_name The name of the mode for which the index is retrieved
+  int aerosol_mode_index(const std::string& mode_name) const {
+    for (int m = 0; m < h_aerosol_modes.size(); ++m) {
+      if (h_aerosol_modes[m].name() == mode_name) {
+        return m;
+        break;
+      }
+    }
+    return -1;
+  }
+
+  /// On host: returns the index of a specific aerosol species within the
+  /// aerosol mode with the given index, or -1 if the desired mode is not found.
+  /// @param [in] mode_index The index of the mode in which the aerosol is sought.
+  /// @param [in] aerosol_symbol The symbolic name of the aerosol species for
+  ///                            which the index is retrieved within the given
+  ///                            mode.
+  int aerosol_species_index(int mode_index, const std::string& aerosol_name) const {
+    for (int s = 0; s < h_species_for_mode.extent(1); ++s) {
+      int species_index = h_species_for_mode(mode_index, s);
+      if ((species_index >= 0) &&
+          (h_aerosol_species[species_index].name() == aerosol_name)) {
+        return s;
+        break;
+      }
+    }
+    return -1;
+  }
+
+  /// On host: returns the population index corresponding to the given aerosol
+  /// mode and species indices.
+  /// @param [in] mode_index The index of the aerosol mode
+  /// @param [in] species_index The index of the aerosol species
+  int population_index(int mode_index, int species_index) const {
+    bool found = false;
+    int p = 0;
+    for (int m = 0; m < h_species_for_mode.extent(0); ++m) {
+      for (int s = 0; s < h_species_for_mode.extent(1) && 0 <= h_species_for_mode(m, s); ++s, ++p) {
+        if ((m == mode_index) && (s == species_index)) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        break;
+      }
+    }
+    return (found) ? p : -1;
+  }
+
+  /// On host: returns the index of a specific gas species, or -1 if the
+  /// desired species is not found.
+  /// @param [in] gas_symbol The symbolic name of the gas for which the index is
+  ///                        retrieved
+  int gas_index(const std::string& gas_symbol) const {
+    for (int g = 0; g < h_gas_species.size(); ++g) {
+      if (h_gas_species[g].symbol() == gas_symbol) {
+        return g;
+        break;
+      }
+    }
+    return -1;
   }
 
   /// On Device: Returns the list of aerosol species associated with the model with the
