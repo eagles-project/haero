@@ -229,7 +229,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   real(wp) :: aircon    ! molar concentration of air [mol/m^3]
   real(wp) :: pblh      ! Planetary boundary layer height [m]
 
-  real(wp) :: h2so4_uptake_rate
+  real(wp) :: h2so4_uptake_rate, h2so4_gasprod_change, h2so4_aeruptk_change
   real(wp) :: dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait
   real(wp) :: dnclusterdt ! diagnostic cluster nucleation rate (#/m3/s)
 
@@ -306,8 +306,15 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     aircon = press(k)/(temp(k)*R_gas)
     ! FIXME: Compute planetary boundary height pblh
 
-    ! Extract prognostic/diagnostic state data.
+    ! Extract prognostic state data.
     qgas_cur(:) = q_g(k, :)
+    qnum_cur(:) = n(k, :)
+    do p = 1,model%num_populations
+      call model%get_mode_and_species(p, m, s)
+      qaer_cur(s,m) = q_i(k, p)
+    end do
+
+    ! Extract diagnostic state data.
     if (associated(qgas_averaged)) then
       qgas_avg(:) = qgas_averaged(k, :)
     else
@@ -318,16 +325,21 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     else
       h2so4_uptake_rate = 0
     end if
-    qnum_cur(:) = n(k, :)
+    if (associated(del_h2so4_gasprod)) then
+      h2so4_gasprod_change = del_h2so4_gasprod(k)
+    else
+      h2so4_gasprod_change = 0
+    end if
+    if (associated(del_h2so4_aeruptk)) then
+      h2so4_aeruptk_change = del_h2so4_aeruptk(k)
+    else
+      h2so4_aeruptk_change = 0
+    end if
     qwtr_cur(:) = n(k, :) ! FIXME: Need to compute water content.
-    do p = 1,model%num_populations
-      call model%get_mode_and_species(p, m, s)
-      qaer_cur(s,m) = q_i(k, p)
-    end do
 
     call compute_tendencies(dt, &
       temp(k), press(k), aircon, height(k), pblh, rel_hum(k), &
-      h2so4_uptake_rate, del_h2so4_gasprod(k), del_h2so4_aeruptk(k), &
+      h2so4_uptake_rate, h2so4_gasprod_change, h2so4_aeruptk_change, &
       qgas_cur, qgas_avg, qnum_cur, qaer_cur, qwtr_cur, &
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
       dnclusterdt)
