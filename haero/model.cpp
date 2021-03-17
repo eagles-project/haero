@@ -166,7 +166,7 @@ DiagnosticsRegister* Model::create_diagnostics() const {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
-  auto diags = new Diagnostics(num_aero_species.size(), num_aero_species,
+  auto diags = new DiagnosticsRegister(num_aero_species.size(), num_aero_species,
                                modal_aerosol_config_.h_gas_species.size(),
                                num_levels_);
 

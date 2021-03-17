@@ -206,7 +206,7 @@ class FPrognosticProcess: public PrognosticProcess
            Real t, Real dt,
            const Prognostics& prognostics,
            const Atmosphere& atmosphere,
-           const DiagnosticsGPU& diagnostics,
+           const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {
     // Set tendencies to zero.
     tendencies.scale(0.0);
