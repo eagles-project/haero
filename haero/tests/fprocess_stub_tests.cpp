@@ -138,7 +138,6 @@ TEST_CASE("prog_fprocess_stub", "") {
       }
     }
 
-
     // Clean up.
     delete progs;
     delete diags;

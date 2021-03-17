@@ -414,7 +414,7 @@ contains
     do m=1,model%num_modes
       model%population_offsets(m+1) = model%population_offsets(m) + model%num_mode_species(m)
     end do
-    model%num_populations = model%population_offsets(model%num_modes+1)
+    model%num_populations = model%population_offsets(model%num_modes+1) - 1
   end subroutine
 
   ! This subroutine gets called when the C++ process exits.
