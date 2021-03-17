@@ -42,10 +42,10 @@ class ModalAerosolConfig final {
     d_aerosol_modes  (vector_to_1dview(aerosol_modes,   "aerosol_modes")),
     d_aerosol_species(vector_to_1dview(aerosol_species, "aerosol_species")),
 
-    // Sum the length of all vectors in the mode_species map. 
-    // Is the use of std::accumulate here too obscure?  
+    // Sum the length of all vectors in the mode_species map.
+    // Is the use of std::accumulate here too obscure?
     num_aerosol_populations(std::accumulate(mode_species.begin(), mode_species.end(), 0,
-      [](int i, std::pair<std::string, std::vector<std::string> > m){return i + m.second.size();})), 
+      [](int i, std::pair<std::string, std::vector<std::string> > m){return i + m.second.size();})),
     d_gas_species    (vector_to_1dview(gas_species, "gas_species"))
   {
     h_aerosol_modes = Kokkos::create_mirror_view(d_aerosol_modes);
@@ -132,6 +132,11 @@ class ModalAerosolConfig final {
   // mapping produces an inconsistent configuration.
   void index_modal_species(const std::map<std::string, std::vector<std::string> >&);
 };
+
+inline ModalAerosolConfig create_mam4_modal_aerosol_config() {
+  return ModalAerosolConfig(create_mam4_modes(), create_mam4_aerosol_species(),
+                            create_mam4_mode_species(), create_mam4_gas_species());
+}
 
 }
 

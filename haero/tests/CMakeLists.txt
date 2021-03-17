@@ -61,6 +61,6 @@ endif()
 #---------------------------
 
 if (HAERO_FORTRAN)
-#EkatCreateUnitTest(mam4_nucleation_fprocess_tests mam4_nucleation_fprocess_tests.cpp
-#                 LIBS ${HAERO_LIBRARIES})
+  EkatCreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
+                     LIBS ${HAERO_LIBRARIES})
 endif()
