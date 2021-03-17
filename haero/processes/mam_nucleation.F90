@@ -318,24 +318,24 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     if (associated(qgas_averaged)) then
       qgas_avg(:) = qgas_averaged(k, :)
     else
-      qgas_avg(:) = 0
+      qgas_avg(:) = 0_wp
     end if
     if (associated(uptkrate_h2so4)) then
       h2so4_uptake_rate = uptkrate_h2so4(k)
     else
-      h2so4_uptake_rate = 0
+      h2so4_uptake_rate = 0_wp
     end if
     if (associated(del_h2so4_gasprod)) then
       h2so4_gasprod_change = del_h2so4_gasprod(k)
     else
-      h2so4_gasprod_change = 0
+      h2so4_gasprod_change = 0_wp
     end if
     if (associated(del_h2so4_aeruptk)) then
       h2so4_aeruptk_change = del_h2so4_aeruptk(k)
     else
-      h2so4_aeruptk_change = 0
+      h2so4_aeruptk_change = 0_wp
     end if
-    qwtr_cur(:) = n(k, :) ! FIXME: Need to compute water content.
+    qwtr_cur(:) = 0_wp !n(k, :) ! FIXME: Need to compute water content.
 
     call compute_tendencies(dt, &
       temp(k), press(k), aircon, height(k), pblh, rel_hum(k), &
@@ -344,11 +344,11 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
       dnclusterdt)
 
-    dqdt_i(:, :) = 0
+    dqdt_i(k, :) = 0_wp
     dqdt_i(k, iaer_so4) = dso4dt_ait
-    dqdt_g(:, :) = 0
+    dqdt_g(k, :) = 0_wp
     dqdt_g(k, igas_h2so4) = -dso4dt_ait
-    dndt(:, :) = 0
+    dndt(k, :) = 0_wp
     dndt(k, nait) = dndt_ait
   end do
 end subroutine
