@@ -21,8 +21,8 @@ TEST_CASE("prog_fprocess_stub", "") {
        gas_species = create_mam4_gas_species();
   auto mode_species = create_mam4_mode_species();
   int num_levels = 72;
-  auto* model = Model::ForUnitTests(modes, aero_species, mode_species,
-                                    gas_species, num_levels);
+  ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
+  auto* model = Model::ForUnitTests(aero_config, num_levels);
 
   // Set up some prognosics aerosol data views‥
   int num_aero_populations = model->num_aerosol_populations();
@@ -42,7 +42,8 @@ TEST_CASE("prog_fprocess_stub", "") {
   Kokkos::View<PackType*> press("pressure", num_levels);
   Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
   Kokkos::View<PackType*> ht("height", num_levels+1);
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht);
+  Real pblh = 100.0;
+  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
 
   // Rate of decay from cloudborne to interstitial aerosols.
   Real decay_rate = -0.05;
@@ -58,14 +59,14 @@ TEST_CASE("prog_fprocess_stub", "") {
   // Test process initialization.
   SECTION("init_process") {
     auto* stub = new ProgFProcessStub(decay_rate);
-    stub->init(*model);
+    stub->init(model->modal_aerosol_config());
     delete stub;
   }
 
   // Test process tendencies.
   SECTION("tendencies") {
     auto* stub = new ProgFProcessStub(decay_rate);
-    stub->init(*model);
+    stub->init(model->modal_aerosol_config());
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
@@ -102,7 +103,7 @@ TEST_CASE("prog_fprocess_stub", "") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 0.01;
-    stub->run(*model, t, dt, *progs, *atm, *diags, *tends);
+    stub->run(model->modal_aerosol_config(), t, dt, *progs, *atm, *diags, *tends);
 
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
@@ -161,8 +162,8 @@ TEST_CASE("diag_process_stub", "") {
        gas_species = create_mam4_gas_species();
   auto mode_species = create_mam4_mode_species();
   int num_levels = 72;
-  auto* model = Model::ForUnitTests(modes, aero_species, mode_species,
-                                    gas_species, num_levels);
+  ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
+  auto* model = Model::ForUnitTests(aero_config, num_levels);
 
   // Set up some prognosics aerosol data views‥
   int num_aero_populations = model->num_aerosol_populations();
@@ -182,7 +183,8 @@ TEST_CASE("diag_process_stub", "") {
   Kokkos::View<PackType*> press("pressure", num_levels);
   Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
   Kokkos::View<PackType*> ht("height", num_levels+1);
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht);
+  Real pblh = 100.0;
+  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
 
   // Test basic construction.
   SECTION("construct") {
@@ -196,7 +198,7 @@ TEST_CASE("diag_process_stub", "") {
   SECTION("prepare_diagnostic_vars") {
     std::vector<int> num_aero_species(num_modes);
     for (int m = 0; m < num_modes; ++m) {
-      num_aero_species[m] = mode_species[modes[m].name].size();
+      num_aero_species[m] = mode_species[modes[m].name()].size();
     }
     Diagnostics diags(num_modes, num_aero_species, num_gases, num_levels);
     auto* stub = new DiagFProcessStub();
@@ -212,13 +214,13 @@ TEST_CASE("diag_process_stub", "") {
   SECTION("init_process") {
     // We create a phony model to be passed to the init method.
     auto* stub = new DiagFProcessStub();
-    stub->init(*model);
+    stub->init(model->modal_aerosol_config());
     delete stub;
   }
 
   SECTION("update_diagnostics") {
     auto* stub = new DiagFProcessStub();
-    stub->init(*model);
+    stub->init(model->modal_aerosol_config());
 
     // Initialize prognostic and diagnostic variables.
     auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
@@ -267,7 +269,7 @@ TEST_CASE("diag_process_stub", "") {
 
     // Now update diagnostics at time 0.
     Real t = 0.0;
-    stub->update(*model, t, *progs, *atm, *diags);
+    stub->update(model->modal_aerosol_config(), t, *progs, *atm, *diags);
 
     // -------------------------------------------------
     // Make sure the temperature field was not affected.

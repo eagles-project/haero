@@ -7,9 +7,9 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
                          const std::vector<int>& num_aerosol_species,
                          int num_gases,
                          int num_levels):
-  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Diagnostics::num_aerosol_species")), 
-  num_aero_populations_(std::accumulate(num_aerosol_species.begin(), num_aerosol_species.end(), 0)),
-  num_gases_(num_gases), 
+  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Diagnostics::num_aerosol_species")),
+  num_aero_populations_(0),
+  num_gases_(num_gases),
   num_levels_(num_levels) {
 
   EKAT_ASSERT_MSG(num_aerosol_modes == num_aerosol_species.size(),
@@ -82,7 +82,23 @@ Diagnostics::Token DiagnosticsRegister::create_var(const std::string& name) {
   return return_val;
 }
 
-Diagnostics::Token DiagnosticsRegister::find_aerosol_var(const std::string& name) const {
+ColumnView
+Diagnostics::var(const Token token) {
+  EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
+    "Diagnostic variable token not found!");
+  ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
+  return vars;
+}
+
+//const ColumnView
+//Diagnostics::var(const Token token) const {
+//  EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
+//    "Diagnostic variable token not found!");
+//  const ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
+//  return vars;
+//}
+
+Diagnostics::Token Diagnostics::find_aerosol_var(const std::string& name) const {
   return get_string_to_token_aero (name);
 }
 
@@ -108,7 +124,24 @@ Diagnostics::Token DiagnosticsRegister::create_aerosol_var(const std::string& na
   return return_val;
 }
 
-Diagnostics::Token DiagnosticsRegister::find_gas_var(const std::string& name) const {
+SpeciesColumnView
+Diagnostics::aerosol_var(const Token token) {
+  EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
+    "Aerosol diagnostic variable token not found!");
+  SpeciesColumnView vars = Kokkos::subview(aero_vars_, token, Kokkos::ALL, Kokkos::ALL);
+  return vars;
+}
+
+//KOKKOS_FUNCTION
+//const SpeciesColumnView
+//Diagnostics::aerosol_var(const Token token) const {
+//  EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
+//    "Aerosol diagnostic variable token  not found!");
+//  const SpeciesColumnView vars = Kokkos::subview(aero_vars_, token, Kokkos::ALL, Kokkos::ALL);
+//  return vars;
+//}
+
+Diagnostics::Token Diagnostics::find_gas_var(const std::string& name) const {
   return get_string_to_token_gas  (name);
 }
 
@@ -126,7 +159,15 @@ Diagnostics::Token DiagnosticsRegister::create_gas_var(const std::string& name) 
   return return_val;
 }
 
-Diagnostics::SpeciesColumnView
+SpeciesColumnView
+Diagnostics::gas_var(const Token token) {
+  EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
+    "Gas diagnostic variable token not found!");
+  SpeciesColumnView vars = Kokkos::subview(gas_vars_, token, Kokkos::ALL, Kokkos::ALL);
+  return vars;
+}
+
+const SpeciesColumnView
 Diagnostics::gas_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
     "Gas diagnostic variable token not found!");
@@ -152,7 +193,15 @@ Diagnostics::Token DiagnosticsRegister::create_modal_var(const std::string& name
   return return_val;
 }
 
-Diagnostics::ModalColumnView
+ModalColumnView
+Diagnostics::modal_var(const Token token) {
+  EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
+    "Modal diagnostic variable token not found!");
+  SpeciesColumnView vars = Kokkos::subview(modal_vars_, token, Kokkos::ALL, Kokkos::ALL);
+  return vars;
+}
+
+const ModalColumnView
 Diagnostics::modal_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
     "Modal diagnostic variable token not found!");
@@ -160,8 +209,8 @@ Diagnostics::modal_var(const Token token) const {
   return vars;
 }
 
-Diagnostics::Token  DiagnosticsRegister::set_string_to_token(std::map<std::string,Token> &registered_strings,
-                                      const std::string &name, 
+Diagnostics::Token  Diagnostics::set_string_to_token(std::map<std::string,Token> &registered_strings,
+                                      const std::string &name,
                                       const Token token) {
   Token return_val=get_string_to_token(registered_strings, name);
 
@@ -177,7 +226,7 @@ Diagnostics::Token  DiagnosticsRegister::get_string_to_token(const std::map<std:
                                       const std::string &name) {
   Token return_val=VAR_NOT_FOUND;
   const auto iter = registered_strings.find(name);
-  if (registered_strings.end() != iter) 
+  if (registered_strings.end() != iter)
     return_val = iter->second;
   return return_val;
 }

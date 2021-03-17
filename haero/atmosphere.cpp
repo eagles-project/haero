@@ -3,15 +3,22 @@
 namespace haero {
 
 Atmosphere::Atmosphere(int num_levels,
-                       const ManagedColumnView temp,
-                       const ManagedColumnView press,
-                       const ManagedColumnView rel_hum,
-                       const ManagedColumnView ht):
+                       const ColumnView temp,
+                       const ColumnView press,
+                       const ColumnView rel_hum,
+                       const ColumnView ht,
+                       Real pblh):
   num_levels_(num_levels),
   temperature_(temp),
   pressure_(press),
   relative_humidity_(rel_hum),
-  height_(ht) {
+  height_(ht),
+  pblh_(pblh) {
+  EKAT_REQUIRE_MSG(num_levels > 0,
+                   "Number of vertical levels must be positive");
+  EKAT_REQUIRE_MSG(pblh >= 0.0,
+                   "Planetary boundary height must be non-negative");
+
   // Make sure the views we're given are properly sized.
   int num_vert_packs = num_levels_/HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
@@ -64,6 +71,12 @@ void* a_height_c(void* a)
   auto* atm = static_cast<Atmosphere*>(a);
   auto& h = atm->height();
   return (void*)h.data();
+}
+
+Real a_pblh_c(void* a)
+{
+  auto* atm = static_cast<Atmosphere*>(a);
+  return atm->planetary_boundary_height();
 }
 
 } // extern "C"

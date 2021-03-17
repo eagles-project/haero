@@ -64,6 +64,7 @@ add_library(haero
             atmosphere.cpp
             chemistry.cpp
             diagnostics.cpp
+            modal_aerosol_config.cpp
             model.cpp
             prognostics.cpp
             selected_processes.cpp

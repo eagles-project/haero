@@ -44,34 +44,34 @@ Tendencies::~Tendencies() {
 //  return int_aero_species_;
 //}
 
-const Tendencies::SpeciesColumnView
+const SpeciesColumnView
 Tendencies::interstitial_aerosols() const {
   return int_aero_species_;
 }
 
-Tendencies::SpeciesColumnView
+SpeciesColumnView
 Tendencies::cloudborne_aerosols() {
   return cld_aero_species_;
 }
 
-const Tendencies::SpeciesColumnView
+const SpeciesColumnView
 Tendencies::cloudborne_aerosols() const {
   return cld_aero_species_;
 }
 
-Tendencies::SpeciesColumnView Tendencies::gases() {
+SpeciesColumnView Tendencies::gases() {
   return gases_;
 }
 
-const Tendencies::SpeciesColumnView Tendencies::gases() const {
+const SpeciesColumnView Tendencies::gases() const {
   return gases_;
 }
 
-Tendencies::ModalColumnView Tendencies::modal_num_concs() {
+ModalColumnView Tendencies::modal_num_concs() {
   return modal_num_concs_;
 }
 
-const Tendencies::ModalColumnView Tendencies::modal_num_concs() const {
+const ModalColumnView Tendencies::modal_num_concs() const {
   return modal_num_concs_;
 }
 
