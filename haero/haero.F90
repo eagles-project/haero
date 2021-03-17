@@ -410,7 +410,7 @@ contains
 
     integer :: m
 
-    model%population_offsets(1) = 0
+    model%population_offsets(1) = 1
     do m=1,model%num_modes
       model%population_offsets(m+1) = model%population_offsets(m) + model%num_mode_species(m)
     end do
@@ -509,7 +509,8 @@ contains
   end function
 
   !> Returns the index of the aerosol population corresponding to the given
-  !> mode and aerosol species indices.
+  !> mode and aerosol species indices, or 0 if no such mode/species combination
+  !> exists.
   !> @param [in] m A pointer to a model object.
   !> @param [in] mode_index The index of an aerosol mode
   !> @param [in] aero_index The index of an aerosol within the given mode
@@ -520,7 +521,11 @@ contains
     integer, intent(in) :: aero_index
     integer :: pop_index
 
-    pop_index = m%population_offsets(mode_index) + aero_index - 1
+    if ((mode_index > 0) .and. (aero_index > 0)) then
+      pop_index = m%population_offsets(mode_index) + aero_index - 1
+    else
+      pop_index = 0
+    end if
   end function
 
   !> Returns the index of the gas species with the given (symbolic) name, or 0

@@ -229,6 +229,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   real(wp) :: aircon    ! molar concentration of air [mol/m^3]
   real(wp) :: pblh      ! Planetary boundary layer height [m]
 
+  real(wp) :: h2so4_uptake_rate
   real(wp) :: dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait
   real(wp) :: dnclusterdt ! diagnostic cluster nucleation rate (#/m3/s)
 
@@ -305,9 +306,18 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     aircon = press(k)/(temp(k)*R_gas)
     ! FIXME: Compute planetary boundary height pblh
 
-    ! Extract prognostic state data.
+    ! Extract prognostic/diagnostic state data.
     qgas_cur(:) = q_g(k, :)
-    qgas_avg(:) = qgas_averaged(k, :)
+    if (associated(qgas_averaged)) then
+      qgas_avg(:) = qgas_averaged(k, :)
+    else
+      qgas_avg(:) = 0
+    end if
+    if (associated(uptkrate_h2so4)) then
+      h2so4_uptake_rate = uptkrate_h2so4(k)
+    else
+      h2so4_uptake_rate = 0
+    end if
     qnum_cur(:) = n(k, :)
     qwtr_cur(:) = n(k, :) ! FIXME: Need to compute water content.
     do p = 1,model%num_populations
@@ -317,7 +327,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 
     call compute_tendencies(dt, &
       temp(k), press(k), aircon, height(k), pblh, rel_hum(k), &
-      uptkrate_h2so4(k), del_h2so4_gasprod(k), del_h2so4_aeruptk(k), &
+      h2so4_uptake_rate, del_h2so4_gasprod(k), del_h2so4_aeruptk(k), &
       qgas_cur, qgas_avg, qnum_cur, qaer_cur, qwtr_cur, &
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
       dnclusterdt)
