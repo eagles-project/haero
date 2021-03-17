@@ -344,8 +344,11 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
       dnclusterdt)
 
+    dqdt_i(:, :) = 0
     dqdt_i(k, iaer_so4) = dso4dt_ait
+    dqdt_g(:, :) = 0
     dqdt_g(k, igas_h2so4) = -dso4dt_ait
+    dndt(:, :) = 0
     dndt(k, nait) = dndt_ait
   end do
 end subroutine
