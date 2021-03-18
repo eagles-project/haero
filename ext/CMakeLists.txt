@@ -344,7 +344,8 @@ if (NOT EXISTS ${TINES_LIBRARY})
                            -DTINES_ENABLE_MKL=ON)
     else()
       # We need OpenBLAS for non-GPU builds that don't use Intel's compiler.
-      string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR})
+      #Extract path to openblas install directory from OPENBLAS_LIBRARY_DIR variable for Tines
+      set(OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR}/..)
       set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                            -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH})
     endif()
