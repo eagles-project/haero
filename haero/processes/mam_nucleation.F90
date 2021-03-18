@@ -162,8 +162,10 @@ subroutine init(model)
   so4_index = model%aerosol_index(nait, "SO4")
   if (so4_index > 0) then
     iaer_so4 = model%population_index(nait, so4_index)
-    so4 = model%aero_species(nait, iaer_so4)
-    mw_so4a_host = so4%molecular_wt
+    if (iaer_so4 > 0) then
+      so4 = model%aero_species(nait, iaer_so4)
+      mw_so4a_host = so4%molecular_wt
+    end if
   else
     iaer_so4 = 0
   end if
@@ -173,8 +175,10 @@ subroutine init(model)
   nh4_index = model%aerosol_index(nait, "NH4")
   if (nh4_index > 0) then
     iaer_nh4 = model%population_index(nait, nh4_index)
-    nh4 = model%aero_species(nait, iaer_nh4)
-    mw_nh4a_host = nh4%molecular_wt
+    if (iaer_nh4 > 0) then
+      nh4 = model%aero_species(nait, iaer_nh4)
+      mw_nh4a_host = nh4%molecular_wt
+    end if
   else
     iaer_nh4 = 0
   end if
@@ -225,6 +229,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   real(wp) :: aircon    ! molar concentration of air [mol/m^3]
   real(wp) :: pblh      ! Planetary boundary layer height [m]
 
+  real(wp) :: h2so4_uptake_rate, h2so4_gasprod_change, h2so4_aeruptk_change
   real(wp) :: dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait
   real(wp) :: dnclusterdt ! diagnostic cluster nucleation rate (#/m3/s)
 
@@ -264,6 +269,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   temp => atmosphere%temperature()
   rel_hum => atmosphere%relative_humidity()
   height => atmosphere%height()
+  pblh = atmosphere%planetary_boundary_height()
 
   ! Diagnostics
   token = diagnostics%find_gas_var("qgas_averaged")
@@ -299,27 +305,50 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     ! Compute the molar concentration of air at the given pressure and
     ! temperature.
     aircon = press(k)/(temp(k)*R_gas)
-    ! FIXME: Compute planetary boundary height pblh
 
     ! Extract prognostic state data.
     qgas_cur(:) = q_g(k, :)
-    qgas_avg(:) = qgas_averaged(k, :)
     qnum_cur(:) = n(k, :)
-    qwtr_cur(:) = n(k, :) ! FIXME: Need to compute water content.
     do p = 1,model%num_populations
       call model%get_mode_and_species(p, m, s)
       qaer_cur(s,m) = q_i(k, p)
     end do
 
+    ! Extract diagnostic state data.
+    if (associated(qgas_averaged)) then
+      qgas_avg(:) = qgas_averaged(k, :)
+    else
+      qgas_avg(:) = 0_wp
+    end if
+    if (associated(uptkrate_h2so4)) then
+      h2so4_uptake_rate = uptkrate_h2so4(k)
+    else
+      h2so4_uptake_rate = 0_wp
+    end if
+    if (associated(del_h2so4_gasprod)) then
+      h2so4_gasprod_change = del_h2so4_gasprod(k)
+    else
+      h2so4_gasprod_change = 0_wp
+    end if
+    if (associated(del_h2so4_aeruptk)) then
+      h2so4_aeruptk_change = del_h2so4_aeruptk(k)
+    else
+      h2so4_aeruptk_change = 0_wp
+    end if
+    qwtr_cur(:) = 0_wp !n(k, :) ! FIXME: Need to compute water content.
+
     call compute_tendencies(dt, &
       temp(k), press(k), aircon, height(k), pblh, rel_hum(k), &
-      uptkrate_h2so4(k), del_h2so4_gasprod(k), del_h2so4_aeruptk(k), &
+      h2so4_uptake_rate, h2so4_gasprod_change, h2so4_aeruptk_change, &
       qgas_cur, qgas_avg, qnum_cur, qaer_cur, qwtr_cur, &
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
       dnclusterdt)
 
+    dqdt_i(k, :) = 0_wp
     dqdt_i(k, iaer_so4) = dso4dt_ait
+    dqdt_g(k, :) = 0_wp
     dqdt_g(k, igas_h2so4) = -dso4dt_ait
+    dndt(k, :) = 0_wp
     dndt(k, nait) = dndt_ait
   end do
 end subroutine

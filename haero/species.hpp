@@ -20,9 +20,16 @@ struct Species final {
   /// Creates a new (aerosol or gas) species.
   /// @param [in] name A unique descriptive name for this species.
   /// @param [in] symbol A unique short, symbolic name for this species.
+  /// @param [in] molecular_wt The molecular weight of the species
+  /// @param [in] crystal_pt The crystalization point of the species
+  /// @param [in] deliq_pt The deliquenscence point of the species
   Species(const std::string& name,
-          const std::string& symbol):
-    name_view(name), symbol_view(symbol) {}
+          const std::string& symbol,
+          Real molecular_wt,
+          Real crystal_pt,
+          Real deliq_pt):
+    molecular_weight(molecular_wt), crystalization_point(crystal_pt),
+    deliquescence_point(deliq_pt), name_view(name), symbol_view(symbol) {}
 
   /// Full species name.
   std::string name() const { return name_view.label(); }
@@ -54,13 +61,15 @@ private:
 /// 7. marine organic aerosol (MOA)
 inline std::vector<Species> create_mam4_aerosol_species() {
   return std::vector<Species>({
-    Species("sulfate", "SO4"),
-    Species("primary organic aerosol", "POA"),
-    Species("secondary organic aerosol", "SOA"),
-    Species("black carbon", "BC"),
-    Species("sea salt", "SS"),
-    Species("dust", "DST"),
-    Species("marine organic aerosol", "MOA"),
+    // FIXME: All of the numerical parameters here are wrong and need to be
+    // FIXME: fixed (except perhaps the molecular weight of SO4).
+    Species("sulfate", "SO4", 96., 1.0, 1.0),
+    Species("primary organic aerosol", "POA", 1.0, 1.0, 1.0),
+    Species("secondary organic aerosol", "SOA", 1.0, 1.0, 1.0),
+    Species("black carbon", "BC", 1.0, 1.0, 1.0),
+    Species("sea salt", "SS", 1.0, 1.0, 1.0),
+    Species("dust", "DST", 1.0, 1.0, 1.0),
+    Species("marine organic aerosol", "MOA", 1.0, 1.0, 1.0),
   });
 }
 
@@ -70,8 +79,9 @@ inline std::vector<Species> create_mam4_aerosol_species() {
 /// 2. semi-volatile organic gas-phase species (SOAG)
 inline std::vector<Species> create_mam4_gas_species() {
   return std::vector<Species>({
-    Species("sulfuric acid", "H2SO4"),
-    Species("semi-volatile organic gas-phase species", "SOAG"),
+    // FIXME: All of the numerical parameters here are wrong and need to be fixed
+    Species("sulfuric acid", "H2SO4", 1.0, 1.0, 1.0),
+    Species("semi-volatile organic gas-phase species", "SOAG", 1.0, 1.0, 1.0),
   });
 }
 
