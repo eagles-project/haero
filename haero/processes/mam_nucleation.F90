@@ -269,6 +269,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   temp => atmosphere%temperature()
   rel_hum => atmosphere%relative_humidity()
   height => atmosphere%height()
+  pblh = atmosphere%planetary_boundary_height()
 
   ! Diagnostics
   token = diagnostics%find_gas_var("qgas_averaged")
@@ -304,7 +305,6 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     ! Compute the molar concentration of air at the given pressure and
     ! temperature.
     aircon = press(k)/(temp(k)*R_gas)
-    ! FIXME: Compute planetary boundary height pblh
 
     ! Extract prognostic state data.
     qgas_cur(:) = q_g(k, :)
