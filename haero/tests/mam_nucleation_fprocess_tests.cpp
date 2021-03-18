@@ -7,7 +7,7 @@
 
 using namespace haero;
 
-// These tests demonstrate our minimal Fortran-backed prognostic process stub.
+// These tests exercise our transplant of the MAM nucleation process.
 TEST_CASE("mam_nucleation_fprocess", "") {
 
   // We create a phony model to be used for these tests.
@@ -95,7 +95,7 @@ TEST_CASE("mam_nucleation_fprocess", "") {
     }
 
     // Now compute the tendencies by running the process.
-    Real t = 0.0, dt = 0.01;
+    Real t = 0.0, dt = 30.0;
     process->run(aero_config, t, dt, *progs, *atm, *diags, *tends);
 
     // --------------------------------------------------
