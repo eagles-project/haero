@@ -264,8 +264,9 @@ list(APPEND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR})
 
 #----------------------------------------------------------------------------
 # OpenBLAS linear algebra library: needed by Tines on CPU builds
+# (We can skip it if we use Intel's compilers, which provide MKL.)
 #----------------------------------------------------------------------------
-if (HAERO_DEVICE STREQUAL "CPU")
+if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   add_library(openblas STATIC IMPORTED GLOBAL)
   set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
   if (NOT EXISTS ${OPENBLAS_LIBRARY})
@@ -308,15 +309,16 @@ endif()
 set_target_properties(tines PROPERTIES IMPORTED_LOCATION ${TINES_LIBRARY})
 if (NOT EXISTS ${TINES_LIBRARY})
   update_submodules()
-  if (HAERO_DEVICE STREQUAL "CPU")
+  if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     set(TINES_DEPENDS openblas ekat)
   else()
     set(TINES_DEPENDS ekat)
   endif()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
-  string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR})
   set(TINES_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+		       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+		       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                        -DCMAKE_CXX_FLAGS=-I${EKAT_LIBRARY_DIR}/../include/kokkos
                        -DTINES_ENABLE_VERBOSE=OFF
                        -DTINES_ENABLE_TEST=OFF
@@ -335,10 +337,18 @@ if (NOT EXISTS ${TINES_LIBRARY})
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
   else()
-    # We need OpenBLAS for non-GPU builds.
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                         -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH})
+                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+      set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+                           -DTINES_ENABLE_MKL=ON)
+    else()
+      # We need OpenBLAS for non-GPU builds that don't use Intel's compiler.
+      #Extract path to openblas install directory from OPENBLAS_LIBRARY_DIR variable for Tines
+      set(OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR}/..)
+      set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+                           -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH})
+    endif()
   endif()
 
   ExternalProject_Add(tines_proj
@@ -380,6 +390,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" TINES_INSTALL_PATH ${TINES_LIBRARY_DIR})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+		       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                        -DTCHEM_INSTALL_LIB_PATH=${CMAKE_INSTALL_LIBDIR}
                        -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
@@ -447,9 +458,10 @@ endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
 endif()
-if (HAERO_DEVICE STREQUAL "CPU" AND
-    ${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
-  install(FILES ${OPENBLAS_LIBRARY} DESTINATION lib)
+if (HAERO_DEVICE STREQUAL "CPU" AND OPENBLAS_LIBRARY_DIR)
+  if (${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
+    install(FILES ${OPENBLAS_LIBRARY} DESTINATION lib)
+  endif()
 endif()
 if (${TINES_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Tines
   install(FILES ${TINES_LIBRARY} DESTINATION lib)

@@ -3,7 +3,9 @@
 # Load relevant modules
 module purge
 module load modules
+module load cmake
 module load PrgEnv-intel
+module load impi
 module load cray-hdf5
 module load cray-netcdf
 
@@ -21,5 +23,7 @@ export NETCDFF_INCLUDE_DIR=$NETCDF_DIR/include
 export NETCDFF_LIBRARY_DIR=$NETCDF_DIR/lib
 export NETCDFF_LIBRARY=libnetcdff.a
 
-# Set relevant compilers.
-export FC=ifort
+# Set relevant compilers and flags.
+export CC=mpiicc
+export CXX=mpiicpc
+export FC=mpiifort
