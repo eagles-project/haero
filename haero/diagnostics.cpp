@@ -15,20 +15,20 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
                   "num_aerosol_species must be a vector of length " << num_aerosol_modes);
 }
 
-DiagnosticsRegister::DiagnosticsRegister(int num_aerosol_modes,
+HostDiagnostics::HostDiagnostics(int num_aerosol_modes,
                                          const std::vector<int>& num_aerosol_species,
                                          int num_gases,
                                          int num_levels) :
   Diagnostics(num_aerosol_modes, num_aerosol_species, num_gases, num_levels) { 
 }
 
-DiagnosticsRegister::~DiagnosticsRegister() {
+HostDiagnostics::~HostDiagnostics() {
 }
 
 Diagnostics::~Diagnostics() {
 }
 
-const Diagnostics &DiagnosticsRegister::GetDiagnostics() {
+const Diagnostics &HostDiagnostics::GetDiagnostics() {
   return *this;
 }
 
@@ -43,7 +43,7 @@ int Diagnostics::num_aerosol_species(int mode_index) const {
   return num_aero_species_[mode_index];
 }
 
-int DiagnosticsRegister::num_aerosol_species(int mode_index) const {
+int HostDiagnostics::num_aerosol_species(int mode_index) const {
   EKAT_ASSERT(mode_index >= 0);
   EKAT_ASSERT(mode_index < num_aero_species_.size());
   auto T = Kokkos::create_mirror_view(num_aero_species_);
@@ -63,11 +63,11 @@ int Diagnostics::num_levels() const {
   return num_levels_;
 }
 
-Diagnostics::Token DiagnosticsRegister::find_var(const std::string& name) const {
+Diagnostics::Token HostDiagnostics::find_var(const std::string& name) const {
   return get_string_to_token_vars (name);
 }
 
-Diagnostics::Token DiagnosticsRegister::create_var(const std::string& name) {
+Diagnostics::Token HostDiagnostics::create_var(const std::string& name) {
   Token return_val = find_var (name);
   EKAT_REQUIRE_MSG(VAR_NOT_FOUND == return_val,
     "Diagnostic variable " << name << " already exists!");
@@ -82,11 +82,11 @@ Diagnostics::Token DiagnosticsRegister::create_var(const std::string& name) {
   return return_val;
 }
 
-Diagnostics::Token DiagnosticsRegister::find_aerosol_var(const std::string& name) const {
+Diagnostics::Token HostDiagnostics::find_aerosol_var(const std::string& name) const {
   return get_string_to_token_aero (name);
 }
 
-Diagnostics::Token DiagnosticsRegister::create_aerosol_var(const std::string& name) {
+Diagnostics::Token HostDiagnostics::create_aerosol_var(const std::string& name) {
   Token return_val = find_aerosol_var (name);
   EKAT_REQUIRE_MSG(VAR_NOT_FOUND == return_val,
     "Aerosol diagnostic variable " << name << " already exists!");
@@ -108,11 +108,11 @@ Diagnostics::Token DiagnosticsRegister::create_aerosol_var(const std::string& na
   return return_val;
 }
 
-Diagnostics::Token DiagnosticsRegister::find_gas_var(const std::string& name) const {
+Diagnostics::Token HostDiagnostics::find_gas_var(const std::string& name) const {
   return get_string_to_token_gas  (name);
 }
 
-Diagnostics::Token DiagnosticsRegister::create_gas_var(const std::string& name) {
+Diagnostics::Token HostDiagnostics::create_gas_var(const std::string& name) {
   Token return_val = find_gas_var (name);
   EKAT_REQUIRE_MSG(VAR_NOT_FOUND == return_val,
     "Gas diagnostic variable " << name << " already exists!");
@@ -134,11 +134,11 @@ Diagnostics::gas_var(const Token token) const {
   return vars;
 }
 
-Diagnostics::Token DiagnosticsRegister::find_modal_var(const std::string& name) const {
+Diagnostics::Token HostDiagnostics::find_modal_var(const std::string& name) const {
   return get_string_to_token_modal(name);
 }
 
-Diagnostics::Token DiagnosticsRegister::create_modal_var(const std::string& name) {
+Diagnostics::Token HostDiagnostics::create_modal_var(const std::string& name) {
   Token return_val = find_modal_var (name);
   EKAT_REQUIRE_MSG(VAR_NOT_FOUND == return_val,
     "Modal diagnostic variable " << name << " already exists!");
@@ -160,7 +160,7 @@ Diagnostics::modal_var(const Token token) const {
   return vars;
 }
 
-Diagnostics::Token  DiagnosticsRegister::set_string_to_token(std::map<std::string,Token> &registered_strings,
+Diagnostics::Token HostDiagnostics::set_string_to_token(std::map<std::string,Token> &registered_strings,
                                       const std::string &name,
                                       const Token token) {
   Token return_val=get_string_to_token(registered_strings, name);
@@ -173,7 +173,7 @@ Diagnostics::Token  DiagnosticsRegister::set_string_to_token(std::map<std::strin
   return return_val;
 }
 
-Diagnostics::Token  DiagnosticsRegister::get_string_to_token(const std::map<std::string,Token> &registered_strings,
+Diagnostics::Token HostDiagnostics::get_string_to_token(const std::map<std::string,Token> &registered_strings,
                                       const std::string &name) {
   Token return_val=VAR_NOT_FOUND;
   const auto iter = registered_strings.find(name);
@@ -182,29 +182,29 @@ Diagnostics::Token  DiagnosticsRegister::get_string_to_token(const std::map<std:
   return return_val;
 }
 
-Diagnostics::Token DiagnosticsRegister::set_string_to_token_vars(const std::string &name, const Token token) {
+Diagnostics::Token HostDiagnostics::set_string_to_token_vars(const std::string &name, const Token token) {
   return set_string_to_token(registered_strings_vars, name, token);
 }
-Diagnostics::Token DiagnosticsRegister::set_string_to_token_aero(const std::string &name, const Token token) {
+Diagnostics::Token HostDiagnostics::set_string_to_token_aero(const std::string &name, const Token token) {
   return set_string_to_token(registered_strings_aero, name, token);
 }
-Diagnostics::Token DiagnosticsRegister::set_string_to_token_gas (const std::string &name, const Token token) {
+Diagnostics::Token HostDiagnostics::set_string_to_token_gas (const std::string &name, const Token token) {
   return set_string_to_token(registered_strings_gas , name, token);
 }
-Diagnostics::Token DiagnosticsRegister::set_string_to_token_modal(const std::string &name, const Token token) {
+Diagnostics::Token HostDiagnostics::set_string_to_token_modal(const std::string &name, const Token token) {
   return set_string_to_token(registered_strings_modal, name, token);
 }
 
-Diagnostics::Token DiagnosticsRegister::get_string_to_token_vars(const std::string &name) const {
+Diagnostics::Token HostDiagnostics::get_string_to_token_vars(const std::string &name) const {
   return get_string_to_token(registered_strings_vars, name);
 }
-Diagnostics::Token DiagnosticsRegister::get_string_to_token_aero(const std::string &name) const {
+Diagnostics::Token HostDiagnostics::get_string_to_token_aero(const std::string &name) const {
   return get_string_to_token(registered_strings_aero, name);
 }
-Diagnostics::Token DiagnosticsRegister::get_string_to_token_gas (const std::string &name) const {
+Diagnostics::Token HostDiagnostics::get_string_to_token_gas (const std::string &name) const {
   return get_string_to_token(registered_strings_gas , name);
 }
-Diagnostics::Token DiagnosticsRegister::get_string_to_token_modal(const std::string &name) const {
+Diagnostics::Token HostDiagnostics::get_string_to_token_modal(const std::string &name) const {
   return get_string_to_token(registered_strings_modal, name);
 }
 
@@ -214,52 +214,52 @@ extern "C" {
 
 Diagnostics::Token d_find_var_c(void* d, const char* name)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   return diags->find_var(name);
 }
 
 void* d_var_c(void* d, const Diagnostics::Token token)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   auto var = diags->var(token);
   return (void*)var.data();
 }
 
 Diagnostics::Token d_find_aerosol_var_c(void* d, const char* name)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   return diags->find_aerosol_var(name);
 }
 
 void* d_aerosol_var_c(void* d, const Diagnostics::Token token)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   auto var = diags->aerosol_var(token);
   return (void*)var.data();
 }
 
 Diagnostics::Token d_find_gas_var_c(void* d, const char* name)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   return diags->find_gas_var(name);
 }
 
 void* d_gas_var_c(void* d, const Diagnostics::Token token)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   auto var = diags->gas_var(token);
   return (void*)var.data();
 }
 
 Diagnostics::Token d_find_modal_var_c(void* d, const char* name)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   return diags->find_modal_var(name);
 }
 
 void* d_modal_var_c(void* d, const Diagnostics::Token token)
 {
-  auto* diags = static_cast<DiagnosticsRegister*>(d);
+  auto* diags = static_cast<HostDiagnostics*>(d);
   auto var = diags->modal_var(token);
   return (void*)var.data();
 }

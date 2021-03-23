@@ -143,14 +143,14 @@ class Diagnostics {
   ModalColumnViewArray   modal_vars_;
 };
 
-/// @class DiagnosticsRegister
+/// @class HostDiagnostics
 /// This type stores a set of named diagnostic variables an aerosol system.
 /// The set of diagnostic variables for such a system is determined by the
 /// parameterizations selected for that system.
-class DiagnosticsRegister final : public Diagnostics {
+class HostDiagnostics final : public Diagnostics {
   public:
 
-  /// Creates an empty DiagnosticsRegister to which data can be added.
+  /// Creates an empty HostDiagnostics to which data can be added.
   /// @param [in] num_aerosol_modes The number of aerosol modes in the system
   /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
   ///                                 ith entry is the number of aerosol species
@@ -158,13 +158,13 @@ class DiagnosticsRegister final : public Diagnostics {
   /// @param [in] num_gases The number of gas species in the atmosphere
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
-  DiagnosticsRegister(int num_aerosol_modes,
+  HostDiagnostics(int num_aerosol_modes,
               const std::vector<int>& num_aerosol_species,
               int num_gases,
               int num_levels);
 
   /// Destructor.
-  ~DiagnosticsRegister();
+  ~HostDiagnostics();
 
   // --------------------------------------------------------------------------
   //                                  Data

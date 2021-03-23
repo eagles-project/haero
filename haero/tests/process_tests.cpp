@@ -193,7 +193,7 @@ TEST_CASE("process_tests", "prognostic_process") {
     num_aero_species[m] = mode_species[modes[m].name()].size();
   }
 
-  DiagnosticsRegister diagnostics_register(num_modes, num_aero_species, num_gases, num_levels);
+  HostDiagnostics diagnostics_register(num_modes, num_aero_species, num_gases, num_levels);
   auto aersol_0 = diagnostics_register.create_aerosol_var("First Aerosol");
   auto aersol_1 = diagnostics_register.create_aerosol_var("Second Aerosol");
   auto generic_0 = diagnostics_register.create_var("Generic Aerosol");

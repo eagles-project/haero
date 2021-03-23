@@ -199,7 +199,7 @@ TEST_CASE("diag_process_stub", "") {
     for (int m = 0; m < num_modes; ++m) {
       num_aero_species[m] = mode_species[modes[m].name()].size();
     }
-    DiagnosticsRegister diags(num_modes, num_aero_species, num_gases, num_levels);
+    HostDiagnostics diags(num_modes, num_aero_species, num_gases, num_levels);
     auto* stub = new DiagFProcessStub();
     stub->prepare(diags);
     auto VAR_NOT_FOUND = Diagnostics::VAR_NOT_FOUND;
