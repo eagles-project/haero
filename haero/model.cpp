@@ -159,14 +159,14 @@ Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
                          int_aerosols, cld_aerosols, gases, modal_num_concs);
 }
 
-Diagnostics* Model::create_diagnostics() const {
+HostDiagnostics* Model::create_diagnostics() const {
   // Create an empty Diagnostics object.
   std::vector<int> num_aero_species(modal_aerosol_config_.h_aerosol_modes.size());
   for (size_t m = 0; m < num_aero_species.size(); ++m) {
     const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
-  auto diags = new Diagnostics(num_aero_species.size(), num_aero_species,
+  auto diags = new HostDiagnostics(num_aero_species.size(), num_aero_species,
                                modal_aerosol_config_.h_gas_species.size(),
                                num_levels_);
 

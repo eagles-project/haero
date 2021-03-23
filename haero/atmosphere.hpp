@@ -57,7 +57,7 @@ class Atmosphere final {
 
   /// Returns the planetary boundary height [m].
   KOKKOS_INLINE_FUNCTION
-  const Real planetary_boundary_height() const { return pblh_; }
+  Real planetary_boundary_height() const { return pblh_; }
 
   private:
 

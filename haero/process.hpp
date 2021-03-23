@@ -308,7 +308,7 @@ class DiagnosticProcess {
   /// process at the beginning of a simulation.
   /// @param [inout] diagnostics The Diagnostics object in which the needed
   ///                            variables are created.
-  void prepare(Diagnostics& diagnostics) const {
+  void prepare(HostDiagnostics& diagnostics) const {
     for (const std::string& var: required_vars_) {
       if (Diagnostics::VAR_NOT_FOUND == diagnostics.find_var(var)) {
         diagnostics.create_var(var);
