@@ -28,14 +28,18 @@
 \usepackage[dvipsnames]{xcolor}
 
 %---------
+% configure-time stuff
+\input{../haero_design_inc.tex}
+
+%---------
 % Draft writing tools
-\newcommand{\todo}[1]{\textcolor{Red}{\textbf{TODO:\xspace} #1}}
-\newcommand{\pbc}[1]{\textcolor{MidnightBlue}{\textbf{PB comment:\xspace} #1}} % Pete
-\newcommand{\jjc}[1]{\textcolor{Cerulean}{\textbf{JJ comment:\xspace} #1}} % Jeff
-\newcommand{\hwc}[1]{\textcolor{ForestGreen}{\textbf{HW comment:\xspace} #1}} % Hui
-\newcommand{\bsc}[1]{\textcolor{BlueViolet}{\textbf{BS comment:\xspace} #1}} % Balwinder
-\newcommand{\msc}[1]{\textcolor{Plum}{\textbf{MS comment:\xspace} #1}} % Mike
-\newcommand{\jsc}[1]{\textcolor{Violet}{\textbf{JS comment:\xspace} #1}} % Jian
+\newcommand{\todo}[1]{\ifinccomments\textcolor{Red}{\textbf{TODO:\xspace} #1}\fi}
+\newcommand{\pbc}[1]{\ifinccomments\textcolor{MidnightBlue}{\textbf{PB comment:\xspace} #1 }\fi} % Pete
+\newcommand{\jjc}[1]{\ifinccomments\textcolor{Cerulean}{\textbf{JJ comment:\xspace} #1}\fi} % Jeff
+\newcommand{\hwc}[1]{\ifinccomments\textcolor{ForestGreen}{\textbf{HW comment:\xspace} #1}\fi} % Hui
+\newcommand{\bsc}[1]{\ifinccomments\textcolor{BlueViolet}{\textbf{BS comment:\xspace} #1}\fi} % Balwinder
+\newcommand{\msc}[1]{\ifinccomments\textcolor{Plum}{\textbf{MS comment:\xspace} #1}\fi} % Mike
+\newcommand{\jsc}[1]{\ifinccomments\textcolor{Violet}{\textbf{JS comment:\xspace} #1}\fi} % Jian
 
 % Bibliography stuff
 \usepackage[sort, numbers]{natbib}
