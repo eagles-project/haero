@@ -1,11 +1,11 @@
 #include "haero/model.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/processes/mam_nucleation_process.hpp"
-#include "mam_nucleation_test_bridge.hpp"
 #include "catch2/catch.hpp"
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <limits>
 
 using namespace haero;
 
@@ -24,23 +24,61 @@ TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_process") {
     const double rh= 0.05 +   .9*random();  // range .05-.95
     const double c2= 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9 
     const double c3=  0.1 +  999*random();  // range 0.1 - 1000
-    double j_log_cpp;
-    double ntot_cpp; 
-    double naci_cpp;
-    double namm_cpp; 
-    double r_cpp;
-    double j_log_f90;
-    double ntot_f90; 
-    double naci_f90;
-    double namm_f90; 
-    double r_f90;
-    MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log_cpp, ntot_cpp, naci_cpp, namm_cpp, r_cpp);
-    ternary_nuc_merik2007_bridge(t, rh, c2, c3, j_log_f90, ntot_f90, naci_f90, namm_f90, r_f90);
-    REQUIRE(j_log_cpp == j_log_f90);
-    REQUIRE(ntot_cpp  == ntot_f90);
-    REQUIRE(naci_cpp  == naci_f90);
-    REQUIRE(namm_cpp  == namm_f90);
-    REQUIRE(r_cpp     == r_f90);
+    double j_log_kok = std::numeric_limits<double>::max();
+    double ntot_kok  = std::numeric_limits<double>::max();
+    double nacid_kok = std::numeric_limits<double>::max();
+    double namm_kok  = std::numeric_limits<double>::max();
+    double r_kok     = std::numeric_limits<double>::max();
+    // This is awkward.  Could not determine how to create a reducer that
+    // would return all five function values at once.  So using the Min() reducer
+    // and calling the function five times. Have to find an example of a user reducer
+    // to clean this up.
+    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_j_log", 1,
+      KOKKOS_LAMBDA(const size_t i, double &j_log) {
+        j_log=0; double ntot=0, nacid=0, namm=0, r=0;
+        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
+      }, 
+      Kokkos::Min<double>(j_log_kok)
+    );
+    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_ntot", 1,
+      KOKKOS_LAMBDA(const size_t i, double &ntot) {
+        ntot=0; double j_log=0, nacid=0, namm=0, r=0;
+        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
+      }, 
+      Kokkos::Min<double>(ntot_kok)
+    );
+    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_nacid", 1,
+      KOKKOS_LAMBDA(const size_t i, double &nacid) {
+        nacid=0; double j_log=0, ntot=0, namm=0, r=0;
+        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
+      }, 
+      Kokkos::Min<double>(nacid_kok)
+    );
+    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_namm", 1,
+      KOKKOS_LAMBDA(const size_t i, double &namm) {
+        namm=0; double j_log=0, ntot=0, nacid=0, r=0;
+        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
+      }, 
+      Kokkos::Min<double>(namm_kok)
+    );
+    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_r", 1,
+      KOKKOS_LAMBDA(const size_t i, double &r) {
+        r=0; double j_log=0, ntot=0, nacid=0, namm=0;
+        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
+      }, 
+      Kokkos::Min<double>(r_kok)
+    );
+    double j_log_cpp = 0;
+    double ntot_cpp  = 0; 
+    double nacid_cpp = 0;
+    double namm_cpp  = 0; 
+    double r_cpp     = 0;
+    MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log_cpp, ntot_cpp, nacid_cpp, namm_cpp, r_cpp);
+    REQUIRE(j_log_cpp == j_log_kok);
+    REQUIRE(ntot_cpp  == ntot_kok);
+    REQUIRE(nacid_cpp == nacid_kok);
+    REQUIRE(namm_cpp  == namm_kok);
+    REQUIRE(r_cpp     == r_kok);
   }
 }
 
