@@ -280,5 +280,10 @@ if (HAERO_ENABLE_DRIVER)
 endif()
 
 # Documentation.
+if (HAERO_DOC_INCLUDE_COMMENTS)
+  set(HAERO_INCLUDE_DESIGN_COMMENTS "\\inccommentstrue")
+else()
+  set(HAERO_INCLUDE_DESIGN_COMMENTS "%\\inccommentstrue")
+endif()
 add_subdirectory(docs)
 
