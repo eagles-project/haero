@@ -11,7 +11,7 @@ module mam_nucleation
   private
 
   ! Module functions
-  public :: init, run, finalize
+  public :: init, run, finalize, ternary_nuc_merik2007
 
   !-------------------
   ! Module parameters
@@ -1246,7 +1246,7 @@ end subroutine
 ! nacid: number of sulfuric acid molecules in the critical cluster
 ! namm:  number of ammonia molecules in the critical cluster
 ! r:     radius of the critical cluster (nm)
-subroutine ternary_nuc_merik2007( t, rh, c2, c3, j_log, ntot, nacid, namm, r )
+subroutine ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r )
   implicit none
 
   real(wp), intent(in) :: t, rh, c2, c3

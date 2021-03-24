@@ -8,7 +8,7 @@
 using namespace haero;
 
 // These tests exercise our transplant of the MAM nucleation process.
-TEST_CASE("mam_nucleation_fprocess", "") {
+TEST_CASE("mam_nucleation_fprocess", "mam_nucleation_fprocess") {
 
   // We create a phony model to be used for these tests.
   auto aero_config = create_mam4_modal_aerosol_config();

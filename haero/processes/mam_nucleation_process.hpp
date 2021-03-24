@@ -92,8 +92,19 @@ class MAMNucleationProcess : public PrognosticProcess {
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const;
 
-  private:
 
+  static
+  void ternary_nuc_merik2007(const double t, 
+                             const double rh, 
+                             const double c2,
+                             const double c3, 
+                             double &j_log, 
+                             double &ntot, 
+                             double &nacid, 
+                             double &namm, 
+                             double &r);
+
+  
 };
 
 
