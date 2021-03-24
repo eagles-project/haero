@@ -178,6 +178,12 @@ BUILD_DRIVER=ON
 #VERBOSE=ON
 
 #-----------------------------------------------------------------------------
+#                               Documentation
+#-----------------------------------------------------------------------------
+# For developers: turn on to include comments in the compiled .tex docs
+#INCLUDE_DESIGN_DOC_COMMENTS=ON
+
+#-----------------------------------------------------------------------------
 #                                   Compilers
 #-----------------------------------------------------------------------------
 
@@ -355,6 +361,7 @@ cmake \
  -DHAERO_DEVICE=\$DEVICE \
  -DHAERO_DEVICE_ARCH=\$DEVICE_ARCH \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \
+ -DHAERO_DOC_INCLUDE_COMMENTS=\$INCLUDE_DESIGN_DOC_COMMENTS \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR
