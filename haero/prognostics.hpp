@@ -6,7 +6,7 @@
 
 #include "haero/haero.hpp"
 #include "haero/mode.hpp"
-#include "haero/species.hpp"
+#include "haero/aerosol_species.hpp"
 #include "haero/view_pack_helpers.hpp"
 
 namespace haero {

@@ -16,6 +16,10 @@ export NETCDFF_INCLUDE_DIR=$NETCDF_ROOT/include
 export NETCDFF_LIBRARY_DIR=$NETCDF_ROOT/lib
 export NETCDFF_LIBRARY=libnetcdff.a
 
+export OPENBLAS_INCLUDE_DIR=/usr/local/Cellar/openblas/0.3.13/include
+export OPENBLAS_LIBRARY_DIR=/usr/local/Cellar/openblas/0.3.13/lib
+export OPENBLAS_LIBRARY=libopenblas.a
+
 export FC=mpifort
 export CC=mpicc
 export CXX=mpicxx

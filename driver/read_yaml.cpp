@@ -31,11 +31,17 @@ std::vector<Mode> read_modes(const YAML::Node& root) {
         throw YamlException("mode entry has no maximum diameter (D_max).");
       } else if (not mnode["sigma"]) {
         throw YamlException("mode entry has no geometric stddev (sigma).");
+      } else if (not mnode["rhcrystal"]) {
+        throw YamlException("mode entry has no crystallization relative humidity (rhcrystal)");
+      } else if (not mnode["rhdeliq"]) {
+        throw YamlException("mode entry has no deliquesence relative humidity (rhdeliq)");
       } else {
         modes.push_back(Mode(name,
                              mnode["D_min"].as<Real>(),
                              mnode["D_max"].as<Real>(),
-                             mnode["sigma"].as<Real>()));
+                             mnode["sigma"].as<Real>(),
+                             mnode["rhcrystal"].as<Real>(),
+                             mnode["rhdeliq"].as<Real>()));
       }
     }
   }
@@ -45,8 +51,8 @@ std::vector<Mode> read_modes(const YAML::Node& root) {
   return modes;
 }
 
-std::vector<Species> read_aerosol_species(const YAML::Node& root) {
-  std::vector<Species> species;
+std::vector<AerosolSpecies> read_aerosol_species(const YAML::Node& root) {
+  std::vector<AerosolSpecies> species;
   if (root["aerosols"] and root["aerosols"].IsMap()) {
     auto node = root["aerosols"];
     for (auto iter = node.begin(); iter != node.end(); ++iter) {
@@ -56,7 +62,7 @@ std::vector<Species> read_aerosol_species(const YAML::Node& root) {
         throw YamlException("aerosol species '%s' has no name.", symbol.c_str());
       } else {
         auto name = snode["name"].as<std::string>();
-        species.push_back(Species(name, symbol, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
+        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
       }
     }
   }
@@ -66,8 +72,8 @@ std::vector<Species> read_aerosol_species(const YAML::Node& root) {
   return species;
 }
 
-std::vector<Species> read_gas_species(const YAML::Node& root) {
-  std::vector<Species> species;
+std::vector<AerosolSpecies> read_gas_species(const YAML::Node& root) {
+  std::vector<AerosolSpecies> species;
   if (root["gases"] and root["gases"].IsMap()) {
     auto node = root["gases"];
     for (auto iter = node.begin(); iter != node.end(); ++iter) {
@@ -77,7 +83,7 @@ std::vector<Species> read_gas_species(const YAML::Node& root) {
         throw YamlException("gas species '%s' has no name.", symbol.c_str());
       else {
         auto name = snode["name"].as<std::string>();
-        species.push_back(Species(name, symbol, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
+        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
       }
     }
   }
@@ -161,8 +167,8 @@ GridParams read_grid_params(const YAML::Node& root)
 }
 
 InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
-                                          const std::vector<Species>& aerosols,
-                                          const std::vector<Species>& gases,
+                                          const std::vector<AerosolSpecies>& aerosols,
+                                          const std::vector<AerosolSpecies>& gases,
                                           const YAML::Node& root) {
   // Read grid parameters to properly size everything up.
   auto grid_params = read_grid_params(root);
@@ -202,7 +208,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
             for (auto m_iter = m.begin(); m_iter != m.end(); ++m_iter) {
               auto aero_symbol = m_iter->first.as<std::string>();
               auto aero_iter = std::find_if(aerosols.begin(), aerosols.end(),
-                  [&](const Species& s) { return s.symbol() == aero_symbol; });
+                  [&](const AerosolSpecies& s) { return s.symbol() == aero_symbol; });
               if (aero_iter == aerosols.end()) {
                 throw YamlException("Invalid aerosol found in initial conditions: %s",
                                     aero_symbol.c_str());
@@ -270,7 +276,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
         for (auto g_iter = g.begin(); g_iter != g.end(); ++g_iter) {
           auto gas_symbol = g_iter->first.as<std::string>();
           auto gas_iter = std::find_if(gases.begin(), gases.end(),
-              [&](const Species& s) { return s.symbol() == gas_symbol; });
+              [&](const AerosolSpecies& s) { return s.symbol() == gas_symbol; });
           if (gas_iter == gases.end()) {
             throw YamlException("Invalid gas found in initial conditions: %s", gas_symbol.c_str());
           }
@@ -413,49 +419,49 @@ AtmosphericConditions read_atmosphere(const YAML::Node& root) {
   AtmosphericConditions atm;
   if (root["atmosphere"] and root["atmosphere"].IsMap()) {
     auto a = root["atmosphere"];
-    
+
     if (a["Tv0"]) {
       atm.Tv0 = a["Tv0"].as<Real>();
     }
     else {
       throw YamlException("Missing virtual temperature reference value!");
     }
-    
+
     if (a["Gammav"]) {
       atm.Gammav = a["Gammav"].as<Real>();
     }
     else {
       throw YamlException("Missing virtual temperature lapse rate!");
     }
-  
+
     if (a["w0"]) {
       atm.w0 = a["w0"].as<Real>();
     }
     else {
       throw YamlException("Missing maximum vertical velocity!");
     }
-    
+
     if (a["ztop"]) {
       atm.ztop = a["ztop"].as<int>();
     }
     else {
       throw YamlException("Missing model top!");
     }
-  
+
     if (a["tperiod"]) {
       atm.tperiod = a["tperiod"].as<int>();
     }
     else {
       throw YamlException("Missing oscillation period!");
     }
-    
+
     if (a["qv0"]) {
       atm.qv0 = a["qv0"].as<Real>();
     }
     else {
       throw YamlException("Missing surface water vapor mixing ratio!");
     }
-    
+
     if (a["qv1"]) {
       atm.qv1 = a["qv1"].as<Real>();
     }

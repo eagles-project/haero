@@ -2,7 +2,7 @@
 !> appropriate section in the Processes chapter of the Haero design document.
 module mam_nucleation
 
-  use haero, only: wp, model_t, species_t, &
+  use haero, only: wp, model_t, aerosol_species_t, &
                    prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
                    var_not_found
   use haero_constants, only: pi, R_gas, Avogadro
@@ -133,7 +133,7 @@ subroutine init(model)
   ! Arguments
   type(model_t), intent(in) :: model
 
-  type(species_t) so4, nh4
+  type(aerosol_species_t) so4, nh4
   integer :: m
   integer :: so4_index, nh4_index
 
