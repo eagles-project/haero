@@ -15,7 +15,10 @@ struct Species final {
 
   // Default constructor needed to resize Kokkos Views on device before deep copy.
   KOKKOS_INLINE_FUNCTION
-  Species(): name_view(), symbol_view() {}
+  Species() { 
+    p_name[0]='\0'; 
+    p_symbol[0]='\0';
+  }
 
   /// Creates a new (aerosol or gas) species.
   /// @param [in] name A unique descriptive name for this species.
@@ -29,13 +32,18 @@ struct Species final {
           Real crystal_pt,
           Real deliq_pt):
     molecular_weight(molecular_wt), crystalization_point(crystal_pt),
-    deliquescence_point(deliq_pt), name_view(name), symbol_view(symbol) {}
+    deliquescence_point(deliq_pt) {
+    EKAT_ASSERT(name.size() < 100);
+    EKAT_ASSERT(symbol.size() < 100);
+    strncpy(p_name, name.c_str(), 100);
+    strncpy(p_symbol, symbol.c_str(), 100);
+  }
 
   /// Full species name.
-  std::string name() const { return name_view.label(); }
+  std::string name() const { return std::string(p_name); }
 
   /// Abbreviated symbolic name.
-  std::string symbol() const { return symbol_view.label(); }
+  std::string symbol() const { return std::string(p_symbol); }
 
   // Molecular weight [kg/mol]
   Real molecular_weight;
@@ -46,8 +54,8 @@ struct Species final {
   // Deliquescence point (relative humidity threshold) [-]
   Real deliquescence_point;
 private:
-  Kokkos::View<int> name_view;
-  Kokkos::View<int> symbol_view;
+  char p_name[100];
+  char p_symbol[100];
 };
 
 /// This factory function constructs a set of aerosol species corresponding to

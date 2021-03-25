@@ -19,8 +19,10 @@ struct Mode final {
   Mode() :
     min_diameter(0),
     max_diameter(0),
-    mean_std_dev(0),
-    name_view() {}
+    mean_std_dev(0)
+  { 
+    name_view[0]='\0';
+  }
   /// Creates a new aerosol particle mode.
   /// @param [in] name A unique name for this mode.
   /// @param [in] min_diameter The minimum diameter for particles that belong
@@ -36,22 +38,28 @@ struct Mode final {
        Real mean_std_dev):
     min_diameter(min_diameter),
     max_diameter(max_diameter),
-    mean_std_dev(mean_std_dev),
-    name_view(name) {}
+    mean_std_dev(mean_std_dev)
+  {
+    EKAT_ASSERT(name.size() < 100);
+    strncpy(name_view, name.c_str(), 100);
+  }
 
   KOKKOS_INLINE_FUNCTION
   Mode(const Mode &m):
     min_diameter(m.min_diameter),
     max_diameter(m.max_diameter),
-    mean_std_dev(m.mean_std_dev),
-    name_view(m.name_view) {}
+    mean_std_dev(m.mean_std_dev)
+  {
+    for (int i=0; i<100; ++i) 
+      name_view[i] = m.name_view[i];
+  }
 
   /// Constructor can be called on device.
   KOKKOS_INLINE_FUNCTION
   ~Mode() {}
 
   /// A unique name for this mode.
-  std::string name() const { return name_view.label(); }
+  std::string name() const { return std::string(name_view); }
 
   /// The minimum diameter for particles that belong to this mode.
   Real min_diameter;
@@ -63,7 +71,7 @@ struct Mode final {
   Real mean_std_dev;
 
 private:
-  Kokkos::View<int>  name_view;
+  char name_view[100];
 };
 
 /// This factory function constructs a set of modes corresponding to the

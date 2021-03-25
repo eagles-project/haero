@@ -9,7 +9,7 @@
 
 using namespace haero;
 
-TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_process") {
+TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
   // Define a pseudo-random generator [0-1] that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -20,65 +20,45 @@ TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_process") {
     return double(seed)/p0;
   };
   for (int i=0; i<1000; ++i) {
+    using fp_helper = FloatingPoint<double>;
+    using SolutionView = DeviceType::view_1d<double>; 
+    const double tolerance = 5.0e-9;
     const double  t=  235 +   60*random();  // range 235-295
     const double rh= 0.05 +   .9*random();  // range .05-.95
     const double c2= 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9 
     const double c3=  0.1 +  999*random();  // range 0.1 - 1000
-    double j_log_kok = std::numeric_limits<double>::max();
-    double ntot_kok  = std::numeric_limits<double>::max();
-    double nacid_kok = std::numeric_limits<double>::max();
-    double namm_kok  = std::numeric_limits<double>::max();
-    double r_kok     = std::numeric_limits<double>::max();
-    // This is awkward.  Could not determine how to create a reducer that
-    // would return all five function values at once.  So using the Min() reducer
-    // and calling the function five times. Have to find an example of a user reducer
-    // to clean this up.
-    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_j_log", 1,
-      KOKKOS_LAMBDA(const size_t i, double &j_log) {
-        j_log=0; double ntot=0, nacid=0, namm=0, r=0;
+
+    SolutionView solution("ternary_nuc_merik2007",5);
+    Kokkos::parallel_for("ternary_nuc_merik2007.mam_nucleation_process", 1,
+      KOKKOS_LAMBDA(const int) {
+        double j_log=0, ntot=0, nacid=0, namm=0, r=0;
         MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
-      }, 
-      Kokkos::Min<double>(j_log_kok)
+        solution(0) = j_log;
+        solution(1) = ntot;
+        solution(2) = nacid;
+        solution(3) = namm;
+        solution(4) = r;
+      }
     );
-    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_ntot", 1,
-      KOKKOS_LAMBDA(const size_t i, double &ntot) {
-        ntot=0; double j_log=0, nacid=0, namm=0, r=0;
-        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
-      }, 
-      Kokkos::Min<double>(ntot_kok)
-    );
-    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_nacid", 1,
-      KOKKOS_LAMBDA(const size_t i, double &nacid) {
-        nacid=0; double j_log=0, ntot=0, namm=0, r=0;
-        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
-      }, 
-      Kokkos::Min<double>(nacid_kok)
-    );
-    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_namm", 1,
-      KOKKOS_LAMBDA(const size_t i, double &namm) {
-        namm=0; double j_log=0, ntot=0, nacid=0, r=0;
-        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
-      }, 
-      Kokkos::Min<double>(namm_kok)
-    );
-    Kokkos::parallel_reduce("ternary_nuc_merik2007.mam_nucleation_process_r", 1,
-      KOKKOS_LAMBDA(const size_t i, double &r) {
-        r=0; double j_log=0, ntot=0, nacid=0, namm=0;
-        MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r);
-      }, 
-      Kokkos::Min<double>(r_kok)
-    );
+    auto h_solution = Kokkos::create_mirror_view(solution);
+    Kokkos::deep_copy(h_solution, solution);
+    const double j_log_kok = h_solution(0);
+    const double ntot_kok  = h_solution(1);
+    const double nacid_kok = h_solution(2);
+    const double namm_kok  = h_solution(3);
+    const double r_kok     = h_solution(4);
+
     double j_log_cpp = 0;
     double ntot_cpp  = 0; 
     double nacid_cpp = 0;
     double namm_cpp  = 0; 
     double r_cpp     = 0;
     MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log_cpp, ntot_cpp, nacid_cpp, namm_cpp, r_cpp);
-    REQUIRE(j_log_cpp == j_log_kok);
-    REQUIRE(ntot_cpp  == ntot_kok);
-    REQUIRE(nacid_cpp == nacid_kok);
-    REQUIRE(namm_cpp  == namm_kok);
-    REQUIRE(r_cpp     == r_kok);
+    REQUIRE(fp_helper::equiv(j_log_cpp , j_log_kok, tolerance));
+    REQUIRE(fp_helper::equiv(ntot_cpp  , ntot_kok,  tolerance));
+    REQUIRE(fp_helper::equiv(nacid_cpp , nacid_kok, tolerance));
+    REQUIRE(fp_helper::equiv(namm_cpp  , namm_kok,  tolerance));
+    REQUIRE(fp_helper::equiv(r_cpp     , r_kok,     tolerance));
   }
 }
 
@@ -94,19 +74,19 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
   // Set up some prognosics aerosol data views‥
   int num_aero_populations = model->num_aerosol_populations();
-  Kokkos::View<PackType**> int_aerosols("interstitial aerosols",
+  SpeciesColumnView        int_aerosols("interstitial aerosols",
                                         num_aero_populations, num_levels);
-  Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols",
+  SpeciesColumnView        cld_aerosols("cloudborne aerosols",
                                         num_aero_populations, num_levels);
-  Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
-  Kokkos::View<PackType**> modal_concs("modal number concs", num_modes,
+  SpeciesColumnView        gases("gases", num_gases, num_levels);
+  ModalColumnView          modal_concs("modal number concs", num_modes,
                                        num_levels);
 
   // Set up atmospheric data and populate it with some views.
-  Kokkos::View<PackType*> temp("temperature", num_levels);
-  Kokkos::View<PackType*> press("pressure", num_levels);
-  Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
-  Kokkos::View<PackType*> ht("height", num_levels+1);
+  ColumnView temp("temperature", num_levels);
+  ColumnView press("pressure", num_levels);
+  ColumnView rel_hum("relative humidity", num_levels);
+  ColumnView ht("height", num_levels+1);
   Real pblh = 100.0;
   auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
 
@@ -141,33 +121,45 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     // atmospheric state
     Real h0 = 3e3, dz = h0/num_levels;
+    auto h_temp    = Kokkos::create_mirror_view(temp);
+    auto h_press   = Kokkos::create_mirror_view(press);
+    auto h_rel_hum = Kokkos::create_mirror_view(rel_hum);
+    auto h_ht      = Kokkos::create_mirror_view(ht);
     for (int k = 0; k < num_levels; ++k) {
-      temp(k) = 273.0;
-      press(k) = 1e5;
-      rel_hum(k) = 0.95;
-      ht(k) = h0 - k*dz;
+      h_temp(k) = 273.0;
+      h_press(k) = 1e5;
+      h_rel_hum(k) = 0.95;
+      h_ht(k) = h0 - k*dz;
     }
+    Kokkos::deep_copy(temp,    h_temp);
+    Kokkos::deep_copy(press,   h_press);
+    Kokkos::deep_copy(rel_hum, h_rel_hum);
+    Kokkos::deep_copy(ht,      h_ht);
 
     // aerosols (none)
+    auto h_int_aerosols = Kokkos::create_mirror_view(int_aerosols);
     for (int p = 0; p < aero_config.num_aerosol_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
-        int_aerosols(p, k) = 0.0;
+        h_int_aerosols(p, k) = 0.0;
       }
     }
+    Kokkos::deep_copy(int_aerosols, h_int_aerosols);
 
     // gases
     int h2so4_index = aero_config.gas_index("H2SO4");
     printf("h2so4 index: %d\n", h2so4_index);
+    auto h_gases = Kokkos::create_mirror_view(gases);
     for (int k = 0; k < num_levels; ++k) {
-      gases(h2so4_index, k) = 1e-13;
+      h_gases(h2so4_index, k) = 1e-13;
     }
     for (int g = 0; g < num_gases; ++g) {
       if (g != h2so4_index) {
         for (int k = 0; k < num_levels; ++k) {
-          gases(g, k) = 0.0;
+          h_gases(g, k) = 0.0;
         }
       }
     }
+    Kokkos::deep_copy(gases, h_gases);
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 30.0;
@@ -182,14 +174,15 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     int aitken_index = aero_config.aerosol_mode_index("aitken");
     int aitken_so4_index = aero_config.aerosol_species_index(aitken_index, "SO4");
     int so4_pop_index = aero_config.population_index(aitken_index, aitken_so4_index);
+    Kokkos::deep_copy(h_int_aerosols, int_aerosols);
     for (int p = 0; p < aero_config.num_aerosol_populations; ++p) {
       if (p == so4_pop_index) {
         for (int k = 0; k < num_levels; ++k) {
-          REQUIRE(int_aerosols(p, k)[0] > 0.0);
+          REQUIRE(h_int_aerosols(p, k)[0] > 0.0);
         }
       } else {
         for (int k = 0; k < num_levels; ++k) {
-          REQUIRE(int_aerosols(p, k)[0] == 0.0);
+          REQUIRE(h_int_aerosols(p, k)[0] == 0.0);
         }
       }
     }
