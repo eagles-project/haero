@@ -1,6 +1,6 @@
 #include "haero/haero_config.hpp"
 #include "haero/mode.hpp"
-#include "haero/species.hpp"
+#include "haero/aerosol_species.hpp"
 #include "driver/ncwriter.hpp"
 #include "driver/ncwriter_impl.hpp"
 #include "ekat/ekat_pack.hpp"
@@ -48,10 +48,10 @@ TEST_CASE("ncwriter", "") {
   ncf.add_mode_dim(modes);
   REQUIRE (ncf.get_ndims() == 4);
 
-  /** 
+  /**
     Add a dimension for species
   */
-  std::vector<Species> species = create_mam4_aerosol_species();
+  std::vector<AerosolSpecies> species = create_mam4_aerosol_species();
   int nspec = species.size();
   ncf.add_species_dim(species);
   REQUIRE(ncf.get_ndims() == 5);
@@ -101,7 +101,7 @@ TEST_CASE("ncwriter", "") {
   Kokkos::deep_copy(test_modal_var, hmodal);
 
   /// Test the stripped-down version of modal variable definition
-  ncf.define_level_var("level_var_subview0", ekat::units::Units::nondimensional(), 
+  ncf.define_level_var("level_var_subview0", ekat::units::Units::nondimensional(),
     Kokkos::subview(test_modal_var,0,Kokkos::ALL));
 
   /**

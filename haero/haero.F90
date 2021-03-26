@@ -8,7 +8,7 @@ module haero
 
   private
 
-  public :: wp, mode_t, species_t, model_t, &
+  public :: wp, mode_t, aerosol_species_t, model_t, &
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
@@ -26,20 +26,28 @@ module haero
     real(wp) :: max_diameter
     !> Geometric mean standard deviation
     real(wp) :: mean_std_dev
+    !> Deliquescence relative humidity
+    real(wp) :: rhdeliq
+    !> Crystallization relative humidity
+    real(wp) :: rhcrystal
   end type
 
-  !> This Fortran type is the equivalent of the C++ Species struct.
-  type :: species_t
+  !> This Fortran type is the equivalent of the C++ AerosolSpecies struct.
+  type :: aerosol_species_t
     !> Species name
     character(len=:), allocatable :: name
     !> Species symbol (abbreviation)
     character(len=:), allocatable :: symbol
-    !> Molecular weight [g/mol]
+    !> Molecular weight [kg/mol]
     real(wp) :: molecular_wt
-    !> Crystalization point [?]
-    real(wp) :: crystal_pt
-    !> Deliquenscence point [?]
-    real(wp) :: deliques_pt
+    !> Carbon weight [kg/mol]
+    real(wp) :: carbon_wt
+    !> Dry radius [m]
+    real(wp) :: dry_radius
+    !> Material density [kg/m^3]
+    real(wp) :: density
+    !> Hygroscopicity
+    real(wp) :: hygroscopicity
   end type
 
   !> This Fortran type is the equivalent of the C++ Model class. Exactly one
@@ -56,9 +64,9 @@ module haero
     !> The total number of distinct aerosol populations.
     integer :: num_populations
     !> The aerosol species within each mode. Indexed as (mode, species).
-    type(species_t), dimension(:,:), allocatable :: aero_species
+    type(aerosol_species_t), dimension(:,:), allocatable :: aero_species
     !> The gas species in the model.
-    type(species_t), dimension(:), allocatable :: gas_species
+    type(aerosol_species_t), dimension(:), allocatable :: gas_species
     !> The number of gases in the model. Equal to size(gas_species).
     integer :: num_gases
     !> The number of vertical levels in an atmospheric column.
@@ -328,7 +336,7 @@ contains
     allocate(model%aero_species(size(model%modes), max_num_species))
   end subroutine
 
-  subroutine haerotran_set_mode(mode, name, min_d, max_d, std_dev) bind(c)
+  subroutine haerotran_set_mode(mode, name, min_d, max_d, std_dev, rhdeliq, rhcrystal) bind(c)
     use iso_c_binding, only: c_int, c_ptr, c_real
     implicit none
 
@@ -337,16 +345,20 @@ contains
     real(c_real), value, intent(in) :: min_d
     real(c_real), value, intent(in) :: max_d
     real(c_real), value, intent(in) :: std_dev
+    real(c_real), value, intent(in) :: rhdeliq
+    real(c_real), value, intent(in) :: rhcrystal
 
     model%modes(mode)%name = c_to_f_string(name)
     model%modes(mode)%min_diameter = min_d
     model%modes(mode)%max_diameter = max_d
     model%modes(mode)%mean_std_dev = std_dev
+    model%modes(mode)%rhdeliq = rhdeliq
+    model%modes(mode)%rhcrystal = rhcrystal
 
   end subroutine
 
   subroutine haerotran_set_aero_species(mode, species, name, symbol, &
-    molecular_wt, crystal_pt, deliques_pt) bind(c)
+    molecular_wt, carbon_wt, dry_radius, density, hygroscopicity) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -355,14 +367,18 @@ contains
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
     real(c_real), value, intent(in) :: molecular_wt
-    real(c_real), value, intent(in) :: crystal_pt
-    real(c_real), value, intent(in) :: deliques_pt
+    real(c_real), value, intent(in) :: carbon_wt
+    real(c_real), value, intent(in) :: dry_radius
+    real(c_real), value, intent(in) :: density
+    real(c_real), value, intent(in) :: hygroscopicity
 
     model%aero_species(mode, species)%name = c_to_f_string(name)
     model%aero_species(mode, species)%symbol = c_to_f_string(symbol)
     model%aero_species(mode, species)%molecular_wt = molecular_wt
-    model%aero_species(mode, species)%crystal_pt = crystal_pt
-    model%aero_species(mode, species)%deliques_pt = deliques_pt
+    model%aero_species(mode, species)%carbon_wt = carbon_wt
+    model%aero_species(mode, species)%dry_radius = dry_radius
+    model%aero_species(mode, species)%density = density
+    model%aero_species(mode, species)%hygroscopicity = hygroscopicity
     model%num_mode_species(mode) = max(species, model%num_mode_species(mode))
   end subroutine
 
@@ -377,7 +393,7 @@ contains
   end subroutine
 
   subroutine haerotran_set_gas_species(species, name, symbol, &
-    molecular_wt, crystal_pt, deliques_pt) bind(c)
+    molecular_wt, carbon_wt, dry_radius, density, hygroscopicity) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -385,14 +401,18 @@ contains
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
     real(c_real), value, intent(in) :: molecular_wt
-    real(c_real), value, intent(in) :: crystal_pt
-    real(c_real), value, intent(in) :: deliques_pt
+    real(c_real), value, intent(in) :: carbon_wt
+    real(c_real), value, intent(in) :: dry_radius
+    real(c_real), value, intent(in) :: density
+    real(c_real), value, intent(in) :: hygroscopicity
 
     model%gas_species(species)%name = c_to_f_string(name)
     model%gas_species(species)%symbol = c_to_f_string(symbol)
     model%gas_species(species)%molecular_wt = molecular_wt
-    model%gas_species(species)%crystal_pt = crystal_pt
-    model%gas_species(species)%deliques_pt = deliques_pt
+    model%gas_species(species)%carbon_wt = carbon_wt
+    model%gas_species(species)%dry_radius = dry_radius
+    model%gas_species(species)%density = density
+    model%gas_species(species)%hygroscopicity = hygroscopicity
   end subroutine
 
   subroutine haerotran_set_num_levels(num_levels) bind(c)

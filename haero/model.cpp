@@ -12,12 +12,12 @@ using haero::Real;
 void haerotran_begin_init();
 void haerotran_set_num_modes(int);
 void haerotran_set_max_mode_species(int);
-void haerotran_set_mode(int, const char*, Real, Real, Real);
+void haerotran_set_mode(int, const char*, Real, Real, Real, Real, Real);
 void haerotran_set_aero_species(int, int, const char*, const char*,
-                                Real, Real, Real);
+                                Real, Real, Real, Real, Real);
 void haerotran_set_num_gas_species(int);
 void haerotran_set_gas_species(int, const char*, const char*,
-                               Real, Real, Real);
+                               Real, Real, Real, Real, Real);
 void haerotran_set_num_levels(int);
 void haerotran_end_init();
 void haerotran_finalize();
@@ -240,7 +240,7 @@ void Model::init_fortran() {
     // Set the properties of mode i+1 (as indexed in Fortran).
     const auto& mode = modal_aerosol_config_.h_aerosol_modes[m];
     haerotran_set_mode(m+1, mode.name().c_str(), mode.min_diameter,
-        mode.max_diameter, mode.mean_std_dev);
+        mode.max_diameter, mode.mean_std_dev, mode.deliquesence_pt, mode.crystallization_pt);
 
     // Set up aerosol species for this mode.
     int num_species = mode_species.size();
@@ -248,7 +248,7 @@ void Model::init_fortran() {
       const auto& species = modal_aerosol_config_.h_aerosol_species[s];
       haerotran_set_aero_species(m+1, s+1, species.name().c_str(),
         species.symbol().c_str(), species.molecular_weight,
-        species.crystalization_point, species.deliquescence_point);
+        species.carbon_weight, species.dry_radius, species.density, species.hygroscopicity);
     }
   }
 
@@ -259,7 +259,7 @@ void Model::init_fortran() {
     const auto& species = modal_aerosol_config_.h_gas_species[i];
     haerotran_set_gas_species(i+1, species.name().c_str(),
         species.symbol().c_str(), species.molecular_weight,
-        species.crystalization_point, species.deliquescence_point);
+        species.carbon_weight, species.dry_radius, species.density, species.hygroscopicity);
   }
 
   // Set dimensions.
