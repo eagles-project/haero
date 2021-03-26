@@ -26,6 +26,10 @@ module haero
     real(wp) :: max_diameter
     !> Geometric mean standard deviation
     real(wp) :: mean_std_dev
+    !> Deliquescence relative humidity
+    real(wp) :: rhdeliq
+    !> Crystallization relative humidity
+    real(wp) :: rhcrystal
   end type
 
   !> This Fortran type is the equivalent of the C++ AerosolSpecies struct.
@@ -332,7 +336,7 @@ contains
     allocate(model%aero_species(size(model%modes), max_num_species))
   end subroutine
 
-  subroutine haerotran_set_mode(mode, name, min_d, max_d, std_dev) bind(c)
+  subroutine haerotran_set_mode(mode, name, min_d, max_d, std_dev, rhdeliq, rhcrystal) bind(c)
     use iso_c_binding, only: c_int, c_ptr, c_real
     implicit none
 
@@ -341,11 +345,15 @@ contains
     real(c_real), value, intent(in) :: min_d
     real(c_real), value, intent(in) :: max_d
     real(c_real), value, intent(in) :: std_dev
+    real(c_real), value, intent(in) :: rhdeliq
+    real(c_real), value, intent(in) :: rhcrystal
 
     model%modes(mode)%name = c_to_f_string(name)
     model%modes(mode)%min_diameter = min_d
     model%modes(mode)%max_diameter = max_d
     model%modes(mode)%mean_std_dev = std_dev
+    model%modes(mode)%rhdeliq = rhdeliq
+    model%modes(mode)%rhcrystal = rhcrystal
 
   end subroutine
 

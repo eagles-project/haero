@@ -36,8 +36,8 @@ struct Mode final {
        Real min_diameter,
        Real max_diameter,
        Real mean_std_dev,
-       Real crystal_pt,
-       Real deliq_pt):
+       Real deliq_pt,
+       Real crystal_pt):
     min_diameter(min_diameter),
     max_diameter(max_diameter),
     mean_std_dev(mean_std_dev),
