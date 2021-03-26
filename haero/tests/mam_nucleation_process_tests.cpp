@@ -68,6 +68,14 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   // We create a phony model to be used for these tests.
   auto aero_config = create_mam4_modal_aerosol_config();
   int num_levels = 72;
+  int num_vert_packs = num_levels/HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
+    num_vert_packs++;
+  }
+  int num_iface_packs = (num_levels+1)/HAERO_PACK_SIZE;
+  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels+1)) {
+    num_iface_packs++;
+  }
   auto* model = Model::ForUnitTests(aero_config, num_levels);
   int num_gases = aero_config.h_gas_species.size();
   int num_modes = aero_config.h_aerosol_modes.size();
@@ -75,19 +83,20 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   // Set up some prognosics aerosol data views‥
   int num_aero_populations = model->num_aerosol_populations();
   SpeciesColumnView        int_aerosols("interstitial aerosols",
-                                        num_aero_populations, num_levels);
+                                        num_aero_populations, num_vert_packs);
   SpeciesColumnView        cld_aerosols("cloudborne aerosols",
-                                        num_aero_populations, num_levels);
-  SpeciesColumnView        gases("gases", num_gases, num_levels);
+                                        num_aero_populations, num_vert_packs);
+  SpeciesColumnView        gases("gases", num_gases, num_vert_packs);
   ModalColumnView          modal_concs("modal number concs", num_modes,
-                                       num_levels);
+                                       num_vert_packs);
 
   // Set up atmospheric data and populate it with some views.
-  ColumnView temp("temperature", num_levels);
-  ColumnView press("pressure", num_levels);
-  ColumnView rel_hum("relative humidity", num_levels);
-  ColumnView ht("height", num_levels+1);
+  ColumnView temp("temperature", num_vert_packs);
+  ColumnView press("pressure", num_vert_packs);
+  ColumnView rel_hum("relative humidity", num_vert_packs);
+  ColumnView ht("height", num_iface_packs);
   Real pblh = 100.0;
+
   auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
 
   // Test basic construction.
@@ -112,10 +121,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                            modal_concs);
-    auto* diags = model->create_diagnostics();
-    auto* tends = new Tendencies(*progs);
+    Prognostics* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases, modal_concs);
+    Diagnostics* diags = model->create_diagnostics();
+    Tendencies*  tends = new Tendencies(*progs);
 
     // Set initial conditions.
 
@@ -126,10 +134,12 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     auto h_rel_hum = Kokkos::create_mirror_view(rel_hum);
     auto h_ht      = Kokkos::create_mirror_view(ht);
     for (int k = 0; k < num_levels; ++k) {
-      h_temp(k) = 273.0;
-      h_press(k) = 1e5;
-      h_rel_hum(k) = 0.95;
-      h_ht(k) = h0 - k*dz;
+      h_temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 273.0;
+      h_press(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 1e5;
+      h_rel_hum(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0.95;
+    }
+    for (int k = 0; k < num_levels+1; ++k) {
+      h_ht(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = h0 - k*dz;
     }
     Kokkos::deep_copy(temp,    h_temp);
     Kokkos::deep_copy(press,   h_press);
@@ -140,7 +150,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     auto h_int_aerosols = Kokkos::create_mirror_view(int_aerosols);
     for (int p = 0; p < aero_config.num_aerosol_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
-        h_int_aerosols(p, k) = 0.0;
+        h_int_aerosols(p, pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0.0;
       }
     }
     Kokkos::deep_copy(int_aerosols, h_int_aerosols);
@@ -150,12 +160,12 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     printf("h2so4 index: %d\n", h2so4_index);
     auto h_gases = Kokkos::create_mirror_view(gases);
     for (int k = 0; k < num_levels; ++k) {
-      h_gases(h2so4_index, k) = 1e-13;
+      h_gases(h2so4_index, pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 1e-13;
     }
     for (int g = 0; g < num_gases; ++g) {
       if (g != h2so4_index) {
         for (int k = 0; k < num_levels; ++k) {
-          h_gases(g, k) = 0.0;
+          h_gases(g, pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0.0;
         }
       }
     }
@@ -178,11 +188,11 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     for (int p = 0; p < aero_config.num_aerosol_populations; ++p) {
       if (p == so4_pop_index) {
         for (int k = 0; k < num_levels; ++k) {
-          REQUIRE(h_int_aerosols(p, k)[0] > 0.0);
+          REQUIRE(h_int_aerosols(p, pack_info::pack_idx(k))[pack_info::vec_idx(k)] > 0.0);
         }
       } else {
         for (int k = 0; k < num_levels; ++k) {
-          REQUIRE(h_int_aerosols(p, k)[0] == 0.0);
+          REQUIRE(h_int_aerosols(p, pack_info::pack_idx(k))[pack_info::vec_idx(k)] == 0.0);
         }
       }
     }
