@@ -76,9 +76,10 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
   const std::vector<Real> aer_hygro =        {0.507,   1e-10,   0.14,    1e-10,   0.14,    1.16,    0.1};
 
   std::vector<AerosolSpecies> result;
-  for (int i=0; i<7; ++i) {
-    result.push_back(AerosolSpecies(aer_names[i], aer_symbs[i], aer_mw[i], aer_cw[i], aer_dry_rad[i],
-      aer_dens[i], aer_hygro[i]));
+  static constexpr Real g_to_kg = 0.001; /// Convert molecular weights to SI units (g/mol) -> (kg/mol)
+  for (int i=0; i<aer_mw.size(); ++i) {
+    result.push_back(AerosolSpecies(aer_names[i], aer_symbs[i],
+      g_to_kg*aer_mw[i], g_to_kg*aer_cw[i], aer_dry_rad[i], aer_dens[i], aer_hygro[i]));
   }
   return result;
 }
