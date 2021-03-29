@@ -391,7 +391,7 @@ contains
   end subroutine
 
   subroutine haerotran_set_gas_species(species, name, symbol, &
-    molecular_wt, dry_radius, density, hygroscopicity) bind(c)
+    molecular_wt) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
