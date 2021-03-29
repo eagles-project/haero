@@ -6,6 +6,7 @@
 #include "haero/utils.hpp"
 #include "haero/mode.hpp"
 #include "haero/aerosol_species.hpp"
+#include "haero/gas_species.hpp"
 #include "haero/atmosphere.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -49,7 +50,8 @@ class NcWriter {
     */
     NcWriter(const std::string& new_filename) : fname(new_filename),
      ncid(NC_EBADID), level_dimid(NC_EBADID), interface_dimid(NC_EBADID),
-     mode_dimid(NC_EBADID), time_dimid(NC_EBADID), species_dimid(NC_EBADID), ndims(0), name_varid_map() {
+     mode_dimid(NC_EBADID), time_dimid(NC_EBADID), aerosol_dimid(NC_EBADID), gas_dimid(NC_EBADID),
+     ndims(0), name_varid_map() {
       const auto fext = get_filename_ext(new_filename);
       EKAT_REQUIRE_MSG(fext == ".nc",
         "NcWriter error: filename extension (" + fext + ") must be .nc");
@@ -77,8 +79,10 @@ class NcWriter {
     int num_modes() const;
     /// return the (current) size of the time dimension
     int num_timesteps() const;
-    /// return the number of species
-    int num_species() const;
+    /// return the number of aerosol species
+    int num_aerosols() const;
+    /// return the number of gas species
+    int num_gases() const;
     /// true if level and interface dimensions are assigned
     inline bool levels_defined() const {return level_dimid != NC_EBADID;}
 
@@ -97,10 +101,15 @@ class NcWriter {
     */
     void add_mode_dim(const std::vector<Mode>& modes);
 
-    /** @brief Adds a dimension for the number of species.
+    /** @brief Adds a dimension for the number of aerosol species.
 
     */
-    void add_species_dim(const std::vector<AerosolSpecies>& species);
+    void add_aerosol_dim(const std::vector<AerosolSpecies>& species);
+
+    /** @brief Adds a dimension for the number of gas species.
+
+    */
+    void add_gas_dim(const std::vector<GasSpecies>& species);
 
 
     /** @brief Defines netcdf variables for Haero::Atmosphere class.
@@ -167,13 +176,23 @@ class NcWriter {
     void define_modal_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
-    /** @brief defines a species variable at level midpoints.
+    /** @brief defines an aerosol variable at level midpoints.
 
       @param [in] name
       @param [in] units
       @param [in] atts
     */
-    void define_species_var(const std::string& name, const ekat::units::Units& units,
+    void define_aerosol_var(const std::string& name, const ekat::units::Units& units,
+      const std::vector<text_att_type>& atts=std::vector<text_att_type>());
+
+
+    /** @brief defines a gas variable at level midpoints.
+
+      @param [in] name
+      @param [in] units
+      @param [in] atts
+    */
+    void define_gas_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
 
     /** @brief defines a constant 1d variable (e.g., a coordinate variable)
@@ -290,6 +309,14 @@ class NcWriter {
 
     */
     template <typename ViewType>
+    void add_aerosol_variable_data(const std::string& varname, const size_t& time_index,
+       const int mode_idx, const int spec_idx, const ViewType& v) const;
+
+    template <typename ViewType>
+    void add_gas_variable_data(const std::string& varname, const size_t& time_index,
+       const int mode_idx, const int spec_idx, const ViewType& v) const;
+
+    template <typename ViewType>
     void add_variable_data(const std::string& varname, const size_t& time_index,
        const int mode_idx, const int spec_idx, const ViewType& v) const;
 
@@ -333,8 +360,10 @@ class NcWriter {
     int mode_dimid;
     /// Time dimension ID.  Assigned by add_time_dim.
     int time_dimid;
-    /// Species dimension ID.  Assigned by add_species_dim.
-    int species_dimid;
+    /// AerosolSpecies dimension ID.  Assigned by add_species_dim.
+    int aerosol_dimid;
+    /// AerosolSpecies dimension ID.  Assigned by add_species_dim.
+    int gas_dimid;
     /// Tracks the number of NetCDF dimensions in the current file.
     int ndims;
     /// key = variable name, value = variable id

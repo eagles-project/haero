@@ -12,7 +12,7 @@ namespace driver {
 template <int Rank, bool IsSimd>
 struct NcWriterImpl {
   template <typename VT>
-  static void add_variable_data(const int ncid, const int varid, 
+  static void add_variable_data(const int ncid, const int varid,
     const int mode_dimid, const int nmodes,
     const int level_dimid, const int interface_dimid, const int nlev,
     const int species_dimid, const int nspec,
@@ -89,6 +89,21 @@ void NcWriter::define_interface_var(const std::string& name, const ekat::units::
 
 
 template <typename ViewType>
+void NcWriter::add_aerosol_variable_data(const std::string& varname, const size_t& time_idx,
+  const int mode_idx, const int spec_idx, const ViewType& view) const {
+
+  EKAT_REQUIRE(time_idx < num_timesteps());
+
+  return NcWriterImpl<ViewType::Rank,
+    ekat::ScalarTraits<typename ViewType::value_type>::is_simd>::add_variable_data(
+    ncid, name_varid_map.at(varname),
+    mode_dimid, num_modes(),
+    level_dimid, interface_dimid, num_levels(),
+    aerosol_dimid, num_aerosols(),
+    time_idx, mode_idx, spec_idx, view);
+}
+
+template <typename ViewType>
 void NcWriter::add_variable_data(const std::string& varname, const size_t& time_idx,
   const int mode_idx, const int spec_idx, const ViewType& view) const {
 
@@ -96,36 +111,50 @@ void NcWriter::add_variable_data(const std::string& varname, const size_t& time_
 
   return NcWriterImpl<ViewType::Rank,
     ekat::ScalarTraits<typename ViewType::value_type>::is_simd>::add_variable_data(
-    ncid, name_varid_map.at(varname), 
+    ncid, name_varid_map.at(varname),
     mode_dimid, num_modes(),
     level_dimid, interface_dimid, num_levels(),
-    species_dimid, num_species(),
+    aerosol_dimid, num_aerosols(),
     time_idx, mode_idx, spec_idx, view);
+}
+
+template <typename ViewType>
+void NcWriter:: add_gas_variable_data(const std::string& varname, const size_t& time_idx,
+  const int mode_idx, const int spec_idx, const ViewType& view) const {
+
+  EKAT_REQUIRE(time_idx < num_timesteps());
+
+  return NcWriterImpl<ViewType::Rank,
+    ekat::ScalarTraits<typename ViewType::value_type>::is_simd>::add_variable_data(
+      ncid, name_varid_map.at(varname),
+      mode_dimid, num_modes(), level_dimid, interface_dimid, num_levels(),
+      gas_dimid, num_gases(),
+      time_idx, mode_idx, spec_idx, view);
 }
 
 template <> struct NcWriterImpl<1,false> {
   template <typename VT>
-  static void add_variable_data(const int ncid, const int varid, 
+  static void add_variable_data(const int ncid, const int varid,
     const int mode_dimid, const int nmodes,
     const int level_dimid, const int interface_dimid, const int nlev,
     const int species_dimid, const int nspec,
     const size_t time_idx, const int mode_idx, const int spec_idx, const VT& view) {
-    
+
       static_assert(VT::Rank == 1, "non-aerosol views must be rank 1.");
-    
+
       int nvardims = 0;
       int retval = nc_inq_varndims(ncid, varid, &nvardims);
       EKAT_REQUIRE(nvardims == 2 && retval == NC_NOERR);
       EKAT_REQUIRE(view.extent(0) == nlev || view.extent(0) == nlev+1);
-    
+
       int dimids[2] = {NC_EBADID, NC_EBADID};
       retval = nc_inq_vardimid(ncid, varid, &dimids[0]);
       EKAT_REQUIRE(retval == NC_NOERR);
       EKAT_REQUIRE(dimids[1] == level_dimid or dimids[1] == interface_dimid);
-    
+
       auto hv = Kokkos::create_mirror_view(view);
       Kokkos::deep_copy(hv, view);
-    
+
       const size_t array_length = (dimids[1] == level_dimid ? nlev : nlev+1);
       for (size_t i=0; i<array_length; ++i) {
         const size_t idx[2] = {time_idx, i};
@@ -141,25 +170,25 @@ template <> struct NcWriterImpl<1,false> {
 
 template <> struct NcWriterImpl<1,true> {
   template <typename VT>
-  static void add_variable_data(const int ncid, const int varid, 
+  static void add_variable_data(const int ncid, const int varid,
     const int mode_dimid, const int nmodes,
     const int level_dimid, const int interface_dimid, const int nlev,
     const int species_dimid, const int nspec,
     const size_t time_idx, const int mode_idx, const int spec_idx, const VT& view) {
-    
+
       static_assert(VT::Rank == 1, "non-aerosol views must be rank 1.");
       int nvardims = 0;
       int retval = nc_inq_varndims(ncid, varid, &nvardims);
       EKAT_REQUIRE(nvardims == 2 && retval == NC_NOERR);
-      
+
       int dimids[2] = {NC_EBADID, NC_EBADID};
       retval = nc_inq_vardimid(ncid, varid, &dimids[0]);
       EKAT_REQUIRE(retval == NC_NOERR);
       EKAT_REQUIRE(dimids[1] == level_dimid or dimids[1] == interface_dimid);
-      
+
       auto hv = Kokkos::create_mirror_view(view);
       Kokkos::deep_copy(hv, view);
-      
+
       const size_t array_length = (dimids[1] == level_dimid ? nlev : nlev+1);
       for (size_t i=0; i<array_length; ++i) {
         const size_t idx[2] = {time_idx, i};
@@ -169,8 +198,8 @@ template <> struct NcWriterImpl<1,true> {
         nc_put_var1_double(ncid, varid, &idx[0], &hv(pack_idx)[vec_idx]);
 #else
         nc_put_var1_float(ncid, varid, &idx[0], &hv(pack_idx)[vec_idx]);
-#endif       
-        EKAT_ASSERT(retval == NC_NOERR); 
+#endif
+        EKAT_ASSERT(retval == NC_NOERR);
       }
     }
 };
@@ -178,12 +207,12 @@ template <> struct NcWriterImpl<1,true> {
 template <>
 struct NcWriterImpl<2, false> {
   template <typename VT>
-  static void add_variable_data(const int ncid, const int varid, 
+  static void add_variable_data(const int ncid, const int varid,
     const int mode_dimid, const int nmodes,
     const int level_dimid, const int interface_dimid, const int nlev,
     const int species_dimid, const int nspec,
-    const size_t time_idx, const int mode_idx, const int spec_idx, const VT& view) { 
-    
+    const size_t time_idx, const int mode_idx, const int spec_idx, const VT& view) {
+
     static_assert(VT::Rank == 2, "aerosol views assumed to have rank 2");
 
     int nvardims = 0;
@@ -219,7 +248,7 @@ struct NcWriterImpl<2, false> {
 template <>
 struct NcWriterImpl<2, true> {
   template <typename VT>
-  static void add_variable_data(const int ncid, const int varid, 
+  static void add_variable_data(const int ncid, const int varid,
     const int mode_dimid, const int nmodes,
     const int level_dimid, const int interface_dimid, const int nlev,
     const int species_dimid, const int nspec,

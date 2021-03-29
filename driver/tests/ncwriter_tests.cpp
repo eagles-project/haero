@@ -53,9 +53,15 @@ TEST_CASE("ncwriter", "") {
   */
   std::vector<AerosolSpecies> species = create_mam4_aerosol_species();
   int nspec = species.size();
-  ncf.add_species_dim(species);
+  ncf.add_aerosol_dim(species);
   REQUIRE(ncf.get_ndims() == 5);
-  REQUIRE(ncf.num_species() == nspec);
+  REQUIRE(ncf.num_aerosols() == nspec);
+
+  std::vector<GasSpecies> gases = create_mam4_gas_species();
+  int ngas = gases.size();
+  ncf.add_gas_dim(gases);
+  REQUIRE(ncf.get_ndims() == 6);
+  REQUIRE(ncf.num_gases() == ngas);
 
   /**
     Define the coordinate variable for the time dimension.
