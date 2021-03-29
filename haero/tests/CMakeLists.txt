@@ -43,6 +43,9 @@ EkatCreateUnitTest(process_tests process_tests.cpp
 
 EkatCreateUnitTest(mam_nucleation_process_tests mam_nucleation_process_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
+
+EkatCreateUnitTest(cuda_tests cuda_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
 #----------------------------------------------------
 # Unit tests for prognostic processes
 #----------------------------------------------------
