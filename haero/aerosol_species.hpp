@@ -18,7 +18,7 @@ struct AerosolSpecies final {
   KOKKOS_INLINE_FUNCTION
   AerosolSpecies(): name_view(), symbol_view() {}
 
-  /// Creates a new (aerosol or gas) species.
+  /// Creates a new aerosol species.
   /// @param [in] name A unique descriptive name for this species.
   /// @param [in] symbol A unique short, symbolic name for this species.
   /// @param [in] molecular_wt The molecular weight [kg/mol]of the species
