@@ -5,7 +5,7 @@
 #include "haero/view_pack_helpers.hpp"
 #include "haero/utils.hpp"
 #include "haero/mode.hpp"
-#include "haero/species.hpp"
+#include "haero/aerosol_species.hpp"
 #include "haero/atmosphere.hpp"
 #include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -35,7 +35,7 @@ class NcWriter {
   public:
     /// key-value pairs for metadata attributes
     typedef std::pair<std::string,std::string> text_att_type;
-    
+
     using ColumnView = Kokkos::View<PackType*>;
     using SpeciesColumnView = Kokkos::View<PackType**>;
     using ModalColumnView = Kokkos::View<PackType**>;
@@ -96,18 +96,18 @@ class NcWriter {
       @param [in] modes
     */
     void add_mode_dim(const std::vector<Mode>& modes);
-    
+
     /** @brief Adds a dimension for the number of species.
-    
+
     */
-    void add_species_dim(const std::vector<Species>& species);
-    
-    
+    void add_species_dim(const std::vector<AerosolSpecies>& species);
+
+
     /** @brief Defines netcdf variables for Haero::Atmosphere class.
-    
+
     **Note:** Does not define pressure, as that variable is already defined by HostDynamics.
-    
-      @param [in] atm 
+
+      @param [in] atm
     */
     void define_atm_state_vars(const Atmosphere& atm);
 
@@ -166,9 +166,9 @@ class NcWriter {
     */
     void define_modal_var(const std::string& name, const ekat::units::Units& units,
       const std::vector<text_att_type>& atts=std::vector<text_att_type>());
-      
+
     /** @brief defines a species variable at level midpoints.
-    
+
       @param [in] name
       @param [in] units
       @param [in] atts
@@ -259,7 +259,7 @@ class NcWriter {
     */
     void add_time_dependent_scalar_value(const std::string& name, const size_t time_idx,
       const Real val) const;
-  
+
     /** @brief write one column's data from a std::vector to the nc file.
 
       @param [in] varname name of variable to write
@@ -270,7 +270,7 @@ class NcWriter {
       const std::vector<Real>& data) const;
 
     /** @brief Adds Haero::Atmosphere data to netcdf file
-    
+
       @param [in] atm
       @param [in] time_idx
     */

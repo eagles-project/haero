@@ -89,7 +89,7 @@ install(FILES haero.hpp
               selected_processes.hpp
               physical_constants.hpp
               prognostics.hpp
-              species.hpp
+              aerosol_species.hpp
               utils.hpp
               view_pack_helpers.hpp
         DESTINATION include/haero)

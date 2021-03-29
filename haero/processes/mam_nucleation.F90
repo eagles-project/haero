@@ -2,7 +2,7 @@
 !> appropriate section in the Processes chapter of the Haero design document.
 module mam_nucleation
 
-  use haero, only: wp, model_t, species_t, &
+  use haero, only: wp, model_t, aerosol_species_t, &
                    prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
                    var_not_found
   use haero_constants, only: pi, R_gas, Avogadro
@@ -133,7 +133,7 @@ subroutine init(model)
   ! Arguments
   type(model_t), intent(in) :: model
 
-  type(species_t) so4, nh4
+  type(aerosol_species_t) so4, nh4
   integer :: m
   integer :: so4_index, nh4_index
 
@@ -159,28 +159,18 @@ subroutine init(model)
 
   ! Record the index for SO4 aerosol within the Aitken mode and fetch some
   ! properties.
-  so4_index = model%aerosol_index(nait, "SO4")
-  if (so4_index > 0) then
-    iaer_so4 = model%population_index(nait, so4_index)
-    if (iaer_so4 > 0) then
-      so4 = model%aero_species(nait, iaer_so4)
-      mw_so4a_host = so4%molecular_wt
-    end if
-  else
-    iaer_so4 = 0
+  iaer_so4 = model%aerosol_index(nait, "SO4")
+  if (iaer_so4 > 0) then
+    so4 = model%aero_species(nait, iaer_so4)
+    mw_so4a_host = so4%molecular_wt
   end if
 
   ! Record the index for NH4 aerosol within the Aitken mode and fetch some
   ! properties.
-  nh4_index = model%aerosol_index(nait, "NH4")
-  if (nh4_index > 0) then
-    iaer_nh4 = model%population_index(nait, nh4_index)
-    if (iaer_nh4 > 0) then
-      nh4 = model%aero_species(nait, iaer_nh4)
-      mw_nh4a_host = nh4%molecular_wt
-    end if
-  else
-    iaer_nh4 = 0
+  iaer_nh4 = model%aerosol_index(nait, "NH4")
+  if (iaer_nh4 > 0) then
+    nh4 = model%aero_species(nait, iaer_nh4)
+    mw_nh4a_host = nh4%molecular_wt
   end if
 
   ! Record the index for H2SO4 gas (source of new nuclei).

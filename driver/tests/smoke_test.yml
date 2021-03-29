@@ -4,18 +4,26 @@ modes:
     D_min: 0.0087
     D_max: 0.052
     sigma: 1.6
+    rhcrystal: 0.35
+    rhdeliq: 0.8
   accumulation:
     D_min: 0.0535
     D_max: 0.44
     sigma: 1.8
+    rhcrystal: 0.35
+    rhdeliq: 0.8
   coarse:
     D_min: 1
     D_max: 4
     sigma: 1.8
+    rhcrystal: 0.35
+    rhdeliq: 0.8
   primary_carbon:
     D_min: 0.01
     D_max: 0.1
     sigma: 1.6
+    rhcrystal: 0.35
+    rhdeliq: 0.8
 
 # Aerosol species can belong to more than one mode, and are indexed within
 # each mode automatically.
@@ -60,7 +68,7 @@ physics:
   nucleation:           true
   coagulation:          true
 
-# ambient atmospheric conditions for each column. 
+# ambient atmospheric conditions for each column.
 atmosphere:
   Tv0:      301.0
   Gammav:   0.02
@@ -69,7 +77,7 @@ atmosphere:
   tperiod:  450
   qv0:      0.002
   qv1:      0.001
-  
+
 
 # Grid geometry
 grid:

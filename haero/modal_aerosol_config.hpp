@@ -2,7 +2,7 @@
 #define HAERO_MODAL_AEROSOL_CONFIG_HPP
 
 #include "haero/mode.hpp"
-#include "haero/species.hpp"
+#include "haero/aerosol_species.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include <map>
 #include <algorithm>
@@ -37,9 +37,9 @@ class ModalAerosolConfig final {
   ///                          those modes.
   /// @param [in] gas_species a list of gas species supported by the Context
   ModalAerosolConfig(const std::vector<Mode>& aerosol_modes,
-                     const std::vector<Species>& aerosol_species,
+                     const std::vector<AerosolSpecies>& aerosol_species,
                      const std::map<std::string, std::vector<std::string> >& mode_species,
-                     const std::vector<Species>& gas_species):
+                     const std::vector<AerosolSpecies>& gas_species):
     d_aerosol_modes  (vector_to_1dview(aerosol_modes,   "aerosol_modes")),
     d_aerosol_species(vector_to_1dview(aerosol_species, "aerosol_species")),
 
@@ -79,26 +79,26 @@ class ModalAerosolConfig final {
 
   /// The list of all aerosol species associated with this aerosol
   /// model.
-  DeviceType::view_1d<Species> d_aerosol_species;
-  HostType::view_1d<Species>   h_aerosol_species;
+  DeviceType::view_1d<AerosolSpecies> d_aerosol_species;
+  HostType::view_1d<AerosolSpecies>   h_aerosol_species;
 
   /// The total number of distinct aerosol species populations in the
   /// model, counting appearances of one species in different modes separately.
   int num_aerosol_populations;
 
   /// The list of gas species associated with this aerosol model.
-  DeviceType::view_1d<Species> d_gas_species;
-  HostType::view_1d<Species>   h_gas_species;
+  DeviceType::view_1d<AerosolSpecies> d_gas_species;
+  HostType::view_1d<AerosolSpecies>   h_gas_species;
 
   /// Returns the list of aerosol species associated with the model with the
   /// given mode index.
   /// @param [in]mode_index An integer index identifying the mode in question. This
   ///                       This index goes from 0 to num_modes-1.
-  std::vector<Species> aerosol_species_for_mode(const int mode_index) const {
+  std::vector<AerosolSpecies> aerosol_species_for_mode(const int mode_index) const {
     EKAT_ASSERT(mode_index >= 0);
     EKAT_ASSERT(mode_index < h_species_for_mode.extent(0));
     // Construct this vector from our association data.
-    std::vector<Species> species;
+    std::vector<AerosolSpecies> species;
     for (int s = 0; s < h_species_for_mode.extent(1) && 0 <= h_species_for_mode(mode_index,s); ++s) {
       species.push_back(h_aerosol_species[h_species_for_mode(mode_index,s)]);
     }
@@ -179,7 +179,7 @@ class ModalAerosolConfig final {
   ///                       given mode index.  Must have been sized large enough to hold as many
   ///                       species as may be found.
   KOKKOS_INLINE_FUNCTION
-  void aerosol_species_for_mode(const int mode_index, DeviceType::view_1d<Species> aerosol_species) const {
+  void aerosol_species_for_mode(const int mode_index, DeviceType::view_1d<AerosolSpecies> aerosol_species) const {
     EKAT_KERNEL_ASSERT(mode_index >= 0);
     EKAT_KERNEL_ASSERT(mode_index < d_species_for_mode.extent(0));
     // Construct this vector from our association data.
