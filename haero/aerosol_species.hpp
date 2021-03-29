@@ -27,11 +27,10 @@ struct AerosolSpecies final {
   AerosolSpecies(const std::string& name,
           const std::string& symbol,
           Real molecular_wt,
-          Real carbon_wt,
           Real dry_rad,
           Real dens,
           Real hygro):
-    molecular_weight(molecular_wt), carbon_weight(carbon_wt), dry_radius(dry_rad),
+    molecular_weight(molecular_wt), dry_radius(dry_rad),
     density(dens), hygroscopicity(hygro), name_view(name), symbol_view(symbol) {}
 
   /// Full species name.
@@ -42,9 +41,6 @@ struct AerosolSpecies final {
 
   // Molecular weight [kg/mol]
   Real molecular_weight;
-
-  // Carbon weight [kg/mol]
-  Real carbon_weight;
 
   /// Dry radius [m]
   Real dry_radius;
@@ -70,7 +66,6 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
     "secondary organic aerosol", "black carbon", "dust", "sodium chloride", "marine organic matter"};
   const std::vector<std::string> aer_symbs = {"SO4",  "POM",  "SOA",   "BC",  "DST",   "NaCl",  "MOM"};
   const std::vector<Real> aer_mw =           {115.107, 12.011,  12.011,  12.011,  135.064, 58.4425, 250093};
-  const std::vector<Real> aer_cw =           {0,       12.011,  12.011,  12.011,  0,       0,       102334};
   const std::vector<Real> aer_dry_rad =      {6.95e-8, 2.12e-8, 2.12e-8, 1.18e-8, 1.51e-6, 2.09e-7, 2.09e-7};
   const std::vector<Real> aer_dens =         {1770,    1000,    1000,    1700,    2600,    1900,    1601};
   const std::vector<Real> aer_hygro =        {0.507,   1e-10,   0.14,    1e-10,   0.14,    1.16,    0.1};
@@ -79,7 +74,7 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
   static constexpr Real g_to_kg = 0.001; /// Convert molecular weights to SI units (g/mol) -> (kg/mol)
   for (int i=0; i<aer_mw.size(); ++i) {
     result.push_back(AerosolSpecies(aer_names[i], aer_symbs[i],
-      g_to_kg*aer_mw[i], g_to_kg*aer_cw[i], aer_dry_rad[i], aer_dens[i], aer_hygro[i]));
+      g_to_kg*aer_mw[i], aer_dry_rad[i], aer_dens[i], aer_hygro[i]));
   }
   return result;
 }
@@ -91,8 +86,8 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
 inline std::vector<AerosolSpecies> create_mam4_gas_species() {
   return std::vector<AerosolSpecies>({
     // FIXME: All of the numerical parameters here are wrong and need to be fixed
-    AerosolSpecies("sulfuric acid", "H2SO4", 1.0, 1.0, 1.0, 1.0, 1.0),
-    AerosolSpecies("semi-volatile organic gas-phase species", "SOAG", 1.0, 1.0, 1.0, 1.0, 1.0),
+    AerosolSpecies("sulfuric acid", "H2SO4", 1.0, 1.0, 1.0, 1.0),
+    AerosolSpecies("semi-volatile organic gas-phase species", "SOAG", 1.0, 1.0, 1.0, 1.0),
   });
 }
 

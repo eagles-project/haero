@@ -63,7 +63,6 @@ add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             ${HAERO_FORTRAN_SOURCES}
             atmosphere.cpp
-            chemistry.cpp
             diagnostics.cpp
             modal_aerosol_config.cpp
             model.cpp

@@ -62,7 +62,7 @@ std::vector<AerosolSpecies> read_aerosol_species(const YAML::Node& root) {
         throw YamlException("aerosol species '%s' has no name.", symbol.c_str());
       } else {
         auto name = snode["name"].as<std::string>();
-        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
+        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
       }
     }
   }
@@ -83,7 +83,7 @@ std::vector<AerosolSpecies> read_gas_species(const YAML::Node& root) {
         throw YamlException("gas species '%s' has no name.", symbol.c_str());
       else {
         auto name = snode["name"].as<std::string>();
-        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
+        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
       }
     }
   }

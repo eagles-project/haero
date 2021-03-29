@@ -55,49 +55,41 @@ void NcWriter::add_species_dim(const std::vector<AerosolSpecies>& species) {
 
   /// Define coordinate variables for AerosolSpecies dimension
   int species_name_var_id = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_species_name", NC_STRING, 1, &species_dimid, &species_name_var_id);
+  retval = nc_def_var(ncid, "aerosol_name", NC_STRING, 1, &species_dimid, &species_name_var_id);
   CHECK_NCERR(retval);
-  name_varid_map.emplace("aerosol_species_name", species_name_var_id);
+  name_varid_map.emplace("aerosol_name", species_name_var_id);
 
   int species_symbol_var_id = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_species_symbol", NC_STRING, 1, &species_dimid, &species_symbol_var_id);
+  retval = nc_def_var(ncid, "aerosol_symbol", NC_STRING, 1, &species_dimid, &species_symbol_var_id);
   CHECK_NCERR(retval);
-  name_varid_map.emplace("aerosol_species_symbol", species_symbol_var_id);
+  name_varid_map.emplace("aerosol_symbol", species_symbol_var_id);
 
   int species_molec_weight_var_id = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_species_molecular_weight", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_molecular_weight", NC_REAL_KIND, 1, &species_dimid,
      &species_molec_weight_var_id);
   CHECK_NCERR(retval);
-  name_varid_map.emplace("aerosol_species_molecular_weight", species_molec_weight_var_id);
-
-  int species_carbon_weight_var_id = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_species_carbon_weight", NC_REAL_KIND, 1, &species_dimid,
-     &species_carbon_weight_var_id);
-  CHECK_NCERR(retval);
-  name_varid_map.emplace("aerosol_species_carbon_weight", species_molec_weight_var_id);
+  name_varid_map.emplace("aerosol_molecular_weight", species_molec_weight_var_id);
 
   int species_dryrad_varid = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_species_dry_radius", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_dry_radius", NC_REAL_KIND, 1, &species_dimid,
     &species_dryrad_varid);
   CHECK_NCERR(retval);
-  name_varid_map.emplace("aerosol_species_dry_radius", species_dryrad_varid);
+  name_varid_map.emplace("aerosol_dry_radius", species_dryrad_varid);
 
   int species_dens_varid = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_species_density", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_density", NC_REAL_KIND, 1, &species_dimid,
     &species_dens_varid);
   CHECK_NCERR(retval);
-  name_varid_map.emplace("aerosol_species_density", species_dens_varid);
+  name_varid_map.emplace("aerosol_density", species_dens_varid);
 
   int species_hygro_varid = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_species_hygroscopicity", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_hygroscopicity", NC_REAL_KIND, 1, &species_dimid,
     &species_hygro_varid);
   CHECK_NCERR(retval);
-  name_varid_map.emplace("aerosol_species_hygroscopicity", species_hygro_varid);
+  name_varid_map.emplace("aerosol_hygroscopicity", species_hygro_varid);
 
   const auto mwstr = ekat::units::to_string(ekat::units::kg / ekat::units::mol);
   retval = nc_put_att_text(ncid, species_molec_weight_var_id, "units", mwstr.size(), mwstr.c_str());
-  CHECK_NCERR(retval);
-  retval = nc_put_att_text(ncid, species_carbon_weight_var_id, "units", mwstr.size(), mwstr.c_str());
   CHECK_NCERR(retval);
   const auto radstr = ekat::units::to_string(ekat::units::m);
   retval = nc_put_att_text(ncid, species_dryrad_varid, "units", radstr.size(), radstr.c_str());
@@ -119,8 +111,6 @@ void NcWriter::add_species_dim(const std::vector<AerosolSpecies>& species) {
 #ifdef HAERO_DOUBLE_PRECISION
     retval = nc_put_var1_double(ncid, species_molec_weight_var_id, &idx, &species[i].molecular_weight);
     CHECK_NCERR(retval);
-    retval = nc_put_var1_double(ncid, species_carbon_weight_var_id, &idx, &species[i].carbon_weight);
-    CHECK_NCERR(retval);
     retval = nc_put_var1_double(ncid, species_dryrad_varid, &idx, &species[i].dry_radius);
     CHECK_NCERR(retval);
     retval = nc_put_var1_double(ncid, species_dens_varid, &idx, &species[i].density);
@@ -129,8 +119,6 @@ void NcWriter::add_species_dim(const std::vector<AerosolSpecies>& species) {
     CHECK_NCERR(retval);
 #else
     retval = nc_put_var1_float(ncid, species_molec_weight_var_id, &idx, &species[i].molecular_weight);
-    CHECK_NCERR(retval);
-    retval = nc_put_var1_float(ncid, species_carbon_weight_var_id, &idx, &species[i].carbon_weight);
     CHECK_NCERR(retval);
     retval = nc_put_var1_float(ncid, species_dryrad_varid, &idx, &species[i].dry_radius);
     CHECK_NCERR(retval);
