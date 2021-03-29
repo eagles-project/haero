@@ -12,6 +12,7 @@ namespace haero {
 /// This struct represents an aerosol particle mode and contains all associated
 /// metadata. It is not polymorphic, so don't derive any subclass from it.
 struct Mode final {
+  static const int NAME_LEN=128;
   public:
 
   // Default constructor needed to resize Kokkos Views on device before deep copy.
@@ -46,8 +47,8 @@ struct Mode final {
     deliquesence_pt(deliq_pt),
     crystallization_pt(crystal_pt)
   {
-    EKAT_ASSERT(name.size() < 100);
-    strncpy(name_view, name.c_str(), 100);
+    EKAT_ASSERT(name.size() < NAME_LEN);
+    strncpy(name_view, name.c_str(), NAME_LEN);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -58,8 +59,21 @@ struct Mode final {
     deliquesence_pt(m.deliquesence_pt),
     crystallization_pt(m.crystallization_pt)
   {
-    for (int i=0; i<100; ++i) 
+    for (int i=0; i<NAME_LEN; ++i) 
       name_view[i] = m.name_view[i];
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  Mode &operator=(const Mode &m)
+  {
+    min_diameter=m.min_diameter;
+    max_diameter=m.max_diameter;
+    mean_std_dev=m.mean_std_dev;
+    deliquesence_pt=m.deliquesence_pt;
+    crystallization_pt=m.crystallization_pt;
+    for (int i=0; i<NAME_LEN; ++i) 
+      name_view[i] = m.name_view[i];
+    return *this;
   }
 
   /// Constructor can be called on device.
@@ -88,7 +102,7 @@ struct Mode final {
   Real arithmetic_mean_diam() const {return 0.5*(min_diameter + max_diameter);}
 
 private:
-  char name_view[100];
+  char name_view[NAME_LEN];
 };
 
 

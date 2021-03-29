@@ -245,7 +245,7 @@ void Model::init_fortran() {
     // Set up aerosol species for this mode.
     int num_species = mode_species.size();
     for (int s = 0; s < num_species; ++s) {
-      const auto& species = modal_aerosol_config_.h_aerosol_species[s];
+      const auto species = modal_aerosol_config_.h_aerosol_species[s];
       haerotran_set_aero_species(m+1, s+1, species.name().c_str(),
         species.symbol().c_str(), species.molecular_weight,
         species.dry_radius, species.density, species.hygroscopicity);
@@ -256,7 +256,7 @@ void Model::init_fortran() {
   int num_gas_species = modal_aerosol_config_.h_gas_species.size();
   haerotran_set_num_gas_species(num_gas_species);
   for (int i = 0; i < num_gas_species; ++i) {
-    const auto& species = modal_aerosol_config_.h_gas_species[i];
+    const auto species = modal_aerosol_config_.h_gas_species[i];
     haerotran_set_gas_species(i+1, species.name().c_str(),
         species.symbol().c_str(), species.molecular_weight,
         species.dry_radius, species.density, species.hygroscopicity);
