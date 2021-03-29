@@ -21,7 +21,7 @@ struct Mode final {
     max_diameter(0),
     mean_std_dev(0),
     deliquesence_pt(0),
-    crystallization_pt(0),
+    crystallization_pt(0)
   { 
     name_view[0]='\0';
   }
@@ -44,8 +44,7 @@ struct Mode final {
     max_diameter(max_diameter),
     mean_std_dev(mean_std_dev),
     deliquesence_pt(deliq_pt),
-    crystallization_pt(crystal_pt),
-    name_view(name)
+    crystallization_pt(crystal_pt)
   {
     EKAT_ASSERT(name.size() < 100);
     strncpy(name_view, name.c_str(), 100);
@@ -57,8 +56,7 @@ struct Mode final {
     max_diameter(m.max_diameter),
     mean_std_dev(m.mean_std_dev),
     deliquesence_pt(m.deliquesence_pt),
-    crystallization_pt(m.crystallization_pt),
-    name_view(m.name_view)
+    crystallization_pt(m.crystallization_pt)
   {
     for (int i=0; i<100; ++i) 
       name_view[i] = m.name_view[i];
