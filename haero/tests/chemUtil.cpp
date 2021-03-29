@@ -18,15 +18,14 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
                        nBatch(inBatch),
                        policy(TChem::exec_space(), nBatch, Kokkos::AUTO()),
                        theta("latitude", nBatch),
-                       lambda("longitude", nBatch){
-
+                       lambda("longitude", nBatch) {
   // NOTE: these appear to do nothing, but keeping them around, just in case
   TChem::exec_space::print_configuration(std::cout, detail);
   TChem::host_exec_space::print_configuration(std::cout, detail);
 
   // construct kmd and use the view for testing
+  kmd = TChem::KineticModelData(cfiles.chemFile, cfiles.thermFile);
   std::ofstream output(cfiles.thermFile);
-  TChem::KineticModelData kmd(cfiles.chemFile, cfiles.thermFile);
   // create a const version
   kmcd = kmd.createConstData<TChem::exec_space>();
 
