@@ -59,9 +59,10 @@ inline std::vector<GasSpecies> create_mam4_gas_species() {
     "O2", "CO2", "N2O", "CH4", "CFC11", "CFC12"};
   const std::vector<Real> gmws = {47.9982, 34.0136, 98.0784, 64.0648, 62.1324, 12.011,
     31.988, 44.009, 44.013, 16.04, 137.37, 120.91};
+  static constexpr Real g_to_kg = 0.001;
   std::vector<GasSpecies> result;
   for (int i=0; i<gnames.size(); ++i) {
-    result.push_back(GasSpecies(gnames[i], gsymbs[i], gmws[i]));
+    result.push_back(GasSpecies(gnames[i], gsymbs[i], g_to_kg*gmws[i]));
   }
   return result;
 }
