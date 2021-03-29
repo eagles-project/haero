@@ -399,16 +399,10 @@ contains
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
     real(c_real), value, intent(in) :: molecular_wt
-    real(c_real), value, intent(in) :: dry_radius
-    real(c_real), value, intent(in) :: density
-    real(c_real), value, intent(in) :: hygroscopicity
 
     model%gas_species(species)%name = c_to_f_string(name)
     model%gas_species(species)%symbol = c_to_f_string(symbol)
     model%gas_species(species)%molecular_wt = molecular_wt
-    model%gas_species(species)%dry_radius = dry_radius
-    model%gas_species(species)%density = density
-    model%gas_species(species)%hygroscopicity = hygroscopicity
   end subroutine
 
   subroutine haerotran_set_num_levels(num_levels) bind(c)
