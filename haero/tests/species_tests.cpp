@@ -9,12 +9,10 @@ using namespace haero;
 
 TEST_CASE("aero_species_ctor", "") {
   // Create a representation of sulfate.
-  // FIXME: Maybe use better numbers.
-  AerosolSpecies sulfate("Sulfate", "SO4", 115.107, 0, 6.95e-8, 1770, 0.507);
+  AerosolSpecies sulfate("Sulfate", "SO4", 115.107, 6.95e-8, 1770, 0.507);
   REQUIRE(sulfate.name() == "Sulfate");
   REQUIRE(sulfate.symbol() == "SO4");
   REQUIRE(sulfate.molecular_weight == 115.107);
-  REQUIRE(sulfate.carbon_weight == 0);
   REQUIRE(sulfate.dry_radius == 6.95e-8);
   REQUIRE(sulfate.density == 1770);
   REQUIRE(sulfate.hygroscopicity == 0.507);

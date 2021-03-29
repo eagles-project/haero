@@ -358,7 +358,7 @@ contains
   end subroutine
 
   subroutine haerotran_set_aero_species(mode, species, name, symbol, &
-    molecular_wt, carbon_wt, dry_radius, density, hygroscopicity) bind(c)
+    molecular_wt, dry_radius, density, hygroscopicity) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -367,7 +367,6 @@ contains
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
     real(c_real), value, intent(in) :: molecular_wt
-    real(c_real), value, intent(in) :: carbon_wt
     real(c_real), value, intent(in) :: dry_radius
     real(c_real), value, intent(in) :: density
     real(c_real), value, intent(in) :: hygroscopicity
@@ -375,7 +374,6 @@ contains
     model%aero_species(mode, species)%name = c_to_f_string(name)
     model%aero_species(mode, species)%symbol = c_to_f_string(symbol)
     model%aero_species(mode, species)%molecular_wt = molecular_wt
-    model%aero_species(mode, species)%carbon_wt = carbon_wt
     model%aero_species(mode, species)%dry_radius = dry_radius
     model%aero_species(mode, species)%density = density
     model%aero_species(mode, species)%hygroscopicity = hygroscopicity
@@ -393,7 +391,7 @@ contains
   end subroutine
 
   subroutine haerotran_set_gas_species(species, name, symbol, &
-    molecular_wt, carbon_wt, dry_radius, density, hygroscopicity) bind(c)
+    molecular_wt, dry_radius, density, hygroscopicity) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -401,7 +399,6 @@ contains
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
     real(c_real), value, intent(in) :: molecular_wt
-    real(c_real), value, intent(in) :: carbon_wt
     real(c_real), value, intent(in) :: dry_radius
     real(c_real), value, intent(in) :: density
     real(c_real), value, intent(in) :: hygroscopicity
@@ -409,7 +406,6 @@ contains
     model%gas_species(species)%name = c_to_f_string(name)
     model%gas_species(species)%symbol = c_to_f_string(symbol)
     model%gas_species(species)%molecular_wt = molecular_wt
-    model%gas_species(species)%carbon_wt = carbon_wt
     model%gas_species(species)%dry_radius = dry_radius
     model%gas_species(species)%density = density
     model%gas_species(species)%hygroscopicity = hygroscopicity
