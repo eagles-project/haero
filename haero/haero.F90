@@ -8,7 +8,7 @@ module haero
 
   private
 
-  public :: wp, mode_t, aerosol_species_t, model_t, &
+  public :: wp, mode_t, aerosol_species_t, gas_species_t, model_t, &
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
@@ -50,6 +50,15 @@ module haero
     real(wp) :: hygroscopicity
   end type
 
+  type :: gas_species_t
+    !> Species name
+    character(len=:), allocatable :: name
+    !> Species symbol (abbreviation)
+    character(len=:), allocatable :: symbol
+    !> Molecular weight [kg/mol]
+    real(wp) :: molecular_wt
+  end type
+
   !> This Fortran type is the equivalent of the C++ Model class. Exactly one
   !> read-only instance of a model is available to Fortran processes.
   type :: model_t
@@ -66,7 +75,7 @@ module haero
     !> The aerosol species within each mode. Indexed as (mode, species).
     type(aerosol_species_t), dimension(:,:), allocatable :: aero_species
     !> The gas species in the model.
-    type(aerosol_species_t), dimension(:), allocatable :: gas_species
+    type(gas_species_t), dimension(:), allocatable :: gas_species
     !> The number of gases in the model. Equal to size(gas_species).
     integer :: num_gases
     !> The number of vertical levels in an atmospheric column.
