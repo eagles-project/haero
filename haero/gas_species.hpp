@@ -47,6 +47,8 @@ struct GasSpecies final {
 /// This factory function constructs a set of gas species corresponding to
 /// the legacy MAM4 model.
 ///
+/// These specific species names can be found in an e3sm v1 atm.log file.
+///
 /// for info on data sources, see
 /// https://eagles-project.atlassian.net/wiki/spaces/Computation/pages/1125515265/Aerosol+species+and+mode+data
 inline std::vector<GasSpecies> create_mam4_gas_species() {

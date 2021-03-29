@@ -79,18 +79,6 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
   return result;
 }
 
-/// This factory function constructs a set of gas species corresponding to
-/// the legacy MAM4 model. Includes:
-/// 1. sulfuric acid (H2SO4)
-/// 2. semi-volatile organic gas-phase species (SOAG)
-inline std::vector<AerosolSpecies> create_mam4_gas_species() {
-  return std::vector<AerosolSpecies>({
-    // FIXME: All of the numerical parameters here are wrong and need to be fixed
-    AerosolSpecies("sulfuric acid", "H2SO4", 1.0, 1.0, 1.0, 1.0),
-    AerosolSpecies("semi-volatile organic gas-phase species", "SOAG", 1.0, 1.0, 1.0, 1.0),
-  });
-}
-
 /// This factory function constructs a map of mode name -> species symbol
 /// associations corresponding to those used in the legacy MAM4 model:
 ///
