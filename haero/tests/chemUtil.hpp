@@ -52,6 +52,8 @@ class chemSolver{
     real_type_1d_view theta, lambda;
     // 2D views containing chemical state, and omega for tendency results
     real_type_2d_view state, omega;
+    // TChem kinetic model data
+    TChem::KineticModelData kmd;
     // a const version of the object that contains the data describing the
       // kinetic model
     TChem::KineticModelConstData<TChem::exec_space> kmcd;
