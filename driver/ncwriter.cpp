@@ -44,46 +44,46 @@ void NcWriter::add_level_dims(const int& nlev) {
   ndims += 2;
 }
 
-void NcWriter::add_species_dim(const std::vector<AerosolSpecies>& species) {
+void NcWriter::add_aerosol_dim(const std::vector<AerosolSpecies>& species) {
   EKAT_ASSERT(ncid != NC_EBADID); // file is open
-  EKAT_REQUIRE_MSG(species_dimid == NC_EBADID, "species dimension already defined.");
+  EKAT_REQUIRE_MSG(aerosol_dimid == NC_EBADID, "aerosol dimension already defined.");
   /// Define species dimension
   const int nspec = species.size();
-  int retval = nc_def_dim(ncid, "aerosol_species", nspec, &species_dimid);
+  int retval = nc_def_dim(ncid, "aerosol_species", nspec, &aerosol_dimid);
   CHECK_NCERR(retval);
   ++ndims;
 
   /// Define coordinate variables for AerosolSpecies dimension
   int species_name_var_id = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_name", NC_STRING, 1, &species_dimid, &species_name_var_id);
+  retval = nc_def_var(ncid, "aerosol_name", NC_STRING, 1, &aerosol_dimid, &species_name_var_id);
   CHECK_NCERR(retval);
   name_varid_map.emplace("aerosol_name", species_name_var_id);
 
   int species_symbol_var_id = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_symbol", NC_STRING, 1, &species_dimid, &species_symbol_var_id);
+  retval = nc_def_var(ncid, "aerosol_symbol", NC_STRING, 1, &aerosol_dimid, &species_symbol_var_id);
   CHECK_NCERR(retval);
   name_varid_map.emplace("aerosol_symbol", species_symbol_var_id);
 
   int species_molec_weight_var_id = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_molecular_weight", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_molecular_weight", NC_REAL_KIND, 1, &aerosol_dimid,
      &species_molec_weight_var_id);
   CHECK_NCERR(retval);
   name_varid_map.emplace("aerosol_molecular_weight", species_molec_weight_var_id);
 
   int species_dryrad_varid = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_dry_radius", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_dry_radius", NC_REAL_KIND, 1, &aerosol_dimid,
     &species_dryrad_varid);
   CHECK_NCERR(retval);
   name_varid_map.emplace("aerosol_dry_radius", species_dryrad_varid);
 
   int species_dens_varid = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_density", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_density", NC_REAL_KIND, 1, &aerosol_dimid,
     &species_dens_varid);
   CHECK_NCERR(retval);
   name_varid_map.emplace("aerosol_density", species_dens_varid);
 
   int species_hygro_varid = NC_EBADID;
-  retval = nc_def_var(ncid, "aerosol_hygroscopicity", NC_REAL_KIND, 1, &species_dimid,
+  retval = nc_def_var(ncid, "aerosol_hygroscopicity", NC_REAL_KIND, 1, &aerosol_dimid,
     &species_hygro_varid);
   CHECK_NCERR(retval);
   name_varid_map.emplace("aerosol_hygroscopicity", species_hygro_varid);
@@ -125,6 +125,51 @@ void NcWriter::add_species_dim(const std::vector<AerosolSpecies>& species) {
     retval = nc_put_var1_float(ncid, species_dens_varid, &idx, &species[i].density);
     CHECK_NCERR(retval);
     retval = nc_put_var1_float(ncid, species_hygro_varid, &idx, &species[i].hygroscopicity);
+    CHECK_NCERR(retval);
+#endif
+  }
+}
+
+void NcWriter::add_gas_dim(const std::vector<GasSpecies>& gases) {
+  EKAT_ASSERT(ncid != NC_EBADID);
+  EKAT_REQUIRE_MSG(gas_dimid == NC_EBADID, "gas dimension already defined.");
+  const int nspec = gases.size();
+  int retval = nc_def_dim(ncid, "gas_species", nspec, &gas_dimid);
+  CHECK_NCERR(retval);
+  ++ndims;
+
+  int gas_name_var_id = NC_EBADID;
+  retval = nc_def_var(ncid, "gas_name", NC_STRING, 1, &gas_dimid, &gas_name_var_id);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("gas_name", gas_name_var_id);
+
+  int gas_symb_var_id = NC_EBADID;
+  retval = nc_def_var(ncid, "gas_symbol", NC_STRING, 1, &gas_dimid, &gas_symb_var_id);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("gas_symbol", gas_symb_var_id);
+
+  int gas_mw_var_id = NC_EBADID;
+  retval = nc_def_var(ncid, "gas_molecular_weight", NC_REAL_KIND, 1, &gas_dimid, &gas_mw_var_id);
+  CHECK_NCERR(retval);
+  name_varid_map.emplace("gas_molecular_weight", gas_mw_var_id);
+
+  const auto mwstr = ekat::units::to_string(ekat::units::kg/ekat::units::mol);
+  retval = nc_put_att_text(ncid, gas_mw_var_id, "units", mwstr.size(), mwstr.c_str());
+  CHECK_NCERR(retval);
+
+  for (int i=0; i<nspec; ++i) {
+    const size_t idx = i;
+    auto name = gases[i].name().c_str();
+    auto symb = gases[i].symbol().c_str();
+    retval = nc_put_var1_string(ncid, gas_name_var_id, &idx, &name);
+    CHECK_NCERR(retval);
+    retval = nc_put_var1_string(ncid, gas_symb_var_id, &idx, &symb);
+    CHECK_NCERR(retval);
+#ifdef HAERO_DOUBLE_PRECISION
+    retval = nc_put_var1_double(ncid, gas_mw_var_id, &idx, &gases[i].molecular_weight);
+    CHECK_NCERR(retval);
+#else
+    retval = nc_put_var1_float(ncid, gas_mw_var_id, &idx, &gases[i].molecular_weight);
     CHECK_NCERR(retval);
 #endif
   }
@@ -456,9 +501,21 @@ int NcWriter::num_modes() const {
   return int(nm);
 }
 
-int NcWriter::num_species() const {
+int NcWriter::num_aerosols() const {
   size_t ns;
-  int retval = nc_inq_dimlen(ncid, species_dimid, &ns);
+  int retval = nc_inq_dimlen(ncid, aerosol_dimid, &ns);
+  if (retval == NC_EBADDIM) {
+    ns = 0;
+  }
+  else {
+    CHECK_NCERR(retval);
+  }
+  return int(ns);
+}
+
+int NcWriter::num_gases() const {
+  size_t ns;
+  int retval = nc_inq_dimlen(ncid, gas_dimid, &ns);
   if (retval == NC_EBADDIM) {
     ns = 0;
   }
@@ -498,13 +555,35 @@ void NcWriter::define_modal_var(const std::string& name, const ekat::units::Unit
   name_varid_map.emplace(name, varid);
 }
 
-void NcWriter::define_species_var(const std::string& name, const ekat::units::Units& units,
+void NcWriter::define_aerosol_var(const std::string& name, const ekat::units::Units& units,
   const std::vector<text_att_type>& atts) {
 
-  EKAT_ASSERT(time_dimid != NC_EBADID && species_dimid != NC_EBADID && level_dimid != NC_EBADID);
+  EKAT_ASSERT(time_dimid != NC_EBADID && aerosol_dimid != NC_EBADID && level_dimid != NC_EBADID);
 
   const int m_ndims = 3;
-  const int dimids[3] = {time_dimid, species_dimid, level_dimid};
+  const int dimids[3] = {time_dimid, aerosol_dimid, level_dimid};
+  int varid = NC_EBADID;
+  int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
+  CHECK_NCERR(retval);
+  const auto unit_str = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unit_str.size(), unit_str.c_str());
+  CHECK_NCERR(retval);
+  if (!atts.empty()) {
+    for (int i=0; i<atts.size(); ++i) {
+      retval = nc_put_att_text(ncid, varid, atts[i].first.c_str(),
+        atts[i].second.size(), atts[i].second.c_str());
+      CHECK_NCERR(retval);
+    }
+  }
+  name_varid_map.emplace(name, varid);
+}
+
+void NcWriter::define_gas_var(const std::string& name, const ekat::units::Units& units,
+  const std::vector<text_att_type>& atts) {
+  EKAT_ASSERT(time_dimid != NC_EBADID && gas_dimid != NC_EBADID && level_dimid != NC_EBADID);
+
+  const int m_ndims = 3;
+  const int dimids[3] = {time_dimid, gas_dimid, level_dimid};
   int varid = NC_EBADID;
   int retval = nc_def_var(ncid, name.c_str(), NC_REAL_KIND, m_ndims, dimids, &varid);
   CHECK_NCERR(retval);

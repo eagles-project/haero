@@ -17,7 +17,7 @@ void haerotran_set_aero_species(int, int, const char*, const char*,
                                 Real, Real, Real, Real);
 void haerotran_set_num_gas_species(int);
 void haerotran_set_gas_species(int, const char*, const char*,
-                               Real, Real, Real, Real);
+                               Real);
 void haerotran_set_num_levels(int);
 void haerotran_end_init();
 void haerotran_finalize();
@@ -258,8 +258,7 @@ void Model::init_fortran() {
   for (int i = 0; i < num_gas_species; ++i) {
     const auto& species = modal_aerosol_config_.h_gas_species[i];
     haerotran_set_gas_species(i+1, species.name().c_str(),
-        species.symbol().c_str(), species.molecular_weight,
-        species.dry_radius, species.density, species.hygroscopicity);
+        species.symbol().c_str(), species.molecular_weight);
   }
 
   // Set dimensions.
