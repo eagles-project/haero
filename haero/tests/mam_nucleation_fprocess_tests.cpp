@@ -13,6 +13,13 @@ using namespace haero;
 using namespace haero;
 
 TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
+  /// Test the ternary_nuc_merik2007 function directly by calling both
+  /// the original Fortran version and the new C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
   // Define a pseudo-random generator [0-1] that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -48,6 +55,13 @@ TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
 }
 
 TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_fprocess") {
+  /// Test the binary_nuc_vehk2002 function directly by calling both
+  /// the original Fortran version and the new C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
   using fp_helper = FloatingPoint<double>;
   const double abs_tol = 2.0e-12;
   const double rel_tol = 2.0e-12;
