@@ -21,7 +21,7 @@ struct AerosolSpecies final {
     symbol_view[0]='\0';
   }
 
-  /// Creates a new (aerosol or gas) species.
+  /// Creates a new aerosol species.
   /// @param [in] name A unique descriptive name for this species.
   /// @param [in] symbol A unique short, symbolic name for this species.
   /// @param [in] molecular_wt The molecular weight [kg/mol]of the species
@@ -103,18 +103,6 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
       g_to_kg*aer_mw[i], aer_dry_rad[i], aer_dens[i], aer_hygro[i]));
   }
   return result;
-}
-
-/// This factory function constructs a set of gas species corresponding to
-/// the legacy MAM4 model. Includes:
-/// 1. sulfuric acid (H2SO4)
-/// 2. semi-volatile organic gas-phase species (SOAG)
-inline std::vector<AerosolSpecies> create_mam4_gas_species() {
-  return std::vector<AerosolSpecies>({
-    // FIXME: All of the numerical parameters here are wrong and need to be fixed
-    AerosolSpecies("sulfuric acid", "H2SO4", 1.0, 1.0, 1.0, 1.0),
-    AerosolSpecies("semi-volatile organic gas-phase species", "SOAG", 1.0, 1.0, 1.0, 1.0),
-  });
 }
 
 /// This factory function constructs a map of mode name -> species symbol

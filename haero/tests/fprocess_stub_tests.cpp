@@ -17,8 +17,8 @@ TEST_CASE("prog_fprocess_stub", "") {
 
   // We create a phony model to be used for these tests.
   auto modes = create_mam4_modes();
-  auto aero_species = create_mam4_aerosol_species(),
-       gas_species = create_mam4_gas_species();
+  auto aero_species = create_mam4_aerosol_species();
+  auto gas_species = create_mam4_gas_species();
   auto mode_species = create_mam4_mode_species();
   int num_levels = 72;
   ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
@@ -157,8 +157,8 @@ TEST_CASE("diag_process_stub", "") {
 
   // We create a phony model to be used for these tests.
   auto modes = create_mam4_modes();
-  auto aero_species = create_mam4_aerosol_species(),
-       gas_species = create_mam4_gas_species();
+  auto aero_species = create_mam4_aerosol_species();
+  auto gas_species = create_mam4_gas_species();
   auto mode_species = create_mam4_mode_species();
   int num_levels = 72;
   ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);

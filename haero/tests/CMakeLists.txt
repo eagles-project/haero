@@ -18,7 +18,10 @@ EkatCreateUnitTest(floating_point_tests floating_point_tests.cpp
 EkatCreateUnitTest(mode_tests mode_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-EkatCreateUnitTest(species_tests species_tests.cpp
+EkatCreateUnitTest(aerosol_species_tests aerosol_species_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
+EkatCreateUnitTest(gas_species_tests gas_species_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
 EkatCreateUnitTest(model_tests model_tests.cpp

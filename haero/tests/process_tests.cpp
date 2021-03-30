@@ -217,7 +217,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   MyPrognosticProcess *device_pp = pp.copy_to_device();
 
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
-  std::vector<AerosolSpecies> gas_species  = create_mam4_gas_species();
+  std::vector<GasSpecies> gas_species  = create_mam4_gas_species();
   ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
   Model *model = Model::ForUnitTests(aero_config, num_levels);
 

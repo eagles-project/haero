@@ -8,7 +8,7 @@ module haero
 
   private
 
-  public :: wp, mode_t, aerosol_species_t, model_t, &
+  public :: wp, mode_t, aerosol_species_t, gas_species_t, model_t, &
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
@@ -50,6 +50,15 @@ module haero
     real(wp) :: hygroscopicity
   end type
 
+  type :: gas_species_t
+    !> Species name
+    character(len=:), allocatable :: name
+    !> Species symbol (abbreviation)
+    character(len=:), allocatable :: symbol
+    !> Molecular weight [kg/mol]
+    real(wp) :: molecular_wt
+  end type
+
   !> This Fortran type is the equivalent of the C++ Model class. Exactly one
   !> read-only instance of a model is available to Fortran processes.
   type :: model_t
@@ -66,7 +75,7 @@ module haero
     !> The aerosol species within each mode. Indexed as (mode, species).
     type(aerosol_species_t), dimension(:,:), allocatable :: aero_species
     !> The gas species in the model.
-    type(aerosol_species_t), dimension(:), allocatable :: gas_species
+    type(gas_species_t), dimension(:), allocatable :: gas_species
     !> The number of gases in the model. Equal to size(gas_species).
     integer :: num_gases
     !> The number of vertical levels in an atmospheric column.
@@ -391,7 +400,7 @@ contains
   end subroutine
 
   subroutine haerotran_set_gas_species(species, name, symbol, &
-    molecular_wt, dry_radius, density, hygroscopicity) bind(c)
+    molecular_wt) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -399,16 +408,10 @@ contains
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
     real(c_real), value, intent(in) :: molecular_wt
-    real(c_real), value, intent(in) :: dry_radius
-    real(c_real), value, intent(in) :: density
-    real(c_real), value, intent(in) :: hygroscopicity
 
     model%gas_species(species)%name = c_to_f_string(name)
     model%gas_species(species)%symbol = c_to_f_string(symbol)
     model%gas_species(species)%molecular_wt = molecular_wt
-    model%gas_species(species)%dry_radius = dry_radius
-    model%gas_species(species)%density = density
-    model%gas_species(species)%hygroscopicity = hygroscopicity
   end subroutine
 
   subroutine haerotran_set_num_levels(num_levels) bind(c)

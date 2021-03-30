@@ -10,6 +10,14 @@
 using namespace haero;
 
 TEST_CASE("cuda_log_tolerance", "cuda_tests") {
+  /// The cuda_log_tolerance test shows that the log function on the GPU
+  /// is the same as CPU.  There was a question of why the results of 
+  /// cuda_ternary_nuc_merik2007_debug_verses_opt unit test has such
+  /// large differences between the CPU and GPU code. It seemed that
+  /// the std::log() function could have been the difference. But
+  /// the cuda_log_tolerance test shows that the CPU and GPU calls
+  /// to log() return almost bitwise identical results over a large range
+  /// of values.
   using fp_helper = FloatingPoint<double>;
   using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
   using SolutionView = DeviceType::view_1d<double>; 
@@ -106,13 +114,14 @@ double ternary_nuc_merik2007(const double t,
   return j_log;
 }
 
-TEST_CASE("cuda_ternary_nuc_merik2007_debgu_verses_opt", "cuda_tests") {
-  /// This test shows the difference between debug and optimized CUDA code.
+TEST_CASE("cuda_ternary_nuc_merik2007_debug_verses_opt", "cuda_tests") {
+  /// This test shows the difference between debug and optimized CUDA code 
+  /// when using the nvidia 11.2.1 compiler.
   /// The above function will produce a return value of  -10.3334643256330061
   /// when compiled optimized on the GPU. Unoptimized is -10.3334643243283608
-  /// But the CPU version using gcc 7.2.0 produces       -10.3334643243283608
+  /// But the CPU version using GCC 7.2.0 produces       -10.3334643243283608
   /// in both cases.  So it appears to get consistent GPU vs CPU results,
-  /// compile both unoptimized.
+  /// compile the GPU version unoptimized.
 
   using fp_helper = FloatingPoint<double>;
   using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
