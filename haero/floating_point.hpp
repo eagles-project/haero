@@ -32,6 +32,14 @@ struct FloatingPoint {
     return std::abs(x0-x1) < tol;
   }
 
+  /// Define floating point equivalence by @f$\lvert x_0 - x_1 \rvert < \epsilon_{tol}@f$
+  KOKKOS_INLINE_FUNCTION
+  static bool rel(const T x0, const T x1, const T tol=zero_tol) {
+    EKAT_KERNEL_ASSERT(tol>0);
+    const T max = std::abs(x0) < std::abs(x1) ? std::abs(x1) : std::abs(x0);
+    return max ? std::abs(x0-x1)/max < tol : true;
+  }
+
   /** Define floating point in bounds as @f$ l - \epsilon_{tol} < x < u + \epsilon_{tol}@f$
 
     @param [in] x

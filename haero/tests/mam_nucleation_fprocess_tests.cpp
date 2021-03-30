@@ -5,6 +5,7 @@
 #include "mam_nucleation_test_bridge.hpp"
 #include "catch2/catch.hpp"
 #include <iostream>
+#include <iomanip>
 #include <cmath>
 
 using namespace haero;
@@ -12,7 +13,14 @@ using namespace haero;
 using namespace haero;
 
 TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
-  // Define a pseudo-random generator [0-1] that is consistent across platforms.
+  /// Test the ternary_nuc_merik2007 function directly by calling both
+  /// the original Fortran version and the new C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
+  // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
   const unsigned p1  =  12373;
@@ -43,6 +51,108 @@ TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
     REQUIRE(nacid_cpp == nacid_f90);
     REQUIRE(namm_cpp  == namm_f90);
     REQUIRE(r_cpp     == r_f90);
+  }
+}
+
+TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_fprocess") {
+  /// Test the binary_nuc_vehk2002 function directly by calling both
+  /// the original Fortran version and the new C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
+  using fp_helper = FloatingPoint<double>;
+  const double abs_tol = 2.0e-12;
+  const double rel_tol = 2.0e-12;
+  // Define a pseudo-random generator [0-1) that is consistent across platforms.
+  // Manually checked the first 100,000 values to be unique.
+  const unsigned p0  = 987659;
+  const unsigned p1  =  12373;
+  long unsigned seed =  54319;
+  auto random = [&]() {
+    seed =  (seed * p1)%p0;
+    return double(seed)/p0;
+  };
+  for (int i=0; i<1000; ++i) {
+    const double temp   =  235 +   60*random();  // range 235-295
+    const double rh     = 0.05 +   .9*random();  // range .05-.95
+    const double so4vol = 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
+    double ratenucl           = 0;
+    double rateloge           = 0;
+    double cnum_h2so4         = 0;
+    double cnum_tot           = 0;
+    double radius_cluster     = 0;
+    double ratenucl_f90       = 0;
+    double rateloge_f90       = 0;
+    double cnum_h2so4_f90     = 0;
+    double cnum_tot_f90       = 0;
+    double radius_cluster_f90 = 0;
+    MAMNucleationProcess::binary_nuc_vehk2002(temp, rh, so4vol, ratenucl, rateloge, cnum_h2so4, cnum_tot, radius_cluster);
+    binary_nuc_vehk2002_bridge(temp, rh, so4vol, ratenucl_f90, rateloge_f90, cnum_h2so4_f90, cnum_tot_f90, radius_cluster_f90);
+    REQUIRE( (fp_helper::equiv(ratenucl      , ratenucl_f90, abs_tol)       || fp_helper::rel(ratenucl   , ratenucl_f90, rel_tol)) );
+    REQUIRE( (fp_helper::equiv(rateloge      ,  rateloge_f90, abs_tol)      || fp_helper::rel(rateloge   ,  rateloge_f90, rel_tol)) );
+    REQUIRE( (fp_helper::equiv(cnum_h2so4    , cnum_h2so4_f90, abs_tol)     || fp_helper::rel(cnum_h2so4 , cnum_h2so4_f90, rel_tol)) );
+    REQUIRE( (fp_helper::equiv(cnum_tot      , cnum_tot_f90, abs_tol)       || fp_helper::rel(cnum_tot   , cnum_tot_f90, rel_tol)) );
+    REQUIRE( (fp_helper::equiv(radius_cluster, radius_cluster_f90, abs_tol) || fp_helper::rel(radius_cluster   , radius_cluster_f90, rel_tol)) );
+  }
+}
+
+TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_fprocess") {
+  /// Test the pbl_nuc_wang2008 function directly by calling both
+  /// the original Fortran version and the new C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
+  using fp_helper = FloatingPoint<double>;
+  const double abs_tol = 2.0e-12;
+  const double rel_tol = 2.0e-12;
+  // Define a pseudo-random generator [0-1) that is consistent across platforms.
+  // Manually checked the first 100,000 values to be unique.
+  const unsigned p0  = 987659;
+  const unsigned p1  =  12373;
+  long unsigned seed =  54319;
+  auto random = [&]() {
+    seed =  (seed * p1)%p0;
+    return double(seed)/p0;
+  };
+  MAMNucleationProcess mam_nucleation_process;
+  for (int i=0; i<1000; ++i) {
+    const double so4vol = 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
+    const int flagaa = 13 + 2*random();  // range 13-14   
+    const double adjust_factor_pbl_ratenucl = random();
+    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
+
+    int    flagaa2 = 0;
+    double ratenucl              = 0;
+    double rateloge              = 0;
+    double cnum_tot              = 0;
+    double cnum_h2so4            = 0;
+    double cnum_nh3              = 0;
+    double radius_cluster        = 0;
+
+    int    flagaa2_f90 = 0;
+    double ratenucl_f90              = 0;
+    double rateloge_f90              = 0;
+    double cnum_tot_f90              = 0;
+    double cnum_h2so4_f90            = 0;
+    double cnum_nh3_f90              = 0;
+    double radius_cluster_f90        = 0;
+
+    mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge, 
+      cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster);
+    pbl_nuc_wang2008_bridge(adjust_factor_pbl_ratenucl, so4vol, flagaa, flagaa2_f90, ratenucl_f90, rateloge_f90, 
+      cnum_tot_f90, cnum_h2so4_f90, cnum_nh3_f90, radius_cluster_f90);
+
+    REQUIRE( flagaa2 == flagaa2_f90);
+    REQUIRE( (fp_helper::equiv(ratenucl       , ratenucl_f90        , abs_tol) || fp_helper::rel(ratenucl          , ratenucl_f90       , rel_tol)) );
+    REQUIRE( (fp_helper::equiv(rateloge       , rateloge_f90        , abs_tol) || fp_helper::rel(rateloge          , rateloge_f90       , rel_tol)) );
+    REQUIRE( (fp_helper::equiv(cnum_tot       , cnum_tot_f90        , abs_tol) || fp_helper::rel(cnum_tot          , cnum_tot_f90       , rel_tol)) );
+    REQUIRE( (fp_helper::equiv(cnum_h2so4     , cnum_h2so4_f90      , abs_tol) || fp_helper::rel(cnum_h2so4        , cnum_h2so4_f90     , rel_tol)) );
+    REQUIRE( (fp_helper::equiv(cnum_nh3       , cnum_nh3_f90        , abs_tol) || fp_helper::rel(cnum_nh3          , cnum_nh3_f90       , rel_tol)) );
+    REQUIRE( (fp_helper::equiv(radius_cluster , radius_cluster_f90  , abs_tol) || fp_helper::rel(radius_cluster    , radius_cluster_f90 , rel_tol)) );
   }
 }
 
