@@ -3,6 +3,7 @@
 
 #include "haero/mode.hpp"
 #include "haero/aerosol_species.hpp"
+#include "haero/gas_species.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include <map>
 #include <algorithm>
@@ -39,7 +40,7 @@ class ModalAerosolConfig final {
   ModalAerosolConfig(const std::vector<Mode>& aerosol_modes,
                      const std::vector<AerosolSpecies>& aerosol_species,
                      const std::map<std::string, std::vector<std::string> >& mode_species,
-                     const std::vector<AerosolSpecies>& gas_species):
+                     const std::vector<GasSpecies>& gas_species):
     d_aerosol_modes  (vector_to_1dview(aerosol_modes,   "aerosol_modes")),
     d_aerosol_species(vector_to_1dview(aerosol_species, "aerosol_species")),
 
@@ -87,8 +88,8 @@ class ModalAerosolConfig final {
   int num_aerosol_populations;
 
   /// The list of gas species associated with this aerosol model.
-  DeviceType::view_1d<AerosolSpecies> d_gas_species;
-  HostType::view_1d<AerosolSpecies>   h_gas_species;
+  DeviceType::view_1d<GasSpecies> d_gas_species;
+  HostType::view_1d<GasSpecies>   h_gas_species;
 
   /// Returns the list of aerosol species associated with the model with the
   /// given mode index.
