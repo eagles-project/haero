@@ -1,9 +1,10 @@
 #ifndef HAERO_DRIVER_ATMOSPHERE_HPP
 #define HAERO_DRIVER_ATMOSPHERE_HPP
 
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "haero/physical_constants.hpp"
 #include "haero/floating_point.hpp"
+#include "haero/utils.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 #include <cmath>
@@ -23,6 +24,7 @@ namespace driver {
   define ambient atmospheric conditions for the driver's dynamics model.
 */
 struct AtmosphericConditions {
+  using fp_helper = FloatingPoint<Real>;
   static constexpr Real pref = 100000; /// Reference pressure at z=0, Tv=Tv0 [Pa]
   /**  virtual temperature appx. factor [K]
 
@@ -59,8 +61,24 @@ struct AtmosphericConditions {
     @param [in] qv0_ water vapor mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
     @param [in] qv1_ water vapor decay rate [1/m]
   */
+  KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const Real Tv0_ = 300, const Real Gammav_ = 0.01, const Real w0_ = 1,
-   const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3);
+   const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3) :
+    Tv0(Tv0_), Gammav(Gammav_), w0(w0_), ztop(ztop_), tperiod(tperiod_), qv0(qv0_), qv1(qv1_) {
+    /// check valid input
+    EKAT_ASSERT_MSG(fp_helper::in_bounds(Tv0_, 273, 323),
+      "unexpected T0, check units = K");
+    EKAT_ASSERT_MSG(fp_helper::in_bounds(w0_, 0, 10), "unexpected w0, check units = m/s");
+    EKAT_ASSERT_MSG(fp_helper::in_bounds(Gammav_, 0, 0.02),
+      "unexpected lapse rate, check units = K/m");
+    EKAT_ASSERT_MSG(fp_helper::in_bounds(ztop_, 3E3,40E3),
+      "unexpected model top, check units = m");
+    EKAT_ASSERT_MSG(tperiod_>0, "nonnegative oscillation period required.");
+    tperiod = tperiod_;
+    EKAT_ASSERT_MSG(fp_helper::in_bounds(qv0_, 0, 0.1),
+      "unexpected water vapor mixing ratio; check units = kg/kg");
+    EKAT_ASSERT_MSG(qv1_ >= 0, "nonnegative decay rate required.");
+}
 
   KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const AtmosphericConditions& other) : Tv0(other.Tv0), Gammav(other.Gammav),

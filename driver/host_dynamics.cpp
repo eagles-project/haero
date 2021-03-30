@@ -77,6 +77,68 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
   Kokkos::deep_copy(p,hp);
 }
 
+void HostDynamics::init_from_uniform_heights(const int nl, const AtmosphericConditions& ac) {
+  using namespace constants;
+
+  EKAT_ASSERT(nl>0);
+
+  const int dz = ac.ztop/nl;
+
+  /// set interface geopotential and velocity
+  auto hphi0 = Kokkos::create_mirror_view(phi0);
+  auto hw = Kokkos::create_mirror_view(w);
+  for (int k=0; k<nl+1; ++k) {
+    // Taylor et al. 2020 fig. 1 interface idx = k+1/2
+    const auto pack_idx = PackInfo::pack_idx(k);
+    const auto vec_idx = PackInfo::vec_idx(k);
+    const Real z = ac.ztop - k * dz;
+    hphi0(pack_idx)[vec_idx] = gravity * z;
+    hw(pack_idx)[vec_idx] = 0;
+  }
+  Kokkos::deep_copy(w,hw);
+  Kokkos::deep_copy(phi0, hphi0);
+  Kokkos::deep_copy(phi, phi0);
+
+  /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
+  auto hp = Kokkos::create_mirror_view(p);
+  auto hthetav = Kokkos::create_mirror_view(thetav);
+  auto hqv = Kokkos::create_mirror_view(qv);
+  auto hrho0 = Kokkos::create_mirror_view(rho0);
+  for (int k=0; k<nlev_; ++k) {
+    // Taylor et al. 2020 fig. 1 level idx = k+1
+    const auto pack_idx = PackInfo::pack_idx(k);
+    const auto vec_idx = PackInfo::vec_idx(k);
+
+    const int kphalf_idx = k+1; // array idx of interface k + 1/2
+    const int kmhalf_idx = k; // array idx of interface k - 1/2
+    const auto kphalf_pack_idx = PackInfo::pack_idx(kphalf_idx);
+    const auto kphalf_vec_idx = PackInfo::vec_idx(kphalf_idx);
+    const auto kmhalf_pack_idx = PackInfo::pack_idx(kmhalf_idx);
+    const auto kmhalf_vec_idx = PackInfo::vec_idx(kmhalf_idx);
+
+    const Real phimid = 0.5*(hphi0(kmhalf_pack_idx)[kmhalf_vec_idx] +
+                             hphi0(kphalf_pack_idx)[kphalf_vec_idx]);
+    const Real zmid = phimid/gravity;
+    const Real pres = hydrostatic_pressure_at_height(zmid, ac);
+    const Real Tv = ac.Tv0 - ac.Gammav * zmid;
+    hp(pack_idx)[vec_idx] = pres;
+    hrho0(pack_idx)[vec_idx] = pres / (r_gas_dry_air * Tv);
+    hthetav(pack_idx)[vec_idx] = Tv / exner_function(pres);
+    hqv(pack_idx)[vec_idx] = water_vapor_mixing_ratio(zmid, ac);
+  }
+
+  rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
+  ps = hydrostatic_pressure_at_height(0, ac);
+  EKAT_ASSERT_MSG(FloatingPoint<Real>::equiv(ps,AtmosphericConditions::pref),
+    "surface pressure must equal the reference pressure, 1000 hPa.");
+
+  Kokkos::deep_copy(rho0, hrho0);
+  Kokkos::deep_copy(rho, rho0);
+  Kokkos::deep_copy(thetav, hthetav);
+  Kokkos::deep_copy(qv, hqv);
+  Kokkos::deep_copy(p, hp);
+}
+
 void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const AtmosphericConditions& ac) {
   using namespace constants;
 
@@ -140,6 +202,70 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const Atm
   Kokkos::deep_copy(thetav,hthetav);
   Kokkos::deep_copy(qv,hqv);
   Kokkos::deep_copy(p,hp);
+}
+
+void HostDynamics::init_from_uniform_pressures(const int nl, const AtmosphericConditions& ac) {
+  using namespace constants;
+
+  EKAT_ASSERT(nl>0);
+
+  const Real ptop = hydrostatic_pressure_at_height(ac.ztop, ac);
+  const Real dp = (AtmosphericConditions::pref - ptop)/nl;
+
+  /// set interface geopotential and velocity
+  auto hphi0 = Kokkos::create_mirror_view(phi0);
+  auto hw = Kokkos::create_mirror_view(w);
+  for (int k=0; k<nlev_+1; ++k) {
+    // Taylor et al. 2020 fig. 1 interface idx = k+1/2
+    const auto pack_idx = PackInfo::pack_idx(k);
+    const auto vec_idx = PackInfo::vec_idx(k);
+
+    const Real punif = ptop + k*dp;
+    const Real z = height_at_pressure(punif, ac);
+    hphi0(pack_idx)[vec_idx] = gravity * z;
+
+    hw(pack_idx)[vec_idx] = 0;
+  }
+  Kokkos::deep_copy(w, hw);
+  Kokkos::deep_copy(phi0, hphi0);
+  Kokkos::deep_copy(phi, phi0);
+
+  /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
+  auto hp = Kokkos::create_mirror_view(p);
+  auto hrho0 = Kokkos::create_mirror_view(rho0);
+  auto hthetav = Kokkos::create_mirror_view(thetav);
+  auto hqv = Kokkos::create_mirror_view(qv);
+  for (int k=0; k<nlev_; ++k) {
+    // Taylor et al. 2020 fig. 1 level idx = k+1
+    const auto pack_idx = PackInfo::pack_idx(k);
+    const auto vec_idx = PackInfo::vec_idx(k);
+
+    const int kphalf_idx = k+1; // array idx of interface k + 1/2
+    const int kmhalf_idx = k; // array idx of interface k - 1/2
+    const auto kphalf_pack_idx = PackInfo::pack_idx(kphalf_idx);
+    const auto kphalf_vec_idx = PackInfo::vec_idx(kphalf_idx);
+    const auto kmhalf_pack_idx = PackInfo::pack_idx(kmhalf_idx);
+    const auto kmhalf_vec_idx = PackInfo::vec_idx(kmhalf_idx);
+
+    const Real phimid = 0.5*(hphi0(kmhalf_pack_idx)[kmhalf_vec_idx] +
+                                        hphi0(kphalf_pack_idx)[kphalf_vec_idx]);
+    const Real zmid = phimid/gravity;
+    const Real pres = hydrostatic_pressure_at_height(zmid, ac);
+    const Real Tv = ac.Tv0 - ac.Gammav * zmid;
+    hp(pack_idx)[vec_idx] = pres;
+    hrho0(pack_idx)[vec_idx] = pres / (r_gas_dry_air * Tv);
+    hthetav(pack_idx)[vec_idx] = Tv / exner_function(pres);
+    hqv(pack_idx)[vec_idx] = water_vapor_mixing_ratio(zmid, ac);
+  }
+
+  Kokkos::deep_copy(qv, hqv);
+  Kokkos::deep_copy(thetav, hthetav);
+  Kokkos::deep_copy(rho0, hrho0);
+  Kokkos::deep_copy(rho, rho0);
+  Kokkos::deep_copy(p,hp);
+
+  ps = AtmosphericConditions::pref;
+  rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
 }
 
 std::string HostDynamics::info_string(int tab_level) const {

@@ -1,7 +1,7 @@
 #ifndef HAERO_DRIVER_HOST_STATE_HPP
 #define HAERO_DRIVER_HOST_STATE_HPP
 
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/math_helpers.hpp"
 #include "host_params.hpp"
@@ -15,7 +15,6 @@ namespace driver {
 
 class HostDynamics final {
   public:
-    using ColumnView = Kokkos::View<PackType*>;
 
     /// vertical velocity (interface variable)
     ColumnView w;
@@ -72,6 +71,11 @@ class HostDynamics final {
     */
     void init_from_interface_pressures(std::vector<Real> p0,
         const AtmosphericConditions& ac);
+
+
+    void init_from_uniform_heights(const int nl, const AtmosphericConditions& ac);
+
+    void init_from_uniform_pressures(const int nl, const AtmosphericConditions& ac);
 
     /** Write basic information about *this to a string.
     */
