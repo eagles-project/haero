@@ -93,6 +93,22 @@ class MAMNucleationProcess : public PrognosticProcess {
                    Tendencies& tendencies) const;
 
 
+/// Function that calculates the parameterized composition
+/// and nucleation rate of critical clusters in h2o-h2so4-nh3 vapor
+///
+/// warning: the fit should not be used outside its limits of validity
+/// (limits indicated below)
+///
+/// @param [in]  t:     temperature (k), limits 235-295 k
+/// @param [in] rh:    relative humidity as fraction (eg. 0.5=50%) limits 0.05-0.95
+/// @param [in] c2:    sulfuric acid concentration (molecules/cm3) limits 5x10^4 - 10^9 molecules/cm3
+/// @param [in] c3:    ammonia mixing ratio (ppt) limits 0.1 - 1000 ppt
+///
+/// @param [out] j_log: logarithm of nucleation rate (1/(s cm3))
+/// @param [out] ntot:  total number of molecules in the critical cluster
+/// @param [out] nacid: number of sulfuric acid molecules in the critical cluster
+/// @param [out] namm:  number of ammonia molecules in the critical cluster
+/// @param [out] r:     radius of the critical cluster (nm)
   KOKKOS_INLINE_FUNCTION 
   static void ternary_nuc_merik2007(const double t, 
                                     const double rh, 
