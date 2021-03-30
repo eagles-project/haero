@@ -110,6 +110,8 @@ class HostDynamics final {
     */
     void update_atmospheric_state(Atmosphere& atm) const;
 
+    inline int nlev() const {return nlev_;}
+
   protected:
     /// number of levels in column
     int nlev_;
