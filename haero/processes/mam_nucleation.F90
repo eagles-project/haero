@@ -11,7 +11,7 @@ module mam_nucleation
   private
 
   ! Module functions
-  public :: init, run, finalize, ternary_nuc_merik2007
+  public :: init, run, finalize, ternary_nuc_merik2007, binary_nuc_vehk2002
 
   !-------------------
   ! Module parameters

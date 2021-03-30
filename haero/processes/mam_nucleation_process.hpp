@@ -93,6 +93,186 @@ class MAMNucleationProcess : public PrognosticProcess {
                    Tendencies& tendencies) const;
 
 
+/// calculates binary nucleation rate and critical cluster size
+/// using the parameterization in
+///     vehkamäki, h., m. kulmala, i. napari, k.e.j. lehtinen,
+///        c. timmreck, m. noppel and a. laaksonen, 2002,
+///        an improved parameterization for sulfuric acid-water nucleation
+///        rates for tropospheric and stratospheric conditions,
+///        j. geophys. res., 107, 4622, doi:10.1029/2002jd002184
+
+///  @param [in]  temp          temperature (k)
+///  @param [in]  rh            relative humidity (0-1)
+///  @param [in]  so4vol        concentration of h2so4 (molecules cm-3)
+///
+///  @param [out] ratenucl      binary nucleation rate, j (# cm-3 s-1)
+///  @param [out] rateloge      log( ratenucl )
+
+///  @param [out] cnum_h2so4    number of h2so4 molecules in the critical nucleus
+///  @param [out] cnum_tot      total number of molecules in the critical nucleus
+
+KOKKOS_INLINE_FUNCTION
+static void binary_nuc_vehk2002(const double temp,
+                         const double rh,
+                         const double so4vol,
+                         double &ratenucl,
+                         double &rateloge,
+                         double &cnum_h2so4,
+                         double &cnum_tot,
+                         double &radius_cluster)
+
+  {
+  using namespace std;
+
+  //calc sulfuric acid mole fraction in critical cluster
+  const double crit_x = 0.740997 - 0.00266379 * temp
+    - 0.00349998 * log (so4vol)
+    + 0.0000504022 * temp * log (so4vol)
+    + 0.00201048 * log (rh)
+    - 0.000183289 * temp * log(rh)
+    + 0.00157407 * log(rh) * log(rh)
+    - 0.0000179059 * temp * log(rh) * log(rh)
+    + 0.000184403 * log(rh) * log(rh) * log(rh)
+    - 1.50345e-6 * temp * log(rh) * log(rh) * log(rh);
+
+  // calc nucleation rate
+  double acoe = 0.14309+2.21956*temp
+    - 0.0273911 * (temp*temp)
+    + 0.0000722811 * (temp*temp*temp) + 5.91822/crit_x;;
+
+  double bcoe = 0.117489 + 0.462532 *temp
+    - 0.0118059 * (temp*temp)
+    + 0.0000404196 * (temp*temp*temp) + 15.7963/crit_x;
+
+  double ccoe = -0.215554-0.0810269 * temp
+    + 0.00143581 * (temp*temp)
+    - 4.7758e-6 * (temp*temp*temp)
+    - 2.91297/crit_x;
+
+  double dcoe = -3.58856+0.049508 * temp
+    - 0.00021382 * (temp*temp)
+    + 3.10801e-7 * (temp*temp*temp)
+    - 0.0293333/crit_x;
+
+  double ecoe = 1.14598 - 0.600796 * temp
+    + 0.00864245 * (temp*temp)
+    - 0.0000228947 * (temp*temp*temp)
+    - 8.44985/crit_x;
+
+  double fcoe = 2.15855 + 0.0808121 * temp
+    - 0.000407382 * (temp*temp)
+    - 4.01957e-7 * (temp*temp*temp)
+    + 0.721326/crit_x;
+
+  double gcoe = 1.6241 - 0.0160106 * temp
+    + 0.0000377124 * (temp*temp)
+    + 3.21794e-8 * (temp*temp*temp)
+    - 0.0113255/crit_x;
+
+  double hcoe = 9.71682 - 0.115048 * temp
+    + 0.000157098 * (temp*temp)
+    + 4.00914e-7 * (temp*temp*temp)
+    + 0.71186/crit_x;
+
+  double icoe = -1.05611 + 0.00903378 * temp
+    - 0.0000198417 * (temp*temp)
+    + 2.46048e-8  * (temp*temp*temp)
+    - 0.0579087/crit_x;
+
+  double jcoe = -0.148712 + 0.00283508 * temp
+    - 9.24619e-6  * (temp*temp)
+    + 5.00427e-9 * (temp*temp*temp)
+    - 0.0127081/crit_x;
+
+  double tmpa = (
+    acoe
+    + bcoe * log (rh)
+    + ccoe * log (rh) * log(rh)
+    + dcoe * log (rh) * log(rh) * log(rh)
+    + ecoe * log (so4vol)
+    + fcoe * log (rh) * log (so4vol)
+    + gcoe * log (rh) * log(rh)
+    * (log (so4vol))
+    + hcoe * log (so4vol) * log (so4vol)
+    + icoe * log (rh)
+    * log (so4vol) * log (so4vol)
+    + jcoe * log (so4vol) * log (so4vol) * log (so4vol)
+  );
+  rateloge = tmpa;
+  tmpa = min( tmpa, log(1.0e38) );
+  ratenucl = exp ( tmpa );
+
+  // calc number of molecules in critical cluster
+  acoe = -0.00295413 - 0.0976834*temp
+    + 0.00102485 * (temp*temp)
+    - 2.18646e-6 * (temp*temp*temp) - 0.101717/crit_x;
+
+  bcoe = -0.00205064 - 0.00758504*temp
+    + 0.000192654 * (temp*temp)
+    - 6.7043e-7 * (temp*temp*temp) - 0.255774/crit_x;
+
+  ccoe = +0.00322308 + 0.000852637 * temp
+    - 0.0000154757 * (temp*temp)
+    + 5.66661e-8 * (temp*temp*temp)
+    + 0.0338444/crit_x;
+
+  dcoe = +0.0474323 - 0.000625104 * temp
+    + 2.65066e-6 * (temp*temp)
+    - 3.67471e-9 * (temp*temp*temp)
+    - 0.000267251/crit_x;
+
+  ecoe = -0.0125211 + 0.00580655 * temp
+    - 0.000101674 * (temp*temp)
+    + 2.88195e-7 * (temp*temp*temp)
+    + 0.0942243/crit_x;
+
+  fcoe = -0.038546 - 0.000672316 * temp
+    + 2.60288e-6 * (temp*temp)
+    + 1.19416e-8 * (temp*temp*temp)
+    - 0.00851515/crit_x;
+
+  gcoe = -0.0183749 + 0.000172072 * temp
+    - 3.71766e-7 * (temp*temp)
+    - 5.14875e-10 * (temp*temp*temp)
+    + 0.00026866/crit_x;
+
+  hcoe = -0.0619974 + 0.000906958 * temp
+    - 9.11728e-7 * (temp*temp)
+    - 5.36796e-9 * (temp*temp*temp)
+    - 0.00774234/crit_x;
+
+  icoe = +0.0121827 - 0.00010665 * temp
+    + 2.5346e-7 * (temp*temp)
+    - 3.63519e-10 * (temp*temp*temp)
+    + 0.000610065/crit_x;
+
+  jcoe = +0.000320184 - 0.0000174762 * temp
+    + 6.06504e-8 * (temp*temp)
+    - 1.4177e-11 * (temp*temp*temp)
+    + 0.000135751/crit_x;
+
+  cnum_tot = exp (
+    acoe
+    + bcoe * log (rh)
+    + ccoe * log (rh) * log (rh)
+    + dcoe * log (rh) * log (rh) * log (rh)
+    + ecoe * log (so4vol)
+    + fcoe * log (rh) * log (so4vol)
+    + gcoe * log (rh) * log (rh)
+    * (log (so4vol))
+    + hcoe * log (so4vol) * log (so4vol)
+    + icoe * log (rh)
+    * log (so4vol) * log (so4vol)
+    + jcoe * log (so4vol) * log (so4vol) * log (so4vol)
+  );
+
+  cnum_h2so4 = cnum_tot * crit_x;
+
+  // calc radius (nm) of critical cluster
+  radius_cluster = exp( -1.6524245 + 0.42316402*crit_x
+    + 0.3346648*log(cnum_tot) );
+}
+
 /// Function that calculates the parameterized composition
 /// and nucleation rate of critical clusters in h2o-h2so4-nh3 vapor
 ///
