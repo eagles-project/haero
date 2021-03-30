@@ -1,4 +1,4 @@
-#include "host_state.hpp"
+#include "host_dynamics.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "haero/utils.hpp"
 #include "haero/floating_point.hpp"
@@ -160,7 +160,7 @@ void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
   auto phi0_local = phi0;
   auto w_local = w;
   auto nlev_p1 = nlev_+1;
-  Kokkos::parallel_for("HostDynamics::InterfaceUpdate", PackInfo::num_packs(nlev_p1), 
+  Kokkos::parallel_for("HostDynamics::InterfaceUpdate", PackInfo::num_packs(nlev_p1),
     KOKKOS_LAMBDA (const int pack_idx) {
     for (int vi=0; vi<PackInfo::vec_end(nlev_p1,pack_idx); ++vi) {
       const Real phi0 = phi0_local(pack_idx)[vi];
@@ -177,7 +177,7 @@ void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
   auto thetav_local = thetav;
   auto p_local = p;
   auto nlev_local = nlev_;
-  Kokkos::parallel_for("HostDynamics::MidpointUpdate", PackInfo::num_packs(nlev_local), 
+  Kokkos::parallel_for("HostDynamics::MidpointUpdate", PackInfo::num_packs(nlev_local),
     KOKKOS_LAMBDA (const int pack_idx) {
     for (int vi=0; vi<PackInfo::vec_end(nlev_local, pack_idx); ++vi) {
       const int k = PackInfo::array_idx(pack_idx,vi);
