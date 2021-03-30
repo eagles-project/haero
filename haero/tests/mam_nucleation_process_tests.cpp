@@ -79,7 +79,7 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_process") {
 
   using fp_helper = FloatingPoint<double>;
   using SolutionView = DeviceType::view_1d<double>; 
-  const double tolerance = 5.0e-9;
+  const double tolerance = 5.0e-12;
   // Define a pseudo-random generator [0-1] that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -120,11 +120,11 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_process") {
     double cnum_tot_cpu       = 0; 
     double radius_cluster_cpu = 0;
     MAMNucleationProcess::binary_nuc_vehk2002(temp, rh, so4vol, ratenucl_cpu, rateloge_cpu, cnum_h2so4_cpu, cnum_tot_cpu, radius_cluster_cpu);
-    REQUIRE(fp_helper::equiv(ratenucl_cpu       , ratenucl_kok       , tolerance));
-    REQUIRE(fp_helper::equiv(rateloge_cpu       , rateloge_kok       , tolerance));
-    REQUIRE(fp_helper::equiv(cnum_h2so4_cpu     , cnum_h2so4_kok     , tolerance));
-    REQUIRE(fp_helper::equiv(cnum_tot_cpu       , cnum_tot_kok       , tolerance));
-    REQUIRE(fp_helper::equiv(radius_cluster_cpu , radius_cluster_kok , tolerance));
+    REQUIRE( (fp_helper::equiv(ratenucl_cpu       , ratenucl_kok       , tolerance) || fp_helper::rel(ratenucl_cpu       , ratenucl_kok       , tolerance)) );
+    REQUIRE( (fp_helper::equiv(rateloge_cpu       , rateloge_kok       , tolerance) || fp_helper::rel(rateloge_cpu       , rateloge_kok       , tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_h2so4_cpu     , cnum_h2so4_kok     , tolerance) || fp_helper::rel(cnum_h2so4_cpu     , cnum_h2so4_kok     , tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_tot_cpu       , cnum_tot_kok       , tolerance) || fp_helper::rel(cnum_tot_cpu       , cnum_tot_kok       , tolerance)) );
+    REQUIRE( (fp_helper::equiv(radius_cluster_cpu , radius_cluster_kok , tolerance) || fp_helper::rel(radius_cluster_cpu , radius_cluster_kok , tolerance)) );
   }
 }
 

@@ -36,7 +36,7 @@ struct FloatingPoint {
   KOKKOS_INLINE_FUNCTION
   static bool rel(const T x0, const T x1, const T tol=zero_tol) {
     EKAT_KERNEL_ASSERT(tol>0);
-    const T max = std::max(std::abs(x0),std::abs(x1));
+    const T max = std::abs(x0) < std::abs(x1) ? std::abs(x1) : std::abs(x0);
     return max ? std::abs(x0-x1)/max < tol : true;
   }
 
