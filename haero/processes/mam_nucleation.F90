@@ -11,7 +11,9 @@ module mam_nucleation
   private
 
   ! Module functions
-  public :: init, run, finalize, ternary_nuc_merik2007
+  public :: init, run, finalize, ternary_nuc_merik2007, binary_nuc_vehk2002, &
+    pbl_nuc_wang2008 
+  public :: adjust_factor_pbl_ratenucl
 
   !-------------------
   ! Module parameters
@@ -135,7 +137,6 @@ subroutine init(model)
 
   type(aerosol_species_t) so4, nh4
   integer :: m
-  integer :: so4_index, nh4_index
 
   ! Extract mode properties.
   allocate(dgnum_aer(model%num_modes))
@@ -978,7 +979,7 @@ end subroutine
 subroutine pbl_nuc_wang2008( so4vol,   &
   newnuc_method_flagaa, newnuc_method_flagaa2,   &
   ratenucl, rateloge,   &
-  cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster )
+  cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster ) 
 
   implicit none
 

@@ -10,7 +10,17 @@
 using namespace haero;
 
 TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
-  // Define a pseudo-random generator [0-1] that is consistent across platforms.
+  /// Test the ternary_nuc_merik2007 function directly by calling both
+  /// the Nvidia Cuda GPU version and the CPU C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
+  using fp_helper = FloatingPoint<double>;
+  using SolutionView = DeviceType::view_1d<double>; 
+  const double tolerance = 5.0e-9;
+  // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
   const unsigned p1  =  12373;
@@ -20,9 +30,6 @@ TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
     return double(seed)/p0;
   };
   for (int i=0; i<1000; ++i) {
-    using fp_helper = FloatingPoint<double>;
-    using SolutionView = DeviceType::view_1d<double>; 
-    const double tolerance = 5.0e-9;
     const double  t=  235 +   60*random();  // range 235-295
     const double rh= 0.05 +   .9*random();  // range .05-.95
     const double c2= 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9 
@@ -59,6 +66,142 @@ TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
     REQUIRE(fp_helper::equiv(nacid_cpp , nacid_kok, tolerance));
     REQUIRE(fp_helper::equiv(namm_cpp  , namm_kok,  tolerance));
     REQUIRE(fp_helper::equiv(r_cpp     , r_kok,     tolerance));
+  }
+}
+
+TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_process") {
+  /// Test the binary_nuc_vehk2002 function directly by calling both
+  /// the Nvidia Cuda GPU version and the CPU C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
+  using fp_helper = FloatingPoint<double>;
+  using SolutionView = DeviceType::view_1d<double>; 
+  const double tolerance = 5.0e-12;
+  // Define a pseudo-random generator [0-1) that is consistent across platforms.
+  // Manually checked the first 100,000 values to be unique.
+  const unsigned p0  = 987659;
+  const unsigned p1  =  12373;
+  long unsigned seed =  54319;
+  auto random = [&]() {
+    seed =  (seed * p1)%p0;
+    return double(seed)/p0;
+  };
+  for (int i=0; i<1000; ++i) {
+    const double temp   =  235 +   60*random();  // range 235-295
+    const double rh     = 0.05 +   .9*random();  // range .05-.95
+    const double so4vol = 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
+
+    SolutionView solution("binary_nuc_vehk2002",5);
+    Kokkos::parallel_for("binary_nuc_vehk2002.mam_nucleation_process", 1,
+      KOKKOS_LAMBDA(const int) {
+        double ratenucl=0, rateloge=0, cnum_h2so4=0, cnum_tot=0, radius_cluster=0;
+        MAMNucleationProcess::binary_nuc_vehk2002(temp, rh, so4vol, ratenucl, rateloge, cnum_h2so4, cnum_tot, radius_cluster);
+        solution(0) = ratenucl;
+        solution(1) = rateloge;
+        solution(2) = cnum_h2so4;
+        solution(3) = cnum_tot;
+        solution(4) = radius_cluster;
+      }
+    );
+    auto h_solution = Kokkos::create_mirror_view(solution);
+    Kokkos::deep_copy(h_solution, solution);
+    const double ratenucl_kok       = h_solution(0);
+    const double rateloge_kok       = h_solution(1);
+    const double cnum_h2so4_kok     = h_solution(2);
+    const double cnum_tot_kok       = h_solution(3);
+    const double radius_cluster_kok = h_solution(4);
+
+    double ratenucl_cpu       = 0;
+    double rateloge_cpu       = 0; 
+    double cnum_h2so4_cpu     = 0;
+    double cnum_tot_cpu       = 0; 
+    double radius_cluster_cpu = 0;
+    MAMNucleationProcess::binary_nuc_vehk2002(temp, rh, so4vol, ratenucl_cpu, rateloge_cpu, cnum_h2so4_cpu, cnum_tot_cpu, radius_cluster_cpu);
+    REQUIRE( (fp_helper::equiv(ratenucl_cpu       , ratenucl_kok       , tolerance) || fp_helper::rel(ratenucl_cpu       , ratenucl_kok       , tolerance)) );
+    REQUIRE( (fp_helper::equiv(rateloge_cpu       , rateloge_kok       , tolerance) || fp_helper::rel(rateloge_cpu       , rateloge_kok       , tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_h2so4_cpu     , cnum_h2so4_kok     , tolerance) || fp_helper::rel(cnum_h2so4_cpu     , cnum_h2so4_kok     , tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_tot_cpu       , cnum_tot_kok       , tolerance) || fp_helper::rel(cnum_tot_cpu       , cnum_tot_kok       , tolerance)) );
+    REQUIRE( (fp_helper::equiv(radius_cluster_cpu , radius_cluster_kok , tolerance) || fp_helper::rel(radius_cluster_cpu , radius_cluster_kok , tolerance)) );
+  }
+}
+
+
+TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
+  /// Test the pbl_nuc_wang2008 function directly by calling both
+  /// the Nvidia Cuda GPU version and the CPU C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
+  using fp_helper = FloatingPoint<double>;
+  using SolutionView = DeviceType::view_1d<double>; 
+  using FlagaaView   = DeviceType::view_1d<int>; 
+  const double tolerance = 5.0e-12;
+  // Define a pseudo-random generator [0-1) that is consistent across platforms.
+  // Manually checked the first 100,000 values to be unique.
+  const unsigned p0  = 987659;
+  const unsigned p1  =  12373;
+  long unsigned seed =  54319;
+  auto random = [&]() {
+    seed =  (seed * p1)%p0;
+    return double(seed)/p0;
+  };
+  MAMNucleationProcess mam_nucleation_process;
+  for (int i=0; i<1000; ++i) {
+    const double so4vol = 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
+    const int flagaa = 13 + 2*random();  // range 13-14
+    const double adjust_factor_pbl_ratenucl = random();
+    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
+
+    SolutionView solution("pbl_nuc_wang2008",6);
+    FlagaaView   flags("newnuc_method_flagaa",1);
+    
+    Kokkos::parallel_for("pbl_nuc_wang2008.mam_nucleation_process", 1,
+      KOKKOS_LAMBDA(const int) {
+        int flagaa2 = 0;
+        double ratenucl=0, rateloge=0, cnum_tot=0, cnum_h2so4=0, cnum_nh3=0, radius_cluster=0;
+        mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge,
+          cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster);
+        solution(0) = ratenucl;        
+        solution(1) = rateloge;        
+        solution(2) = cnum_tot;        
+        solution(3) = cnum_h2so4;      
+        solution(4) = cnum_nh3;        
+        solution(5) = radius_cluster; 
+        flags(0)    = flagaa2;
+      }
+    );
+    auto h_solution = Kokkos::create_mirror_view(solution);
+    auto h_flags = Kokkos::create_mirror_view(flags);
+    Kokkos::deep_copy(h_solution, solution);
+    const double ratenucl_kok       = h_solution(0);
+    const double rateloge_kok       = h_solution(1);
+    const double cnum_tot_kok       = h_solution(2);
+    const double cnum_h2so4_kok     = h_solution(3);
+    const double cnum_nh3_kok       = h_solution(4);
+    const double radius_cluster_kok = h_solution(5);
+    const int    flagaa2_kok        = h_flags(0);
+
+    double ratenucl_cpu       = 0;
+    double rateloge_cpu       = 0; 
+    double cnum_tot_cpu       = 0;
+    double cnum_h2so4_cpu     = 0; 
+    double cnum_nh3_cpu       = 0;
+    double radius_cluster_cpu = 0;
+    int    flagaa2_cpu        = 0; 
+
+    mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2_cpu, ratenucl_cpu, rateloge_cpu, cnum_tot_cpu, cnum_h2so4_cpu, cnum_nh3_cpu, radius_cluster_cpu);
+    REQUIRE( (fp_helper::equiv(ratenucl_cpu      , ratenucl_kok        , tolerance) || fp_helper::rel(ratenucl_cpu      , ratenucl_kok        , tolerance)) );
+    REQUIRE( (fp_helper::equiv(rateloge_cpu      , rateloge_kok        , tolerance) || fp_helper::rel(rateloge_cpu      , rateloge_kok        , tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_tot_cpu      , cnum_tot_kok        , tolerance) || fp_helper::rel(cnum_tot_cpu      , cnum_tot_kok        , tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_h2so4_cpu    , cnum_h2so4_kok      , tolerance) || fp_helper::rel(cnum_h2so4_cpu    , cnum_h2so4_kok      , tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_nh3_cpu      , cnum_nh3_kok        , tolerance) || fp_helper::rel(cnum_nh3_cpu      , cnum_nh3_kok        , tolerance)) );
+    REQUIRE( (fp_helper::equiv(radius_cluster_cpu, radius_cluster_kok  , tolerance) || fp_helper::rel(radius_cluster_cpu, radius_cluster_kok  , tolerance)) );
+    REQUIRE( flagaa2_cpu ==flagaa2_kok );
   }
 }
 
