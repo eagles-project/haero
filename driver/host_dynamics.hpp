@@ -20,6 +20,8 @@ class HostDynamics final {
     ColumnView w;
     /// geopotential (interface variable)
     ColumnView phi;
+    /// vertical derivative of pressure (interface variable)
+    ColumnView dpdz;
 
     /// density (midpoint variable)
     ColumnView rho;
@@ -29,6 +31,8 @@ class HostDynamics final {
     ColumnView qv;
     /// pressure (midpoint variable)
     ColumnView p;
+    /// layer thickness (midpoint variable)
+    ColumnView dz;
 
     /// elapsed time
     Real t;
@@ -42,10 +46,12 @@ class HostDynamics final {
     HostDynamics(const int nl) :
       w("w",PackInfo::num_packs(nl+1)),
       phi("phi",PackInfo::num_packs(nl+1)),
+      dpdz("dp/dz", PackInfo::num_packs(nl+1)),
       rho("rho",PackInfo::num_packs(nl)),
       thetav("thetav",PackInfo::num_packs(nl)),
       qv("qv",PackInfo::num_packs(nl)),
       p("p",PackInfo::num_packs(nl)),
+      dz("dzlev", PackInfo::num_packs(nl)),
       t(0), ps(0), nlev_(nl),
       phi0("phi0",PackInfo::num_packs(nl+1)),
       rho0("rho0", PackInfo::num_packs(nl))
@@ -119,8 +125,13 @@ class HostDynamics final {
     ColumnView phi0;
     /// initial density values
     ColumnView rho0;
-
+    /// initial density at the surface
     Real rho0surf;
+
+    /** @brief compute discrete approximations of vertical derivatives using centered finite differences
+      as described by Taylor et al. 2020.
+    */
+    void update_vertical_derivs(const AtmosphericConditions& conds);
 };
 
 /** @brief Defines the Lagrangian geopotential for HostDynamics' 1d toy model.

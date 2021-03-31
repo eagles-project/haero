@@ -4,6 +4,7 @@
 #include "haero/floating_point.hpp"
 #include "haero/physical_constants.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 #include "ncwriter_impl.hpp"
 #include <cmath>
 #include <algorithm>
@@ -75,6 +76,8 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
   Kokkos::deep_copy(thetav,hthetav);
   Kokkos::deep_copy(qv,hqv);
   Kokkos::deep_copy(p,hp);
+
+  update_vertical_derivs(ac);
 }
 
 void HostDynamics::init_from_uniform_heights(const int nl, const AtmosphericConditions& ac) {
@@ -137,6 +140,8 @@ void HostDynamics::init_from_uniform_heights(const int nl, const AtmosphericCond
   Kokkos::deep_copy(thetav, hthetav);
   Kokkos::deep_copy(qv, hqv);
   Kokkos::deep_copy(p, hp);
+
+  update_vertical_derivs(ac);
 }
 
 void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const AtmosphericConditions& ac) {
@@ -202,6 +207,8 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const Atm
   Kokkos::deep_copy(thetav,hthetav);
   Kokkos::deep_copy(qv,hqv);
   Kokkos::deep_copy(p,hp);
+
+  update_vertical_derivs(ac);
 }
 
 void HostDynamics::init_from_uniform_pressures(const int nl, const AtmosphericConditions& ac) {
@@ -266,6 +273,47 @@ void HostDynamics::init_from_uniform_pressures(const int nl, const AtmosphericCo
 
   ps = AtmosphericConditions::pref;
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
+
+  update_vertical_derivs(ac);
+}
+
+void HostDynamics::update_vertical_derivs(const AtmosphericConditions& conds) {
+  using namespace constants;
+
+  // differences at level midpoints
+  auto phi_local = ekat::scalarize(phi);
+  EKAT_ASSERT(phi_local.extent(0) == nlev_ +1);
+  auto dz_local = ekat::scalarize(dz);
+  EKAT_ASSERT(dz_local.extent(0) == nlev_);
+  Kokkos::parallel_for("HostDynamics::dz", nlev_,
+    KOKKOS_LAMBDA (const int k) {
+      const int kmhalf_idx = k;
+      const int kphalf_idx = k+1;
+      dz_local(k) = (phi_local(kmhalf_idx) - phi_local(kphalf_idx))/gravity;
+    });
+
+  // differences at level interfaces
+  auto p_local = ekat::scalarize(p);
+  EKAT_ASSERT(p_local.extent(0) == nlev_);
+  auto dpdz_local = ekat::scalarize(dpdz);
+  EKAT_ASSERT(dpdz_local.extent(0) == nlev_+1);
+
+  Kokkos::parallel_for("HostDynamics::dpdz", nlev_,
+    KOKKOS_LAMBDA (const int k) {
+      if (k==0) { // model top
+        dpdz(0) = (conds.ptop - p_local(0)) / (2*dz_local(0));
+        dpdz(1) = (p_local(1) - p_local(0)) /
+          (0.5*(dz_local(1) + dz_local(0)));
+      }
+      else if (k==nlev_-1) { // surface
+        dpdz(nlev_) = (p_local(nlev_-1) - ps) / (2*dz_local(nlev_-1));
+      }
+      else {
+        dpdz(k+1) = (p_local(k) - p_local(k+1)) /
+          (0.5*(dz_local(k+1) + dz_local(k)));
+      }
+
+    });
 }
 
 std::string HostDynamics::info_string(int tab_level) const {
@@ -275,6 +323,7 @@ std::string HostDynamics::info_string(int tab_level) const {
   tabstr += "\t";
   ss << "nlev = " << nlev_ << "\n";
   ss << "ps = " << ps << "\n";
+  ss << "rho0surf = " << rho0surf << "\n";
   ss << "t = " << t << "\n";
   return ss.str();
 }
@@ -320,6 +369,7 @@ void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
 
   const Real rhosurf = density(newt, 0, 0, rho0surf, ac);
   ps = pressure(rhosurf, ac.Tv0);
+  update_vertical_derivs(ac);
 }
 
 void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
@@ -344,6 +394,11 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
   writer.define_interface_var("vertical_velocity", w_units, w, w_atts);
   writer.define_interface_var("geopotential", phi_units, phi, phi_atts);
 
+  const var_atts dpdz_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("short_name", "dpdz")};
+  const auto dpdz_units = ekat::units::Pa / ekat::units::m;
+  writer.define_interface_var("dpdz", dpdz_units, dpdz, dpdz_atts);
+
   // level variables
   const var_atts thetav_atts = {std::make_pair("cf_long_name", "null"),
     std::make_pair("haero_long_name", "virtual_potential_temperature"),
@@ -364,10 +419,16 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
     std::make_pair("short_name", "rho")};
   const auto rho_units = ekat::units::kg * ekat::units::pow(ekat::units::m,-3);
 
+  const var_atts dz_atts = {std::make_pair("cf_long_name",
+    "atmosphere_layer_thickness_expressed_as_geopotential_height_difference"),
+    std::make_pair("short_name", "dz")};
+  const auto dz_units = ekat::units::m;
+
   writer.define_level_var("density", rho_units, rho, rho_atts);
   writer.define_level_var("thetav", thetav_units, thetav, thetav_atts);
   writer.define_level_var("qv", qv_units, qv, qv_atts);
   writer.define_level_var("p", p_units, p, p_atts);
+  writer.define_level_var("dz", dz_units, dz, dz_atts);
 
   // surface variables
   const var_atts ps_atts = {std::make_pair("cf_long_name", "surface_air_pressure"),
@@ -378,7 +439,7 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
   // scalar variables and parameters
   const var_atts p0_atts = {
     std::make_pair("cf_long_name", "reference_air_pressure_for_atmospheric_vertical_coordinate"),
-    std::make_pair("short_name", "p0")};
+    std::make_pair("short_name", "pref")};
   writer.define_scalar_var("p0", ekat::units::Pa, p0_atts, AtmosphericConditions::pref);
 
   const var_atts Tv0_atts = {std::make_pair("cf_long_name", "null"),
@@ -387,20 +448,20 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
   writer.define_scalar_var("Tv0", Tv0_units, Tv0_atts, conds.Tv0);
 
   const var_atts Gammav_atts = {std::make_pair("cf_long_name", "null"),
-    std::make_pair("haero_long_name", "virtual_temperature_lapse_rate"),
+    std::make_pair("haero_long_name", "initial_virtual_temperature_lapse_rate"),
     std::make_pair("short_name", "Gamma_v")};
   const auto Gammav_units = ekat::units::K / ekat::units::m;
   writer.define_scalar_var("Tv_lapse_rate", Gammav_units, Gammav_atts,
     conds.Gammav);
 
   const var_atts qv0_atts = {std::make_pair("cf_long_name", "null"),
-    std::make_pair("haero_long_name", "surface_water_vapor_mixing_ratio"),
+    std::make_pair("haero_long_name", "initial_surface_water_vapor_mixing_ratio"),
     std::make_pair("short_name", "qv0")};
   writer.define_scalar_var("qv0", ekat::units::Units::nondimensional(), qv0_atts,
     conds.qv0);
 
   const var_atts qv1_atts = {std::make_pair("cf_long_name", "null"),
-    std::make_pair("haero_long_name", "water_vapor_mixing_ratio_decay_rate"),
+    std::make_pair("haero_long_name", "initial_water_vapor_mixing_ratio_decay_rate"),
     std::make_pair("short_name", "qv1")};
   writer.define_scalar_var("qv1", ekat::units::pow(ekat::units::m, -1), qv1_atts,
     conds.qv1);
@@ -408,6 +469,10 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
   const var_atts ztop_atts = {std::make_pair("cf_long_name", "altitude_at_top_of_atmosphere_model"),
     std::make_pair("short_name", "z_top")};
   writer.define_scalar_var("ztop", ekat::units::m, ztop_atts, conds.ztop);
+
+  const var_atts ptop_atts = {std::make_pair("cf_long_name", "air_pressure_at_top_of_atmosphere_model"),
+    std::make_pair("short_name", "p_top")};
+  writer.define_scalar_var("ptop", ekat::units::Pa, ptop_atts, conds.ptop);
 
   const var_atts w0_atts = {std::make_pair("cf_long_name", "null"),
     std::make_pair("haero_long_name", "host_dynamics_maximum_velocity"),
@@ -430,6 +495,8 @@ void HostDynamics::nc_write_data(NcWriter& writer, const size_t time_idx) const 
   writer.add_variable_data("thetav", time_idx, null_idx, null_idx, thetav);
   writer.add_variable_data("qv", time_idx, null_idx, null_idx, qv);
   writer.add_variable_data("p", time_idx, null_idx, null_idx, p);
+  writer.add_variable_data("dpdz", time_idx, null_idx, null_idx, dpdz);
+  writer.add_variable_data("dz", time_idx, null_idx, null_idx, dz);
   writer.add_time_dependent_scalar_value("surface_pressure", time_idx, ps);
 }
 

@@ -358,6 +358,9 @@ void NcWriter::define_scalar_var(const std::string& name, const ekat::units::Uni
   }
   retval = nc_put_var(ncid, varid, &val);
   CHECK_NCERR(retval);
+  const auto unitstr = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unitstr.size(), unitstr.c_str());
+  CHECK_NCERR(retval);
 }
 
 void NcWriter::define_time_dependent_scalar_var(const std::string& name,
@@ -375,6 +378,9 @@ void NcWriter::define_time_dependent_scalar_var(const std::string& name,
         var_atts[i].second.size(), var_atts[i].second.c_str());
     CHECK_NCERR(retval);
   }
+  const auto unitstr = ekat::units::to_string(units);
+  retval = nc_put_att_text(ncid, varid, "units", unitstr.size(), unitstr.c_str());
+  CHECK_NCERR(retval);
 }
 
 std::string NcWriter::info_string(const int& tab_level) const {

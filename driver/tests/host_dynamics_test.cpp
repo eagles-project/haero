@@ -7,6 +7,7 @@
 #include "ekat/util/ekat_units.hpp"
 #include "haero/math_helpers.hpp"
 #include <iostream>
+#include <iomanip>
 
 using namespace haero;
 using namespace driver;
@@ -20,6 +21,13 @@ struct HydrostaticBalance {
   void run_test(const HostDynamics& dyn, const AtmosphericConditions& ac);
 };
 
+struct UniformThicknessHeight {
+  int nerr;
+  Real dzval;
+  UniformThicknessHeight(const Real layer_depth) : nerr(0), dzval(layer_depth) {}
+  void run_test(const HostDynamics& dyn);
+};
+
 TEST_CASE("driver dynamics", "") {
 
   const Real Tv0 = 300;
@@ -31,16 +39,20 @@ TEST_CASE("driver dynamics", "") {
   const Real qv1 = 2.5E-3;
   const AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
 
-  HydrostaticBalance hbtest;
-
   const int nlev = 20;
+
+  HydrostaticBalance hbtest;
+  UniformThicknessHeight onedz(ztop/nlev);
+
   SECTION("height init -- uniform heights") {
     HostDynamics zdyn(nlev);
     zdyn.init_from_uniform_heights(nlev, conds);
     std::cout << zdyn.info_string();
     hbtest.run_test(zdyn, conds);
+    onedz.run_test(zdyn);
 
     REQUIRE(hbtest.nerr == 0);
+    REQUIRE(onedz.nerr == 0);
 
     /// Create a new netcdf file
     const std::string fname = "host_dynamics_test_zinit_unif.nc";
@@ -214,7 +226,22 @@ void HydrostaticBalance::run_test(const HostDynamics& dyn, const AtmosphericCond
 
       if (!FloatingPoint<Real>::zero(pres - p(pack_idx)[vec_idx])) {
         ++errct;
-        printf("at level %d: pres = %f, p = %f", k, pres, p(pack_idx)[vec_idx]);
+        printf("at level %d: pres = %f, p = %f\n", k, pres, p(pack_idx)[vec_idx]);
+      }
+    }, nerr);
+}
+
+void UniformThicknessHeight::run_test(const HostDynamics& dyn) {
+  const auto dz = dyn.dz;
+  nerr = 0;
+  Kokkos::parallel_reduce("UniformThicknessHeight::run_test", dyn.nlev(),
+    KOKKOS_LAMBDA (const int k, int& errct) {
+      const int pack_idx_k = PackInfo::pack_idx(k);
+      const int vec_idx_k = PackInfo::vec_idx(k);
+      if (!FloatingPoint<Real>::equiv(dz(pack_idx_k)[vec_idx_k], dzval, 2E-12)) {
+//         std::cout << "at level " << k << ": abs(dz-dzval) = " << std::setprecision(16)
+//                   << std::abs(dz(pack_idx_k)[vec_idx_k]-dzval) << "\n";
+        ++errct;
       }
     }, nerr);
 }

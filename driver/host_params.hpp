@@ -13,6 +13,10 @@
 namespace haero {
 namespace driver {
 
+// fwd decl.
+KOKKOS_INLINE_FUNCTION
+Real hydrostatic_pressure_at_height(const Real z, const Real p0, const Real T0, const Real Gamma);
+
 /** @defgroup ReferenceAtmosphere ReferenceAtmosphere
 
   Functions and classes related to generating model atmosphere vertical profiles.
@@ -47,6 +51,8 @@ struct AtmosphericConditions {
   Real qv0;
   /// initial decay rate of water vapor mass mixing ratio with height [per m]
   Real qv1;
+  /// top of model [Pa]
+  Real ptop;
 
   /** Construct and return a hydrostatic instance of AtmosphericConditions
 
@@ -64,7 +70,8 @@ struct AtmosphericConditions {
   KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const Real Tv0_ = 300, const Real Gammav_ = 0.01, const Real w0_ = 1,
    const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3) :
-    Tv0(Tv0_), Gammav(Gammav_), w0(w0_), ztop(ztop_), tperiod(tperiod_), qv0(qv0_), qv1(qv1_) {
+    Tv0(Tv0_), Gammav(Gammav_), w0(w0_), ztop(ztop_), tperiod(tperiod_), qv0(qv0_), qv1(qv1_),
+    ptop(hydrostatic_pressure_at_height(ztop_, AtmosphericConditions::pref, Tv0_, Gammav_)) {
     /// check valid input
     EKAT_ASSERT_MSG(fp_helper::in_bounds(Tv0_, 273, 323),
       "unexpected T0, check units = K");
@@ -82,7 +89,8 @@ struct AtmosphericConditions {
 
   KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const AtmosphericConditions& other) : Tv0(other.Tv0), Gammav(other.Gammav),
-    w0(other.w0), ztop(other.ztop), tperiod(other.tperiod), qv0(other.qv0), qv1(other.qv1) {}
+    w0(other.w0), ztop(other.ztop), tperiod(other.tperiod), qv0(other.qv0), qv1(other.qv1),
+    ptop(other.ptop) {}
 
   /// Write instance info to string
   std::string info_string(const int tab_level=0) const;

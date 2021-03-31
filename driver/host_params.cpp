@@ -16,6 +16,7 @@ std::string AtmosphericConditions::info_string(const int tab_level) const {
   ss << tabstr << "Gammav = " << Gammav << " K/m\n";
   ss << tabstr << "w0 = " << w0 << " m/s\n";
   ss << tabstr << "ztop = " << ztop << " m\n";
+  ss << tabstr << "ptop = " << ptop << " Pa\n";
   ss << tabstr << "tperiod = " << tperiod << " s\n";
   ss << tabstr << "qv0 = " << qv0 << " kg/kg\n";
   ss << tabstr << "qv1 = " << qv1 << " per m\n";
