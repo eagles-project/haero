@@ -205,6 +205,179 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
   }
 }
 
+TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
+  /// Test the mer07_veh02_nuc_mosaic_1box function directly by calling both
+  /// the Nvidia Cuda GPU version and the CPU C++ version and compare
+  /// the result. The testing process is to generate a bunch of random
+  /// input values and check the output values are close.  Differences
+  /// in Fortran and C++ means the result is not identical but we hope
+  /// it is within numerical round off.
+
+  using fp_helper = FloatingPoint<double>;
+  using SolutionView = DeviceType::view_1d<double>; 
+  using FlagaaView   = DeviceType::view_1d<int>; 
+  const double tolerance = 5.0e-12;
+  // Define a pseudo-random generator [0-1) that is consistent across platforms.
+  // Manually checked the first 100,000 values to be unique.
+  const unsigned p0  = 987659;
+  const unsigned p1  =  12373;
+  long unsigned seed =  54319;
+  auto random = [&]() {
+    seed =  (seed * p1)%p0;
+    return double(seed)/p0;
+  };
+  MAMNucleationProcess mam_nucleation_process;
+  for (int i=0; i<1000; ++i) {
+    const int newnuc_method_flagaa = random() < .5 ? 1+2*random() : 11+2*random();  // range 1,2,11,12
+    const double dtnuc             = random();
+    const double temp_in           = 235 +   60*random();    // range 235-295
+    const double rh_in             = 0.05 +   .9*random();   // range .05-.95
+    const double press_in          = 96325 + 10000*random(); // pressure in Pascal, sea level=101,325
+    const double zm_in             =   500 + 10000*random(); // layer midpoint height (m)
+    const double pblh_in           =  1000 +  1000*random(); // boundary layer height (m)
+    const double qh2so4_cur        = random();               // mixing ratio
+    const double qh2so4_avg        = random();               // mixing ratio
+    const double qnh3_cur          = random();               // mixing ratio
+    const double h2so4_uptkrate    = 10*random();            // h2so4 uptake rate to aerosol (1/s)
+    const double mw_so4a_host      = random()/1000;          // mw of so4 aerosol in host code (g/mol)
+    const int nsize                = 3+10*random();          // number of aerosol size bins. NOTE: nsize<=maxd_asize
+    const int maxd_asize           = nsize + 2*random();     // dimension for dplom_sect, NOTE: nsize<=maxd_asize,
+    const int ldiagaa              = 10*random();             // does not appear to be used.
+    std::vector<double> dplom_sect(maxd_asize);
+    std::vector<double> dphim_sect(maxd_asize);
+    dplom_sect[0] = random()/100000;
+    for (int i=1; i<maxd_asize; ++i) {
+      dplom_sect[i]   = dplom_sect[i-1] + random()/100000;
+      dphim_sect[i-1] = dplom_sect[i];
+    }
+    dphim_sect[maxd_asize-1] = dplom_sect[maxd_asize-1]+random()/100000;;
+
+    const double adjust_factor_bin_tern_ratenucl = random();
+    const double adjust_factor_pbl_ratenucl = random();
+    mam_nucleation_process.set_adjust_factor_bin_tern_ratenucl(adjust_factor_bin_tern_ratenucl);
+    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
+
+
+    SolutionView solution("mer07_veh02_nuc_mosaic_1box",7);
+    FlagaaView   flags("newnuc_method_flagaa",1);
+
+    SolutionView dplom_sect_view("dplom_sect", dplom_sect.size());
+    SolutionView dphim_sect_view("dphim_sect", dphim_sect.size());
+    auto h_dplom_sect_view = Kokkos::create_mirror_view(dplom_sect_view);
+    auto h_dphim_sect_view = Kokkos::create_mirror_view(dphim_sect_view);
+    for (int i=0; i<maxd_asize; ++i) {
+      h_dplom_sect_view(i) = dplom_sect[i];
+      h_dphim_sect_view(i) = dphim_sect[i];
+    }  
+    Kokkos::deep_copy(dplom_sect_view, h_dplom_sect_view);
+    Kokkos::deep_copy(dphim_sect_view, h_dphim_sect_view);
+    
+    Kokkos::parallel_for("mer07_veh02_nuc_mosaic_1box.mam_nucleation_process", 1,
+      KOKKOS_LAMBDA(const int) {
+        int    isize_nuc    = 0;
+        double qnuma_del    = 0;
+        double qso4a_del    = 0;
+        double qnh4a_del    = 0;
+        double qh2so4_del   = 0;
+        double qnh3_del     = 0;
+        double dens_nh4so4a = 0;
+        double dnclusterdt  = 0;
+        mam_nucleation_process.mer07_veh02_nuc_mosaic_1box(
+          newnuc_method_flagaa,
+          dtnuc,
+          temp_in,
+          rh_in,
+          press_in,
+          zm_in,
+          pblh_in,
+          qh2so4_cur,
+          qh2so4_avg,
+          qnh3_cur,
+          h2so4_uptkrate,
+          mw_so4a_host,
+          nsize,
+          maxd_asize,
+          dplom_sect_view.data(),
+          dphim_sect_view.data(),
+          isize_nuc,
+          qnuma_del,
+          qso4a_del,
+          qnh4a_del,
+          qh2so4_del,
+          qnh3_del,
+          dens_nh4so4a,
+          ldiagaa,
+          &dnclusterdt);
+
+        solution(0) = qnuma_del    ;        
+        solution(1) = qso4a_del    ;        
+        solution(2) = qnh4a_del    ;        
+        solution(3) = qh2so4_del   ;      
+        solution(4) = qnh3_del     ;        
+        solution(5) = dens_nh4so4a ; 
+        solution(6) = dnclusterdt  ;
+        flags(0)    = isize_nuc    ;
+      }
+    );
+    auto h_solution = Kokkos::create_mirror_view(solution);
+    auto h_flags = Kokkos::create_mirror_view(flags);
+    Kokkos::deep_copy(h_solution, solution);
+    const double qnuma_del_kok     = h_solution(0);
+    const double qso4a_del_kok     = h_solution(1);
+    const double qnh4a_del_kok     = h_solution(2);
+    const double qh2so4_del_kok    = h_solution(3);
+    const double qnh3_del_kok      = h_solution(4);
+    const double dens_nh4so4a_kok  = h_solution(5);
+    const double dnclusterdt_kok   = h_solution(6);
+    const int    isize_nuc_kok     = h_flags(0);
+
+    double qnuma_del_cpu    = 0;
+    double qso4a_del_cpu    = 0; 
+    double qnh4a_del_cpu    = 0;
+    double qh2so4_del_cpu   = 0; 
+    double qnh3_del_cpu     = 0;
+    double dens_nh4so4a_cpu = 0;
+    double dnclusterdt_cpu  = 0;
+    int    isize_nuc_cpu    = 0; 
+
+    mam_nucleation_process.mer07_veh02_nuc_mosaic_1box(
+          newnuc_method_flagaa,
+          dtnuc,
+          temp_in,
+          rh_in,
+          press_in,
+          zm_in,
+          pblh_in,
+          qh2so4_cur,
+          qh2so4_avg,
+          qnh3_cur,
+          h2so4_uptkrate,
+          mw_so4a_host,
+          nsize,
+          maxd_asize,
+          dplom_sect.data(),
+          dphim_sect.data(),
+          isize_nuc_cpu,
+          qnuma_del_cpu,
+          qso4a_del_cpu,
+          qnh4a_del_cpu,
+          qh2so4_del_cpu,
+          qnh3_del_cpu,
+          dens_nh4so4a_cpu,
+          ldiagaa,
+          &dnclusterdt_cpu);
+
+    REQUIRE( (fp_helper::equiv( qnuma_del_cpu    ,  qnuma_del_kok     , tolerance) || fp_helper::rel( qnuma_del_cpu    ,  qnuma_del_kok    , tolerance)) );
+    REQUIRE( (fp_helper::equiv( qso4a_del_cpu    ,  qso4a_del_kok     , tolerance) || fp_helper::rel( qso4a_del_cpu    ,  qso4a_del_kok    , tolerance)) );
+    REQUIRE( (fp_helper::equiv( qnh4a_del_cpu    ,  qnh4a_del_kok     , tolerance) || fp_helper::rel( qnh4a_del_cpu    ,  qnh4a_del_kok    , tolerance)) );
+    REQUIRE( (fp_helper::equiv( qh2so4_del_cpu   ,  qh2so4_del_kok    , tolerance) || fp_helper::rel( qh2so4_del_cpu   ,  qh2so4_del_kok   , tolerance)) );
+    REQUIRE( (fp_helper::equiv( qnh3_del_cpu     ,  qnh3_del_kok      , tolerance) || fp_helper::rel( qnh3_del_cpu     ,  qnh3_del_kok     , tolerance)) );
+    REQUIRE( (fp_helper::equiv( dens_nh4so4a_cpu ,  dens_nh4so4a_kok  , tolerance) || fp_helper::rel( dens_nh4so4a_cpu ,  dens_nh4so4a_kok , tolerance)) );
+    REQUIRE( (fp_helper::equiv( dnclusterdt_cpu  ,  dnclusterdt_kok   , tolerance) || fp_helper::rel( dnclusterdt_cpu  ,  dnclusterdt_kok  , tolerance)) );
+    REQUIRE( isize_nuc_cpu == isize_nuc_kok );
+  }
+}
+
 // These tests exercise our transplant of the MAM nucleation process.
 TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 

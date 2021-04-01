@@ -34,6 +34,7 @@ namespace haero {
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
 class MAMNucleationProcess : public PrognosticProcess {
+public:
   double adjust_factor_pbl_ratenucl = 0;
   double adjust_factor_bin_tern_ratenucl = 0;
 
@@ -63,12 +64,16 @@ class MAMNucleationProcess : public PrognosticProcess {
   /// arguments (out) computed in call to function mer07_veh02_nuc_mosaic_1box
   ///    these are used to duplicate the outputs of yang zhang's original test driver
   ///    they are not really needed in wrf-chem
-  double  ratenuclt      = 0;  // j = ternary nucleation rate from napari param. (cm-3 s-1)
-  double  rateloge       = 0;  // ln (j)
-  double  cnum_h2so4     = 0;  // number of h2so4 molecules in the critical nucleus
-  double  cnum_nh3       = 0;  // number of nh3   molecules in the critical nucleus
-  double  cnum_tot       = 0;  // total number of molecules in the critical nucleus
-  double  radius_cluster = 0;  // the radius of cluster (nm)
+  /// In the Fortran code these are values set during function calls that are then
+  /// accessable as public data on the module.  This will not work for the GPU
+  /// where the lambda capture of the class is one way, CPU to GPU and no class
+  /// member dtaa is returned.  
+  // double  ratenuclt      = 0;  // j = ternary nucleation rate from napari param. (cm-3 s-1)
+  // double  rateloge       = 0;  // ln (j)
+  // double  cnum_h2so4     = 0;  // number of h2so4 molecules in the critical nucleus
+  // double  cnum_nh3       = 0;  // number of nh3   molecules in the critical nucleus
+  // double  cnum_tot       = 0;  // total number of molecules in the critical nucleus
+  // double  radius_cluster = 0;  // the radius of cluster (nm)
 
   public:
 
@@ -81,7 +86,10 @@ class MAMNucleationProcess : public PrognosticProcess {
   /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   MAMNucleationProcess(const MAMNucleationProcess& pp) :
-    PrognosticProcess(pp) {}
+    PrognosticProcess(pp),
+    adjust_factor_pbl_ratenucl ( pp.adjust_factor_pbl_ratenucl ),
+    adjust_factor_bin_tern_ratenucl ( pp.adjust_factor_bin_tern_ratenucl )
+    {}
 
   /// MAMNucleationProcess objects are not assignable.
   PrognosticProcess& operator=(const MAMNucleationProcess&) = delete;
@@ -214,7 +222,7 @@ void mer07_veh02_nuc_mosaic_1box(
   double &qnh3_del, 
   double &dens_nh4so4a, 
   const int ldiagaa,   
-  double *dnclusterdt=nullptr )
+  double *dnclusterdt=nullptr ) const 
 {
   using namespace std;
   static const double pi      = constants::pi;             
@@ -275,8 +283,15 @@ void mer07_veh02_nuc_mosaic_1box(
   cair = press_in/(temp_in*rgas);
   so4vol_in  = qh2so4_avg * cair * avogad * 1.0e-6;
   nh3ppt    = qnh3_cur * 1.0e12;
-  ratenuclt = 1.0e-38;
-  rateloge = log( ratenuclt );
+  double ratenuclt = 1.0e-38;
+  double rateloge = log( ratenuclt );
+
+  // On the CPU this values was set in global data for use later.
+  // But that pattern does not work for GPU.
+  double  cnum_tot       = 0;  // total number of molecules in the critical nucleus
+  double  cnum_h2so4     = 0;  // number of h2so4 molecules in the critical nucleus
+  double  cnum_nh3       = 0;  // number of nh3   molecules in the critical nucleus
+  double  radius_cluster = 0;  // the radius of cluster (nm)
 
   int newnuc_method_flagaa2 = 0;
   if ( (newnuc_method_flagaa !=  2)  &&   (nh3ppt >= 0.1) ) {    
@@ -516,7 +531,6 @@ void mer07_veh02_nuc_mosaic_1box(
   qnh4a_del =   -qnh3_del;
   // change to aerosol number (in #/mol-air)
   qnuma_del = 1.0e-3*(qso4a_del*mw_so4a + qnh4a_del*mw_nh4a)/mass_part;
-
   // do the following (tmpa, tmpb, tmpc) calculations as a check
   // max production of aerosol number (#/mol-air)
   tmpa = max( 0.0, (ratenuclt_kk*dtnuc/cair) );

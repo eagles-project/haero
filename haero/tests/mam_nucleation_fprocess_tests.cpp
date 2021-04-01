@@ -196,11 +196,11 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
     std::vector<double> dplom_sect_vec(maxd_asize);
     std::vector<double> dphim_sect_vec(maxd_asize);
     dplom_sect_vec[0] = random()/100000;
-    for (int i=1; i<nsize; ++i) {
+    for (int i=1; i<maxd_asize; ++i) {
       dplom_sect_vec[i]   = dplom_sect_vec[i-1] + random()/100000;
       dphim_sect_vec[i-1] = dplom_sect_vec[i];
     }
-    dphim_sect_vec[nsize-1] = dplom_sect_vec[nsize-1]+random()/100000;;
+    dphim_sect_vec[maxd_asize-1] = dplom_sect_vec[maxd_asize-1]+random()/100000;;
 
     const double *dplom_sect = dplom_sect_vec.data();   
     const double *dphim_sect = dphim_sect_vec.data();   
