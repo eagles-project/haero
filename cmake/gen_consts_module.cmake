@@ -55,7 +55,10 @@ function(gen_consts_module cxx_header fortran_module)
               string(SUBSTRING ${line} ${begin} -1 value)
               string(REPLACE ";" "" value ${value})
               string(STRIP ${value} value)
-
+              # This is a numeric constant that needs to have _wp appended 
+              if (value MATCHES "^([0-9]*)(\\.[0-9]*)?([eE][+\\-]?[0-9]+)?$")
+                string(APPEND value "_wp")
+              endif()
               # Now we write it to our Fortran code list.
               if (comment)
                 list(APPEND fortran_lines "  !${comment}")

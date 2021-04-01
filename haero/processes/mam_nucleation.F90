@@ -12,8 +12,9 @@ module mam_nucleation
 
   ! Module functions
   public :: init, run, finalize, ternary_nuc_merik2007, binary_nuc_vehk2002, &
-    pbl_nuc_wang2008 
+    pbl_nuc_wang2008, mer07_veh02_nuc_mosaic_1box
   public :: adjust_factor_pbl_ratenucl
+  public :: adjust_factor_bin_tern_ratenucl
 
   !-------------------
   ! Module parameters
