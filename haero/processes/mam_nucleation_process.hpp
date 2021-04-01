@@ -34,7 +34,6 @@ namespace haero {
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
 class MAMNucleationProcess : public PrognosticProcess {
-public:
   double adjust_factor_pbl_ratenucl = 0;
   double adjust_factor_bin_tern_ratenucl = 0;
 
