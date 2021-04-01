@@ -121,7 +121,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_fprocess") {
   MAMNucleationProcess mam_nucleation_process;
   for (int i=0; i<1000; ++i) {
     const double so4vol = 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
-    const int flagaa = 13 + 2*random();  // range 13-14   
+    const int flagaa = 11 + 2*random();  // range 11-12   
     const double adjust_factor_pbl_ratenucl = random();
     mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
 
@@ -180,27 +180,28 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
   for (int i=0; i<1000; ++i) {
     const int newnuc_method_flagaa = random() < .5 ? 1+2*random() : 11+2*random();  // range 1,2,11,12
     const double dtnuc             = random();  
-    const double temp_in           = 235 +   60*random();    // range 235-295
-    const double rh_in             = 0.05 +   .9*random();   // range .05-.95
+    const double temp_in           = 235   +   60*random();  // range 235-295
+    const double rh_in             = 0.05  +   .9*random();  // range .05-.95
     const double press_in          = 96325 + 10000*random(); // pressure in Pascal, sea level=101,325
     const double zm_in             =   500 + 10000*random(); // layer midpoint height (m)
     const double pblh_in           =  1000 +  1000*random(); // boundary layer height (m) 
     const double qh2so4_cur        = random();               // mixing ratio
     const double qh2so4_avg        = random();               // mixing ratio
     const double qnh3_cur          = random();               // mixing ratio
-    const double h2so4_uptkrate    = 10*random();            // h2so4 uptake rate to aerosol (1/s)
+    const double h2so4_uptkrate    = 100*random();           // h2so4 uptake rate to aerosol (1/s)
     const double mw_so4a_host      = random()/1000;          // mw of so4 aerosol in host code (g/mol)
-    const int nsize                = 3+10*random();          // number of aerosol size bins. NOTE: nsize<=maxd_asize
+    const int nsize                = 1+2*random();           // number of aerosol size bins. NOTE: nsize<=maxd_asize
     const int maxd_asize           = nsize + 2*random();     // dimension for dplom_sect, NOTE: nsize<=maxd_asize,
-    const int ldiagaa              = 10*random();             // does not appear to be used.
+    const int ldiagaa              = 10*random();            // does not appear to be used.
     std::vector<double> dplom_sect_vec(maxd_asize);
     std::vector<double> dphim_sect_vec(maxd_asize);
-    dplom_sect_vec[0] = random()/100000;
+    const double SECT_SCALE = 1.0e10;
+    dplom_sect_vec[0] = random()/SECT_SCALE;
     for (int i=1; i<maxd_asize; ++i) {
-      dplom_sect_vec[i]   = dplom_sect_vec[i-1] + random()/100000;
+      dplom_sect_vec[i]   = dplom_sect_vec[i-1] + random()/SECT_SCALE;
       dphim_sect_vec[i-1] = dplom_sect_vec[i];
     }
-    dphim_sect_vec[maxd_asize-1] = dplom_sect_vec[maxd_asize-1]+random()/100000;;
+    dphim_sect_vec[maxd_asize-1] = dplom_sect_vec[maxd_asize-1]+random()/SECT_SCALE;
 
     const double *dplom_sect = dplom_sect_vec.data();   
     const double *dphim_sect = dphim_sect_vec.data();   
