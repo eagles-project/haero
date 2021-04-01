@@ -216,7 +216,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
   using fp_helper = FloatingPoint<double>;
   using SolutionView = DeviceType::view_1d<double>; 
   using FlagaaView   = DeviceType::view_1d<int>; 
-  const double tolerance = 5.0e-12;
+  const double tolerance = 1.0e-08;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;

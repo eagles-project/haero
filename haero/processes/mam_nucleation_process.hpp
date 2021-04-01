@@ -196,7 +196,7 @@ public:
 ///   @param [out] dens_nh4so4a      dry-density of the new nh4-so4 aerosol mass (kg/m3)
 ///   @param [out] (optional) dnclusterdt  cluster nucleation rate (#/m3/s)
 
-
+KOKKOS_INLINE_FUNCTION
 void mer07_veh02_nuc_mosaic_1box(   
   const int newnuc_method_flagaa, 
   const double dtnuc, 
