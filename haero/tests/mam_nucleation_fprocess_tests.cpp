@@ -10,7 +10,12 @@
 
 using namespace haero;
 
-using namespace haero;
+#ifdef __GNUC__
+#if __has_include("fenv.h")
+#include "fenv.h"
+#define HAERO_WITH_NANTRAP
+#endif
+#endif
 
 TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
   /// Test the ternary_nuc_merik2007 function directly by calling both
@@ -19,6 +24,10 @@ TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
   /// input values and check the output values are close.  Differences
   /// in Fortran and C++ means the result is not identical but we hope
   /// it is within numerical round off.
+#ifdef HAERO_WITH_NANTRAP
+  feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+#endif
+
 
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
