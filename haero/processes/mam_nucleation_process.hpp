@@ -788,6 +788,40 @@ static void binary_nuc_vehk2002(const double temp,
     + 0.3346648*log(cnum_tot) );
 }
 
+/// Tempary scalar interface.  For two reasons:
+/// 1. Makes it easy to compare results from a PackType call with the
+///    equivalent four scalar calls for unit testing.
+/// 2. Untill all functions that call ternary_nuc_merik2007 are
+///    also converted to PackType, this is needed to link and run.
+  KOKKOS_INLINE_FUNCTION 
+  static void ternary_nuc_merik2007(const Real t, 
+                                    const Real rh, 
+                                    const Real c2,
+                                    const Real c3, 
+                                    Real &j_log, 
+                                    Real &ntot, 
+                                    Real &nacid, 
+                                    Real &namm, 
+                                    Real &r)
+  {
+     using Pack = ekat::Pack<Real, 1>;
+     const Pack t_p(t);
+     const Pack rh_p(rh);
+     const Pack c2_p(c2);
+     const Pack c3_p(c3);
+     Pack j_log_p(j_log);
+     Pack ntot_p(ntot);
+     Pack nacid_p(nacid);
+     Pack namm_p(namm);
+     Pack r_p(r);
+     ternary_nuc_merik2007(t_p, rh_p, c2_p, c3_p, j_log_p, ntot_p, nacid_p, namm_p, r_p);
+     j_log = j_log_p[0];
+     ntot  = ntot_p[0];
+     nacid = nacid_p[0];
+     namm  = namm_p[0];
+     r     = r_p[0];
+  }
+
 /// ternary_nuc_merik2007 calculates the parameterized composition
 /// and nucleation rate of critical clusters in h2o-h2so4-nh3 vapor
 ///
@@ -804,28 +838,30 @@ static void binary_nuc_vehk2002(const double temp,
 /// @param [out] nacid: number of sulfuric acid molecules in the critical cluster
 /// @param [out] namm:  number of ammonia molecules in the critical cluster
 /// @param [out] r:     radius of the critical cluster (nm)
+  template <typename Pack>
   KOKKOS_INLINE_FUNCTION 
-  static void ternary_nuc_merik2007(const double t, 
-                                    const double rh, 
-                                    const double c2,
-                                    const double c3, 
-                                    double &j_log, 
-                                    double &ntot, 
-                                    double &nacid, 
-                                    double &namm, 
-                                    double &r)
- {
+  static void ternary_nuc_merik2007(const Pack t, 
+                                    const Pack rh, 
+                                    const Pack c2,
+                                    const Pack c3, 
+                                    Pack &j_log, 
+                                    Pack &ntot, 
+                                    Pack &nacid, 
+                                    Pack &namm, 
+                                    Pack &r)
+  {
     using namespace std;
+    using Mask = ekat::Mask<Pack::n>;
 
-
-    const double t_onset=143.6002929064716 + 1.0178856665693992*rh + \
+    const Pack t_onset=143.6002929064716 + 1.0178856665693992*rh + \
       10.196398812974294*log(c2) - \
       0.1849879416839113*(log(c2)*log(c2)) - 17.161783213150173*log(c3) + \
       (109.92469248546053*log(c3))/log(c2) + \
       0.7734119613144357*log(c2)*log(c3) - 0.15576469879527022*(log(c3)*log(c3));
 
-    if (t_onset > t) {
-      j_log = -12.861848898625231 + 4.905527742256349*c3 - 358.2337705052991*rh - \
+    const Mask mask(t_onset > t);
+      j_log.set(!mask, -300.0);
+      j_log.set(mask, -12.861848898625231 + 4.905527742256349*c3 - 358.2337705052991*rh - \
         0.05463019231872484*c3*t + 4.8630382337426985*rh*t + \
         0.00020258394697064567*c3*(t*t) - 0.02175548069741675*rh*(t*t) - \
         2.502406532869512e-7*c3*(t*t*t) + 0.00003212869941055865*rh*(t*t*t) - \
@@ -885,54 +921,48 @@ static void binary_nuc_vehk2002(const double temp,
         3.1712136610383244*(log(c3)*log(c3)*log(c3))*log(rh) - \
         0.037822330602328806*t*(log(c3)*log(c3)*log(c3))*log(rh) + \
         0.0001500555743561457*(t*t)*(log(c3)*log(c3)*log(c3))*log(rh) - \
-        1.9828365865570703e-7*(t*t*t)*(log(c3)*log(c3)*log(c3))*log(rh);
+        1.9828365865570703e-7*(t*t*t)*(log(c3)*log(c3)*log(c3))*log(rh));
 
-      const double j = exp(j_log);
-
-      ntot = 57.40091052369212 - 0.2996341884645408*t + \
+      ntot.set(mask, 57.40091052369212 - 0.2996341884645408*t + \
         0.0007395477768531926*(t*t) - \
         5.090604835032423*log(c2) + 0.011016634044531128*t*log(c2) + \
         0.06750032251225707*(log(c2)*log(c2)) - 0.8102831333223962*log(c3) + \
         0.015905081275952426*t*log(c3) - 0.2044174683159531*log(c2)*log(c3) + \
         0.08918159167625832*(log(c3)*log(c3)) - 0.0004969033586666147*t*(log(c3)*log(c3)) + \
-        0.005704394549007816*(log(c3)*log(c3)*log(c3)) + 3.4098703903474368*log(j) - \
-        0.014916956508210809*t*log(j) + 0.08459090011666293*log(c3)*log(j) - \
-        0.00014800625143907616*t*log(c3)*log(j) + 0.00503804694656905*(log(j)*log(j));
+        0.005704394549007816*(log(c3)*log(c3)*log(c3)) + 3.4098703903474368*j_log - \
+        0.014916956508210809*t*j_log + 0.08459090011666293*log(c3)*j_log - \
+        0.00014800625143907616*t*log(c3)*j_log + 0.00503804694656905*(j_log*j_log));
 
-      r = 3.2888553966535506e-10 - 3.374171768439839e-12*t + \
+      r.set(mask, 3.2888553966535506e-10 - 3.374171768439839e-12*t + \
         1.8347359507774313e-14*(t*t) + 2.5419844298881856e-12*log(c2) - \
         9.498107643050827e-14*t*log(c2) + 7.446266520834559e-13*(log(c2)*log(c2)) + \
         2.4303397746137294e-11*log(c3) + 1.589324325956633e-14*t*log(c3) - \
         2.034596219775266e-12*log(c2)*log(c3) - 5.59303954457172e-13*(log(c3)*log(c3)) - \
         4.889507104645867e-16*t*(log(c3)*log(c3)) + 1.3847024107506764e-13*(log(c3)*log(c3)*log(c3)) + \
-        4.141077193427042e-15*log(j) - 2.6813110884009767e-14*t*log(j) + \
-        1.2879071621313094e-12*log(c3)*log(j) - \
-        3.80352446061867e-15*t*log(c3)*log(j) - 1.8790172502456827e-14*(log(j)*log(j));
+        4.141077193427042e-15*j_log - 2.6813110884009767e-14*t*j_log + \
+        1.2879071621313094e-12*log(c3)*j_log - \
+        3.80352446061867e-15*t*log(c3)*j_log - 1.8790172502456827e-14*(j_log*j_log));
 
-      nacid = -4.7154180661803595 + 0.13436423483953885*t - \
+      nacid.set(mask, -4.7154180661803595 + 0.13436423483953885*t - \
         0.00047184686478816176*(t*t) - \
         2.564010713640308*log(c2) + 0.011353312899114723*t*log(c2) + \
         0.0010801941974317014*(log(c2)*log(c2)) + 0.5171368624197119*log(c3) - \
         0.0027882479896204665*t*log(c3) + 0.8066971907026886*(log(c3)*log(c3)) - \
         0.0031849094214409335*t*(log(c3)*log(c3)) - 0.09951184152927882*(log(c3)*log(c3)*log(c3)) + \
-        0.00040072788891745513*t*(log(c3)*log(c3)*log(c3)) + 1.3276469271073974*log(j) - \
-        0.006167654171986281*t*log(j) - 0.11061390967822708*log(c3)*log(j) + \
-        0.0004367575329273496*t*log(c3)*log(j) + 0.000916366357266258*(log(j)*log(j));
+        0.00040072788891745513*t*(log(c3)*log(c3)*log(c3)) + 1.3276469271073974*j_log - \
+        0.006167654171986281*t*j_log - 0.11061390967822708*log(c3)*j_log + \
+        0.0004367575329273496*t*log(c3)*j_log + 0.000916366357266258*(j_log*j_log));
 
-      namm = 71.20073903979772 - 0.8409600103431923*t + \
+      namm.set(mask, 71.20073903979772 - 0.8409600103431923*t + \
         0.0024803006590334922*(t*t) + \
         2.7798606841602607*log(c2) - 0.01475023348171676*t*log(c2) + \
         0.012264508212031405*(log(c2)*log(c2)) - 2.009926050440182*log(c3) + \
         0.008689123511431527*t*log(c3) - 0.009141180198955415*log(c2)*log(c3) + \
         0.1374122553905617*(log(c3)*log(c3)) - 0.0006253227821679215*t*(log(c3)*log(c3)) + \
-        0.00009377332742098946*(log(c3)*log(c3)*log(c3)) + 0.5202974341687757*log(j) - \
-        0.002419872323052805*t*log(j) + 0.07916392322884074*log(c3)*log(j) - \
-        0.0003021586030317366*t*log(c3)*log(j) + 0.0046977006608603395*(log(j)*log(j));
+        0.00009377332742098946*(log(c3)*log(c3)*log(c3)) + 0.5202974341687757*j_log - \
+        0.002419872323052805*t*j_log + 0.07916392322884074*log(c3)*j_log - \
+        0.0003021586030317366*t*log(c3)*j_log + 0.0046977006608603395*(j_log*j_log));
 
-    } else {
-      // nucleation rate less than 5e-6, setting j_log arbitrary small
-      j_log = -300.0 ;
-    }
   }
 };
 
