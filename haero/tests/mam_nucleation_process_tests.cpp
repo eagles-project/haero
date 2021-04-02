@@ -178,6 +178,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
     auto h_solution = Kokkos::create_mirror_view(solution);
     auto h_flags = Kokkos::create_mirror_view(flags);
     Kokkos::deep_copy(h_solution, solution);
+    Kokkos::deep_copy(h_flags, flags);
     const double ratenucl_kok       = h_solution(0);
     const double rateloge_kok       = h_solution(1);
     const double cnum_tot_kok       = h_solution(2);
@@ -323,6 +324,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     auto h_solution = Kokkos::create_mirror_view(solution);
     auto h_flags = Kokkos::create_mirror_view(flags);
     Kokkos::deep_copy(h_solution, solution);
+    Kokkos::deep_copy(h_flags, flags);
     const double qnuma_del_kok     = h_solution(0);
     const double qso4a_del_kok     = h_solution(1);
     const double qnh4a_del_kok     = h_solution(2);

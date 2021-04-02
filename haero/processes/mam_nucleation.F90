@@ -1314,8 +1314,6 @@ subroutine ternary_nuc_merik2007(t, rh, c2, c3, j_log, ntot, nacid, namm, r )
       0.0001500555743561457_wp*t**2*log(c3)**3*log(rh) - &
       1.9828365865570703e-7_wp*t**3*log(c3)**3*log(rh)
 
-    ! j = exp(j_log)
-
     ntot = 57.40091052369212_wp - 0.2996341884645408_wp*t + &
       0.0007395477768531926_wp*t**2 - &
       5.090604835032423_wp*log(c2) + 0.011016634044531128_wp*t*log(c2) + &
