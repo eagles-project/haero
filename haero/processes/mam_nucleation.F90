@@ -567,7 +567,9 @@ subroutine compute_tendencies(deltat, &
 
   ! dso4dt_ait, dnh4dt_ait are (kmol/kmol-air/s)
   dso4dt_ait = dmdt_ait*tmp_frso4/mw_so4a_host
-  dnh4dt_ait = dmdt_ait*(1.0_wp - tmp_frso4)/mw_nh4a_host
+  if (0.0_wp < mw_nh4a_host) then
+    dnh4dt_ait = dmdt_ait*(1.0_wp - tmp_frso4)/mw_nh4a_host
+  end if
 end subroutine
 
 ! Calculates new particle production from homogeneous nucleation
