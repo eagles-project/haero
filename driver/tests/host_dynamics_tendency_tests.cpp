@@ -14,7 +14,7 @@ TEST_CASE("basic tendency unit tests", "") {
   const auto conds = AtmosphericConditions();
 
   HostDynamics dyn(nlev);
-  dyn.init_from_uniform_pressures(nlev, conds);
+  dyn.init_from_uniform_pressures(conds);
 
   DynamicsTendencies dtends(nlev);
   dtends.compute(t, dyn.phi, dyn.rho, conds);

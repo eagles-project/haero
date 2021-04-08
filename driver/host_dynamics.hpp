@@ -20,8 +20,8 @@ class HostDynamics final {
     ColumnView w;
     /// geopotential (interface variable)
     ColumnView phi;
-    /// vertical derivative of pressure (interface variable)
-    ColumnView dpdz;
+    /// layer thickness in pressure (interface variable)
+    ColumnView dp;
 
     /// density (midpoint variable)
     ColumnView rho;
@@ -31,7 +31,7 @@ class HostDynamics final {
     ColumnView qv;
     /// pressure (midpoint variable)
     ColumnView p;
-    /// layer thickness (midpoint variable)
+    /// layer thickness in height (midpoint variable)
     ColumnView dz;
 
     /// elapsed time
@@ -46,7 +46,7 @@ class HostDynamics final {
     HostDynamics(const int nl) :
       w("w",PackInfo::num_packs(nl+1)),
       phi("phi",PackInfo::num_packs(nl+1)),
-      dpdz("dp/dz", PackInfo::num_packs(nl+1)),
+      dp("dpint", PackInfo::num_packs(nl+1)),
       rho("rho",PackInfo::num_packs(nl)),
       thetav("thetav",PackInfo::num_packs(nl)),
       qv("qv",PackInfo::num_packs(nl)),
@@ -79,9 +79,9 @@ class HostDynamics final {
         const AtmosphericConditions& ac);
 
 
-    void init_from_uniform_heights(const int nl, const AtmosphericConditions& ac);
+    void init_from_uniform_heights(const AtmosphericConditions& ac);
 
-    void init_from_uniform_pressures(const int nl, const AtmosphericConditions& ac);
+    void init_from_uniform_pressures(const AtmosphericConditions& ac);
 
     /** Write basic information about *this to a string.
     */
