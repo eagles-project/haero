@@ -6,9 +6,10 @@
 #include <iostream>
 
 // these are required for TChem
-#include "tchem/TChem_SourceTermToyProblem.hpp"
+// #include "tchem/TChem_SourceTermToyProblem.hpp"
 #include "tchem/TChem_KineticModelData.hpp"
 #include "tchem/TChem_Util.hpp"
+#include "tchem/TChem_Impl_RateOfProgress.hpp"
 
 namespace chemUtil {
 
@@ -70,4 +71,35 @@ class chemSolver{
 };
 
 } // namespace chemUtil
+
+// NOTE: everything in this namespace is copied directly from TChem
+namespace tchem_stuff {
+
+  struct SourceTermToyProblem
+  {
+
+    template<typename KineticModelConstDataType>
+    static inline ordinal_type getWorkSpaceSize(
+      const KineticModelConstDataType& kmcd)
+    {
+      return SourceTermToyProblem::getWorkSpaceSize(kmcd);
+    }
+
+    //
+    static void runDeviceBatch( /// input
+      typename UseThisTeamPolicy<exec_space>::type& policy,
+      const real_type_1d_view& theta,
+      const real_type_1d_view& lambda,
+      const real_type_2d_view& state,
+      /// output
+      const real_type_2d_view& SourceTermToyProblem,
+      /// const data from kinetic model
+      const KineticModelConstDataDevice& kmcd);
+
+  }; // end STTP struct
+
+  template<typename KineticModelConstDataType>
+  KOKKOS_INLINE_FUNCTION static ordinal_type getWorkSpaceSize(
+    const KineticModelConstDataType& kmcd);
+} // end tchem_stuff namespace
 #endif
