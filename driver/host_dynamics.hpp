@@ -64,19 +64,25 @@ class HostDynamics final {
 
     /** Initialize column data at t=0 to stationary, hydrostatic balance
 
+      Calling this method will change the ztop/ptop values of AtmosphericConditions to match the
+      first height value.
+
       @param z0 initial heights of interfaces
       @param ac atmospheric conditions to define parameters
     */
     void init_from_interface_heights(std::vector<Real> z0,
-        const AtmosphericConditions& ac);
+        AtmosphericConditions& ac);
 
     /** Initialize column data at t=0 to stationary, hydrostatic balance
+
+      Calling this method will change the ztop/ptop values of AtmosphericConditions to match the
+      first pressure value.
 
       @param p0 initial pressure at interfaces
       @param ac atmospheric conditions to define parameters
     */
     void init_from_interface_pressures(std::vector<Real> p0,
-        const AtmosphericConditions& ac);
+         AtmosphericConditions& ac);
 
 
     void init_from_uniform_heights(const AtmosphericConditions& ac);

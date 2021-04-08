@@ -106,7 +106,8 @@ TEST_CASE("driver dynamics", "") {
     for (int i=0; i<nlev+1; ++i) {
       z_vals[i] = square(Real(i)/Real(nlev))*ztop;
     }
-    const AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
+    AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
+    std::cout << conds.info_string();
 
     HostDynamics zdyn(nlev);
     zdyn.init_from_interface_heights(z_vals, conds);
@@ -148,6 +149,7 @@ TEST_CASE("driver dynamics", "") {
     const int nlev = 20;
     const Real ztop = 20E3;
     const AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
+    std::cout << conds.info_string();
 
     HostDynamics pdyn(nlev);
     pdyn.init_from_uniform_pressures(conds);
@@ -158,8 +160,6 @@ TEST_CASE("driver dynamics", "") {
     hbtest.run_test(pdyn, conds);
     onedp.run_test(pdyn, 0.01);
     hypsotest.run_test(pdyn,conds, 0.07);
-
-
 
     REQUIRE(hbtest.nerr == 0);
     REQUIRE(onedp.nerr == 0);
@@ -199,8 +199,8 @@ TEST_CASE("driver dynamics", "") {
     /// Assume input is interfaces
     const int nlev = p_vals.size()-1;
     const Real ztop = height_at_pressure(p_vals[0], AtmosphericConditions::pref, Tv0, Gammav);
-    const AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
-
+    AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
+    std::cout << conds.info_string();
     HostDynamics pdyn(nlev);
     pdyn.init_from_interface_pressures(p_vals, conds);
     std::cout << pdyn.info_string();

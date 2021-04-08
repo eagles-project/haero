@@ -14,7 +14,7 @@ namespace haero {
 namespace driver {
 
 void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
-        const AtmosphericConditions& ac) {
+        AtmosphericConditions& ac) {
   using namespace constants;
 
   EKAT_REQUIRE_MSG(z0.size() == nlev_+1, "number of initial heights must match number of levels + 1");
@@ -22,6 +22,9 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
 
   const bool increasing = (z0[1] > z0[0]);
   if (increasing) std::reverse(z0.begin(), z0.end());
+
+  ac.ztop = z0[0];
+  ac.ptop = hydrostatic_pressure_at_height(ac.ztop, ac);
 
   auto hphi0 = Kokkos::create_mirror_view(phi0);
   auto hrho0 = Kokkos::create_mirror_view(rho0);
@@ -142,7 +145,7 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
   update_vertical_derivs(ac);
 }
 
-void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const AtmosphericConditions& ac) {
+void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  AtmosphericConditions& ac) {
   using namespace constants;
 
   EKAT_REQUIRE_MSG(p0.size() == nlev_ + 1, "number of initial pressures must match number of levels + 1");
@@ -151,6 +154,9 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0, const Atm
   const bool increasing = (p0[1]>p0[0]);
   if (!increasing) std::reverse(p0.begin(), p0.end());
   EKAT_REQUIRE_MSG(p0.back()== AtmosphericConditions::pref, "surface pressure must initialize to 1000 hPa.");
+
+  ac.ptop = p0[0];
+  ac.ztop = height_at_pressure(p0[0], ac);
 
   auto hphi0 = Kokkos::create_mirror_view(phi0);
   auto hrho0 = Kokkos::create_mirror_view(rho0);
