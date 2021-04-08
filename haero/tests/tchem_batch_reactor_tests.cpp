@@ -11,6 +11,18 @@ using namespace chemUtil;
 
 TEST_CASE("toy problem chemistry", "haero_unit_tests")
 {
+
+  real_type lat = 20.0;
+  real_type lon = 37.612;
+
+  const real_type latc(20.0); //! degrees
+  const real_type lonc(300.0);// ! degrees
+  real_type k1 = ats<real_type>::sin(lat*PI()/180) * ats<real_type>::sin(latc*PI()/180) +
+                       ats<real_type>::cos(lat*PI()/180) * ats<real_type>::cos(latc*PI()/180) *
+                       ats<real_type>::cos(lon*PI()/180 - lonc*PI()/180);
+  k1 = k1 > 0 ? k1 : 0;
+  real_type k2 = 1;
+
   // Write out some test data to our current working directory.
   const char* chem_inp = R"INPUT(ELEMENTS
 X /1/
@@ -30,8 +42,8 @@ X2                       X  2               G   200.000  6000.000 1000.00      1
  0.00000000E+00 0.00000000E+00-7.45375000E+02 4.37967000E+00                   4
 END
 REACTIONS
-X2=>2X      10E+0    1   1
-X+X=>X2      10E+0    1   1
+X2=>2X      17E+0    1   1
+X+X=>X2      21E+0    1   1
 END
 )INPUT";
   mkdir("data", 0777);
