@@ -97,7 +97,10 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
   for (int l = 0; l < num_levels; ++l) {
     if (num_params == 1) {
       auto iter = param_walk.parameters.begin();
-      override_parameter(prognostics, atmosphere, iter->first, iter->second[l]);
+      auto name = iter->first;
+      const auto& vals = iter->second;
+      override_parameter(prognostics, atmosphere, name, vals[l]);
+      overridden_params.push_back({{name, vals[l]}});
     } else if (num_params == 2) {
       auto iter = param_walk.parameters.begin();
       auto name1 = iter->first;
@@ -110,6 +113,8 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       size_t j2 = l - n2*j1;
       override_parameter(prognostics, atmosphere, name1, vals1[j1]);
       override_parameter(prognostics, atmosphere, name2, vals2[j2]);
+      overridden_params.push_back({{name1, vals1[j1]},
+                                   {name2, vals2[j2]}});
     } else if (num_params == 3) {
       auto iter = param_walk.parameters.begin();
       auto name1 = iter->first;
@@ -128,6 +133,9 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       override_parameter(prognostics, atmosphere, name1, vals1[j1]);
       override_parameter(prognostics, atmosphere, name2, vals2[j2]);
       override_parameter(prognostics, atmosphere, name3, vals3[j3]);
+      overridden_params.push_back({{name1, vals1[j1]},
+                                   {name2, vals2[j2]},
+                                   {name3, vals3[j3]}});
     } else if (num_params == 4) {
       auto iter = param_walk.parameters.begin();
       auto name1 = iter->first;
@@ -152,6 +160,10 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       override_parameter(prognostics, atmosphere, name2, vals2[j2]);
       override_parameter(prognostics, atmosphere, name3, vals3[j3]);
       override_parameter(prognostics, atmosphere, name4, vals4[j4]);
+      overridden_params.push_back({{name1, vals1[j1]},
+                                   {name2, vals2[j2]},
+                                   {name3, vals3[j3]},
+                                   {name4, vals4[j4]}});
     } else { // if (num_params == 5)
       auto iter = param_walk.parameters.begin();
       auto name1 = iter->first;
@@ -182,6 +194,11 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       override_parameter(prognostics, atmosphere, name3, vals3[j3]);
       override_parameter(prognostics, atmosphere, name4, vals4[j4]);
       override_parameter(prognostics, atmosphere, name5, vals5[j5]);
+      overridden_params.push_back({{name1, vals1[j1]},
+                                   {name2, vals2[j2]},
+                                   {name3, vals3[j3]},
+                                   {name4, vals4[j4]},
+                                   {name5, vals5[j5]}});
     }
   }
 
@@ -272,15 +289,18 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
     }
 
     // If the planetary boundary layer height is actually a walked parameter,
-    // add it to our list of overridden parameters.
+    // add it each one of our list of overridden parameters.
     if (pblhs.size() > 1) {
-      overridden_params.push_back({{"planetary_boundary_layer_height", pblhs[i]}});
+      for (int l = 0; l < num_levels; ++l) {
+        overridden_params[l].push_back({"planetary_boundary_layer_height", pblhs[i]});
+      }
     }
 
     // Stash output data.
     for (auto params: overridden_params) {
       OutputData output;
       output.params = params;
+      // TODO: I'm not sure yet that we should adopt the box model's output.
       output_data.push_back(output);
     }
   }
