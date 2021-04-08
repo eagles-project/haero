@@ -15,6 +15,7 @@ using HostType   = ekat::KokkosTypes<ekat::HostDevice>;
 
 /// Pack data structure for SIMD.
 using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
+using MaskType = ekat::Mask<HAERO_PACK_SIZE>;
 
 /// Helpers for pack/array indexing
 using PackInfo = ekat::PackInfo<HAERO_PACK_SIZE>;

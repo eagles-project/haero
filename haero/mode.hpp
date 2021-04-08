@@ -12,6 +12,7 @@ namespace haero {
 /// This struct represents an aerosol particle mode and contains all associated
 /// metadata. It is not polymorphic, so don't derive any subclass from it.
 struct Mode final {
+  static const int NAME_LEN=128;
   public:
 
   // Default constructor needed to resize Kokkos Views on device before deep copy.
@@ -21,8 +22,10 @@ struct Mode final {
     max_diameter(0),
     mean_std_dev(0),
     deliquesence_pt(0),
-    crystallization_pt(0),
-    name_view() {}
+    crystallization_pt(0)
+  { 
+    name_view[0]='\0';
+  }
   /// Creates a new aerosol particle mode.
   /// @param [in] name A unique name for this mode.
   /// @param [in] min_diameter The minimum diameter for particles that belong
@@ -42,9 +45,11 @@ struct Mode final {
     max_diameter(max_diameter),
     mean_std_dev(mean_std_dev),
     deliquesence_pt(deliq_pt),
-    crystallization_pt(crystal_pt),
-    name_view(name)
-     {}
+    crystallization_pt(crystal_pt)
+  {
+    EKAT_ASSERT(name.size() < NAME_LEN);
+    strncpy(name_view, name.c_str(), NAME_LEN);
+  }
 
   KOKKOS_INLINE_FUNCTION
   Mode(const Mode &m):
@@ -52,16 +57,31 @@ struct Mode final {
     max_diameter(m.max_diameter),
     mean_std_dev(m.mean_std_dev),
     deliquesence_pt(m.deliquesence_pt),
-    crystallization_pt(m.crystallization_pt),
-    name_view(m.name_view)
-    {}
+    crystallization_pt(m.crystallization_pt)
+  {
+    for (int i=0; i<NAME_LEN; ++i) 
+      name_view[i] = m.name_view[i];
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  Mode &operator=(const Mode &m)
+  {
+    min_diameter=m.min_diameter;
+    max_diameter=m.max_diameter;
+    mean_std_dev=m.mean_std_dev;
+    deliquesence_pt=m.deliquesence_pt;
+    crystallization_pt=m.crystallization_pt;
+    for (int i=0; i<NAME_LEN; ++i) 
+      name_view[i] = m.name_view[i];
+    return *this;
+  }
 
   /// Constructor can be called on device.
   KOKKOS_INLINE_FUNCTION
   ~Mode() {}
 
   /// A unique name for this mode.
-  std::string name() const { return name_view.label(); }
+  std::string name() const { return std::string(name_view); }
 
   /// The minimum diameter for particles that belong to this mode.
   Real min_diameter;
@@ -82,7 +102,7 @@ struct Mode final {
   Real arithmetic_mean_diam() const {return 0.5*(min_diameter + max_diameter);}
 
 private:
-  Kokkos::View<int>  name_view;
+  char name_view[NAME_LEN];
 };
 
 

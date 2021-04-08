@@ -13,10 +13,13 @@ namespace haero {
 /// @struct GasSpecies
 /// This type represents a gas that participates in one or more aerosol microphysics parameterizations.
 struct GasSpecies final {
-
+  static const int NAME_LEN=128;
   // Default constructor needed for device
   KOKKOS_INLINE_FUNCTION
-  GasSpecies() : name_view(), symbol_view() {}
+  GasSpecies() {
+    name_view[0]='\0';
+    symbol_view[0]='\0';
+  }
 
   /// Creates a new gas species
   /** @param [in] name A unique descriptive name for this species
@@ -26,22 +29,46 @@ struct GasSpecies final {
   GasSpecies(const std::string& name,
     const std::string& symbol,
     Real molecular_wt) :
-    molecular_weight(molecular_wt),
-    name_view(name), symbol_view(symbol) {}
+    molecular_weight(molecular_wt)
+  {
+    EKAT_ASSERT(name.size() < NAME_LEN);
+    EKAT_ASSERT(symbol.size() < NAME_LEN);
+    strncpy(name_view, name.c_str(), NAME_LEN);
+    strncpy(symbol_view, symbol.c_str(), NAME_LEN);
+  }
 
+  KOKKOS_INLINE_FUNCTION
+  GasSpecies(const GasSpecies& g) :
+    molecular_weight(g.molecular_weight) 
+  {
+    for (int i=0; i<NAME_LEN; ++i)
+       name_view[i] = g.name_view[i];
+    for (int i=0; i<NAME_LEN; ++i)
+       symbol_view[i] = g.symbol_view[i];
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  GasSpecies &operator=(const GasSpecies& g) {
+    molecular_weight = g.molecular_weight;
+    for (int i=0; i<NAME_LEN; ++i)
+       name_view[i] = g.name_view[i];
+    for (int i=0; i<NAME_LEN; ++i)
+       symbol_view[i] = g.symbol_view[i];
+    return *this;
+  }
 
   /// full species name
-  std::string name() const {return name_view.label();}
+  std::string name() const {return std::string(name_view);}
 
   /// abbreviated name
-  std::string symbol() const {return symbol_view.label();}
+  std::string symbol() const {return std::string(symbol_view);}
 
   /// Molecular weight [kg/mol]
   Real molecular_weight;
 
   private:
-    Kokkos::View<int> name_view;
-    Kokkos::View<int> symbol_view;
+    char name_view[NAME_LEN];
+    char symbol_view[NAME_LEN];
 };
 
 /// This factory function constructs a set of gas species corresponding to
