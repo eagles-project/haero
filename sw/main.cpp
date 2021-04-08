@@ -22,8 +22,11 @@ int main(int argc, const char* argv[]) {
   if (argc < 2)
     usage(argv[0]);
 
+  // Set up an aerosol configuration. For now, we just use MAM4.
+  auto aero_config = haero::create_mam4_modal_aerosol_config();
+
   // Read the input file and extract input.
   std::string input_file(argv[1]);
-  auto param_walk = parse_yaml(input_file);
+  auto param_walk = parse_yaml(aero_config, input_file);
 
 }

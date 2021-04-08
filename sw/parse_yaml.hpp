@@ -13,10 +13,6 @@ class YamlException: public std::exception {
   YamlException(const std::string& message):
     _message(message) {}
 
-  /// Constructs an exception containing the given formatting string and
-  /// C-style variadic arguments (a la printf).
-  YamlException(const char* fmt, ...);
-
   const char* what() const throw() {
     return _message.c_str();
   }
@@ -52,9 +48,12 @@ struct ParameterWalk {
 
 /// This function reads input from a YAML input file. If an error is
 /// encountered, this throws a YamlException.
+/// \param [in] aerosol_config A selected modal aerosol configuration that
+///                            defines how the input is interpreted.
 /// \param [in] filename The name of the file to be read
 /// \returns A set of data and metadata used by skywalker to run a parameter
 ///          study
-ParameterWalk parse_yaml(const std::string& filename);
+ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
+                         const std::string& filename);
 
 #endif
