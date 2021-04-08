@@ -1,6 +1,6 @@
 #include "parse_yaml.hpp"
-#include "haero/haero.hpp"
-#include "haero/modal_aerosol_config.hpp"
+#include "haero/model.hpp"
+#include "haero/processes/mam_nucleation_fprocess.hpp"
 
 #include "ekat/ekat_session.hpp"
 
@@ -12,6 +12,288 @@ void usage(const char* exe)
   fprintf(stderr, "%s: usage:\n", exe);
   fprintf(stderr, "%s <input.yml>\n", exe);
   exit(1);
+}
+
+// List of overridden parameter (name, value)s.
+using OverriddenParameterList = std::vector<std::pair<std::string, haero::Real>>;
+
+// Here's a container that associates input parameters with output data.
+struct OutputData {
+  // Names and values of overridden input parameters.
+  OverriddenParameterList params;
+  // Output data.
+  std::vector<haero::Real> q, qqcw, dgncur_a, dgncur_awet,
+                           wetdens;
+};
+
+// Writes simulation output data to a Python module.
+void write_py_module(const char* py_module_name,
+                     const std::vector<OutputData>& data) {
+}
+
+// Overrides the parameter with the given name using the given value within
+// the aerosol prognostics or atmospheric state.
+void override_parameter(haero::Prognostics& prognostics,
+                        haero::Atmosphere& atmosphere,
+                        const std::string& param_name,
+                        haero::Real param_value) {
+}
+
+// Initializes prognostic and atmosphere input data according to the
+// (non-plbh) parameters given in the walker. Returns an exhaustive list of
+// ŧhe sets of overridden input parameters used to initialize the containers.
+std::vector<OverriddenParameterList>
+initialize_input(const haero::ModalAerosolConfig& aero_config,
+                 const ParameterWalk& param_walk,
+                 haero::Atmosphere& atmosphere,
+                 haero::Prognostics& prognostics) {
+  // Copy in reference data.
+  int num_levels = prognostics.num_levels();
+  int num_modes = prognostics.num_aerosol_modes();
+  int num_gases = prognostics.num_gases();
+  {
+    auto T = atmosphere.temperature();
+    auto p = atmosphere.pressure();
+    auto relhum = atmosphere.relative_humidity();
+    auto h = atmosphere.height();
+    auto int_aero = prognostics.interstitial_aerosols();
+    auto cld_aero = prognostics.cloudborne_aerosols();
+    auto gases = prognostics.gases();
+    auto num_concs = prognostics.modal_num_concs();
+    for (int l = 0; l < num_levels; ++l) {
+      // Atmospheric state
+      T(l) = param_walk.temperature;
+      p(l) = param_walk.pressure;
+      relhum(l) = param_walk.relative_humidity;
+      h(l) = param_walk.height;
+      // TODO: Atmosphere needs cloud_fraction, doesn't it?
+
+      // Aerosol prognostics.
+      for (int m = 0; m < num_modes; ++m) {
+        num_concs(m, l) = param_walk.number_concs[m];
+        for (size_t s = 0; s < param_walk.aero_mix_fractions[m].size(); ++s) {
+          int p = aero_config.population_index(m, static_cast<int>(s));
+          int_aero(p, l) = param_walk.aero_mix_fractions[m][s];
+        }
+        // TODO: Cloudborne aerosols not yet treated!
+      }
+      for (int g = 0; g < num_gases; ++g) {
+        gases(g, l) = param_walk.gas_mix_fractions[g];
+      }
+    }
+  }
+
+  // How many non-plbh parameters are we overriding?
+  int num_params = param_walk.parameters.size();
+  if (param_walk.parameters.find("planetary_boundary_layer_height") != param_walk.parameters.end()) {
+    num_params--;
+  }
+  EKAT_REQUIRE_MSG(((num_params < 1) or (num_params > 5)),
+    "Invalid number of overridden parameters (must be 1-5).");
+
+  // Override the requested parameters at each level.
+  // This involves some ugly index magic based on the number of parameters.
+  std::vector<OverriddenParameterList> overridden_params;
+  for (int l = 0; l < num_levels; ++l) {
+    if (num_params == 1) {
+      auto iter = param_walk.parameters.begin();
+      override_parameter(prognostics, atmosphere, iter->first, iter->second[l]);
+    } else if (num_params == 2) {
+      auto iter = param_walk.parameters.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      size_t n2 = vals2.size();
+      size_t j1 = l/n2;
+      size_t j2 = l - n2*j1;
+      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
+      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
+    } else if (num_params == 3) {
+      auto iter = param_walk.parameters.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      iter++;
+      auto name3 = iter->first;
+      const auto& vals3 = iter->second;
+      size_t n2 = vals2.size();
+      size_t n3 = vals3.size();
+      size_t j1 = l/(n2*n3);
+      size_t j2 = (l - n2*n3*j1) / n3;
+      size_t j3 = l - n2*n3*j1 - n3*j2;
+      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
+      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
+      override_parameter(prognostics, atmosphere, name3, vals3[j3]);
+    } else if (num_params == 4) {
+      auto iter = param_walk.parameters.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      iter++;
+      auto name3 = iter->first;
+      const auto& vals3 = iter->second;
+      iter++;
+      auto name4 = iter->first;
+      const auto& vals4 = iter->second;
+      size_t n2 = vals2.size();
+      size_t n3 = vals3.size();
+      size_t n4 = vals4.size();
+      size_t j1 = l/(n2*n3*n4);
+      size_t j2 = (l - n2*n3*n4*j1) / (n3*n4);
+      size_t j3 = (l - n2*n3*n4*j1 - n3*n4*j2) / n4;
+      size_t j4 = l - n2*n3*n4*j1 - n3*n4*j2 - n4*j3;
+      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
+      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
+      override_parameter(prognostics, atmosphere, name3, vals3[j3]);
+      override_parameter(prognostics, atmosphere, name4, vals4[j4]);
+    } else { // if (num_params == 5)
+      auto iter = param_walk.parameters.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      iter++;
+      auto name3 = iter->first;
+      const auto& vals3 = iter->second;
+      iter++;
+      auto name4 = iter->first;
+      const auto& vals4 = iter->second;
+      iter++;
+      auto name5 = iter->first;
+      const auto& vals5 = iter->second;
+      size_t n2 = vals2.size();
+      size_t n3 = vals3.size();
+      size_t n4 = vals4.size();
+      size_t n5 = vals5.size();
+      size_t j1 = l/(n2*n3*n4*n5);
+      size_t j2 = (l - n2*n3*n4*n5*j1) / (n3*n4*n5);
+      size_t j3 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2) / (n4*n5);
+      size_t j4 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3) / n5;
+      size_t j5 = l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3 - n5*j4;
+      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
+      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
+      override_parameter(prognostics, atmosphere, name3, vals3[j3]);
+      override_parameter(prognostics, atmosphere, name4, vals4[j4]);
+      override_parameter(prognostics, atmosphere, name5, vals5[j5]);
+    }
+  }
+
+  return overridden_params;
+}
+
+// Runs an aerosol process using the parameters in param_walk, writing output
+// ŧo a Python module with the given name.
+void run_process(const haero::ModalAerosolConfig& aero_config,
+                 const ParameterWalk& param_walk,
+                 const char* py_module_name) {
+  // Count up the number of simulations we need (excluding the planetary
+  // boundary layer parameter). We can run all simulations simultaneously
+  // by setting data for each simulation at a specific vertical level.
+  std::vector<haero::Real> pblhs;
+  int num_levels = 1;
+  for (auto iter = param_walk.parameters.begin();
+       iter != param_walk.parameters.end(); ++iter) {
+    if (iter->first == "planetary_boundary_layer_height") {
+      pblhs = iter->second;
+    } else {
+      num_levels *= static_cast<int>(iter->second.size());
+    }
+  }
+  if (pblhs.empty()) { // pblh is not a walked parameter!
+    pblhs.push_back(param_walk.planetary_boundary_layer_height);
+  }
+
+  // Create a model initialized for a number of vertical levels equal to the
+  // number of (0D) simulations we need for our parameter walk.
+  haero::Model* model = haero::Model::ForUnitTests(aero_config, num_levels);
+
+  // Create column views containing reference data.
+  int num_modes = aero_config.h_aerosol_modes.size();
+  int num_aero_populations = model->num_aerosol_populations();
+  int num_gases = aero_config.h_gas_species.size();
+  haero::SpeciesColumnView int_aerosols("interstitial aerosols",
+                                        num_aero_populations, num_levels);
+  haero::SpeciesColumnView cld_aerosols("cloudborne aerosols",
+                                        num_aero_populations, num_levels);
+  haero::SpeciesColumnView gases("gases", num_gases, num_levels);
+  haero::ModalColumnView modal_num_concs("modal number concs", num_modes,
+                                         num_levels);
+  auto* prognostics = model->create_prognostics(int_aerosols, cld_aerosols,
+                                                gases, modal_num_concs);
+  auto* diagnostics = model->create_diagnostics();
+
+  // Set up an atmospheric state and initialize it with reference data.
+  haero::ColumnView temp("temperature", num_levels);
+  haero::ColumnView press("pressure", num_levels);
+  haero::ColumnView rel_hum("relative humidity", num_levels);
+  haero::ColumnView ht("height", num_levels+1);
+  auto* atmosphere = new haero::Atmosphere(num_levels, temp, press, rel_hum, ht,
+                       param_walk.planetary_boundary_layer_height);
+
+  // Create tendencies for the given prognostics.
+  auto* tendencies = new haero::Tendencies(*prognostics);
+
+  // Create the specified process.
+  haero::PrognosticProcess* process = nullptr;
+  if (param_walk.process == "MAMNucleationFProcess") { // fortran nucleation
+    process = new haero::MAMNucleationFProcess();
+  } else { // unknown
+    fprintf(stderr, "Unknown aerosol process: %s", param_walk.process.c_str());
+  }
+
+  // Initialize it for the given aerosol configuration.
+  process->init(aero_config);
+
+  // Run a series of simulations for each value of the planetary boundary
+  // layer height, gathering output data. The outer loop is for different
+  std::vector<OutputData> output_data;
+  for (size_t i = 0; i < pblhs.size(); ++i) {
+    // Initialize the input.
+    auto overridden_params = initialize_input(aero_config, param_walk,
+      *atmosphere, *prognostics);
+    atmosphere->set_planetary_boundary_height(pblhs[i]);
+
+    // Run the thing.
+    haero::Real t = 0.0, dt = param_walk.dt;
+    for (int n = 0; n < param_walk.nsteps; ++n) {
+      process->run(aero_config, t, dt, *prognostics, *atmosphere, *diagnostics,
+                   *tendencies);
+
+      // Advance the time and prognostic state.
+      t += dt;
+      prognostics->scale_and_add(dt, *tendencies);
+    }
+
+    // If the planetary boundary layer height is actually a walked parameter,
+    // add it to our list of overridden parameters.
+    if (pblhs.size() > 1) {
+      overridden_params.push_back({{"planetary_boundary_layer_height", pblhs[i]}});
+    }
+
+    // Stash output data.
+    for (auto params: overridden_params) {
+      OutputData output;
+      output.params = params;
+      output_data.push_back(output);
+    }
+  }
+
+  // Write the output data to a Python module.
+  write_py_module(py_module_name, output_data);
+
+  // Clean up.
+  delete tendencies;
+  delete atmosphere;
+  delete diagnostics;
+  delete prognostics;
+  delete process;
 }
 
 } // anonymous namespace
@@ -29,4 +311,7 @@ int main(int argc, const char* argv[]) {
   std::string input_file(argv[1]);
   auto param_walk = parse_yaml(aero_config, input_file);
 
+  // Set up the desired aerosol process and run it, dumping output to
+  // "haero_skywalker.py".
+  run_process(aero_config, param_walk, "haero_skywalker");
 }

@@ -38,7 +38,8 @@ struct ParameterWalk {
   std::map<std::string, std::vector<haero::Real>> parameters;
 
   // atmospheric state parameters
-  haero::Real temperature, pressure, relative_humidity, height, cloud_fraction;
+  haero::Real temperature, pressure, relative_humidity, height,
+              cloud_fraction, planetary_boundary_layer_height;
 
   // aerosol initial data
   std::vector<haero::Real> number_concs;

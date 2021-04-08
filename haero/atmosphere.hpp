@@ -50,6 +50,10 @@ class Atmosphere final {
   KOKKOS_INLINE_FUNCTION
   int num_levels() const { return num_levels_; }
 
+  /// Sets the planetary boundary height [m].
+  KOKKOS_INLINE_FUNCTION
+  void set_planetary_boundary_height(Real pblh) { pblh_ = pblh; }
+
   private:
 
   // Number of vertical levels.
