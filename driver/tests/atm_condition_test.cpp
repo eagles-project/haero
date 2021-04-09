@@ -7,17 +7,17 @@
 using namespace haero;
 using namespace haero::driver;
 
-struct InitialThicknessProfileTest {
+struct InitialThicknessTest {
   int nerrz;
   int nerrp;
-  InitialThicknessProfileTest() : nerrz(0), nerrp(0) {}
+  InitialThicknessTest() : nerrz(0), nerrp(0) {}
   void run_test(const AtmosphericConditions& ac, const Real tol=FloatingPoint<Real>::zero_tol);
 };
 
 
 TEST_CASE("atmosphere_conditions", "") {
 
-  InitialThicknessProfileTest ittest;
+  InitialThicknessTest ittest;
   SECTION("dynamics") {
     const Real T0 = 300;
     const Real Gamma = 0.005;
@@ -57,7 +57,7 @@ TEST_CASE("atmosphere_conditions", "") {
   }
 }
 
-void InitialThicknessProfileTest::run_test(const AtmosphericConditions& ac, const Real tol) {
+void InitialThicknessTest::run_test(const AtmosphericConditions& ac, const Real tol) {
   using namespace constants;
   nerrz = 0;
   nerrp = 0;
