@@ -11,25 +11,28 @@ timestepping:
 parameters:
   temperature: [270, 276, 0.5]
   relative_humidity: [0, 1, 0.1]
-  qh2so4: [0, 1.e-3, 1.e-4]
+  qh2so4: [0, 1.e-3, 1.e-4]  # _aero for aerosol data
+  aitken:
+    so4: [0, ...]
 
 atmosphere:
   temperature: 273
   pressure: 100000
   relative_humidity: 0.95
   height: 3000
-  cloud_fraction: 0.0
+  #  cloud_fraction: 0.0
 
 aerosols:
   accumulation:
-    number_conc: 1.e8
-    so4: 0.3
-    pom: 0
-    soa: 0.3
-    bc: 0
-    dst: 0
-    ncl: 0.4
-    mom: 0
+    number_conc: 1.e8 # [ # aerosol molecules / kg air]
+    species:
+      so4: 0.3 # [change to kg aerosol/kg air]
+      pom: 0
+      soa: 0.3
+      bc: 0
+      dst: 0
+      ncl: 0.4
+      mom: 0
   aitken:
     number_conc: 1.e9
     so4: 0.3
@@ -51,7 +54,7 @@ aerosols:
     mom: 0
 
 gases:
-  qso2: 1.e-4
+  qso2: 1.e-4 # [kg gas / kg air]
   qh2so4: 1.e-13
   qsoag: 5.e-10
 
