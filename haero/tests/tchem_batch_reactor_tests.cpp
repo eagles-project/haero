@@ -68,8 +68,8 @@ END
                                     // 8) initial mass X2 (real)
 
   // provide arbitrarily chosen inputs
-  chemSolver chem_solver("toy-problem/", false, 1, false, 20.0, 37.612, 2.5e-7,
-                         1.8e-6);
+  chemSolver chem_solver("toy-problem/", false, 1, false, 20.0, 37.612, k1, k2,
+                         2.5e-7, 1.8e-6);
 
   // run the problem on device
   real_type_2d_view results = chem_solver.get_results();

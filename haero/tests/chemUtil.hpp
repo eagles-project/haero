@@ -52,7 +52,7 @@ class chemSolver{
     // lat/lon views
     real_type_1d_view theta, lambda;
     // 2D views containing chemical state, and omega for tendency results
-    real_type_2d_view state, omega;
+    real_type_2d_view state, omega, reactRate;
     // TChem kinetic model data
     TChem::KineticModelData kmd;
     // a const version of the object that contains the data describing the
@@ -65,6 +65,7 @@ class chemSolver{
     // constructor
     chemSolver(std::string chemDir, bool detail, int inBatch, bool iverbose,
                real_type itheta, real_type ilambda,
+               real_type k1, real_type k2,
                real_type initX, real_type initX2);
     // runs chemical model and saves the results (tendencies) to the output file
     real_type_2d_view get_results();
@@ -90,6 +91,7 @@ namespace tchem_stuff {
       typename UseThisTeamPolicy<exec_space>::type& policy,
       const real_type_1d_view& theta,
       const real_type_1d_view& lambda,
+      const real_type_2d_view& reactRate,
       const real_type_2d_view& state,
       /// output
       const real_type_2d_view& SourceTermToyProblem,

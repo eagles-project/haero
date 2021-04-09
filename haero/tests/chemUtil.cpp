@@ -13,6 +13,7 @@ chemFiles::chemFiles(std::string chemDir){
 
 chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
                        bool iverbose, real_type itheta, real_type ilambda,
+                       real_type k1, real_type k2,
                        real_type initX, real_type initX2)
                        :
                        cfiles(chemDir),
@@ -31,23 +32,33 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   // create a const version
   kmcd = kmd.createConstData<TChem::exec_space>();
 
+  // 2d view for reaction rates (calculated in team_invoke_detail())
+  reactRate = real_type_2d_view("ReactionRates", nBatch, kmcd.nSpec);
+
   // input: state vectors: temperature, pressure and mass fraction
   state = real_type_2d_view("StateVector", nBatch, kmcd.nSpec);
   // output: omega, reaction rates
   omega = real_type_2d_view("NetProductionRate", nBatch, kmcd.nSpec);
 
-  // create mirror views on host to set the initial values of theta/lambda,
-  // then deep copy to device
+  // create mirror views on host to set the initial values of theta/lambda and
+  // reactRate then deep copy to device
   auto theta_host = Kokkos::create_mirror_view(theta);
   auto lambda_host = Kokkos::create_mirror_view(lambda);
+  auto reactRate_host = Kokkos::create_mirror_view(reactRate);
 
   // assign the constructor arguments to the corresponding mirror views
   theta_host(0) = itheta;
   lambda_host(0) = ilambda;
+  for (int i = 0; i < nBatch; ++i)
+  {
+    reactRate_host(i, 0) = k1;
+    reactRate_host(i, 1) = k2;
+  }
 
   // deep copy to device
   Kokkos::deep_copy(theta, theta_host);
   Kokkos::deep_copy(lambda, lambda_host);
+  Kokkos::deep_copy(reactRate, reactRate_host);
 
   /// create a mirror view to store input from a file
   auto state_host = Kokkos::create_mirror_view(state);
@@ -101,7 +112,7 @@ real_type_2d_view chemSolver::get_results(){
   // reset timer
   timer.reset();
   // run the model
-  tchem_stuff::SourceTermToyProblem::runDeviceBatch(policy, theta, lambda, state, omega, kmcd);
+  tchem_stuff::SourceTermToyProblem::runDeviceBatch(policy, theta, lambda, reactRate, state, omega, kmcd);
   Kokkos::fence(); /// timing purpose
   t_device_batch = timer.seconds();
   /// create a mirror view of omega (output) to export a file
@@ -143,6 +154,7 @@ namespace tchem_stuff {
       /// input
       const real_type& theta,
       const real_type& lambda,
+      const RealType1DViewType& reactRate,
       const RealType1DViewType& concX,
       /// output
       const RealType1DViewType& omega, /// (kmcd.nSpec)
@@ -155,21 +167,29 @@ namespace tchem_stuff {
       const KineticModelConstDataType& kmcd)
     {
 
-      /// 1. compute forward and reverse rate constants
-      {
-        const real_type thetac(20.0); //! degrees
-        const real_type lambdac(300.0);// ! degrees
-        const real_type k1 = ats<real_type>::sin(theta*PI()/180) * ats<real_type>::sin(thetac*PI()/180) +
-                             ats<real_type>::cos(theta*PI()/180) * ats<real_type>::cos(thetac*PI()/180) *
-                             ats<real_type>::cos(lambda*PI()/180 - lambdac*PI()/180);
-        kfor(0) = k1 > 0 ? k1 : 0;
-        kfor(1) = 1;
-        krev(0) = 0;
-        krev(0) = 0;
+      kfor(0) = reactRate(0);
+      kfor(1) = reactRate(1);
+      krev(0) = 0;
+      krev(1) = 0;
 
-        // printf("k1 = %e\n",kfor(0) );
-        // printf("k2 = %e\n",kfor(1) );
-      }
+      // printf("k1 (detail, before) = %e\n",reactRate(0) );
+      // printf("k2 (detail, before) = %e\n",reactRate(1) );
+
+      // /// 1. compute forward and reverse rate constants
+      // {
+      //   const real_type thetac(20.0); //! degrees
+      //   const real_type lambdac(300.0);// ! degrees
+      //   const real_type k1 = ats<real_type>::sin(theta*PI()/180) * ats<real_type>::sin(thetac*PI()/180) +
+      //                        ats<real_type>::cos(theta*PI()/180) * ats<real_type>::cos(thetac*PI()/180) *
+      //                        ats<real_type>::cos(lambda*PI()/180 - lambdac*PI()/180);
+      //   kfor(0) = k1 > 0 ? k1 : 0;
+      //   kfor(1) = 1;
+      //   krev(0) = 0;
+      //   krev(0) = 0;
+
+      //   printf("k1 (detail, after) = %e\n",kfor(0) );
+      //   printf("k2 (detail, after) = %e\n",kfor(1) );
+      // }
 
       member.team_barrier();
 
@@ -276,6 +296,7 @@ namespace tchem_stuff {
       /// input
       const real_type& theta,
       const real_type& lambda,
+      const RealType1DViewType& reactRate,
       const RealType1DViewType& X, /// (kmcd.nSpec)
       /// output
       const RealType1DViewType& omega, /// (kmcd.nSpec)
@@ -304,6 +325,7 @@ namespace tchem_stuff {
       team_invoke_detail(member,
                          theta,
                          lambda,
+                         reactRate,
                          X,
                          omega,
                          kfor,
@@ -325,6 +347,7 @@ namespace tchem_stuff {
     const PolicyType& policy,
     const RealType1DViewType& theta,
     const RealType1DViewType& lambda,
+    const RealType2DViewType& reactRate,
     const RealType2DViewType& state,
     const RealType2DViewType& SourceTermToyProblem,
     const KineticModelConstType& kmcd
@@ -343,6 +366,8 @@ namespace tchem_stuff {
         const ordinal_type i = member.league_rank();
         const RealType1DViewType state_at_i =
           Kokkos::subview(state, i, Kokkos::ALL());
+        const RealType1DViewType reactRate_at_i =
+          Kokkos::subview(reactRate, i, Kokkos::ALL());
         const RealType1DViewType SourceTermToyProblem_at_i =
           Kokkos::subview(SourceTermToyProblem, i, Kokkos::ALL());
 
@@ -353,7 +378,7 @@ namespace tchem_stuff {
         const real_type theta_at_i = theta(i);
         const real_type lambda_at_i = lambda(i);
 
-        team_invoke(member, theta_at_i, lambda_at_i,
+        team_invoke(member, theta_at_i, lambda_at_i, reactRate_at_i,
           state_at_i, SourceTermToyProblem_at_i, work, kmcd);
 
       });
@@ -364,6 +389,7 @@ namespace tchem_stuff {
     typename UseThisTeamPolicy<exec_space>::type& policy,
     const real_type_1d_view& theta,
     const real_type_1d_view& lambda,
+    const real_type_2d_view& reactRate,
     const real_type_2d_view& state,
     /// output
     const real_type_2d_view& SourceTermToyProblem,
@@ -377,6 +403,7 @@ namespace tchem_stuff {
       policy,
       theta,
       lambda,
+      reactRate,
       state,
       SourceTermToyProblem,
       kmcd);
