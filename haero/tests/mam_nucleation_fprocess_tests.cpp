@@ -13,6 +13,8 @@ using namespace haero;
 using namespace haero;
 
 TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
+  using fp_helper = FloatingPoint<double>;
+  const double tolerance = 5.0e-09;
   /// Test the ternary_nuc_merik2007 function directly by calling both
   /// the original Fortran version and the new C++ version and compare
   /// the result. The testing process is to generate a bunch of random
@@ -46,11 +48,11 @@ TEST_CASE("ternary_nuc_merik2007", "mam_nucleation_fprocess") {
     double r_f90    = 0;
     MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log_cpp, ntot_cpp, nacid_cpp, namm_cpp, r_cpp);
     ternary_nuc_merik2007_bridge(t, rh, c2, c3, j_log_f90, ntot_f90, nacid_f90, namm_f90, r_f90);
-    REQUIRE(j_log_cpp == j_log_f90);
-    REQUIRE(ntot_cpp  == ntot_f90);
-    REQUIRE(nacid_cpp == nacid_f90);
-    REQUIRE(namm_cpp  == namm_f90);
-    REQUIRE(r_cpp     == r_f90);
+    REQUIRE( fp_helper::equiv(j_log_cpp , j_log_f90, tolerance));
+    REQUIRE( fp_helper::equiv(ntot_cpp  , ntot_f90,  tolerance));
+    REQUIRE( fp_helper::equiv(nacid_cpp , nacid_f90, tolerance));
+    REQUIRE( fp_helper::equiv(namm_cpp  , namm_f90,  tolerance));
+    REQUIRE( fp_helper::equiv(r_cpp     , r_f90,     tolerance));
   }
 }
 
@@ -61,7 +63,6 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_fprocess") {
   /// input values and check the output values are close.  Differences
   /// in Fortran and C++ means the result is not identical but we hope
   /// it is within numerical round off.
-
   using fp_helper = FloatingPoint<double>;
   const double abs_tol = 2.0e-12;
   const double rel_tol = 2.0e-12;
@@ -166,7 +167,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
 
   using fp_helper = FloatingPoint<double>;
   const double abs_tol = 5.0e-12;
-  const double rel_tol = 5.0e-12;
+  const double rel_tol = 5.0e-09;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -299,7 +300,6 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
 
 // These tests exercise our transplant of the MAM nucleation process.
 TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
-
   // We create a phony model to be used for these tests.
   auto aero_config = create_mam4_modal_aerosol_config();
   int num_levels = 72;

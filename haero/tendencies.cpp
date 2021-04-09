@@ -17,23 +17,27 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
                        std::string(")]");
   int_aero_species_ = SpeciesColumnView(int_view_name, num_aerosol_populations,
                                         num_vert_packs);
+  Kokkos::deep_copy(int_aero_species_, PackType(0));
   auto cld_view_name = std::string("d/dt[") +
                        prognostics.cloudborne_aerosols().label() +
                        std::string(")]");
   cld_aero_species_ = SpeciesColumnView(cld_view_name, num_aerosol_populations,
                                         num_vert_packs);
+  Kokkos::deep_copy(cld_aero_species_, PackType(0));
 
   int num_gases = prognostics.num_gases();
   auto gas_view_name = std::string("d/dt[") +
                        prognostics.gases().label() +
                        std::string(")]");
   gases_ = SpeciesColumnView(gas_view_name, num_gases, num_vert_packs);
+  Kokkos::deep_copy(gases_, PackType(0));
 
   auto n_view_name = std::string("d/dt[") +
                      prognostics.modal_num_concs().label() +
                      std::string(")]");
   int num_modes = prognostics.num_aerosol_modes();
   modal_num_concs_ = ModalColumnView(n_view_name, num_modes, num_vert_packs);
+  Kokkos::deep_copy(modal_num_concs_, PackType(0));
 }
 
 Tendencies::~Tendencies() {
