@@ -6,7 +6,6 @@
 #include <iostream>
 
 // these are required for TChem
-// #include "tchem/TChem_SourceTermToyProblem.hpp"
 #include "tchem/TChem_KineticModelData.hpp"
 #include "tchem/TChem_Util.hpp"
 #include "tchem/TChem_Impl_RateOfProgress.hpp"

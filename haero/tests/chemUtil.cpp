@@ -22,9 +22,9 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
                        policy(TChem::exec_space(), nBatch, Kokkos::AUTO()),
                        theta("latitude", nBatch),
                        lambda("longitude", nBatch) {
-  // NOTE: these appear to do nothing, but keeping them around, just in case
-  TChem::exec_space::print_configuration(std::cout, detail);
-  TChem::host_exec_space::print_configuration(std::cout, detail);
+  // optionally print some configuration info (seems to only do something on GPU)
+  // TChem::exec_space::print_configuration(std::cout, detail);
+  // TChem::host_exec_space::print_configuration(std::cout, detail);
 
   // construct kmd and use the view for testing
   kmd = TChem::KineticModelData(cfiles.chemFile, cfiles.thermFile);
@@ -171,25 +171,6 @@ namespace tchem_stuff {
       kfor(1) = reactRate(1);
       krev(0) = 0;
       krev(1) = 0;
-
-      // printf("k1 (detail, before) = %e\n",reactRate(0) );
-      // printf("k2 (detail, before) = %e\n",reactRate(1) );
-
-      // /// 1. compute forward and reverse rate constants
-      // {
-      //   const real_type thetac(20.0); //! degrees
-      //   const real_type lambdac(300.0);// ! degrees
-      //   const real_type k1 = ats<real_type>::sin(theta*PI()/180) * ats<real_type>::sin(thetac*PI()/180) +
-      //                        ats<real_type>::cos(theta*PI()/180) * ats<real_type>::cos(thetac*PI()/180) *
-      //                        ats<real_type>::cos(lambda*PI()/180 - lambdac*PI()/180);
-      //   kfor(0) = k1 > 0 ? k1 : 0;
-      //   kfor(1) = 1;
-      //   krev(0) = 0;
-      //   krev(0) = 0;
-
-      //   printf("k1 (detail, after) = %e\n",kfor(0) );
-      //   printf("k2 (detail, after) = %e\n",kfor(1) );
-      // }
 
       member.team_barrier();
 

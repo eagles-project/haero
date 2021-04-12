@@ -60,10 +60,6 @@ END
   f = fopen("data/toy-problem/therm.dat", "w");
   fclose(f);
 
-  // Run the test.
-  Kokkos::initialize();
-  {
-
   // arguments to the constructor are: 1) directory containing chem files
                                     // 2) detail (boolean)
                                     // 3) nBatch (int)
@@ -92,8 +88,6 @@ END
   REQUIRE(FloatingPoint<Real>::in_bounds(val01, -1.0e14, 0.0,
                                      FloatingPoint<Real>::zero_tol));
 
-  } // kokkos scope
-  Kokkos::finalize();
 }
 
 TEST_CASE("dark side of terminator", "haero_unit_tests")
@@ -147,10 +141,6 @@ END
   f = fopen("data/toy-problem/therm.dat", "w");
   fclose(f);
 
-  // Run the test.
-  Kokkos::initialize();
-  {
-
   // arguments to the constructor are: 1) directory containing chem files
                                     // 2) detail (boolean)
                                     // 3) nBatch (int)
@@ -179,8 +169,6 @@ END
   REQUIRE(FloatingPoint<Real>::in_bounds(val01, 0.0, 1.0e14,
                                      FloatingPoint<Real>::zero_tol));
 
-  } // kokkos scope
-  Kokkos::finalize();
 }
 
 TEST_CASE("zero tendencies", "haero_unit_tests")
@@ -236,10 +224,6 @@ END
   f = fopen("data/toy-problem/therm.dat", "w");
   fclose(f);
 
-  // Run the test.
-  Kokkos::initialize();
-  {
-
   // arguments to the constructor are: 1) directory containing chem files
                                     // 2) detail (boolean)
                                     // 3) nBatch (int)
@@ -266,7 +250,5 @@ END
   REQUIRE(FloatingPoint<Real>::zero(val00, FloatingPoint<Real>::zero_tol));
   REQUIRE(FloatingPoint<Real>::zero(val01, FloatingPoint<Real>::zero_tol));
 
-  } // kokkos scope
-  Kokkos::finalize();
 }
 
