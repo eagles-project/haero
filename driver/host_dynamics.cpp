@@ -218,32 +218,30 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
 void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) {
   using namespace constants;
 
-  const Real dp = (AtmosphericConditions::pref - ac.ptop)/nlev_;
-  std::cout << "unif. pressure dp = " << dp << "\n";
+  const Real delp = (AtmosphericConditions::pref - ac.ptop)/nlev_;
+  std::cout << "unif. pressure dp = " << delp << "\n";
 
-  /// set interface geopotential and velocity
   auto hphi0 = Kokkos::create_mirror_view(ekat::scalarize(phi0));
   auto hw = Kokkos::create_mirror_view(ekat::scalarize(w));
-  for (int k=0; k<nlev_+1; ++k) {
-    // Taylor et al. 2020 fig. 1 interface idx = k+1/2
-    const Real punif = ac.ptop + k*dp;
-    const Real z = height_at_pressure(punif, ac);
-    hphi0(k) = gravity * z;
-
-    hw(k) = 0;
-  }
-
-  EKAT_ASSERT(FloatingPoint<Real>::equiv(AtmosphericConditions::pref, ac.ptop + nlev_ * dp));
-
-  Kokkos::deep_copy(w, hw);
-  Kokkos::deep_copy(phi0, hphi0);
-  Kokkos::deep_copy(phi, phi0);
-
-  /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
   auto hp = Kokkos::create_mirror_view(ekat::scalarize(p));
   auto hrho0 = Kokkos::create_mirror_view(ekat::scalarize(rho0));
   auto hthetav = Kokkos::create_mirror_view(ekat::scalarize(thetav));
   auto hqv = Kokkos::create_mirror_view(ekat::scalarize(qv));
+  auto hdp = Kokkos::create_mirror_view(ekat::scalarize(dp));
+  auto hdz = Kokkos::create_mirror_view(ekat::scalarize(dz));
+
+//   / set interface geopotential and velocity
+  for (int k=0; k<nlev_+1; ++k) {
+//     Taylor et al. 2020 fig. 1 interface idx = k+1/2
+    const Real punif = ac.ptop + k*delp;
+    const Real z = height_at_pressure(punif, ac);
+    hphi0(k) = gravity * z;
+    hdp(k) = -delp;
+    hw(k) = 0;
+  }
+
+  EKAT_ASSERT(FloatingPoint<Real>::equiv(AtmosphericConditions::pref, ac.ptop + nlev_ * delp));
+
   for (int k=0; k<nlev_; ++k) {
     // Taylor et al. 2020 fig. 1 level idx = k
     const int kmhalf_idx = k; // array idx of interface k - 1/2
@@ -257,8 +255,13 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
     hrho0(k) = pres / (r_gas_dry_air * Tv);
     hthetav(k) = Tv / exner_function(pres);
     hqv(k) = water_vapor_mixing_ratio(zmid, ac);
+    hdz(k) = (hphi0(kmhalf_idx) - hphi0(kphalf_idx))/gravity;
   }
 
+
+  Kokkos::deep_copy(w, hw);
+  Kokkos::deep_copy(phi0, hphi0);
+  Kokkos::deep_copy(phi, phi0);
   Kokkos::deep_copy(qv, hqv);
   Kokkos::deep_copy(thetav, hthetav);
   Kokkos::deep_copy(rho0, hrho0);
@@ -268,7 +271,7 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
   ps = AtmosphericConditions::pref;
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
 
-  update_vertical_derivs(ac);
+
 }
 
 void HostDynamics::update_vertical_derivs(const AtmosphericConditions& conds) {
