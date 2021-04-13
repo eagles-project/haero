@@ -2,7 +2,6 @@
 #include "catch2/catch.hpp"
 #include "haero/physical_constants.hpp"
 #include <iostream>
-#include <limits>
 
 using namespace haero;
 using namespace haero::driver;
