@@ -20,8 +20,8 @@ class HostDynamics final {
     ColumnView w;
     /// geopotential (interface variable)
     ColumnView phi;
-    /// layer thickness in pressure (interface variable)
-    ColumnView dp;
+    /// hydrostatic pressure (interface variable)
+    ColumnView phydro_int;
 
     /// density (midpoint variable)
     ColumnView rho;
@@ -33,6 +33,14 @@ class HostDynamics final {
     ColumnView p;
     /// layer thickness in height (midpoint variable)
     ColumnView dz;
+    /** approximate layer thickness in pressure (midpoint variable)
+
+      "approximate" because it's calculated based on the hydrostatic assumption;
+      in a non-hydrostatic atmosphere, it's an approximation.
+
+      This is analogous to "pseudo-density" in HOMME-NH.
+    */
+    ColumnView hydrostatic_dp;
 
     /// elapsed time
     Real t;
@@ -46,12 +54,13 @@ class HostDynamics final {
     HostDynamics(const int nl) :
       w("w",PackInfo::num_packs(nl+1)),
       phi("phi",PackInfo::num_packs(nl+1)),
-      dp("dpint", PackInfo::num_packs(nl+1)),
+      phydro_int("hydrostatic_pressure_interface", PackInfo::num_packs(nl+1)),
       rho("rho",PackInfo::num_packs(nl)),
       thetav("thetav",PackInfo::num_packs(nl)),
       qv("qv",PackInfo::num_packs(nl)),
-      p("p",PackInfo::num_packs(nl)),
+      p("plev",PackInfo::num_packs(nl)),
       dz("dzlev", PackInfo::num_packs(nl)),
+      hydrostatic_dp("pseudo_density", PackInfo::num_packs(nl)),
       t(0), ps(0), nlev_(nl),
       phi0("phi0",PackInfo::num_packs(nl+1)),
       rho0("rho0", PackInfo::num_packs(nl))
@@ -124,7 +133,9 @@ class HostDynamics final {
 
     inline int nlev() const {return nlev_;}
 
-  protected:
+
+
+  private:
     /// number of levels in column
     int nlev_;
     /// intial geopotential values
@@ -134,10 +145,11 @@ class HostDynamics final {
     /// initial density at the surface
     Real rho0surf;
 
+
     /** @brief compute discrete approximations of vertical derivatives using centered finite differences
       as described by Taylor et al. 2020.
     */
-    void update_vertical_derivs(const AtmosphericConditions& conds);
+    void update_pressure(const AtmosphericConditions& conds);
 };
 
 /** @brief Defines the Lagrangian geopotential for HostDynamics' 1d toy model.

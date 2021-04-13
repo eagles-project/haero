@@ -32,6 +32,7 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
   auto hthetav = Kokkos::create_mirror_view(thetav);
   auto hqv = Kokkos::create_mirror_view(qv);
   auto hw = Kokkos::create_mirror_view(w);
+  auto hpint = Kokkos::create_mirror_view(phydro_int);
 
   /// set interface geopotential
   for (int k=0; k<nlev_+1; ++k) {
@@ -40,6 +41,7 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
     const auto vec_idx = PackInfo::vec_idx(k);
     hphi0(pack_idx)[vec_idx] = gravity * z0[k];
     hw(pack_idx)[vec_idx] = 0;
+    hpint(pack_idx)[vec_idx] = hydrostatic_pressure_at_height(z0[k], ac);
   }
 
   /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
@@ -79,29 +81,33 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
   Kokkos::deep_copy(thetav,hthetav);
   Kokkos::deep_copy(qv,hqv);
   Kokkos::deep_copy(p,hp);
+  Kokkos::deep_copy(phydro_int, hpint);
 
-  update_vertical_derivs(ac);
+  update_pressure(ac);
 }
 
 void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
   using namespace constants;
 
-  const int dz = ac.ztop/nlev_;
+  const Real dz = ac.ztop/nlev_;
 
   /// set interface geopotential and velocity
   auto hphi0 = Kokkos::create_mirror_view(phi0);
   auto hw = Kokkos::create_mirror_view(w);
+  auto hpint = Kokkos::create_mirror_view(phydro_int);
   for (int k=0; k<nlev_+1; ++k) {
+    const int pack_idx = PackInfo::pack_idx(k);
+    const int vec_idx = PackInfo::vec_idx(k);
     // Taylor et al. 2020 fig. 1 interface idx = k+1/2
-    const auto pack_idx = PackInfo::pack_idx(k);
-    const auto vec_idx = PackInfo::vec_idx(k);
     const Real z = ac.ztop - k * dz;
     hphi0(pack_idx)[vec_idx] = gravity * z;
     hw(pack_idx)[vec_idx] = 0;
+    hpint(pack_idx)[vec_idx] = hydrostatic_pressure_at_height(z, ac);
   }
-  Kokkos::deep_copy(w,hw);
+  Kokkos::deep_copy(w, hw);
   Kokkos::deep_copy(phi0, hphi0);
   Kokkos::deep_copy(phi, phi0);
+  Kokkos::deep_copy(phydro_int, hpint);
 
   /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
   auto hp = Kokkos::create_mirror_view(p);
@@ -142,7 +148,7 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
   Kokkos::deep_copy(qv, hqv);
   Kokkos::deep_copy(p, hp);
 
-  update_vertical_derivs(ac);
+  update_pressure(ac);
 }
 
 void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  AtmosphericConditions& ac) {
@@ -164,6 +170,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
   auto hthetav = Kokkos::create_mirror_view(thetav);
   auto hqv = Kokkos::create_mirror_view(qv);
   auto hw = Kokkos::create_mirror_view(w);
+  auto hpint = Kokkos::create_mirror_view(phydro_int);
 
   /// set interface geopotential
   for (int k=0; k<nlev_+1; ++k) {
@@ -174,6 +181,11 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
     hw(pack_idx)[vec_idx] = 0;
     const Real z = height_at_pressure(p0[k],ac);
     hphi0(pack_idx)[vec_idx] = gravity * z;
+    const Real phydro = hydrostatic_pressure_at_height(z, ac);
+    hpint(pack_idx)[vec_idx] = phydro;
+
+    // assert that p(z) = p(z(p))
+    EKAT_ASSERT(FloatingPoint<Real>::equiv(z, height_at_pressure(phydro, ac),3.5e-12));
   }
 
   /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
@@ -201,6 +213,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
   }
 
   ps = p0.back();
+  EKAT_ASSERT(FloatingPoint<Real>::equiv(ps, hpint(PackInfo::last_pack_idx(nlev_+1))[PackInfo::last_vec_end(nlev_+1)-1]));
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
 
   Kokkos::deep_copy(w,hw);
@@ -212,7 +225,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
   Kokkos::deep_copy(qv,hqv);
   Kokkos::deep_copy(p,hp);
 
-  update_vertical_derivs(ac);
+  update_pressure(ac);
 }
 
 void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) {
@@ -227,8 +240,8 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
   auto hrho0 = Kokkos::create_mirror_view(ekat::scalarize(rho0));
   auto hthetav = Kokkos::create_mirror_view(ekat::scalarize(thetav));
   auto hqv = Kokkos::create_mirror_view(ekat::scalarize(qv));
-  auto hdp = Kokkos::create_mirror_view(ekat::scalarize(dp));
   auto hdz = Kokkos::create_mirror_view(ekat::scalarize(dz));
+  auto hpint = Kokkos::create_mirror_view(ekat::scalarize(phydro_int));
 
 //   / set interface geopotential and velocity
   for (int k=0; k<nlev_+1; ++k) {
@@ -236,8 +249,8 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
     const Real punif = ac.ptop + k*delp;
     const Real z = height_at_pressure(punif, ac);
     hphi0(k) = gravity * z;
-    hdp(k) = -delp;
     hw(k) = 0;
+    hpint(k) = punif;
   }
 
   EKAT_ASSERT(FloatingPoint<Real>::equiv(AtmosphericConditions::pref, ac.ptop + nlev_ * delp));
@@ -270,18 +283,28 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
 
   ps = AtmosphericConditions::pref;
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
-
-
 }
 
-void HostDynamics::update_vertical_derivs(const AtmosphericConditions& conds) {
+void HostDynamics::update_pressure(const AtmosphericConditions& conds) {
   using namespace constants;
 
-  // differences at level midpoints
   auto phi_local = ekat::scalarize(phi);
+  auto pint_local = ekat::scalarize(phydro_int);
+
   EKAT_ASSERT(phi_local.extent(0) == nlev_ +1);
+
+  Kokkos::parallel_for("HostDynamics::hydrostatic_pint", nlev_+1,
+    KOKKOS_LAMBDA (const int k) {
+      pint_local(k) = hydrostatic_pressure_at_height(phi_local(k)/gravity, conds);
+    });
+
+  // differences at level midpoints
+
   auto dz_local = ekat::scalarize(dz);
   EKAT_ASSERT(dz_local.extent(0) == nlev_);
+
+  auto dph = ekat::scalarize(hydrostatic_dp);
+
   Kokkos::parallel_for("HostDynamics::dz", nlev_,
     KOKKOS_LAMBDA (const int k) {
       const int kmhalf_idx = k;
@@ -289,28 +312,7 @@ void HostDynamics::update_vertical_derivs(const AtmosphericConditions& conds) {
       // negative sign because levels & interfaces are indexed from model top to surface,
       // but z increases from surface to top
       dz_local(k) = -(phi_local(kphalf_idx) - phi_local(kmhalf_idx))/gravity;
-    });
-
-  // differences at level interfaces
-  auto p_local = ekat::scalarize(p);
-  EKAT_ASSERT(p_local.extent(0) == nlev_);
-  auto dp_local = ekat::scalarize(dp);
-  EKAT_ASSERT(dp_local.extent(0) == nlev_+1);
-
-  Kokkos::parallel_for("HostDynamics::dpdz", nlev_+1,
-    KOKKOS_LAMBDA (const int k) {
-      if (k==0) { // model top
-          dp(0) = -2*(p_local(0) - conds.ptop);
-      }
-      else if (k==nlev_) { // surface
-          dp(k) = -2*(AtmosphericConditions::pref - p_local(nlev_-1));
-      }
-      else {
-        // negative sign because levels & interfaces are indexed from model top to surface,
-        // but z increases from surface to top
-          dp(k) = -(p_local(k) - p_local(k-1));
-      }
-
+      dph(k) = -(pint_local(kphalf_idx) - pint_local(kmhalf_idx));
     });
 }
 
@@ -359,7 +361,7 @@ void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
 
   const Real rhosurf = density(newt, 0, 0, rho0surf, ac);
   ps = pressure(rhosurf, ac.Tv0);
-  update_vertical_derivs(ac);
+  update_pressure(ac);
 }
 
 void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
@@ -381,14 +383,14 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
     std::make_pair("short_name","phi")};
   const auto phi_units = ekat::units::pow(ekat::units::m,2)*ekat::units::pow(ekat::units::s,-2);
 
+  const var_atts ph_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("haero_long_name", "hydrostatic_air_pressure_at_interfaces"),
+    std::make_pair("short_name", "phydro_int")};
+  const auto ph_units = ekat::units::Pa;
+
   writer.define_interface_var("vertical_velocity", w_units, w, w_atts);
   writer.define_interface_var("geopotential", phi_units, phi, phi_atts);
-
-  const var_atts dpdz_atts = {std::make_pair("cf_long_name", "null"),
-    std::make_pair("short_name", "dp"),
-    std::make_pair("haero_long_name", "atmosphere_layer_thickness_expressed_as_pressure_difference")};
-  const auto dpdz_units = ekat::units::Pa / ekat::units::m;
-  writer.define_interface_var("dp", dpdz_units, dp, dpdz_atts);
+  writer.define_interface_var("phydro_int", ph_units, phydro_int, ph_atts);
 
   // level variables
   const var_atts thetav_atts = {std::make_pair("cf_long_name", "null"),
@@ -415,11 +417,18 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
     std::make_pair("short_name", "dz")};
   const auto dz_units = ekat::units::m;
 
+  const var_atts dp_atts = {std::make_pair("cf_long_name", "null"),
+    std::make_pair("short_name", "dph"),
+    std::make_pair("haero_long_name", "atmosphere_layer_thickness_expressed_as_hydrostatic_pressure_difference"),
+    std::make_pair("scream_name", "pseudo_density")};
+  const auto dp_units = ekat::units::Pa / ekat::units::m;
+
   writer.define_level_var("density", rho_units, rho, rho_atts);
   writer.define_level_var("thetav", thetav_units, thetav, thetav_atts);
   writer.define_level_var("qv", qv_units, qv, qv_atts);
   writer.define_level_var("p", p_units, p, p_atts);
   writer.define_level_var("dz", dz_units, dz, dz_atts);
+  writer.define_level_var("hydrostatic_dp", dp_units, hydrostatic_dp, dp_atts);
 
   // surface variables
   const var_atts ps_atts = {std::make_pair("cf_long_name", "surface_air_pressure"),
@@ -482,11 +491,12 @@ void HostDynamics::nc_write_data(NcWriter& writer, const size_t time_idx) const 
 
   writer.add_variable_data("vertical_velocity", time_idx, null_idx, null_idx, w);
   writer.add_variable_data("geopotential", time_idx, null_idx, null_idx, phi);
+  writer.add_variable_data("phydro_int", time_idx, null_idx, null_idx, phydro_int);
   writer.add_variable_data("density", time_idx, null_idx, null_idx, rho);
   writer.add_variable_data("thetav", time_idx, null_idx, null_idx, thetav);
   writer.add_variable_data("qv", time_idx, null_idx, null_idx, qv);
   writer.add_variable_data("p", time_idx, null_idx, null_idx, p);
-  writer.add_variable_data("dp", time_idx, null_idx, null_idx, dp);
+  writer.add_variable_data("hydrostatic_dp", time_idx, null_idx, null_idx, hydrostatic_dp);
   writer.add_variable_data("dz", time_idx, null_idx, null_idx, dz);
   writer.add_time_dependent_scalar_value("surface_pressure", time_idx, ps);
 }

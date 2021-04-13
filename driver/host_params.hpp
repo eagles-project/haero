@@ -44,9 +44,9 @@ struct AtmosphericConditions {
   /// maximum magnitude of vertical velocity [m/s]
   Real w0;
   /// top of model [m]
-  int ztop;
+  Real ztop;
   /// period of velocity oscillation [s]
-  int tperiod;
+  Real tperiod;
   /// initial water vapor mass mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
   Real qv0;
   /// initial decay rate of water vapor mass mixing ratio with height [per m]
@@ -58,6 +58,9 @@ struct AtmosphericConditions {
 
     This method checks that the input arguments are within reasonably expected
     bounds for the standard units listed below.
+
+    Note: Constructor takes int args for ztop and tperiod; we do not allow units of length
+      smaller than 1 meter, or units of time smaller than 1 second.
 
     @param [in] Tv0_ reference virtual temperature [K]
     @param [in] Gammav_ virtual temperature lapse rate [K/m]
