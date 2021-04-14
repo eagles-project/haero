@@ -35,7 +35,7 @@ EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
 
 add_library(chemUtil chemUtil.cpp)
 add_dependencies(chemUtil tchem)
-EkatCreateUnitTest(tchem_batch_reactor tchem_batch_reactor.cpp
+EkatCreateUnitTest(tchem_batch_reactor_tests tchem_batch_reactor_tests.cpp
                    LIBS chemUtil;${HAERO_LIBRARIES})
 
 EkatCreateUnitTest(kokkos_team_execute kokkos_team_execute.cpp

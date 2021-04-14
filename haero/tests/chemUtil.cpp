@@ -2,6 +2,8 @@
 
 namespace chemUtil {
 
+using namespace from_tchem;
+
 chemFiles::chemFiles(std::string chemDir){
   prefixPath = "data/" + chemDir;
   chemFile = prefixPath + "chem.inp";
@@ -10,8 +12,9 @@ chemFiles::chemFiles(std::string chemDir){
 }
 
 chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
-                       bool iverbose, real_type itheta, real_type ilambda,
-                       real_type initX, real_type initX2)
+                       bool iverbose, Real itheta, Real ilambda,
+                       Real k1, Real k2,
+                       Real initX, Real initX2)
                        :
                        cfiles(chemDir),
                        verbose(iverbose),
@@ -19,9 +22,10 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
                        policy(TChem::exec_space(), nBatch, Kokkos::AUTO()),
                        theta("latitude", nBatch),
                        lambda("longitude", nBatch) {
-  // NOTE: these appear to do nothing, but keeping them around, just in case
-  TChem::exec_space::print_configuration(std::cout, detail);
-  TChem::host_exec_space::print_configuration(std::cout, detail);
+  // optionally print some configuration info
+    // (note: this doesn't appear to do anything when compiled in serial)
+  // TChem::exec_space::print_configuration(std::cout, detail);
+  // TChem::host_exec_space::print_configuration(std::cout, detail);
 
   // construct kmd and use the view for testing
   kmd = TChem::KineticModelData(cfiles.chemFile, cfiles.thermFile);
@@ -29,23 +33,33 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   // create a const version
   kmcd = kmd.createConstData<TChem::exec_space>();
 
+  // 2d view for reaction rates (calculated in team_invoke_detail())
+  reactRate = real_type_2d_view("ReactionRates", nBatch, kmcd.nSpec);
+
   // input: state vectors: temperature, pressure and mass fraction
   state = real_type_2d_view("StateVector", nBatch, kmcd.nSpec);
   // output: omega, reaction rates
   omega = real_type_2d_view("NetProductionRate", nBatch, kmcd.nSpec);
 
-  // create mirror views on host to set the initial values of theta/lambda,
-  // then deep copy to device
+  // create mirror views on host to set the initial values of theta/lambda and
+  // reactRate then deep copy to device
   auto theta_host = Kokkos::create_mirror_view(theta);
   auto lambda_host = Kokkos::create_mirror_view(lambda);
+  auto reactRate_host = Kokkos::create_mirror_view(reactRate);
 
   // assign the constructor arguments to the corresponding mirror views
   theta_host(0) = itheta;
   lambda_host(0) = ilambda;
+  for (int i = 0; i < nBatch; ++i)
+  {
+    reactRate_host(i, 0) = k1;
+    reactRate_host(i, 1) = k2;
+  }
 
   // deep copy to device
   Kokkos::deep_copy(theta, theta_host);
   Kokkos::deep_copy(lambda, lambda_host);
+  Kokkos::deep_copy(reactRate, reactRate_host);
 
   /// create a mirror view to store input from a file
   auto state_host = Kokkos::create_mirror_view(state);
@@ -70,7 +84,7 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   // this bit is a little over my head
   const ordinal_type level = 1;
   const ordinal_type per_team_extent =
-    TChem::SourceTermToyProblem::getWorkSpaceSize(kmcd);
+    getWorkSpaceSize(kmcd);
   const ordinal_type per_team_scratch =
     TChem::Scratch<real_type_1d_view>::shmem_size(per_team_extent);
   policy.set_scratch_size(level, Kokkos::PerTeam(per_team_scratch));
@@ -89,17 +103,17 @@ void chemSolver::print_summary(const chemFiles& cfiles){
   printf("---------------------------------------------------\n");
   printf("Time deep copy      %e [sec] %e [sec/sample]\n",
          t_deepcopy,
-         t_deepcopy / real_type(nBatch));
+         t_deepcopy / Real(nBatch));
   printf("Time reaction rates %e [sec] %e [sec/sample]\n",
          t_device_batch,
-         t_device_batch / real_type(nBatch));
+         t_device_batch / Real(nBatch));
 } // end chemSolver::print_summary
 
 real_type_2d_view chemSolver::get_results(){
   // reset timer
   timer.reset();
   // run the model
-  TChem::SourceTermToyProblem::runDeviceBatch(policy, theta, lambda, state, omega, kmcd);
+  from_tchem::SourceTermToyProblem::runDeviceBatch(policy, theta, lambda, reactRate, state, omega, kmcd);
   Kokkos::fence(); /// timing purpose
   t_device_batch = timer.seconds();
   /// create a mirror view of omega (output) to export a file
@@ -118,4 +132,266 @@ real_type_2d_view chemSolver::get_results(){
   return omega;
 } // end chemSolver::get_results
 
-}
+} // end chemUtil namespace
+
+/*
+***NOTE: everything in this namespace is copied directly from TChem***
+*/
+namespace from_tchem {
+
+  using Real = haero::Real;
+
+  template<typename KineticModelConstDataType>
+  KOKKOS_INLINE_FUNCTION static ordinal_type getWorkSpaceSize(
+    const KineticModelConstDataType& kmcd)
+  {
+    return 6 * kmcd.nReac;
+  }
+
+    template<typename MemberType,
+             typename RealType1DViewType,
+             typename OrdinalType1DViewType,
+             typename KineticModelConstDataType>
+    KOKKOS_INLINE_FUNCTION static void team_invoke_detail(
+      const MemberType& member,
+      /// input
+      const Real& theta,
+      const Real& lambda,
+      const RealType1DViewType& reactRate,
+      const RealType1DViewType& concX,
+      /// output
+      const RealType1DViewType& omega, /// (kmcd.nSpec)
+      const RealType1DViewType& kfor,
+      const RealType1DViewType& krev,
+      const RealType1DViewType& ropFor,
+      const RealType1DViewType& ropRev,
+      const OrdinalType1DViewType& iter,
+      /// const input from kinetic model
+      const KineticModelConstDataType& kmcd)
+    {
+
+      kfor(0) = reactRate(0);
+      kfor(1) = reactRate(1);
+      krev(0) = 0;
+      krev(1) = 0;
+
+      member.team_barrier();
+
+
+      /// 2. compute rate-of-progress
+      TChem::Impl::RateOfProgress::team_invoke(member,
+                                  kfor,
+                                  krev,
+                                  concX, /// input
+                                  ropFor,
+                                  ropRev, /// output
+                                  iter,   /// workspace for iterators
+                                  kmcd);
+
+      member.team_barrier();
+
+      /// 3. assemble reaction rates
+      auto rop = ropFor;
+      Kokkos::parallel_for(
+        Kokkos::TeamVectorRange(member, kmcd.nReac), [&](const ordinal_type& i) {
+          rop(i) -= ropRev(i);
+          const Real rop_at_i = rop(i);
+          for (ordinal_type j = 0; j < kmcd.reacNreac(i); ++j) {
+            const ordinal_type kspec = kmcd.reacSidx(i, j);
+            // omega(kspec) += kmcd.reacNuki(i,j)*rop_at_i;
+            const Real val = kmcd.reacNuki(i, j) * rop_at_i;
+            Kokkos::atomic_fetch_add(&omega(kspec), val);
+          }
+          const ordinal_type joff = kmcd.reacSidx.extent(1) / 2;
+          for (ordinal_type j = 0; j < kmcd.reacNprod(i); ++j) {
+            const ordinal_type kspec = kmcd.reacSidx(i, j + joff);
+            // omega(kspec) += kmcd.reacNuki(i,j+joff)*rop_at_i;
+            const Real val = kmcd.reacNuki(i, j + joff) * rop_at_i;
+            Kokkos::atomic_fetch_add(&omega(kspec), val);
+          }
+        });
+
+
+      member.team_barrier();
+
+  #if defined(TCHEM_ENABLE_SERIAL_TEST_OUTPUT) && !defined(__CUDA_ARCH__)
+      if (member.league_rank() == 0) {
+        FILE* fs = fopen("SourceTermToyProblem.team_invoke.test.out", "a+");
+        fprintf(fs, ":: SourceTermToyProblem::team_invoke\n");
+        fprintf(fs, ":::: input\n");
+        fprintf(fs,
+                "     nSpec %3d, nReac %3d\n",
+                kmcd.nSpec,
+                kmcd.nReac);
+        //
+        fprintf(fs, ":: concX\n");
+        for (int i = 0; i < int(concX.extent(0)); ++i)
+          fprintf(fs,
+                  "     i %3d, kfor %e\n",
+                  i,
+                  concX(i));
+        fprintf(fs, ":: kfor\n");
+        for (int i = 0; i < int(kfor.extent(0)); ++i)
+          fprintf(fs,
+                  "     i %3d, kfor %e\n",
+                  i,
+                  kfor(i));
+        fprintf(fs, ":: krev\n");
+        for (int i = 0; i < int(krev.extent(0)); ++i)
+          fprintf(fs,
+                  "     i %3d, krev %e\n",
+                  i,
+                  krev(i));
+        //
+        fprintf(fs, ":: ropFor\n");
+        for (int i = 0; i < int(ropFor.extent(0)); ++i)
+          fprintf(fs,
+                  "     i %3d, kfor %e\n",
+                  i,
+                  ropFor(i));
+        fprintf(fs, ":: ropRev\n");
+        for (int i = 0; i < int(ropRev.extent(0)); ++i)
+          fprintf(fs,
+                  "     i %3d, krev %e\n",
+                  i,
+                  ropRev(i));
+        fprintf(fs, "\n");
+        fprintf(fs, ":::: output\n");
+        for (int i = 0; i < int(omega.extent(0)); ++i)
+          fprintf(fs, "     i %3d, omega %e\n", i, omega(i));
+        fprintf(fs, "\n");
+      }
+  #endif
+
+      // if (member.league_rank() == 0) {
+      //   FILE *fs = fopen("SourceTermToyProblem.team_invoke.test.out", "a+");
+      //   for (int i=0;i<int(Crnd.extent(0));++i)
+      //     fprintf(fs, " %d %e\n", i , Real(1e-3)*Crnd(i)*kfor(i));
+      // }
+    }
+
+
+    template<typename MemberType,
+             typename WorkViewType,
+             typename RealType1DViewType,
+             typename KineticModelConstDataType>
+    KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
+      const MemberType& member,
+      /// input
+      const Real& theta,
+      const Real& lambda,
+      const RealType1DViewType& reactRate,
+      const RealType1DViewType& X, /// (kmcd.nSpec)
+      /// output
+      const RealType1DViewType& omega, /// (kmcd.nSpec)
+      /// workspace
+      const WorkViewType& work,
+      /// const input from kinetic model
+      const KineticModelConstDataType& kmcd)
+    {
+
+      ///
+      auto w = (Real*)work.data();
+      auto kfor = RealType1DViewType(w, kmcd.nReac);
+      w += kmcd.nReac;
+      auto krev = RealType1DViewType(w, kmcd.nReac);
+      w += kmcd.nReac;
+      auto ropFor = RealType1DViewType(w, kmcd.nReac);
+      w += kmcd.nReac;
+      auto ropRev = RealType1DViewType(w, kmcd.nReac);
+      w += kmcd.nReac;
+      auto iter = Kokkos::View<ordinal_type*,
+                               Kokkos::LayoutRight,
+                               typename WorkViewType::memory_space>(
+        (ordinal_type*)w, kmcd.nReac * 2);
+      w += kmcd.nReac * 2;
+
+      team_invoke_detail(member,
+                         theta,
+                         lambda,
+                         reactRate,
+                         X,
+                         omega,
+                         kfor,
+                         krev,
+                         ropFor,
+                         ropRev,
+                         iter,
+                         kmcd);
+    }
+
+  template<typename PolicyType,
+          typename RealType1DViewType,
+          typename RealType2DViewType,
+          typename KineticModelConstType>
+  //
+  void SourceTermToyProblem_TemplateRun( /// input
+    const std::string& profile_name,
+    /// team size setting
+    const PolicyType& policy,
+    const RealType1DViewType& theta,
+    const RealType1DViewType& lambda,
+    const RealType2DViewType& reactRate,
+    const RealType2DViewType& state,
+    const RealType2DViewType& SourceTermToyProblem,
+    const KineticModelConstType& kmcd
+  )
+  {
+    Kokkos::Profiling::pushRegion(profile_name);
+    using policy_type = PolicyType;
+
+    const ordinal_type level = 1;
+    const ordinal_type per_team_extent = getWorkSpaceSize(kmcd);
+
+    Kokkos::parallel_for(
+      profile_name,
+      policy,
+      KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
+        const ordinal_type i = member.league_rank();
+        const RealType1DViewType state_at_i =
+          Kokkos::subview(state, i, Kokkos::ALL());
+        const RealType1DViewType reactRate_at_i =
+          Kokkos::subview(reactRate, i, Kokkos::ALL());
+        const RealType1DViewType SourceTermToyProblem_at_i =
+          Kokkos::subview(SourceTermToyProblem, i, Kokkos::ALL());
+
+        Scratch<RealType1DViewType> work(member.team_scratch(level),
+                                        per_team_extent);
+
+        //
+        const Real theta_at_i = theta(i);
+        const Real lambda_at_i = lambda(i);
+
+        team_invoke(member, theta_at_i, lambda_at_i, reactRate_at_i,
+          state_at_i, SourceTermToyProblem_at_i, work, kmcd);
+
+      });
+    Kokkos::Profiling::popRegion();
+  }
+
+  void SourceTermToyProblem::runDeviceBatch( /// input
+    typename UseThisTeamPolicy<exec_space>::type& policy,
+    const real_type_1d_view& theta,
+    const real_type_1d_view& lambda,
+    const real_type_2d_view& reactRate,
+    const real_type_2d_view& state,
+    /// output
+    const real_type_2d_view& SourceTermToyProblem,
+    /// const data from kinetic model
+    const KineticModelConstDataDevice& kmcd)
+  {
+
+    SourceTermToyProblem_TemplateRun( /// input
+      "SourceTermToyProblem::runDeviceBatch",
+      /// team size setting
+      policy,
+      theta,
+      lambda,
+      reactRate,
+      state,
+      SourceTermToyProblem,
+      kmcd);
+
+  }
+
+} // end from_tchem namespace
