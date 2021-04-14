@@ -22,7 +22,8 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
                        policy(TChem::exec_space(), nBatch, Kokkos::AUTO()),
                        theta("latitude", nBatch),
                        lambda("longitude", nBatch) {
-  // optionally print some configuration info (seems to only do something on GPU)
+  // optionally print some configuration info
+    // (note: this doesn't appear to do anything when compiled in serial)
   // TChem::exec_space::print_configuration(std::cout, detail);
   // TChem::host_exec_space::print_configuration(std::cout, detail);
 
