@@ -1,4 +1,3 @@
-#include "driver/host_dynamics.hpp"
 #include "driver/host_params.hpp"
 #include "driver/ncwriter.hpp"
 #include "driver/ncwriter_impl.hpp"
@@ -13,6 +12,10 @@
 #include <sstream>
 #include <algorithm>
 #include <numeric>
+
+#define private public // unit tests need to access HostDynamics private variables
+#include "driver/host_dynamics.hpp"
+#define private private // back to normal
 
 using namespace haero;
 using namespace driver;

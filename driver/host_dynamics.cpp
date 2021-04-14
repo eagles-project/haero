@@ -418,7 +418,7 @@ void HostDynamics::nc_init_dynamics_variables(NcWriter& writer,
   const auto dz_units = ekat::units::m;
 
   const var_atts dp_atts = {std::make_pair("cf_long_name", "null"),
-    std::make_pair("short_name", "dph"),
+    std::make_pair("short_name", "pdel"),
     std::make_pair("haero_long_name", "atmosphere_layer_thickness_expressed_as_hydrostatic_pressure_difference"),
     std::make_pair("scream_name", "pseudo_density")};
   const auto dp_units = ekat::units::Pa / ekat::units::m;
@@ -501,8 +501,8 @@ void HostDynamics::nc_write_data(NcWriter& writer, const size_t time_idx) const 
   writer.add_time_dependent_scalar_value("surface_pressure", time_idx, ps);
 }
 
-Atmosphere HostDynamics::create_atmospheric_state(Kokkos::View<PackType*> temp,
-      Kokkos::View<PackType*> relh, Kokkos::View<PackType*> z) const {
+Atmosphere HostDynamics::create_atmospheric_state(ColumnView temp,
+      ColumnView relh, ColumnView z) const {
   using namespace constants;
   const auto p_local = p;
   const auto phi_local = phi;
@@ -517,10 +517,6 @@ Atmosphere HostDynamics::create_atmospheric_state(Kokkos::View<PackType*> temp,
     const Real T = temperature_from_virtual_temperature(Tv, qv_local(pack_idx)[vec_idx]);
 
     const Real qvsat = qvsat_tetens(T,P);
-//     const int kphalf_pack_idx = PackInfo::pack_idx(k+1);
-//     const int kphalf_vec_idx = PackInfo::vec_idx(k+1);
-//     const Real phimid = 0.5*(phi_local(pack_idx)[vec_idx] +
-//                              phi_local(kphalf_pack_idx)[kphalf_vec_idx]);
 
     relh(pack_idx)[vec_idx] = qv_local(pack_idx)[vec_idx] * FloatingPoint<>::safe_denominator(qvsat);
     temp(pack_idx)[vec_idx] = T;
@@ -533,7 +529,7 @@ Atmosphere HostDynamics::create_atmospheric_state(Kokkos::View<PackType*> temp,
   });
   Real pblh = 100.0;
 
-  return Atmosphere(nlev_, temp, p, relh, z, pblh);
+  return Atmosphere(nlev_, temp, p, relh, z, hydrostatic_dp, pblh);
 }
 
 void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
@@ -554,12 +550,6 @@ void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
     const Real Tv = thetav_local(pack_idx)[vec_idx] * exner_function(P);
     const Real T = temperature_from_virtual_temperature(Tv, qv_local(pack_idx)[vec_idx]);
     const Real qvsat = qvsat_tetens(T,P);
-
-
-//     const int kphalf_pack_idx = PackInfo::pack_idx(k+1);
-//     const int kphalf_vec_idx = PackInfo::vec_idx(k+1);
-//     const Real phimid = 0.5*(phi_local(pack_idx)[vec_idx] +
-//                              phi_local(kphalf_pack_idx)[kphalf_vec_idx]);
 
     temperature(pack_idx)[vec_idx] = T;
     rel_humidity(pack_idx)[vec_idx] = qv_local(pack_idx)[vec_idx] * FloatingPoint<>::safe_denominator(qvsat);

@@ -121,7 +121,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_fprocess") {
   MAMNucleationProcess mam_nucleation_process;
   for (int i=0; i<1000; ++i) {
     const double so4vol = 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
-    const int flagaa = 11 + 2*random();  // range 11-12   
+    const int flagaa = 11 + 2*random();  // range 11-12
     const double adjust_factor_pbl_ratenucl = random();
     mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
 
@@ -141,9 +141,9 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_fprocess") {
     double cnum_nh3_f90              = 0;
     double radius_cluster_f90        = 0;
 
-    mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge, 
+    mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge,
       cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster);
-    pbl_nuc_wang2008_bridge(adjust_factor_pbl_ratenucl, so4vol, flagaa, flagaa2_f90, ratenucl_f90, rateloge_f90, 
+    pbl_nuc_wang2008_bridge(adjust_factor_pbl_ratenucl, so4vol, flagaa, flagaa2_f90, ratenucl_f90, rateloge_f90,
       cnum_tot_f90, cnum_h2so4_f90, cnum_nh3_f90, radius_cluster_f90);
 
     REQUIRE( flagaa2 == flagaa2_f90);
@@ -179,12 +179,12 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
   MAMNucleationProcess mam_nucleation_process;
   for (int i=0; i<1000; ++i) {
     const int newnuc_method_flagaa = random() < .5 ? 1+2*random() : 11+2*random();  // range 1,2,11,12
-    const double dtnuc             = random();  
+    const double dtnuc             = random();
     const double temp_in           = 235   +   60*random();  // range 235-295
     const double rh_in             = 0.05  +   .9*random();  // range .05-.95
     const double press_in          = 96325 + 10000*random(); // pressure in Pascal, sea level=101,325
     const double zm_in             =   500 + 10000*random(); // layer midpoint height (m)
-    const double pblh_in           =  1000 +  1000*random(); // boundary layer height (m) 
+    const double pblh_in           =  1000 +  1000*random(); // boundary layer height (m)
     const double qh2so4_cur        = random();               // mixing ratio
     const double qh2so4_avg        = random();               // mixing ratio
     const double qnh3_cur          = random();               // mixing ratio
@@ -203,8 +203,8 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
     }
     dphim_sect_vec[maxd_asize-1] = dplom_sect_vec[maxd_asize-1]+random()/SECT_SCALE;
 
-    const double *dplom_sect = dplom_sect_vec.data();   
-    const double *dphim_sect = dphim_sect_vec.data();   
+    const double *dplom_sect = dplom_sect_vec.data();
+    const double *dphim_sect = dphim_sect_vec.data();
 
     const double adjust_factor_bin_tern_ratenucl = random();
     const double adjust_factor_pbl_ratenucl = random();
@@ -245,8 +245,8 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
       mw_so4a_host,
       nsize,
       maxd_asize,
-      dplom_sect,  
-      dphim_sect,  
+      dplom_sect,
+      dphim_sect,
       isize_nuc,
       qnuma_del,
       qso4a_del,
@@ -258,7 +258,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
       &dnclusterdt);
 
     mer07_veh02_nuc_mosaic_1box_bridge(
-      adjust_factor_bin_tern_ratenucl, 
+      adjust_factor_bin_tern_ratenucl,
       adjust_factor_pbl_ratenucl,
       newnuc_method_flagaa,
       dtnuc,
@@ -274,8 +274,8 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
       mw_so4a_host,
       nsize,
       maxd_asize,
-      dplom_sect,  
-      dphim_sect,  
+      dplom_sect,
+      dphim_sect,
       isize_nuc_f,
       qnuma_del_f,
       qso4a_del_f,
@@ -321,9 +321,10 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   Kokkos::View<PackType*> temp("temperature", num_levels);
   Kokkos::View<PackType*> press("pressure", num_levels);
   Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
+  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);
   Kokkos::View<PackType*> ht("height", num_levels+1);
   Real pblh = 100.0;
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
+  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel, pblh);
 
   // Test basic construction.
   SECTION("construct") {

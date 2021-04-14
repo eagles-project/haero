@@ -20,8 +20,6 @@ class HostDynamics final {
     ColumnView w;
     /// geopotential (interface variable)
     ColumnView phi;
-    /// hydrostatic pressure (interface variable)
-    ColumnView phydro_int;
 
     /// density (midpoint variable)
     ColumnView rho;
@@ -54,7 +52,6 @@ class HostDynamics final {
     HostDynamics(const int nl) :
       w("w",PackInfo::num_packs(nl+1)),
       phi("phi",PackInfo::num_packs(nl+1)),
-      phydro_int("hydrostatic_pressure_interface", PackInfo::num_packs(nl+1)),
       rho("rho",PackInfo::num_packs(nl)),
       thetav("thetav",PackInfo::num_packs(nl)),
       qv("qv",PackInfo::num_packs(nl)),
@@ -63,7 +60,8 @@ class HostDynamics final {
       hydrostatic_dp("pseudo_density", PackInfo::num_packs(nl)),
       t(0), ps(0), nlev_(nl),
       phi0("phi0",PackInfo::num_packs(nl+1)),
-      rho0("rho0", PackInfo::num_packs(nl))
+      rho0("rho0", PackInfo::num_packs(nl)),
+      phydro_int("hydrostatic_pressure_interface", PackInfo::num_packs(nl+1))
     {}
 
     HostDynamics() = delete;
@@ -118,12 +116,17 @@ class HostDynamics final {
 
     /** @brief Creates a haero::Atmosphere instance to provide dynamics input data to parameterizations.
 
+      Note: Atmosphere member variables that are identical to existing HostDynamics ColumnView members
+        are simple view copies (e.g., hydrostatic_dp and pressure). Atmosphere member variables
+        that are not already ColumnViews in HostDynamics must be passed as ColumnViews to
+        this function (e.g., temperature, height, and relative humidity).
+
       @param [in/out] temp view to store temperature (rank 1, size = nlev)
       @param [in/out] relh view to store relative humidity (rank 1, size = nlev)
       @param [in/out] z view to store level interface heights (rank 1, size = nlev + 1)
     */
-    Atmosphere create_atmospheric_state(Kokkos::View<PackType*> temp,
-      Kokkos::View<PackType*> relh, Kokkos::View<PackType*> z) const;
+    Atmosphere create_atmospheric_state(ColumnView temp,
+      ColumnView relh, ColumnView z) const;
 
     /** @brief Updates a haero::Atmosphere instance's data (e.g., after a change in the time variable)
 
@@ -144,7 +147,8 @@ class HostDynamics final {
     ColumnView rho0;
     /// initial density at the surface
     Real rho0surf;
-
+    /// hydrostatic pressure (interface variable)
+    ColumnView phydro_int;
 
     /** @brief compute discrete approximations of vertical derivatives using centered finite differences
       as described by Taylor et al. 2020.

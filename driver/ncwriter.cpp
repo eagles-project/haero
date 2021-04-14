@@ -242,11 +242,13 @@ void NcWriter::define_atm_state_vars(const Atmosphere& atm) {
       std::make_pair("amip_short_name", "ta"),
       std::make_pair("short_name", "T")};
   define_level_var("temperature", ekat::units::K, atm.temperature(), Tatts);
+
   const var_atts rhatts = {std::make_pair("cf_long_name","relative_humidity"),
     std::make_pair("amip_short_name", "hur"),
     std::make_pair("haero_short_name", "rel_humidity")};
   define_level_var("relative_humidity", ekat::units::Units::nondimensional(),
     atm.relative_humidity(), rhatts);
+
   const var_atts hatts = {std::make_pair("cf_long_name", "geopotential_height"),
     std::make_pair("haero_short_name", "z")};
   define_interface_var("geopotential_height", ekat::units::m,
