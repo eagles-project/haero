@@ -535,7 +535,7 @@ spaces:
   \toprule
   View Name & Rank & Description & C++ & Fortran \\
   \midrule
-  \texttt{ColumnView} & 1 & Maps a vertical level index $k$ to a pack & \texttt{v(k)  & \texttt{v(k)} \\
+  \texttt{ColumnView} & 1 & Maps a vertical level index $k$ to a pack & \texttt{v(k)} & \texttt{v(k)} \\
   \texttt{SpeciesColumnView} & 2 & Maps a population index $p$ and a vertical level index $k$ to a pack & \texttt{v(p,k)}  & \texttt{v(k,p)} \\
   \texttt{ModalColumnView} & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \texttt{v(m,k)}  & \texttt{v(k,m)} \\
   \bottomrule
@@ -997,7 +997,7 @@ do before Haero can construct a model that includes your new process type:
   \item Edit the \texttt{select\_prognostic\_process} function in
         \texttt{haero/selected\_processes.cpp} to create a new pointer to the C++
         class that implements or wraps your process type. You don't have to
-        \texttt{#include} the C++ header file for your process--it should be
+        \texttt{\#include} the C++ header file for your process--it should be
         included for you in the generated file \texttt{available\_processes.hpp}.
   \item Update the driver YAML input parser to add an option for a user
         to select your new process.
@@ -1172,8 +1172,8 @@ There are instructions on how to declare your process in that file.
 
 For example, the Fortran MAM water uptake process is implemented in a Fortran
 module named \texttt{mam\_water\_uptake}, implemented in the source file
-\texttt{haero/processes/mam\_water\_uptake.F90.. In
-\texttt{haero/processes/CMakeLists.txt., it's declared as a Fortran diagnostic
+\texttt{haero/processes/mam\_water\_uptake.F90}. In
+\texttt{haero/processes/CMakeLists.txt}, it's declared as a Fortran diagnostic
 process the following way:
 
 \begin{lstlisting}
@@ -1194,7 +1194,7 @@ To make Haero aware of your new diagnostic process, you follow similar steps
 to those for prognostic processes:
 
 \begin{enumerate}
-  \item Edit the \texttt{SelectedProcesses. struct in
+  \item Edit the \texttt{SelectedProcesses} struct in
         \texttt{haero/selected\_processes.hpp}, and add a field to the enumerated
         type that corresponds to the \texttt{ProcessType} value you selected in
         Step 2 of your implementation procedure above.
