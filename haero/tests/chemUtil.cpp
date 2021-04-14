@@ -2,7 +2,7 @@
 
 namespace chemUtil {
 
-using namespace tchem_stuff;
+using namespace from_tchem;
 
 chemFiles::chemFiles(std::string chemDir){
   prefixPath = "data/" + chemDir;
@@ -12,9 +12,9 @@ chemFiles::chemFiles(std::string chemDir){
 }
 
 chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
-                       bool iverbose, real_type itheta, real_type ilambda,
-                       real_type k1, real_type k2,
-                       real_type initX, real_type initX2)
+                       bool iverbose, Real itheta, Real ilambda,
+                       Real k1, Real k2,
+                       Real initX, Real initX2)
                        :
                        cfiles(chemDir),
                        verbose(iverbose),
@@ -102,17 +102,17 @@ void chemSolver::print_summary(const chemFiles& cfiles){
   printf("---------------------------------------------------\n");
   printf("Time deep copy      %e [sec] %e [sec/sample]\n",
          t_deepcopy,
-         t_deepcopy / real_type(nBatch));
+         t_deepcopy / Real(nBatch));
   printf("Time reaction rates %e [sec] %e [sec/sample]\n",
          t_device_batch,
-         t_device_batch / real_type(nBatch));
+         t_device_batch / Real(nBatch));
 } // end chemSolver::print_summary
 
 real_type_2d_view chemSolver::get_results(){
   // reset timer
   timer.reset();
   // run the model
-  tchem_stuff::SourceTermToyProblem::runDeviceBatch(policy, theta, lambda, reactRate, state, omega, kmcd);
+  from_tchem::SourceTermToyProblem::runDeviceBatch(policy, theta, lambda, reactRate, state, omega, kmcd);
   Kokkos::fence(); /// timing purpose
   t_device_batch = timer.seconds();
   /// create a mirror view of omega (output) to export a file
@@ -136,7 +136,9 @@ real_type_2d_view chemSolver::get_results(){
 /*
 ***NOTE: everything in this namespace is copied directly from TChem***
 */
-namespace tchem_stuff {
+namespace from_tchem {
+
+  using Real = haero::Real;
 
   template<typename KineticModelConstDataType>
   KOKKOS_INLINE_FUNCTION static ordinal_type getWorkSpaceSize(
@@ -152,8 +154,8 @@ namespace tchem_stuff {
     KOKKOS_INLINE_FUNCTION static void team_invoke_detail(
       const MemberType& member,
       /// input
-      const real_type& theta,
-      const real_type& lambda,
+      const Real& theta,
+      const Real& lambda,
       const RealType1DViewType& reactRate,
       const RealType1DViewType& concX,
       /// output
@@ -192,18 +194,18 @@ namespace tchem_stuff {
       Kokkos::parallel_for(
         Kokkos::TeamVectorRange(member, kmcd.nReac), [&](const ordinal_type& i) {
           rop(i) -= ropRev(i);
-          const real_type rop_at_i = rop(i);
+          const Real rop_at_i = rop(i);
           for (ordinal_type j = 0; j < kmcd.reacNreac(i); ++j) {
             const ordinal_type kspec = kmcd.reacSidx(i, j);
             // omega(kspec) += kmcd.reacNuki(i,j)*rop_at_i;
-            const real_type val = kmcd.reacNuki(i, j) * rop_at_i;
+            const Real val = kmcd.reacNuki(i, j) * rop_at_i;
             Kokkos::atomic_fetch_add(&omega(kspec), val);
           }
           const ordinal_type joff = kmcd.reacSidx.extent(1) / 2;
           for (ordinal_type j = 0; j < kmcd.reacNprod(i); ++j) {
             const ordinal_type kspec = kmcd.reacSidx(i, j + joff);
             // omega(kspec) += kmcd.reacNuki(i,j+joff)*rop_at_i;
-            const real_type val = kmcd.reacNuki(i, j + joff) * rop_at_i;
+            const Real val = kmcd.reacNuki(i, j + joff) * rop_at_i;
             Kokkos::atomic_fetch_add(&omega(kspec), val);
           }
         });
@@ -263,7 +265,7 @@ namespace tchem_stuff {
       // if (member.league_rank() == 0) {
       //   FILE *fs = fopen("SourceTermToyProblem.team_invoke.test.out", "a+");
       //   for (int i=0;i<int(Crnd.extent(0));++i)
-      //     fprintf(fs, " %d %e\n", i , real_type(1e-3)*Crnd(i)*kfor(i));
+      //     fprintf(fs, " %d %e\n", i , Real(1e-3)*Crnd(i)*kfor(i));
       // }
     }
 
@@ -275,8 +277,8 @@ namespace tchem_stuff {
     KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
       const MemberType& member,
       /// input
-      const real_type& theta,
-      const real_type& lambda,
+      const Real& theta,
+      const Real& lambda,
       const RealType1DViewType& reactRate,
       const RealType1DViewType& X, /// (kmcd.nSpec)
       /// output
@@ -288,7 +290,7 @@ namespace tchem_stuff {
     {
 
       ///
-      auto w = (real_type*)work.data();
+      auto w = (Real*)work.data();
       auto kfor = RealType1DViewType(w, kmcd.nReac);
       w += kmcd.nReac;
       auto krev = RealType1DViewType(w, kmcd.nReac);
@@ -356,8 +358,8 @@ namespace tchem_stuff {
                                         per_team_extent);
 
         //
-        const real_type theta_at_i = theta(i);
-        const real_type lambda_at_i = lambda(i);
+        const Real theta_at_i = theta(i);
+        const Real lambda_at_i = lambda(i);
 
         team_invoke(member, theta_at_i, lambda_at_i, reactRate_at_i,
           state_at_i, SourceTermToyProblem_at_i, work, kmcd);
@@ -391,4 +393,4 @@ namespace tchem_stuff {
 
   }
 
-} // end tchem_stuff namespace
+} // end from_tchem namespace

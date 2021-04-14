@@ -1,11 +1,12 @@
-#ifndef CHEMUTIL_HPP
-#define CHEMUTIL_HPP
+#ifndef HAERO_CHEMUTIL_HPP
+#define HAERO_CHEMUTIL_HPP
 
 #include <string>
 #include <sstream>
 #include <iostream>
 
 // these are required for TChem
+#include "haero/haero.hpp"
 #include "tchem/TChem_KineticModelData.hpp"
 #include "tchem/TChem_Util.hpp"
 #include "tchem/TChem_Impl_RateOfProgress.hpp"
@@ -14,7 +15,7 @@ namespace chemUtil {
 
 // some aliases
 using ordinal_type = TChem::ordinal_type;
-using real_type = TChem::real_type;
+using Real = haero::Real;
 using real_type_1d_view = TChem::real_type_1d_view;
 using real_type_2d_view = TChem::real_type_2d_view;
 using policy_type = typename TChem::UseThisTeamPolicy<TChem::exec_space>::type;
@@ -41,7 +42,7 @@ class chemSolver{
     // number of chemical batches/samples that will have the given composition
     int nBatch;
     // timer variables
-    real_type t_deepcopy, t_device_batch;
+    Real t_deepcopy, t_device_batch;
     // kokkos team policy
     policy_type policy;
     // timer object for kokkos
@@ -63,9 +64,9 @@ class chemSolver{
   public:
     // constructor
     chemSolver(std::string chemDir, bool detail, int inBatch, bool iverbose,
-               real_type itheta, real_type ilambda,
-               real_type k1, real_type k2,
-               real_type initX, real_type initX2);
+               Real itheta, Real ilambda,
+               Real k1, Real k2,
+               Real initX, Real initX2);
     // runs chemical model and saves the results (tendencies) to the output file
     real_type_2d_view get_results();
 };
@@ -73,7 +74,7 @@ class chemSolver{
 } // namespace chemUtil
 
 // NOTE: everything in this namespace is copied directly from TChem
-namespace tchem_stuff {
+namespace from_tchem {
 
   struct SourceTermToyProblem
   {
@@ -102,5 +103,5 @@ namespace tchem_stuff {
   template<typename KineticModelConstDataType>
   KOKKOS_INLINE_FUNCTION static ordinal_type getWorkSpaceSize(
     const KineticModelConstDataType& kmcd);
-} // end tchem_stuff namespace
+} // end from_tchem namespace
 #endif
