@@ -80,16 +80,16 @@ Haero's aerosol state data lives in multi-dimensional arrays within ``smart
 containers'':
 
 \begin{itemize}
-  \item The \verb Prognostics  container contains prognostic state variables
+  \item The \texttt{Prognostics} container contains prognostic state variables
         specific to aerosols
-  \item The \verb Atmosphere  container contains a thermodynamic description
+  \item The \texttt{Atmosphere} container contains a thermodynamic description
         of the atmosphere in which an aerosol system is embedded
-  \item The \verb Diagnostics  container contains a registry of diagnostic
+  \item The \texttt{Diagnostics} container contains a registry of diagnostic
         variables shared amongst various aerosol processes, and made available
         for output
 \end{itemize}
 
-The arrays in these data structures are stored in \verb View  objects provided
+The arrays in these data structures are stored in \texttt{View} objects provided
 by the Kokkos C++ library. Aerosol state data is allocated in C++, but available
 for use in Fortran for implementing aerosol processes or for using Haero
 from within a Fortran host model. Atmospheric state data is provided by the
@@ -204,8 +204,8 @@ class ModalAerosolConfig final {
 \subsection{The Model Type}
 \labelsubsection{lib:model}
 
-In Haero, an aerosol model is defined by the \verb Model  type, defined within
-the \verb haero  namespace. Interfaces to this type are provided in both C++ and
+In Haero, an aerosol model is defined by the \texttt{Model} type, defined within
+the \texttt{haero} namespace. Interfaces to this type are provided in both C++ and
 Fortran.
 
 What do we mean by an ``aerosol model'', exactly? One can think about it in a
@@ -222,9 +222,9 @@ few different ways.
         time. In this sense, all of its information is ``timeless''.
 \end{itemize}
 
-Below is an abbreviated look at the \verb Model  C++ class. The source code for
-this class can be found in the \verb haero/model.hpp  and
-\verb haero/model.cpp files within the repository. Reading through this class,
+Below is an abbreviated look at the \texttt{Model} C++ class. The source code for
+this class can be found in the \texttt{haero/model.hpp} and
+\texttt{haero/model.cpp} files within the repository. Reading through this class,
 you'll see references to various other data structures. We describe these data
 structures in subsequent sections.
 
@@ -280,15 +280,15 @@ class Model final {
 };
 \end{lstlisting}
 
-In C++, you can create as many \verb Model  variables as you like, though
+In C++, you can create as many \texttt{Model} variables as you like, though
 there's usually no reason to do so, unless you're running an ensemble of
 simulations whose underlying assumptions differ beyond their initial states.
 
-Haero's Fortran interface provides a \verb model_t  derived type with a subset
-of the information available to the C++ \verb Model  type. The Fortran
+Haero's Fortran interface provides a \texttt{model\_t} derived type with a subset
+of the information available to the C++ \texttt{Model} type. The Fortran
 interface doesn't have ``feature parity'' with its C++ counterpart. In fact,
 it really only provides information equivalent to that in the
-\verb ModalAerosolConfig  C++ class. Nevertheless, we argue that it provides
+\texttt{ModalAerosolConfig} C++ class. Nevertheless, we argue that it provides
 ample information for implementing aerosol processes in Fortran.
 
 \lstset{language=[03]{fortran}}
@@ -316,8 +316,8 @@ contains
 end type
 \end{lstlisting}
 
-In Fortran, a single global \verb model_t  variable, \verb model , is provided
-within the \verb haero  module. This variable is automatically populated with
+In Fortran, a single global \texttt{model\_t} variable, \texttt{model}, is provided
+within the \texttt{haero} module. This variable is automatically populated with
 data by Haero before any work is done, so there's no need to create it or
 modify it yourself. {\em Do not attempt to change any data within
 this global variable}.
@@ -340,7 +340,7 @@ by \refeq{modal_n}.
 The essential information in a mode is the range of particle sizes it
 encompasses, $[D_{\min}, D_{\max}]$, and its geometric standard deviation,
 $\sigma_g$. In Haero's C and C++ interfaces,
-we represent an aerosol mode with the \verb|Mode| struct:
+we represent an aerosol mode with the \texttt{Mode} struct:
 
 \lstset{language=[11]{c++}}
 \begin{lstlisting}
@@ -352,9 +352,9 @@ struct Mode {
 };
 \end{lstlisting}
 
-Haero's Fortran interface offers a \verb mode_t  data structure, equivalent to
-the C++ \verb Mode  class. This data structure is defined in the \verb haero  Fortran
-module:
+Haero's Fortran interface offers a \texttt{mode\_t} data structure, equivalent to
+the C++ \texttt{Mode} class. This data structure is defined in the \texttt{haero}
+Fortran module:
 
 \lstset{language=[03]{fortran}}
 \begin{lstlisting}
@@ -380,15 +380,15 @@ the parametrizations selected can accommodate the given modes.
 Each aerosol mode consists of one or more particle species. Additionally,
 gas particles also come in different species. Both aerosol particles and
 gas particles have physical properties that are described by the
-\verb Species  data type.
+\texttt{Species} data type.
 
 A particle species is a specifically-identified molecular assembly with
 a number of relevant physical properties. The fundamental description of a
 species includes
 
 \begin{itemize}
-  \item a descriptive name (e.g. \verb "sulfate" )
-  \item a symbolic name (e.g. \verb SO4 , for sulfate)
+  \item a descriptive name (e.g. \texttt{"sulfate"})
+  \item a symbolic name (e.g. \texttt{SO4}, for sulfate)
   \item information about the chemical properties of the species
 \end{itemize}
 
@@ -427,7 +427,7 @@ end type
 
 Once a model variable has been created that defines an aerosol system, you can
 create state variables for that system. The state of an aerosol system is
-defined by the following prognostic variables within the \verb Prognostics  data
+defined by the following prognostic variables within the \texttt{Prognostics} data
 structure:
 
 \begin{itemize}
@@ -442,27 +442,27 @@ structure:
 
 The state of the atmosphere (expressed in averaged thermodynamic quantities
 like pressure and temperature) greatly affects the behavior of aerosols, so
-this atmosphere state information is made available in the \verb Atmosphere  data
+this atmosphere state information is made available in the \texttt{Atmosphere} data
 structure.
 
 Finally, the model possesses a set of diagnostic variables, stored in the
-\verb Diagnostics  data structure, that depend on its selected aerosol processes
+\texttt{Diagnostics} data structure, that depend on its selected aerosol processes
 (which are discussed in a later section).
 
 How does one create a set of state variables given a model variable? Recall that
-the \verb Model  C++ class provides the following two functions, which you can
-call directly yourself, given a pointer to a C++ variable called \verb model :
+the \texttt{Model} C++ class provides the following two functions, which you can
+call directly yourself, given a pointer to a C++ variable called \texttt{model}:
 
 \begin{itemize}
-  \item \verb model->create_prognostics(...)  : returns a pointer to a new C++
-    \verb Prognostics  container, given views that store aerosol prognostics
-  \item \verb model->create_diagnostics()  : returns a pointer to a new C++
-    \verb Diagnostics  container
+  \item \texttt{model->create\_prognostics(...)}: returns a pointer to a new C++
+    \texttt{Prognostics} container, given views that store aerosol prognostics
+  \item \texttt{model->create\_diagnostics()}: returns a pointer to a new C++
+    \texttt{Diagnostics} container
 \end{itemize}
 
 These functions don't take any parameters---they just use the information within
 the model variable. A host model is responsible for creating its own
-\verb Atmosphere  objects, because it manages the memory within the underlying
+\texttt{Atmosphere} objects, because it manages the memory within the underlying
 views.
 
 By the way, you don't always have to call these functions yourself. State
@@ -472,32 +472,32 @@ Haero within your own host model, or if you're writing a unit test for your
 parameterization, you must call these functions to obtain containers for your
 aerosol model's state data.
 
-The \verb Prognostics , \verb Atmosphere , and \verb Diagnostics  containers
+The \texttt{Prognostics}, \texttt{Atmosphere}, and \texttt{Diagnostics} containers
 store state data in multidimensional arrays allocated in C++ but made available
 to both C++ and Fortran. The data for each array is stored within a Kokkos
-\verb View .
+\texttt{View}.
 
 \subsection*{Kokkos Views}
 \labelsubsection{lib:views}
 
 The C++ programming language has lots of features, but remarkably it includes no
 mechanism for allocating multidimensional arrays at runtime. The Kokkos C++
-library fills this gap by providing a data structure called a \verb View . A
-\verb View  is essentially an interface that allows a C++ programmer to treat a
+library fills this gap by providing a data structure called a \texttt{View}. A
+\texttt{View} is essentially an interface that allows a C++ programmer to treat a
 chunk of memory like a multidimensional array.
 
-A \verb View  has a rank and a set of dimensions, just like an allocatable
-Fortran array. You access a \verb View  in the same way that you'd access a
+A \texttt{View} has a rank and a set of dimensions, just like an allocatable
+Fortran array. You access a \texttt{View} in the same way that you'd access a
 Fortran array, except that C++ uses row-major indexing instead of Fortran's
-column-major indexing. So for a rank-3 view \verb f  that you access in C++
-as \verb f(i,j,k) , you would access the corresponding array in Fortran as
-\verb f(k,j,i) .
+column-major indexing. So for a rank-3 view \texttt{f} that you access in C++
+as \texttt{f(i,j,k)}, you would access the corresponding array in Fortran as
+\texttt{f(k,j,i)}.
 
 \subsubsection*{Digression: Packs and Vectorization}
 \labelsubsubsection{lib:packs}
 
-Haero uses Views that consist of \verb Pack  objects instead of floating
-point numbers. A \verb Pack  (or just ``pack'') is a contiguous array of numbers
+Haero uses Views that consist of \texttt{Pack} objects instead of floating
+point numbers. A \texttt{Pack} (or just ``pack'') is a contiguous array of numbers
 that allows a modern CPU or GPU to vectorize calculations using special
 instructions.
 
@@ -508,9 +508,9 @@ optimization is that a pack represents several numbers, not one. This can make
 it tricky to reason about the physical quantities stored in a pack.
 
 Haero uses packs with a size (number of contiguously stored numbers) set at
-compile time by the CMake variable \verb HAERO_PACK_SIZE . To simplify the
+compile time by the CMake variable \texttt{HAERO\_PACK\_SIZE}. To simplify the
 process of reasoning about packs, Haero uses these objects one way only:
-in Haero a pack stores data for \verb HAERO_PACK_SIZE  vertical levels in
+in Haero a pack stores data for \texttt{HAERO\_PACK\_SIZE} vertical levels in
 a column. Thus, a pack contains data for exactly one variable (with the same
 units and physical interpretation) whose values span one or more vertical
 levels.
@@ -518,8 +518,8 @@ levels.
 This is the easiest way for Haero to support vectorization. It does mean,
 however, that the number of vertical levels in a column differs in general from
 the number of packs spanning a vertical level. For example, a column of data
-with 72 vertical levels running in a Haero build with a \verb HAERO_PACK_SIZE  of
-2 contains $36 = 72 / 2 $ packs in its vertical extent.
+with 72 vertical levels running in a Haero build with a \texttt{HAERO\_PACK\_SIZE}
+of 2 contains $36 = 72 / 2 $ packs in its vertical extent.
 
 \subsubsection*{Haero Views}
 
@@ -535,22 +535,22 @@ spaces:
   \toprule
   View Name & Rank & Description & C++ & Fortran \\
   \midrule
-  \verb ColumnView  & 1 & Maps a vertical level index $k$ to a pack & \verb v(k)  & \verb v(k) \\
-  \verb SpeciesColumnView  & 2 & Maps a population index $p$ and a vertical level index $k$ to a pack & \verb v(p,k)  & \verb v(k,p) \\
-  \verb ModalColumnView & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \verb v(m,k)  & \verb v(k,m) \\
+  \texttt{ColumnView} & 1 & Maps a vertical level index $k$ to a pack & \texttt{v(k)  & \texttt{v(k)} \\
+  \texttt{SpeciesColumnView} & 2 & Maps a population index $p$ and a vertical level index $k$ to a pack & \texttt{v(p,k)}  & \texttt{v(k,p)} \\
+  \texttt{ModalColumnView} & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \texttt{v(m,k)}  & \texttt{v(k,m)} \\
   \bottomrule
 \end{tabular}
 \end{table}
 
-The \verb Prognostics , \verb Atmosphere , and \verb Diagnostics  containers
+The \texttt{Prognostics}, \texttt{Atmosphere}, and \texttt{Diagnostics} containers
 described below make use of these named types.
 
 \subsection{Prognostics Type}
 \labelsubsection{lib:prognostics}
 
-The \verb Prognostics  C++ class provides access to the prognostic variables
+The \texttt{Prognostics} C++ class provides access to the prognostic variables
 that define aerosols in a modal description. Here's the C++ class interface
-(abbreviated for brevity---see the full interface in \verb haero/prognostics.hpp ):
+(abbreviated for brevity---see the full interface in \texttt{haero/prognostics.hpp}):
 
 \lstset{language=[11]{c++}}
 \begin{lstlisting}
@@ -588,12 +588,12 @@ class Prognostics final {
 };
 \end{lstlisting}
 
-Typically, you never modify a \verb Prognostics  variable directly. Instead, you
-compute a set of tendencies (in a \verb Tendencies  variable, which is very
-similar to a \verb Prognostics  variable) and accumulate them into your
-\verb Prognostics  variable by calling \verb scale_and_add .
+Typically, you never modify a \texttt{Prognostics} variable directly. Instead, you
+compute a set of tendencies (in a \texttt{Tendencies} variable, which is very
+similar to a \texttt{Prognostics} variable) and accumulate them into your
+\texttt{Prognostics} variable by calling \texttt{scale\_and\_add}.
 
-The Fortran version of the \verb Prognostics  type is similar, and offers
+The Fortran version of the \texttt{Prognostics} type is similar, and offers
 access to Fortran multidimensional arrays instead of C++ views. For cleaner
 syntax, this type uses bound procedures to return pointers to its arrays.
 
@@ -615,7 +615,7 @@ syntax, this type uses bound procedures to return pointers to its arrays.
 \subsection{Atmosphere Type}
 \labelsubsection{lib:atmosphere}
 
-The \verb Atmosphere  C++ class stores a fixed set of state variables that
+The \texttt{Atmosphere} C++ class stores a fixed set of state variables that
 describe the atmosphere, such as
 
 \begin{itemize}
@@ -625,7 +625,7 @@ describe the atmosphere, such as
   \item heights at level interfaces [m]
 \end{itemize}
 
-Each of these variables are stored in \verb ColumnView  objects whose memory
+Each of these variables are stored in \texttt{ColumnView} objects whose memory
 is managed by the host model.
 
 {\em This data structure is new, so we'll be adding and changing these state
@@ -634,7 +634,7 @@ variables a bit in the near future.}
 \subsection{Diagnostics Type}
 \labelsubsection{lib:diagnostics}
 
-The \verb Diagnostics  C++ class stores a dynamically-determined set of
+The \texttt{Diagnostics} C++ class stores a dynamically-determined set of
 diagnostic variables that correspond to the specific parameterizations available
 to the aerosol model that created it. The variables are identified by unique
 tokens that can be retrieved by name.
@@ -693,11 +693,11 @@ class Diagnostics final {
 };
 \end{lstlisting}
 
-The Fortran version of \verb Diagnostics , like its \verb Prognostics  counterpart,
+The Fortran version of \texttt{Diagnostics}, like its \texttt{Prognostics} counterpart,
 uses bound procedures to provide access to its array data. Each one of these
 bound procedures accepts a single dummy argument: the name of the desired
 diagnostic variable. This Fortran pseudocode illustrates the interface for the
-\verb Diagnostics  derived-type \verb diagnostics_t .
+\texttt{Diagnostics} derived-type \texttt{diagnostics\_t}.
 
 \lstset{language=[03]{fortran}}
 \begin{lstlisting}
@@ -734,14 +734,14 @@ diagnostic variable. This Fortran pseudocode illustrates the interface for the
   end type
 \end{lstlisting}
 
-At this point, you might wonder how a \verb Diagnostics  variable knows which
-variables it needs. In fact, the \verb Diagnostics  class provides functions for
-creating variables that it needs. The C++ \verb Model  variable used to create
-a \verb Diagnostics  variable knows this information, and automatically calls
+At this point, you might wonder how a \texttt{Diagnostics} variable knows which
+variables it needs. In fact, the \texttt{Diagnostics} class provides functions for
+creating variables that it needs. The C++ \texttt{Model} variable used to create
+a \texttt{Diagnostics} variable knows this information, and automatically calls
 these functions for you.
 
-For examples of how the \verb Prognostics , \verb Atmosphere , and
-\verb Diagnostics  types are used in practice, take a look at one of the
+For examples of how the \texttt{Prognostics}, \texttt{Atmosphere}, and
+\texttt{Diagnostics} types are used in practice, take a look at one of the
 existing aerosol process implementations.
 
 \section{Aerosol Processes in Haero}
@@ -764,7 +764,7 @@ Haero library handle the details of how these processes are created and used.
 
 For detailed descriptions of the specific processes provided by Haero, take a
 look at \refchapter{processes}. You can find examples of source code for
-Haero's processes in the \verb haero/processes  subdirectory.
+Haero's processes in the \texttt{haero/processes} subdirectory.
 
 \subsection{The Prognostic Process Interface}
 \labelsubsection{lib:prognostic_process}
@@ -800,11 +800,11 @@ in a data type ``derived'' from that base class.
 
 Haero uses the object-oriented features of C++ for process development. All
 prognostic process implementations are derived from a C++ base class called
-\verb PrognosticProcess . This is true regardless of whether you implement the
+\texttt{PrognosticProcess}. This is true regardless of whether you implement the
 process using C++ or Fortran.
 
-The \verb PrognosticProcess  provides the following interface (see
-\verb haero/process.hpp  for more details):
+The \texttt{PrognosticProcess} provides the following interface (see
+\texttt{haero/process.hpp} for more details):
 
 \lstset{language=[11]{c++}}
 \begin{lstlisting}
@@ -834,12 +834,12 @@ class PrognosticProcess {
 \end{lstlisting}
 
 In addition to the ``constructor'' function used to create an instance of a
-\verb PrognosticProcess  variables, this interface declares three functions
-(\verb init , \verb run , and the destructor function \verb \~PrognosticProcess )
+\texttt{PrognosticProcess} variables, this interface declares three functions
+(\texttt{init}, \texttt{run}, and the destructor function \texttt{\~PrognosticProcess})
 that correspond to the three behaviors described above.
 
 The constructor accepts a process type that indicates what stage of the aerosol
-life cycle it represents. A \verb ProcessType  data structure is an
+life cycle it represents. A \texttt{ProcessType} data structure is an
 ``enumerated type'' that enumerates the various stages:
 
 \begin{lstlisting}
@@ -869,29 +869,29 @@ does! The procedure for testing an aerosol process is described in
 
 In C++, all you have to do in order to implement a prognostic process is to
 define a class with a specific name, derived from the
-\verb PrognosticProcess  base class. For example, the MAM4 implementation of the
+\texttt{PrognosticProcess} base class. For example, the MAM4 implementation of the
 nucleation process, described in \refsubsection{nuc:mam4}, is defined in a C++
-class named \verb MAMNucleationProcess . A C++ class derived from a base class
+class named \texttt{MAMNucleationProcess}. A C++ class derived from a base class
 is called a {\bf subclass} of that base class, so
-\verb MAMNucleationProcess  is a subclass of \verb PrognosticProcess .
+\texttt{MAMNucleationProcess} is a subclass of \texttt{PrognosticProcess}.
 
 To create a C++ implemention for a prognostic process:
 
 \begin{enumerate}
   \item Create a header file that declares your subclass of
-        \verb PrognosticProcess . This header file must declare a constructor,
-        a destructor, the \verb init  function, and the \verb run  function.
-        This file lives in the \verb haero/processes  subdirectory within the
-        repository. See \verb haero/processes/MAMNucleationProcess.hpp  for an
+        \texttt{PrognosticProcess}. This header file must declare a constructor,
+        a destructor, the \texttt{init} function, and the \texttt{run} function.
+        This file lives in the \texttt{haero/processes} subdirectory within the
+        repository. See \texttt{haero/processes/MAMNucleationProcess.hpp} for an
         example.
   \item Create a source file containing implementations for the constructor, the
-        destructor, the \verb init  functon, and the \verb run  function for
+        destructor, the \texttt{init} function, and the \texttt{run} function for
         your subclass. This lives alongside the header file you just created.
-        See \verb haero/processes/MAMNucleationProcess.cpp for an example.
-        In particular, select the \verb ProcessType  value that reflects the
+        See \texttt{haero/processes/MAMNucleationProcess.cpp} for an example.
+        In particular, select the \texttt{ProcessType} value that reflects the
         proper stage of the aerosol lifecycle for your process.
   \item Add your source file to the set of source files in the
-        \verb PROCESS_SOURCES  variable in \verb haero/processes/CMakeLists.txt .
+        \texttt{PROCESS\_SOURCES} variable in \texttt{haero/processes/CMakeLists.txt}.
   \item Write one or more tests for your new aerosol process.
         \refchapter{testing} provides extensive details about how to do this.
 \end{enumerate}
@@ -900,7 +900,7 @@ To create a C++ implemention for a prognostic process:
 \labelsubsubsection{lib:prognostic_f90}
 
 A Fortran prognostic process implementation consists of a Fortran module that
-contains \verb init , \verb run , and \verb finalize  subroutines that implement
+contains \texttt{init}, \texttt{run}, and \texttt{finalize} subroutines that implement
 the same functionality as their C++ counterparts:
 
 \begin{lstlisting}
@@ -952,13 +952,13 @@ end module
 \end{lstlisting}
 
 To implement a prognostic process in Fortran, you create such a module in a
-Fortran source file and then declare it as a \verb prognostic_fprocess in the
-\verb CMakeLists.txt  file within the \verb haero/processes subdirectory. There
+Fortran source file and then declare it as a \texttt{prognostic\_fprocess} in the
+\texttt{CMakeLists.txt} file within the \texttt{haero/processes} subdirectory. There
 are instructions on how to declare your process in that file.
 
 For example, the Fortran MAM nucleation process is implemented in a Fortran
-module named \verb mam_nucleation , implemented in the source file
-\verb haero/processes/mam_nucleation.F90 . In \verb haero/processes/CMakeLists.txt ,
+module named \texttt{mam\_nucleation}, implemented in the source file
+\texttt{haero/processes/mam\_nucleation.F90}. In \texttt{haero/processes/CMakeLists.txt},
 it's declared as a Fortran prognostic process the following way:
 
 \begin{lstlisting}
@@ -990,15 +990,15 @@ make it available to the Haero library? There are a few more things you need to
 do before Haero can construct a model that includes your new process type:
 
 \begin{enumerate}
-  \item Edit the \verb SelectedProcesses  struct in
-        \verb haero/selected_processes.hpp  , and add a field to the enumerated
-        type that corresponds to the \verb ProcessType  value you selected in
+  \item Edit the \texttt{SelectedProcesses} struct in
+        \texttt{haero/selected\_processes.hpp}, and add a field to the enumerated
+        type that corresponds to the \texttt{ProcessType} value you selected in
         Step 2 of your implementation procedure above.
-  \item Edit the \verb select_prognostic_process  function in
-        \verb haero/selected_processes.cpp  to create a new pointer to the C++
+  \item Edit the \texttt{select\_prognostic\_process} function in
+        \texttt{haero/selected\_processes.cpp} to create a new pointer to the C++
         class that implements or wraps your process type. You don't have to
-        \verb #include  the C++ header file for your process--it should be
-        included for you in the generated file \verb available_processes.hpp .
+        \texttt{#include} the C++ header file for your process--it should be
+        included for you in the generated file \texttt{available\_processes.hpp}.
   \item Update the driver YAML input parser to add an option for a user
         to select your new process.
   \item Update this document with a description of your process in the
@@ -1033,13 +1033,13 @@ implemented in a C++ function or a Fortran subroutine.
 
 Implementing a diagnostic process is very similar to implementing a prognostic
 process. The only difference is that the diagnostic process has an
-\verb update  behavior with a different interface from the \verb run  behavior
+\texttt{update} behavior with a different interface from the \texttt{run} behavior
 in a prognostic process.
 
 As in the case of prognostic processes, we use C++'s object-oriented approach to
 implement diagnostic processes in C++ and Fortran. This time we derive a C++
-class from the \verb DiagnosticProcess  base class, which has following
-interface (see \verb haero/process.hpp ):
+class from the \texttt{DiagnosticProcess} base class, which has following
+interface (see \texttt{haero/process.hpp}):
 
 \begin{lstlisting}
 class DiagnosticProcess {
@@ -1074,12 +1074,12 @@ class DiagnosticProcess {
 };
 \end{lstlisting}
 
-Everything about this interface is the same as the \verb PrognosticProcess ,
+Everything about this interface is the same as the \texttt{PrognosticProcess},
 except that
 
 \begin{itemize}
-  \item the \verb run  function here is replaced by the \verb update  function
-  \item there's a \verb set_diag_vars  function that you can use to express
+  \item the \texttt{run} function here is replaced by the \texttt{update} function
+  \item there's a \texttt{set\_diag\_vars} function that you can use to express
         which diagnostic variables are required by your process
 \end{itemize}
 
@@ -1093,22 +1093,22 @@ To create a C++ implemention for a diagnostic process:
 
 \begin{enumerate}
   \item Create a header file that declares your subclass of
-        \verb DiagnosticProcess . This header file must declare a constructor,
-        a destructor, the \verb init  function, and the \verb run  function.
-        This file lives in the \verb haero/processes  subdirectory within the
-        repository. See \verb haero/processes/MAMWaterUptakeProcess.hpp  for an
+        \texttt{DiagnosticProcess}. This header file must declare a constructor,
+        a destructor, the \texttt{init} function, and the \texttt{run} function.
+        This file lives in the \texttt{haero/processes} subdirectory within the
+        repository. See \texttt{haero/processes/MAMWaterUptakeProcess.hpp} for an
         example.
   \item Create a source file containing implementations for the constructor, the
-        destructor, the \verb init  functon, and the \verb run  function for
+        destructor, the \texttt{init} functon, and the \texttt{run} function for
         your subclass. This lives alongside the header file you just created.
-        See \verb haero/processes/MAMWaterUptakeProcess.cpp for an example.
-        In particular, select the \verb ProcessType  value that reflects the
+        See \texttt{haero/processes/MAMWaterUptakeProcess.cpp} for an example.
+        In particular, select the \texttt{ProcessType} value that reflects the
         proper stage of the aerosol lifecycle for your process.
   \item If your diagnostic process requires the presence of specific diagnostic
-        variables, call the \verb set_diag_vars  function (with the appropriate
+        variables, call the \texttt{set\_diag\_vars} function (with the appropriate
         variable names of each type) in the class's constructor.
   \item Add your source file to the set of source files in the
-        \verb PROCESS_SOURCES  variable in \verb haero/processes/CMakeLists.txt .
+        \texttt{PROCESS\_SOURCES} variable in \texttt{haero/processes/CMakeLists.txt}.
   \item Write one or more tests for your new aerosol process.
         \refchapter{testing} provides extensive details about how to do this.
 \end{enumerate}
@@ -1117,7 +1117,7 @@ To create a C++ implemention for a diagnostic process:
 \labelsubsubsection{lib:diagnostic_f90}
 
 A Fortran diagnostic process implementation consists of a Fortran module that
-contains \verb init , \verb update , and \verb finalize  subroutines that implement
+contains \texttt{init}, \texttt{update}, and \texttt{finalize} subroutines that implement
 the same functionality as their C++ counterparts:
 
 \begin{lstlisting}
@@ -1166,14 +1166,14 @@ end module
 \end{lstlisting}
 
 To implement a diagnostic process in Fortran, you create such a module in a
-Fortran source file and then declare it as a \verb diagnostic_fprocess in the
-\verb CMakeLists.txt  file within the \verb haero/processes subdirectory. There
-are instructions on how to declare your process in that file.
+Fortran source file and then declare it as a \texttt{diagnostic\_fprocess} in the
+\texttt{CMakeLists.txt} file within the \texttt{haero/processes} subdirectory.
+There are instructions on how to declare your process in that file.
 
 For example, the Fortran MAM water uptake process is implemented in a Fortran
-module named \verb mam_water_uptake , implemented in the source file
-\verb haero/processes/mam_water_uptake.F90 . In
-\verb haero/processes/CMakeLists.txt , it's declared as a Fortran diagnostic
+module named \texttt{mam\_water\_uptake}, implemented in the source file
+\texttt{haero/processes/mam\_water\_uptake.F90.. In
+\texttt{haero/processes/CMakeLists.txt., it's declared as a Fortran diagnostic
 process the following way:
 
 \begin{lstlisting}
@@ -1194,12 +1194,12 @@ To make Haero aware of your new diagnostic process, you follow similar steps
 to those for prognostic processes:
 
 \begin{enumerate}
-  \item Edit the \verb SelectedProcesses  struct in
-        \verb haero/selected_processes.hpp  , and add a field to the enumerated
-        type that corresponds to the \verb ProcessType  value you selected in
+  \item Edit the \texttt{SelectedProcesses. struct in
+        \texttt{haero/selected\_processes.hpp}, and add a field to the enumerated
+        type that corresponds to the \texttt{ProcessType} value you selected in
         Step 2 of your implementation procedure above.
-  \item Edit the \verb select_diagnostic_process  function in
-        \verb haero/selected_processes.cpp  to create a new pointer to the C++
+  \item Edit the \texttt{select\_diagnostic\_process} function in
+        \texttt{haero/selected\_processes.cpp} to create a new pointer to the C++
         class for your process type.
   \item Update the driver YAML input parser to add an option for a user
         to select your new process.
