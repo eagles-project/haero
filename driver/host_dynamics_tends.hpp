@@ -29,7 +29,7 @@ class DynamicsTendencies final {
 
       @param [in] nl number of vertical levels
     */
-    DynamicsTendencies(const int nl) :
+    explicit DynamicsTendencies(const int nl) :
       w_tend("w_tend", PackInfo::num_packs(nl+1)),
       phi_tend("phi_tend", PackInfo::num_packs(nl+1)),
       rho_tend("rho_tend", PackInfo::num_packs(nl)),

@@ -15,7 +15,7 @@
 
 #define private public // unit tests need to access HostDynamics private variables
 #include "driver/host_dynamics.hpp"
-#define private private // back to normal
+#undef private // back to normal
 
 using namespace haero;
 using namespace driver;
@@ -74,8 +74,8 @@ struct VerticalConvergenceTests {
     hypso_rate(nt,0),
     hydro_maxres(nt,0),
     hydro_avgres(nt,0),
-    hydro_avgrate(nt,0),
     hydro_rate(nt,0),
+    hydro_avgrate(nt,0),
     ps_res(nt,0),
     ps_rate(nt,0),
     ztop_res(nt,0),
@@ -97,8 +97,8 @@ struct VerticalConvergenceTests {
     hypso_rate(levels.size(), 0),
     hydro_maxres(levels.size(), 0),
     hydro_avgres(levels.size(), 0),
-    hydro_avgrate(levels.size(), 0),
     hydro_rate(levels.size(), 0),
+    hydro_avgrate(levels.size(), 0),
     ps_res(levels.size(), 0),
     ps_rate(levels.size(), 0),
     ztop_res(levels.size(), 0),

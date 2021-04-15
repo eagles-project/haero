@@ -91,9 +91,22 @@ class HostDynamics final {
     void init_from_interface_pressures(std::vector<Real> p0,
          AtmosphericConditions& ac);
 
+    /** @brief initialize column data using equally-spaced levels in height coordinates.
 
+      layer thickness dz = ac.ztop/nlev
+
+    */
     void init_from_uniform_heights(const AtmosphericConditions& ac);
 
+
+    /** @brief initialize column data using equally-spaced levels in pressure coordinates.
+
+      layer thickness dp = ac.ptop/nlev
+
+      Note: this layer thickness does not equate to the hydrostatic_dp layer thickness, because
+      the column is only in hydrostatic balance at t = integer multiples of ac.tperiod.
+
+    */
     void init_from_uniform_pressures(const AtmosphericConditions& ac);
 
     /** Write basic information about *this to a string.
