@@ -159,7 +159,7 @@ It follows that the initial virtual potential temperature profile is defined as
   \theta_{v0}(z) = T_{v0}(z)\left(\frac{p_{ref}}{p_0(z)}\right)^\kappa.
 \end{equation}
 The initial water vapor mixing ratio profile is also defined by two parameters, $q_0$ and $q_1$, with default values $q_0=0.015$ kg H$_2$O / kg air and $q_1 = $ 1E-3 m$^{-1}$, as
-\begin{equation}
+\begin{equation}\label{eq:init_qv}
   q_{v0}(z) = q_0e^{-q_1 z}.
 \end{equation}
 Initial densities are defined as
@@ -169,16 +169,18 @@ Initial densities are defined as
 
 \subsection{Discretized column}
 
+The Haero column is defined by first setting the required parameters using the \texttt{haero::driver::AtmosphericConditions} class.
+These include the model top $z_{top}$, maximum vertical velocity $w_0$, and velocity period $t_p$ in \eqref{eq:phi_vel}, the initial virtual temperature profile \eqref{eq:tv}, and the initial water vapor mixing ratio profile \eqref{eq:init_qv}.
+
 In the Haero driver, we emulate the vertical grid staggering used by the HOMME-NH dynamical core \cite{Taylor2020}, which has $n_{lev}$ levels and $n_{lev}+1$ interfaces.
 Levels are indexed by integer values $k$, for $k=1,\dotsc,n_{lev}$ and interfaces are indexed by $k+1/2$, for $k=0,\dotsc,n_{lev}$.
 
-Geopotential and vertical velocity are defined at interfaces;
+In the \texttt{haero::driver::HostDynamics} class, geopotential and vertical velocity are defined at interfaces;
 \begin{align}
   \phi_{k+1/2}(t) &= \frac{2gz_{top}}{\pi}\arctan\left[\tan\frac{\pi \phi_{k+1/2}(0)}{2g z_{top}}\exp\left(\frac{w_0t_p}{2z_{top}} \sin^2 \frac{2\pi t}{t_p}\right)\right], \label{eq:phi_disc}\\
   w_{k+1/2}(t) &= w_0 \sin \frac{\pi \phi_{k+1/2}(t)}{g z_{top}}\sin\frac{2\pi t}{t_p}. \label{eq:w_disc}
 \end{align}
-
-Density, virtual potential temperature, water vapor, and pressure are defined at level midpoints,
+Similarly, density, virtual potential temperature, water vapor, and pressure are defined at level midpoints,
 \begin{align}
   \rho_k(t) &= \rho_0(\overline{\phi_k}(0))\exp\left[\frac{ w_0 t_p}{2z_{top}}\left(\cos\frac{\pi \overline{\phi_k}(t)}{gz_{top}}\cos\frac{2\pi t}{t_p}-\cos\frac{\pi \overline{\phi_{k}}(0)}{gz_{top}}\right)\right], \label{eq:rho_disc}\\
   \theta_{vk}(t) &= \theta_{v0}(\overline{\phi_k}(0)/g), \label{eq:thetav_disc} \\
@@ -188,38 +190,36 @@ p_k(t) &=  \left(p_{ref}^{-\kappa} R \rho_k(t)\theta_{vk}(t)\right)^{1/(1-\kappa
 \end{align}
 where the constants $g = 9.8$ m/s$^2$, $p_{ref} = 10^5$ Pa, and $\kappa = 0.286$; the overline denotes an average, $\overline{\phi_k}(t) = (\phi_{k-1/2}(t) + \phi_{k+1/2}(t))/2$.
 
+Users may opt to initialize a column with uniform spacing in either height or pressure (at interfaces), or to specify their own height or pressure interfaces via an input \texttt{.yaml} file.  
+The model top is defined by \eqref{eq:z_of_p}.  
 
+Unit tests verify the expected 2nd order convergence of the centered finite difference methods used by both HOMME-NH and the Haero driver, and that layer thicknesses sum to the correct values $z_{top}$ and $p_{top}$, as shown in Figure \ref{fig:fd_verification}.
 
-%Column data are initialized as follows:
-%\begin{enumerate}
-%  \item A set of levels and interfaces are defined in one of two ways:
-%  \begin{enumerate}
-%    \item Height level interfaces $z_{1/2}, z_{3/2}, \dotsc, z_{n_{lev}+1/2}$  are chosen such that $z_{1/2} = z_{top}$ and $z_{n_{lev}+1/2} = 0$.
-%        Geopotential $\phi(z_{i+1/2}) = g z_{i+1/2}$ is defined for $i=0,\dotsc,n_{lev}$.
-%    \begin{itemize}
-%      \item Level midpoints are initialized so that $z_i = (z_{i+1/2} + z_{i-1/2})/2$ for $i=1,\dotsc,n_{lev}$. 
-%      \item Level and interface values for $s$ and $\Delta s$ are computed using \eqref{eq:s_coord}.
-%      \item Given a user-specified lapse rate $\Gamma$, hydrostatic pressure $\pi$ is initialized at each level interface and pressure $p$ is initialized at level midpoints using \eqref{eq:hydrostatic_pressure_profile}.
-%    \end{itemize}
-%    \item Pressure level interfaces $\pi_{1/2}, \pi_{3/2}, \dotsc, \pi_{n_{lev}+1/2}$  are chosen such that $\pi_{1/2} = \pi_{top}$ and $\pi_{n_{lev}+1/2} = p_0$.
-%    \begin{itemize}
-%      \item Given a user-specified lapse rate $\Gamma$, geopotential $\phi=gz$ is initialized at each level interface using \eqref{eq:hydrostatic_height_profile}.
-%      \item Level midpoints are initialized so that $z_i = (z_{i+1/2} + z_{i-1/2})/2$ for $i=1,\dotsc,n_{lev}$, and level \& interface values for $s$ and $\Delta s$ are defined using \eqref{eq:s_coord}.
-%      \item Pressure $p$ is defined via \eqref{eq:hydrostatic_pressure_profile} at level midpoints. 
-%    \end{itemize}
-%  \end{enumerate}
-%  \item Pseudodensity is defined at each level midpoint,
-%    \begin{equation}
-%      \left(\partd{\pi}{s}\right)_i = -\frac{g(\pi_{i+1/2}-\pi_{i-1/2})}{z_{top}(\phi_{i+1/2}-\phi_{i-1/2})},
-%    \end{equation}
-%    where we have used $\partial s / \partial z = - 1 /z_{top}$ from \eqref{eq:s_coord}.
-%%    \begin{rem}
-%%    This is an example of the $s$-coordinate cancelling, which is why most models don't explicitly define it.
-%%    \end{rem}
-%  \item A water vapor profile is defined, by choosing constant values for $q_v^{(0)}$ and $q_v^{(1)}$ in \eqref{eq:qv_profile}, and its values are stored at level midpoints.
-%  \item Virtual potential temperature $\theta_v = T_v(p_0/p)^{\kappa}$, with the dry-air constant $\kappa = R_{dry}/c_p$, is defined at level midpoints.
-%  \item The initial velocity profile is defined, usually $w=0$.  
-%\end{enumerate}
+\begin{figure}[H]
+\centering 
+\includegraphics[width=0.8\linewidth]{figures/vconv_plot}
+\caption{Vertical finite difference verification. Clockwise from top left: hydrostatic balance, hypsometric layer thickness, sum of height thicknesses, sum of pressure thicknesses.}\label{fig:fd_verification}
+\end{figure}
+
+\subsubsection{Layer thickness}
+
+Layer thickness in height units is computed directly as 
+\begin{equation}\label{eq:z_thick}
+  \Delta z_k = \left(\phi_{k-1/2} - \phi_{k+1/2}\right)/g,
+\end{equation}
+which reflects the true thickness of a model level in our non-hydrostatic model.
+However, some legacy parameterizations require thickness defined in \emph{pressure} units.
+To support these parameterizations, we compute \texttt{hydrostatic\_dp} as a member of the \texttt{HostDynamics} class.
+This calculation begins by defining the hydrostatic pressure $p_H$ at each interface, $p_{H,k+1/2} = p(\phi_{k+1/2}/g)$ using \eqref{eq:z_of_p}.
+Then the layer thickness is computed as
+\begin{equation}\label{eq:p_thick}
+  \Delta p_{Hk} = p_{H,k+1/2} - p_{H,k-1/2}.
+\end{equation}
+\begin{assume}[Hyrdostatic layer thickness]
+  Pressure thickness is computed via the hydrostatic approximation.  
+\end{assume}
+
+The interface hydrostatic pressures $p_H$ are stored as a private variable, to prevent users from mistaking them for the full non-hydrostatic pressure.
 
 \subsection{Creating a Haero atmosphere}
 
@@ -260,9 +260,10 @@ The above dynamics are associated with the following \emph{tendencies}, the righ
     \dot{\phi}(\phi,t) \equiv \totd{\phi} &= gw_0 \sin \frac{\pi \phi}{g z_{top}}\sin\frac{2\pi t}{t_p},\\
     \dot{\rho}(\phi, t, \rho) \equiv \totd{\rho} &= -\rho \frac{\pi w_0}{z_{top}}\cos\frac{\pi \phi}{g z_{top}}\sin\frac{2\pi t}{t_p},\\
     \dot{\theta_v} \equiv \totd{\theta_v} &= 0,\\
-    \dot{q_v} \equiv \totd{q_v} &= 0.
+    \dot{q_v} \equiv \totd{q_v} &= 0,
   \end{align}
 \end{subequations} 
+where the dot denotes differentiation with respect to time.
 
 %We use an explicit 2nd order Runge-Kutta method, hereafter RK2, for advancing \eqref{eq:column_dynamics} forward in time \cite[\S 8.3.3]{DahlquistBjork}.
 
