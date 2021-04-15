@@ -1,9 +1,12 @@
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 #include "catch2/catch.hpp"
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <cmath>
 
 using namespace haero;
@@ -94,3 +97,73 @@ TEST_CASE("view_pack_helpers", "") {
   }
 }
 
+template <int PackSize> struct PackViewTest {
+  typedef ekat::Pack<Real,PackSize> test_pack_type;
+  typedef ekat::PackInfo<PackSize> test_pack_info;
+
+  Kokkos::View<test_pack_type*> level_view;
+  Kokkos::View<test_pack_type*> intfc_view;
+  int nlev;
+
+  PackViewTest(const int nl) :
+    level_view("level_view", test_pack_info::num_packs(nl)),
+    intfc_view("intfc_view", test_pack_info::num_packs(nl+1)),
+    nlev(nl)
+    {}
+
+  std::string info_string() const;
+};
+
+TEST_CASE ("scalarized views", "" ) {
+
+  const int nlev = 72;
+
+  SECTION ("pack size = 1") {
+    static constexpr int tc_pack_size = 1;
+    PackViewTest<tc_pack_size> testcase(nlev);
+    std::cout << testcase.info_string();
+
+    REQUIRE(ekat::scalarize(testcase.level_view).extent(0) ==
+      tc_pack_size * PackViewTest<tc_pack_size>::test_pack_info::num_packs(nlev));
+    REQUIRE(ekat::scalarize(testcase.intfc_view).extent(0) ==
+      tc_pack_size * PackViewTest<tc_pack_size>::test_pack_info::num_packs(nlev+1));
+
+  }
+  SECTION ("pack size = 2") {
+    static constexpr int tc_pack_size = 2;
+
+    PackViewTest<tc_pack_size> testcase(nlev);
+    std::cout << testcase.info_string();
+
+    REQUIRE(ekat::scalarize(testcase.level_view).extent(0) ==
+      tc_pack_size * PackViewTest<tc_pack_size>::test_pack_info::num_packs(nlev));
+    REQUIRE(ekat::scalarize(testcase.intfc_view).extent(0) ==
+      tc_pack_size * PackViewTest<tc_pack_size>::test_pack_info::num_packs(nlev+1));
+  }
+  SECTION ("pack size = 4") {
+    static constexpr int tc_pack_size = 4;
+
+    PackViewTest<tc_pack_size> testcase(nlev);
+    std::cout << testcase.info_string();
+
+    REQUIRE(ekat::scalarize(testcase.level_view).extent(0) ==
+      tc_pack_size * PackViewTest<tc_pack_size>::test_pack_info::num_packs(nlev));
+    REQUIRE(ekat::scalarize(testcase.intfc_view).extent(0) ==
+      tc_pack_size * PackViewTest<tc_pack_size>::test_pack_info::num_packs(nlev+1));
+  }
+}
+
+template <int PackSize>
+std::string PackViewTest<PackSize>::info_string() const {
+  std::ostringstream ss;
+  ss << "PackViewTest info:\n";
+  ss << "\t" << "nlev = " << nlev << "\n";
+  ss << "\t" << "pack size = " << PackSize << "\n";
+  ss << "\t" << "num_packs (levels) = " << test_pack_info::num_packs(nlev) << "\n";
+  ss << "\t" << "level_view.extent(0) = " << level_view.extent(0) << "\n";
+  ss << "\t" << "ekat::scalarize(level_view).extent(0) = " << ekat::scalarize(level_view).extent(0) << "\n";
+  ss << "\t" << "num_packs (intfcs) = " << test_pack_info::num_packs(nlev+1) << "\n";
+  ss << "\t" << "intfc_view.extent(0) = " << intfc_view.extent(0) << "\n";
+  ss << "\t" << "ekat::scalarize(intfc_view).extent(0) = " << ekat::scalarize(intfc_view).extent(0) << "\n";
+  return ss.str();
+}
