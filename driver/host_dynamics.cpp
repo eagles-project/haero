@@ -291,8 +291,6 @@ void HostDynamics::update_pressure(const AtmosphericConditions& conds) {
   auto phi_local = ekat::scalarize(phi);
   auto pint_local = ekat::scalarize(phydro_int);
 
-  EKAT_ASSERT(phi_local.extent(0) == nlev_ +1);
-
   Kokkos::parallel_for("HostDynamics::hydrostatic_pint", nlev_+1,
     KOKKOS_LAMBDA (const int k) {
       pint_local(k) = hydrostatic_pressure_at_height(phi_local(k)/gravity, conds);
