@@ -18,7 +18,7 @@ TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
   /// it is within numerical round off.
 
   using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>; 
+  using SolutionView = DeviceType::view_1d<double>;
   const double tolerance = 5.0e-9;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
@@ -32,7 +32,7 @@ TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
   for (int i=0; i<1000; ++i) {
     const double  t=  235 +   60*random();  // range 235-295
     const double rh= 0.05 +   .9*random();  // range .05-.95
-    const double c2= 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9 
+    const double c2= 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
     const double c3=  0.1 +  999*random();  // range 0.1 - 1000
 
     SolutionView solution("ternary_nuc_merik2007",5);
@@ -56,9 +56,9 @@ TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
     const double r_kok     = h_solution(4);
 
     double j_log_cpp = 0;
-    double ntot_cpp  = 0; 
+    double ntot_cpp  = 0;
     double nacid_cpp = 0;
-    double namm_cpp  = 0; 
+    double namm_cpp  = 0;
     double r_cpp     = 0;
     MAMNucleationProcess::ternary_nuc_merik2007(t, rh, c2, c3, j_log_cpp, ntot_cpp, nacid_cpp, namm_cpp, r_cpp);
     REQUIRE(fp_helper::equiv(j_log_cpp , j_log_kok, tolerance));
@@ -78,7 +78,7 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_process") {
   /// it is within numerical round off.
 
   using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>; 
+  using SolutionView = DeviceType::view_1d<double>;
   const double tolerance = 5.0e-12;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
@@ -115,9 +115,9 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_process") {
     const double radius_cluster_kok = h_solution(4);
 
     double ratenucl_cpu       = 0;
-    double rateloge_cpu       = 0; 
+    double rateloge_cpu       = 0;
     double cnum_h2so4_cpu     = 0;
-    double cnum_tot_cpu       = 0; 
+    double cnum_tot_cpu       = 0;
     double radius_cluster_cpu = 0;
     MAMNucleationProcess::binary_nuc_vehk2002(temp, rh, so4vol, ratenucl_cpu, rateloge_cpu, cnum_h2so4_cpu, cnum_tot_cpu, radius_cluster_cpu);
     REQUIRE( (fp_helper::equiv(ratenucl_cpu       , ratenucl_kok       , tolerance) || fp_helper::rel(ratenucl_cpu       , ratenucl_kok       , tolerance)) );
@@ -138,8 +138,8 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
   /// it is within numerical round off.
 
   using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>; 
-  using FlagaaView   = DeviceType::view_1d<int>; 
+  using SolutionView = DeviceType::view_1d<double>;
+  using FlagaaView   = DeviceType::view_1d<int>;
   const double tolerance = 5.0e-12;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
@@ -159,19 +159,19 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
 
     SolutionView solution("pbl_nuc_wang2008",6);
     FlagaaView   flags("newnuc_method_flagaa",1);
-    
+
     Kokkos::parallel_for("pbl_nuc_wang2008.mam_nucleation_process", 1,
       KOKKOS_LAMBDA(const int) {
         int flagaa2 = 0;
         double ratenucl=0, rateloge=0, cnum_tot=0, cnum_h2so4=0, cnum_nh3=0, radius_cluster=0;
         mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge,
           cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster);
-        solution(0) = ratenucl;        
-        solution(1) = rateloge;        
-        solution(2) = cnum_tot;        
-        solution(3) = cnum_h2so4;      
-        solution(4) = cnum_nh3;        
-        solution(5) = radius_cluster; 
+        solution(0) = ratenucl;
+        solution(1) = rateloge;
+        solution(2) = cnum_tot;
+        solution(3) = cnum_h2so4;
+        solution(4) = cnum_nh3;
+        solution(5) = radius_cluster;
         flags(0)    = flagaa2;
       }
     );
@@ -188,12 +188,12 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
     const int    flagaa2_kok        = h_flags(0);
 
     double ratenucl_cpu       = 0;
-    double rateloge_cpu       = 0; 
+    double rateloge_cpu       = 0;
     double cnum_tot_cpu       = 0;
-    double cnum_h2so4_cpu     = 0; 
+    double cnum_h2so4_cpu     = 0;
     double cnum_nh3_cpu       = 0;
     double radius_cluster_cpu = 0;
-    int    flagaa2_cpu        = 0; 
+    int    flagaa2_cpu        = 0;
 
     mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2_cpu, ratenucl_cpu, rateloge_cpu, cnum_tot_cpu, cnum_h2so4_cpu, cnum_nh3_cpu, radius_cluster_cpu);
     REQUIRE( (fp_helper::equiv(ratenucl_cpu      , ratenucl_kok        , tolerance) || fp_helper::rel(ratenucl_cpu      , ratenucl_kok        , tolerance)) );
@@ -215,8 +215,8 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
   /// it is within numerical round off.
 
   using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>; 
-  using FlagaaView   = DeviceType::view_1d<int>; 
+  using SolutionView = DeviceType::view_1d<double>;
+  using FlagaaView   = DeviceType::view_1d<int>;
   const double tolerance = 1.0e-08;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
@@ -270,10 +270,10 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     for (int i=0; i<maxd_asize; ++i) {
       h_dplom_sect_view(i) = dplom_sect[i];
       h_dphim_sect_view(i) = dphim_sect[i];
-    }  
+    }
     Kokkos::deep_copy(dplom_sect_view, h_dplom_sect_view);
     Kokkos::deep_copy(dphim_sect_view, h_dphim_sect_view);
-    
+
     Kokkos::parallel_for("mer07_veh02_nuc_mosaic_1box.mam_nucleation_process", 1,
       KOKKOS_LAMBDA(const int) {
         int    isize_nuc    = 0;
@@ -311,12 +311,12 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
           ldiagaa,
           &dnclusterdt);
 
-        solution(0) = qnuma_del    ;        
-        solution(1) = qso4a_del    ;        
-        solution(2) = qnh4a_del    ;        
-        solution(3) = qh2so4_del   ;      
-        solution(4) = qnh3_del     ;        
-        solution(5) = dens_nh4so4a ; 
+        solution(0) = qnuma_del    ;
+        solution(1) = qso4a_del    ;
+        solution(2) = qnh4a_del    ;
+        solution(3) = qh2so4_del   ;
+        solution(4) = qnh3_del     ;
+        solution(5) = dens_nh4so4a ;
         solution(6) = dnclusterdt  ;
         flags(0)    = isize_nuc    ;
       }
@@ -335,13 +335,13 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     const int    isize_nuc_kok     = h_flags(0);
 
     double qnuma_del_cpu    = 0;
-    double qso4a_del_cpu    = 0; 
+    double qso4a_del_cpu    = 0;
     double qnh4a_del_cpu    = 0;
-    double qh2so4_del_cpu   = 0; 
+    double qh2so4_del_cpu   = 0;
     double qnh3_del_cpu     = 0;
     double dens_nh4so4a_cpu = 0;
     double dnclusterdt_cpu  = 0;
-    int    isize_nuc_cpu    = 0; 
+    int    isize_nuc_cpu    = 0;
 
     mam_nucleation_process.mer07_veh02_nuc_mosaic_1box(
           newnuc_method_flagaa,
@@ -414,9 +414,10 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   ColumnView press("pressure", num_vert_packs);
   ColumnView rel_hum("relative humidity", num_vert_packs);
   ColumnView ht("height", num_iface_packs);
+  ColumnView pdel("hydrostatic_dp", num_vert_packs);
   Real pblh = 100.0;
 
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pblh);
+  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel, pblh);
 
   // Test basic construction.
   SECTION("construct") {

@@ -7,12 +7,14 @@ Atmosphere::Atmosphere(int num_levels,
                        const ColumnView press,
                        const ColumnView rel_hum,
                        const ColumnView ht,
+                       const ColumnView pdel,
                        Real pblh):
   num_levels_(num_levels),
   temperature_(temp),
   pressure_(press),
   relative_humidity_(rel_hum),
   height_(ht),
+  hydrostatic_dp_(pdel),
   pblh_(pblh) {
   EKAT_REQUIRE_MSG(num_levels > 0,
                    "Number of vertical levels must be positive");
@@ -30,6 +32,8 @@ Atmosphere::Atmosphere(int num_levels,
                    "Pressure view must have extent == " << num_vert_packs);
   EKAT_REQUIRE_MSG(rel_hum.extent(0) == num_vert_packs,
                    "Relative humidity view must have extent == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(pdel.extent(0) == num_vert_packs,
+                   "Hydrostatic pressure thickness must have extent == " << num_vert_packs);
   int num_iface_packs = (num_levels_+1)/HAERO_PACK_SIZE;
   if (num_iface_packs * HAERO_PACK_SIZE < (num_levels_+1)) {
     num_iface_packs++;
@@ -71,6 +75,12 @@ void* a_height_c(void* a)
   auto* atm = static_cast<Atmosphere*>(a);
   auto& h = atm->height();
   return (void*)h.data();
+}
+
+void* a_hydrostatic_dp_c(void* a) {
+  auto* atm = static_cast<Atmosphere*>(a);
+  auto& hdp = atm->hydrostatic_dp();
+  return (void*)hdp.data();
 }
 
 Real a_pblh_c(void* a)

@@ -29,6 +29,7 @@ class Atmosphere final {
              const ColumnView press,
              const ColumnView rel_hum,
              const ColumnView ht,
+             const ColumnView pdel,
              Real pblh);
 
   /// Destructor.
@@ -51,13 +52,17 @@ class Atmosphere final {
   KOKKOS_INLINE_FUNCTION
   const ColumnView relative_humidity() const { return relative_humidity_; }
 
-  /// Returns height data [m], defined at interfaces between vertical levels.
+  /// Returns geopotential height data [m], defined at interfaces between vertical levels.
   KOKKOS_INLINE_FUNCTION
   const ColumnView height() const { return height_; }
 
   /// Returns the planetary boundary height [m].
   KOKKOS_INLINE_FUNCTION
   Real planetary_boundary_height() const { return pblh_; }
+
+  /// Returns the thickness of a layer in pressure units, based on the hydrostatic approximation
+  KOKKOS_INLINE_FUNCTION
+  const ColumnView hydrostatic_dp() const {return hydrostatic_dp_;}
 
   private:
 
@@ -69,6 +74,7 @@ class Atmosphere final {
   const ColumnView pressure_;
   const ColumnView relative_humidity_;
   const ColumnView height_;
+  const ColumnView hydrostatic_dp_;
 
   // Planetary boundary height.
   Real pblh_;

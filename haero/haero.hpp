@@ -26,6 +26,7 @@ using PackInfo = ekat::PackInfo<HAERO_PACK_SIZE>;
 /// accessible at `view(pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
 /// See Chapter 3 of the design document for an explanation of packs.
 using ColumnView = DeviceType::view_1d<PackType>;
+using ConstColumnView = DeviceType::view_1d<const PackType>;
 
 /// Views of this type store packs defined for each species population (for
 /// aerosols or gases), with ceil(num_levels/HAERO_PACK_SIZE) packs spanning

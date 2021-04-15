@@ -171,6 +171,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   Kokkos::View<PackType*> temp("temperature", num_vert_packs);
   Kokkos::View<PackType*> press("pressure", num_vert_packs);
   Kokkos::View<PackType*> rel_hum("relative humidity", num_vert_packs);
+  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_vert_packs);
   int num_iface_packs = (num_levels+1)/HAERO_PACK_SIZE;
   if (num_iface_packs * HAERO_PACK_SIZE < (num_levels+1)) {
     num_iface_packs++;
@@ -184,7 +185,7 @@ TEST_CASE("process_tests", "prognostic_process") {
     Kokkos::deep_copy(temp, host_temp);
   }
   Real pblh = 100.0;
-  Atmosphere atmos(num_levels, temp, press, rel_hum, ht, pblh);
+  Atmosphere atmos(num_levels, temp, press, rel_hum, ht, pdel, pblh);
 
   std::vector<int> num_aero_species(num_modes);
   std::vector<Mode> modes = create_mam4_modes();

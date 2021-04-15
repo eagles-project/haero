@@ -1,9 +1,10 @@
 #ifndef HAERO_DRIVER_ATMOSPHERE_HPP
 #define HAERO_DRIVER_ATMOSPHERE_HPP
 
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "haero/physical_constants.hpp"
 #include "haero/floating_point.hpp"
+#include "haero/utils.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 #include <cmath>
@@ -11,6 +12,10 @@
 
 namespace haero {
 namespace driver {
+
+// fwd decl.
+KOKKOS_INLINE_FUNCTION
+Real hydrostatic_pressure_at_height(const Real z, const Real p0, const Real T0, const Real Gamma);
 
 /** @defgroup ReferenceAtmosphere ReferenceAtmosphere
 
@@ -38,18 +43,23 @@ struct AtmosphericConditions {
   /// maximum magnitude of vertical velocity [m/s]
   Real w0;
   /// top of model [m]
-  int ztop;
+  Real ztop;
   /// period of velocity oscillation [s]
-  int tperiod;
+  Real tperiod;
   /// initial water vapor mass mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
   Real qv0;
   /// initial decay rate of water vapor mass mixing ratio with height [per m]
   Real qv1;
+  /// top of model [Pa]
+  Real ptop;
 
   /** Construct and return a hydrostatic instance of AtmosphericConditions
 
     This method checks that the input arguments are within reasonably expected
     bounds for the standard units listed below.
+
+    Note: Constructor takes int args for ztop and tperiod; we do not allow units of length
+      smaller than 1 meter, or units of time smaller than 1 second.
 
     @param [in] Tv0_ reference virtual temperature [K]
     @param [in] Gammav_ virtual temperature lapse rate [K/m]
@@ -59,12 +69,30 @@ struct AtmosphericConditions {
     @param [in] qv0_ water vapor mixing ratio at z = 0 [kg H<sub>2</sub>O / kg air]
     @param [in] qv1_ water vapor decay rate [1/m]
   */
+  KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const Real Tv0_ = 300, const Real Gammav_ = 0.01, const Real w0_ = 1,
-   const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3);
+   const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3) :
+    Tv0(Tv0_), Gammav(Gammav_), w0(w0_), ztop(ztop_), tperiod(tperiod_), qv0(qv0_), qv1(qv1_),
+    ptop(hydrostatic_pressure_at_height(ztop_, AtmosphericConditions::pref, Tv0_, Gammav_)) {
+    /// check valid input
+    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(Tv0_, 273, 323),
+      "unexpected T0, check units = K");
+    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(w0_, 0, 10), "unexpected w0, check units = m/s");
+    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(Gammav_, 0, 0.02),
+      "unexpected lapse rate, check units = K/m");
+    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(ztop_, 3E3,40E3),
+      "unexpected model top, check units = m");
+    EKAT_ASSERT_MSG(tperiod_>0, "nonnegative oscillation period required.");
+    tperiod = tperiod_;
+    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(qv0_, 0, 0.1),
+      "unexpected water vapor mixing ratio; check units = kg/kg");
+    EKAT_ASSERT_MSG(qv1_ >= 0, "nonnegative decay rate required.");
+}
 
   KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const AtmosphericConditions& other) : Tv0(other.Tv0), Gammav(other.Gammav),
-    w0(other.w0), ztop(other.ztop), tperiod(other.tperiod), qv0(other.qv0), qv1(other.qv1) {}
+    w0(other.w0), ztop(other.ztop), tperiod(other.tperiod), qv0(other.qv0), qv1(other.qv1),
+    ptop(other.ptop) {}
 
   /// Write instance info to string
   std::string info_string(const int tab_level=0) const;

@@ -1,7 +1,7 @@
 #ifndef HAERO_DRIVER_HOST_STATE_HPP
 #define HAERO_DRIVER_HOST_STATE_HPP
 
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/math_helpers.hpp"
 #include "host_params.hpp"
@@ -15,7 +15,6 @@ namespace driver {
 
 class HostDynamics final {
   public:
-    using ColumnView = Kokkos::View<PackType*>;
 
     /// vertical velocity (interface variable)
     ColumnView w;
@@ -30,6 +29,16 @@ class HostDynamics final {
     ColumnView qv;
     /// pressure (midpoint variable)
     ColumnView p;
+    /// layer thickness in height (midpoint variable)
+    ColumnView dz;
+    /** approximate layer thickness in pressure (midpoint variable)
+
+      "approximate" because it's calculated based on the hydrostatic assumption;
+      in a non-hydrostatic atmosphere, it's an approximation.
+
+      This is analogous to "pseudo-density" in HOMME-NH.
+    */
+    ColumnView hydrostatic_dp;
 
     /// elapsed time
     Real t;
@@ -46,10 +55,13 @@ class HostDynamics final {
       rho("rho",PackInfo::num_packs(nl)),
       thetav("thetav",PackInfo::num_packs(nl)),
       qv("qv",PackInfo::num_packs(nl)),
-      p("p",PackInfo::num_packs(nl)),
+      p("plev",PackInfo::num_packs(nl)),
+      dz("dzlev", PackInfo::num_packs(nl)),
+      hydrostatic_dp("pseudo_density", PackInfo::num_packs(nl)),
       t(0), ps(0), nlev_(nl),
       phi0("phi0",PackInfo::num_packs(nl+1)),
-      rho0("rho0", PackInfo::num_packs(nl))
+      rho0("rho0", PackInfo::num_packs(nl)),
+      phydro_int("hydrostatic_pressure_interface", PackInfo::num_packs(nl+1))
     {}
 
     HostDynamics() = delete;
@@ -59,19 +71,43 @@ class HostDynamics final {
 
     /** Initialize column data at t=0 to stationary, hydrostatic balance
 
+      Calling this method will change the ztop/ptop values of AtmosphericConditions to match the
+      first height value.
+
       @param z0 initial heights of interfaces
       @param ac atmospheric conditions to define parameters
     */
     void init_from_interface_heights(std::vector<Real> z0,
-        const AtmosphericConditions& ac);
+        AtmosphericConditions& ac);
 
     /** Initialize column data at t=0 to stationary, hydrostatic balance
+
+      Calling this method will change the ztop/ptop values of AtmosphericConditions to match the
+      first pressure value.
 
       @param p0 initial pressure at interfaces
       @param ac atmospheric conditions to define parameters
     */
     void init_from_interface_pressures(std::vector<Real> p0,
-        const AtmosphericConditions& ac);
+         AtmosphericConditions& ac);
+
+    /** @brief initialize column data using equally-spaced levels in height coordinates.
+
+      layer thickness dz = ac.ztop/nlev
+
+    */
+    void init_from_uniform_heights(const AtmosphericConditions& ac);
+
+
+    /** @brief initialize column data using equally-spaced levels in pressure coordinates.
+
+      layer thickness dp = ac.ptop/nlev
+
+      Note: this layer thickness does not equate to the hydrostatic_dp layer thickness, because
+      the column is only in hydrostatic balance at t = integer multiples of ac.tperiod.
+
+    */
+    void init_from_uniform_pressures(const AtmosphericConditions& ac);
 
     /** Write basic information about *this to a string.
     */
@@ -93,12 +129,17 @@ class HostDynamics final {
 
     /** @brief Creates a haero::Atmosphere instance to provide dynamics input data to parameterizations.
 
+      Note: Atmosphere member variables that are identical to existing HostDynamics ColumnView members
+        are simple view copies (e.g., hydrostatic_dp and pressure). Atmosphere member variables
+        that are not already ColumnViews in HostDynamics must be passed as ColumnViews to
+        this function (e.g., temperature, height, and relative humidity).
+
       @param [in/out] temp view to store temperature (rank 1, size = nlev)
       @param [in/out] relh view to store relative humidity (rank 1, size = nlev)
       @param [in/out] z view to store level interface heights (rank 1, size = nlev + 1)
     */
-    Atmosphere create_atmospheric_state(Kokkos::View<PackType*> temp,
-      Kokkos::View<PackType*> relh, Kokkos::View<PackType*> z) const;
+    Atmosphere create_atmospheric_state(ColumnView temp,
+      ColumnView relh, ColumnView z) const;
 
     /** @brief Updates a haero::Atmosphere instance's data (e.g., after a change in the time variable)
 
@@ -106,15 +147,26 @@ class HostDynamics final {
     */
     void update_atmospheric_state(Atmosphere& atm) const;
 
-  protected:
+    inline int nlev() const {return nlev_;}
+
+
+
+  private:
     /// number of levels in column
     int nlev_;
     /// intial geopotential values
     ColumnView phi0;
     /// initial density values
     ColumnView rho0;
-
+    /// initial density at the surface
     Real rho0surf;
+    /// hydrostatic pressure (interface variable)
+    ColumnView phydro_int;
+
+    /** @brief compute discrete approximations of vertical derivatives using centered finite differences
+      as described by Taylor et al. 2020.
+    */
+    void update_pressure(const AtmosphericConditions& conds);
 };
 
 /** @brief Defines the Lagrangian geopotential for HostDynamics' 1d toy model.

@@ -1,14 +1,13 @@
 #ifndef HAERO_NC_WRITER_HPP
 #define HAERO_NC_WRITER_HPP
 
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "haero/utils.hpp"
 #include "haero/mode.hpp"
 #include "haero/aerosol_species.hpp"
 #include "haero/gas_species.hpp"
 #include "haero/atmosphere.hpp"
-#include "column_base.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "netcdf.h"
@@ -36,10 +35,6 @@ class NcWriter {
   public:
     /// key-value pairs for metadata attributes
     typedef std::pair<std::string,std::string> text_att_type;
-
-    using ColumnView = Kokkos::View<PackType*>;
-    using SpeciesColumnView = Kokkos::View<PackType**>;
-    using ModalColumnView = Kokkos::View<PackType**>;
 
     /// Use the correct netcdf real kind parameter
     static constexpr int NC_REAL_KIND = (std::is_same<Real,double>::value ? NC_DOUBLE : NC_FLOAT);
