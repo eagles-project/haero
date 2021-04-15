@@ -299,7 +299,6 @@ void HostDynamics::update_pressure(const AtmosphericConditions& conds) {
   // differences at level midpoints
 
   auto dz_local = ekat::scalarize(dz);
-  EKAT_ASSERT(dz_local.extent(0) == nlev_);
 
   auto dph = ekat::scalarize(hydrostatic_dp);
 
