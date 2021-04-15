@@ -77,7 +77,7 @@ void* a_height_c(void* a)
   return (void*)h.data();
 }
 
-void* a_hydrostatic_dep_c(void* a) {
+void* a_hydrostatic_dp_c(void* a) {
   auto* atm = static_cast<Atmosphere*>(a);
   auto& hdp = atm->hydrostatic_dp();
   return (void*)hdp.data();
