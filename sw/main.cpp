@@ -21,9 +21,12 @@ using OverriddenParameterList = std::vector<std::pair<std::string, haero::Real>>
 struct OutputData {
   // Names and values of overridden input parameters.
   OverriddenParameterList params;
-  // Output data.
-  std::vector<haero::Real> q, qqcw, dgncur_a, dgncur_awet,
-                           wetdens;
+  // Modal aerosol number concentrations [# aero molecules / kg air]
+  std::vector<haero::Real> number_concs;
+  // Aerosol mass mixing ratios [kg aerosol / kg air]
+  std::vector<std::vector<haero::Real>> aero_mmrs;
+  // Gas mass mixing ratios [kg gas / kg air]
+  std::vector<haero::Real> gas_mmrs;
 };
 
 // Writes simulation output data to a Python module.
@@ -71,21 +74,21 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       // Aerosol prognostics.
       for (int m = 0; m < num_modes; ++m) {
         num_concs(m, l) = param_walk.number_concs[m];
-        for (size_t s = 0; s < param_walk.aero_mix_fractions[m].size(); ++s) {
+        for (size_t s = 0; s < param_walk.aero_mmrs[m].size(); ++s) {
           int p = aero_config.population_index(m, static_cast<int>(s));
-          int_aero(p, l) = param_walk.aero_mix_fractions[m][s];
+          int_aero(p, l) = param_walk.aero_mmrs[m][s];
         }
         // TODO: Cloudborne aerosols not yet treated!
       }
       for (int g = 0; g < num_gases; ++g) {
-        gases(g, l) = param_walk.gas_mix_fractions[g];
+        gases(g, l) = param_walk.gas_mmrs[g];
       }
     }
   }
 
   // How many non-plbh parameters are we overriding?
-  int num_params = param_walk.parameters.size();
-  if (param_walk.parameters.find("planetary_boundary_layer_height") != param_walk.parameters.end()) {
+  int num_params = param_walk.ensemble.size();
+  if (param_walk.ensemble.find("planetary_boundary_layer_height") != param_walk.ensemble.end()) {
     num_params--;
   }
   EKAT_REQUIRE_MSG(((num_params < 1) or (num_params > 5)),
@@ -96,13 +99,13 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
   std::vector<OverriddenParameterList> overridden_params;
   for (int l = 0; l < num_levels; ++l) {
     if (num_params == 1) {
-      auto iter = param_walk.parameters.begin();
+      auto iter = param_walk.ensemble.begin();
       auto name = iter->first;
       const auto& vals = iter->second;
       override_parameter(prognostics, atmosphere, name, vals[l]);
       overridden_params.push_back({{name, vals[l]}});
     } else if (num_params == 2) {
-      auto iter = param_walk.parameters.begin();
+      auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
       const auto& vals1 = iter->second;
       iter++;
@@ -116,7 +119,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       overridden_params.push_back({{name1, vals1[j1]},
                                    {name2, vals2[j2]}});
     } else if (num_params == 3) {
-      auto iter = param_walk.parameters.begin();
+      auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
       const auto& vals1 = iter->second;
       iter++;
@@ -137,7 +140,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
                                    {name2, vals2[j2]},
                                    {name3, vals3[j3]}});
     } else if (num_params == 4) {
-      auto iter = param_walk.parameters.begin();
+      auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
       const auto& vals1 = iter->second;
       iter++;
@@ -165,7 +168,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
                                    {name3, vals3[j3]},
                                    {name4, vals4[j4]}});
     } else { // if (num_params == 5)
-      auto iter = param_walk.parameters.begin();
+      auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
       const auto& vals1 = iter->second;
       iter++;
@@ -213,18 +216,23 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // Count up the number of simulations we need (excluding the planetary
   // boundary layer parameter). We can run all simulations simultaneously
   // by setting data for each simulation at a specific vertical level.
-  std::vector<haero::Real> pblhs;
+  std::vector<haero::Real> pblhs, dts;
   int num_levels = 1;
-  for (auto iter = param_walk.parameters.begin();
-       iter != param_walk.parameters.end(); ++iter) {
+  for (auto iter = param_walk.ensemble.begin();
+       iter != param_walk.ensemble.end(); ++iter) {
     if (iter->first == "planetary_boundary_layer_height") {
       pblhs = iter->second;
+    } else if (iter->first == "dt") {
+      dts = iter->second;
     } else {
       num_levels *= static_cast<int>(iter->second.size());
     }
   }
   if (pblhs.empty()) { // pblh is not a walked parameter!
     pblhs.push_back(param_walk.planetary_boundary_layer_height);
+  }
+  if (dts.empty()) { // dt is not a walked parameter!
+    dts.push_back(param_walk.dt);
   }
 
   // Create a model initialized for a number of vertical levels equal to the
@@ -272,37 +280,45 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // Run a series of simulations for each value of the planetary boundary
   // layer height, gathering output data. The outer loop is for different
   std::vector<OutputData> output_data;
-  for (size_t i = 0; i < pblhs.size(); ++i) {
+  for (auto pblh: pblhs) {
     // Initialize the input.
     auto overridden_params = initialize_input(aero_config, param_walk,
       *atmosphere, *prognostics);
-    atmosphere->set_planetary_boundary_height(pblhs[i]);
+    atmosphere->set_planetary_boundary_height(pblh);
 
-    // Run the thing.
-    haero::Real t = 0.0, dt = param_walk.dt;
-    for (int n = 0; n < param_walk.nsteps; ++n) {
-      process->run(aero_config, t, dt, *prognostics, *atmosphere, *diagnostics,
-                   *tendencies);
+    for (auto dt: dts) {
+      // Run the thing.
+      haero::Real t = 0.0, t_end = param_walk.total_time;
+      while (t < t_end) {
+        process->run(aero_config, t, dt, *prognostics, *atmosphere, *diagnostics,
+                     *tendencies);
 
-      // Advance the time and prognostic state.
-      t += dt;
-      prognostics->scale_and_add(dt, *tendencies);
-    }
-
-    // If the planetary boundary layer height is actually a walked parameter,
-    // add it each one of our list of overridden parameters.
-    if (pblhs.size() > 1) {
-      for (int l = 0; l < num_levels; ++l) {
-        overridden_params[l].push_back({"planetary_boundary_layer_height", pblhs[i]});
+        // Advance the time and prognostic state.
+        t += dt;
+        prognostics->scale_and_add(dt, *tendencies);
       }
-    }
 
-    // Stash output data.
-    for (auto params: overridden_params) {
-      OutputData output;
-      output.params = params;
-      // TODO: I'm not sure yet that we should adopt the box model's output.
-      output_data.push_back(output);
+      // If the planetary boundary layer height is actually a walked parameter,
+      // add it each one of our list of overridden parameters.
+      if (pblhs.size() > 1) {
+        for (int l = 0; l < num_levels; ++l) {
+          overridden_params[l].push_back({"planetary_boundary_layer_height", pblh});
+        }
+      }
+
+      // Same for time steps.
+      if (dts.size() > 1) {
+        for (int l = 0; l < num_levels; ++l) {
+          overridden_params[l].push_back({"dt", dt});
+        }
+      }
+
+      // Stash output data.
+      for (auto params: overridden_params) {
+        OutputData output;
+        output.params = params;
+        output_data.push_back(output);
+      }
     }
   }
 

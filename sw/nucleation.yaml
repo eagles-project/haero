@@ -4,11 +4,11 @@ process:
   mam: newnuc
   haero: MAMNucleationFProcess
 
-timestepping:
+timestepping: # [s]
   dt: 3600
-  nsteps: 1
+  total_time: 3600
 
-parameters:
+ensemble:
   temperature: [270, 276, 0.5]
   relative_humidity: [0, 1, 0.1]
   qh2so4: [0, 1.e-3, 1.e-4]  # _aero for aerosol data
@@ -20,7 +20,7 @@ atmosphere:
   pressure: 100000
   relative_humidity: 0.95
   height: 3000
-  #  cloud_fraction: 0.0
+  hydrostatic_dp: 200
 
 aerosols:
   accumulation:

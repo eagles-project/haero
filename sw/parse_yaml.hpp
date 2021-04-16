@@ -31,20 +31,23 @@ struct ParameterWalk {
   std::string process;
 
   // timestepping parameters
-  haero::Real dt;
-  int nsteps;
+  haero::Real dt, total_time;
 
-  // parameters to walk (name -> vector of values)
-  std::map<std::string, std::vector<haero::Real>> parameters;
+  // ensemble: parameters to walk (name -> vector of values)
+  std::map<std::string, std::vector<haero::Real>> ensemble;
 
   // atmospheric state parameters
   haero::Real temperature, pressure, relative_humidity, height,
-              cloud_fraction, planetary_boundary_layer_height;
+              hydrostatic_dp, planetary_boundary_layer_height;
 
   // aerosol initial data
+
+  // Modal aerosol number concentrations [# aero molecules / kg air]
   std::vector<haero::Real> number_concs;
-  std::vector<std::vector<haero::Real>> aero_mix_fractions;
-  std::vector<haero::Real> gas_mix_fractions;
+  // Aerosol mass mixing ratios [kg aerosol / kg air]
+  std::vector<std::vector<haero::Real>> aero_mmrs;
+  // Gas mass mixing ratios [kg gas / kg air]
+  std::vector<haero::Real> gas_mmrs;
 };
 
 /// This function reads input from a YAML input file. If an error is

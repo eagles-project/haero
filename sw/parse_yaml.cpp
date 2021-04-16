@@ -30,23 +30,23 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
     if (root["timestepping"] and root["timestepping"].IsMap()) {
       auto ts = root["timestepping"];
       if (ts["dt"]) {
-        pw.dt = ts["dt"].as<double>();
+        pw.dt = ts["dt"].as<haero::Real>();
       } else {
         throw YamlException("'dt' not found in timestepping section!\n");
       }
-      if (ts["nsteps"]) {
-        pw.nsteps = ts["nsteps"].as<int>();
+      if (ts["total_time"]) {
+        pw.total_time = ts["total_time"].as<haero::Real>();
       } else {
-        throw YamlException("'nsteps' not found in timestepping section!\n");
+        throw YamlException("'total_time' not found in timestepping section!\n");
       }
     } else {
       throw YamlException("Did not find a valid timestepping section!\n");
       exit(1);
     }
 
-    // parameters section
-    if (root["parameters"] and root["parameters"].IsMap()) {
-      auto params = root["parameters"];
+    // enѕemble section
+    if (root["ensemble"] and root["ensemble"].IsMap()) {
+      auto params = root["ensemble"];
       for (auto iter = params.begin(); iter != params.end(); ++iter) {
         auto param = iter->second;
         if (param.IsSequence()) {
@@ -62,15 +62,15 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
             }
             if (not (value1 < value2)) { // [start, stop, step]
               len = static_cast<size_t>((value1 - value0)/value2) + 1;
-              pw.parameters[param_name].resize(len);
+              pw.ensemble[param_name].resize(len);
               for (int j = 0; j < len; ++j) {
-                pw.parameters[param_name][j] = value0 + j*value2;
+                pw.ensemble[param_name][j] = value0 + j*value2;
               }
             } else {
-              pw.parameters[param_name] = {value0, value1, value2};
+              pw.ensemble[param_name] = {value0, value1, value2};
             }
           } else {
-            pw.parameters[param_name] = param.as<std::vector<Real>>();
+            pw.ensemble[param_name] = param.as<std::vector<Real>>();
           }
         } else {
           throw YamlException(std::string("Parameter '") +
@@ -79,7 +79,7 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
         }
       }
     } else {
-      throw YamlException("Did not find a valid parameters section!\n");
+      throw YamlException("Did not find a valid ensemble section!\n");
     }
 
     // atmosphere section
@@ -105,10 +105,10 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
       } else {
         throw YamlException("Did not find 'height' in the atmosphere section!\n");
       }
-      if (atm["cloud_fraction"]) {
-        pw.cloud_fraction = atm["cloud_fraction"].as<Real>();
+      if (atm["hydrostatic_dp"]) {
+        pw.hydrostatic_dp = atm["hydrostatic_dp"].as<Real>();
       } else {
-        throw YamlException("Did not find 'cloud_fraction' in the atmosphere section!\n");
+        throw YamlException("Did not find 'hydrostatic_dp' in the atmosphere section!\n");
       }
     } else {
       throw YamlException("Did not find a valid atmosphere section!\n");
@@ -116,9 +116,9 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
 
     // aerosols section
     pw.number_concs.resize(aerosol_config.h_aerosol_modes.size());
-    pw.aero_mix_fractions.resize(aerosol_config.h_aerosol_modes.size());
+    pw.aero_mmrs.resize(aerosol_config.h_aerosol_modes.size());
     std::vector<int> found_mode(pw.number_concs.size(), 0);
-    std::vector<std::vector<int>> found_aerosol(pw.aero_mix_fractions.size());
+    std::vector<std::vector<int>> found_aerosol(pw.aero_mmrs.size());
     if (root["aerosols"] and root["aerosols"].IsMap()) {
       auto aerosols = root["aerosols"];
       for (auto iter = aerosols.begin(); iter != aerosols.end(); ++iter) {
@@ -134,11 +134,11 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
             }
           }
 
-          if (mode_index < pw.aero_mix_fractions.size()) {
+          if (mode_index < pw.aero_mmrs.size()) {
             // Get the initial data for the aerosol species in this mode.
             auto mode_species = aerosol_config.aerosol_species_for_mode(mode_index);
             bool found_number_conc = false;
-            pw.aero_mix_fractions[mode_index].resize(mode_species.size());
+            pw.aero_mmrs[mode_index].resize(mode_species.size());
             found_aerosol[mode_index].resize(mode_species.size());
             for (auto mf_iter = mode.begin(); mf_iter != mode.end(); ++mf_iter) {
               auto aero_name = mf_iter->first.as<std::string>();
@@ -156,7 +156,7 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
                   }
                 }
                 if (aero_index < mode_species.size()) {
-                  pw.aero_mix_fractions[mode_index][aero_index] = aero_species.as<Real>();
+                  pw.aero_mmrs[mode_index][aero_index] = aero_species.as<Real>();
                 } else {
                   throw YamlException(std::string("Found invalid aerosol species '") +
                     aero_name + std::string("' within mode '") + mode_name +
@@ -197,8 +197,8 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
     }
 
     // gases section
-    pw.gas_mix_fractions.resize(aerosol_config.h_gas_species.size());
-    std::vector<int> found_gas(pw.gas_mix_fractions.size(), 0);
+    pw.gas_mmrs.resize(aerosol_config.h_gas_species.size());
+    std::vector<int> found_gas(pw.gas_mmrs.size(), 0);
     if (root["gases"] and root["gases"].IsMap()) {
       auto gases = root["gases"];
       for (auto iter = gases.begin(); iter != gases.end(); ++iter) {
@@ -211,8 +211,8 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
             break;
           }
         }
-        if (index < pw.gas_mix_fractions.size()) {
-          pw.gas_mix_fractions[index] = gas.as<Real>();
+        if (index < pw.gas_mmrs.size()) {
+          pw.gas_mmrs[index] = gas.as<Real>();
         } else {
           throw YamlException(std::string("Found invalid gas '") +
             gas_name + "' in the gases section!");
