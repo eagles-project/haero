@@ -24,12 +24,15 @@ class Atmosphere final {
   ///                managed by the host model
   /// @param [in] pblh The column-specific planetary boundary height [m],
   ///                  computed by the host model
+  /// @param [in] dp The hydrostatic "pressure thickness" defined as the
+  ///                difference in hydrostatic pressure levels at interfaces
+  ///                bounding each vertical level [Pa]
   Atmosphere(int num_levels,
              const ColumnView temp,
              const ColumnView press,
              const ColumnView rel_hum,
              const ColumnView ht,
-             const ColumnView pdel,
+             const ColumnView dp,
              Real pblh);
 
   /// Destructor.

@@ -32,7 +32,7 @@ Atmosphere::Atmosphere(int num_levels,
                    "Pressure view must have extent == " << num_vert_packs);
   EKAT_REQUIRE_MSG(rel_hum.extent(0) == num_vert_packs,
                    "Relative humidity view must have extent == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(pdel.extent(0) == num_vert_packs,
+  EKAT_REQUIRE_MSG(dp.extent(0) == num_vert_packs,
                    "Hydrostatic pressure thickness must have extent == " << num_vert_packs);
   int num_iface_packs = (num_levels_+1)/HAERO_PACK_SIZE;
   if (num_iface_packs * HAERO_PACK_SIZE < (num_levels_+1)) {

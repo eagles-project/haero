@@ -251,8 +251,9 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   haero::ColumnView press("pressure", num_levels);
   haero::ColumnView rel_hum("relative humidity", num_levels);
   haero::ColumnView ht("height", num_levels+1);
+  haero::ColumnView dp("hydrostatic pressure thickness", num_levels);
   auto* atmosphere = new haero::Atmosphere(num_levels, temp, press, rel_hum, ht,
-                       param_walk.planetary_boundary_layer_height);
+                       dp, param_walk.planetary_boundary_layer_height);
 
   // Create tendencies for the given prognostics.
   auto* tendencies = new haero::Tendencies(*prognostics);
