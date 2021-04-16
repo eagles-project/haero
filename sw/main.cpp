@@ -36,10 +36,52 @@ void write_py_module(const char* py_module_name,
 
 // Overrides the parameter with the given name using the given value within
 // the aerosol prognostics or atmospheric state.
-void override_parameter(haero::Prognostics& prognostics,
+void override_parameter(const haero::ModalAerosolConfig& aero_config,
+                        haero::Prognostics& prognostics,
                         haero::Atmosphere& atmosphere,
+                        int level,
                         const std::string& param_name,
                         haero::Real param_value) {
+  size_t colon = param_name.find(':');
+  if (colon != std::string::npos) { // mode:aerosol
+    auto mode_name = param_name.substr(0, colon);
+    auto aero_name = param_name.substr(colon+1, param_name.length());
+    int mode_index = aero_config.aerosol_mode_index(mode_name);
+    int aero_index = aero_config.aerosol_species_index(mode_index, aero_name);
+    int pop_index = aero_config.population_index(mode_index, aero_index);
+    auto int_aerosols = prognostics.interstitial_aerosols();
+    int_aerosols(pop_index, level) = param_value;
+  } else {
+    // gas or mode?
+    int mode_index = aero_config.aerosol_mode_index(param_name);
+    int gas_index = aero_config.gas_index(param_name);
+    if (mode_index != -1) {
+      auto num_concs = prognostics.modal_num_concs();
+      num_concs(mode_index, level) = param_value;
+    } else if (gas_index != -1) {
+      auto gases = prognostics.gases();
+      gases(gas_index, level) = param_value;
+    } else {
+      // Atmospheric state variables?
+      if (param_name == "temperature") {
+        auto T = atmosphere.temperature();
+        T(level) = param_value;
+      } else if (param_name == "pressure") {
+        auto p = atmosphere.pressure();
+        p(level) = param_value;
+      } else if (param_name == "relative_humidity") {
+        auto relhum = atmosphere.relative_humidity();
+        relhum(level) = param_value;
+      } else if (param_name == "height") {
+        auto h = atmosphere.height();
+        h(level) = param_value;
+      } else if (param_name == "hydroѕtatic_dp") {
+        auto dp = atmosphere.hydrostatic_dp();
+        dp(level) = param_value;
+      } else { // other
+      }
+    }
+  }
 }
 
 // Initializes prognostic and atmosphere input data according to the
@@ -103,7 +145,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       auto iter = param_walk.ensemble.begin();
       auto name = iter->first;
       const auto& vals = iter->second;
-      override_parameter(prognostics, atmosphere, name, vals[l]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name, vals[l]);
       overridden_params.push_back({{name, vals[l]}});
     } else if (num_params == 2) {
       auto iter = param_walk.ensemble.begin();
@@ -115,8 +157,8 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       size_t n2 = vals2.size();
       size_t j1 = l/n2;
       size_t j2 = l - n2*j1;
-      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
-      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name1, vals1[j1]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name2, vals2[j2]);
       overridden_params.push_back({{name1, vals1[j1]},
                                    {name2, vals2[j2]}});
     } else if (num_params == 3) {
@@ -134,9 +176,9 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       size_t j1 = l/(n2*n3);
       size_t j2 = (l - n2*n3*j1) / n3;
       size_t j3 = l - n2*n3*j1 - n3*j2;
-      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
-      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
-      override_parameter(prognostics, atmosphere, name3, vals3[j3]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name1, vals1[j1]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name2, vals2[j2]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name3, vals3[j3]);
       overridden_params.push_back({{name1, vals1[j1]},
                                    {name2, vals2[j2]},
                                    {name3, vals3[j3]}});
@@ -160,10 +202,10 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       size_t j2 = (l - n2*n3*n4*j1) / (n3*n4);
       size_t j3 = (l - n2*n3*n4*j1 - n3*n4*j2) / n4;
       size_t j4 = l - n2*n3*n4*j1 - n3*n4*j2 - n4*j3;
-      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
-      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
-      override_parameter(prognostics, atmosphere, name3, vals3[j3]);
-      override_parameter(prognostics, atmosphere, name4, vals4[j4]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name1, vals1[j1]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name2, vals2[j2]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name3, vals3[j3]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name4, vals4[j4]);
       overridden_params.push_back({{name1, vals1[j1]},
                                    {name2, vals2[j2]},
                                    {name3, vals3[j3]},
@@ -193,11 +235,11 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       size_t j3 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2) / (n4*n5);
       size_t j4 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3) / n5;
       size_t j5 = l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3 - n5*j4;
-      override_parameter(prognostics, atmosphere, name1, vals1[j1]);
-      override_parameter(prognostics, atmosphere, name2, vals2[j2]);
-      override_parameter(prognostics, atmosphere, name3, vals3[j3]);
-      override_parameter(prognostics, atmosphere, name4, vals4[j4]);
-      override_parameter(prognostics, atmosphere, name5, vals5[j5]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name1, vals1[j1]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name2, vals2[j2]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name3, vals3[j3]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name4, vals4[j4]);
+      override_parameter(aero_config, prognostics, atmosphere, l, name5, vals5[j5]);
       overridden_params.push_back({{name1, vals1[j1]},
                                    {name2, vals2[j2]},
                                    {name3, vals3[j3]},
