@@ -13,7 +13,7 @@ ensemble:
   relative_humidity: [0, 1, 0.1]
   qh2so4: [0, 1.e-3, 1.e-4]  # _aero for aerosol data
   aitken:
-    so4: [0, ...]
+    so4: [0, 0.001]
 
 atmosphere:
   temperature: 273

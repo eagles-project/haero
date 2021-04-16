@@ -59,6 +59,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
     auto p = atmosphere.pressure();
     auto relhum = atmosphere.relative_humidity();
     auto h = atmosphere.height();
+    auto dp = atmosphere.hydrostatic_dp();
     auto int_aero = prognostics.interstitial_aerosols();
     auto cld_aero = prognostics.cloudborne_aerosols();
     auto gases = prognostics.gases();
@@ -69,7 +70,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
       p(l) = param_walk.pressure;
       relhum(l) = param_walk.relative_humidity;
       h(l) = param_walk.height;
-      // TODO: Atmosphere needs cloud_fraction, doesn't it?
+      dp(l) = param_walk.hydrostatic_dp;
 
       // Aerosol prognostics.
       for (int m = 0; m < num_modes; ++m) {
@@ -277,8 +278,10 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // Initialize it for the given aerosol configuration.
   process->init(aero_config);
 
-  // Run a series of simulations for each value of the planetary boundary
-  // layer height, gathering output data. The outer loop is for different
+  // Run a set of simulations, each of which computes tendencies for aerosols
+  // and gases over different vertical levels, to maximize parallelism. We do
+  // include two loops here to accommodate different values of the planetary
+  // boundary layer height and the use of different time steps.
   std::vector<OutputData> output_data;
   for (auto pblh: pblhs) {
     // Initialize the input.
