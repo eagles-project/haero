@@ -116,8 +116,9 @@ class ModalAerosolConfig final {
                          bool case_sensitive = true) const {
     for (int m = 0; m < h_aerosol_modes.size(); ++m) {
       if ((h_aerosol_modes[m].name() == mode_name) or
-          (strcasecmp(h_aerosol_modes[m].name().c_str(),
-                      mode_name.c_str()) == 0)) {
+          (not case_sensitive and
+           (strcasecmp(h_aerosol_modes[m].name().c_str(),
+                       mode_name.c_str()) == 0))) {
         return m;
         break;
       }
@@ -141,8 +142,9 @@ class ModalAerosolConfig final {
       int species_index = h_species_for_mode(mode_index, s);
       if ((species_index >= 0) &&
           ((h_aerosol_species[species_index].symbol() == aerosol_symbol) or
-           (strcasecmp(h_aerosol_species[species_index].symbol().c_str(),
-                       aerosol_symbol.c_str()) == 0))) {
+           (not case_sensitive and
+            (strcasecmp(h_aerosol_species[species_index].symbol().c_str(),
+                        aerosol_symbol.c_str()) == 0)))) {
         return s;
         break;
       }
