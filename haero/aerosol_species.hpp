@@ -33,10 +33,10 @@ struct AerosolSpecies final {
           Real dry_rad,
           Real dens,
           Real hygro):
-    molecular_weight(molecular_wt), 
+    molecular_weight(molecular_wt),
     dry_radius      (dry_rad),
-    density         (dens), 
-    hygroscopicity  (hygro) 
+    density         (dens),
+    hygroscopicity  (hygro)
   {
     EKAT_ASSERT(name.size() < NAME_LEN);
     EKAT_ASSERT(symbol.size() < NAME_LEN);
@@ -46,26 +46,26 @@ struct AerosolSpecies final {
 
   KOKKOS_INLINE_FUNCTION
   AerosolSpecies(const AerosolSpecies& a) :
-    molecular_weight(a.molecular_weight), 
+    molecular_weight(a.molecular_weight),
     dry_radius      (a.dry_radius),
-    density         (a.density), 
+    density         (a.density),
     hygroscopicity  (a.hygroscopicity) {
     for (int i=0; i<NAME_LEN; ++i)
-       name_view[i] = a.name_view[i]; 
+       name_view[i] = a.name_view[i];
     for (int i=0; i<NAME_LEN; ++i)
-       symbol_view[i] = a.symbol_view[i]; 
+       symbol_view[i] = a.symbol_view[i];
   }
 
   KOKKOS_INLINE_FUNCTION
   AerosolSpecies &operator=(const AerosolSpecies& a) {
-    molecular_weight = a.molecular_weight; 
+    molecular_weight = a.molecular_weight;
     dry_radius       = a.dry_radius;
-    density          =  a.density; 
+    density          =  a.density;
     hygroscopicity   = a.hygroscopicity;
     for (int i=0; i<NAME_LEN; ++i)
-       name_view[i] = a.name_view[i]; 
+       name_view[i] = a.name_view[i];
     for (int i=0; i<NAME_LEN; ++i)
-       symbol_view[i] = a.symbol_view[i]; 
+       symbol_view[i] = a.symbol_view[i];
     return *this;
   }
 
