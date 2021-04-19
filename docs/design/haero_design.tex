@@ -16,7 +16,7 @@
 \newtheorem{defn}{Definition}
 \newtheorem{appx}{Approximation}
 \newtheorem{assume}{Assumption}
-\renewcommand{\listtheoremname}{List of Assumptions and Approximations}
+
 
 \theoremstyle{remark}
 \newtheorem*{rem}{Remark}
@@ -121,6 +121,8 @@
 %\date
 \maketitle
 
+\tableofcontents
+
 % \include puts page breaks after each section, while \input does not.
 \include{intro}
 \include{physics}
@@ -134,6 +136,8 @@
 \include{api}
 \include{process_appendix}
 \include{driver_input}
+\chapter{List of assumptions and approximations}
+\renewcommand{\listtheoremname}{}
 \listoftheorems[ignoreall, show={assume,appx}, onlynamed]
 \nocite{*}
 \bibliography{haero_design}
