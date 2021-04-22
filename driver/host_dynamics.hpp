@@ -150,16 +150,17 @@ class HostDynamics final {
     inline int nlev() const {return nlev_;}
 
 
-
+#ifndef USE_CUDA // variables below are meant to be private, but must be public for gpu builds
   private:
+#endif
     /// number of levels in column
     int nlev_;
+    /// initial density at the surface
+    Real rho0surf;
     /// intial geopotential values
     ColumnView phi0;
     /// initial density values
     ColumnView rho0;
-    /// initial density at the surface
-    Real rho0surf;
     /// hydrostatic pressure (interface variable)
     ColumnView phydro_int;
 

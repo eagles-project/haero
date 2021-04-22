@@ -126,6 +126,7 @@ TEST_CASE("driver dynamics", "") {
   HypsometricLevelsTest hypsotest;
 
   SECTION("height init -- uniform heights") {
+    std::cout << "Uniform height levels\n";
     const int nlev = 320;
     const Real ztop = 20E3;
     const AtmosphericConditions conds(Tv0, Gammav, w0, ztop, tperiod, qv0, qv1);
@@ -136,13 +137,15 @@ TEST_CASE("driver dynamics", "") {
     HostDynamics zdyn(nlev);
     zdyn.init_from_uniform_heights(conds);
     std::cout << zdyn.info_string();
-    hbtest.run_test(zdyn, conds);
-    onedz.run_test(zdyn, 2.1e-12);
+    hbtest.run_test(zdyn, conds, FloatingPoint<Real>::zero_tol);
+    onedz.run_test(zdyn, 30*FloatingPoint<Real>::zero_tol);
     hypsotest.run_test(zdyn, conds, 1.5e-2);
 
     REQUIRE(hbtest.nerr == 0);
     REQUIRE(onedz.nerr == 0);
     REQUIRE(hypsotest.nerr == 0);
+
+    std::cout << "\tinitialization unit tests complete\n";
 
     /// Create a new netcdf file
     const std::string fname = "host_dynamics_test_zinit_unif.nc";
@@ -335,7 +338,7 @@ TEST_CASE("vertical_convergence_dynamics_init", "[convergence]") {
     std::cout << convtests.info_string();
 
     REQUIRE(FloatingPoint<Real>::zero(convtests.max_ps_err));
-    REQUIRE(FloatingPoint<Real>::zero(convtests.max_ztop_err, 5.5e-11));
+    REQUIRE(FloatingPoint<Real>::zero(convtests.max_ztop_err, 600*FloatingPoint<Real>::zero_tol));
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hydro_max, 2, 0.01));
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hydro_avg, 2, 0.01));
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hypso_max, 3, 0.05));
@@ -366,9 +369,10 @@ void HydrostaticBalanceTest::run_test(const HostDynamics& dyn, const Atmospheric
       const Real zmid = phimid/gravity;
       const Real pres = hydrostatic_pressure_at_height(zmid, ac);
 
-      if (!FloatingPoint<Real>::zero(pres - p(k), tol)) {
+      if (!FloatingPoint<Real>::zero((pres - p(k))/p(k), tol)) {
         ++errct;
-        printf("hydrostatic test level %d: p = %f, expected = %f; |diff| = %18.15g\n", k, p(k), pres, std::abs(pres-p(k))/p(k));
+        printf("hydrostatic test level %d: p = %f, expected = %f; |diff| = %18.15g, tol = %g\n",
+            k, p(k), pres, std::abs(pres-p(k))/p(k), tol);
       }
     }, nerr);
 
@@ -384,10 +388,12 @@ void HydrostaticBalanceTest::run_test(const HostDynamics& dyn, const Atmospheric
 void UniformThicknessHeightTest::run_test(const HostDynamics& dyn, const Real tol) {
   const auto dz = ekat::scalarize(dyn.dz);
   nerr = 0;
+  const Real dzval_ = dzval;
   Kokkos::parallel_reduce("UniformThicknessHeightTest::run_test", dyn.nlev(),
     KOKKOS_LAMBDA (const int k, int& errct) {
-      if (!FloatingPoint<Real>::equiv(dz(k), dzval, tol)) {
-        printf("unif. dz level %d, dz = %f; expected %f; |diff| = %18.15g\n", k, dz(k), dzval, std::abs(dz(k)-dzval));
+      if (!FloatingPoint<Real>::equiv(dz(k), dzval_, tol)) {
+        printf("unif. dz level %d, dz = %f; expected %f; |diff| = %18.15g\n",
+            k, dz(k), dzval_, std::abs(dz(k)-dzval_));
         ++errct;
       }
     }, nerr);

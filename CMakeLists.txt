@@ -14,6 +14,7 @@ elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
   message(FATAL_ERROR "Invalid HAERO_DEVICE: ${HAERO_DEVICE} (Must be CPU or CUDA).")
 elseif(HAERO_DEVICE STREQUAL CUDA)
   set(ENABLE_FORTRAN OFF)
+  set(USE_CUDA ON)
 else() # CPU -- use OpenMP as "device" for non-Apple architectures.
   if (NOT APPLE)
     set(USE_OPENMP ON)
