@@ -118,6 +118,15 @@ class AerosolProcess {
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const = 0;
 
+  /// Override this method to return a vector of strings containing the names
+  /// of diagnostic variables required by this aerosol process in order to
+  /// compute its tendencies. The Model that runs this aerosol process checks
+  /// that these diagnostics variables are present before executing the process.
+  /// By default, an aerosol process does not require any diagnostic variables.
+  virtual std::vector<std::string> required_diagnostics() const {
+    return std::vector<std::string>();
+  }
+
   private:
 
   const AerosolProcessType type_;
