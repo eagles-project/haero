@@ -7,7 +7,7 @@
 !> number of modes/species. Gases are ignored. Modal number densities are
 !> unaffected, as aerosol particles are simply transferred from one population
 !> to the other.
-module prog_fprocess_stub
+module faerosol_process_stub
 
   use iso_c_binding, only: c_ptr
   use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &
@@ -20,13 +20,13 @@ module prog_fprocess_stub
   ! Process parameters
   real(wp) :: decay_rate ! Decay rate for cloudborne aerosols
 
-  public :: prog_stub_init, &
-            prog_stub_run, &
-            prog_stub_finalize
+  public :: process_stub_init, &
+            process_stub_run, &
+            process_stub_finalize
 
   ! C function for obtaining decay rate.
   interface
-    real(c_real) function prog_stub_decay_rate() bind(c)
+    real(c_real) function process_stub_decay_rate() bind(c)
       use iso_c_binding, only: c_real
     end function
   end interface
@@ -34,16 +34,16 @@ module prog_fprocess_stub
 contains
 
 !> Performs initialization.
-subroutine prog_stub_init() bind(c)
+subroutine process_stub_init() bind(c)
   implicit none
 
   ! Initialize process parameters.
-  decay_rate = prog_stub_decay_rate()
+  decay_rate = process_stub_decay_rate()
 end subroutine
 
 !> Calls the update for the process, computing tendencies for each affected
 !> prognostic variable.
-subroutine prog_stub_run(t, dt, progs, atm, diags, tends) bind(c)
+subroutine process_stub_run(t, dt, progs, atm, diags, tends) bind(c)
   use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
@@ -105,9 +105,9 @@ subroutine prog_stub_run(t, dt, progs, atm, diags, tends) bind(c)
 
 end subroutine
 
-!> Disposes of the process-specific data allocated in prog_process_init.
+!> Disposes of the process-specific data allocated in process_stub_init.
 !> You don't need this if you haven't allocated any process-specific data.
-subroutine prog_stub_finalize() bind(c)
+subroutine process_stub_finalize() bind(c)
   implicit none
 
   ! Deallocate any process-specific resources
