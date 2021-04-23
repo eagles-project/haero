@@ -167,7 +167,7 @@ class HostDynamics final {
     /** @brief compute discrete approximations of vertical derivatives using centered finite differences
       as described by Taylor et al. 2020.
     */
-    void update_pressure(const AtmosphericConditions& conds);
+    void update_thickness(const AtmosphericConditions& conds);
 };
 
 /** @brief Defines the Lagrangian geopotential for HostDynamics' 1d toy model.
