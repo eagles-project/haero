@@ -150,7 +150,7 @@ class HostDynamics final {
     inline int nlev() const {return nlev_;}
 
 
-#ifndef USE_CUDA // variables below are meant to be private, but must be public for gpu builds
+#ifndef HAERO_USE_CUDA // variables below are meant to be private, but must be public for gpu builds
   private:
 #endif
     /// number of levels in column
