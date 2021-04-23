@@ -125,7 +125,7 @@ TEST_CASE("driver dynamics", "") {
   HydrostaticBalanceTest hbtest;
   HypsometricLevelsTest hypsotest;
 
-  SECTION("height init -- uniform heights") {
+  SECTION("z_unif_init") {
     std::cout << "Uniform height levels\n";
     const int nlev = 320;
     const Real ztop = 20E3;
@@ -153,6 +153,8 @@ TEST_CASE("driver dynamics", "") {
     writer.define_time_var();
     zdyn.nc_init_dynamics_variables(writer, conds);
 
+    std::cout << "ncwriter initialized\n";
+
     size_t time_idx = 0;
     zdyn.nc_write_data(writer, time_idx);
     Kokkos::View<PackType*> temperature("temperature", PackInfo::num_packs(nlev));
@@ -164,17 +166,25 @@ TEST_CASE("driver dynamics", "") {
 
     Real t = 0.5*conds.tperiod;
     ++time_idx;
-    zdyn.update(t,conds);
-    zdyn.update_atmospheric_state(atm);
 
+    std::cout << "calling dynamics update\n";
+    zdyn.update(t,conds);
+    std::cout << "dynamics updated\n";
+    //zdyn.update_atmospheric_state(atm);
+    std::cout << "atmosphere state updated\n";
     writer.add_time_value(t);
+    std::cout << "writing dynamics data to nc file\n";
     zdyn.nc_write_data(writer, time_idx);
+    std::cout << "writing atmosphere state data to nc file\n";
     writer.add_atm_state_data(atm, time_idx);
 
     writer.close();
   }
 
   SECTION("height init -- specified heights") {
+
+    std::cout << "User-specified height levels\n";
+
     const int nlev = 20;
     /// In actual examples, these would come from an input yaml file
     std::vector<Real> z_vals(nlev+1);

@@ -234,23 +234,25 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
   const Real delp = (AtmosphericConditions::pref - ac.ptop)/nlev_;
   std::cout << "unif. pressure dp = " << delp << "\n";
 
-  auto hphi0 = Kokkos::create_mirror_view(ekat::scalarize(phi0));
-  auto hw = Kokkos::create_mirror_view(ekat::scalarize(w));
-  auto hp = Kokkos::create_mirror_view(ekat::scalarize(p));
-  auto hrho0 = Kokkos::create_mirror_view(ekat::scalarize(rho0));
-  auto hthetav = Kokkos::create_mirror_view(ekat::scalarize(thetav));
-  auto hqv = Kokkos::create_mirror_view(ekat::scalarize(qv));
-  auto hdz = Kokkos::create_mirror_view(ekat::scalarize(dz));
-  auto hpint = Kokkos::create_mirror_view(ekat::scalarize(phydro_int));
+  auto hphi0 = Kokkos::create_mirror_view(phi0);
+  auto hw = Kokkos::create_mirror_view(w);
+  auto hp = Kokkos::create_mirror_view(p);
+  auto hrho0 = Kokkos::create_mirror_view(rho0);
+  auto hthetav = Kokkos::create_mirror_view(thetav);
+  auto hqv = Kokkos::create_mirror_view(qv);
+  auto hdz = Kokkos::create_mirror_view(dz);
+  auto hpint = Kokkos::create_mirror_view(phydro_int);
 
 //   / set interface geopotential and velocity
   for (int k=0; k<nlev_+1; ++k) {
 //     Taylor et al. 2020 fig. 1 interface idx = k+1/2
+    const int pack_idx = PackInfo::pack_idx(k);
+    const int vec_idx = PackInfo::vec_idx(k);
     const Real punif = ac.ptop + k*delp;
     const Real z = height_at_pressure(punif, ac);
-    hphi0(k) = gravity * z;
-    hw(k) = 0;
-    hpint(k) = punif;
+    hphi0(pack_idx)[vec_idx] = gravity * z;
+    hw(pack_idx)[vec_idx] = 0;
+    hpint(pack_idx)[vec_idx] = punif;
   }
 
   EKAT_ASSERT(FloatingPoint<Real>::equiv(AtmosphericConditions::pref, ac.ptop + nlev_ * delp));
@@ -260,15 +262,24 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
     const int kmhalf_idx = k; // array idx of interface k - 1/2
     const int kphalf_idx = k+1; // array idx of interface k + 1/2
 
-    const Real phimid = 0.5*(hphi0(kmhalf_idx) + hphi0(kphalf_idx));
+    const int kpack_idx = PackInfo::pack_idx(k);
+    const int kvec_idx = PackInfo::vec_idx(k);
+    const int kphalf_pack_idx = PackInfo::pack_idx(kphalf_idx);
+    const int kphalf_vec_idx = PackInfo::vec_idx(kphalf_idx);
+    const int kmhalf_pack_idx = PackInfo::pack_idx(kmhalf_idx);
+    const int kmhalf_vec_idx = PackInfo::vec_idx(kphalf_idx);
+
+    const Real phimid = 0.5*(hphi0(kmhalf_pack_idx)[kmhalf_vec_idx] +
+      hphi0(kphalf_pack_idx)[kphalf_vec_idx]);
     const Real zmid = phimid/gravity;
     const Real pres = hydrostatic_pressure_at_height(zmid, ac);
     const Real Tv = ac.Tv0 - ac.Gammav * zmid;
-    hp(k) = pres;
-    hrho0(k) = pres / (r_gas_dry_air * Tv);
-    hthetav(k) = Tv / exner_function(pres);
-    hqv(k) = water_vapor_mixing_ratio(zmid, ac);
-    hdz(k) = (hphi0(kmhalf_idx) - hphi0(kphalf_idx))/gravity;
+    hp(kpack_idx)[kvec_idx] = pres;
+    hrho0(kpack_idx)[kvec_idx] = pres / (r_gas_dry_air * Tv);
+    hthetav(kpack_idx)[kvec_idx] = Tv / exner_function(pres);
+    hqv(kpack_idx)[kvec_idx] = water_vapor_mixing_ratio(zmid, ac);
+    hdz(kpack_idx)[kvec_idx] = (hphi0(kmhalf_pack_idx)[kmhalf_vec_idx] -
+        hphi0(kphalf_pack_idx)[kphalf_vec_idx])/gravity;
   }
 
 
@@ -280,6 +291,8 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
   Kokkos::deep_copy(rho0, hrho0);
   Kokkos::deep_copy(rho, rho0);
   Kokkos::deep_copy(p,hp);
+  Kokkos::deep_copy(dz,hdz);
+  Kokkos::deep_copy(phydro_int, hpint);
 
   ps = AtmosphericConditions::pref;
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
@@ -288,19 +301,17 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
 void HostDynamics::update_pressure(const AtmosphericConditions& conds) {
   using namespace constants;
 
-  auto phi_local = ekat::scalarize(phi);
-  auto pint_local = ekat::scalarize(phydro_int);
-
   Kokkos::parallel_for("HostDynamics::hydrostatic_pint", nlev_+1,
-    KOKKOS_LAMBDA (const int k) {
-      pint_local(k) = hydrostatic_pressure_at_height(phi_local(k)/gravity, conds);
-    });
+    HydrostaticPressureUpdate(phi, phydro_int, conds));
+
+  Kokkos::fence();
 
   // differences at level midpoints
 
   auto dz_local = ekat::scalarize(dz);
-
   auto dph = ekat::scalarize(hydrostatic_dp);
+  auto phi_local = ekat::scalarize(phi);
+  auto pint_local = ekat::scalarize(phydro_int);
 
   Kokkos::parallel_for("HostDynamics::dz", nlev_,
     KOKKOS_LAMBDA (const int k) {
@@ -311,6 +322,8 @@ void HostDynamics::update_pressure(const AtmosphericConditions& conds) {
       dz_local(k) = -(phi_local(kphalf_idx) - phi_local(kmhalf_idx))/gravity;
       dph(k) = -(pint_local(kphalf_idx) - pint_local(kmhalf_idx));
     });
+
+  Kokkos::fence();
 }
 
 std::string HostDynamics::info_string(int tab_level) const {
@@ -328,22 +341,12 @@ std::string HostDynamics::info_string(int tab_level) const {
 void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
   using namespace constants;
   // interface update
-  auto phi_local = ekat::scalarize(phi);
-  auto phi0_local = ekat::scalarize(phi0);
-  auto w_local = ekat::scalarize(w);
   Kokkos::parallel_for("HostDynamics::InterfaceUpdate", nlev_+1,
-    KOKKOS_LAMBDA (const int k) {
-      Real geop;
-      if (k>0 && k<nlev_) {
-        geop = geopotential(newt, phi0_local(k), ac);
-      }
-      else {
-        geop = (k == 0 ? gravity*ac.ztop : 0);
-      }
-      phi_local(k) = geop;
-      w_local(k) = velocity(newt, geop, ac);
-    });
+    DynamicsInterfaceUpdate(newt, phi, phi0, w, ac, nlev_));
+  Kokkos::fence();
 
+  const auto phi_local = ekat::scalarize(phi);
+  const auto phi0_local = ekat::scalarize(phi0);
   auto rho_local = ekat::scalarize(rho);
   auto rho0_local = ekat::scalarize(rho0);
   auto thetav_local = ekat::scalarize(thetav);
@@ -355,6 +358,8 @@ void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
       rho_local(k) = density(newt, phimid, phi0mid, rho0_local(k), ac);
       p_local(k) = pressure(rho_local(k), thetav_local(k));
     });
+
+  Kokkos::fence();
 
   const Real rhosurf = density(newt, 0, 0, rho0surf, ac);
   ps = pressure(rhosurf, ac.Tv0);
