@@ -14,5 +14,5 @@ EkatCreateUnitTest(ncwriter ncwriter_tests.cpp LIBS haero_standalone ${HAERO_LIB
 EkatCreateUnitTest(host_dynamics host_dynamics_test.cpp LIBS haero_standalone ${HAERO_LIBRARIES}
   ${HAERO_DRIVER_LIBRARIES})
 
-EkatCreateUnitTest(host_dynamics_tendencies host_dynamics_tendency_tests.cpp LIBS haero_standalone
-  ${HAERO_DRIVER_LIBRARIES} ${HAERO_LIBRARIES})
+#EkatCreateUnitTest(host_dynamics_tendencies host_dynamics_tendency_tests.cpp LIBS haero_standalone
+#  ${HAERO_DRIVER_LIBRARIES} ${HAERO_LIBRARIES})
