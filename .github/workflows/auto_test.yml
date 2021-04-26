@@ -24,10 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     # Pre-fab container with third-party libs installed.
-    # Here's what we'd use in a world where we purpose-built containers by
-    # precision. We don't, currently, so we always use the "double" version.
-    # container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
-    container: coherellc/haero-tpl:${{ matrix.build-type }}-double-pack-size-${{ matrix.pack-size }}
+    container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
 
     # Environment variables
     env:
