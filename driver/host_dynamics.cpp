@@ -111,6 +111,7 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
   Kokkos::deep_copy(phydro_int, hpint);
 
   /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
+  // host mirrors preceded by "h"
   auto hp = Kokkos::create_mirror_view(p);
   auto hthetav = Kokkos::create_mirror_view(thetav);
   auto hqv = Kokkos::create_mirror_view(qv);
@@ -245,7 +246,7 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
   auto hdz = Kokkos::create_mirror_view(dz);
   auto hpint = Kokkos::create_mirror_view(phydro_int);
 
-
+  // scalarized views preceded by "s"
   auto shphi0 = ekat::scalarize(hphi0);
   auto shw = ekat::scalarize(hw);
   auto shp = ekat::scalarize(hp);
