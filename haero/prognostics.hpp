@@ -24,7 +24,7 @@ class Tendencies;
 class Prognostics final {
   public:
 
-  /// Creates a Prognostics object that can store aerosol data can be added.
+  /// Creates a Prognostics object that can store aerosol data.
   /// This constructor accepts a number of Kokkos View objects, managed by the
   /// host model, that store aerosol data. The Prognostics object
   /// creates its own views for these views.

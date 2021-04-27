@@ -92,6 +92,7 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
   const Real dz = ac.ztop/nlev_;
 
   /// set interface geopotential and velocity
+  // host mirrors preceded by "h"
   auto hphi0 = Kokkos::create_mirror_view(phi0);
   auto hw = Kokkos::create_mirror_view(w);
   auto hpint = Kokkos::create_mirror_view(phydro_int);
@@ -163,7 +164,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
 
   ac.ptop = p0[0];
   ac.ztop = height_at_pressure(p0[0], ac);
-
+  // host mirrors preceded by "h"
   auto hphi0 = Kokkos::create_mirror_view(phi0);
   auto hrho0 = Kokkos::create_mirror_view(rho0);
   auto hp = Kokkos::create_mirror_view(p);
@@ -234,6 +235,7 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
   const Real delp = (AtmosphericConditions::pref - ac.ptop)/nlev_;
   std::cout << "unif. pressure dp = " << delp << "\n";
 
+  // host mirrors preceded by "h"
   auto hphi0 = Kokkos::create_mirror_view(phi0);
   auto hw = Kokkos::create_mirror_view(w);
   auto hp = Kokkos::create_mirror_view(p);
@@ -243,7 +245,7 @@ void HostDynamics::init_from_uniform_pressures(const AtmosphericConditions& ac) 
   auto hdz = Kokkos::create_mirror_view(dz);
   auto hpint = Kokkos::create_mirror_view(phydro_int);
 
-//   / set interface geopotential and velocity
+// set interface geopotential and velocity
   for (int k=0; k<nlev_+1; ++k) {
 //     Taylor et al. 2020 fig. 1 interface idx = k+1/2
     const int pack_idx = PackInfo::pack_idx(k);

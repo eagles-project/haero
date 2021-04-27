@@ -347,17 +347,23 @@ TEST_CASE("vertical_convergence_dynamics_init", "[convergence]") {
     convtests.compute_appx_conv_rates();
     std::cout << convtests.info_string();
 
+    // ptop + sum of all levels' pressure must equal surface pressure
     REQUIRE(FloatingPoint<Real>::zero(convtests.max_ps_err));
+    // sum of level thicknesses must equal ztop
     REQUIRE(FloatingPoint<Real>::zero(convtests.max_ztop_err, 600*FloatingPoint<Real>::zero_tol));
+    // rate of average error in hydrostatic equation should converge at 2nd order
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hydro_max, 2, 0.01));
+    // rate of max error in hydrostatic equation should converge at 2nd order
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hydro_avg, 2, 0.01));
+    // rate of average error in hypsometric equation should converge at 3rd order
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hypso_max, 3, 0.05));
+    // rate of max error in hypsometric equation should converge at 3rd order
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hypso_avg, 3, 0.01));
   }
 
-  SECTION("uniform dp tests") {
-
-  }
+//   SECTION("uniform dp tests") {
+//
+//   }
 }
 
 void HydrostaticBalanceTest::run_test(const HostDynamics& dyn, const AtmosphericConditions& ac,
