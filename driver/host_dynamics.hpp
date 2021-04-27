@@ -150,23 +150,24 @@ class HostDynamics final {
     inline int nlev() const {return nlev_;}
 
 
-
+#ifndef HAERO_USE_CUDA // variables below are meant to be private, but must be public for gpu builds
   private:
+#endif
     /// number of levels in column
     int nlev_;
+    /// initial density at the surface
+    Real rho0surf;
     /// intial geopotential values
     ColumnView phi0;
     /// initial density values
     ColumnView rho0;
-    /// initial density at the surface
-    Real rho0surf;
     /// hydrostatic pressure (interface variable)
     ColumnView phydro_int;
 
     /** @brief compute discrete approximations of vertical derivatives using centered finite differences
       as described by Taylor et al. 2020.
     */
-    void update_pressure(const AtmosphericConditions& conds);
+    void update_thickness(const AtmosphericConditions& conds);
 };
 
 /** @brief Defines the Lagrangian geopotential for HostDynamics' 1d toy model.
@@ -248,6 +249,62 @@ Real qvsat_tetens(const Real T, const Real p) {
   static constexpr Real tetens_coeff = 380.042;
   return tetens_coeff * std::exp(half15ln10*(T - 273)/(T-36)) / p;
 }
+
+struct DynamicsInterfaceUpdate {
+  Real t;
+  ColumnView phi;
+  ConstColumnView phi0;
+  ColumnView w;
+  AtmosphericConditions conds;
+  int nlev;
+
+  DynamicsInterfaceUpdate(const Real newt, ColumnView phi_, ColumnView phi0_, ColumnView w_,
+    const AtmosphericConditions ac, const int nl) :
+    t(newt),
+    phi(phi_),
+    phi0(phi0_),
+    w(w_),
+    conds(ac),
+    nlev(nl) {}
+
+  KOKKOS_INLINE_FUNCTION
+  void operator () (const int k) const {
+    using namespace constants;
+    const int pack_idx = PackInfo::pack_idx(k);
+    const int vec_idx = PackInfo::vec_idx(k);
+    Real geop;
+    if (k>0 && k<nlev) {
+      geop = geopotential(t, phi0(pack_idx)[vec_idx], conds);
+    }
+    else {
+      geop = (k==0 ? gravity*conds.ztop : 0);
+    }
+    phi(pack_idx)[vec_idx] = geop;
+    w(pack_idx)[vec_idx] = velocity(t, geop, conds);
+  }
+};
+
+struct HydrostaticPressureUpdate {
+  ConstColumnView phi;
+  ColumnView phydro_int;
+  AtmosphericConditions conds;
+
+  HydrostaticPressureUpdate(ColumnView phi_, ColumnView ph_, const AtmosphericConditions ac) :
+    phi(phi_),
+    phydro_int(ph_),
+    conds(ac)
+  {}
+
+  KOKKOS_INLINE_FUNCTION
+  void operator () (const int k) const {
+    using namespace constants;
+    const int pack_idx = PackInfo::pack_idx(k);
+    const int vec_idx = PackInfo::vec_idx(k);
+    phydro_int(pack_idx)[vec_idx] =
+      hydrostatic_pressure_at_height(phi(pack_idx)[vec_idx]/gravity, conds);
+  }
+
+};
 
 } // namespace driver
 } // namespace haero

@@ -72,26 +72,39 @@ struct AtmosphericConditions {
   KOKKOS_INLINE_FUNCTION
   AtmosphericConditions(const Real Tv0_ = 300, const Real Gammav_ = 0.01, const Real w0_ = 1,
    const int ztop_ = 20E3,  const int tperiod_=900, const Real qv0_=1.5E-3, const Real qv1_ = 1E-3) :
-    Tv0(Tv0_), Gammav(Gammav_), w0(w0_), ztop(ztop_), tperiod(tperiod_), qv0(qv0_), qv1(qv1_),
-    ptop(hydrostatic_pressure_at_height(ztop_, AtmosphericConditions::pref, Tv0_, Gammav_)) {
+      Tv0(Tv0_),
+      Gammav(Gammav_),
+      w0(w0_),
+      ztop(ztop_),
+      tperiod(tperiod_),
+      qv0(qv0_),
+      qv1(qv1_),
+      ptop(hydrostatic_pressure_at_height(ztop_, AtmosphericConditions::pref, Tv0_, Gammav_))
+  {
     /// check valid input
-    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(Tv0_, 273, 323),
+    EKAT_KERNEL_ASSERT_MSG(FloatingPoint<Real>::in_bounds(Tv0_, 273, 323),
       "unexpected T0, check units = K");
-    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(w0_, 0, 10), "unexpected w0, check units = m/s");
-    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(Gammav_, 0, 0.02),
+    EKAT_KERNEL_ASSERT_MSG(FloatingPoint<Real>::in_bounds(w0_, 0, 10), "unexpected w0, check units = m/s");
+    EKAT_KERNEL_ASSERT_MSG(FloatingPoint<Real>::in_bounds(Gammav_, 0, 0.02),
       "unexpected lapse rate, check units = K/m");
-    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(ztop_, 3E3,40E3),
+    EKAT_KERNEL_ASSERT_MSG(FloatingPoint<Real>::in_bounds(ztop_, 3E3,40E3),
       "unexpected model top, check units = m");
-    EKAT_ASSERT_MSG(tperiod_>0, "nonnegative oscillation period required.");
+    EKAT_KERNEL_ASSERT_MSG(tperiod_>0, "nonnegative oscillation period required.");
     tperiod = tperiod_;
-    EKAT_ASSERT_MSG(FloatingPoint<Real>::in_bounds(qv0_, 0, 0.1),
+    EKAT_KERNEL_ASSERT_MSG(FloatingPoint<Real>::in_bounds(qv0_, 0, 0.1),
       "unexpected water vapor mixing ratio; check units = kg/kg");
-    EKAT_ASSERT_MSG(qv1_ >= 0, "nonnegative decay rate required.");
+    EKAT_KERNEL_ASSERT_MSG(qv1_ >= 0, "nonnegative decay rate required.");
 }
 
   KOKKOS_INLINE_FUNCTION
-  AtmosphericConditions(const AtmosphericConditions& other) : Tv0(other.Tv0), Gammav(other.Gammav),
-    w0(other.w0), ztop(other.ztop), tperiod(other.tperiod), qv0(other.qv0), qv1(other.qv1),
+  AtmosphericConditions(const AtmosphericConditions& other) :
+    Tv0(other.Tv0),
+    Gammav(other.Gammav),
+    w0(other.w0),
+    ztop(other.ztop),
+    tperiod(other.tperiod),
+    qv0(other.qv0),
+    qv1(other.qv1),
     ptop(other.ptop) {}
 
   /// Write instance info to string
