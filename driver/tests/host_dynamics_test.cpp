@@ -167,15 +167,10 @@ TEST_CASE("driver dynamics", "") {
     Real t = 0.5*conds.tperiod;
     ++time_idx;
 
-    std::cout << "calling dynamics update\n";
     zdyn.update(t,conds);
-    std::cout << "dynamics updated\n";
-    //zdyn.update_atmospheric_state(atm);
-    std::cout << "atmosphere state updated\n";
+    zdyn.update_atmospheric_state(atm);
     writer.add_time_value(t);
-    std::cout << "writing dynamics data to nc file\n";
     zdyn.nc_write_data(writer, time_idx);
-    std::cout << "writing atmosphere state data to nc file\n";
     writer.add_atm_state_data(atm, time_idx);
 
     writer.close();

@@ -150,7 +150,7 @@ class HostDynamics final {
     inline int nlev() const {return nlev_;}
 
 
-#ifndef USE_CUDA // variables below are meant to be private, but must be public for gpu builds
+#ifndef HAERO_USE_CUDA // variables below are meant to be private, but must be public for gpu builds
   private:
 #endif
     /// number of levels in column
@@ -167,7 +167,7 @@ class HostDynamics final {
     /** @brief compute discrete approximations of vertical derivatives using centered finite differences
       as described by Taylor et al. 2020.
     */
-    void update_pressure(const AtmosphericConditions& conds);
+    void update_thickness(const AtmosphericConditions& conds);
 };
 
 /** @brief Defines the Lagrangian geopotential for HostDynamics' 1d toy model.
