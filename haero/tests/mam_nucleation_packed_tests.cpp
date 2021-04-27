@@ -225,9 +225,9 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     const int nsize                = 1+2*random();           // number of aerosol size bins. NOTE: nsize<=maxd_asize
     const int maxd_asize           = nsize + 2*random();     // dimension for dplom_sect, NOTE: nsize<=maxd_asize,
     const int ldiagaa              = 10*random();             // does not appear to be used.
-    std::vector<double> dplom_sect(maxd_asize);
-    std::vector<double> dphim_sect(maxd_asize);
-    const double SECT_SCALE = 1.0e10;
+    std::vector<Real> dplom_sect(maxd_asize);
+    std::vector<Real> dphim_sect(maxd_asize);
+    const Real SECT_SCALE = 1.0e10;
     dplom_sect[0] = random()/SECT_SCALE;
     for (int i=1; i<maxd_asize; ++i) {
       dplom_sect[i]   = dplom_sect[i-1] + random()/SECT_SCALE;
@@ -235,8 +235,8 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     }
     dphim_sect[maxd_asize-1] = dplom_sect[maxd_asize-1]+random()/SECT_SCALE;
 
-    const double adjust_factor_bin_tern_ratenucl = random();
-    const double adjust_factor_pbl_ratenucl = random();
+    const Real adjust_factor_bin_tern_ratenucl = random();
+    const Real adjust_factor_pbl_ratenucl = random();
     mam_nucleation_process.set_adjust_factor_bin_tern_ratenucl(adjust_factor_bin_tern_ratenucl);
     mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
 

@@ -809,7 +809,7 @@ static void binary_nuc_vehk2002(const Pack temp,
     + jcoe * log (so4vol) * log (so4vol) * log (so4vol)
   );
   rateloge = tmpa;
-  tmpa = min( log(1.0e38), tmpa );
+  tmpa = min( log(Real(1.0e38)), tmpa );
   ratenucl = exp ( tmpa );
 
   // calc number of molecules in critical cluster

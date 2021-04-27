@@ -17,9 +17,9 @@ TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
   /// in Fortran and C++ means the result is not identical but we hope
   /// it is within numerical round off.
   using Pack = ekat::Pack<Real, 1>;
-  using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>;
-  const double tolerance = 5.0e-9;
+  using fp_helper = FloatingPoint<Real>;
+  using SolutionView = DeviceType::view_1d<Real>;
+  const Real tolerance = 5.0e-9;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -27,7 +27,7 @@ TEST_CASE("ternary_nuc_merik2007_test", "mam_nucleation_process") {
   long unsigned seed =  54319;
   auto random = [&]() {
     seed =  (seed * p1)%p0;
-    return double(seed)/p0;
+    return Real(seed)/p0;
   };
   for (int i=0; i<1000; ++i) {
     const Pack  t(  235 +   60*random());  // range 235-295
@@ -77,9 +77,9 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_process") {
   /// in Fortran and C++ means the result is not identical but we hope
   /// it is within numerical round off.
   using Pack = ekat::Pack<Real, 1>;
-  using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>;
-  const double tolerance = 5.0e-12;
+  using fp_helper = FloatingPoint<Real>;
+  using SolutionView = DeviceType::view_1d<Real>;
+  const Real tolerance = 5.0e-12;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -87,7 +87,7 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_process") {
   long unsigned seed =  54319;
   auto random = [&]() {
     seed =  (seed * p1)%p0;
-    return double(seed)/p0;
+    return Real(seed)/p0;
   };
   for (int i=0; i<1000; ++i) {
     const Pack temp   (  235 +   60*random());  // range 235-295
@@ -137,10 +137,10 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
   /// in Fortran and C++ means the result is not identical but we hope
   /// it is within numerical round off.
   using Pack = ekat::Pack<Real, 1>;
-  using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>;
+  using fp_helper = FloatingPoint<Real>;
+  using SolutionView = DeviceType::view_1d<Real>;
   using FlagaaView   = DeviceType::view_1d<int>;
-  const double tolerance = 5.0e-12;
+  const Real tolerance = 5.0e-12;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -148,13 +148,13 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
   long unsigned seed =  54319;
   auto random = [&]() {
     seed =  (seed * p1)%p0;
-    return double(seed)/p0;
+    return Real(seed)/p0;
   };
   MAMNucleationProcess mam_nucleation_process;
   for (int i=0; i<1000; ++i) {
     const Pack so4vol ( 5.e4 + 1.e8*random());  // range 5x10^4 - 10^9
     const int flagaa = 11 + 2*random();  // range 11-12
-    const double adjust_factor_pbl_ratenucl  = random();
+    const Real adjust_factor_pbl_ratenucl  = random();
     mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
 
     SolutionView solution("pbl_nuc_wang2008",6);
@@ -214,10 +214,10 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
   /// in Fortran and C++ means the result is not identical but we hope
   /// it is within numerical round off.
   using Pack = ekat::Pack<Real, 1>;
-  using fp_helper = FloatingPoint<double>;
-  using SolutionView = DeviceType::view_1d<double>;
+  using fp_helper = FloatingPoint<Real>;
+  using SolutionView = DeviceType::view_1d<Real>;
   using FlagaaView   = DeviceType::view_1d<int>;
-  const double tolerance = 1.0e-08;
+  const Real tolerance = 1.0e-08;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -225,7 +225,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
   long unsigned seed =  54319;
   auto random = [&]() {
     seed =  (seed * p1)%p0;
-    return double(seed)/p0;
+    return Real(seed)/p0;
   };
   MAMNucleationProcess mam_nucleation_process;
   for (int i=0; i<1000; ++i) {
@@ -244,9 +244,9 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     const int nsize                = 1+2*random();           // number of aerosol size bins. NOTE: nsize<=maxd_asize
     const int maxd_asize           = nsize + 2*random();     // dimension for dplom_sect, NOTE: nsize<=maxd_asize,
     const int ldiagaa              = 10*random();             // does not appear to be used.
-    std::vector<double> dplom_sect(maxd_asize);
-    std::vector<double> dphim_sect(maxd_asize);
-    const double SECT_SCALE = 1.0e10;
+    std::vector<Real> dplom_sect(maxd_asize);
+    std::vector<Real> dphim_sect(maxd_asize);
+    const Real SECT_SCALE = 1.0e10;
     dplom_sect[0] = random()/SECT_SCALE;
     for (int i=1; i<maxd_asize; ++i) {
       dplom_sect[i]   = dplom_sect[i-1] + random()/SECT_SCALE;
@@ -254,8 +254,8 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     }
     dphim_sect[maxd_asize-1] = dplom_sect[maxd_asize-1]+random()/SECT_SCALE;
 
-    const double adjust_factor_bin_tern_ratenucl = random();
-    const double adjust_factor_pbl_ratenucl = random();
+    const Real adjust_factor_bin_tern_ratenucl = random();
+    const Real adjust_factor_pbl_ratenucl = random();
     mam_nucleation_process.set_adjust_factor_bin_tern_ratenucl(adjust_factor_bin_tern_ratenucl);
     mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
 
