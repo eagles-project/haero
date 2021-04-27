@@ -33,28 +33,26 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-add_library(chemUtil chemUtil.cpp)
-add_dependencies(chemUtil tchem)
-EkatCreateUnitTest(tchem_batch_reactor_tests tchem_batch_reactor_tests.cpp
-                   LIBS chemUtil;${HAERO_LIBRARIES})
-
 EkatCreateUnitTest(kokkos_team_execute kokkos_team_execute.cpp
                    LIBS ${HAERO_LIBRARIES})
 
 EkatCreateUnitTest(process_tests process_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-EkatCreateUnitTest(mam_nucleation_process_tests mam_nucleation_process_tests.cpp
-                   LIBS ${HAERO_LIBRARIES})
-
-EkatCreateUnitTest(mam_nucleation_packed_tests mam_nucleation_packed_tests.cpp
-                   LIBS ${HAERO_LIBRARIES})
-
 EkatCreateUnitTest(cuda_tests cuda_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
+
 #----------------------------------------------------
-# Unit tests for prognostic processes
+# Unit tests for aerosol processes
 #----------------------------------------------------
+
+if (HAERO_DOUBLE_PRECISION) # double precision testing only for now
+  EkatCreateUnitTest(mam_nucleation_process_tests mam_nucleation_process_tests.cpp
+                     LIBS ${HAERO_LIBRARIES})
+
+  EkatCreateUnitTest(mam_nucleation_packed_tests mam_nucleation_packed_tests.cpp
+                     LIBS ${HAERO_LIBRARIES})
+endif()
 
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
@@ -67,9 +65,20 @@ if (HAERO_FORTRAN)
   EkatCreateUnitTest(fprocess_stub_tests fprocess_stub_tests.cpp
                      LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
 
-#---------------------------
-# Aerosol process unit tests
-#---------------------------
-  EkatCreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
-                     LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
+  # Aerosol process unit tests
+  if (HAERO_DOUBLE_PRECISION)
+    EkatCreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
+                       LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
+  endif()
+endif()
+
+#----------------------------------------------------
+# Chemistry unit tests
+#----------------------------------------------------
+
+if (HAERO_DOUBLE_PRECISION)
+  add_library(chemUtil chemUtil.cpp)
+  add_dependencies(chemUtil tchem)
+  EkatCreateUnitTest(tchem_batch_reactor_tests tchem_batch_reactor_tests.cpp
+                     LIBS chemUtil;${HAERO_LIBRARIES})
 endif()
