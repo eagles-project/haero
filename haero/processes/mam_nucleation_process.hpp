@@ -271,9 +271,11 @@ void mer07_veh02_nuc_mosaic_1box(
   qh2so4_del = 0.0;
   qnh3_del = 0.0;
 
-  if (dnclusterdt)
-    for (int i=0; i<Pack::n; ++i)
+  if (dnclusterdt) {
+    for (int i=0; i<Pack::n; ++i) {
       (*dnclusterdt)[i] = 0.0;
+    }
+  }
 
   if ((newnuc_method_flagaa !=  1)  &&   
       (newnuc_method_flagaa !=  2)  &&   
@@ -298,11 +300,11 @@ void mer07_veh02_nuc_mosaic_1box(
 
   ekat::Pack<int,Pack::n> newnuc_method_flagaa2(0.0);
   {
-    const Mask mask(  (nh3ppt >= 0.1) && (newnuc_method_flagaa !=  2));
-    if (mask.any()) {
+    const Mask nh3_present(  (nh3ppt >= 0.1) && (newnuc_method_flagaa !=  2));
+    if (nh3_present.any()) {
       // make call to merikanto ternary parameterization routine
       // (when nh3ppt < 0.1, use binary param instead)
-      const Mask so4vol = mask && (so4vol_in >= 5.0e4);
+      const Mask so4vol = nh3_present && (so4vol_in >= 5.0e4);
       if (so4vol.any()) {   
         temp_bb  .set(so4vol, max( 235.0, min( 295.0, temp_in ) ));
         rh_bb    .set(so4vol, max( 0.05, min( 0.95, rh_in ) ));
@@ -330,11 +332,11 @@ void mer07_veh02_nuc_mosaic_1box(
         cnum_nh3       .set(so4vol, p_cnum_nh3      );
         radius_cluster .set(so4vol, p_radius_cluster);
       }     
-      newnuc_method_flagaa2.set(mask,1);
+      newnuc_method_flagaa2.set(nh3_present,1);
     }
-    if ((!mask).any()) {
+    if ((!nh3_present).any()) {
       // make call to vehkamaki binary parameterization routine
-      const Mask so4vol = !mask && (so4vol_in >= 1.0e4);    
+      const Mask so4vol = !nh3_present && (so4vol_in >= 1.0e4);    
       if (so4vol.any()) {   
         temp_bb  .set(so4vol,max( 230.15, min( 305.15, temp_in ) ));
         rh_bb    .set(so4vol,max( 1.0e-4, min( 1.0, rh_in ) ));
@@ -358,8 +360,8 @@ void mer07_veh02_nuc_mosaic_1box(
         cnum_tot       .set(so4vol,  p_cnum_tot      );
         radius_cluster .set(so4vol,  p_radius_cluster);
       }
-      cnum_nh3.set(!mask,0.0);
-      newnuc_method_flagaa2.set(!mask,2);
+      cnum_nh3.set(!nh3_present,0.0);
+      newnuc_method_flagaa2.set(!nh3_present,2);
     }
   }
 
@@ -368,9 +370,9 @@ void mer07_veh02_nuc_mosaic_1box(
   // do boundary layer nuc
   if ((newnuc_method_flagaa == 11)  ||    
       (newnuc_method_flagaa == 12)) {
-    const Mask mask( zm_in <= max(pblh_in,100.0) );
-    if (mask.any()) {
-      so4vol_bb.set(mask,so4vol_in);
+    const Mask below_pblh( zm_in <= max(pblh_in,100.0) );
+    if (below_pblh.any()) {
+      so4vol_bb.set(below_pblh,so4vol_in);
       Pack p_so4vol_bb               (so4vol_bb);
       ekat::Pack<int,Pack::n> p_newnuc_method_flagaa2   (newnuc_method_flagaa2);
       Pack p_ratenuclt               (ratenuclt);
@@ -383,14 +385,14 @@ void mer07_veh02_nuc_mosaic_1box(
         p_newnuc_method_flagaa2, p_ratenuclt, p_rateloge, p_cnum_tot, p_cnum_h2so4, 
         p_cnum_nh3, p_radius_cluster );
 
-      so4vol_bb             .set(mask, p_so4vol_bb             );
-      newnuc_method_flagaa2 .set(mask, p_newnuc_method_flagaa2 );
-      ratenuclt             .set(mask, p_ratenuclt             );
-      rateloge              .set(mask, p_rateloge              );
-      cnum_tot              .set(mask, p_cnum_tot              );
-      cnum_h2so4            .set(mask, p_cnum_h2so4            );
-      cnum_nh3              .set(mask, p_cnum_nh3              );
-      radius_cluster        .set(mask, p_radius_cluster        );
+      so4vol_bb             .set(below_pblh, p_so4vol_bb             );
+      newnuc_method_flagaa2 .set(below_pblh, p_newnuc_method_flagaa2 );
+      ratenuclt             .set(below_pblh, p_ratenuclt             );
+      rateloge              .set(below_pblh, p_rateloge              );
+      cnum_tot              .set(below_pblh, p_cnum_tot              );
+      cnum_h2so4            .set(below_pblh, p_cnum_h2so4            );
+      cnum_nh3              .set(below_pblh, p_cnum_nh3              );
+      radius_cluster        .set(below_pblh, p_radius_cluster        );
     }
   }
 
@@ -436,17 +438,17 @@ void mer07_veh02_nuc_mosaic_1box(
   
   igrow.set((dpdry_clus <= dplom_sect[0]), 1); // need to clusters to larger size
   {
-    const Mask mask(!(dpdry_clus <= dplom_sect[0]) && (dpdry_clus >= dphim_sect[nsize-1]));
-    igrow.set(mask, 0);
-    isize_nuc.set(mask, nsize-1);
-    dpdry_part.set(mask, dphim_sect[nsize-1]);
+    const Mask dpdry_clus_in_dplom_sect(!(dpdry_clus <= dplom_sect[0]) && (dpdry_clus >= dphim_sect[nsize-1]));
+    igrow.set(dpdry_clus_in_dplom_sect, 0);
+    isize_nuc.set(dpdry_clus_in_dplom_sect, nsize-1);
+    dpdry_part.set(dpdry_clus_in_dplom_sect, dphim_sect[nsize-1]);
   }
   {
-    const Mask mask(!(dpdry_clus <= dplom_sect[0]) && !(dpdry_clus >= dphim_sect[nsize-1]));
-    igrow.set(mask, 0);
-    Mask found(!mask);
+    const Mask dpdry_clus_not_in_dplom_sect(!(dpdry_clus <= dplom_sect[0]) && !(dpdry_clus >= dphim_sect[nsize-1]));
+    igrow.set(dpdry_clus_not_in_dplom_sect, 0);
+    Mask found(!dpdry_clus_not_in_dplom_sect);
     for (int i = 0; i < nsize && (!found).any(); ++i) {
-      const Mask size_mask(mask && !found && (dpdry_clus < dphim_sect[i]));
+      const Mask size_mask(dpdry_clus_not_in_dplom_sect && !found && (dpdry_clus < dphim_sect[i]));
       isize_nuc .set(size_mask, i);
       dpdry_part.set(size_mask, dpdry_clus);
       dpdry_part.set(size_mask, min( dpdry_part, dphim_sect[i] ));
@@ -513,24 +515,24 @@ void mer07_veh02_nuc_mosaic_1box(
   // calc kerminen & kulmala (2002) correction
   Pack factor_kk(0.0);
   {
-    Mask mask (igrow <= 0);
-    factor_kk.set(mask, 1.0);
-    mask = !mask;
+    const Mask negative_igrow (igrow <= 0);
+    factor_kk.set(negative_igrow, 1.0);
+    const Mask igrow_gt_0 = !negative_igrow;
     // "gr" parameter (nm/h) = condensation growth rate of new particles
     // use kk2002 eqn 21 for h2so4 uptake, and correct for nh3 & h2o uptake
-    tmp_spd.set(mask, 14.7*sqrt(temp_in)); // h2so4 molecular speed (m/s);
-    gr_kk.set(mask, 3.0e-9*tmp_spd*mw_sulfacid*so4vol_in/(dens_part*wet_volfrac_so4a));
+    tmp_spd.set(igrow_gt_0, 14.7*sqrt(temp_in)); // h2so4 molecular speed (m/s);
+    gr_kk.set(igrow_gt_0, 3.0e-9*tmp_spd*mw_sulfacid*so4vol_in/(dens_part*wet_volfrac_so4a));
 
     // "gamma" parameter (nm2/m2/h)
     // use kk2002 eqn 22
     // dfin_kk = wet diam (nm) of grown particle having dry dia = dpdry_part (m)
-    dfin_kk.set(mask, 1.0e9 * dpdry_part * pow(wetvol_dryvol,onethird));
+    dfin_kk.set(igrow_gt_0, 1.0e9 * dpdry_part * pow(wetvol_dryvol,onethird));
     // dnuc_kk = wet diam (nm) of cluster
-    dnuc_kk.set(mask, 2.0*radius_cluster);
-    dnuc_kk.set(mask, max( dnuc_kk, 1.0 ));
+    dnuc_kk.set(igrow_gt_0, 2.0*radius_cluster);
+    dnuc_kk.set(igrow_gt_0, max( dnuc_kk, 1.0 ));
     // neglect (dmean/150)^0.048 factor,
     // which should be very close to 1.0 because of small exponent
-    gamma_kk.set(mask, 0.23 * pow(dnuc_kk,0.2)
+    gamma_kk.set(igrow_gt_0, 0.23 * pow(dnuc_kk,0.2)
       * pow(dfin_kk/3.0,       0.075)
       * pow(dens_part*1.0e-3, -0.33)
       * pow(temp_in/293.0,    -0.75));
@@ -545,20 +547,20 @@ void mer07_veh02_nuc_mosaic_1box(
     //     calculated directly from eqn 2,
     //     which is acceptable, given overall uncertainties
     // tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
-    tmpa.set(mask, h2so4_uptkrate * 3600.0);
+    tmpa.set(igrow_gt_0, h2so4_uptkrate * 3600.0);
     //const Pack tmpa1 = tmpa;
-    tmpa.set(mask, max( tmpa, 0.0 ));
+    tmpa.set(igrow_gt_0, max( tmpa, 0.0 ));
     // tmpb = h2so4 gas diffusivity (m2/s, then m2/h)
-    tmpb.set(mask, 6.7037e-6 * pow(temp_in, 0.75) / cair);
+    tmpb.set(igrow_gt_0, 6.7037e-6 * pow(temp_in, 0.75) / cair);
     //const Pack tmpb1 = tmpb;        // m2/s
-    tmpb.set(mask, tmpb*3600.0);  // m2/h
-    cs_prime_kk.set(mask, tmpa/(4.0*pi*tmpb*accom_coef_h2so4));
+    tmpb.set(igrow_gt_0, tmpb*3600.0);  // m2/h
+    cs_prime_kk.set(igrow_gt_0, tmpa/(4.0*pi*tmpb*accom_coef_h2so4));
     //cs_kk = cs_prime_kk*4.0*pi*tmpb1;
 
     // "nu" parameter (nm) -- kk2002 eqn 11
-    nu_kk.set(mask, gamma_kk*cs_prime_kk/gr_kk);
+    nu_kk.set(igrow_gt_0, gamma_kk*cs_prime_kk/gr_kk);
     // nucleation rate adjustment factor (--) -- kk2002 eqn 13
-    factor_kk.set(mask, exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) ));
+    factor_kk.set(igrow_gt_0, exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) ));
   }
   ratenuclt_kk = ratenuclt_bb*factor_kk;
 
@@ -577,17 +579,17 @@ void mer07_veh02_nuc_mosaic_1box(
   // check if max production exceeds available nh3 vapor
   Pack freduceb ( 1.0 );
   {
-    const Mask mask(molenh4a_per_moleso4a >= 1.0e-10); 
+    const Mask molenh4a_per_moleso4a_non_zero(molenh4a_per_moleso4a >= 1.0e-10); 
     // max production of aerosol nh4 (ppm) based on ratenuclt_kk and mass_part
-    qmolnh4a_del_max.set(mask, qmolso4a_del_max*molenh4a_per_moleso4a);
-    freduceb.set(mask && (qmolnh4a_del_max > qnh3_cur),qnh3_cur/qmolnh4a_del_max);
+    qmolnh4a_del_max.set(molenh4a_per_moleso4a_non_zero, qmolso4a_del_max*molenh4a_per_moleso4a);
+    freduceb.set(molenh4a_per_moleso4a_non_zero && (qmolnh4a_del_max > qnh3_cur),qnh3_cur/qmolnh4a_del_max);
   }
   freduce = ekat::min( freducea, freduceb );
 
   // if adjusted nucleation rate is less than 1e-12 #/m3/s ~= 0.1 #/cm3/day,
   // exit with new particle formation = 0
   {
-    const Mask mask(1.0e-12 < freduce*ratenuclt_kk);
+    const Mask freduce_ratenuclt_kk_non_zero(1.0e-12 < freduce*ratenuclt_kk);
     // note:  suppose that at this point, freduce < 1.0 (no gas-available
     //    constraints) and molenh4a_per_moleso4a < 2.0
     // if the gas-available constraints is do to h2so4 availability,
@@ -600,22 +602,22 @@ void mer07_veh02_nuc_mosaic_1box(
     // are such refinements worth the effort?
 
     // changes to h2so4 & nh3 gas (in mol/mol-air), limited by amounts available
-    tmpa.set(mask, 0.9999);
-    qh2so4_del.set(mask, ekat::min( tmpa*qh2so4_cur, freduce*qmolso4a_del_max ));
-    qnh3_del  .set(mask, ekat::min( tmpa*qnh3_cur, qh2so4_del*molenh4a_per_moleso4a ));
-    qh2so4_del.set(mask, -qh2so4_del);
-    qnh3_del  .set(mask, -qnh3_del);
+    tmpa.set(freduce_ratenuclt_kk_non_zero, 0.9999);
+    qh2so4_del.set(freduce_ratenuclt_kk_non_zero, ekat::min( tmpa*qh2so4_cur, freduce*qmolso4a_del_max ));
+    qnh3_del  .set(freduce_ratenuclt_kk_non_zero, ekat::min( tmpa*qnh3_cur, qh2so4_del*molenh4a_per_moleso4a ));
+    qh2so4_del.set(freduce_ratenuclt_kk_non_zero, -qh2so4_del);
+    qnh3_del  .set(freduce_ratenuclt_kk_non_zero, -qnh3_del);
 
     // changes to so4 & nh4 aerosol (in mol/mol-air)
-    qso4a_del.set(mask, -qh2so4_del);
-    qnh4a_del.set(mask,   -qnh3_del);
+    qso4a_del.set(freduce_ratenuclt_kk_non_zero, -qh2so4_del);
+    qnh4a_del.set(freduce_ratenuclt_kk_non_zero,   -qnh3_del);
     // change to aerosol number (in #/mol-air)
-    qnuma_del.set(mask, 1.0e-3*(qso4a_del*mw_so4a + qnh4a_del*mw_nh4a)/mass_part);
+    qnuma_del.set(freduce_ratenuclt_kk_non_zero, 1.0e-3*(qso4a_del*mw_so4a + qnh4a_del*mw_nh4a)/mass_part);
     // do the following (tmpa, tmpb, tmpc) calculations as a check
     // max production of aerosol number (#/mol-air)
-    tmpa.set(mask, max( 0.0, (ratenuclt_kk*dtnuc/cair) ));
+    tmpa.set(freduce_ratenuclt_kk_non_zero, max( 0.0, (ratenuclt_kk*dtnuc/cair) ));
     // adjusted production of aerosol number (#/mol-air)
-    tmpb.set(mask, tmpa*freduce);
+    tmpb.set(freduce_ratenuclt_kk_non_zero, tmpa*freduce);
     // relative difference from qnuma_del
     //const Pack tmpc = (tmpb - qnuma_del)/max(max(tmpb, qnuma_del), 1.0e-35);
   }
@@ -679,25 +681,25 @@ void pbl_nuc_wang2008(const Pack & so4vol,
 
   //! exit if pbl nuc rate is lower than (incoming) ternary/binary rate
   {
-    const Mask mask(rateloge < tmp_rateloge);
+    const Mask rateloge_lt_tmp_rateloge(rateloge < tmp_rateloge);
 
-    rateloge.set(mask, tmp_rateloge);
-    ratenucl.set(mask, tmp_ratenucl);
-    newnuc_method_flagaa2.set(mask, newnuc_method_flagaa);
+    rateloge.set(rateloge_lt_tmp_rateloge, tmp_rateloge);
+    ratenucl.set(rateloge_lt_tmp_rateloge, tmp_ratenucl);
+    newnuc_method_flagaa2.set(rateloge_lt_tmp_rateloge, newnuc_method_flagaa);
 
     // following wang 2002, assume fresh nuclei are 1 nm diameter
     //    subsequent code will "grow" them to aitken mode size
-    radius_cluster.set(mask, 0.5);
+    radius_cluster.set(rateloge_lt_tmp_rateloge, 0.5);
 
     // assume fresh nuclei are pure h2so4
     //    since aitken size >> initial size, the initial composition
     //    has very little impact on the results
-    const Pack tmp_diam (mask, radius_cluster * 2.0e-7);                  // diameter in cm
-    const Pack tmp_volu (mask, (tmp_diam*tmp_diam*tmp_diam) * (constants::pi/6.0));  // volume in cm^3
-    const Pack tmp_mass (mask, tmp_volu * 1.8);                           // mass in g
-    cnum_h2so4.set(mask, (tmp_mass / 98.0) * 6.023e23);                        // no. of h2so4 molec assuming pure h2so4
-    cnum_tot.set(mask, cnum_h2so4);
-    cnum_nh3.set(mask, 0.0);
+    const Pack tmp_diam (rateloge_lt_tmp_rateloge, radius_cluster * 2.0e-7);                  // diameter in cm
+    const Pack tmp_volu (rateloge_lt_tmp_rateloge, (tmp_diam*tmp_diam*tmp_diam) * (constants::pi/6.0));  // volume in cm^3
+    const Pack tmp_mass (rateloge_lt_tmp_rateloge, tmp_volu * 1.8);                           // mass in g
+    cnum_h2so4.set(rateloge_lt_tmp_rateloge, (tmp_mass / 98.0) * 6.023e23);                        // no. of h2so4 molec assuming pure h2so4
+    cnum_tot.set(rateloge_lt_tmp_rateloge, cnum_h2so4);
+    cnum_nh3.set(rateloge_lt_tmp_rateloge, 0.0);
   }
 }
 
@@ -919,9 +921,9 @@ static void binary_nuc_vehk2002(const Pack temp,
       0.7734119613144357*log(c2)*log(c3) - 0.15576469879527022*(log(c3)*log(c3));
 
     {
-      const Mask mask(t_onset > t);
-      j_log.set(!mask, -300.0);
-      j_log.set(mask, -12.861848898625231 + 4.905527742256349*c3 - 358.2337705052991*rh -
+      const Mask t_onset_gt_t(t_onset > t);
+      j_log.set(!t_onset_gt_t, -300.0);
+      j_log.set(t_onset_gt_t, -12.861848898625231 + 4.905527742256349*c3 - 358.2337705052991*rh -
         0.05463019231872484*c3*t + 4.8630382337426985*rh*t +
         0.00020258394697064567*c3*(t*t) - 0.02175548069741675*rh*(t*t) -
         2.502406532869512e-7*c3*(t*t*t) + 0.00003212869941055865*rh*(t*t*t) -
@@ -983,7 +985,7 @@ static void binary_nuc_vehk2002(const Pack temp,
         0.0001500555743561457*(t*t)*(log(c3)*log(c3)*log(c3))*log(rh) -
         1.9828365865570703e-7*(t*t*t)*(log(c3)*log(c3)*log(c3))*log(rh));
 
-      ntot.set(mask, 57.40091052369212 - 0.2996341884645408*t +
+      ntot.set(t_onset_gt_t, 57.40091052369212 - 0.2996341884645408*t +
         0.0007395477768531926*(t*t) -
         5.090604835032423*log(c2) + 0.011016634044531128*t*log(c2) +
         0.06750032251225707*(log(c2)*log(c2)) - 0.8102831333223962*log(c3) +
@@ -993,7 +995,7 @@ static void binary_nuc_vehk2002(const Pack temp,
         0.014916956508210809*t*j_log + 0.08459090011666293*log(c3)*j_log -
         0.00014800625143907616*t*log(c3)*j_log + 0.00503804694656905*(j_log*j_log));
 
-      r.set(mask, 3.2888553966535506e-10 - 3.374171768439839e-12*t +
+      r.set(t_onset_gt_t, 3.2888553966535506e-10 - 3.374171768439839e-12*t +
         1.8347359507774313e-14*(t*t) + 2.5419844298881856e-12*log(c2) -
         9.498107643050827e-14*t*log(c2) + 7.446266520834559e-13*(log(c2)*log(c2)) +
         2.4303397746137294e-11*log(c3) + 1.589324325956633e-14*t*log(c3) -
@@ -1003,7 +1005,7 @@ static void binary_nuc_vehk2002(const Pack temp,
         1.2879071621313094e-12*log(c3)*j_log -
         3.80352446061867e-15*t*log(c3)*j_log - 1.8790172502456827e-14*(j_log*j_log));
 
-      nacid.set(mask, -4.7154180661803595 + 0.13436423483953885*t -
+      nacid.set(t_onset_gt_t, -4.7154180661803595 + 0.13436423483953885*t -
         0.00047184686478816176*(t*t) -
         2.564010713640308*log(c2) + 0.011353312899114723*t*log(c2) +
         0.0010801941974317014*(log(c2)*log(c2)) + 0.5171368624197119*log(c3) -
@@ -1013,7 +1015,7 @@ static void binary_nuc_vehk2002(const Pack temp,
         0.006167654171986281*t*j_log - 0.11061390967822708*log(c3)*j_log +
         0.0004367575329273496*t*log(c3)*j_log + 0.000916366357266258*(j_log*j_log));
 
-      namm.set(mask, 71.20073903979772 - 0.8409600103431923*t +
+      namm.set(t_onset_gt_t, 71.20073903979772 - 0.8409600103431923*t +
         0.0024803006590334922*(t*t) +
         2.7798606841602607*log(c2) - 0.01475023348171676*t*log(c2) +
         0.012264508212031405*(log(c2)*log(c2)) - 2.009926050440182*log(c3) +
