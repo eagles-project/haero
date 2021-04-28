@@ -100,42 +100,26 @@ class Prognostics final {
   //                                 Data
   // --------------------------------------------------------------------------
 
-  /// Returns the view storing interstitial aerosol mass mixing ratios
-  /// [kg aerosol / kg dry air].
-  KOKKOS_INLINE_FUNCTION
-  SpeciesColumnView interstitial_aerosols() {
-    return int_aero_species_;
-  }
+  // Modal interstitial aerosol species mixing ratios.
+  // int_aerosols_[s][k] -> mixing ratio of aerosol mode/species s within the
+  // kth pack of vertical levels.
+  SpeciesColumnView interstitial_aerosols;
 
-  /// Returns the view storing interstitial aerosol mass mixing ratios
-  /// [kg aerosol / kg dry air] (const).
-  KOKKOS_INLINE_FUNCTION
-  const SpeciesColumnView interstitial_aerosols() const {
-    return int_aero_species_;
-  }
+  // Modal cloud-borne aerosol species mixing ratios.
+  // cld_aerosols_[s][k] -> mixing ratio of aerosol mode/species s within the
+  // kth pack of vertical levels.
+  SpeciesColumnView cloud_aerosols;
 
-  /// Returns the view storing cloud-borne aerosol mass mixing ratios
-  /// [kg aerosol / kg dry air].
-  SpeciesColumnView cloudborne_aerosols();
+  /// Gas mixing ratios.
+  /// gases_[s][k] -> mixing ratio of gas species s within the kth pack of
+  /// vertical levels.
+  SpeciesColumnView gases;
 
-  /// Returns the view storing cloud-borne aerosol mass mixing ratios
-  /// [kg aerosol / kg dry air] (const).
-  const SpeciesColumnView cloudborne_aerosols() const;
+  /// Modal number concentrations.
+  /// modal_num_concs_[m][k] -> number concentration of mode m within the kth
+  /// pack of vertical levels.
+  ModalColumnView modal_num_concs;
 
-  /// Returns the view storing the mass mixing ratios of gas species
-  /// [kg gas / kg dry air].
-  SpeciesColumnView gases();
-
-  /// Returns the view storing the mass mixing ratios of gas species
-  /// [kg gas / kg dry air] (const).
-  const SpeciesColumnView gases() const;
-
-  /// Returns the view storing the modal number concentrations [# / kg dry air].
-  ModalColumnView modal_num_concs();
-
-  /// Returns the view storing the modal number concentrations [# / kg dry air]
-  /// (const).
-  const ModalColumnView modal_num_concs() const;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
@@ -161,25 +145,7 @@ class Prognostics final {
   // Number of vertical levels.
   const int num_levels_;
 
-  // Modal interstitial aerosol species mixing ratios.
-  // int_aerosols_[s][k] -> mixing ratio of aerosol mode/species s within the
-  // kth pack of vertical levels.
-  SpeciesColumnView int_aero_species_;
 
-  // Modal cloud-borne aerosol species mixing ratios.
-  // cld_aerosols_[s][k] -> mixing ratio of aerosol mode/species s within the
-  // kth pack of vertical levels.
-  SpeciesColumnView cld_aero_species_;
-
-  /// Gas mixing ratios.
-  /// gases_[s][k] -> mixing ratio of gas species s within the kth pack of
-  /// vertical levels.
-  SpeciesColumnView gases_;
-
-  /// Modal number concentrations.
-  /// modal_num_concs_[m][k] -> number concentration of mode m within the kth
-  /// pack of vertical levels.
-  ModalColumnView modal_num_concs_;
 };
 
 }

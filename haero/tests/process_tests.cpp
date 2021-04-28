@@ -60,7 +60,7 @@ public :
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const {
 
-    const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols();
+    const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
     const ColumnView temp = atmosphere.temperature;
     const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
@@ -240,7 +240,7 @@ TEST_CASE("process_tests", "prognostic_process") {
 
   {
     using fp_helper = FloatingPoint<float>;
-    const SpeciesColumnView int_aerosols = progs.interstitial_aerosols();
+    const SpeciesColumnView int_aerosols = progs.interstitial_aerosols;
     const ColumnView temp = atmos.temperature;
     const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
