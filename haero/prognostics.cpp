@@ -8,16 +8,16 @@ Prognostics::Prognostics(int num_aerosol_modes,
                          int num_levels,
                          SpeciesColumnView int_aerosols,
                          SpeciesColumnView cld_aerosols,
-                         SpeciesColumnView gases,
-                         ModalColumnView   modal_num_concs):
+                         SpeciesColumnView gases_,
+                         ModalColumnView   modal_num_concs_):
   num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Prognostics::num_aerosol_species")),
   num_aero_populations_(0),
   num_gases_(num_gases),
   num_levels_(num_levels),
-  int_aero_species_(int_aerosols),
-  cld_aero_species_(cld_aerosols),
-  gases_(gases),
-  modal_num_concs_(modal_num_concs)
+  interstitial_aerosols(int_aerosols),
+  cloud_aerosols(cld_aerosols),
+  gases(gases_),
+  modal_num_concs(modal_num_concs_)
   {
 
   // Count up the mode/species combinations.
@@ -81,32 +81,6 @@ int Prognostics::num_levels() const {
   return num_levels_;
 }
 
-SpeciesColumnView
-Prognostics::cloudborne_aerosols() {
-  return cld_aero_species_;
-}
-
-const SpeciesColumnView
-Prognostics::cloudborne_aerosols() const {
-  return cld_aero_species_;
-}
-
-SpeciesColumnView Prognostics::gases() {
-  return gases_;
-}
-
-const SpeciesColumnView Prognostics::gases() const {
-  return gases_;
-}
-
-ModalColumnView Prognostics::modal_num_concs() {
-  return modal_num_concs_;
-}
-
-const ModalColumnView Prognostics::modal_num_concs() const {
-  return modal_num_concs_;
-}
-
 void Prognostics::scale_and_add(Real scale_factor,
                                 const Tendencies& tendencies) {
   EKAT_REQUIRE_MSG(false, "scale_and_add() is not yet implemented!");
@@ -119,28 +93,28 @@ extern "C" {
 void* p_int_aero_mix_frac_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto mix_fracs = progs->interstitial_aerosols();
+  auto mix_fracs = progs->interstitial_aerosols;
   return (void*)mix_fracs.data();
 }
 
 void* p_cld_aero_mix_frac_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto mix_fracs = progs->cloudborne_aerosols();
+  auto mix_fracs = progs->cloud_aerosols;
   return (void*)mix_fracs.data();
 }
 
 void* p_gases_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto mix_fracs = progs->gases();
+  auto mix_fracs = progs->gases;
   return (void*)mix_fracs.data();
 }
 
 void* p_modal_num_concs_c(void* p)
 {
   auto* progs = static_cast<Prognostics*>(p);
-  auto num_concs = progs->modal_num_concs();
+  auto num_concs = progs->modal_num_concs;
   return (void*)num_concs.data();
 }
 
