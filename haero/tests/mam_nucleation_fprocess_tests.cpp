@@ -73,6 +73,7 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_fprocess") {
 #else
   const Real tolerance = 1.0e-10;
 #endif
+  using Pack = ekat::Pack<Real,1>;
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
   const unsigned p0  = 987659;
@@ -83,26 +84,26 @@ TEST_CASE("binary_nuc_vehk2002", "mam_nucleation_fprocess") {
     return Real(seed)/p0;
   };
   for (int i=0; i<1000; ++i) {
-    const Real temp   =  235 +   60*random();  // range 235-295
-    const Real rh     = 0.05 +   .9*random();  // range .05-.95
-    const Real so4vol = 5.e4 + 1.e8*random();  // range 5x10^4 - 10^9
-    Real ratenucl           = 0;
-    Real rateloge           = 0;
-    Real cnum_h2so4         = 0;
-    Real cnum_tot           = 0;
-    Real radius_cluster     = 0;
-    Real ratenucl_f90       = 0;
-    Real rateloge_f90       = 0;
-    Real cnum_h2so4_f90     = 0;
-    Real cnum_tot_f90       = 0;
-    Real radius_cluster_f90 = 0;
+    const Pack temp   (  235 +   60*random());  // range 235-295
+    const Pack rh     ( 0.05 +   .9*random());  // range .05-.95
+    const Pack so4vol ( 5.e4 + 1.e8*random());  // range 5x10^4 - 10^9
+    Pack ratenucl           ( 0 );
+    Pack rateloge           ( 0 );
+    Pack cnum_h2so4         ( 0 );
+    Pack cnum_tot           ( 0 );
+    Pack radius_cluster     ( 0 );
+    Real ratenucl_f90       = 0  ;
+    Real rateloge_f90       = 0  ;
+    Real cnum_h2so4_f90     = 0  ;
+    Real cnum_tot_f90       = 0  ;
+    Real radius_cluster_f90 = 0  ;
     MAMNucleationProcess::binary_nuc_vehk2002(temp, rh, so4vol, ratenucl, rateloge, cnum_h2so4, cnum_tot, radius_cluster);
-    binary_nuc_vehk2002_bridge(temp, rh, so4vol, ratenucl_f90, rateloge_f90, cnum_h2so4_f90, cnum_tot_f90, radius_cluster_f90);
-    REQUIRE( (fp_helper::equiv(ratenucl      , ratenucl_f90, tolerance)       || fp_helper::rel(ratenucl   , ratenucl_f90, tolerance)) );
-    REQUIRE( (fp_helper::equiv(rateloge      ,  rateloge_f90, tolerance)      || fp_helper::rel(rateloge   ,  rateloge_f90, tolerance)) );
-    REQUIRE( (fp_helper::equiv(cnum_h2so4    , cnum_h2so4_f90, tolerance)     || fp_helper::rel(cnum_h2so4 , cnum_h2so4_f90, tolerance)) );
-    REQUIRE( (fp_helper::equiv(cnum_tot      , cnum_tot_f90, tolerance)       || fp_helper::rel(cnum_tot   , cnum_tot_f90, tolerance)) );
-    REQUIRE( (fp_helper::equiv(radius_cluster, radius_cluster_f90, tolerance) || fp_helper::rel(radius_cluster   , radius_cluster_f90, tolerance)) );
+    binary_nuc_vehk2002_bridge(temp[0], rh[0], so4vol[0], ratenucl_f90, rateloge_f90, cnum_h2so4_f90, cnum_tot_f90, radius_cluster_f90);
+    REQUIRE( (fp_helper::equiv(ratenucl   [0], ratenucl_f90, tolerance)       || fp_helper::rel(ratenucl   [0], ratenucl_f90, tolerance)) );
+    REQUIRE( (fp_helper::equiv(rateloge   [0], rateloge_f90, tolerance)       || fp_helper::rel(rateloge   [0],  rateloge_f90, tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_h2so4 [0], cnum_h2so4_f90, tolerance)     || fp_helper::rel(cnum_h2so4 [0], cnum_h2so4_f90, tolerance)) );
+    REQUIRE( (fp_helper::equiv(cnum_tot   [0], cnum_tot_f90, tolerance)       || fp_helper::rel(cnum_tot   [0], cnum_tot_f90, tolerance)) );
+    REQUIRE( (fp_helper::equiv(radius_cluster[0], radius_cluster_f90, tolerance) || fp_helper::rel(radius_cluster   [0], radius_cluster_f90, tolerance)) );
   }
 }
 

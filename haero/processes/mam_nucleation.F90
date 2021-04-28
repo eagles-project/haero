@@ -1149,8 +1149,8 @@ subroutine binary_nuc_vehk2002( temp, rh, so4vol,   &
   )
   rateloge = tmpa
   if (log(1.0e38_wp) < tmpa) then
-    PRINT*,"Error: tmpa exceeds limit of about 87."
-    EXIT
+    print*,"Error: tmpa exceeds limit of about 87."
+    stop
   end if
   ratenucl = exp ( tmpa )
 
