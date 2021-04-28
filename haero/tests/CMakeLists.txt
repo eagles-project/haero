@@ -46,13 +46,11 @@ EkatCreateUnitTest(cuda_tests cuda_tests.cpp
 # Unit tests for aerosol processes
 #----------------------------------------------------
 
-if (HAERO_DOUBLE_PRECISION) # double precision testing only for now
-  EkatCreateUnitTest(mam_nucleation_process_tests mam_nucleation_process_tests.cpp
-                     LIBS ${HAERO_LIBRARIES})
+EkatCreateUnitTest(mam_nucleation_process_tests mam_nucleation_process_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
 
-  EkatCreateUnitTest(mam_nucleation_packed_tests mam_nucleation_packed_tests.cpp
-                     LIBS ${HAERO_LIBRARIES})
-endif()
+EkatCreateUnitTest(mam_nucleation_packed_tests mam_nucleation_packed_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
 
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
@@ -66,10 +64,8 @@ if (HAERO_FORTRAN)
                      LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
 
   # Aerosol process unit tests
-  if (HAERO_DOUBLE_PRECISION)
-    EkatCreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
-                       LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
-  endif()
+  EkatCreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
+                     LIBS haero_fprocess_stubs;${HAERO_LIBRARIES})
 endif()
 
 #----------------------------------------------------
