@@ -1148,7 +1148,10 @@ subroutine binary_nuc_vehk2002( temp, rh, so4vol,   &
     + jcoe * (log (so4vol)) **3.0_wp   &
   )
   rateloge = tmpa
-  tmpa = min( tmpa, log(1.0e38_wp) )
+  if (log(1.0e38_wp) < tmpa) then
+    PRINT*,"Error: tmpa exceeds limit of about 87."
+    EXIT
+  end if
   ratenucl = exp ( tmpa )
 
   ! calc number of molecules in critical cluster
