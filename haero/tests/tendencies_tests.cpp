@@ -30,17 +30,17 @@ TEST_CASE("tendencies_ctor", "") {
 
   // Now create tendencies for it, and make sure the vitals match up.
   Tendencies tends(progs);
-  const auto& tends_int_aeros = tends.interstitial_aerosols();
+  const auto& tends_int_aeros = tends.interstitial_aerosols;
   const auto& progs_int_aeros = progs.interstitial_aerosols();
   REQUIRE(tends_int_aeros.extent(0) == progs_int_aeros.extent(0));
   REQUIRE(tends_int_aeros.extent(1) == progs_int_aeros.extent(1));
 
-  const auto& tends_cld_aeros = tends.cloudborne_aerosols();
+  const auto& tends_cld_aeros = tends.cloud_aerosols;
   const auto& progs_cld_aeros = progs.cloudborne_aerosols();
   REQUIRE(tends_cld_aeros.extent(0) == progs_cld_aeros.extent(0));
   REQUIRE(tends_cld_aeros.extent(1) == progs_cld_aeros.extent(1));
 
-  const auto& tends_modal_num_concs = tends.modal_num_concs();
+  const auto& tends_modal_num_concs = tends.modal_num_concs;
   const auto& progs_modal_num_concs = progs.modal_num_concs();
   REQUIRE(tends_modal_num_concs.extent(0) == progs_modal_num_concs.extent(0));
   REQUIRE(tends_modal_num_concs.extent(1) == progs_modal_num_concs.extent(1));
