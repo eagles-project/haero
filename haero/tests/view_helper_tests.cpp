@@ -153,6 +153,15 @@ TEST_CASE ("scalarized views", "" ) {
   }
 }
 
+TEST_CASE ("Haero view type basics", "") {
+
+   SECTION("ColumnView") {
+    ColumnView empty_view;
+    std::cout << "An empty view (default-constructed) has extent " << empty_view.extent(0) << "\n";
+    REQUIRE(empty_view.extent(0) == 0);
+   }
+}
+
 template <int PackSize>
 std::string PackViewTest<PackSize>::info_string() const {
   std::ostringstream ss;
