@@ -6,6 +6,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 
 namespace haero {
 
