@@ -138,7 +138,7 @@ class MAMNucleationProcess : public PrognosticProcess {
 ///    particles exceed the current gas mixrats, the new particle production
 ///    is reduced so that the new particle mass mixrats match the gas mixrats.
 ///
-///    the correction of kerminen and kulmala (2002) is applied to account
+///    the correction of eerminen and kulmala (2002) is applied to account
 ///    for loss of the new particles by coagulation as they are
 ///    growing to the "host code mininum size"
 ///
@@ -734,6 +734,7 @@ static void binary_nuc_vehk2002(const Pack temp,
 
 {
   using namespace std;
+  using Mask = ekat::Mask<Pack::n>;
   //calc sulfuric acid mole fraction in critical cluster
   const Pack crit_x = 0.740997 - 0.00266379 * temp
     - 0.00349998 * log (so4vol)
@@ -809,7 +810,18 @@ static void binary_nuc_vehk2002(const Pack temp,
     + jcoe * log (so4vol) * log (so4vol) * log (so4vol)
   );
   rateloge = tmpa;
-  tmpa = min( log(1.0e38), tmpa );
+  {
+    // historical bounds check that might have 
+    // something to do with single precision
+    // limits.
+    const Real bounds_limit = log(1.0e38); // 
+    const Mask bounds_check(bounds_limit < tmpa); 
+    if (bounds_check.any()) {
+      printf ("%s:%d: Error in bounds check. tmpa exceeds limit:%lf\n",
+         __FILE__,__LINE__,log(1.0e38));
+      EKAT_KERNEL_ASSERT(bounds_check.any());
+    } 
+  }
   ratenucl = exp ( tmpa );
 
   // calc number of molecules in critical cluster
