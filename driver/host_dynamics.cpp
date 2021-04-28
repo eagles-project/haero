@@ -546,9 +546,9 @@ void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
   const auto thetav_local = thetav;
   const auto qv_local = qv;
 
-  auto temperature = atm.temperature();
-  auto rel_humidity = atm.relative_humidity();
-  auto level_heights = atm.height();
+  auto temperature = atm.temperature;
+  auto rel_humidity = atm.relative_humidity;
+  auto level_heights = atm.height;
   Kokkos::parallel_for("HostDynamics:UpdateAtmosphereLevels", nlev_, KOKKOS_LAMBDA (const int k) {
     const int pack_idx = PackInfo::pack_idx(k);
     const int vec_idx = PackInfo::vec_idx(k);
