@@ -44,11 +44,7 @@ class Atmosphere final {
   const ColumnView hydrostatic_dp;
 
   // Planetary boundary height.
-  Real pblh;
-
-  KOKKOS_INLINE_FUNCTION
-  Real planetary_boundary_height() const {return pblh;}
-
+  Real planetary_boundary_height;
 
   /// Returns the number of vertical levels per column in the system.
   KOKKOS_INLINE_FUNCTION
