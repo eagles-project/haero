@@ -187,7 +187,12 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
     hpint(pack_idx)[vec_idx] = phydro;
 
     // assert that p(z) = p(z(p))
-    EKAT_ASSERT(FloatingPoint<Real>::equiv(z, height_at_pressure(phydro, ac),3.5e-12));
+//     if (!FloatingPoint<Real>::equiv(z, height_at_pressure(phydro, ac), 35*FloatingPoint<Real>::zero_tol)) {
+//       std::cout << " z = " << z << " z(p) = " << height_at_pressure(phydro, ac) << " |diff| = "
+//         << std::abs(z - height_at_pressure(phydro, ac)) << "\n";
+//     }
+    EKAT_ASSERT(FloatingPoint<Real>::equiv(z, height_at_pressure(phydro, ac),
+      (std::is_same<float, Real>::value ? 2e-3 : 35*FloatingPoint<Real>::zero_tol)));
   }
 
   /// set midpoint pressure, density, virtual potential temperature, water vapor mixing ratio
