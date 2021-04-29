@@ -100,6 +100,13 @@ class Model final {
   /// Returns the number of vertical levels in the model.
   int num_levels() const { return num_levels_; }
 
+  /// Returns the number of modes in the model
+  KOKKOS_INLINE_FUNCTION
+  int num_modes() const {return modal_aerosol_config_.num_modes();}
+
+  KOKKOS_INLINE_FUNCTION
+  int num_gases() const {return modal_aerosol_config_.num_gases();}
+
   /// Returns the total number of distinct aerosol species populations
   /// (mode-species pairs).
   int num_aerosol_populations() const {

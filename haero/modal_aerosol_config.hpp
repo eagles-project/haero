@@ -87,6 +87,12 @@ class ModalAerosolConfig final {
   /// model, counting appearances of one species in different modes separately.
   int num_aerosol_populations;
 
+  KOKKOS_INLINE_FUNCTION
+  int num_modes() const {return d_aerosol_modes.extent(0);}
+
+  KOKKOS_INLINE_FUNCTION
+  int num_gases() const {return d_gas_species.extent(0);}
+
   /// The list of gas species associated with this aerosol model.
   DeviceType::view_1d<GasSpecies> d_gas_species;
   HostType::view_1d<GasSpecies>   h_gas_species;

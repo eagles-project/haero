@@ -56,12 +56,13 @@ PrognosticProcess* select_prognostic_process(ProcessType type,
     }
   }
   else if (type == NucleationProcess) {
+    if (selections.nucleation == SelectedProcesses::MAMNucleation) {
+      process = new MAMNucleationProcess();
 #if HAERO_FORTRAN
-    if (selections.nucleation == SelectedProcesses::MAMFNucleation) {
+    } else if (selections.nucleation == SelectedProcesses::MAMFNucleation) {
       process = new MAMNucleationFProcess();
-    } else
 #endif
-    if (selections.nucleation == SelectedProcesses::NoNucleation) {
+    } else if (selections.nucleation == SelectedProcesses::NoNucleation) {
       process = new NullPrognosticProcess(type);
     }
   }
