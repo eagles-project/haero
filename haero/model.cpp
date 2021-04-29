@@ -40,23 +40,6 @@ std::set<std::string>* fortran_strings_ = nullptr;
 
 #endif // HAERO_FORTRAN
 
-// Prognostic process types.
-const ProcessType progProcessTypes[] = {
-  ActivationProcess,
-  CloudBorneWetRemovalProcess,
-  CoagulationProcess,
-  CondensationProcess,
-  DryDepositionProcess,
-  EmissionsProcess,
-  NucleationProcess,
-  ResuspensionProcess
-};
-
-// Diagnostic process types.
-const ProcessType diagProcessTypes[] = {
-  WaterUptakeProcess
-};
-
 } // anonymous namespace
 
 Model::Model(
@@ -66,8 +49,7 @@ Model::Model(
   modal_aerosol_config_(modal_aerosol_config),
   selected_processes_(selected_processes),
   num_levels_(num_levels),
-  prog_processes_(),
-  diag_processes_(),
+  aero_processes_(),
   uses_fortran_(false)
 {
   // Validate model parameters.
@@ -85,10 +67,7 @@ Model::Model(
   }
 
   // Now we can initialize the processes.
-  for (auto p: prog_processes_) {
-    p.second->init(modal_aerosol_config_);
-  }
-  for (auto p: diag_processes_) {
+  for (auto p: aero_processes_) {
     p.second->init(modal_aerosol_config_);
   }
 }
@@ -100,8 +79,7 @@ Model::Model(const Model &model):
   modal_aerosol_config_(model.modal_aerosol_config_),
   selected_processes_(model.selected_processes_),
   num_levels_(model.num_levels_),
-  prog_processes_(model.prog_processes_),
-  diag_processes_(model.diag_processes_),
+  aero_processes_(model.aero_processes_),
   uses_fortran_(model.uses_fortran_)
 {}
 
@@ -123,10 +101,7 @@ Model* Model::ForUnitTests(
 }
 
 Model::~Model() {
-  for (auto p: prog_processes_) {
-    delete p.second;
-  }
-  for (auto p: diag_processes_) {
+  for (auto p: aero_processes_) {
     delete p.second;
   }
 
@@ -167,26 +142,26 @@ HostDiagnostics* Model::create_diagnostics() const {
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
   auto diags = new HostDiagnostics(num_aero_species.size(), num_aero_species,
-                               modal_aerosol_config_.h_gas_species.size(),
-                               num_levels_);
+                                   modal_aerosol_config_.h_gas_species.size(),
+                                   num_levels_);
 
-  // Make sure that all diagnostic variables needed by the model's processes
-  // are present.
-  for (auto iter = diag_processes_.begin(); iter != diag_processes_.end(); ++iter) {
-    iter->second->prepare(*diags);
-  }
+//  // Make sure that all diagnostic variables needed by the model's processes
+//  // are present.
+//  for (auto iter = diag_processes_.begin(); iter != diag_processes_.end(); ++iter) {
+//    iter->second->prepare(*diags);
+//  }
 
   return diags;
 }
 
-void Model::run_process(ProcessType type,
+void Model::run_process(AerosolProcessType type,
                         Real t, Real dt,
                         const Prognostics& prognostics,
                         const Atmosphere& atmosphere,
                         const Diagnostics& diagnostics,
                         Tendencies& tendencies) {
-  auto iter = prog_processes_.find(type);
-  EKAT_REQUIRE_MSG(iter != prog_processes_.end(),
+  auto iter = aero_processes_.find(type);
+  EKAT_REQUIRE_MSG(iter != aero_processes_.end(),
                    "No process of the selected type is available!");
   EKAT_REQUIRE_MSG(iter->second != nullptr,
                    "Null process pointer encountered!");
@@ -194,21 +169,6 @@ void Model::run_process(ProcessType type,
                    "Invalid process type encountered!");
   iter->second->run(modal_aerosol_config_, t, dt, prognostics, atmosphere, diagnostics,
                     tendencies);
-}
-
-void Model::update_diagnostics(ProcessType type,
-                               Real t,
-                               const Prognostics& prognostics,
-                               const Atmosphere& atmosphere,
-                               Diagnostics& diagnostics) {
-  auto iter = diag_processes_.find(type);
-  EKAT_REQUIRE_MSG(iter != diag_processes_.end(),
-                   "No process of the selected type is available!");
-  EKAT_REQUIRE_MSG(iter->second != nullptr,
-                   "Null process pointer encountered!");
-  EKAT_REQUIRE_MSG(iter->second->type() == type,
-                   "Invalid process type encountered!");
-  iter->second->update(modal_aerosol_config_, t, prognostics, atmosphere, diagnostics);
 }
 
 const SelectedProcesses& Model::selected_processes() const {
@@ -278,24 +238,15 @@ bool Model::gather_processes() {
   // yet, because that requires that the Fortran representation of the Model
   // needs to be set up before that happens.
   bool have_fortran_processes = false;
-  for (auto p: progProcessTypes) {
-    PrognosticProcess* process = select_prognostic_process(p, selected_processes_);
+  for (int p = ActivationProcess; p != Terminator; ++p) {
+    auto pType = static_cast<AerosolProcessType>(p);
+    AerosolProcess* process = select_aerosol_process(pType, selected_processes_);
 #if HAERO_FORTRAN
-    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
+    if (dynamic_cast<FAerosolProcess*>(process) != nullptr) { // Fortran-backed!
       have_fortran_processes = true;
     }
 #endif // HAERO_FORTRAN
-    prog_processes_[p] = process;
-  }
-
-  for (auto p: diagProcessTypes) {
-    DiagnosticProcess* process = select_diagnostic_process(p, selected_processes_);
-#if HAERO_FORTRAN
-    if (dynamic_cast<FPrognosticProcess*>(process) != nullptr) { // Fortran-backed!
-      have_fortran_processes = true;
-    }
-#endif // HAERO_FORTRAN
-    diag_processes_[p] = process;
+    aero_processes_[pType] = process;
   }
 
   return have_fortran_processes;

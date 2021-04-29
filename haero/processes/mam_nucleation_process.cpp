@@ -7,18 +7,18 @@
 namespace haero {
 
 
-  MAMNucleationProcess::MAMNucleationProcess():
-    PrognosticProcess(NucleationProcess, "MAMNucleationProcess") {}
+MAMNucleationProcess::MAMNucleationProcess():
+  AerosolProcess(NucleationProcess, "MAMNucleationProcess") {}
 
 
-  //------------------------------------------------------------------------
-  //                                Accessors
-  //------------------------------------------------------------------------
+//------------------------------------------------------------------------
+//                                Accessors
+//------------------------------------------------------------------------
 
-  void MAMNucleationProcess::init(const ModalAerosolConfig& modal_aerosol_config) {}
+void MAMNucleationProcess::init(const ModalAerosolConfig& modal_aerosol_config) {}
 
-  KOKKOS_FUNCTION
-  void MAMNucleationProcess::run(const ModalAerosolConfig& modal_aerosol_config,
+KOKKOS_FUNCTION
+void MAMNucleationProcess::run(const ModalAerosolConfig& modal_aerosol_config,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,

@@ -1,7 +1,7 @@
 #ifndef HAERO_SELECTED_PROCESSES_HPP
 #define HAERO_SELECTED_PROCESSES_HPP
 
-#include "haero/process.hpp"
+#include "haero/aerosol_process.hpp"
 
 namespace haero {
 
@@ -99,20 +99,6 @@ struct SelectedProcesses final {
   };
   /// The selected resuspension model
   Resuspension resuspension;
-
-  /// Available process models for water uptake, in which water molecules are
-  /// captured by interstitial aerosol particles.
-  enum WaterUptake {
-    /// no water uptake model
-    NoWaterUptake,
-    /// Water uptake module from MAM4 in Fortran
-    MAM4Fortran,
-    /// Water uptake module from MAM4 in Fortran using bisection for Kohler solve
-    MAM4KohlerBisectionFortran
-  };
-  /// The selected water uptake model.
-  WaterUptake water_uptake;
-
 };
 
 /// Given a (prognostic) aerosol process type and a set of selected
@@ -126,22 +112,8 @@ struct SelectedProcesses final {
 ///                        and their implementations.
 /// @returns A pointer to a newly allocated process reflecting the given
 ///          selections.
-PrognosticProcess* select_prognostic_process(ProcessType type,
-                                             const SelectedProcesses& selections);
-
-/// Given a (diagnostic) aerosol process type and a set of selected
-/// parameterizations, this function creates and returns a pointer to a
-/// newly-allocated DiagnosticProcess instance representing a specific
-/// parameterization (or implementation). The implementation of this function
-/// must be updated whenever a new DiagnosticProcess implementation is made
-/// available.
-/// @param [in] type The type of aerosol process to be selected.
-/// @param [in] selections A struct containing selected aerosol processes
-///                        and their implementations.
-/// @returns A pointer to a newly allocated process reflecting the given
-///          selections.
-DiagnosticProcess* select_diagnostic_process(ProcessType type,
-                                             const SelectedProcesses& selections);
+AerosolProcess* select_aerosol_process(AerosolProcessType type,
+                                       const SelectedProcesses& selections);
 
 } // end haero namespace
 

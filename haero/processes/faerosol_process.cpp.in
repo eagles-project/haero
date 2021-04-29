@@ -16,8 +16,8 @@ extern void @F90_MODULE_NAME@_finalize();
 namespace haero {
 
 @CXX_CLASS_NAME@::@CXX_CLASS_NAME@():
-  haero::FPrognosticProcess(haero::@PROCESS_ENUM_TYPE@,
-    "@CXX_CLASS_NAME@ (Fortran prognostic @PROCESS_ENUM_TYPE@)",
+  haero::FAerosolProcess(haero::@PROCESS_ENUM_TYPE@,
+    "@CXX_CLASS_NAME@ (Fortran @PROCESS_ENUM_TYPE@)",
     @F90_MODULE_NAME@_init,
     @F90_MODULE_NAME@_run,
     @F90_MODULE_NAME@_finalize) {
