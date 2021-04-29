@@ -27,7 +27,7 @@ TEST_CASE("model_ctor", "") {
 
   // select processes (for now, just nucleation)
   SelectedProcesses aerosol_processes;
-  aerosol_processes.nucleation = SelectedProcesses::Nucleation::MAMFNucleation;
+  aerosol_processes.nucleation = SelectedProcesses::Nucleation::MAMNucleation;
   {
     // later:
     // const auto aerosol_processes = create_mam4_aerosol_processes();
