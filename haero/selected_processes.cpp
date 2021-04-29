@@ -61,7 +61,7 @@ AerosolProcess* select_aerosol_process(AerosolProcessType type,
       process = new MAMNucleationFProcess();
 #endif
     } else if (selections.nucleation == SelectedProcesses::NoNucleation) {
-      process = new NullPrognosticProcess(type);
+      process = new NullAerosolProcess(type);
     }
   }
   else if (type == ResuspensionProcess) {
