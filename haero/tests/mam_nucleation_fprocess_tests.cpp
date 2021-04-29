@@ -133,7 +133,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_fprocess") {
   MAMNucleationProcess mam_nucleation_process;
   for (int i=0; i<1000; ++i) {
     const Pack so4vol ( 5.e4 + 1.e8*random() );  // range 5x10^4 - 10^9
-    const int flagaa = 11 + 2*random();  // range 11-12   
+    const int flagaa = 11 + 2*random();  // range 11-12
     const Real adjust_factor_pbl_ratenucl = random();
     mam_nucleation_process.set_adjust_factor_pbl_ratenucl(adjust_factor_pbl_ratenucl);
 
@@ -155,7 +155,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_fprocess") {
 
     mam_nucleation_process.pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge,
       cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster);
-    pbl_nuc_wang2008_bridge(adjust_factor_pbl_ratenucl, so4vol[0], flagaa, flagaa2_f90, ratenucl_f90, rateloge_f90, 
+    pbl_nuc_wang2008_bridge(adjust_factor_pbl_ratenucl, so4vol[0], flagaa, flagaa2_f90, ratenucl_f90, rateloge_f90,
       cnum_tot_f90, cnum_h2so4_f90, cnum_nh3_f90, radius_cluster_f90);
 
     REQUIRE( flagaa2[0] == flagaa2_f90);
@@ -194,12 +194,12 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
   MAMNucleationProcess mam_nucleation_process;
   for (int i=0; i<1000; ++i) {
     const int newnuc_method_flagaa = random() < .5 ? 1+2*random() : 11+2*random();  // range 1,2,11,12
-    const Pack dtnuc             ( random() );  
+    const Pack dtnuc             ( random() );
     const Pack temp_in           ( 235   +   60*random() );  // range 235-295
     const Pack rh_in             ( 0.05  +   .9*random() );  // range .05-.95
     const Pack press_in          ( 96325 + 10000*random() ); // pressure in Pascal, sea level=101,325
     const Pack zm_in             (   500 + 10000*random() ); // layer midpoint height (m)
-    const Pack pblh_in           (  1000 +  1000*random() ); // boundary layer height (m) 
+    const Pack pblh_in           (  1000 +  1000*random() ); // boundary layer height (m)
     const Pack qh2so4_cur        ( random() );               // mixing ratio
     const Pack qh2so4_avg        ( random() );               // mixing ratio
     const Pack qnh3_cur          ( random() );               // mixing ratio
@@ -407,7 +407,7 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
     // --------------------------------------------------
 
     // SO4 nucleates within the aitken mode. All other tendencies are zero.
-    const auto aero_tends = tends->interstitial_aerosols();
+    const auto aero_tends = tends->interstitial_aerosols;
     int aitken_index = aero_config.aerosol_mode_index("aitken");
     int aitken_so4_index = aero_config.aerosol_species_index(aitken_index, "SO4");
     int so4_pop_index = aero_config.population_index(aitken_index, aitken_so4_index);
@@ -426,7 +426,7 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
     }
 
     // The tendency for H2SO4 should be negative, and the rest should be zero.
-    const auto gas_tends = tends->gases();
+    const auto gas_tends = tends->gases;
     for (int k = 0; k < num_levels; ++k) {
       REQUIRE(gas_tends(h2so4_index, k)[0] <= 0.0);
     }

@@ -130,14 +130,14 @@ void* t_cld_aero_mix_frac_c(void* t)
   return (void*)mix_fracs.data();
 }
 
-void* t_gasesc(void* t)
+void* t_gases_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
   auto mix_fracs = tends->gases;
   return (void*)mix_fracs.data();
 }
 
-void* t_modal_num_concsc(void* t)
+void* t_modal_num_concs_c(void* t)
 {
   Tendencies* tends = (Tendencies*)t;
   auto num_concs = tends->modal_num_concs;
