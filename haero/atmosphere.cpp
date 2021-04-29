@@ -15,10 +15,10 @@ Atmosphere::Atmosphere(int num_levels,
   relative_humidity(rel_hum),
   height(ht),
   hydrostatic_dp(pdel),
-  pblh(pbl) {
+  planetary_boundary_height(pbl) {
   EKAT_REQUIRE_MSG(num_levels > 0,
                    "Number of vertical levels must be positive");
-  EKAT_REQUIRE_MSG(pblh >= 0.0,
+  EKAT_REQUIRE_MSG(pbl >= 0.0,
                    "Planetary boundary height must be non-negative");
 
   // Make sure the views we're given are properly sized.
@@ -86,7 +86,7 @@ void* a_hydrostatic_dp_c(void* a) {
 Real a_pblh_c(void* a)
 {
   auto* atm = static_cast<Atmosphere*>(a);
-  return atm->planetary_boundary_height();
+  return atm->planetary_boundary_height;
 }
 
 } // extern "C"
