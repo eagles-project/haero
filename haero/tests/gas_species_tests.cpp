@@ -14,7 +14,7 @@ TEST_CASE("gas_species_ctor", "") {
   GasSpecies co2("carbon dioxide", "CO2", g_to_kg*44.009);
   REQUIRE(co2.name() == "carbon dioxide");
   REQUIRE(co2.symbol() == "CO2");
-  REQUIRE(co2.molecular_weight == g_to_kg*44.009);
+  REQUIRE(co2.molecular_weight == Real(g_to_kg*44.009));
 }
 
 
