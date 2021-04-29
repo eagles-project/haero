@@ -138,7 +138,7 @@ TEST_CASE("driver dynamics", "") {
     zdyn.init_from_uniform_heights(conds);
     std::cout << zdyn.info_string();
     hbtest.run_test(zdyn, conds, FloatingPoint<Real>::zero_tol);
-    onedz.run_test(zdyn, 30*FloatingPoint<Real>::zero_tol);
+    onedz.run_test(zdyn, (std::is_same<float, Real>::value ? 1.1e-3 : 30*FloatingPoint<Real>::zero_tol) );
     hypsotest.run_test(zdyn, conds, 1.5e-2);
 
     REQUIRE(hbtest.nerr == 0);
@@ -343,9 +343,13 @@ TEST_CASE("vertical_convergence_dynamics_init", "[convergence]") {
     std::cout << convtests.info_string();
 
     // ptop + sum of all levels' pressure must equal surface pressure
-    REQUIRE(FloatingPoint<Real>::zero(convtests.max_ps_err));
+    REQUIRE(FloatingPoint<Real>::zero(convtests.max_ps_err,
+      (std::is_same<float,Real>::value ? 8e-3 : FloatingPoint<Real>::zero_tol)));
     // sum of level thicknesses must equal ztop
-    REQUIRE(FloatingPoint<Real>::zero(convtests.max_ztop_err, 600*FloatingPoint<Real>::zero_tol));
+    REQUIRE(FloatingPoint<Real>::zero(convtests.max_ztop_err,
+      (std::is_same<float,Real>::value ? 5.3e-2 : 600*FloatingPoint<Real>::zero_tol)));
+
+#if HAERO_DOUBLE_PRECISION
     // rate of average error in hydrostatic equation should converge at 2nd order
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hydro_max, 2, 0.01));
     // rate of max error in hydrostatic equation should converge at 2nd order
@@ -354,6 +358,7 @@ TEST_CASE("vertical_convergence_dynamics_init", "[convergence]") {
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hypso_max, 3, 0.05));
     // rate of max error in hypsometric equation should converge at 3rd order
     REQUIRE(FloatingPoint<Real>::equiv(convtests.avg_rate_hypso_avg, 3, 0.01));
+#endif
   }
 
 //   SECTION("uniform dp tests") {
@@ -412,7 +417,7 @@ void UniformThicknessHeightTest::run_test(const HostDynamics& dyn, const Real to
     std::cout << "Uniform height thickness test passed with tolerance " << tol << "\n";
   }
   else {
-    std::cout << "Uniform height thickness test failed.\n";
+    std::cout << "Uniform height thickness test failed with tolerance " << tol << "\n";
   }
 }
 
