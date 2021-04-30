@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: [ubuntu-latest] #, macos-latest]
         build-type: [Debug, Release]
-        fp-precision: [double] #[single, double]
+        fp-precision: [single, double]
         pack-size: [1, 4]
 
     runs-on: ${{ matrix.os }}

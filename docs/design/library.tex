@@ -107,20 +107,11 @@ convection in the atmosphere, whereas processes with faster time scales must be
 treated in some special way that accommodates a relaxation or equilibration
 process.
 
-Haero provides data structures for constructing two distinct types of aerosol
-processes:
+In Haero, an ``aerosol process'' accepts a set of completely specified input
+(prognostic and diagnostic variables, an atmospheric state, etc) and calculates
+a set of tendencies for prognostic aerosol and gas variables.
 
-\begin{itemize}
-  \item A {\bf prognostic process} accepts a set of prognostic and diagnostic
-        variables as input, and computes as output one or more tendencies for a
-        corresponding set of prognostic variables. It does not make any changes
-        to any of its inputs.
-  \item A {\bf diagnostic process} accepts a set of prognostic variables as
-        input, and updates one or more diagnostic variables in place so that
-        these variables are consistent with the prognostic variables.
-\end{itemize}
-
-A process consists of a set of parameterizations that encode simplifying
+An aerosol process consists of a set of parameterizations that encode simplifying
 assumptions about a specific stage of the aerosol life cycle into an algorithm
 that computes the relevant quantities of interest. The processes provided by
 Haero, and their various parameterizations, are described in \refchapter{processes}.
@@ -766,10 +757,10 @@ For detailed descriptions of the specific processes provided by Haero, take a
 look at \refchapter{processes}. You can find examples of source code for
 Haero's processes in the \texttt{haero/processes} subdirectory.
 
-\subsection{The Prognostic Process Interface}
-\labelsubsection{lib:prognostic_process}
+\subsection{The Aerosol Process Interface}
+\labelsubsection{lib:aerosol_process}
 
-A prognostic process has three behaviors which must be defined by any
+An aerosol process has three behaviors which must be defined by any
 implementation. Each of these behaviors is implemented in a C++ function or
 a Fortran subroutine.
 
@@ -799,24 +790,24 @@ functions and subroutines. Then any implementation of this interface is defined
 in a data type ``derived'' from that base class.
 
 Haero uses the object-oriented features of C++ for process development. All
-prognostic process implementations are derived from a C++ base class called
-\texttt{PrognosticProcess}. This is true regardless of whether you implement the
+aerosol process implementations are derived from a C++ base class called
+\texttt{AerosolProcess}. This is true regardless of whether you implement the
 process using C++ or Fortran.
 
-The \texttt{PrognosticProcess} provides the following interface (see
+The \texttt{AerosolProcess} provides the following interface (see
 \texttt{haero/process.hpp} for more details):
 
 \lstset{language=[11]{c++}}
 \begin{lstlisting}
-class PrognosticProcess {
+class AerosolProcess {
   public:
 
-  // Constructor, called by all PrognosticProcess subclasses.
-  PrognosticProcess(ProcessType type, const std::string& name):
+  // Constructor, called by all AerosolProcess subclasses.
+  AerosolProcess(AerosolProcessType type, const std::string& name):
     type_(type), name_(name) {}
 
   // Destructor.
-  virtual ~PrognosticProcess() {}
+  virtual ~AerosolProcess() {}
 
   // Override this method if your aerosol process needs to be initialized
   // with information about the model. The default implementation does nothing.
@@ -834,17 +825,17 @@ class PrognosticProcess {
 \end{lstlisting}
 
 In addition to the ``constructor'' function used to create an instance of a
-\texttt{PrognosticProcess} variables, this interface declares three functions
-(\texttt{init}, \texttt{run}, and the destructor function \texttt{\~PrognosticProcess})
+\texttt{AerosolProcess}, this interface declares three functions (\texttt{init},
+\texttt{run}, and the destructor function \texttt{\~AerosolProcess})
 that correspond to the three behaviors described above.
 
 The constructor accepts a process type that indicates what stage of the aerosol
-life cycle it represents. A \texttt{ProcessType} data structure is an
+life cycle it represents. An \texttt{AerosolProcessType} data structure is an
 ``enumerated type'' that enumerates the various stages:
 
 \begin{lstlisting}
 // This enumerated type lists all relevant physical aerosol processes.
-enum ProcessType {
+enum AerosolProcessType {
   ActivationProcess,
   CloudBorneWetRemovalProcess,
   CoagulationProcess,
@@ -853,33 +844,32 @@ enum ProcessType {
   EmissionsProcess,
   InterstitialWetRemovalProcess,
   NucleationProcess,
-  ResuspensionProcess,
-  WaterUptakeProcess
+  ResuspensionProcess
 };
 \end{lstlisting}
 
-Let's explore how we might implement a prognostic aerosol process in C++ and in
-Fortran. Here we describe only the steps needed to implement the process itself.
-You must also testing your process to make sure it behaves the way you think it
-does! The procedure for testing an aerosol process is described in
+Let's explore how we might implement an aerosol process in C++ and in Fortran.
+Here we describe only the steps needed to implement the process itself. You must
+also test your process to make sure it behaves the way you think it does! The
+procedure for testing an aerosol process is described in
 \refchapter{testing}.
 
-\subsubsection{C++ prognostic processes}
-\labelsubsubsection{lib:prognostic_cxx}
+\subsubsection{C++ aerosol processes}
+\labelsubsubsection{lib:aerosol_process_cxx}
 
-In C++, all you have to do in order to implement a prognostic process is to
-define a class with a specific name, derived from the
-\texttt{PrognosticProcess} base class. For example, the MAM4 implementation of the
-nucleation process, described in \refsubsection{nuc:mam4}, is defined in a C++
-class named \texttt{MAMNucleationProcess}. A C++ class derived from a base class
-is called a {\bf subclass} of that base class, so
-\texttt{MAMNucleationProcess} is a subclass of \texttt{PrognosticProcess}.
+In C++, all you have to do in order to implement an aerosol process is to define
+a class with a specific name, derived from the \texttt{AerosolProcess} base
+class. For example, the MAM4 implementation of the nucleation process, described
+in \refsubsection{nuc:mam4}, is defined in a C++ class named
+\texttt{MAMNucleationProcess}. A C++ class derived from a base class is called a
+{\bf subclass} of that base class, so \texttt{MAMNucleationProcess} is a
+subclass of \texttt{AerosolProcess}.
 
-To create a C++ implemention for a prognostic process:
+To create a C++ implemention for an aerosol process:
 
 \begin{enumerate}
   \item Create a header file that declares your subclass of
-        \texttt{PrognosticProcess}. This header file must declare a constructor,
+        \texttt{AerosolProcess}. This header file must declare a constructor,
         a destructor, the \texttt{init} function, and the \texttt{run} function.
         This file lives in the \texttt{haero/processes} subdirectory within the
         repository. See \texttt{haero/processes/MAMNucleationProcess.hpp} for an
@@ -888,20 +878,20 @@ To create a C++ implemention for a prognostic process:
         destructor, the \texttt{init} function, and the \texttt{run} function for
         your subclass. This lives alongside the header file you just created.
         See \texttt{haero/processes/MAMNucleationProcess.cpp} for an example.
-        In particular, select the \texttt{ProcessType} value that reflects the
-        proper stage of the aerosol lifecycle for your process.
+        In particular, select the \texttt{AerosolProcessType} value that
+        reflects the proper stage of the aerosol lifecycle for your process.
   \item Add your source file to the set of source files in the
         \texttt{PROCESS\_SOURCES} variable in \texttt{haero/processes/CMakeLists.txt}.
   \item Write one or more tests for your new aerosol process.
         \refchapter{testing} provides extensive details about how to do this.
 \end{enumerate}
 
-\subsubsection{Fortran prognostic processes}
+\subsubsection{Fortran aerosol processes}
 \labelsubsubsection{lib:prognostic_f90}
 
-A Fortran prognostic process implementation consists of a Fortran module that
-contains \texttt{init}, \texttt{run}, and \texttt{finalize} subroutines that implement
-the same functionality as their C++ counterparts:
+A Fortran aerosol process implementation consists of a Fortran module that
+contains \texttt{init}, \texttt{run}, and \texttt{finalize} subroutines that
+implement the same functionality as their C++ counterparts:
 
 \begin{lstlisting}
 module <module_name>
@@ -951,20 +941,21 @@ end subroutine
 end module
 \end{lstlisting}
 
-To implement a prognostic process in Fortran, you create such a module in a
-Fortran source file and then declare it as a \texttt{prognostic\_fprocess} in the
-\texttt{CMakeLists.txt} file within the \texttt{haero/processes} subdirectory. There
-are instructions on how to declare your process in that file.
+To implement an aerosol process in Fortran, you create such a module in a
+Fortran source file and then declare it as a \texttt{faerosol\_process} in the
+\texttt{CMakeLists.txt} file within the \texttt{haero/processes} subdirectory.
+There are instructions on how to declare your process in that file.
 
 For example, the Fortran MAM nucleation process is implemented in a Fortran
 module named \texttt{mam\_nucleation}, implemented in the source file
-\texttt{haero/processes/mam\_nucleation.F90}. In \texttt{haero/processes/CMakeLists.txt},
-it's declared as a Fortran prognostic process the following way:
+\texttt{haero/processes/mam\_nucleation.F90}. In
+\texttt{haero/processes/CMakeLists.txt}, it's declared as a Fortran aerosol
+process the following way:
 
 \begin{lstlisting}
 if (HAERO_FORTRAN)
   ...
-  prognostic_fprocess(MAMNucleationFProcess NucleationProcess mam_nucleation)
+  faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
   ...
 endif()
 \end{lstlisting}
@@ -983,9 +974,9 @@ The build system automatically generates a C++ class for the Fortran module that
 allows the process to be used in a Haero simulation. The name of this C++ class
 is important for exposing it to the Haero library.
 
-\subsubsection{Making your prognostic process available to Haero}
+\subsubsection{Making your aerosol process available to Haero}
 
-So you've implemented your prognostic process in C++ or Fortran. How do you
+So you've implemented your aerosol process in C++ or Fortran. How do you
 make it available to the Haero library? There are a few more things you need to
 do before Haero can construct a model that includes your new process type:
 
@@ -994,7 +985,7 @@ do before Haero can construct a model that includes your new process type:
         \texttt{haero/selected\_processes.hpp}, and add a field to the enumerated
         type that corresponds to the \texttt{ProcessType} value you selected in
         Step 2 of your implementation procedure above.
-  \item Edit the \texttt{select\_prognostic\_process} function in
+  \item Edit the \texttt{select\_aerosol\_process} function in
         \texttt{haero/selected\_processes.cpp} to create a new pointer to the C++
         class that implements or wraps your process type. You don't have to
         \texttt{\#include} the C++ header file for your process--it should be
@@ -1005,209 +996,39 @@ do before Haero can construct a model that includes your new process type:
         appropriate section of \refchapter{processes}.
 \end{enumerate}
 
-Once you've done these things and rebuilt Haero, your new process type is
-available for use.
+Once you've done these things and rebuilt Haero, your new aerosol process
+implementation is available for use.
 
-\subsection{The Diagnostic Process Interface}
-\labelsubsection{lib:diagnostic_process}
+\subsection{Diagnostic Functions}
+\labelsubsection{lib:diagnostic_functions}
 
-Like a prognostic process, a diagnostic process has three behaviors that must be
-implemented in a C++ function or a Fortran subroutine.
-
-\begin{enumerate}
-  \item {\bf initialization}: like a prognostic process, a diagnostic process
-        can perform whatever work and/or resource allocation is needed during
-        initialization. If nothing needs to be done for initialization, its
-        function or subroutine body can be empty.
-  \item {\bf updating}: the process must know how to update any relevant
-        diagnostic variables. The procedure for updating these variables is
-        defined by a function or subroutine that provides all prognostic
-        variables for the aerosol system as input. The function or subroutine
-        that implements this behavior updates the relevant diagnostic variables
-        immediately and returns.
-  \item {\bf finalization}: the finalization of a diagnostic process is similar
-        to that for a prognostic process. If no resources are allocated by the
-        process during initialization, the function or subroutine body
-        implementing finalization can be empty.
-\end{enumerate}
-
-Implementing a diagnostic process is very similar to implementing a prognostic
-process. The only difference is that the diagnostic process has an
-\texttt{update} behavior with a different interface from the \texttt{run} behavior
-in a prognostic process.
-
-As in the case of prognostic processes, we use C++'s object-oriented approach to
-implement diagnostic processes in C++ and Fortran. This time we derive a C++
-class from the \texttt{DiagnosticProcess} base class, which has following
-interface (see \texttt{haero/process.hpp}):
-
-\begin{lstlisting}
-class DiagnosticProcess {
-  public:
-
-  // Constructor, called by all DiagnosticProcess subclasses.
-  DiagnosticProcess(ProcessType type, const std::string& name):
-    type_(type), name_(name) {}
-
-  // Destructor.
-  virtual ~DiagnosticProcess() {}
-
-  // Override this method if your aerosol process needs to be initialized
-  // with information about the model. The default implementation does nothing.
-  virtual void init(const ModalAerosolConfig& modal_aerosol_config) {}
-
-  // Override this method to update diagnostic variables at the given time.
-  virtual void update(const ModalAerosolConfig& modal_aerosol_config, Real t,
-                      const Prognostics& prognostics,
-                      const Atmosphere& atmosphere,
-                      Diagnostics& diagnostics) const = 0;
-
-  // This function accepts the names of diagnostic variables required by this
-  // process. These variables include those variables used by the process, as
-  // well as variables computed by the process. The process ensures that any
-  // Diagnostics object passed to it has storage for these variables. This
-  // is usually called inside the constructor of a DiagnosticProcess subclass.
-  void set_diag_vars(const std::vector<std::string>& vars,
-                     const std::vector<std::string>& aero_vars,
-                     const std::vector<std::string>& gas_vars,
-                     const std::vector<std::string>& modal_vars);
-};
-\end{lstlisting}
-
-Everything about this interface is the same as the \texttt{PrognosticProcess},
-except that
-
-\begin{itemize}
-  \item the \texttt{run} function here is replaced by the \texttt{update} function
-  \item there's a \texttt{set\_diag\_vars} function that you can use to express
-        which diagnostic variables are required by your process
-\end{itemize}
-
-The procedure for implementing a diagnostic process is almost exactly
-the same as that for a prognostic process.
-
-\subsubsection{Implementing a diagnostic process in C++}
-\labelsubsubsection{lib:diagnostic_cxx}
-
-To create a C++ implemention for a diagnostic process:
+Aerosol processes compute tendencies for prognostic variables. But how are
+diagnostic variables updated? These variables are quite different in nature from
+their prognostic counterparts:
 
 \begin{enumerate}
-  \item Create a header file that declares your subclass of
-        \texttt{DiagnosticProcess}. This header file must declare a constructor,
-        a destructor, the \texttt{init} function, and the \texttt{run} function.
-        This file lives in the \texttt{haero/processes} subdirectory within the
-        repository. See \texttt{haero/processes/MAMWaterUptakeProcess.hpp} for an
-        example.
-  \item Create a source file containing implementations for the constructor, the
-        destructor, the \texttt{init} functon, and the \texttt{run} function for
-        your subclass. This lives alongside the header file you just created.
-        See \texttt{haero/processes/MAMWaterUptakeProcess.cpp} for an example.
-        In particular, select the \texttt{ProcessType} value that reflects the
-        proper stage of the aerosol lifecycle for your process.
-  \item If your diagnostic process requires the presence of specific diagnostic
-        variables, call the \texttt{set\_diag\_vars} function (with the appropriate
-        variable names of each type) in the class's constructor.
-  \item Add your source file to the set of source files in the
-        \texttt{PROCESS\_SOURCES} variable in \texttt{haero/processes/CMakeLists.txt}.
-  \item Write one or more tests for your new aerosol process.
-        \refchapter{testing} provides extensive details about how to do this.
+  \item they depend algebraically on prognostic variables and other diagnostic
+        variables
+  \item they are updated in place instead of being evolved in time by
+        differential equations
+  \item they are often shared/needed by several distinct aerosol processes, and
+        at various points in time, depending on a given process ordering
 \end{enumerate}
 
-\subsubsection{Implementing a diagnostic process in Fortran}
-\labelsubsubsection{lib:diagnostic_f90}
+Because of these considerations, it's not clear that we can update more than a
+single diagnostic variable at once. To do so implies a knowledge of how the
+aerosol processes are invoked during a time step, and Haero does not make any
+such decision on behalf of a host model. This means we must provide a diagnostic
+variable update mechanism that is flexible but easy to understand. This
+mechanism, which updates a single diagnostic variable, is called a
+{\bf diagnostic function}.
 
-A Fortran diagnostic process implementation consists of a Fortran module that
-contains \texttt{init}, \texttt{update}, and \texttt{finalize} subroutines that implement
-the same functionality as their C++ counterparts:
+Unlike aerosol processes, which have multiple behaviors associated with
+initialization, finalization, and the execution of the process itself, a
+diagnostic function only ever does one thing: it takes a set of input and
+uses it to update its diagnostic variable. In other words, it has no internal
+state of its own---it's just a function that you can call whenever you need
+to update a particular diagnostic variable.
 
-\begin{lstlisting}
-module <module_name>
-  use haero, only: wp, model_t, prognostics_t, atmosphere_t, diagnostics_t
-  ...
-  implicit none
-  public :: init, update, finalize
-
-contains
-
-subroutine init(model)
-  implicit none
-
-  ! Arguments
-  type(model_t), intent(in) :: model
-
-  ...
-end subroutine
-
-subroutine update(model, t, prognostics, atmosphere, diagnostics)
-  implicit none
-
-  ! Arguments
-  type(model_t), intent(in)          :: model
-  real(wp), value, intent(in)        :: t
-  type(prognostics_t), intent(in)    :: prognostics
-  type(atmosphere_t), intent(in)     :: atmosphere
-  type(diagnostics_t), intent(inout) :: diagnostics
-
-  ...
-end subroutine
-
-subroutine finalize(model)
-  implicit none
-
-  ! Arguments
-  type(model_t), intent(in) :: model
-
-  ...
-end subroutine
-
-...
-
-end module
-\end{lstlisting}
-
-To implement a diagnostic process in Fortran, you create such a module in a
-Fortran source file and then declare it as a \texttt{diagnostic\_fprocess} in the
-\texttt{CMakeLists.txt} file within the \texttt{haero/processes} subdirectory.
-There are instructions on how to declare your process in that file.
-
-For example, the Fortran MAM water uptake process is implemented in a Fortran
-module named \texttt{mam\_water\_uptake}, implemented in the source file
-\texttt{haero/processes/mam\_water\_uptake.F90}. In
-\texttt{haero/processes/CMakeLists.txt}, it's declared as a Fortran diagnostic
-process the following way:
-
-\begin{lstlisting}
-if (HAERO_FORTRAN)
-  ...
-  diagnostic_fprocess(MAMWaterUptake WaterUptakeProcess mam_water_uptake)
-  ...
-endif()
-\end{lstlisting}
-
-This declaration takes three arguments that have the same meaning as those for
-Fortran prognostic processes. As in the case of prognostic processes, the build
-system generates a C++ class for the Fortran module.
-
-\subsubsection{Making your diagnostic process available to Haero}
-
-To make Haero aware of your new diagnostic process, you follow similar steps
-to those for prognostic processes:
-
-\begin{enumerate}
-  \item Edit the \texttt{SelectedProcesses} struct in
-        \texttt{haero/selected\_processes.hpp}, and add a field to the enumerated
-        type that corresponds to the \texttt{ProcessType} value you selected in
-        Step 2 of your implementation procedure above.
-  \item Edit the \texttt{select\_diagnostic\_process} function in
-        \texttt{haero/selected\_processes.cpp} to create a new pointer to the C++
-        class for your process type.
-  \item Update the driver YAML input parser to add an option for a user
-        to select your new process.
-  \item Update this document with a description of your process in the
-        appropriate section of \refchapter{processes}.
-\end{enumerate}
-
-It's helpful to look at examples of existing prognostic and diagnostic
-processes before you get started on your own. In addition, it often helps to
-think about how you might test a process to clarify and test your assumptions.
-In the next chapter, we discuss Haero's approach to testing aerosol processes.
+{\em MORE NEEDED HERE! At the moment, we're not prepared to say much more than
+this. Watch this space.}

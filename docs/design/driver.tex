@@ -130,9 +130,9 @@ Physically, the ansatz \eqref{eq:z_vel} may be interpreted via \eqref{eq:momentu
   &= \frac{2\pi w_0}{t_p}\sin\frac{\pi\phi}{gz_{top}}\cos\frac{2\pi t}{t_p} + \frac{\pi w_0^2}{2z_{top}}\sin\frac{2\pi\phi}{gz_{top}}\sin^2\frac{2\pi t}{t_p},
 \end{align}
 where the right-hand side is the time derivative of \eqref{eq:phi_vel}.
-It is most straightforward to derive this interpretation by decomposing the pressure into a constant, hydrostatically balanced reference state with a superimposed perturbation \cite{Klemp1978,Srivastava1967,SoongOgura1973} so that $p = \overline{p} + p'$.
+It is most straightforward to derive this interpretation by decomposing the pressure into a constant, hydrostatically balanced reference state with a superimposed perturbation \cite{KlempWilhelmson1978,Srivastava1967,SoongOgura1973} so that $p = \overline{p} + p'$.
 Combining this decomposition (and similar treatment of temperature and density) with the equation of state leads to a formulation of the total pressure gradient as the background hydrostatic balance plus a perturbation due to nonhydrostatic buoyancy.  
-In \cite{Klemp1978,Srivastava1967,SoongOgura1973} this arises as quadratic terms of the perturbation variables are neglected.  
+In \cite{KlempWilhelmson1978,Srivastava1967,SoongOgura1973} this arises as quadratic terms of the perturbation variables are neglected.  
 It is interesting that a similar (though not equivalent\footnote{Taylor et.~al.~\cite{Taylor2020} retain the full form of the pressure gradient, without a linearization.}) term arises in \cite{Taylor2020} as a result of the choice of a vertical mass coordinate based on hydrostatic pressure.
   
 \subsection{Initialization}
@@ -227,7 +227,7 @@ The above dynamics are motivated by the input requirements of the various parame
 These are encapsulated by the \texttt{haero::Atmosphere} class, which requires temperature, pressure, height, and relative humidity data. 
 We already have pressure and height.
 Temperature may be diagnosed using the approximation given by \cite[eq.~(2.3)]{KlempWilhelmson1978},
-\begin{equation}
+\begin{equation}\label{eq:approx_temp}
   T_k(t) \approx \frac{\theta_{vk}(t) ~ \Pi_k(t)}{1+\alpha_q ~ q_{vk}(t)},
 \end{equation}
 with constant $\alpha_q = 0.61$.
@@ -265,136 +265,112 @@ The above dynamics are associated with the following \emph{tendencies}, the righ
 \end{subequations} 
 where the dot denotes differentiation with respect to time.
 
-%We use an explicit 2nd order Runge-Kutta method, hereafter RK2, for advancing \eqref{eq:column_dynamics} forward in time \cite[\S 8.3.3]{DahlquistBjork}.
-
-%\paragraph{Case 1: Prescribed velocity.} In this case we assume that vertical velocity $w$ is prescribed by a known function $w=w(z,t)$, for example,
-%\begin{equation}\label{eq:presc_velocity}
-%  w(z,t) = w_0 \sin \frac{2\pi t}{t_p}\sin \frac{m \pi z}{z_{top}},
-%\end{equation}
-%where the user-chosen parameters are $w_0$, the maximum vertical velocity [m/s], $t_p$, the period [s], and $m$, the vertical wave number (a dimensionless integer).
-%%Equations \eqref{eq:column_dynamics} are separable in this case and we can solve them analytically by recalling that $z = \phi/g$.
-%Using \eqref{eq:presc_velocity} in \eqref{eq:column_dynamics} and recalling that $\phi = gz$, the geopotential equation becomes,
-%\begin{equation}
-%  \deriv{\phi}{t} = gw_0\sin\frac{2\pi t}{t_p}\sin\frac{m\pi \phi(t)}{g z_{top}},
-%\end{equation}
-%which is a separable equation for $\phi(t)$ that can be solved analytically for each interface.
-%\begin{subequations}
-%We find that
-%\begin{equation}
-%  \phi_{i+1/2}(t_{n+1}) = \frac{2 g z_{top}}{m \pi}\arccot\left[ {\exp\left(-\frac{m t_p w_0}{z_{top}}\sin^2\frac{\pi t_{n+1}}{t_p}\right)}{{\cot\left(\frac{m \pi \phi_0}{2gz_{top}}\right)}}\right],
-%\end{equation}
-%where $\phi_0 = \phi_{i+1/2}(0)$.
-%Vertical velocity is updated as
-%\begin{equation}
-%  w_{i+1/2}(t_{n+1}) = w(\phi_{i+1/2}(t_{n+1})/g, t_{n+1}).
-%\end{equation}
-%
-%The level variables lack source/sink terms; hence,
-%\begin{align}
-%  \partd{\pi}{s}_i(t_{n+1}) &= \partd{\pi}{s}_i(t_n),\\
-%  \theta_{v,i}(t_{n+1}) &= \theta_{v,i}(t_{n+1}),\\
-%  q_{v,i}(t_{n+1}) &= q_{v,i}(t_{n+1}).
-%\end{align}
-%
-%Substituting \eqref{eq:presc_velocity} into the momentum equation we find that
-%\begin{equation}
-%  \mu_{i+1/2}(t_{n+1})= 1 + \frac{2\pi w_0}{gt_p}\cos\frac{2\pi t_{n+1}}{t_p}\sin\frac{m\pi \phi_{i+1/2}(t_{n+1})}{gz_{top}}.
-%\end{equation}
-%
-%At each level we can directly apply the vertical derivative operator to get
-%\begin{equation}
-%  \partd{\phi}{s}_i(t_{n+1}) = \frac{\phi_{i+1/2}(t_{n+1})-\phi_{i-1/2}(t_{n+1})}{\Delta s_i}.
-%\end{equation}
-%After averaging the pseudodensity to the interfaces, the definition of $\mu$ gives $\partd{p}{s}$,
-%\begin{equation}
-%  \partd{p}{s}_{i+1/2}(t_{n+1}) = \mu_{i+1/2}(t_{n+1})\overline{\partd{\pi}{s}}_{i+1/2}(t_{n+1}).
-%\end{equation}
-%Pressure at the levels follows from the equation of state,
-%\begin{equation}
-%  p_{i+1}(t_{n+1}) = \exp\left(\frac{1}{{R}/{c_p}-1}\right)\left(\frac{\partd{\phi}{s}_ip_0^{R/c_p}}{R \theta_{v,i}(t_{n+1}) \partd{\pi}{s}_i(t_{n+1})}\right).
-%\end{equation}
-%Finally, surface pressure is updated as \cite[eqn.~(35)]{Taylor2020},
-%\begin{equation}
-%  p_s(t_{n+1}) = p_{top} -\frac{1}{2}\left[\left(\partd{p}{s}\Delta s\right)_{1/2} + \left(\partd{p}{s}\Delta s\right)_{n_{lev}+1/2}\right] + \sum_{k=0}^{n_{lev}}\left(\partd{p}{s}\Delta s\right)_{k+1/2}.
-%\end{equation}
-%\end{subequations}
-%
-
-
 \subsubsection{Simple microphysics}
 
-A simple cloud model with warm-rain microphysics, often called \emph{Kessler microphysics}, is summarized in \cite[ch.~15]{RogersYau}.
-It introduces mass mixing ratio tracers for cloud liquid water $q_c$ and rain water $q_r$ and is very similar to the microphysics used in \cite{SoongOgura1973,KlempWilhelmson1978}, and source terms for the dynamics equations.
+A simple cloud model with warm-rain microphysics, often called \emph{Kessler microphysics}, is summarized in \cite[ch.~15]{RogersYau}, which references \cite{Srivastava1967}.
+It introduces mass mixing ratio tracers for cloud liquid water $q_c$ and rain water $q_r$ and source terms for the dynamics equations.  
+We use \cite{SoongOgura1973,KlempWilhelmson1978} as additional references.
+We adapt this microphysics model here to match the HOMME-NH dynamics variables.
 
-\paragraph{Vertical velocity.} The vertical velocity $w$ is adjusted to account for falling liquid water, so that \eqref{eq:vert_vel} is now
+The two new tracers are advected passively by the dynamics (without source and sink terms) in the same manner as water vapor,
+\begin{subequations}
+  \begin{align}
+    \dot{q_c} \equiv \deriv{q_c}{t} &= 0,\\
+    \dot{q_r} \equiv \deriv{q_r}{t} &= 0.
+  \end{align}
+\end{subequations}
+Microphysical parameterizations define approximate source and sink terms to correspond to a select (incomplete) set of physical processes, as described below.
+
+
+\paragraph{Vertical velocity.} The vertical velocity $w$ is adjusted to account for loss of buoyancy due to the mass of suspended liquid water, 
 \begin{equation*}
-  \deriv{w}{t} = -g(1-\mu -(q_c+q_r)).  
+  \dot{w} \pluseq -g(q_c+q_r).  
 \end{equation*}
 
-
-\paragraph{Moisture variables.}
-We assume, following \cite{SoongOgura1973,KlempWilhelmson1978}, that any supersaturated immediately condenses, and that any cloud liquid present in unsaturated air immediately evaporates.
-Rain water only evaporates if $q_c = 0$.
-These processes are represented by terms $E_1:q_v\leftrightarrow q_c$ and $E_2:q_v \leftarrow q_r$.
-Equations \eqref{eq:theta_v} and \eqref{eq:q_v} become,
-\begin{align}
-  \deriv{\Theta}{t} &= \frac{L}{c_p \Pi }(E_1 + E_2), \\
-  \deriv{q_v}{t} &= E_1 + E_2,
-\end{align}
-and new equations are added for $q_c$ and $q_r$:
-\begin{align}
-  \deriv{q_c}{t} &= -E_1 - (P_1 + P_2),\label{eq:cloud_water} \\
-  \deriv{q_r}{t} &= -\frac{1}{\rho}\partd{}{z}(\rho q_r w_r) - E_2 + (P_1 + P_2), \label{eq:rain_water}
-\end{align}
-where $P_1:q_c+q_c\mapsto q_r$ and $P_2:q_c+q_r\mapsto q_r$ represent rain production from autoconversion and accretion, respectively, and $w_r$ is the velocity of rain water. Each is discussed below in greater detail.
-
-Temperature $T$ and potential temperature $\theta$ are recovered from $\theta_v$ at level midpoints as
-\begin{equation}\label{eq:temperature}
-  T = \frac{\theta_v}{1+\alpha_v q_v} \left(\frac{p_0}{p}\right)^{-\kappa}, \quad \theta = \frac{\theta_v}{1+\alpha_vq_v},
-\end{equation}
-and 
-
-  
 \paragraph{Evaporation and condensation.}
-The evaporation/condensation rate is parameterized by \cite[eqn.~(5)]{Srivastava1967}
-\begin{equation}\label{eq:evap_param}
-  E_1 = w\partd{q_v}{z}.
-\end{equation}
-Rain water is only allowed to evaporate in downdrafts and external to the cloud  \cite[eqn.~(10)]{Srivastava1967},
-\begin{equation}\label{eq:rain_evap_param}
-  E_2 = -\alpha_E w \partd{q_v}{z}, \quad \alpha_E = \begin{cases} 1 & w<0 \text{ and } q_c = 0,\\
- 0 & \text{otherwise}  
- \end{cases}.
-\end{equation}
 
-\begin{rem}
-Parameterizations \eqref{eq:evap_param} and \eqref{eq:rain_evap_param} are not meant to be interpreted as useful for physically realistic cloud simulations. 
-They simply provide a basic model which is useful for testing purposes.
-See \cite{SoongOgura1973,KlempWilhelmson1978} for more advanced parameterizations based on the difference between $q_v$ and the saturation mixing ratio, $q_{vs}$.
-\end{rem}
-
-\paragraph{Autoconversion.} Autoconversion only occurs in the presence of sufficient cloud water droplets.
-Here, ``sufficient'' is defined as greater than a constant critical value, $q_c^{(crit)}$, and \cite[eqn.~(12)]{Srivastava1967}
+Our first step assumes unsaturated air, $q_v \le q_{vs}$, where $q_{vs}$ is the saturation mixing ratio defined by \eqref{eq:tetens} using the temperature computed by \eqref{eq:approx_temp},
+\begin{subequations}\label{eq:evap}
+  \begin{align}
+    \dot{q_v} &\pluseq E_{cv} + E_{rv}, \\
+    \dot{q_c} &\minuseq E_{cv}, \\
+    \dot{q_r} &\minuseq E_{rv},  \\
+    \dot{\theta_v} &\minuseq \frac{L}{c_p \Pi}(E_{cv} + E_{rv}),
+  \end{align}
+where $E_{cv}$ and $E_{rv}$ denote the evaporation rates between cloud liquid/water vapor and rain/water vapor, respectively.
+\begin{equation}\label{eq:cloud2vapor_evap}
+   E_{cv} = \begin{cases} q_c & \text{if } q_v < q_{vs} \\ 0 & \text{otherwise}\end{cases}
+\end{equation}
 \begin{equation}
-  P_1 = \begin{cases}
-    0 & q_c \le q_c^{(crit)}, \\
-    \alpha_{auto}(q_c - q_c^{(crit)}) & q_c > q_c^{(crit)},
-  \end{cases}
+  E_{rv} = \begin{cases} \frac{(1-q_v/q_{vs}) C_{vt} (\rho q_r)^{0.525}}{\rho 5.4\text{E}5 + 4.1\text{E}6/e_s(T)} & \text{if } q_v < q_{vs} \text{ and } q_c = 0 \\ 0 & \text{otherwise}\end{cases}
 \end{equation}
+The ventillation coefficient $C_{vt} = 1.6 + 5.7\text{E-}2V_r^{3/2}$ for rain falling at speed $V_r$ relative to the air, and $e_s(T)$ is the saturation vapor pressure for a planar liquid water surface at temperature $T$.  
+The latter two values are approximated as \cite[eqn.~(15))]{SoongOgura1973},
+  \begin{align}
+    V_r & = 36.34 (1\text{E}3\rho q_r)^{0.1346} \text{ m/s},\\
+    e_s(T) & = 6.1094\exp\left( \frac{17.625 (T-273)}{T-29.96} \right)\text{ hPa}.
+  \end{align}
+\end{subequations}
+
+A second step \cite[eqns.(A7)--(A10)]{SoongOgura1973} conducts an adjustment for supersaturated air, $q_v > q_{vs}$, after the time stepping procedure implied by \eqref{eq:evap} is finished.
+Let these values be denoted by a star: $\theta_v^*$, $q_v^*$, $q_c^*$, etc. 
+\begin{subequations}
+Define the factor $r_1$,
+\begin{equation}
+  r_1 = \left(1 + \frac{237 a\Pi q_{vs}^*}{(T^*-36)^2}\frac{L}{c_p\Pi} \right)^{-1}.
+\end{equation}
+Then the adjusted values are given as
+\begin{align}
+  q_v &= q_{v}^* - r_1(q_v^*-q_{vs}^*),\\
+  \theta_v & = \left(\theta^* + \frac{Lr_1}{c_p\Pi}(q_v^*-q_{vs}^*)\right)\left(1 + \alpha_v q_v\right),\\
+  q_c &= q_v^* + q_c^* - q_v.
+\end{align}
+\end{subequations}
+
+
+\paragraph{Autoconversion.} Autoconversion of cloud liquid into rain only occurs in the presence of sufficient cloud water droplets.
+Here, ``sufficient'' is defined as greater than a constant critical value, $q_c^{(crit)}$, and \cite[eqn.~(12)]{Srivastava1967}
+\begin{subequations} \label{eq:autoconversion}
+\begin{align}
+  \dot{q_c} &\minuseq \alpha_{auto}(q_c - q_c^{(crit)})_+,\\
+  \dot{q_r} &\pluseq \alpha_{auto}(q_c - q_c^{(crit)})_+,
+\end{align}
+\end{subequations}
 where $\alpha_{auto}$ [1/s] is the inverse of the autoconversion time scale and $q_c^{(crit)}$ is a user-defined parameter.
+In \cite{SoongOgura1973}, $\alpha_{auto}=1\text{E-3}$ s$^{-1}$ and $q_c^{(crit)} = 1\text{E-3}$.
 
 \paragraph{Accretion.} Accretion describes the capture of cloud water droplets by rainwater droplets.
 As in \cite{SoongOgura1973,KlempWilhelmson1978}, we use
-\begin{equation}
-  P_2 = \alpha_{accr}q_cq_r^{7/8},
-\end{equation}
+\begin{subequations}\label{eq:accretion}
+\begin{align}
+  \dot{q_c} &\minuseq \alpha_{accr}q_cq_r^{7/8}, \\
+  \dot{q_r} &\pluseq \alpha_{accr} q_c q_r^{7/8},
+\end{align}
+\end{subequations}
 with $\alpha_{accr} = 2.2$.
 
-\paragraph{Rainwater flux.} Rainwater by definition falls relative to the air; its vertical flux is described by the first term on the RHS of \eqref{eq:rain_water}.
-  We use \cite[eqns.~(14),(15)]{SoongOgura1973} to approximate $w_r$,
-  \begin{equation}
-    w_r = 36.34 (\rho q_r)^{0.1364} ~\text{m/s}.
-  \end{equation}
-  
+\paragraph{Rainwater sedimentation.} 
 
+\begin{equation}
+  \dot{q_r} \minuseq \frac{1}{\rho}\partd{}{z}(\rho V_rq_r)
+\end{equation}
+
+At the model top, this term is zero.
+
+\todo{lower boundary}
+
+\paragraph{Turbulent mixing.}
+
+We modify sub-grid scale turbulence mode of \cite{KlempWilhelmson1978} to use a simple Smagorinsky turbulent eddy mixing coefficient,
+\begin{equation}
+  K_m = \sqrt{2}\left(\frac{7l}{50}\right)^2 \abs{\partd{w}{z}}.
+\end{equation}
+The additional source terms are \cite[eqns.~(3.15)--(3.16)]{KlempWilhelmson1978}
+\begin{align}
+  \dot{w} &\pluseq 2 \partd{}{z}\left(K_m \partd{w}{z}\right) - \frac{20}{3 l^2}K_m\partd{K_m}{z},\\
+  \dot{q_v} &\pluseq 3\partd{}{z}\left(K_m\partd{q_v}{z}\right), \\
+  \dot{q_c} &\pluseq 3\partd{}{z}\left(K_m\partd{q_c}{z}\right), \\
+  \dot{\theta} &\pluseq 3\partd{}{z}\left(K_m\partd{\theta}{z}\right). 
+\end{align}
+\todo{Boundary conditions}
 \subsection{Embedded parameterization}

@@ -3,7 +3,6 @@
 
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/selected_processes.hpp"
-#include "haero/process.hpp"
 #include "haero/prognostics.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
@@ -67,24 +66,12 @@ class Model final {
   /// @param [in] atmosphere The atmospheric state variables used by this process.
   /// @param [in] diagnostics The diagnostic variables used by this process.
   /// @param [out] tendencies The aerosol tendencies computed.
-  void run_process(ProcessType type,
+  void run_process(AerosolProcessType type,
                    Real t, Real dt,
                    const Prognostics& prognostics,
                    const Atmosphere& atmosphere,
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies);
-
-  /// Updates the state with the (diagnostic) aerosol process of the given type.
-  /// @param [in] type The type of aerosol state to be updated.
-  /// @param [in] t The time at which the process runs.
-  /// @param [in] prognostics The prognostic variables used by this process.
-  /// @param [in] atmosphere The atmospheric state variables used by this process.
-  /// @param [inout] diagnostics The diagnostic variables used by and updated by
-  ///                            this process.
-  void update_diagnostics(ProcessType type, Real t,
-                          const Prognostics& prognostics,
-                          const Atmosphere& atmosphere,
-                          Diagnostics& diagnostics);
 
   // Accessors
 
@@ -99,6 +86,13 @@ class Model final {
 
   /// Returns the number of vertical levels in the model.
   int num_levels() const { return num_levels_; }
+
+  /// Returns the number of modes in the model
+  KOKKOS_INLINE_FUNCTION
+  int num_modes() const {return modal_aerosol_config_.num_modes();}
+
+  KOKKOS_INLINE_FUNCTION
+  int num_gases() const {return modal_aerosol_config_.num_gases();}
 
   /// Returns the total number of distinct aerosol species populations
   /// (mode-species pairs).
@@ -132,10 +126,7 @@ class Model final {
   int num_levels_;
 
   // Selected implementations of prognostic processes used by this model.
-  std::map<ProcessType, PrognosticProcess*> prog_processes_;
-
-  // Selected implementations of diagnostic processes used by this model.
-  std::map<ProcessType, DiagnosticProcess*> diag_processes_;
+  std::map<AerosolProcessType, AerosolProcess*> aero_processes_;
 
   // This flag is set if this model initializes the haero Fortran model.
   bool uses_fortran_;

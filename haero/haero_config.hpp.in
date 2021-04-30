@@ -4,7 +4,12 @@
 #ifndef HAERO_CONFIG_HPP
 #define HAERO_CONFIG_HPP
 
+#include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_pack_utils.hpp"
+#include "ekat/kokkos/ekat_kokkos_types.hpp"
+
 namespace haero {
+
 /// Real-valued numbers are of this type.
 typedef @HAERO_REAL_TYPE@ Real;
 
@@ -21,6 +26,39 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 
 /// Are we building with Fortran support?
 #define HAERO_FORTRAN @HAERO_FORTRAN@
+
+/// Pack data structure for SIMD
+using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
+using MaskType = ekat::Mask<HAERO_PACK_SIZE>;
+
+/// Device and host types
+using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
+using HostType   = ekat::KokkosTypes<ekat::HostDevice>;
+
+/// Views of this type store packs in a vertical column, with
+/// ceil(num_levels/HAERO_PACK_SIZE) packs spanning the column's vertical
+/// levels. If k identifies a vertical level, the corresponding data is
+/// accessible at `view(pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
+/// See Chapter 3 of the design document for an explanation of packs.
+using ColumnView = @HAERO_COLUMN_VIEW_TYPE@;
+using ConstColumnView = ColumnView::const_type;
+
+/// Views of this type store packs defined for each species population (for
+/// aerosols or gases), with ceil(num_levels/HAERO_PACK_SIZE) packs spanning
+/// the column's vertical levels. If p identifies a species population (aerosol
+/// or gas), and k identifies a vertical level,
+/// the corresponding data is accessible at
+/// `view(p, pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
+/// See Chapter 3 of the design document for an explanation of packs.
+using SpeciesColumnView = @HAERO_SPECIES_COLUMN_VIEW_TYPE@;
+
+/// Views of this type store packs defined for each mode, with
+/// ceil(num_levels/HAERO_PACK_SIZE) packs spanning the column's vertical
+/// levels. If m identifies a mode and k identifies a vertical level,
+/// the corresponding data is accessible at
+/// `view(m, pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
+/// See Chapter 3 of the design document for an explanation of packs.
+using ModalColumnView = @HAERO_MODAL_COLUMN_VIEW_TYPE@;
 
 }
 #endif

@@ -2,7 +2,7 @@
 #define HAERO_MAM_NUCLEATION_PROCESS_HPP
 
 #include <iomanip>
-#include "haero/process.hpp"
+#include "haero/aerosol_process.hpp"
 #include "haero/physical_constants.hpp"
 
 
@@ -16,7 +16,7 @@ namespace haero {
 /// **implementation** of a specific **parametrization** for a particular **process**.
 ///
 /// To make these ideas more complete, consider the following examples of
-/// important **physical processes** in the ProcessType above.
+/// important **physical processes** in the AerosolProcessType above.
 ///
 /// Each of these processes has one or more **parametrizations**--mathematical
 /// models that quantify the outcomes of these processes in specific
@@ -30,10 +30,10 @@ namespace haero {
 /// implementation that runs only on CPUs, as well as a C++ implementation that
 /// can run on CPUs and GPUs.
 ///
-/// The PrognosticProcess class provides an interface for all
+/// The AerosolProcess class provides an interface for all
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
-class MAMNucleationProcess : public PrognosticProcess {
+class MAMNucleationProcess : public AerosolProcess {
   double adjust_factor_pbl_ratenucl = 0;
   double adjust_factor_bin_tern_ratenucl = 0;
 
@@ -66,7 +66,7 @@ class MAMNucleationProcess : public PrognosticProcess {
   /// In the Fortran code these are values set during function calls that are then
   /// accessable as public data on the module.  This will not work for the GPU
   /// where the lambda capture of the class is one way, CPU to GPU and no class
-  /// member dtaa is returned.  
+  /// member dtaa is returned.
   // double  ratenuclt      = 0;  // j = ternary nucleation rate from napari param. (cm-3 s-1)
   // double  rateloge       = 0;  // ln (j)
   // double  cnum_h2so4     = 0;  // number of h2so4 molecules in the critical nucleus
@@ -85,13 +85,13 @@ class MAMNucleationProcess : public PrognosticProcess {
   /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   MAMNucleationProcess(const MAMNucleationProcess& pp) :
-    PrognosticProcess(pp),
+    AerosolProcess(pp),
     adjust_factor_pbl_ratenucl ( pp.adjust_factor_pbl_ratenucl ),
     adjust_factor_bin_tern_ratenucl ( pp.adjust_factor_bin_tern_ratenucl )
     {}
 
   /// MAMNucleationProcess objects are not assignable.
-  PrognosticProcess& operator=(const MAMNucleationProcess&) = delete;
+  AerosolProcess& operator=(const MAMNucleationProcess&) = delete;
 
   //------------------------------------------------------------------------
   //                                Accessors
@@ -111,7 +111,7 @@ class MAMNucleationProcess : public PrognosticProcess {
   /// Set the Adjustment factor for nucleation rate corrected for the planetary boundary
   /// layer.  This is used in calculating the boundary nucleation rate in
   /// pbl_nuc_wang2008.
-  void set_adjust_factor_pbl_ratenucl(const double v) 
+  void set_adjust_factor_pbl_ratenucl(const double v)
   {
      adjust_factor_pbl_ratenucl = v;
   }
@@ -119,7 +119,7 @@ class MAMNucleationProcess : public PrognosticProcess {
   /// Set the Adjustment factor for nucleation rate with binary/ternary nucleation.
   /// This is used in calculating the boundary nucleation rate in
   /// mer07_veh02_nuc_mosaic_1box(.
-  void set_adjust_factor_bin_tern_ratenucl(const double v) 
+  void set_adjust_factor_bin_tern_ratenucl(const double v)
   {
      adjust_factor_bin_tern_ratenucl = v;
   }
@@ -196,36 +196,36 @@ class MAMNucleationProcess : public PrognosticProcess {
 ///   @param [out] (optional) dnclusterdt  cluster nucleation rate (#/m3/s)
 template <typename Pack>
 KOKKOS_INLINE_FUNCTION
-void mer07_veh02_nuc_mosaic_1box(   
-  const int newnuc_method_flagaa, 
-  const Pack &dtnuc, 
-  const Pack &temp_in, 
-  const Pack &rh_in, 
-  const Pack &press_in,   
-  const Pack &zm_in, 
-  const Pack &pblh_in,   
-  const Pack &qh2so4_cur, 
-  const Pack &qh2so4_avg, 
-  const Pack &qnh3_cur, 
-  const Pack &h2so4_uptkrate,   
-  const Pack &mw_so4a_host,   
-  const int nsize, 
-  const int maxd_asize, 
+void mer07_veh02_nuc_mosaic_1box(
+  const int newnuc_method_flagaa,
+  const Pack &dtnuc,
+  const Pack &temp_in,
+  const Pack &rh_in,
+  const Pack &press_in,
+  const Pack &zm_in,
+  const Pack &pblh_in,
+  const Pack &qh2so4_cur,
+  const Pack &qh2so4_avg,
+  const Pack &qnh3_cur,
+  const Pack &h2so4_uptkrate,
+  const Pack &mw_so4a_host,
+  const int nsize,
+  const int maxd_asize,
   const Real *dplom_sect,  // array size maxd_asize
   const Real *dphim_sect,  // array size maxd_asize
-  ekat::Pack<int, Pack::n> &isize_nuc, 
-  Pack &qnuma_del, 
-  Pack &qso4a_del, 
-  Pack &qnh4a_del,   
-  Pack &qh2so4_del, 
-  Pack &qnh3_del, 
-  Pack &dens_nh4so4a, 
-  const int ldiagaa,   
-  Pack *dnclusterdt=nullptr) const 
+  ekat::Pack<int, Pack::n> &isize_nuc,
+  Pack &qnuma_del,
+  Pack &qso4a_del,
+  Pack &qnh4a_del,
+  Pack &qh2so4_del,
+  Pack &qnh3_del,
+  Pack &dens_nh4so4a,
+  const int ldiagaa,
+  Pack *dnclusterdt=nullptr) const
 {
   using namespace std;
   using Mask = ekat::Mask<Pack::n>;
-  static const Real pi      = constants::pi;             
+  static const Real pi      = constants::pi;
   static const Real rgas    = constants::r_gas;             // Gas constant (J/K/kmol)
   static const Real avogad  = constants::avogadro;          // Avogadro's number (1/kmol)
   static const Real mw_so4a = constants::molec_weight_so4;  // Molecular weight of sulfate
@@ -240,7 +240,7 @@ void mer07_veh02_nuc_mosaic_1box(
   Pack   dpdry_part           ;  // "grown" single-particle dry diameter (m)
   Pack   tmp_spd              ;  // h2so4 vapor molecular speed (m/s)
   Pack   freduce              ;  // reduction factor applied to nucleation rate
-                                ;  // due to limited availability of h2so4 & nh3 gases
+                              ;  // due to limited availability of h2so4 & nh3 gases
   Pack   gamma_kk             ;  // kk2002 "gamma" parameter (nm2*m2/h)
   Pack   gr_kk                ;  // kk2002 "gr" parameter (nm/h)
   Pack   kgaero_per_moleso4a  ;  // (kg dry aerosol)/(mol aerosol so4)
@@ -277,9 +277,9 @@ void mer07_veh02_nuc_mosaic_1box(
     }
   }
 
-  if ((newnuc_method_flagaa !=  1)  &&   
-      (newnuc_method_flagaa !=  2)  &&   
-      (newnuc_method_flagaa != 11)  &&  
+  if ((newnuc_method_flagaa !=  1)  &&
+      (newnuc_method_flagaa !=  2)  &&
+      (newnuc_method_flagaa != 11)  &&
       (newnuc_method_flagaa != 12)) return;
 
   // make call to parameterization routine
@@ -305,7 +305,7 @@ void mer07_veh02_nuc_mosaic_1box(
       // make call to merikanto ternary parameterization routine
       // (when nh3ppt < 0.1, use binary param instead)
       const Mask so4vol = nh3_present && (so4vol_in >= 5.0e4);
-      if (so4vol.any()) {   
+      if (so4vol.any()) {
         temp_bb  .set(so4vol, max( 235.0, min( 295.0, temp_in ) ));
         rh_bb    .set(so4vol, max( 0.05, min( 0.95, rh_in ) ));
         so4vol_bb.set(so4vol, max( 5.0e4, min( 1.0e9, so4vol_in ) ));
@@ -319,8 +319,8 @@ void mer07_veh02_nuc_mosaic_1box(
         Pack p_cnum_h2so4    (cnum_h2so4 );
         Pack p_cnum_nh3      (cnum_nh3 );
         Pack p_radius_cluster(radius_cluster );
-        ternary_nuc_merik2007(   
-          p_temp_bb, p_rh_bb, p_so4vol_bb, p_nh3ppt_bb, p_rateloge, 
+        ternary_nuc_merik2007(
+          p_temp_bb, p_rh_bb, p_so4vol_bb, p_nh3ppt_bb, p_rateloge,
           p_cnum_tot, p_cnum_h2so4, p_cnum_nh3, p_radius_cluster);
         temp_bb        .set(so4vol, p_temp_bb       );
         rh_bb          .set(so4vol, p_rh_bb         );
@@ -331,13 +331,13 @@ void mer07_veh02_nuc_mosaic_1box(
         cnum_h2so4     .set(so4vol, p_cnum_h2so4    );
         cnum_nh3       .set(so4vol, p_cnum_nh3      );
         radius_cluster .set(so4vol, p_radius_cluster);
-      }     
+      }
       newnuc_method_flagaa2.set(nh3_present,1);
     }
     if ((!nh3_present).any()) {
       // make call to vehkamaki binary parameterization routine
-      const Mask so4vol = !nh3_present && (so4vol_in >= 1.0e4);    
-      if (so4vol.any()) {   
+      const Mask so4vol = !nh3_present && (so4vol_in >= 1.0e4);
+      if (so4vol.any()) {
         temp_bb  .set(so4vol,max( 230.15, min( 305.15, temp_in ) ));
         rh_bb    .set(so4vol,max( 1.0e-4, min( 1.0, rh_in ) ));
         so4vol_bb.set(so4vol,max( 1.0e4, min( 1.0e11, so4vol_in ) ));
@@ -349,7 +349,7 @@ void mer07_veh02_nuc_mosaic_1box(
         Pack p_cnum_h2so4       (cnum_h2so4);
         Pack p_cnum_tot         (cnum_tot);
         Pack p_radius_cluster   (radius_cluster );
-        binary_nuc_vehk2002(p_temp_bb, p_rh_bb, p_so4vol_bb, 
+        binary_nuc_vehk2002(p_temp_bb, p_rh_bb, p_so4vol_bb,
           p_ratenuclt, p_rateloge, p_cnum_h2so4, p_cnum_tot, p_radius_cluster );
         temp_bb        .set(so4vol,  p_temp_bb       );
         rh_bb          .set(so4vol,  p_rh_bb         );
@@ -368,7 +368,7 @@ void mer07_veh02_nuc_mosaic_1box(
   rateloge  = rateloge + log(max(1.0e-38, adjust_factor_bin_tern_ratenucl));
 
   // do boundary layer nuc
-  if ((newnuc_method_flagaa == 11)  ||    
+  if ((newnuc_method_flagaa == 11)  ||
       (newnuc_method_flagaa == 12)) {
     const Mask below_pblh( zm_in <= max(pblh_in,100.0) );
     if (below_pblh.any()) {
@@ -381,8 +381,8 @@ void mer07_veh02_nuc_mosaic_1box(
       Pack p_cnum_h2so4              (cnum_h2so4);
       Pack p_cnum_nh3                (cnum_nh3);
       Pack p_radius_cluster          (radius_cluster);
-      pbl_nuc_wang2008( p_so4vol_bb, newnuc_method_flagaa, 
-        p_newnuc_method_flagaa2, p_ratenuclt, p_rateloge, p_cnum_tot, p_cnum_h2so4, 
+      pbl_nuc_wang2008( p_so4vol_bb, newnuc_method_flagaa,
+        p_newnuc_method_flagaa2, p_ratenuclt, p_rateloge, p_cnum_tot, p_cnum_h2so4,
         p_cnum_nh3, p_radius_cluster );
 
       so4vol_bb             .set(below_pblh, p_so4vol_bb             );
@@ -426,7 +426,7 @@ void mer07_veh02_nuc_mosaic_1box(
 
   // determine size bin into which the new particles go
   // (probably it will always be bin #1, but ...)
-  voldry_clus =( max(cnum_h2so4,1.0)*mw_so4a + cnum_nh3*mw_nh4a ) /   
+  voldry_clus =( max(cnum_h2so4,1.0)*mw_so4a + cnum_nh3*mw_nh4a ) /
     (1.0e3*dens_sulfacid*avogad);
   // correction when host code sulfate is really ammonium bisulfate/sulfate
   voldry_clus =voldry_clus * (mw_so4a_host/mw_so4a);
@@ -435,7 +435,7 @@ void mer07_veh02_nuc_mosaic_1box(
   isize_nuc =0;
   dpdry_part =dplom_sect[0];
   ekat::Pack<int,Pack::n> igrow (0);
-  
+
   igrow.set((dpdry_clus <= dplom_sect[0]), 1); // need to clusters to larger size
   {
     const Mask dpdry_clus_in_dplom_sect(!(dpdry_clus <= dplom_sect[0]) && (dpdry_clus >= dphim_sect[nsize-1]));
@@ -496,8 +496,8 @@ void mer07_veh02_nuc_mosaic_1box(
   const Pack tmp_m1(tmp_n1*mw_ammsulf);
   const Pack tmp_m2(tmp_n2*mw_ammbisulf);
   const Pack tmp_m3(tmp_n3*mw_sulfacid);
-  dens_part = (tmp_m1 + tmp_m2 + tmp_m3)/   
-    ((tmp_m1/dens_ammsulf) + (tmp_m2/dens_ammbisulf)   
+  dens_part = (tmp_m1 + tmp_m2 + tmp_m3)/
+    ((tmp_m1/dens_ammsulf) + (tmp_m2/dens_ammbisulf)
     + (tmp_m3/dens_sulfacid));
   dens_nh4so4a = dens_part;
   mass_part  = voldry_part*dens_part;
@@ -579,7 +579,7 @@ void mer07_veh02_nuc_mosaic_1box(
   // check if max production exceeds available nh3 vapor
   Pack freduceb ( 1.0 );
   {
-    const Mask molenh4a_per_moleso4a_non_zero(molenh4a_per_moleso4a >= 1.0e-10); 
+    const Mask molenh4a_per_moleso4a_non_zero(molenh4a_per_moleso4a >= 1.0e-10);
     // max production of aerosol nh4 (ppm) based on ratenuclt_kk and mass_part
     qmolnh4a_del_max.set(molenh4a_per_moleso4a_non_zero, qmolso4a_del_max*molenh4a_per_moleso4a);
     freduceb.set(molenh4a_per_moleso4a_non_zero && (qmolnh4a_del_max > qnh3_cur),qnh3_cur/qmolnh4a_del_max);
@@ -811,16 +811,16 @@ static void binary_nuc_vehk2002(const Pack temp,
   );
   rateloge = tmpa;
   {
-    // historical bounds check that might have 
+    // historical bounds check that might have
     // something to do with single precision
     // limits.
-    const Real bounds_limit = log(1.0e38); // 
-    const Mask bounds_check(bounds_limit < tmpa); 
+    const Real bounds_limit = log(1.0e38); //
+    const Mask bounds_check(bounds_limit < tmpa);
     if (bounds_check.any()) {
       printf ("%s:%d: Error in bounds check. tmpa exceeds limit:%lf\n",
          __FILE__,__LINE__,log(1.0e38));
       EKAT_KERNEL_ASSERT(bounds_check.any());
-    } 
+    }
   }
   ratenucl = exp ( tmpa );
 
@@ -912,15 +912,15 @@ static void binary_nuc_vehk2002(const Pack temp,
 /// @param [out] namm:  number of ammonia molecules in the critical cluster
 /// @param [out] r:     radius of the critical cluster (nm)
   template <typename Pack>
-  KOKKOS_FUNCTION 
-  static void ternary_nuc_merik2007(const Pack &t, 
-                                    const Pack &rh, 
+  KOKKOS_FUNCTION
+  static void ternary_nuc_merik2007(const Pack &t,
+                                    const Pack &rh,
                                     const Pack &c2,
-                                    const Pack &c3, 
-                                    Pack &j_log, 
-                                    Pack &ntot, 
-                                    Pack &nacid, 
-                                    Pack &namm, 
+                                    const Pack &c3,
+                                    Pack &j_log,
+                                    Pack &ntot,
+                                    Pack &nacid,
+                                    Pack &namm,
                                     Pack &r)
   {
     using namespace std;
