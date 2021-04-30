@@ -241,25 +241,25 @@ void NcWriter::define_atm_state_vars(const Atmosphere& atm) {
   const var_atts Tatts = {std::make_pair("cf_long_name", "air_temperature"),
       std::make_pair("amip_short_name", "ta"),
       std::make_pair("short_name", "T")};
-  define_level_var("temperature", ekat::units::K, atm.temperature(), Tatts);
+  define_level_var("temperature", ekat::units::K, atm.temperature, Tatts);
 
   const var_atts rhatts = {std::make_pair("cf_long_name","relative_humidity"),
     std::make_pair("amip_short_name", "hur"),
     std::make_pair("haero_short_name", "rel_humidity")};
   define_level_var("relative_humidity", ekat::units::Units::nondimensional(),
-    atm.relative_humidity(), rhatts);
+    atm.relative_humidity, rhatts);
 
   const var_atts hatts = {std::make_pair("cf_long_name", "geopotential_height"),
     std::make_pair("haero_short_name", "z")};
   define_interface_var("geopotential_height", ekat::units::m,
-    atm.height(), hatts);
+    atm.height, hatts);
 }
 
 void NcWriter::add_atm_state_data(const Atmosphere& atm, const size_t time_idx) {
   const int null_idx = -1;
-  add_variable_data("temperature", time_idx, null_idx, null_idx, atm.temperature());
-  add_variable_data("relative_humidity", time_idx, null_idx, null_idx, atm.relative_humidity());
-  add_variable_data("geopotential_height", time_idx, null_idx, null_idx, atm.height());
+  add_variable_data("temperature", time_idx, null_idx, null_idx, atm.temperature);
+  add_variable_data("relative_humidity", time_idx, null_idx, null_idx, atm.relative_humidity);
+  add_variable_data("geopotential_height", time_idx, null_idx, null_idx, atm.height);
 }
 
 void NcWriter::add_time_value(const Real& t) const {

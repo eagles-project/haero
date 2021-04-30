@@ -111,8 +111,8 @@ TEST_CASE("faerosol_process_stub", "") {
 
     // Cloudborne aerosol mix fractions have negative tendencies, interstitial
     // mix fractions have positive tendencies, and their sums are zero.
-    auto dqdt_c = tends->cloudborne_aerosols();
-    auto dqdt_i = tends->interstitial_aerosols();
+    auto dqdt_c = tends->cloud_aerosols;
+    auto dqdt_i = tends->interstitial_aerosols;
     for (int p = 0; p < num_aero_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(dqdt_c(p, k)[0] < 0.0);
@@ -123,7 +123,7 @@ TEST_CASE("faerosol_process_stub", "") {
     }
 
     // Aerosol modal number concentrations are unchanged.
-    auto dndt = tends->modal_num_concs();
+    auto dndt = tends->modal_num_concs;
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(FloatingPoint<Real>::equiv(dndt(m, k)[0], 0.0));
@@ -131,7 +131,7 @@ TEST_CASE("faerosol_process_stub", "") {
     }
 
     // Gas mix ratios are unchanged.
-    const auto& dqdt_g = tends->gases();
+    const auto& dqdt_g = tends->gases;
     for (int g = 0; g < num_gases; ++g) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(FloatingPoint<Real>::equiv(dqdt_g(g, k)[0], 0.0));

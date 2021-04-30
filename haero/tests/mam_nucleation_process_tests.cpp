@@ -500,7 +500,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     // --------------------------------------------------
 
     // SO4 nucleates within the aitken mode. All other tendencies are zero.
-    const auto aero_tends = tends->interstitial_aerosols();
+    const auto aero_tends = tends->interstitial_aerosols;
     int aitken_index = aero_config.aerosol_mode_index("aitken");
     int aitken_so4_index = aero_config.aerosol_species_index(aitken_index, "SO4");
     int so4_pop_index = aero_config.population_index(aitken_index, aitken_so4_index);
