@@ -149,6 +149,29 @@ PRECISION=double
 PACK_SIZE=1
 
 #-----------------------------------------------------------------------------
+#                         Kokkos View Types
+#-----------------------------------------------------------------------------
+
+# Change these only if your host model needs to specify the Kokkos view types
+# used by Haero to store aerosol data. These Views are Kokkos types defined via
+# EKAT.  See ekat/src/ekat/kokkos/ekat_kokkos_types.hpp for additional details.
+# You may reference the following types in your type ѕpecifications:
+#
+# * DeviceType - the DefaultDevice used for ekat's Kokkos build
+# * PackType - ekat's SIMD-enabled Pack with Haero's floating point data type
+#
+# Remember to use quotes around these C++ types!
+
+# Modal column view type (maps vertical index k to a datum)
+HAERO_COLUMN_VIEW_TYPE="DeviceType::view_1d<PackType>"
+
+# Species column view type (maps species index s, vertical index k to a datum)
+HAERO_SPECIES_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
+
+# Modal column view type (maps mode index m, vertical index k to a datum)
+HAERO_MODAL_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
+
+#-----------------------------------------------------------------------------
 #                                Build type
 #-----------------------------------------------------------------------------
 # Choose one of the following.
@@ -361,6 +384,9 @@ cmake \
  -DHAERO_DEVICE=\$DEVICE \
  -DHAERO_DEVICE_ARCH=\$DEVICE_ARCH \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \
+ -DHAERO_COLUMN_VIEW_TYPE="\$HAERO_COLUMN_VIEW_TYPE" \
+ -DHAERO_SPECIES_COLUMN_VIEW_TYPE="\$HAERO_SPECIES_COLUMN_VIEW_TYPE" \
+ -DHAERO_MODAL_COLUMN_VIEW_TYPE="\$HAERO_MODAL_COLUMN_VIEW_TYPE" \
  -DHAERO_DOC_INCLUDE_COMMENTS=\$INCLUDE_DESIGN_DOC_COMMENTS \
  \$OPTIONS \
  -G "\$GENERATOR" \
