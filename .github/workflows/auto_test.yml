@@ -61,6 +61,9 @@ jobs:
           -DHAERO_DEVICE=CPU \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
+          -DHAERO_COLUMN_VIEW_TYPE="DeviceType::view_1d<PackType>" \
+          -DHAERO_SPECIES_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>" \
+          -DHAERO_MODAL_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>" \
           -DHAERO_ENABLE_DRIVER=ON \
           -DHAERO_AUTOTESTER=ON \
           -DEKAT_LIBRARY=/opt/haero/lib/libekat.a \
