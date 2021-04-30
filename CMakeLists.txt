@@ -35,13 +35,13 @@ message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
 # Define default Kokkos View types
 if (NOT HAERO_COLUMN_VIEW_TYPE)
   set(HAERO_COLUMN_VIEW_TYPE "DeviceType::view_1d<PackType>")
-endif
+endif()
 if (NOT HAERO_SPECIES_COLUMN_VIEW_TYPE)
   set(HAERO_SPECIES_COLUMN_VIEW_TYPE "DeviceType::view_2d<PackType>")
-endif
+endif()
 if (NOT HAERO_MODAL_COLUMN_VIEW_TYPE)
   set(HAERO_MODAL_COLUMN_VIEW_TYPE "DeviceType::view_2d<PackType>")
-endif
+endif()
 
 if (NOT ENABLE_FORTRAN)
   message(STATUS "================================================================")
