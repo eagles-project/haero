@@ -3,6 +3,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/ekat_scalar_traits.hpp"
 #include "catch2/catch.hpp"
 #include <iostream>
 #include <sstream>
@@ -94,6 +95,9 @@ TEST_CASE("view_pack_helpers", "") {
     }
     REQUIRE (nerr == 0);
 
+    REQUIRE_FALSE(std::is_arithmetic<PackType>::value);
+    REQUIRE(std::is_arithmetic<ekat::ScalarTraits<PackType>::scalar_type>::value);
+    REQUIRE(std::is_arithmetic<ekat::ScalarTraits<Real>::scalar_type>::value);
   }
 }
 
