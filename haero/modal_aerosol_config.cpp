@@ -1,4 +1,7 @@
 #include "haero/modal_aerosol_config.hpp"
+#include "haero/utils.hpp"
+#include <sstream>
+#include <iomanip>
 
 namespace haero {
 
@@ -7,6 +10,9 @@ namespace haero {
 void ModalAerosolConfig::index_modal_species(const std::map<std::string, std::vector<std::string> >& mode_species) {
   HostType::view_1d<const Mode> aerosol_modes = h_aerosol_modes;
   std::vector<std::vector<int>> species_for_mode(aerosol_modes.size());
+
+  h_n_species_per_mode = Kokkos::create_mirror_view(d_n_species_per_mode);
+
   for (auto iter = mode_species.begin(); iter != mode_species.end(); ++iter) {
     const std::string& mode_name = iter->first;
     const std::vector<std::string>& aero_species = iter->second;
@@ -22,11 +28,14 @@ void ModalAerosolConfig::index_modal_species(const std::map<std::string, std::ve
       species_for_mode[mode_index].push_back(species_index);
     }
   }
+
   // Make sure each mode contains at least one species.
   for (int m = 0; m < species_for_mode.size(); ++m) {
     EKAT_REQUIRE_MSG(not species_for_mode[m].empty(),
       aerosol_modes[m].name().c_str() << " mode contains no aerosol species!");
+    h_n_species_per_mode(m) = species_for_mode[m].size();
   }
+  Kokkos::deep_copy(d_n_species_per_mode, h_n_species_per_mode);
 
   // Move to a 2D View by making rectangular and filling ragged arrays with -1.
   unsigned long max_num_species = 0;
@@ -39,6 +48,23 @@ void ModalAerosolConfig::index_modal_species(const std::map<std::string, std::ve
 
   h_species_for_mode = Kokkos::create_mirror_view(d_species_for_mode);
   Kokkos::deep_copy(h_species_for_mode, d_species_for_mode);
+}
+
+std::string ModalAerosolConfig::info_string(const int tab_level) const {
+  auto tabstr = indent_string(tab_level);
+  std::ostringstream ss;
+  ss << tabstr << "ModalAerosolConfig info\n";
+  tabstr += "\t";
+  ss << tabstr  << "        Mode    " << "nspec  " << "species" << "\n";
+  for (int m=0; m<num_modes(); ++m) {
+    ss << std::setw(20) << h_aerosol_modes(m).name() << std::setw(7) << h_n_species_per_mode(m) << "  ";
+    const auto species_for_mode = aerosol_species_for_mode(m);
+    for (int s=0; s<h_n_species_per_mode(m); ++s) {
+      ss << species_for_mode[s].symbol() << (s < h_n_species_per_mode(m)-1 ? ", " : "\n");
+    }
+    ss << "\n";
+  }
+  return ss.str();
 }
 
 } // haero

@@ -11,18 +11,36 @@ using namespace haero;
 TEST_CASE("model_ctor", "") {
   // define aerosol modes
   const auto modes = create_mam4_modes();
+  std::cout << "created mam4 modes: ";
+  for (int m=0; m<modes.size(); ++m) {
+    std::cout << modes[m].name() << " ";
+  }
+  std::cout << "\n";
   // define aerosol species
   const auto aero_species = create_mam4_aerosol_species();
+  std::cout << "created mam4 aerosol species: ";
+  for (int s=0; s<aero_species.size(); ++s) {
+    std::cout << aero_species[s].symbol() << " ";
+  }
+  std::cout << "\n";
   // map aerosols to modes
   const auto mode_spec_map = create_mam4_mode_species();
+  std::cout << "mode_spec_map.size() = " << mode_spec_map.size() << "\n";
   // define gas species
   const auto gas_species = create_mam4_gas_species();
+  std::cout << "created mam4 gas species: ";
+  for (int g=0; g<gas_species.size(); ++g) {
+    std::cout << gas_species[g].symbol() << " ";
+  }
+  std::cout << "\n";
   // configure the aerosol model
   const auto aero_config = ModalAerosolConfig(modes, aero_species, mode_spec_map, gas_species);
+  std::cout << "long config complete" << std::endl;
 
   {
     // All of the above steps can be combined:
     const auto short_config = create_mam4_modal_aerosol_config();
+    std::cout << short_config.info_string();
   }
 
   // select processes (for now, just nucleation)

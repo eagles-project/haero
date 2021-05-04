@@ -8,6 +8,7 @@
 #include <map>
 #include <algorithm>
 #include <numeric>
+#include <string>
 
 namespace haero {
 
@@ -43,7 +44,7 @@ class ModalAerosolConfig final {
                      const std::vector<GasSpecies>& gas_species):
     d_aerosol_modes  (vector_to_1dview(aerosol_modes,   "aerosol_modes")),
     d_aerosol_species(vector_to_1dview(aerosol_species, "aerosol_species")),
-
+    d_n_species_per_mode("n_species_per_mode", aerosol_modes.size()),
     // Sum the length of all vectors in the mode_species map.
     // Is the use of std::accumulate here too obscure?
     num_aerosol_populations(std::accumulate(mode_species.begin(), mode_species.end(), 0,
@@ -82,6 +83,9 @@ class ModalAerosolConfig final {
   /// model.
   DeviceType::view_1d<AerosolSpecies> d_aerosol_species;
   HostType::view_1d<AerosolSpecies>   h_aerosol_species;
+
+  DeviceType::view_1d<int> d_n_species_per_mode;
+  HostType::view_1d<int> h_n_species_per_mode;
 
   /// The total number of distinct aerosol species populations in the
   /// model, counting appearances of one species in different modes separately.
@@ -212,6 +216,8 @@ class ModalAerosolConfig final {
       aerosol_species[s] = species;
     }
   }
+
+  std::string info_string(const int tab_level=0) const;
 
   private:
   // The association of aerosol species with modes.
