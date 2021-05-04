@@ -7,6 +7,8 @@
 
 namespace haero {
 
+using std::abs;
+
 /**
   struct for help with common floating point operations
 
@@ -98,7 +100,9 @@ struct FloatingPoint<PackType> {
   KOKKOS_INLINE_FUNCTION
   static bool rel(const PackType& x0, const PackType& x1, const Real tol=zero_tol) {
     EKAT_KERNEL_ASSERT(tol>0);
-    const Real max = ekat::impl::max(ekat::max(x0), ekat::max(abs(x1)));
+    const Real max0 = ekat::max(x0);
+    const Real max1 = ekat::max(x1);
+    const Real max = (max0 > max1 ? max0 : max1);
     return (abs(x0-x1)/max < tol).all();
   }
 

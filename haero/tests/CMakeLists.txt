@@ -42,6 +42,9 @@ EkatCreateUnitTest(process_tests process_tests.cpp
 EkatCreateUnitTest(cuda_tests cuda_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(math_tests math_helper_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 #----------------------------------------------------
 # Unit tests for aerosol processes
 #----------------------------------------------------
