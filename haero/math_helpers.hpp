@@ -4,7 +4,8 @@
 #include "haero.hpp"
 #include "floating_point.hpp"
 #include "physical_constants.hpp"
-#include "ekat/ekat_pack_math.hpp"
+#include <cmath>
+#include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 
 namespace haero {
@@ -76,8 +77,8 @@ void next_bisection_scalar_iteration<PackType>(PackType& xnp1, PackType& an, Pac
   xnp1 = 0.5*(an + bn);
   const auto m = (fx * fan < 0);
   const auto not_m = !m;
-  ekat_masked_loop(m, s) bn[s] = xn[s];
-  ekat_masked_loop(not_m, s) {an[s] = xn[s]; fan[s] = fx[s];}
+  ekat_masked_loop(m, s) {bn[s] = xn[s];};
+  ekat_masked_loop(not_m, s) {an[s] = xn[s]; fan[s] = fx[s];};
 }
 
 
@@ -203,16 +204,18 @@ struct ScalarNewtonSolver {
   /// Solves for the root.  Prints a warning message if the convergence tolerance is not met before the maximum number of iterations is achieved.
   KOKKOS_INLINE_FUNCTION
   value_type solve() {
-    while (!FloatingPoint<value_type>::zero(iter_diff, conv_tol)) {
+    bool keep_going = true;
+    while (keep_going) {
       ++counter;
       const value_type fxn = f(xroot);
       const value_type fprimexn = f.derivative(xroot);
       const value_type xnp1 = next_newton_scalar_iteration(xroot, fxn, fprimexn);
       iter_diff = abs(xnp1 - xroot);
       xroot = xnp1;
+      keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       if (counter >= max_iter) {
         printf("newton solve warning: max iterations reached\n");
-        break;
+        keep_going = false;
       }
     }
     return xroot;
