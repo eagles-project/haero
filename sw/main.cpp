@@ -1,6 +1,6 @@
 #include "parse_yaml.hpp"
 #include "haero/model.hpp"
-#include "haero/processes/mam_nucleation_fprocess.hpp"
+#include "haero/available_processes.hpp"
 
 #include "ekat/ekat_session.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
@@ -314,6 +314,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   haero::AerosolProcess* process = nullptr;
   if (param_walk.process == "MAMNucleationFProcess") { // fortran nucleation
     process = new haero::MAMNucleationFProcess();
+  } else if (param_walk.process == "MAMNucleationProcess") { // C++ nucleation
+    process = new haero::MAMNucleationProcess();
   } else { // unknown
     fprintf(stderr, "Unknown aerosol process: %s", param_walk.process.c_str());
   }
@@ -392,9 +394,14 @@ int main(int argc, const char* argv[]) {
 
   // Read the input file and extract input.
   std::string input_file(argv[1]);
-  auto param_walk = parse_yaml(aero_config, input_file);
+  try {
+    auto param_walk = parse_yaml(aero_config, input_file);
 
-  // Set up the desired aerosol process and run it, dumping output to
-  // "haero_skywalker.py".
-  run_process(aero_config, param_walk, "haero_skywalker");
+    // Set up the desired aerosol process and run it, dumping output to
+    // "haero_skywalker.py".
+    run_process(aero_config, param_walk, "haero_skywalker");
+  } catch (std::exception& e) {
+    printf("%s: error: %s\n", argv[0], e.what());
+    exit(1);
+  }
 }
