@@ -55,7 +55,7 @@ class Atmosphere final {
 
   /// Sets the planetary boundary height [m].
   KOKKOS_INLINE_FUNCTION
-  void set_planetary_boundary_height(Real pblh) { pblh_ = pblh; }
+  void set_planetary_boundary_height(Real pblh) { planetary_boundary_height = pblh; }
 
   private:
 

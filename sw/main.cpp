@@ -3,6 +3,7 @@
 #include "haero/processes/mam_nucleation_fprocess.hpp"
 
 #include "ekat/ekat_session.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 
 namespace {
 
@@ -49,34 +50,34 @@ void override_parameter(const haero::ModalAerosolConfig& aero_config,
     int mode_index = aero_config.aerosol_mode_index(mode_name);
     int aero_index = aero_config.aerosol_species_index(mode_index, aero_name);
     int pop_index = aero_config.population_index(mode_index, aero_index);
-    auto int_aerosols = prognostics.interstitial_aerosols();
+    auto int_aerosols = ekat::scalarize(prognostics.interstitial_aerosols);
     int_aerosols(pop_index, level) = param_value;
   } else {
     // gas or mode?
     int mode_index = aero_config.aerosol_mode_index(param_name);
     int gas_index = aero_config.gas_index(param_name);
     if (mode_index != -1) {
-      auto num_concs = prognostics.modal_num_concs();
+      auto num_concs = ekat::scalarize(prognostics.modal_num_concs);
       num_concs(mode_index, level) = param_value;
     } else if (gas_index != -1) {
-      auto gases = prognostics.gases();
+      auto gases = ekat::scalarize(prognostics.gases);
       gases(gas_index, level) = param_value;
     } else {
       // Atmospheric state variables?
       if (param_name == "temperature") {
-        auto T = atmosphere.temperature();
+        auto T = ekat::scalarize(atmosphere.temperature);
         T(level) = param_value;
       } else if (param_name == "pressure") {
-        auto p = atmosphere.pressure();
+        auto p = ekat::scalarize(atmosphere.pressure);
         p(level) = param_value;
       } else if (param_name == "relative_humidity") {
-        auto relhum = atmosphere.relative_humidity();
+        auto relhum = ekat::scalarize(atmosphere.relative_humidity);
         relhum(level) = param_value;
       } else if (param_name == "height") {
-        auto h = atmosphere.height();
+        auto h = ekat::scalarize(atmosphere.height);
         h(level) = param_value;
       } else if (param_name == "hydroѕtatic_dp") {
-        auto dp = atmosphere.hydrostatic_dp();
+        auto dp = ekat::scalarize(atmosphere.hydrostatic_dp);
         dp(level) = param_value;
       } else { // other
       }
@@ -97,15 +98,15 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
   int num_modes = prognostics.num_aerosol_modes();
   int num_gases = prognostics.num_gases();
   {
-    auto T = atmosphere.temperature();
-    auto p = atmosphere.pressure();
-    auto relhum = atmosphere.relative_humidity();
-    auto h = atmosphere.height();
-    auto dp = atmosphere.hydrostatic_dp();
-    auto int_aero = prognostics.interstitial_aerosols();
-    auto cld_aero = prognostics.cloudborne_aerosols();
-    auto gases = prognostics.gases();
-    auto num_concs = prognostics.modal_num_concs();
+    auto T = ekat::scalarize(atmosphere.temperature);
+    auto p = ekat::scalarize(atmosphere.pressure);
+    auto relhum = ekat::scalarize(atmosphere.relative_humidity);
+    auto h = ekat::scalarize(atmosphere.height);
+    auto dp = ekat::scalarize(atmosphere.hydrostatic_dp);
+    auto int_aero = ekat::scalarize(prognostics.interstitial_aerosols);
+    auto cld_aero = ekat::scalarize(prognostics.cloud_aerosols);
+    auto gases = ekat::scalarize(prognostics.gases);
+    auto num_concs = ekat::scalarize(prognostics.modal_num_concs);
     for (int l = 0; l < num_levels; ++l) {
       // Atmospheric state
       T(l) = param_walk.temperature;
@@ -121,7 +122,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
           int p = aero_config.population_index(m, static_cast<int>(s));
           int_aero(p, l) = param_walk.aero_mmrs[m][s];
         }
-        // TODO: Cloudborne aerosols not yet treated!
+        // TODO: Cloud aerosols not yet treated!
       }
       for (int g = 0; g < num_gases; ++g) {
         gases(g, l) = param_walk.gas_mmrs[g];
@@ -288,7 +289,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   int num_gases = aero_config.h_gas_species.size();
   haero::SpeciesColumnView int_aerosols("interstitial aerosols",
                                         num_aero_populations, num_levels);
-  haero::SpeciesColumnView cld_aerosols("cloudborne aerosols",
+  haero::SpeciesColumnView cld_aerosols("cloud aerosols",
                                         num_aero_populations, num_levels);
   haero::SpeciesColumnView gases("gases", num_gases, num_levels);
   haero::ModalColumnView modal_num_concs("modal number concs", num_modes,
@@ -310,7 +311,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   auto* tendencies = new haero::Tendencies(*prognostics);
 
   // Create the specified process.
-  haero::PrognosticProcess* process = nullptr;
+  haero::AerosolProcess* process = nullptr;
   if (param_walk.process == "MAMNucleationFProcess") { // fortran nucleation
     process = new haero::MAMNucleationFProcess();
   } else { // unknown
