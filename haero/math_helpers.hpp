@@ -87,10 +87,11 @@ void next_bisection_scalar_iteration<PackType>(PackType& xnp1, PackType& an, Pac
   This struct is used for unit tests and to demonstrate the required
   interface for scalar functions to be used with rootfinding algorithms.
 
-  Each scalar function must implement the function_eval(const Real x) method.
+  Each scalar function must implement the operator() (const Real x) method that returns the
+  function's value at x.
 
   If it is to be used by the Newton solver, it must also implement the
-  derivative_eval(const Real x) method.
+  derivative(const Real x) method, which returns f'(x).
 
   For an application example, see KohlerPolynomial.
 */
@@ -122,10 +123,10 @@ struct LegendreCubic {
   This struct is used for unit tests and to demonstrate the required
   interface for scalar functions to be used with rootfinding algorithms.
 
-  Each scalar function must implement the function_eval(const Real x) method.
+  Each scalar function must implement the operator() (const Real x) method.
 
   If it is to be used by the Newton solver, it must also implement the
-  derivative_eval(const Real x) method.
+  derivative(const Real x) method, which returns f'(x).
 
   For an application example, see KohlerPolynomial.
 */
