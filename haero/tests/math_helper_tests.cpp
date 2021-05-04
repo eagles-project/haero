@@ -36,12 +36,13 @@ TEST_CASE("rootfinding-Real","") {
     const Real cubic_sol = cubic_solver.solve();
     std::cout << "newton cubic_sol rel. error = " << std::abs(cubic_sol - cubic_root)/cubic_root
        << " n_iter = " << cubic_solver.counter << "\n";
-    REQUIRE(FloatingPoint<Real>::equiv(cubic_sol, cubic_root, conv_tol));
 
     auto quartic_solver = ScalarNewtonSolver<LegendreQuartic<Real>>(x0, conv_tol, p4);
     const Real quartic_sol = quartic_solver.solve();
     std::cout << "newton quartic_sol rel. error = " << std::abs(quartic_sol - quartic_root)/quartic_root
       << " n_iter = " << quartic_solver.counter << "\n";
+
+    REQUIRE(FloatingPoint<Real>::equiv(cubic_sol, cubic_root, conv_tol));
     REQUIRE(FloatingPoint<Real>::equiv(quartic_sol, quartic_root, conv_tol));
   }
 
