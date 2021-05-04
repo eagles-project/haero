@@ -18,7 +18,7 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
     if (root["process"] and root["process"].IsMap()) {
       auto process = root["process"];
       if (process["haero"]) {
-        pw.process = process["mam"].as<std::string>();
+        pw.process = process["haero"].as<std::string>();
       } else {
         throw YamlException("'haero' entry not found in process section!");
       }
@@ -73,39 +73,32 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
             pw.ensemble[param_name] = param.as<std::vector<Real>>();
           }
         } else if (param.IsMap()) { // could be an aerosol or gas species mmr
-          for (auto iter = param.begin(); iter != param.end(); ++iter) {
-            // Is this a valid aerosol mode?
-            auto mode_name = iter->first.as<std::string>();
-            auto mode = iter->second;
-            int mode_index = aerosol_config.aerosol_mode_index(mode_name);
-            if (mode_index != -1) {
-              auto mode_species = aerosol_config.aerosol_species_for_mode(mode_index);
-              for (auto aero_iter = mode.begin(); aero_iter != mode.end(); ++aero_iter) {
-                auto aero_name = aero_iter->first.as<std::string>();
-                auto aero_species = aero_iter->second;
-                // Find the aerosol index within this species.
-                int aero_index = aerosol_config.aerosol_species_index(mode_index, aero_name);
-                if (aero_index == -1) {
-                  throw YamlException(std::string("Found invalid aerosol species '") +
-                    aero_name + std::string("' within mode '") + mode_name +
-                    std::string("' in the ensemble section!"));
-                }
-                auto mmr_name = mode_name + std::string(":") + aero_name;
-                pw.ensemble[mmr_name] = aero_species.as<std::vector<Real>>();
+          auto param_name = iter->first.as<std::string>();
+          int mode_index = aerosol_config.aerosol_mode_index(param_name, false);
+          if (mode_index != -1) { // it's an aerosol mode!
+            for (auto iter = param.begin(); iter != param.end(); ++iter) {
+              // Is this a valid aerosol species?
+              auto aero_name = iter->first.as<std::string>();
+              // Find the aerosol index within this species.
+              int aero_index = aerosol_config.aerosol_species_index(mode_index, aero_name, false);
+              if (aero_index == -1) {
+                throw YamlException(std::string("Found invalid aerosol species '") +
+                  aero_name + std::string("' within mode '") + param_name +
+                  std::string("' in the ensemble section!"));
               }
-            } else {
-              // Maybe it's a gas species?
-              auto gas_name = mode_name;
-              auto gas_species = mode;
-              int gas_index = aerosol_config.gas_index(gas_name);
-              if (gas_index != -1) {
-                pw.ensemble[gas_name] = gas_species.as<std::vector<Real>>();
-              } else {
-                throw YamlException(std::string("Parameter '") +
-                  iter->first.as<std::string>() +
-                  std::string("' is not a valid aerosol mode or gas species!\n"));
-              }
+              auto mmr_name = param_name + std::string(":") + aero_name;
+              auto aero_species = iter->second;
+              pw.ensemble[mmr_name] = aero_species.as<std::vector<Real>>();
             }
+          } else {
+            // Maybe it's a gas species?
+            int gas_index = aerosol_config.gas_index(param_name);
+            if (gas_index == -1) {
+              throw YamlException(std::string("Parameter '") +
+                iter->first.as<std::string>() +
+                std::string("' is not a valid aerosol mode or gas species!\n"));
+            }
+            pw.ensemble[param_name] = param.as<std::vector<Real>>();
           }
         } else {
           throw YamlException(std::string("Parameter '") +
@@ -183,19 +176,14 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
                 found_number_conc = true;
               } else {
                 // Find the aerosol index within this species.
-                size_t aero_index;
-                for (aero_index = 0; aero_index < mode_species.size(); ++aero_index) {
-                  if (aero_name == mode_species[aero_index].symbol()) {
-                    found_aerosol[mode_index][aero_index] = 1;
-                    break;
-                  }
-                }
-                if (aero_index < mode_species.size()) {
-                  pw.aero_mmrs[mode_index][aero_index] = aero_species.as<Real>();
-                } else {
+                int aero_index = aerosol_config.aerosol_species_index(mode_index, aero_name, false);
+                if (aero_index == -1) {
                   throw YamlException(std::string("Found invalid aerosol species '") +
                     aero_name + std::string("' within mode '") + mode_name +
                     std::string("' in the aerosols section!"));
+                } else {
+                  found_aerosol[mode_index][aero_index] = 1;
+                  pw.aero_mmrs[mode_index][aero_index] = aero_species.as<Real>();
                 }
               }
               if (not found_number_conc) {
@@ -212,16 +200,17 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
 
       // Did we find all the modes we need?
       for (size_t m = 0; m < found_mode.size(); ++m) {
+        auto mode_name = aerosol_config.h_aerosol_modes(m).name();
         if (found_mode[m] == 0) {
           throw YamlException(std::string("Didn't find mode '") +
-            aerosol_config.h_aerosol_modes(m).name() +
-            std::string("' in aerosols section."));
+            mode_name + std::string("' in aerosols section."));
         } else {
           for (size_t a = 0; a < found_aerosol[m].size(); ++a) {
             if (found_aerosol[m][a] == 0) {
               auto mode_species = aerosol_config.aerosol_species_for_mode(m);
               throw YamlException(std::string("Didn't find aerosol '") +
-                mode_species[a].symbol() + std::string("' in aerosols section."));
+                mode_species[a].symbol() + std::string("' in mode '") +
+                mode_name + std::string("' of aerosols section."));
             }
           }
         }
@@ -238,16 +227,11 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
       auto gases = root["gases"];
       for (auto iter = gases.begin(); iter != gases.end(); ++iter) {
         auto gas_name = iter->first.as<std::string>();
-        auto gas = iter->second;
-        size_t index;
-        for (index = 0; index < aerosol_config.h_gas_species.size(); ++index) {
-          if (gas_name == aerosol_config.h_gas_species(index).symbol()) {
-            found_gas[index] = 1;
-            break;
-          }
-        }
-        if (index < pw.gas_mmrs.size()) {
-          pw.gas_mmrs[index] = gas.as<Real>();
+        int gas_index = aerosol_config.gas_index(gas_name, false);
+        if (gas_index != -1) { // valid gas
+          found_gas[gas_index] = 1;
+          auto gas = iter->second;
+          pw.gas_mmrs[gas_index] = gas.as<Real>();
         } else {
           throw YamlException(std::string("Found invalid gas '") +
             gas_name + "' in the gases section!");

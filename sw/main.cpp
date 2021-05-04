@@ -135,8 +135,8 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
   if (param_walk.ensemble.find("planetary_boundary_layer_height") != param_walk.ensemble.end()) {
     num_params--;
   }
-  EKAT_REQUIRE_MSG(((num_params < 1) or (num_params > 5)),
-    "Invalid number of overridden parameters (must be 1-5).");
+  EKAT_REQUIRE_MSG(((num_params >= 1) and (num_params <= 5)),
+    "Invalid number of overridden parameters (" << num_params << ", must be 1-5).");
 
   // Override the requested parameters at each level.
   // This involves some ugly index magic based on the number of parameters.
@@ -317,7 +317,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   } else if (param_walk.process == "MAMNucleationProcess") { // C++ nucleation
     process = new haero::MAMNucleationProcess();
   } else { // unknown
-    fprintf(stderr, "Unknown aerosol process: %s", param_walk.process.c_str());
+    fprintf(stderr, "Unknown aerosol process: %s\n", param_walk.process.c_str());
+    return;
   }
 
   // Initialize it for the given aerosol configuration.

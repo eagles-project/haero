@@ -25,28 +25,28 @@ atmosphere:
 aerosols:
   accumulation:
     number_conc: 1.e8 # [ # aerosol molecules / kg air]
-    species:
-      so4: 0.3 # [change to kg aerosol/kg air]
-      pom: 0
-      soa: 0.3
-      bc: 0
-      dst: 0
-      ncl: 0.4
-      mom: 0
+    so4: 0.3 # [change to kg aerosol/kg air]
+    pom: 0
+    soa: 0.3
+    bc: 0
+    dst: 0
+    nacl: 0.4
+    mom: 0
   aitken:
     number_conc: 1.e9
     so4: 0.3
     soa: 0.3
-    ncl: 0.4
+    nacl: 0.4
     mom: 0
   coarse:
     number_conc: 1.e5
     so4: 0.3
     pom: 0
+    mom: 0
     soa: 0.3
     bc: 0
     dst: 0
-    ncl: 0.4
+    nacl: 0.4
   primary_carbon:
     number_conc: 2.e8
     pom: 0
@@ -54,7 +54,16 @@ aerosols:
     mom: 0
 
 gases:
-  qso2: 1.e-4 # [kg gas / kg air]
-  qh2so4: 1.e-13
-  qsoag: 5.e-10
+  so2: 1.e-4 # [kg gas / kg air]
+  h2so4: 1.e-13
+  soag: 5.e-10
+  o3: 0
+  o2: 0
+  co2: 0
+  n2o: 0
+  ch4: 0
+  cfc11: 0
+  cfc12: 0
+  h2o2: 0
+  dms: 0
 
