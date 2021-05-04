@@ -10,14 +10,14 @@ Prognostics::Prognostics(int num_aerosol_modes,
                          SpeciesColumnView cld_aerosols,
                          SpeciesColumnView gases_,
                          ModalColumnView   modal_num_concs_):
-  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Prognostics::num_aerosol_species")),
-  num_aero_populations_(0),
-  num_gases_(num_gases),
-  num_levels_(num_levels),
   interstitial_aerosols(int_aerosols),
   cloud_aerosols(cld_aerosols),
   gases(gases_),
-  modal_num_concs(modal_num_concs_)
+  modal_num_concs(modal_num_concs_),
+  num_aero_species_(vector_to_basic_1dview(num_aerosol_species, "Prognostics::num_aerosol_species")),
+  num_aero_populations_(0),
+  num_gases_(num_gases),
+  num_levels_(num_levels)
   {
 
   // Count up the mode/species combinations.

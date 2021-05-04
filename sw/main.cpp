@@ -312,10 +312,12 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
 
   // Create the specified process.
   haero::AerosolProcess* process = nullptr;
-  if (param_walk.process == "MAMNucleationFProcess") { // fortran nucleation
-    process = new haero::MAMNucleationFProcess();
-  } else if (param_walk.process == "MAMNucleationProcess") { // C++ nucleation
+  if (param_walk.process == "MAMNucleationProcess") { // C++ nucleation
     process = new haero::MAMNucleationProcess();
+#if HAERO_FORTRAN
+  } else if (param_walk.process == "MAMNucleationFProcess") { // fortran nucleation
+    process = new haero::MAMNucleationFProcess();
+#endif
   } else { // unknown
     fprintf(stderr, "Unknown aerosol process: %s\n", param_walk.process.c_str());
     return;
