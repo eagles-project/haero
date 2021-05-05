@@ -7,6 +7,7 @@
 
 #include "haero/mode.hpp"
 #include "haero/aerosol_species.hpp"
+#include "haero/gas_species.hpp"
 #include "haero/haero_config.hpp"
 #include "haero/physical_constants.hpp"
 #include "host_params.hpp"
@@ -90,7 +91,7 @@ struct SimulationInput {
   /// List of aerosol species.
   std::vector<AerosolSpecies> aerosols;
   /// List of gas species.
-  std::vector<AerosolSpecies> gases;
+  std::vector<GasSpecies> gases;
   /// Settings for modeling specific processes.
   AerosolProcesses physics;
   /// Ambient atmosphere conditions.
