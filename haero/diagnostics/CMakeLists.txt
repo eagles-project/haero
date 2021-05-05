@@ -3,7 +3,7 @@
 # C++ diagnostic implementations go here.  These are the names of the
 # c++ source files that implement diagnostic functions
 set (CXX_DIAGNOSTIC_SOURCES
-  kohler_solve.cpp
+  kohler_solve_diagnostic.cpp
 )
 
 # prepend diagnostics/ to each source file and transmit HAERO_DIAGNOSTICS upward
