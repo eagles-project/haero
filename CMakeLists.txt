@@ -308,9 +308,11 @@ if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
   add_custom_target(format
     find haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \\;
     COMMAND find driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \\;
-    VERBATIM)
+    VERBATIM
+    COMMENT "Auto-formatting C++ code...")
   add_custom_target(format-check
     find haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \\;
     COMMAND find driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \\;
-    VERBATIM)
+    VERBATIM
+    COMMENT "Checking C++ formatting...")
 endif()
