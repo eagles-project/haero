@@ -306,13 +306,13 @@ add_subdirectory(docs)
 find_program(CLANG_FORMAT clang-format)
 if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
   add_custom_target(format
-    find haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \\;
-    COMMAND find driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \\;
+    find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} + \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} + \+;
     VERBATIM
     COMMENT "Auto-formatting C++ code...")
   add_custom_target(format-check
-    find haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \\;
-    COMMAND find driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \\;
+    find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     VERBATIM
     COMMENT "Checking C++ formatting...")
 endif()
