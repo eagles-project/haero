@@ -239,7 +239,7 @@ add_subdirectory(ext)
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_DEVICE STREQUAL CUDA)
   set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
