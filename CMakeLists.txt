@@ -279,6 +279,11 @@ if (HAERO_ENABLE_DRIVER)
   add_subdirectory(driver)
 endif()
 
+if (HAERO_ENABLE_CHEM_DRIVER)
+  message(STATUS "Building chem_driver.")
+  add_subdirectory(chemDriver)
+endif()
+
 # Documentation.
 if (HAERO_DOC_INCLUDE_COMMENTS)
   set(HAERO_INCLUDE_DESIGN_COMMENTS "\\inccommentstrue")

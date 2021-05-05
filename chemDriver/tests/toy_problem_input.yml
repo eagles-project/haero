@@ -1,0 +1,38 @@
+
+problem_specific:
+  lat_zenith: 20.0
+  lon_zenith: 300.0
+  lat_column: 20.0
+  lon_column: 37.5
+
+species:
+  X:
+    initial_value: 1.0e-6
+    units: molecule m-3
+  X2:
+    initial_value: 1.0e-6
+    units: molecule m-3
+
+environmental_conditions:
+  temperature:
+    initial_value: 298.15
+    units: K
+  pressure:
+    initial_value: 101325
+    units: Pa
+
+reactions:
+  - type: ARRHENIUS
+    reactants:
+      X2: 1.0
+    products:
+      X: 2.0
+    rate_coefficients:
+      A: 0.00172025021466
+  - type: arrhenius
+    reactants:
+      X: 2.0
+    products:
+      X2: 1.0
+    rate_coefficients:
+      A: 1.0

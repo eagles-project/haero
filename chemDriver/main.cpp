@@ -1,0 +1,66 @@
+// This is Haero's chemistry batch reactor driver. It reads a YAML file
+// containing input parameters for a simulation (or an ensemble of simulations)
+// and solves the chemical system using TChem.
+
+#include <cstdio>
+// #include <cstdlib>
+// #include <limits>
+#include "haero/haero.hpp"
+#include "ekat/ekat_parameter_list.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/ekat_session.hpp"
+#include "chemUtil.hpp"
+#include "read_chem_input.hpp"
+
+using namespace std;
+using namespace haero;
+using namespace haero::chemDriver;
+
+namespace {
+
+// Print version banner.
+void print_banner()
+{
+  string version = haero::version();
+  string revision = haero::revision();
+  bool not_for_science = haero::has_uncommitted_changes();
+  printf("haero v%s (git revision %s)\n", version.c_str(), revision.c_str());
+  if (not_for_science)
+  {
+    fprintf(stderr, "WARNING: haero was built with uncommitted changes!\n");
+    fprintf(stderr, "WARNING: DO NOT USE FOR SCIENCE!\n");
+  }
+}
+
+// Print driver usage information and exit.
+void usage(const char* exe)
+{
+  fprintf(stderr, "Too few inputs to %s--usage:\n", exe);
+  fprintf(stderr, "%s <input.yml>\n", exe);
+  exit(1);
+}
+
+} // anonymous namespace
+
+int main(int argc, const char** argv)
+{
+  // ekat::initialize_ekat_session(argc, const_cast<char**>(argv), false);
+  print_banner();
+
+  if (argc < 2)
+    usage(argv[0]);
+
+  // Read the input file and extract input.
+  std::string input_file(argv[1]);
+  SimulationInput sim_input = read_chem_input(input_file);
+  // provide arbitrarily chosen inputs
+  chemSolver chem_solver("toy-problem/", false, 1, false, lat, lon, k1, k2,
+                           initX, initX2);
+
+  // // Now run the driver with our input.
+  // haero_driver(ensemble);
+
+  // // Clean up.
+  // ekat::finalize_ekat_session();
+  return 0;
+}
