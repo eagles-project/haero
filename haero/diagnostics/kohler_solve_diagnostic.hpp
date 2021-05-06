@@ -96,10 +96,17 @@ struct KohlerPolynomial {
   T operator() (const T& wet_radius) const {
     const T wet_radius_cubed = cube(wet_radius);
     const Real kelvinA = 0.00120746723156361711;
-    return log_rel_humidity * wet_radius * wet_radius_cubed -
+    T result = log_rel_humidity * wet_radius * wet_radius_cubed -
       kelvinA * wet_radius_cubed +
       (hygroscopicity * dry_radius_cubed - log_rel_humidity * dry_radius_cubed)*wet_radius +
       kelvinA * dry_radius_cubed;
+    const auto nans = isnan(wet_radius);
+    vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
+      if (nans[i]) {
+        result[i] = 0;
+      }
+    }
+    return result;
   }
 
   /** @brief Evaluates the derivative of the Kohler polynomial with respect to wet radius
@@ -113,9 +120,16 @@ struct KohlerPolynomial {
   T derivative(const T& wet_radius) const {
     const T wet_radius_squared = square(wet_radius);
     const Real kelvinA = 0.00120746723156361711;
-    return 4*log_rel_humidity*wet_radius*wet_radius_squared -
+    T result = 4*log_rel_humidity*wet_radius*wet_radius_squared -
       3*kelvinA*wet_radius_squared +
       hygroscopicity*dry_radius_cubed - log_rel_humidity*dry_radius_cubed;
+    const auto nans = isnan(wet_radius);
+    vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
+      if (nans[i]) {
+        result[i] = 0;
+      }
+    }
+    return result;
   }
 
   KOKKOS_INLINE_FUNCTION
