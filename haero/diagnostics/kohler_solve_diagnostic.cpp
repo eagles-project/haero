@@ -1,14 +1,15 @@
 #include "kohler_solve_diagnostic.hpp"
 #include <sstream>
+#include <iomanip>
 
 namespace haero {
 
 template <typename T>
 std::string KohlerPolynomial<T>::mathematica_verification_program(const int n, const std::string& output_dir) {
   std::ostringstream ss;
-  ss << "kelvinCoeff = " << kelvin_droplet_effect_coeff << ";\n";
+  ss << "kelvinCoeff = " << std::fixed << std::setprecision(16) << kelvin_droplet_effect_coeff << ";\n";
   ss << "rhMin = " << rel_humidity_min << ";\n";
-  ss << "rhMin = " << rel_humidity_max << ";\n";
+  ss << "rhMax = " << rel_humidity_max << ";\n";
   ss << "hygMin = " << hygro_min << ";\n";
   ss << "hygMax = " << hygro_max << ";\n";
   ss << "radMin = " << dry_radius_min_microns << ";\n";

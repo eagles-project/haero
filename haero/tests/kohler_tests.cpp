@@ -180,6 +180,10 @@ TEST_CASE("KohlerSolve-verification", "") {
   REQUIRE(max_err_newton < conv_tol);
   REQUIRE(max_err_bisection < conv_tol);
 
+  std::cout << "To generate the verification data, run this program in Mathematica:\n\n";
+
+  std::cout << KohlerPolynomial<PackType>::mathematica_verification_program(N);
+
 }
 
 
