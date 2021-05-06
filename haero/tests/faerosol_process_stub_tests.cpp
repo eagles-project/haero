@@ -1,8 +1,7 @@
 #include "haero/model.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/diagnostics.hpp"
-#include "prog_fprocess_stub.hpp"
-#include "diag_fprocess_stub.hpp"
+#include "faerosol_process_stub.hpp"
 #include "catch2/catch.hpp"
 #include <iostream>
 #include <cmath>
@@ -10,7 +9,7 @@
 using namespace haero;
 
 // These tests demonstrate our minimal Fortran-backed prognostic process stub.
-TEST_CASE("prog_fprocess_stub", "") {
+TEST_CASE("faerosol_process_stub", "") {
 
   static_assert(HAERO_PACK_SIZE == 1,
                 "Fortran not supported for HAERO_PACK_SIZE != 1.");
@@ -51,22 +50,22 @@ TEST_CASE("prog_fprocess_stub", "") {
 
   // Test basic construction.
   SECTION("construct") {
-    auto* stub = new ProgFProcessStub(decay_rate);
+    auto* stub = new FAerosolProcessStub(decay_rate);
     REQUIRE(stub->type() == haero::ActivationProcess);
-    REQUIRE(stub->name() == "Prognostic process stub (Fortran)");
+    REQUIRE(stub->name() == "Aerosol process stub (Fortran)");
     delete stub;
   }
 
   // Test process initialization.
   SECTION("init_process") {
-    auto* stub = new ProgFProcessStub(decay_rate);
+    auto* stub = new FAerosolProcessStub(decay_rate);
     stub->init(model->modal_aerosol_config());
     delete stub;
   }
 
   // Test process tendencies.
   SECTION("tendencies") {
-    auto* stub = new ProgFProcessStub(decay_rate);
+    auto* stub = new FAerosolProcessStub(decay_rate);
     stub->init(model->modal_aerosol_config());
 
     // Initialize prognostic and diagnostic variables, and construct a
@@ -112,8 +111,8 @@ TEST_CASE("prog_fprocess_stub", "") {
 
     // Cloudborne aerosol mix fractions have negative tendencies, interstitial
     // mix fractions have positive tendencies, and their sums are zero.
-    auto dqdt_c = tends->cloudborne_aerosols();
-    auto dqdt_i = tends->interstitial_aerosols();
+    auto dqdt_c = tends->cloud_aerosols;
+    auto dqdt_i = tends->interstitial_aerosols;
     for (int p = 0; p < num_aero_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(dqdt_c(p, k)[0] < 0.0);
@@ -124,7 +123,7 @@ TEST_CASE("prog_fprocess_stub", "") {
     }
 
     // Aerosol modal number concentrations are unchanged.
-    auto dndt = tends->modal_num_concs();
+    auto dndt = tends->modal_num_concs;
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(FloatingPoint<Real>::equiv(dndt(m, k)[0], 0.0));
@@ -132,7 +131,7 @@ TEST_CASE("prog_fprocess_stub", "") {
     }
 
     // Gas mix ratios are unchanged.
-    const auto& dqdt_g = tends->gases();
+    const auto& dqdt_g = tends->gases;
     for (int g = 0; g < num_gases; ++g) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(FloatingPoint<Real>::equiv(dqdt_g(g, k)[0], 0.0));
@@ -150,6 +149,7 @@ TEST_CASE("prog_fprocess_stub", "") {
   delete model;
 }
 
+/*
 // These tests demonstrate our minimal Fortran-backed diagnostic process stub.
 TEST_CASE("diag_process_stub", "") {
 
@@ -306,4 +306,5 @@ TEST_CASE("diag_process_stub", "") {
   delete atm;
   delete model;
 }
+*/
 

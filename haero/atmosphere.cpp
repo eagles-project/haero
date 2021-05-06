@@ -8,17 +8,17 @@ Atmosphere::Atmosphere(int num_levels,
                        const ColumnView rel_hum,
                        const ColumnView ht,
                        const ColumnView pdel,
-                       Real pblh):
-  num_levels_(num_levels),
-  temperature_(temp),
-  pressure_(press),
-  relative_humidity_(rel_hum),
-  height_(ht),
-  hydrostatic_dp_(pdel),
-  pblh_(pblh) {
+                       Real pbl):
+  temperature(temp),
+  pressure(press),
+  relative_humidity(rel_hum),
+  height(ht),
+  hydrostatic_dp(pdel),
+  planetary_boundary_height(pbl),
+  num_levels_(num_levels) {
   EKAT_REQUIRE_MSG(num_levels > 0,
                    "Number of vertical levels must be positive");
-  EKAT_REQUIRE_MSG(pblh >= 0.0,
+  EKAT_REQUIRE_MSG(pbl >= 0.0,
                    "Planetary boundary height must be non-negative");
 
   // Make sure the views we're given are properly sized.
@@ -52,41 +52,41 @@ extern "C" {
 void* a_temperature_c(void* a)
 {
   auto* atm = static_cast<Atmosphere*>(a);
-  auto& T = atm->temperature();
+  auto& T = atm->temperature;
   return (void*)T.data();
 }
 
 void* a_pressure_c(void* a)
 {
   auto* atm = static_cast<Atmosphere*>(a);
-  auto& p = atm->temperature();
+  auto& p = atm->temperature;
   return (void*)p.data();
 }
 
 void* a_relative_humidity_c(void* a)
 {
   auto* atm = static_cast<Atmosphere*>(a);
-  auto& RH = atm->relative_humidity();
+  auto& RH = atm->relative_humidity;
   return (void*)RH.data();
 }
 
 void* a_height_c(void* a)
 {
   auto* atm = static_cast<Atmosphere*>(a);
-  auto& h = atm->height();
+  auto& h = atm->height;
   return (void*)h.data();
 }
 
 void* a_hydrostatic_dp_c(void* a) {
   auto* atm = static_cast<Atmosphere*>(a);
-  auto& hdp = atm->hydrostatic_dp();
+  auto& hdp = atm->hydrostatic_dp;
   return (void*)hdp.data();
 }
 
 Real a_pblh_c(void* a)
 {
   auto* atm = static_cast<Atmosphere*>(a);
-  return atm->planetary_boundary_height();
+  return atm->planetary_boundary_height;
 }
 
 } // extern "C"

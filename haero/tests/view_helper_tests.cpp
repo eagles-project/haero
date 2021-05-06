@@ -3,6 +3,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/ekat_scalar_traits.hpp"
 #include "catch2/catch.hpp"
 #include <iostream>
 #include <sstream>
@@ -94,6 +95,9 @@ TEST_CASE("view_pack_helpers", "") {
     }
     REQUIRE (nerr == 0);
 
+    REQUIRE_FALSE(std::is_arithmetic<PackType>::value);
+    REQUIRE(std::is_arithmetic<ekat::ScalarTraits<PackType>::scalar_type>::value);
+    REQUIRE(std::is_arithmetic<ekat::ScalarTraits<Real>::scalar_type>::value);
   }
 }
 
@@ -151,6 +155,15 @@ TEST_CASE ("scalarized views", "" ) {
     REQUIRE(ekat::scalarize(testcase.intfc_view).extent(0) ==
       tc_pack_size * PackViewTest<tc_pack_size>::test_pack_info::num_packs(nlev+1));
   }
+}
+
+TEST_CASE ("Haero view type basics", "") {
+
+   SECTION("ColumnView") {
+    ColumnView empty_view;
+    std::cout << "An empty view (default-constructed) has extent " << empty_view.extent(0) << "\n";
+    REQUIRE(empty_view.extent(0) == 0);
+   }
 }
 
 template <int PackSize>

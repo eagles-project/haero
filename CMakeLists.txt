@@ -14,6 +14,7 @@ elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
   message(FATAL_ERROR "Invalid HAERO_DEVICE: ${HAERO_DEVICE} (Must be CPU or CUDA).")
 elseif(HAERO_DEVICE STREQUAL CUDA)
   set(ENABLE_FORTRAN OFF)
+  set(HAERO_USE_CUDA ON)
 else() # CPU -- use OpenMP as "device" for non-Apple architectures.
   if (NOT APPLE)
     set(USE_OPENMP ON)
@@ -30,6 +31,17 @@ elseif(HAERO_PACK_SIZE GREATER 1)
   set(ENABLE_FORTRAN OFF)
 endif()
 message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
+
+# Define default Kokkos View types
+if (NOT HAERO_COLUMN_VIEW_TYPE)
+  set(HAERO_COLUMN_VIEW_TYPE "DeviceType::view_1d<PackType>")
+endif()
+if (NOT HAERO_SPECIES_COLUMN_VIEW_TYPE)
+  set(HAERO_SPECIES_COLUMN_VIEW_TYPE "DeviceType::view_2d<PackType>")
+endif()
+if (NOT HAERO_MODAL_COLUMN_VIEW_TYPE)
+  set(HAERO_MODAL_COLUMN_VIEW_TYPE "DeviceType::view_2d<PackType>")
+endif()
 
 if (NOT ENABLE_FORTRAN)
   message(STATUS "================================================================")
@@ -227,7 +239,7 @@ add_subdirectory(ext)
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_DEVICE STREQUAL CUDA)
   set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
@@ -283,6 +295,8 @@ if (HAERO_ENABLE_CHEM_DRIVER)
   message(STATUS "Building chem_driver.")
   add_subdirectory(chemDriver)
 endif()
+# Skywalker--a tool for exploring aerosol processes in low-dimensional parameter spaces
+add_subdirectory(sw)
 
 # Documentation.
 if (HAERO_DOC_INCLUDE_COMMENTS)

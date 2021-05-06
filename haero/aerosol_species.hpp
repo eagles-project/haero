@@ -14,58 +14,69 @@ namespace haero {
 /// This type represents an aerosol species.
 struct AerosolSpecies final {
   static const int NAME_LEN=128;
+  static const int DESC_LEN=512;
   // Default constructor needed to resize Kokkos Views on device before deep copy.
   KOKKOS_INLINE_FUNCTION
   AerosolSpecies() {
     name_view[0]='\0';
     symbol_view[0]='\0';
+    desc_view[0]='\0';
   }
 
   /// Creates a new aerosol species.
   /// @param [in] name A unique descriptive name for this species.
   /// @param [in] symbol A unique short, symbolic name for this species.
+  /// @param [in] description A short text description of this species and its composition
   /// @param [in] molecular_wt The molecular weight [kg/mol]of the species
   /// @param [in] dry_rad The dry radius [m] of the species' particle size
   /// @param [in] hygro Base hygroscopicity of the species
   AerosolSpecies(const std::string& name,
           const std::string& symbol,
+          const std::string& description,
           Real molecular_wt,
           Real dry_rad,
           Real dens,
           Real hygro):
-    molecular_weight(molecular_wt), 
+    molecular_weight(molecular_wt),
     dry_radius      (dry_rad),
-    density         (dens), 
-    hygroscopicity  (hygro) 
+    density         (dens),
+    hygroscopicity  (hygro)
   {
     EKAT_ASSERT(name.size() < NAME_LEN);
     EKAT_ASSERT(symbol.size() < NAME_LEN);
     strncpy(name_view, name.c_str(), NAME_LEN);
     strncpy(symbol_view, symbol.c_str(), NAME_LEN);
+    strncpy(desc_view, description.c_str(), DESC_LEN);
   }
 
   KOKKOS_INLINE_FUNCTION
   AerosolSpecies(const AerosolSpecies& a) :
-    molecular_weight(a.molecular_weight), 
+    molecular_weight(a.molecular_weight),
     dry_radius      (a.dry_radius),
-    density         (a.density), 
+    density         (a.density),
     hygroscopicity  (a.hygroscopicity) {
     for (int i=0; i<NAME_LEN; ++i)
-       name_view[i] = a.name_view[i]; 
+       name_view[i] = a.name_view[i];
     for (int i=0; i<NAME_LEN; ++i)
-       symbol_view[i] = a.symbol_view[i]; 
+       symbol_view[i] = a.symbol_view[i];
+    for (int i=0; i<DESC_LEN; ++i)
+       desc_view[i] = a.desc_view[i];
   }
 
   KOKKOS_INLINE_FUNCTION
   AerosolSpecies &operator=(const AerosolSpecies& a) {
-    molecular_weight = a.molecular_weight; 
-    dry_radius       = a.dry_radius;
-    density          =  a.density; 
-    hygroscopicity   = a.hygroscopicity;
-    for (int i=0; i<NAME_LEN; ++i)
-       name_view[i] = a.name_view[i]; 
-    for (int i=0; i<NAME_LEN; ++i)
-       symbol_view[i] = a.symbol_view[i]; 
+    if (&a != this) {
+      molecular_weight = a.molecular_weight;
+      dry_radius       = a.dry_radius;
+      density          =  a.density;
+      hygroscopicity   = a.hygroscopicity;
+      for (int i=0; i<NAME_LEN; ++i)
+        name_view[i] = a.name_view[i];
+      for (int i=0; i<NAME_LEN; ++i)
+        symbol_view[i] = a.symbol_view[i];
+      for (int i=0; i<DESC_LEN; ++i)
+        desc_view[i] = a.desc_view[i];
+    }
     return *this;
   }
 
@@ -74,6 +85,9 @@ struct AerosolSpecies final {
 
   /// Abbreviated symbolic name.
   std::string symbol() const { return std::string(symbol_view); }
+
+  /// Species description.
+  std::string description() const { return std::string(desc_view); }
 
   // Molecular weight [kg/mol]
   Real molecular_weight;
@@ -90,6 +104,7 @@ struct AerosolSpecies final {
 private:
   char name_view[NAME_LEN];
   char symbol_view[NAME_LEN];
+  char desc_view[DESC_LEN];
 };
 
 /// This factory function constructs a set of aerosol species corresponding to
@@ -109,7 +124,7 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
   std::vector<AerosolSpecies> result;
   static constexpr Real g_to_kg = 0.001; /// Convert molecular weights to SI units (g/mol) -> (kg/mol)
   for (int i=0; i<aer_mw.size(); ++i) {
-    result.push_back(AerosolSpecies(aer_names[i], aer_symbs[i],
+    result.push_back(AerosolSpecies(aer_names[i], aer_symbs[i], "(No description)",
       g_to_kg*aer_mw[i], aer_dry_rad[i], aer_dens[i], aer_hygro[i]));
   }
   return result;

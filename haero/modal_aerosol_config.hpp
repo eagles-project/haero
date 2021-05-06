@@ -87,14 +87,20 @@ class ModalAerosolConfig final {
   /// model, counting appearances of one species in different modes separately.
   int num_aerosol_populations;
 
+  KOKKOS_INLINE_FUNCTION
+  int num_modes() const {return d_aerosol_modes.extent(0);}
+
+  KOKKOS_INLINE_FUNCTION
+  int num_gases() const {return d_gas_species.extent(0);}
+
   /// The list of gas species associated with this aerosol model.
   DeviceType::view_1d<GasSpecies> d_gas_species;
   HostType::view_1d<GasSpecies>   h_gas_species;
 
   /// Returns the list of aerosol species associated with the model with the
   /// given mode index.
-  /// @param [in]mode_index An integer index identifying the mode in question. This
-  ///                       This index goes from 0 to num_modes-1.
+  /// @param [in] mode_index An integer index identifying the mode in question. This
+  ///                        This index goes from 0 to num_modes-1.
   std::vector<AerosolSpecies> aerosol_species_for_mode(const int mode_index) const {
     EKAT_ASSERT(mode_index >= 0);
     EKAT_ASSERT(mode_index < h_species_for_mode.extent(0));
@@ -109,9 +115,16 @@ class ModalAerosolConfig final {
   /// On host: returns the index of a specific aerosol mode, or -1 if the
   /// desired mode is not found.
   /// @param [in] mode_name The name of the mode for which the index is retrieved
-  int aerosol_mode_index(const std::string& mode_name) const {
+  /// @param [in] case_sensitive If true, mode_name must exactly match the name
+  ///                            of the aerosol mode. Otherwise, a case-
+  ///                            insensitive comparison is made.
+  int aerosol_mode_index(const std::string& mode_name,
+                         bool case_sensitive = true) const {
     for (int m = 0; m < h_aerosol_modes.size(); ++m) {
-      if (h_aerosol_modes[m].name() == mode_name) {
+      if ((h_aerosol_modes[m].name() == mode_name) or
+          (not case_sensitive and
+           (strcasecmp(h_aerosol_modes[m].name().c_str(),
+                       mode_name.c_str()) == 0))) {
         return m;
         break;
       }
@@ -125,11 +138,19 @@ class ModalAerosolConfig final {
   /// @param [in] aerosol_symbol The symbolic name of the aerosol species for
   ///                            which the index is retrieved within the given
   ///                            mode.
-  int aerosol_species_index(int mode_index, const std::string& aerosol_name) const {
+  /// @param [in] case_sensitive If true, aerosol_symbol must exactly match the
+  ///                            aerosol's symbol. Otherwise, a case-insensitive
+  ///                            comparison is made.
+  int aerosol_species_index(int mode_index,
+                            const std::string& aerosol_symbol,
+                            bool case_sensitive = true) const {
     for (int s = 0; s < h_species_for_mode.extent(1); ++s) {
       int species_index = h_species_for_mode(mode_index, s);
       if ((species_index >= 0) &&
-          (h_aerosol_species[species_index].name() == aerosol_name)) {
+          ((h_aerosol_species[species_index].symbol() == aerosol_symbol) or
+           (not case_sensitive and
+            (strcasecmp(h_aerosol_species[species_index].symbol().c_str(),
+                        aerosol_symbol.c_str()) == 0)))) {
         return s;
         break;
       }
@@ -162,9 +183,12 @@ class ModalAerosolConfig final {
   /// desired species is not found.
   /// @param [in] gas_symbol The symbolic name of the gas for which the index is
   ///                        retrieved
-  int gas_index(const std::string& gas_symbol) const {
+  int gas_index(const std::string& gas_symbol, bool case_sensitive = true) const {
     for (int g = 0; g < h_gas_species.size(); ++g) {
-      if (h_gas_species[g].symbol() == gas_symbol) {
+      if ((h_gas_species[g].symbol() == gas_symbol) ||
+          (not case_sensitive and
+           (strcasecmp(h_gas_species[g].symbol().c_str(),
+                       gas_symbol.c_str()) == 0))) {
         return g;
         break;
       }

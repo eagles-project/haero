@@ -16,7 +16,7 @@
 \newtheorem{defn}{Definition}
 \newtheorem{appx}{Approximation}
 \newtheorem{assume}{Assumption}
-\renewcommand{\listtheoremname}{List of Assumptions and Approximations}
+
 
 \theoremstyle{remark}
 \newtheorem*{rem}{Remark}
@@ -104,6 +104,9 @@
 \newcommand{\water}{H_{_2}O}
 \newcommand{\numc}{N_{_{t,i}}}
 \mathchardef\mhyphen="2D % Define a "math hyphen", make the dash shorter
+\newcommand{\pluseq}{\mathrel{+}=}
+\newcommand{\minuseq}{\mathrel{-}=}
+\DeclareMathOperator{\sgn}{sgn}
 
 % Norm and Absolute value
 	\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
@@ -121,6 +124,8 @@
 %\date
 \maketitle
 
+\tableofcontents
+
 % \include puts page breaks after each section, while \input does not.
 \include{intro}
 \include{physics}
@@ -134,6 +139,8 @@
 \include{api}
 \include{process_appendix}
 \include{driver_input}
+\chapter{List of assumptions and approximations}
+\renewcommand{\listtheoremname}{}
 \listoftheorems[ignoreall, show={assume,appx}, onlynamed]
 \nocite{*}
 \bibliography{haero_design}

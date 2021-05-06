@@ -38,7 +38,7 @@ endif()
 #----------------------------------------------------------------------------
 # libz compression library
 #----------------------------------------------------------------------------
-find_library(Z_LIBRARY libz.a)
+find_library(Z_LIBRARY libz.a libz${CMAKE_SHARED_LIBRARY_SUFFIX})
 if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
@@ -272,6 +272,11 @@ if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   if (NOT EXISTS ${OPENBLAS_LIBRARY})
     update_submodules()
     set(OPENBLAS_OPTS NO_SHARED=1 PREFIX=${PROJECT_BINARY_DIR})
+    if (HAERO_DOUBLE_PRECISION)
+      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_DOUBLE=1)
+    else()
+      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_SINGLE=1)
+    endif()
     ExternalProject_Add(openblas_proj
                         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS

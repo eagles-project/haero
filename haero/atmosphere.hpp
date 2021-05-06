@@ -24,6 +24,9 @@ class Atmosphere final {
   ///                managed by the host model
   /// @param [in] pblh The column-specific planetary boundary height [m],
   ///                  computed by the host model
+  /// @param [in] pdel The hydrostatic "pressure thickness" defined as the
+  ///                  difference in hydrostatic pressure levels at interfaces
+  ///                  bounding each vertical level [Pa]
   Atmosphere(int num_levels,
              const ColumnView temp,
              const ColumnView press,
@@ -36,48 +39,29 @@ class Atmosphere final {
   KOKKOS_FUNCTION
   ~Atmosphere();
 
+  // Views.
+  const ColumnView temperature;
+  const ColumnView pressure;
+  const ColumnView relative_humidity;
+  const ColumnView height;
+  const ColumnView hydrostatic_dp;
+
+  // Planetary boundary height.
+  Real planetary_boundary_height;
+
   /// Returns the number of vertical levels per column in the system.
   KOKKOS_INLINE_FUNCTION
   int num_levels() const { return num_levels_; }
 
-  /// Returns atmospheric temperature data [K], defined at each vertical level
+  /// Sets the planetary boundary height [m].
   KOKKOS_INLINE_FUNCTION
-  const ColumnView temperature() const { return temperature_; }
-
-  /// Returns atmospheric pressure data [Pa], defined at each vertical level.
-  KOKKOS_INLINE_FUNCTION
-  const ColumnView pressure() const { return pressure_; }
-
-  /// Returns relative humidity data [-], defined at each vertical level.
-  KOKKOS_INLINE_FUNCTION
-  const ColumnView relative_humidity() const { return relative_humidity_; }
-
-  /// Returns geopotential height data [m], defined at interfaces between vertical levels.
-  KOKKOS_INLINE_FUNCTION
-  const ColumnView height() const { return height_; }
-
-  /// Returns the planetary boundary height [m].
-  KOKKOS_INLINE_FUNCTION
-  Real planetary_boundary_height() const { return pblh_; }
-
-  /// Returns the thickness of a layer in pressure units, based on the hydrostatic approximation
-  KOKKOS_INLINE_FUNCTION
-  const ColumnView hydrostatic_dp() const {return hydrostatic_dp_;}
+  void set_planetary_boundary_height(Real pblh) { planetary_boundary_height = pblh; }
 
   private:
 
   // Number of vertical levels.
   const int num_levels_;
 
-  // Views.
-  const ColumnView temperature_;
-  const ColumnView pressure_;
-  const ColumnView relative_humidity_;
-  const ColumnView height_;
-  const ColumnView hydrostatic_dp_;
-
-  // Planetary boundary height.
-  Real pblh_;
 };
 
 }

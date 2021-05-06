@@ -11,7 +11,7 @@
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/view_pack_helpers.hpp"
-#include "haero/process.hpp"
+#include "haero/aerosol_process.hpp"
 #include "haero/floating_point.hpp"
 
 using namespace haero;
@@ -25,15 +25,15 @@ typedef Kokkos::CudaSpace MemSpace;
 typedef Kokkos::HostSpace MemSpace;
 #endif
 
-class MyPrognosticProcess : public PrognosticProcess {
+class MyAerosolProcess : public AerosolProcess {
 public :
-  MyPrognosticProcess(ProcessType type,
-                      const std::string& name,
-                      const int num_lev,
-                      const Diagnostics::Token aer_0,
-                      const Diagnostics::Token aer_1,
-                      const Diagnostics::Token gen_0) :
-   PrognosticProcess(type, name),
+  MyAerosolProcess(AerosolProcessType type,
+                   const std::string& name,
+                   const int num_lev,
+                   const Diagnostics::Token aer_0,
+                   const Diagnostics::Token aer_1,
+                   const Diagnostics::Token gen_0) :
+   AerosolProcess(type, name),
    num_levels (num_lev),
    aersol_0 (aer_0),
    aersol_1 (aer_1),
@@ -41,11 +41,11 @@ public :
  {}
 
   KOKKOS_INLINE_FUNCTION
-  virtual ~MyPrognosticProcess() {}
+  virtual ~MyAerosolProcess() {}
 
   KOKKOS_INLINE_FUNCTION
-  MyPrognosticProcess(const MyPrognosticProcess& pp) :
-   PrognosticProcess(pp),
+  MyAerosolProcess(const MyAerosolProcess& pp) :
+   AerosolProcess(pp),
    num_levels (pp.num_levels),
    aersol_0 (pp.aersol_0),
    aersol_1 (pp.aersol_1),
@@ -60,12 +60,12 @@ public :
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const {
 
-    const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols();
-    const ColumnView temp = atmosphere.temperature();
+    const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
+    const ColumnView temp = atmosphere.temperature;
     const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
     const ColumnView        generic_var   = diagnostics.var(generic_0);
-    SpeciesColumnView aero_tend = tendencies.interstitial_aerosols();
+    SpeciesColumnView aero_tend = tendencies.interstitial_aerosols;
 
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
@@ -96,13 +96,13 @@ public :
     }
   };
 
-  MyPrognosticProcess *copy_to_device() {
+  MyAerosolProcess *copy_to_device() {
     const std::string debuggingName(name());
-    MyPrognosticProcess *pp = static_cast<MyPrognosticProcess *>(
-      Kokkos::kokkos_malloc<MemSpace>(debuggingName + "_malloc", sizeof(MyPrognosticProcess)));
-    const MyPrognosticProcess &this_pp = *this; // Suck into lambda capture space.
+    MyAerosolProcess *pp = static_cast<MyAerosolProcess *>(
+      Kokkos::kokkos_malloc<MemSpace>(debuggingName + "_malloc", sizeof(MyAerosolProcess)));
+    const MyAerosolProcess &this_pp = *this; // Suck into lambda capture space.
     Kokkos::parallel_for(debuggingName + "_format", 1,
-                         KOKKOS_LAMBDA(const int) { new (pp) MyPrognosticProcess(this_pp); });
+                         KOKKOS_LAMBDA(const int) { new (pp) MyAerosolProcess(this_pp); });
     return pp;
   }
 private:
@@ -113,8 +113,7 @@ private:
 };
 
 
-TEST_CASE("process_tests", "prognostic_process") {
-
+TEST_CASE("process_tests", "aerosol_process") {
 
   const int num_levels = 72;
   const int num_gases  = 1;
@@ -202,7 +201,7 @@ TEST_CASE("process_tests", "prognostic_process") {
   Tendencies tends(progs);
   {
     const int num_populations = progs.num_aerosol_populations();
-    SpeciesColumnView aero_tend = tends.interstitial_aerosols();
+    SpeciesColumnView aero_tend = tends.interstitial_aerosols;
     auto host_aero_tend  =  Kokkos::create_mirror_view(aero_tend);
     for (int i=0; i<num_levels; ++i) {
       for (int j=0; j<num_populations; ++j) {
@@ -212,10 +211,10 @@ TEST_CASE("process_tests", "prognostic_process") {
     Kokkos::deep_copy(aero_tend, host_aero_tend);
   }
 
-  ProcessType type = CloudBorneWetRemovalProcess;
-  const std::string name = "CloudPrognosticProcess";
-  MyPrognosticProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
-  MyPrognosticProcess *device_pp = pp.copy_to_device();
+  AerosolProcessType type = CloudBorneWetRemovalProcess;
+  const std::string name = "CloudProcess";
+  MyAerosolProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
+  MyAerosolProcess *device_pp = pp.copy_to_device();
 
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
   std::vector<GasSpecies> gas_species  = create_mam4_gas_species();
@@ -240,12 +239,12 @@ TEST_CASE("process_tests", "prognostic_process") {
 
   {
     using fp_helper = FloatingPoint<float>;
-    const SpeciesColumnView int_aerosols = progs.interstitial_aerosols();
-    const ColumnView temp = atmos.temperature();
+    const SpeciesColumnView int_aerosols = progs.interstitial_aerosols;
+    const ColumnView temp = atmos.temperature;
     const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
     const ColumnView        generic_var   = diagnostics.var(generic_0);
-    SpeciesColumnView aero_tend = tends.interstitial_aerosols();
+    SpeciesColumnView aero_tend = tends.interstitial_aerosols;
 
     auto host_first_aersol  =  Kokkos::create_mirror_view(first_aersol);
     auto host_second_aersol =  Kokkos::create_mirror_view(second_aersol);
