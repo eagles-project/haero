@@ -291,6 +291,9 @@ if (HAERO_ENABLE_DRIVER)
   add_subdirectory(driver)
 endif()
 
+# Skywalker--a tool for exploring aerosol processes in low-dimensional parameter spaces
+add_subdirectory(sw)
+
 # Documentation.
 if (HAERO_DOC_INCLUDE_COMMENTS)
   set(HAERO_INCLUDE_DESIGN_COMMENTS "\\inccommentstrue")

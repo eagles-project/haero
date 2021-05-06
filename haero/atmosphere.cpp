@@ -9,13 +9,13 @@ Atmosphere::Atmosphere(int num_levels,
                        const ColumnView ht,
                        const ColumnView pdel,
                        Real pbl):
-  num_levels_(num_levels),
   temperature(temp),
   pressure(press),
   relative_humidity(rel_hum),
   height(ht),
   hydrostatic_dp(pdel),
-  planetary_boundary_height(pbl) {
+  planetary_boundary_height(pbl),
+  num_levels_(num_levels) {
   EKAT_REQUIRE_MSG(num_levels > 0,
                    "Number of vertical levels must be positive");
   EKAT_REQUIRE_MSG(pbl >= 0.0,

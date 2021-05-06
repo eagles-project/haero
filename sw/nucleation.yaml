@@ -1,0 +1,69 @@
+# This input walks 3 parameters to which the nucleation process is sensitive.
+
+process:
+  mam: newnuc
+  haero: MAMNucleationFProcess
+
+timestepping: # [s]
+  dt: 3600
+  total_time: 3600
+
+ensemble:
+  temperature: [270, 276, 0.5]
+  relative_humidity: [0, 1, 0.1]
+  qh2so4: [0, 1.e-3, 1.e-4]  # _aero for aerosol data
+  aitken:
+    so4: [0, 0.001]
+
+atmosphere:
+  temperature: 273
+  pressure: 100000
+  relative_humidity: 0.95
+  height: 3000
+  hydrostatic_dp: 200
+
+aerosols:
+  accumulation:
+    number_conc: 1.e8 # [ # aerosol molecules / kg air]
+    so4: 0.3 # [change to kg aerosol/kg air]
+    pom: 0
+    soa: 0.3
+    bc: 0
+    dst: 0
+    nacl: 0.4
+    mom: 0
+  aitken:
+    number_conc: 1.e9
+    so4: 0.3
+    soa: 0.3
+    nacl: 0.4
+    mom: 0
+  coarse:
+    number_conc: 1.e5
+    so4: 0.3
+    pom: 0
+    mom: 0
+    soa: 0.3
+    bc: 0
+    dst: 0
+    nacl: 0.4
+  primary_carbon:
+    number_conc: 2.e8
+    pom: 0
+    bc: 1
+    mom: 0
+
+gases:
+  so2: 1.e-4 # [kg gas / kg air]
+  h2so4: 1.e-13
+  soag: 5.e-10
+  o3: 0
+  o2: 0
+  co2: 0
+  n2o: 0
+  ch4: 0
+  cfc11: 0
+  cfc12: 0
+  h2o2: 0
+  dms: 0
+
