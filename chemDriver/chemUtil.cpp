@@ -5,23 +5,21 @@ namespace chemUtil {
 using namespace from_tchem;
 
 chemFiles::chemFiles(std::string chemDir){
-  prefixPath = "data/" + chemDir;
+  prefixPath = "tests/" + chemDir;
   chemFile = prefixPath + "chem.inp";
   thermFile = prefixPath + "therm.dat";
   outputFile = prefixPath + "omega.dat";
 }
 
 chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
-                       bool iverbose, Real itheta, Real ilambda,
+                       bool iverbose,
                        Real k1, Real k2,
                        Real initX, Real initX2)
                        :
                        cfiles(chemDir),
                        verbose(iverbose),
                        nBatch(inBatch),
-                       policy(TChem::exec_space(), nBatch, Kokkos::AUTO()),
-                       theta("latitude", nBatch),
-                       lambda("longitude", nBatch) {
+                       policy(TChem::exec_space(), nBatch, Kokkos::AUTO()) {
   // optionally print some configuration info
     // (note: this doesn't appear to do anything when compiled in serial)
   // TChem::exec_space::print_configuration(std::cout, detail);
@@ -33,6 +31,7 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   // create a const version
   kmcd = kmd.createConstData<TChem::exec_space>();
 
+
   // 2d view for reaction rates (calculated in team_invoke_detail())
   reactRate = real_type_2d_view("ReactionRates", nBatch, kmcd.nSpec);
 
@@ -41,15 +40,11 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   // output: omega, reaction rates
   omega = real_type_2d_view("NetProductionRate", nBatch, kmcd.nSpec);
 
-  // create mirror views on host to set the initial values of theta/lambda and
+  // create mirror views on host to set the initial values of
   // reactRate then deep copy to device
-  auto theta_host = Kokkos::create_mirror_view(theta);
-  auto lambda_host = Kokkos::create_mirror_view(lambda);
   auto reactRate_host = Kokkos::create_mirror_view(reactRate);
 
-  // assign the constructor arguments to the corresponding mirror views
-  theta_host(0) = itheta;
-  lambda_host(0) = ilambda;
+  // assign the constructor arguments to the corresponding mirror view
   for (int i = 0; i < nBatch; ++i)
   {
     reactRate_host(i, 0) = k1;
@@ -57,8 +52,6 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
   }
 
   // deep copy to device
-  Kokkos::deep_copy(theta, theta_host);
-  Kokkos::deep_copy(lambda, lambda_host);
   Kokkos::deep_copy(reactRate, reactRate_host);
 
   /// create a mirror view to store input from a file
@@ -73,7 +66,7 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
 
     // FIXME(mjs): I don't know what this does just keeping it around from what I
               // picked out of TChem, itself
-    TChem::Test::cloneView(state_host);
+    // TChem::Test::cloneView(state_host);
   }
 
   // reset timer and time the deep copy from host to device
@@ -113,7 +106,7 @@ real_type_2d_view chemSolver::get_results(){
   // reset timer
   timer.reset();
   // run the model
-  from_tchem::SourceTermToyProblem::runDeviceBatch(policy, theta, lambda, reactRate, state, omega, kmcd);
+  from_tchem::SourceTermToyProblem::runDeviceBatch(policy, reactRate, state, omega, kmcd);
   Kokkos::fence(); /// timing purpose
   t_device_batch = timer.seconds();
   /// create a mirror view of omega (output) to export a file
@@ -155,8 +148,6 @@ namespace from_tchem {
     KOKKOS_INLINE_FUNCTION static void team_invoke_detail(
       const MemberType& member,
       /// input
-      const Real& theta,
-      const Real& lambda,
       const RealType1DViewType& reactRate,
       const RealType1DViewType& concX,
       /// output
@@ -278,8 +269,6 @@ namespace from_tchem {
     KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
       const MemberType& member,
       /// input
-      const Real& theta,
-      const Real& lambda,
       const RealType1DViewType& reactRate,
       const RealType1DViewType& X, /// (kmcd.nSpec)
       /// output
@@ -307,8 +296,6 @@ namespace from_tchem {
       w += kmcd.nReac * 2;
 
       team_invoke_detail(member,
-                         theta,
-                         lambda,
                          reactRate,
                          X,
                          omega,
@@ -321,7 +308,7 @@ namespace from_tchem {
     }
 
   template<typename PolicyType,
-          typename RealType1DViewType,
+          // typename RealType1DViewType,
           typename RealType2DViewType,
           typename KineticModelConstType>
   //
@@ -329,8 +316,6 @@ namespace from_tchem {
     const std::string& profile_name,
     /// team size setting
     const PolicyType& policy,
-    const RealType1DViewType& theta,
-    const RealType1DViewType& lambda,
     const RealType2DViewType& reactRate,
     const RealType2DViewType& state,
     const RealType2DViewType& SourceTermToyProblem,
@@ -348,22 +333,18 @@ namespace from_tchem {
       policy,
       KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
         const ordinal_type i = member.league_rank();
-        const RealType1DViewType state_at_i =
+        const real_type_1d_view state_at_i =
           Kokkos::subview(state, i, Kokkos::ALL());
-        const RealType1DViewType reactRate_at_i =
+        const real_type_1d_view reactRate_at_i =
           Kokkos::subview(reactRate, i, Kokkos::ALL());
-        const RealType1DViewType SourceTermToyProblem_at_i =
+        const real_type_1d_view SourceTermToyProblem_at_i =
           Kokkos::subview(SourceTermToyProblem, i, Kokkos::ALL());
 
-        Scratch<RealType1DViewType> work(member.team_scratch(level),
+        Scratch<real_type_1d_view> work(member.team_scratch(level),
                                         per_team_extent);
 
-        //
-        const Real theta_at_i = theta(i);
-        const Real lambda_at_i = lambda(i);
-
-        team_invoke(member, theta_at_i, lambda_at_i, reactRate_at_i,
-          state_at_i, SourceTermToyProblem_at_i, work, kmcd);
+        team_invoke(member, reactRate_at_i, state_at_i,
+                    SourceTermToyProblem_at_i, work, kmcd);
 
       });
     Kokkos::Profiling::popRegion();
@@ -371,8 +352,6 @@ namespace from_tchem {
 
   void SourceTermToyProblem::runDeviceBatch( /// input
     typename UseThisTeamPolicy<exec_space>::type& policy,
-    const real_type_1d_view& theta,
-    const real_type_1d_view& lambda,
     const real_type_2d_view& reactRate,
     const real_type_2d_view& state,
     /// output
@@ -385,8 +364,6 @@ namespace from_tchem {
       "SourceTermToyProblem::runDeviceBatch",
       /// team size setting
       policy,
-      theta,
-      lambda,
       reactRate,
       state,
       SourceTermToyProblem,
