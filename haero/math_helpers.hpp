@@ -236,9 +236,9 @@ struct ScalarNewtonSolver {
   For an application example, see KohlerPolynomial.
 
 */
-template <typename ScalarFunction, typename ScalarType=Real> struct BisectionSolver {
+template <typename ScalarFunction> struct BisectionSolver {
   using value_type = typename ScalarFunction::value_type;
-  using scalar_type = typename ScalarFunction::scalar_type;
+
   /// maximum number of iterations allowed
   static constexpr int max_iter = 200;
   /// solution
@@ -248,7 +248,7 @@ template <typename ScalarFunction, typename ScalarType=Real> struct BisectionSol
   /// right endpoint of root search interval
   value_type b;
   /// tolerance
-  value_type conv_tol;
+  Real conv_tol;
   /// function value at left endpoint of search interval
   value_type fa;
   /// next iteration solution
@@ -277,22 +277,22 @@ template <typename ScalarFunction, typename ScalarType=Real> struct BisectionSol
     xnp1(0.5*(a0+b0)),
     counter(0),
     iter_diff(b0-a0),
-    f(fn) {
-    EKAT_KERNEL_ASSERT(b0 > a0);
-  }
+    f(fn) {}
 
   /// Solves for the root.  Prints a warning message if the convergence tolerance is not met before the maximum number of iterations is achieved.
   KOKKOS_INLINE_FUNCTION
   value_type solve() {
-    while (!FloatingPoint<value_type>::zero(iter_diff, conv_tol)) {
+    bool keep_going = true;
+    while (keep_going) {
       ++counter;
       const value_type fx = f(xroot);
       next_bisection_scalar_iteration(xnp1, a, b, fa, xroot, fx);
       iter_diff = b-a;
       xroot = xnp1;
+      keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       if (counter >= max_iter) {
         printf("bisection solve warning: max iterations reached");
-        break;
+        keep_going = false;
       }
     }
     return xroot;
