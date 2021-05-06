@@ -66,13 +66,11 @@ END
                                       // 2) detail (boolean)
                                       // 3) nBatch (int)
                                       // 4) verbose (boolean)
-                                      // 5) theta/latitude (real)
-                                      // 6) lambda/longitude (real)
-                                      // 7) initial mass X (real)
-                                      // 8) initial mass X2 (real)
+                                      // 5) initial mass X (real)
+                                      // 6) initial mass X2 (real)
 
     // provide arbitrarily chosen inputs
-    chemSolver chem_solver("toy-problem/", false, 1, false, lat, lon, k1, k2,
+    chemSolver chem_solver("toy-problem/", false, 1, false, k1, k2,
                            initX, initX2);
 
     // run the problem on device
@@ -112,13 +110,11 @@ END
                                       // 2) detail (boolean)
                                       // 3) nBatch (int)
                                       // 4) verbose (boolean)
-                                      // 5) theta/latitude (real)
-                                      // 6) lambda/longitude (real)
-                                      // 7) initial mass X (real)
-                                      // 8) initial mass X2 (real)
+                                      // 5) initial mass X (real)
+                                      // 6) initial mass X2 (real)
 
     // provide arbitrarily chosen inputs
-    chemSolver chem_solver("toy-problem/", false, 1, false, lat, lon, k1, k2,
+    chemSolver chem_solver("toy-problem/", false, 1, false, k1, k2,
                            initX, initX2);
 
     // run the problem on device
@@ -160,13 +156,11 @@ END
                                       // 2) detail (boolean)
                                       // 3) nBatch (int)
                                       // 4) verbose (boolean)
-                                      // 5) theta/latitude (real)
-                                      // 6) lambda/longitude (real)
-                                      // 7) initial mass X (real)
-                                      // 8) initial mass X2 (real)
+                                      // 5) initial mass X (real)
+                                      // 6) initial mass X2 (real)
 
     // provide arbitrarily chosen inputs
-    chemSolver chem_solver("toy-problem/", false, 1, false, lat, lon, k1, k2,
+    chemSolver chem_solver("toy-problem/", false, 1, false, k1, k2,
                            initX, initX2);
 
     // run the problem on device
