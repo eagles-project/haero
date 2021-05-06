@@ -95,10 +95,11 @@ struct KohlerPolynomial {
   KOKKOS_INLINE_FUNCTION
   T operator() (const T& wet_radius) const {
     const T wet_radius_cubed = cube(wet_radius);
+    const Real kelvinA = 0.00120746723156361711;
     return log_rel_humidity * wet_radius * wet_radius_cubed -
-      KohlerPolynomial<T>::kelvin_droplet_effect_coeff * wet_radius_cubed +
+      kelvinA * wet_radius_cubed +
       (hygroscopicity * dry_radius_cubed - log_rel_humidity * dry_radius_cubed)*wet_radius +
-      KohlerPolynomial<T>::kelvin_droplet_effect_coeff * dry_radius_cubed;
+      kelvinA * dry_radius_cubed;
   }
 
   /** @brief Evaluates the derivative of the Kohler polynomial with respect to wet radius
@@ -111,8 +112,9 @@ struct KohlerPolynomial {
   KOKKOS_INLINE_FUNCTION
   T derivative(const T& wet_radius) const {
     const T wet_radius_squared = square(wet_radius);
+    const Real kelvinA = 0.00120746723156361711;
     return 4*log_rel_humidity*wet_radius*wet_radius_squared -
-      3*kelvin_droplet_effect_coeff*wet_radius_squared +
+      3*kelvinA*wet_radius_squared +
       hygroscopicity*dry_radius_cubed - log_rel_humidity*dry_radius_cubed;
   }
 

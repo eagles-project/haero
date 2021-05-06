@@ -177,6 +177,9 @@ TEST_CASE("KohlerSolve-verification", "") {
   std::cout << "\t max err = " << max_err_bisection << "\n";
   std::cout << "\tmax iter = " << max_iter_bisection << "\n";
 
+  REQUIRE(max_err_newton < conv_tol);
+  REQUIRE(max_err_bisection < conv_tol);
+
 }
 
 
