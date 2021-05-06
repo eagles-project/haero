@@ -111,6 +111,8 @@ struct KohlerTestFunctor {
         std::cout << PackInfo::array_idx(pack_idx, i) << " ";
       }
       std::cout << "\nrh " << rh_in(pack_idx) << " hyg " << hyg_in(pack_idx) << " dry_rad " << dry_rad(pack_idx) << "\n";
+      std::cout << "newton sol = " << newton_sol(pack_idx) << "\n";
+      std::cout << "true_sol = " << true_sol(pack_idx) << "\n";
     }
 #endif
 
