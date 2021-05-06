@@ -103,6 +103,19 @@ struct KohlerTestFunctor {
     bisection_err(pack_idx) = abs(bisection_sol(pack_idx) - true_sol(pack_idx));
     bisection_iterations(pack_idx) = bisection.n_iter;
 
+#ifndef HAERO_USE_CUDA
+#ifndef NDEBUG
+    if ( (newton_err(pack_idx) > tol).any() ) {
+      std::cout << "error exceeds tolerance at pack " << pack_idx << "\n";
+      std::cout << "array indices: ";
+      for (int i=0; i<HAERO_PACK_SIZE; ++i) {
+        std::cout << PackInfo::array_idx(pack_idx, i) << " ";
+      }
+      std::cout << "\nrh " << rh_in(pack_idx) << " hyg " << hyg_in(pack_idx) << " dry_rad " << dry_rad(pack_idx) << "\n";
+    }
+#endif
+#endif
+
     if (pack_idx == rh_in.extent(0) - 1) {
       ekat_masked_loop(!pack_masks(pack_idx), s) {newton_err(pack_idx)[s] = 0; bisection_err(pack_idx)[s] = 0;}
     }
