@@ -40,8 +40,8 @@ struct KohlerPolynomial {
   static constexpr Real rel_humidity_min = 0.05;
   /// Above this relative humidity is considered saturated air, and cloud aerosol processes would apply
   static constexpr Real rel_humidity_max = 0.98;
-  /// Minimum hygroscopicity for E3SM v1 aerosol species is below single precision zero_tol
-  static constexpr Real hygro_min = std::max(FloatingPoint<Real>::zero_tol, 1e-10);
+  /// Minimum hygroscopicity for E3SM v1 aerosol species
+  static constexpr Real hygro_min =  1e-10;
   /// Maximum hygroscopicity for E3SM v1 aerosol species
   static constexpr Real hygro_max = 1.3;
   /// Minimum particle size for E3SM v1
