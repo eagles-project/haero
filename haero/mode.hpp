@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
 
 namespace haero {
 
@@ -21,9 +22,10 @@ struct Mode final {
     min_diameter(0),
     max_diameter(0),
     mean_std_dev(0),
+    log_sigma(0),
     deliquesence_pt(0),
     crystallization_pt(0)
-  { 
+  {
     name_view[0]='\0';
   }
   /// Creates a new aerosol particle mode.
@@ -36,14 +38,15 @@ struct Mode final {
   /// @param [in] crystal_pt The crystallization point of the mode
   /// @param [in] deliq_pt The deliquescence point of the mode
   Mode(const std::string& name,
-       Real min_diameter,
-       Real max_diameter,
-       Real mean_std_dev,
+       Real min_diam,
+       Real max_diam,
+       Real sigma,
        Real deliq_pt,
        Real crystal_pt):
-    min_diameter(min_diameter),
-    max_diameter(max_diameter),
-    mean_std_dev(mean_std_dev),
+    min_diameter(min_diam),
+    max_diameter(max_diam),
+    mean_std_dev(sigma),
+    log_sigma(log(sigma)),
     deliquesence_pt(deliq_pt),
     crystallization_pt(crystal_pt)
   {
@@ -56,10 +59,11 @@ struct Mode final {
     min_diameter(m.min_diameter),
     max_diameter(m.max_diameter),
     mean_std_dev(m.mean_std_dev),
+    log_sigma(m.log_sigma),
     deliquesence_pt(m.deliquesence_pt),
     crystallization_pt(m.crystallization_pt)
   {
-    for (int i=0; i<NAME_LEN; ++i) 
+    for (int i=0; i<NAME_LEN; ++i)
       name_view[i] = m.name_view[i];
   }
 
@@ -69,9 +73,10 @@ struct Mode final {
     min_diameter=m.min_diameter;
     max_diameter=m.max_diameter;
     mean_std_dev=m.mean_std_dev;
+    log_sigma=m.log_sigma;
     deliquesence_pt=m.deliquesence_pt;
     crystallization_pt=m.crystallization_pt;
-    for (int i=0; i<NAME_LEN; ++i) 
+    for (int i=0; i<NAME_LEN; ++i)
       name_view[i] = m.name_view[i];
     return *this;
   }
@@ -92,14 +97,14 @@ struct Mode final {
   /// The geometric mean standard deviation for this mode.
   Real mean_std_dev;
 
+  /// The natural logarithm of the mean standard deviation for this mode.
+  Real log_sigma;
+
   /// The deliquescence point (rel. humidity) for this mode.
   Real deliquesence_pt;
 
   /// The crystallization point (rel. humidity) for this mode.
   Real crystallization_pt;
-
-  KOKKOS_INLINE_FUNCTION
-  Real arithmetic_mean_diam() const {return 0.5*(min_diameter + max_diameter);}
 
 private:
   char name_view[NAME_LEN];
