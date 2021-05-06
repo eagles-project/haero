@@ -131,7 +131,7 @@ struct PackMaxReduce {
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const int pack_idx, ScalarType& s) const {
-    vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
+    vector_disabled for (int i=0; i<HAERO_PACK_SIZE; ++i) {
       s = (s > view(pack_idx)[i] ? s : view(pack_idx)[i]);
     }
   }
@@ -160,10 +160,10 @@ TEST_CASE("KohlerSolve-verification", "") {
       pack_masks(pack_idx) = MaskType(true);
     }
     else {
-      vector_simd for (int i=0; i<PackInfo::last_vec_end(cube(N)); ++i) {
+      vector_disabled for (int i=0; i<PackInfo::last_vec_end(cube(N)); ++i) {
         pack_masks(pack_idx).set(i, true);
       }
-      vector_simd for (int i=PackInfo::last_vec_end(cube(N)); i<HAERO_PACK_SIZE; ++i) {
+      vector_disabled for (int i=PackInfo::last_vec_end(cube(N)); i<HAERO_PACK_SIZE; ++i) {
         pack_masks(pack_idx).set(i,false);
       }
     }
