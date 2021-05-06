@@ -1,9 +1,10 @@
-#include "kohler_solve.hpp"
+#include "kohler_solve_diagnostic.hpp"
 #include <sstream>
 
 namespace haero {
 
-static std::string KohlerPolynomial<T>::mathematica_verification_program(const int n, const std::string& output_dir) const {
+template <typename T>
+std::string KohlerPolynomial<T>::mathematica_verification_program(const int n, const std::string& output_dir) {
   std::ostringstream ss;
   ss << "kelvinCoeff = " << kelvin_droplet_effect_coeff << ";\n";
   ss << "rhMin = " << rel_humidity_min << ";\n";
@@ -22,5 +23,8 @@ static std::string KohlerPolynomial<T>::mathematica_verification_program(const i
   ss << "Export[\"" << output_dir << "/mm_kohler_roots.txt\", kout];\n";
   return ss.str();
 }
+
+// ETI
+template struct KohlerPolynomial<PackType>;
 
 } // namespace haero

@@ -5,6 +5,8 @@
 #include "haero/math_helpers.hpp"
 #include "haero/floating_point.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_pack_math.hpp"
 
 namespace haero {
 
@@ -76,7 +78,7 @@ struct KohlerPolynomial {
     log_rel_humidity(log(rel_h)),
     hygroscopicity(hygro),
     dry_radius_cubed(cube(dry_rad_microns)) {
-    EKAT_KERNEL_ASSERT(valid_inputs(rel_h, hygro, dry_rad_microns);
+    EKAT_KERNEL_ASSERT(valid_inputs(rel_h, hygro, dry_rad_microns));
     }
 
 
@@ -91,11 +93,12 @@ struct KohlerPolynomial {
     @return Polynomial value, wet_radius in microns [ 1e-6 m]
   */
   KOKKOS_INLINE_FUNCTION
-  T operator() (const T& wet_radius_microns) const {
-    const T wet_radius_cubed = cube(wet_radius_microns);
-    return log_rel_humidity * wet_radius * wet_radius_cubed - kelvin_droplet_effect_coeff * wet_radius_cubed +
+  T operator() (const T& wet_radius) const {
+    const T wet_radius_cubed = cube(wet_radius);
+    return log_rel_humidity * wet_radius * wet_radius_cubed -
+      KohlerPolynomial<T>::kelvin_droplet_effect_coeff * wet_radius_cubed +
       (hygroscopicity * dry_radius_cubed - log_rel_humidity * dry_radius_cubed)*wet_radius +
-      kelvin_droplet_effect_coeff * dry_radius_cubed;
+      KohlerPolynomial<T>::kelvin_droplet_effect_coeff * dry_radius_cubed;
   }
 
   /** @brief Evaluates the derivative of the Kohler polynomial with respect to wet radius
@@ -106,8 +109,8 @@ struct KohlerPolynomial {
     @return Polynomial slope at input value
   */
   KOKKOS_INLINE_FUNCTION
-  T derivative(const T& wet_radius_microns) const {
-    const T wet_radius_squared = square(wet_radius_microns);
+  T derivative(const T& wet_radius) const {
+    const T wet_radius_squared = square(wet_radius);
     return 4*log_rel_humidity*wet_radius*wet_radius_squared -
       3*kelvin_droplet_effect_coeff*wet_radius_squared +
       hygroscopicity*dry_radius_cubed - log_rel_humidity*dry_radius_cubed;
@@ -120,9 +123,9 @@ struct KohlerPolynomial {
             FloatingPoint<T>::in_bounds(dry_rad, dry_radius_min_microns, dry_radius_max_microns));
   }
 
-  static std::string mathematica_verification_program(const int n, const std::string& output_dir = "~") const;
-}
+  static std::string mathematica_verification_program(const int n, const std::string& output_dir = "~");
 };
+
 
 /** @brief This functor solves for the positive root of a packed instance of the KohlerPolynomial.
 */
@@ -143,7 +146,7 @@ struct KohlerNewtonSolve {
     {}
 
   KOKKOS_INLINE_FUNCTION
-  PackType operator() () const {
+  PackType operator() () {
     /// first guess at root needs to be sufficiently positive to avoid convergence to the negative root.
     /// avg. case suggests an initial guess of ~ 10 * dry_radius is good and convergence is achieved within < 10 iterations
     /// worst case (large dry radius, near-saturated air) may require initial guesses ~ 25 * dry_radius
@@ -154,13 +157,13 @@ struct KohlerNewtonSolve {
     PackType result(-1);
     bool keep_going = true;
     while ( keep_going ) {
-      const auto solver = ScalarNewtonSolver<KohlerPolynomial<PackType>>(wet_radius_init, conv_tol,
+      auto solver = math::ScalarNewtonSolver<KohlerPolynomial<PackType>>(wet_radius_init, conv_tol,
         KohlerPolynomial<PackType>(relative_humidity, hygroscopicity, dry_radius_microns));
       result = solver.solve();
       n_iter += solver.counter;
       keep_going = (result < 0).any();
       /// iterations must converge
-      EKAT_KERNEL_ASSERT(solver.counter < ScalarNewtonSolver<KohlerPolynomial<PackType>>::max_iter);
+      EKAT_KERNEL_ASSERT(solver.counter < math::ScalarNewtonSolver<KohlerPolynomial<PackType>>::max_iter);
       /// if converged to the wrong root, try a bigger initial guess
       if (keep_going) {
         wet_radius_init *= 2;
@@ -170,6 +173,35 @@ struct KohlerNewtonSolve {
   }
 };
 
+
+struct KohlerBisectionSolve {
+  const PackType& relative_humidity;
+  const PackType& hygroscopicity;
+  const PackType& dry_radius_microns;
+  Real conv_tol;
+  int n_iter;
+
+  KOKKOS_INLINE_FUNCTION
+  KohlerBisectionSolve(const PackType& rel_h, const PackType& hygro, const PackType& dry_rad, const Real tol) :
+    relative_humidity(rel_h),
+    hygroscopicity(hygro),
+    dry_radius_microns(dry_rad),
+    conv_tol(tol),
+    n_iter(0)
+    {}
+
+  KOKKOS_INLINE_FUNCTION
+  PackType operator() () {
+    PackType left_endpt(0.9*dry_radius_microns);
+    PackType right_endpt(200.0);
+    PackType result(-1);
+    auto solver = math::BisectionSolver<KohlerPolynomial<PackType>>(left_endpt, right_endpt, conv_tol,
+      KohlerPolynomial<PackType>(relative_humidity, hygroscopicity, dry_radius_microns));
+    result = solver.solve();
+    n_iter = solver.counter;
+    return result;
+  }
+};
 
 } // namespace haero
 #endif
