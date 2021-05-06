@@ -62,7 +62,7 @@ std::vector<AerosolSpecies> read_aerosol_species(const YAML::Node& root) {
         throw YamlException("aerosol species '%s' has no name.", symbol.c_str());
       } else {
         auto name = snode["name"].as<std::string>();
-        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
+        species.push_back(AerosolSpecies(name, symbol, "(no description)", 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
       }
     }
   }
@@ -72,8 +72,8 @@ std::vector<AerosolSpecies> read_aerosol_species(const YAML::Node& root) {
   return species;
 }
 
-std::vector<AerosolSpecies> read_gas_species(const YAML::Node& root) {
-  std::vector<AerosolSpecies> species;
+std::vector<GasSpecies> read_gas_species(const YAML::Node& root) {
+  std::vector<GasSpecies> species;
   if (root["gases"] and root["gases"].IsMap()) {
     auto node = root["gases"];
     for (auto iter = node.begin(); iter != node.end(); ++iter) {
@@ -83,7 +83,7 @@ std::vector<AerosolSpecies> read_gas_species(const YAML::Node& root) {
         throw YamlException("gas species '%s' has no name.", symbol.c_str());
       else {
         auto name = snode["name"].as<std::string>();
-        species.push_back(AerosolSpecies(name, symbol, 1.0, 1.0, 1.0, 1.0)); // FIXME: Need real material props!
+        species.push_back(GasSpecies(name, symbol, "(no description)", 1.0)); // FIXME: Need real material props!
       }
     }
   }
@@ -168,7 +168,7 @@ GridParams read_grid_params(const YAML::Node& root)
 
 InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
                                           const std::vector<AerosolSpecies>& aerosols,
-                                          const std::vector<AerosolSpecies>& gases,
+                                          const std::vector<GasSpecies>& gases,
                                           const YAML::Node& root) {
   // Read grid parameters to properly size everything up.
   auto grid_params = read_grid_params(root);
@@ -276,7 +276,7 @@ InitialConditions read_initial_conditions(const std::vector<Mode>& modes,
         for (auto g_iter = g.begin(); g_iter != g.end(); ++g_iter) {
           auto gas_symbol = g_iter->first.as<std::string>();
           auto gas_iter = std::find_if(gases.begin(), gases.end(),
-              [&](const AerosolSpecies& s) { return s.symbol() == gas_symbol; });
+              [&](const GasSpecies& s) { return s.symbol() == gas_symbol; });
           if (gas_iter == gases.end()) {
             throw YamlException("Invalid gas found in initial conditions: %s", gas_symbol.c_str());
           }

@@ -24,6 +24,9 @@ class Atmosphere final {
   ///                managed by the host model
   /// @param [in] pblh The column-specific planetary boundary height [m],
   ///                  computed by the host model
+  /// @param [in] pdel The hydrostatic "pressure thickness" defined as the
+  ///                  difference in hydrostatic pressure levels at interfaces
+  ///                  bounding each vertical level [Pa]
   Atmosphere(int num_levels,
              const ColumnView temp,
              const ColumnView press,
@@ -49,6 +52,10 @@ class Atmosphere final {
   /// Returns the number of vertical levels per column in the system.
   KOKKOS_INLINE_FUNCTION
   int num_levels() const { return num_levels_; }
+
+  /// Sets the planetary boundary height [m].
+  KOKKOS_INLINE_FUNCTION
+  void set_planetary_boundary_height(Real pblh) { planetary_boundary_height = pblh; }
 
   private:
 

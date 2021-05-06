@@ -187,9 +187,12 @@ class ModalAerosolConfig final {
   /// desired species is not found.
   /// @param [in] gas_symbol The symbolic name of the gas for which the index is
   ///                        retrieved
-  int gas_index(const std::string& gas_symbol) const {
+  int gas_index(const std::string& gas_symbol, bool case_sensitive = true) const {
     for (int g = 0; g < h_gas_species.size(); ++g) {
-      if (h_gas_species[g].symbol() == gas_symbol) {
+      if ((h_gas_species[g].symbol() == gas_symbol) ||
+          (not case_sensitive and
+           (strcasecmp(h_gas_species[g].symbol().c_str(),
+                       gas_symbol.c_str()) == 0))) {
         return g;
         break;
       }

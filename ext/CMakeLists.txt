@@ -38,7 +38,7 @@ endif()
 #----------------------------------------------------------------------------
 # libz compression library
 #----------------------------------------------------------------------------
-find_library(Z_LIBRARY libz.a)
+find_library(Z_LIBRARY libz.a libz${CMAKE_SHARED_LIBRARY_SUFFIX})
 if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
