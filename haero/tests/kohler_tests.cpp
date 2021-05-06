@@ -104,7 +104,6 @@ struct KohlerTestFunctor {
     bisection_iterations(pack_idx) = bisection.n_iter;
 
 #ifndef HAERO_USE_CUDA
-#ifndef NDEBUG
     if ( (newton_err(pack_idx) > tol).any() ) {
       std::cout << "error exceeds tolerance at pack " << pack_idx << "\n";
       std::cout << "array indices: ";
@@ -113,7 +112,6 @@ struct KohlerTestFunctor {
       }
       std::cout << "\nrh " << rh_in(pack_idx) << " hyg " << hyg_in(pack_idx) << " dry_rad " << dry_rad(pack_idx) << "\n";
     }
-#endif
 #endif
 
     if (pack_idx == rh_in.extent(0) - 1) {
