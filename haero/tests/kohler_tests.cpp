@@ -71,13 +71,14 @@ struct KohlerTestFunctor {
   DeviceType::view_1d<PackType> hyg_in;
   DeviceType::view_1d<PackType> dry_rad;
   DeviceType::view_1d<PackType> true_sol;
+  DeviceType::view_1d<MaskType> pack_masks;
   Real tol;
 
   KohlerTestFunctor(DeviceType::view_1d<PackType> nsol, DeviceType::view_1d<PackType> nerr,
     DeviceType::view_1d<int> niter, DeviceType::view_1d<PackType> bsol, DeviceType::view_1d<PackType> berr,
     DeviceType::view_1d<int> biter, const DeviceType::view_1d<PackType> rh,
     const DeviceType::view_1d<PackType> hyg, const DeviceType::view_1d<PackType> drad,
-    const DeviceType::view_1d<PackType> tsol, const Real ctol) :
+    const DeviceType::view_1d<PackType> tsol, const DeviceType::view_1d<MaskType> masks, const Real ctol) :
     newton_sol(nsol),
     newton_err(nerr),
     newton_iterations(niter),
@@ -88,6 +89,7 @@ struct KohlerTestFunctor {
     hyg_in(hyg),
     dry_rad(drad),
     true_sol(tsol),
+    pack_masks(masks),
     tol(ctol) {}
 
   KOKKOS_INLINE_FUNCTION
@@ -100,6 +102,10 @@ struct KohlerTestFunctor {
     bisection_sol(pack_idx) = bisection();
     bisection_err(pack_idx) = abs(bisection_sol(pack_idx) - true_sol(pack_idx));
     bisection_iterations(pack_idx) = bisection.n_iter;
+
+    if (pack_idx == rh_in.extent(0) - 1) {
+      ekat_masked_loop(!pack_masks(pack_idx), s) {newton_err(pack_idx)[s] = 0; bisection_err(pack_idx)[s] = 0;}
+    }
   }
 };
 
@@ -134,6 +140,21 @@ TEST_CASE("KohlerSolve-verification", "") {
   DeviceType::view_1d<PackType> bisection_error("bisection_error", num_packs);
   DeviceType::view_1d<int> bisection_iterations("bisection_iterations", num_packs);
   DeviceType::view_1d<PackType> true_sol("true_sol", num_packs);
+  DeviceType::view_1d<MaskType> pack_masks("pack_masks", num_packs);
+
+  Kokkos::parallel_for(num_packs, KOKKOS_LAMBDA (const int pack_idx) {
+    if (pack_idx < num_packs-1) {
+      pack_masks(pack_idx) = MaskType(true);
+    }
+    else {
+      vector_simd for (int i=0; i<PackInfo::last_vec_end(cube(N)); ++i) {
+        pack_masks(pack_idx).set(i, true);
+      }
+      vector_simd for (int i=PackInfo::last_vec_end(cube(N)); i<HAERO_PACK_SIZE; ++i) {
+        pack_masks(pack_idx).set(i,false);
+      }
+    }
+  });
 
   std::string dfile = HAERO_TEST_DATA_DIR;
   dfile += "/mm_kohler_roots.txt";
@@ -154,7 +175,7 @@ TEST_CASE("KohlerSolve-verification", "") {
     KohlerTestFunctor(newton_sol, newton_error, newton_iterations,
         bisection_sol, bisection_error, bisection_iterations,
         test_inputs.relative_humidity, test_inputs.hygroscopicity, test_inputs.dry_radius,
-        true_sol, conv_tol));
+        true_sol, pack_masks, conv_tol));
 
   Real max_err_newton;
   Real max_err_bisection;
