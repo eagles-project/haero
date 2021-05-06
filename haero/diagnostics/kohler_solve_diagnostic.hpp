@@ -126,7 +126,7 @@ struct KohlerPolynomial {
     const auto nans = isnan(wet_radius);
     vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
       if (nans[i]) {
-        result[i] = 0;
+        result[i] = FLT_MAX;
       }
     }
     return result;
