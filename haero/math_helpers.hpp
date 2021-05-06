@@ -88,11 +88,11 @@ void next_bisection_scalar_iteration<PackType>(PackType& xnp1, PackType& an, Pac
   This struct is used for unit tests and to demonstrate the required
   interface for scalar functions to be used with rootfinding algorithms.
 
-  Each scalar function must implement the operator() (const Real x) method that returns the
+  Each scalar function must implement the T operator() (const T x) method that returns the
   function's value at x.
 
   If it is to be used by the Newton solver, it must also implement the
-  derivative(const Real x) method, which returns f'(x).
+  derivative(const T x) method, which returns f'(x).
 
   For an application example, see KohlerPolynomial.
 */
@@ -124,10 +124,10 @@ struct LegendreCubic {
   This struct is used for unit tests and to demonstrate the required
   interface for scalar functions to be used with rootfinding algorithms.
 
-  Each scalar function must implement the operator() (const Real x) method.
+  Each scalar function must implement the T operator() (const T x) method.
 
   If it is to be used by the Newton solver, it must also implement the
-  derivative(const Real x) method, which returns f'(x).
+  derivative(const T x) method, which returns f'(x).
 
   For an application example, see KohlerPolynomial.
 */
@@ -160,10 +160,7 @@ struct LegendreQuartic {
   It may converge to an incorrect root if a poor initial guess is chosen.
   It requires both function values and derivative values.
 
-  Template parameter ScalarFunction must implement the function_eval(const Real x)
-  and derivative_eval(const Real x) methods.
-
-  The Legendre polynomials above demonstrate the required interface.
+  The Legendre polynomials above demonstrate the required ScalarFunction interface.
 
   For an application example, see KohlerPolynomial.
 
@@ -231,10 +228,7 @@ struct ScalarNewtonSolver {
   This method has only a linear convergence rate, but it is guaranteed to converge if
   the initial interval contains a root.
 
-  Template parameter ScalarFunction must implement the function_eval(const Real x) method.
-  The derivative_eval(const Real x) method is not necessary to use this solver.
-
-  The Legendre polynomials above demonstrate the required interface.
+  The Legendre polynomials above demonstrate the required ScalarFunction interface.
 
   For an application example, see KohlerPolynomial.
 
