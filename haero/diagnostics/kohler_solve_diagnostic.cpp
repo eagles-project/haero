@@ -21,7 +21,7 @@ std::string KohlerPolynomial<T>::mathematica_verification_program(const int n, c
   ss << "kinputs = Flatten[Table[{rhMin + i*drh, hygMin + j*dhyg, radMin + k*drad}, {i, 0, nn - 1}, {j, 0, nn - 1}, {k, 0, nn - 1}], 2];\n";
   ss << "kroots = Flatten[Table[NSolve[Log[kinputs[[i]][[1]]] r^4 + kelvinCoeff*(kinputs[[i]][[3]]^3 - r^3) + (kinputs[[i]][[2]] - Log[kinputs[[i]][[1]]]) kinputs[[i]][[3]]^3 r == 0 && r > 0, r, Reals], {i, Length[kinputs]}]];\n";
   ss << "kout = Table[r /. kroots[[i]], {i, Length[kroots]}];\n";
-  ss << "Export[\"" << output_dir << "/mm_kohler_roots.txt\", kout];\n";
+  ss << "(*Export[\"" << HAERO_TEST_DATA_DIR << "/mm_kohler_roots.txt\", kout];*)\n";
   return ss.str();
 }
 
