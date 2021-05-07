@@ -129,7 +129,7 @@ struct KohlerPolynomial {
     const auto nans = isnan(wet_radius);
     vector_disabled for (int i=0; i<HAERO_PACK_SIZE; ++i) {
       if (nans[i]) {
-        result[i] = FLT_MAX;
+        result[i] = FloatingPoint<T>::zero_tol;
       }
     }
     return result;
