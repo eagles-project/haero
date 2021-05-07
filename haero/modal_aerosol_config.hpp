@@ -97,6 +97,15 @@ class ModalAerosolConfig final {
   KOKKOS_INLINE_FUNCTION
   int num_gases() const {return d_gas_species.extent(0);}
 
+  inline int max_species_per_mode() const {
+    int result = 0;
+    for (int m=0; m<num_modes(); ++m) {
+      const auto mode_species = aerosol_species_for_mode(m);
+      result = std::max(result, int(mode_species.size()));
+    }
+    return result;
+   }
+
   /// The list of gas species associated with this aerosol model.
   DeviceType::view_1d<GasSpecies> d_gas_species;
   HostType::view_1d<GasSpecies>   h_gas_species;
@@ -181,6 +190,19 @@ class ModalAerosolConfig final {
       }
     }
     return (found) ? p : -1;
+  }
+
+  /// On device: returns a view containing the population indices for each mode/species pair.
+  DeviceType::view_2d<int> create_population_indices_view() const {
+    DeviceType::view_2d<int> result("population_indices", num_modes(), max_species_per_mode());
+    auto h_result = Kokkos::create_mirror_view(result);
+    for (int m=0; m<num_modes(); ++m) {
+      for (int s=0; s<max_species_per_mode(); ++s) {
+        h_result(m,s) = population_index(m, s);
+      }
+    }
+    Kokkos::deep_copy(result, h_result);
+    return result;
   }
 
   /// On host: returns the index of a specific gas species, or -1 if the

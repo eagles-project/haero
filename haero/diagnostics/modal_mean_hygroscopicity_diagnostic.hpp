@@ -13,21 +13,18 @@ struct ModalHygroscopicity {
   DeviceType::view_1d<const AerosolSpecies> aerosols_in_mode;
   DeviceType::view_1d<const int> population_indices;
   int n_aerosols_in_mode;
-  int mode_idx;
 
   KOKKOS_INLINE_FUNCTION
   ModalHygroscopicity(ColumnView hyg,
                       const SpeciesColumnView mass_mrs,
                       const DeviceType::view_1d<AerosolSpecies> aeros,
                       const DeviceType::view_1d<int> pops,
-                      const int n,
-                      const int m) :
+                      const int n) :
       hygroscopicity(hyg),
       mass_mixing_ratios(mass_mrs),
       aerosols_in_mode(aeros),
       population_indices(pops),
-      n_aerosols_in_mode(n),
-      mode_idx(m)
+      n_aerosols_in_mode(n)
       {}
 
 

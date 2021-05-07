@@ -13,9 +13,7 @@ struct ModalWetRadius {
   ConstColumnView modal_hygroscopicity;
   ConstColumnView modal_dry_radius_meters;
   ConstColumnView relative_humidity;
-  static constexpr Real tol = 100*FloatingPoint<Real>::zero_tol;
-  static constexpr Real meters2microns = 1e3;
-  static constexpr Real microns2meters = 1e-3;
+  Real tol;
 
   KOKKOS_INLINE_FUNCTION
   ModalWetRadius(ColumnView rwet, const ColumnView hyg, const ColumnView rdry,
@@ -23,11 +21,14 @@ struct ModalWetRadius {
     wet_radius_meters(rwet),
     modal_hygroscopicity(hyg),
     modal_dry_radius_meters(rdry),
-    relative_humidity(rh)
+    relative_humidity(rh),
+    tol(100*FloatingPoint<Real>::zero_tol)
     {}
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const int pack_idx) const {
+    const Real meters2microns = 1e3;
+    const Real microns2meters = 1e-3;
     KohlerNewtonSolve kohler(relative_humidity(pack_idx), modal_hygroscopicity(pack_idx),
       meters2microns*modal_dry_radius_meters(pack_idx), tol);
       wet_radius_meters(pack_idx) = microns2meters * kohler();
