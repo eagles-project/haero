@@ -1,6 +1,7 @@
 #ifndef HAERO_PHYSICAL_CONSTANTS_HPP
 #define HAERO_PHYSICAL_CONSTANTS_HPP
 
+// clang-format off
 // All physical constants in Haero are in SI units unless it's explicitly
 // stated otherwise. Units given in brackets are SI units and are included
 // here only for clarity.
@@ -92,4 +93,5 @@ static constexpr Real dry_adiabatic_lapse_rate = 0.0098;
 } // namespace constants
 
 } // namespace haero
+// clang-format on
 #endif
