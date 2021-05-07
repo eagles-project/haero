@@ -238,6 +238,8 @@ inline ModalAerosolConfig create_mam4_modal_aerosol_config() {
                             create_mam4_mode_species(), create_mam4_gas_species());
 }
 
+ModalAerosolConfig create_simple_test_config();
+
 }
 
 #endif

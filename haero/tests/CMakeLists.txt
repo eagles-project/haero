@@ -48,6 +48,9 @@ EkatCreateUnitTest(math_tests math_helper_tests.cpp
 EkatCreateUnitTest(kohler_tests kohler_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(modal_wet_radius modal_wet_radius_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 #----------------------------------------------------
 # Unit tests for aerosol processes
 #----------------------------------------------------
