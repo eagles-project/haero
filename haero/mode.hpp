@@ -2,7 +2,9 @@
 #define HAERO_MODE_HPP
 
 #include "haero/haero.hpp"
-
+#include "haero/physical_constants.hpp"
+#include "haero/math_helpers.hpp"
+#include "ekat/ekat_pack.hpp"
 #include <string>
 #include <vector>
 #include <cmath>
@@ -110,6 +112,18 @@ private:
   char name_view[NAME_LEN];
 };
 
+/** @brief This function returns the modal geometric mean particle diametr,
+  given the mode's mean volume (3rd log-normal moment) and the modal standard deviation.
+
+  @param mode_mean_particle_volume mean particle volume for mode [m^3]
+  @param log_sigma natural log of the mode's geometric mean std. dev.
+  @return modal mean particle diameter (~ 1st log-normal moment) [m]
+*/
+template <typename T> KOKKOS_INLINE_FUNCTION
+T modal_mean_particle_diameter(const T mode_mean_particle_volume, const Real log_sigma) {
+  static constexpr Real pi_sixth = constants::pi/6;
+  return cbrt(pi_sixth * mode_mean_particle_volume) * exp(-1.5 * square(log_sigma));
+}
 
 inline std::vector<Mode> create_mam4_modes() {
   /// Legacy MAM4 used the same constant crystallization and deliquescence values for all

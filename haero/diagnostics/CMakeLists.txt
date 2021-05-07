@@ -4,6 +4,8 @@
 # c++ source files that implement diagnostic functions
 set (CXX_DIAGNOSTIC_SOURCES
   kohler_solve_diagnostic.cpp
+  mode_dry_particle_volume_diagnostic.cpp
+  modal_mean_hygroscopicity_diagnostic.cpp
 )
 
 # prepend diagnostics/ to each source file and transmit HAERO_DIAGNOSTICS upward
