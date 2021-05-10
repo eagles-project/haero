@@ -138,6 +138,11 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
       } else {
         throw YamlException("Did not find 'hydrostatic_dp' in the atmosphere section!\n");
       }
+      if (atm["planetary_boundary_layer_height"]) {
+        pw.planetary_boundary_layer_height = atm["planetary_boundary_layer_height"].as<Real>();
+      } else {
+        throw YamlException("Did not find 'planetary_boundary_layer_height' in the atmosphere section!\n");
+      }
     } else {
       throw YamlException("Did not find a valid atmosphere section!\n");
     }

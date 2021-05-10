@@ -33,6 +33,7 @@ struct OutputData {
 // Writes simulation output data to a Python module.
 void write_py_module(const char* py_module_name,
                      const std::vector<OutputData>& data) {
+
 }
 
 // Overrides the parameter with the given name using the given value within
@@ -48,7 +49,7 @@ void override_parameter(const haero::ModalAerosolConfig& aero_config,
     auto mode_name = param_name.substr(0, colon);
     auto aero_name = param_name.substr(colon+1, param_name.length());
     int mode_index = aero_config.aerosol_mode_index(mode_name);
-    int aero_index = aero_config.aerosol_species_index(mode_index, aero_name);
+    int aero_index = aero_config.aerosol_species_index(mode_index, aero_name, false);
     int pop_index = aero_config.population_index(mode_index, aero_index);
     auto int_aerosols = ekat::scalarize(prognostics.interstitial_aerosols);
     int_aerosols(pop_index, level) = param_value;

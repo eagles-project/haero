@@ -21,6 +21,7 @@ atmosphere:
   relative_humidity: 0.95
   height: 3000
   hydrostatic_dp: 200
+  planetary_boundary_layer_height: 1000
 
 aerosols:
   accumulation:
