@@ -100,12 +100,12 @@ struct KohlerPolynomial {
       kelvinA * wet_radius_cubed +
       (hygroscopicity * dry_radius_cubed - log_rel_humidity * dry_radius_cubed)*wet_radius +
       kelvinA * dry_radius_cubed;
-    const auto nans = isnan(wet_radius);
-    vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
-      if (nans[i]) {
-        result[i] = 0;
-      }
-    }
+//     const auto nans = isnan(wet_radius);
+//     vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
+//       if (nans[i]) {
+//         result[i] = 0;
+//       }
+//     }
     return result;
   }
 
@@ -123,12 +123,12 @@ struct KohlerPolynomial {
     T result = 4*log_rel_humidity*wet_radius*wet_radius_squared -
       3*kelvinA*wet_radius_squared +
       hygroscopicity*dry_radius_cubed - log_rel_humidity*dry_radius_cubed;
-    const auto nans = isnan(wet_radius);
-    vector_disabled for (int i=0; i<HAERO_PACK_SIZE; ++i) {
-      if (nans[i]) {
-        result[i] = FLT_MAX;
-      }
-    }
+//     const auto nans = isnan(wet_radius);
+//     vector_disabled for (int i=0; i<HAERO_PACK_SIZE; ++i) {
+//       if (nans[i]) {
+//         result[i] = FLT_MAX;
+//       }
+//     }
     return result;
   }
 
