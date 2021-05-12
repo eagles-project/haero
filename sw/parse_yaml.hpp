@@ -7,19 +7,14 @@ namespace skywalker {
 
 /// This exception class stores information about errors encountered in reading
 /// data from a YAML file.
-class YamlException: public std::exception {
-  public:
-
+class YamlException : public std::exception {
+ public:
   /// Constructs an exception containing the given descriptive message.
-  YamlException(const std::string& message):
-    _message(message) {}
+  YamlException(const std::string& message) : _message(message) {}
 
-  const char* what() const throw() {
-    return _message.c_str();
-  }
+  const char* what() const throw() { return _message.c_str(); }
 
-  private:
-
+ private:
   std::string _message;
 };
 
@@ -33,6 +28,6 @@ class YamlException: public std::exception {
 ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
                          const std::string& filename);
 
-}
+}  // namespace skywalker
 
 #endif

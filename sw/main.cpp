@@ -1,18 +1,16 @@
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/ekat_session.hpp"
+#include "haero/available_processes.hpp"
+#include "haero/model.hpp"
 #include "parse_yaml.hpp"
 #include "write_py_module.hpp"
-#include "haero/model.hpp"
-#include "haero/available_processes.hpp"
-
-#include "ekat/ekat_session.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
 
 using namespace skywalker;
 
 namespace {
 
 // Print driver usage information and exit.
-void usage(const char* exe)
-{
+void usage(const char* exe) {
   fprintf(stderr, "%s: usage:\n", exe);
   fprintf(stderr, "%s <input.yml>\n", exe);
   exit(1);
@@ -20,17 +18,18 @@ void usage(const char* exe)
 
 // Gathers all input from the given parameter walk given a fixed aerosol model
 // configuration.
-std::vector<InputData>
-gather_inputs(const haero::ModalAerosolConfig& aero_config,
-              const ParameterWalk& param_walk) {
-
+std::vector<InputData> gather_inputs(
+    const haero::ModalAerosolConfig& aero_config,
+    const ParameterWalk& param_walk) {
   // How many non-plbh parameters are we overriding?
   int num_params = param_walk.ensemble.size();
-  if (param_walk.ensemble.find("planetary_boundary_layer_height") != param_walk.ensemble.end()) {
+  if (param_walk.ensemble.find("planetary_boundary_layer_height") !=
+      param_walk.ensemble.end()) {
     num_params--;
   }
   EKAT_REQUIRE_MSG(((num_params >= 1) and (num_params <= 5)),
-    "Invalid number of overridden parameters (" << num_params << ", must be 1-5).");
+                   "Invalid number of overridden parameters ("
+                       << num_params << ", must be 1-5).");
 
   // Count up the number of inputs defined by the parameter walk thingy.
   size_t num_inputs = 1;
@@ -60,8 +59,8 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       auto name2 = iter->first;
       const auto& vals2 = iter->second;
       size_t n2 = vals2.size();
-      size_t j1 = l/n2;
-      size_t j2 = l - n2*j1;
+      size_t j1 = l / n2;
+      size_t j2 = l - n2 * j1;
       inputs[l][name1] = vals1[j1];
       inputs[l][name2] = vals2[j2];
     } else if (num_params == 3) {
@@ -76,9 +75,9 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       const auto& vals3 = iter->second;
       size_t n2 = vals2.size();
       size_t n3 = vals3.size();
-      size_t j1 = l/(n2*n3);
-      size_t j2 = (l - n2*n3*j1) / n3;
-      size_t j3 = l - n2*n3*j1 - n3*j2;
+      size_t j1 = l / (n2 * n3);
+      size_t j2 = (l - n2 * n3 * j1) / n3;
+      size_t j3 = l - n2 * n3 * j1 - n3 * j2;
       inputs[l][name1] = vals1[j1];
       inputs[l][name2] = vals2[j2];
       inputs[l][name3] = vals3[j3];
@@ -98,15 +97,15 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       size_t n2 = vals2.size();
       size_t n3 = vals3.size();
       size_t n4 = vals4.size();
-      size_t j1 = l/(n2*n3*n4);
-      size_t j2 = (l - n2*n3*n4*j1) / (n3*n4);
-      size_t j3 = (l - n2*n3*n4*j1 - n3*n4*j2) / n4;
-      size_t j4 = l - n2*n3*n4*j1 - n3*n4*j2 - n4*j3;
+      size_t j1 = l / (n2 * n3 * n4);
+      size_t j2 = (l - n2 * n3 * n4 * j1) / (n3 * n4);
+      size_t j3 = (l - n2 * n3 * n4 * j1 - n3 * n4 * j2) / n4;
+      size_t j4 = l - n2 * n3 * n4 * j1 - n3 * n4 * j2 - n4 * j3;
       inputs[l][name1] = vals1[j1];
       inputs[l][name2] = vals2[j2];
       inputs[l][name3] = vals3[j3];
       inputs[l][name4] = vals4[j4];
-    } else { // if (num_params == 5)
+    } else {  // if (num_params == 5)
       auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
       const auto& vals1 = iter->second;
@@ -126,11 +125,13 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       size_t n3 = vals3.size();
       size_t n4 = vals4.size();
       size_t n5 = vals5.size();
-      size_t j1 = l/(n2*n3*n4*n5);
-      size_t j2 = (l - n2*n3*n4*n5*j1) / (n3*n4*n5);
-      size_t j3 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2) / (n4*n5);
-      size_t j4 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3) / n5;
-      size_t j5 = l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3 - n5*j4;
+      size_t j1 = l / (n2 * n3 * n4 * n5);
+      size_t j2 = (l - n2 * n3 * n4 * n5 * j1) / (n3 * n4 * n5);
+      size_t j3 = (l - n2 * n3 * n4 * n5 * j1 - n3 * n4 * n5 * j2) / (n4 * n5);
+      size_t j4 =
+          (l - n2 * n3 * n4 * n5 * j1 - n3 * n4 * n5 * j2 - n4 * n5 * j3) / n5;
+      size_t j5 = l - n2 * n3 * n4 * n5 * j1 - n3 * n4 * n5 * j2 -
+                  n4 * n5 * j3 - n5 * j4;
       inputs[l][name1] = vals1[j1];
       inputs[l][name2] = vals2[j2];
       inputs[l][name3] = vals3[j3];
@@ -144,10 +145,8 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
 
 // Initializes prognostic and atmosphere input data according to the
 // (non-plbh) parameters given in the given vector of inputs.
-void
-set_input(const std::vector<InputData>& inputs,
-          haero::Atmosphere& atmosphere,
-          haero::Prognostics& prognostics) {
+void set_input(const std::vector<InputData>& inputs,
+               haero::Atmosphere& atmosphere, haero::Prognostics& prognostics) {
   int num_levels = prognostics.num_levels();
   int num_modes = prognostics.num_aerosol_modes();
   int num_gases = prognostics.num_gases();
@@ -184,9 +183,8 @@ set_input(const std::vector<InputData>& inputs,
 }
 
 // Retrieves output from prognostic and atmosphere data.
-std::vector<OutputData>
-get_output(const haero::ModalAerosolConfig& aero_config,
-           const haero::Prognostics& prognostics) {
+std::vector<OutputData> get_output(const haero::ModalAerosolConfig& aero_config,
+                                   const haero::Prognostics& prognostics) {
   int num_levels = prognostics.num_levels();
   int num_modes = prognostics.num_aerosol_modes();
   int num_pops = prognostics.num_aerosol_populations();
@@ -219,8 +217,7 @@ get_output(const haero::ModalAerosolConfig& aero_config,
 // Runs an aerosol process using the parameters in param_walk, writing output
 // ŧo a Python module with the given name.
 void run_process(const haero::ModalAerosolConfig& aero_config,
-                 const ParameterWalk& param_walk,
-                 const char* py_module_name) {
+                 const ParameterWalk& param_walk, const char* py_module_name) {
   // Count up the number of simulations we need (excluding the planetary
   // boundary layer parameter). We can run all simulations simultaneously
   // by setting data for each simulation at a specific vertical level.
@@ -236,10 +233,10 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       num_levels *= static_cast<int>(iter->second.size());
     }
   }
-  if (pblhs.empty()) { // pblh is not a walked parameter!
+  if (pblhs.empty()) {  // pblh is not a walked parameter!
     pblhs.push_back(param_walk.ref_input.planetary_boundary_layer_height);
   }
-  if (dts.empty()) { // dt is not a walked parameter!
+  if (dts.empty()) {  // dt is not a walked parameter!
     dts.push_back(param_walk.ref_input.dt);
   }
 
@@ -256,8 +253,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   int num_gases = aero_config.h_gas_species.size();
   haero::SpeciesColumnView int_aerosols("interstitial aerosols",
                                         num_aero_populations, num_levels);
-  haero::SpeciesColumnView cld_aerosols("cloud aerosols",
-                                        num_aero_populations, num_levels);
+  haero::SpeciesColumnView cld_aerosols("cloud aerosols", num_aero_populations,
+                                        num_levels);
   haero::SpeciesColumnView gases("gases", num_gases, num_levels);
   haero::ModalColumnView int_num_concs("interstitial number concs", num_modes,
                                        num_levels);
@@ -272,24 +269,27 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   haero::ColumnView temp("temperature", num_levels);
   haero::ColumnView press("pressure", num_levels);
   haero::ColumnView rel_hum("relative humidity", num_levels);
-  haero::ColumnView ht("height", num_levels+1);
+  haero::ColumnView ht("height", num_levels + 1);
   haero::ColumnView dp("hydrostatic pressure thickness", num_levels);
-  auto* atmosphere = new haero::Atmosphere(num_levels, temp, press, rel_hum, ht,
-    dp, param_walk.ref_input.planetary_boundary_layer_height);
+  auto* atmosphere = new haero::Atmosphere(
+      num_levels, temp, press, rel_hum, ht, dp,
+      param_walk.ref_input.planetary_boundary_layer_height);
 
   // Create tendencies for the given prognostics.
   auto* tendencies = new haero::Tendencies(*prognostics);
 
   // Create the specified process.
   haero::AerosolProcess* process = nullptr;
-  if (param_walk.process == "MAMNucleationProcess") { // C++ nucleation
+  if (param_walk.process == "MAMNucleationProcess") {  // C++ nucleation
     process = new haero::MAMNucleationProcess();
 #if HAERO_FORTRAN
-  } else if (param_walk.process == "MAMNucleationFProcess") { // fortran nucleation
+  } else if (param_walk.process ==
+             "MAMNucleationFProcess") {  // fortran nucleation
     process = new haero::MAMNucleationFProcess();
 #endif
-  } else { // unknown
-    fprintf(stderr, "Unknown aerosol process: %s\n", param_walk.process.c_str());
+  } else {  // unknown
+    fprintf(stderr, "Unknown aerosol process: %s\n",
+            param_walk.process.c_str());
     return;
   }
 
@@ -302,17 +302,17 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // boundary layer height and the use of different time steps.
   std::vector<InputData> input_data;
   std::vector<OutputData> output_data;
-  for (auto pblh: pblhs) {
+  for (auto pblh : pblhs) {
     // Initialize the state with input data.
     set_input(inputs, *atmosphere, *prognostics);
     atmosphere->set_planetary_boundary_height(pblh);
 
-    for (auto dt: dts) {
+    for (auto dt : dts) {
       // Run the thing.
       haero::Real t = 0.0, t_end = param_walk.ref_input.total_time;
       while (t < t_end) {
-        process->run(aero_config, t, dt, *prognostics, *atmosphere, *diagnostics,
-                     *tendencies);
+        process->run(aero_config, t, dt, *prognostics, *atmosphere,
+                     *diagnostics, *tendencies);
 
         // Advance the time and prognostic state.
         t += dt;
@@ -356,13 +356,12 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   delete process;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 int main(int argc, const char* argv[]) {
   ekat::initialize_ekat_session(argc, const_cast<char**>(argv), false);
 
-  if (argc < 2)
-    usage(argv[0]);
+  if (argc < 2) usage(argv[0]);
 
   // Set up an aerosol configuration. For now, we just use MAM4.
   auto aero_config = haero::create_mam4_modal_aerosol_config();

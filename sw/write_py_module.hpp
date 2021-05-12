@@ -10,6 +10,6 @@ void write_py_module(const std::vector<InputData>& inputs,
                      const std::vector<OutputData>& outputs,
                      const char* py_module_name);
 
-}
+}  // namespace skywalker
 
 #endif

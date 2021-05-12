@@ -8,9 +8,8 @@ namespace skywalker {
 
 // Reference input data for simulations.
 struct InputData {
-
-  explicit InputData(const haero::ModalAerosolConfig& aero_config):
-    aero_config(aero_config) {}
+  explicit InputData(const haero::ModalAerosolConfig& aero_config)
+      : aero_config(aero_config) {}
   InputData() = delete;
 
   const haero::ModalAerosolConfig& aero_config;
@@ -19,8 +18,8 @@ struct InputData {
   haero::Real dt, total_time;
 
   // atmospheric state parameters
-  haero::Real temperature, pressure, relative_humidity, height,
-              hydrostatic_dp, planetary_boundary_layer_height;
+  haero::Real temperature, pressure, relative_humidity, height, hydrostatic_dp,
+      planetary_boundary_layer_height;
 
   // aerosol initial data
 
@@ -36,11 +35,10 @@ struct InputData {
   haero::Real& operator[](const std::string& param_name);
 };
 
-
 // Data structure that stores parameter walking information.
 struct ParameterWalk {
-  explicit ParameterWalk(const haero::ModalAerosolConfig& aero_config):
-    aero_config(aero_config), process(), ref_input(aero_config) {}
+  explicit ParameterWalk(const haero::ModalAerosolConfig& aero_config)
+      : aero_config(aero_config), process(), ref_input(aero_config) {}
   ParameterWalk() = delete;
 
   // aerosol configuration
@@ -58,8 +56,8 @@ struct ParameterWalk {
 
 // Here's a container that associates input parameters with output data.
 struct OutputData {
-  explicit OutputData(const haero::ModalAerosolConfig& aero_config):
-    aero_config(aero_config) {}
+  explicit OutputData(const haero::ModalAerosolConfig& aero_config)
+      : aero_config(aero_config) {}
   OutputData() = delete;
 
   const haero::ModalAerosolConfig& aero_config;
@@ -73,9 +71,8 @@ struct OutputData {
 
   // Fetches the parameter with the given name.
   haero::Real operator[](const std::string& param_name) const;
-
 };
 
-}
+}  // namespace skywalker
 
 #endif

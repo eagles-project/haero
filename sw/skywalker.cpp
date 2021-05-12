@@ -4,13 +4,15 @@ namespace skywalker {
 
 haero::Real InputData::operator[](const std::string& param_name) const {
   size_t colon = param_name.find(':');
-  if (colon != std::string::npos) { // mode:aerosol
+  if (colon != std::string::npos) {  // mode:aerosol
     auto mode_name = param_name.substr(0, colon);
-    auto aero_name = param_name.substr(colon+1, param_name.length());
+    auto aero_name = param_name.substr(colon + 1, param_name.length());
     int mode_index = aero_config.aerosol_mode_index(mode_name);
-    int aero_index = aero_config.aerosol_species_index(mode_index, aero_name, false);
+    int aero_index =
+        aero_config.aerosol_species_index(mode_index, aero_name, false);
     int pop_index = aero_config.population_index(mode_index, aero_index);
-    return interstitial_aero_mmrs[pop_index]; // TODO: what about cloud aerosols?
+    return interstitial_aero_mmrs[pop_index];  // TODO: what about cloud
+                                               // aerosols?
   } else {
     // gas or mode?
     int mode_index = aero_config.aerosol_mode_index(param_name);
@@ -41,13 +43,15 @@ haero::Real InputData::operator[](const std::string& param_name) const {
 
 haero::Real& InputData::operator[](const std::string& param_name) {
   size_t colon = param_name.find(':');
-  if (colon != std::string::npos) { // mode:aerosol
+  if (colon != std::string::npos) {  // mode:aerosol
     auto mode_name = param_name.substr(0, colon);
-    auto aero_name = param_name.substr(colon+1, param_name.length());
+    auto aero_name = param_name.substr(colon + 1, param_name.length());
     int mode_index = aero_config.aerosol_mode_index(mode_name);
-    int aero_index = aero_config.aerosol_species_index(mode_index, aero_name, false);
+    int aero_index =
+        aero_config.aerosol_species_index(mode_index, aero_name, false);
     int pop_index = aero_config.population_index(mode_index, aero_index);
-    return interstitial_aero_mmrs[pop_index]; // TODO: what about cloud aerosols?
+    return interstitial_aero_mmrs[pop_index];  // TODO: what about cloud
+                                               // aerosols?
   } else {
     // gas or mode?
     int mode_index = aero_config.aerosol_mode_index(param_name);
@@ -70,7 +74,7 @@ haero::Real& InputData::operator[](const std::string& param_name) {
       } else if (param_name == "planetary_boundary_layer_height") {
         return planetary_boundary_layer_height;
       } else {
-        return planetary_boundary_layer_height; // TODO
+        return planetary_boundary_layer_height;  // TODO
       }
     }
   }
@@ -78,13 +82,15 @@ haero::Real& InputData::operator[](const std::string& param_name) {
 
 haero::Real OutputData::operator[](const std::string& param_name) const {
   size_t colon = param_name.find(':');
-  if (colon != std::string::npos) { // mode:aerosol
+  if (colon != std::string::npos) {  // mode:aerosol
     auto mode_name = param_name.substr(0, colon);
-    auto aero_name = param_name.substr(colon+1, param_name.length());
+    auto aero_name = param_name.substr(colon + 1, param_name.length());
     int mode_index = aero_config.aerosol_mode_index(mode_name);
-    int aero_index = aero_config.aerosol_species_index(mode_index, aero_name, false);
+    int aero_index =
+        aero_config.aerosol_species_index(mode_index, aero_name, false);
     int pop_index = aero_config.population_index(mode_index, aero_index);
-    return interstitial_aero_mmrs[pop_index]; // TODO: what about cloud aerosols?
+    return interstitial_aero_mmrs[pop_index];  // TODO: what about cloud
+                                               // aerosols?
   } else {
     // gas or mode?
     int mode_index = aero_config.aerosol_mode_index(param_name);
@@ -99,5 +105,4 @@ haero::Real OutputData::operator[](const std::string& param_name) const {
   }
 }
 
-
-}
+}  // namespace skywalker
