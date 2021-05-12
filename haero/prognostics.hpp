@@ -4,9 +4,9 @@
 #include <map>
 #include <vector>
 
+#include "haero/aerosol_species.hpp"
 #include "haero/haero.hpp"
 #include "haero/mode.hpp"
-#include "haero/aerosol_species.hpp"
 #include "haero/view_pack_helpers.hpp"
 
 namespace haero {
@@ -22,8 +22,7 @@ class Tendencies;
 /// * interstitial and cloud-borne number concentrations for each aerosol mode
 /// * mass mixing ratios for gas species
 class Prognostics final {
-  public:
-
+ public:
   /// Creates a Prognostics object that can store aerosol data.
   /// This constructor accepts a number of Kokkos View objects, managed by the
   /// host model, that store aerosol data. The Prognostics object
@@ -63,13 +62,10 @@ class Prognostics final {
   ///                               adjacent vertical levels equal to
   ///                               HAERO_PACK_SIZE (possibly padded)
   Prognostics(int num_aerosol_modes,
-              const std::vector<int>& num_aerosol_species,
-              int num_gases,
-              int num_levels,
-              SpeciesColumnView int_aerosols,
-              SpeciesColumnView cld_aerosols,
-              SpeciesColumnView gases,
-              ModalColumnView   modal_num_concs);
+              const std::vector<int>& num_aerosol_species, int num_gases,
+              int num_levels, SpeciesColumnView int_aerosols,
+              SpeciesColumnView cld_aerosols, SpeciesColumnView gases,
+              ModalColumnView modal_num_concs);
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -120,7 +116,6 @@ class Prognostics final {
   /// pack of vertical levels.
   ModalColumnView modal_num_concs;
 
-
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
   // --------------------------------------------------------------------------
@@ -131,8 +126,7 @@ class Prognostics final {
   /// @param [in] tendencies The tendencies to be summed into the state.
   void scale_and_add(Real scale_factor, const Tendencies& tendencies);
 
-  private:
-
+ private:
   // Aerosol species names within each mode.
   const view_1d_int_type num_aero_species_;
 
@@ -144,10 +138,8 @@ class Prognostics final {
 
   // Number of vertical levels.
   const int num_levels_;
-
-
 };
 
-}
+}  // namespace haero
 
 #endif

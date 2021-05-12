@@ -1,18 +1,19 @@
 #include "utils.hpp"
+
 #include <sstream>
 
 namespace haero {
 
 std::string indent_string(const int tab_lev) {
   std::string result("");
-  for (int i=0; i<tab_lev; ++i) {
+  for (int i = 0; i < tab_lev; ++i) {
     result += "\t";
   }
   return result;
 }
 
 std::string& tolower(std::string& s) {
-  for (auto& c: s) {
+  for (auto& c : s) {
     c = std::tolower(c);
   }
   return s;
@@ -33,16 +34,15 @@ bool vector_is_monotone(const std::vector<Real>& vals) {
     // check increasing or decreasing based on first 2 values
     bool increasing = (vals[1] > vals[0]);
     if (increasing) {
-      for (int i=1; i<vals.size(); ++i) {
-        if (vals[i] <= vals[i-1]) {
+      for (int i = 1; i < vals.size(); ++i) {
+        if (vals[i] <= vals[i - 1]) {
           result = false;
           break;
         }
       }
-    }
-    else {
-      for (int i=1; i<vals.size(); ++i) {
-        if (vals[i] >= vals[i-1]) {
+    } else {
+      for (int i = 1; i < vals.size(); ++i) {
+        if (vals[i] >= vals[i - 1]) {
           result = false;
           break;
         }
@@ -52,4 +52,4 @@ bool vector_is_monotone(const std::vector<Real>& vals) {
   return result;
 }
 
-}// namespace haero
+}  // namespace haero

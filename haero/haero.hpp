@@ -18,6 +18,6 @@ const char* revision();
 // repo.
 bool has_uncommitted_changes();
 
-} // end namespace haero
+}  // end namespace haero
 
 #endif

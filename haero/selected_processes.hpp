@@ -11,7 +11,6 @@ namespace haero {
 /// algorithms, or can be disabled to allow for testing. This struct must be
 /// updated when a new process implementation is made available.
 struct SelectedProcesses final {
-
   /// Default constructor (no processes selected).
   SelectedProcesses();
 
@@ -115,6 +114,6 @@ struct SelectedProcesses final {
 AerosolProcess* select_aerosol_process(AerosolProcessType type,
                                        const SelectedProcesses& selections);
 
-} // end haero namespace
+}  // namespace haero
 
 #endif

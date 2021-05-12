@@ -1,6 +1,8 @@
 #include "host_params.hpp"
-#include "ekat/ekat_assert.hpp"
+
 #include <sstream>
+
+#include "ekat/ekat_assert.hpp"
 
 namespace haero {
 namespace driver {
@@ -23,5 +25,5 @@ std::string AtmosphericConditions::info_string(const int tab_level) const {
   return ss.str();
 }
 
-} // namespace driver
-} // namespace haero
+}  // namespace driver
+}  // namespace haero

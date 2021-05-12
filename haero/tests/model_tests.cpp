@@ -1,10 +1,11 @@
-#include "haero/model.hpp"
+#include <cmath>
+#include <iostream>
+#include <memory>
+
+#include "catch2/catch.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
-#include "catch2/catch.hpp"
-#include <iostream>
-#include <cmath>
-#include <memory>
+#include "haero/model.hpp"
 
 using namespace haero;
 
@@ -18,7 +19,8 @@ TEST_CASE("model_ctor", "") {
   // define gas species
   const auto gas_species = create_mam4_gas_species();
   // configure the aerosol model
-  const auto aero_config = ModalAerosolConfig(modes, aero_species, mode_spec_map, gas_species);
+  const auto aero_config =
+      ModalAerosolConfig(modes, aero_species, mode_spec_map, gas_species);
 
   {
     // All of the above steps can be combined:
@@ -39,13 +41,15 @@ TEST_CASE("model_ctor", "") {
   const int num_vert_packs = PackInfo::num_packs(nlev);
 
   /** Host model jobs start here */
-    // create views of tracer data (species/mode mass mixing ratios)
-    auto aero_tracers = SpeciesColumnView("aerosol_tracers", haero_model.num_aerosol_populations(), num_vert_packs);
-    auto mode_tracers = ModalColumnView("aerosol_mode_tracers", haero_model.num_modes(), num_vert_packs);
-    auto gas_tracers = SpeciesColumnView("gas_tracers", haero_model.num_gases(), num_vert_packs);
+  // create views of tracer data (species/mode mass mixing ratios)
+  auto aero_tracers = SpeciesColumnView(
+      "aerosol_tracers", haero_model.num_aerosol_populations(), num_vert_packs);
+  auto mode_tracers = ModalColumnView("aerosol_mode_tracers",
+                                      haero_model.num_modes(), num_vert_packs);
+  auto gas_tracers =
+      SpeciesColumnView("gas_tracers", haero_model.num_gases(), num_vert_packs);
   /** end host model jobs */
 
   auto progs = std::unique_ptr<Prognostics>(haero_model.create_prognostics(
-    aero_tracers, aero_tracers, gas_tracers, mode_tracers));
+      aero_tracers, aero_tracers, gas_tracers, mode_tracers));
 }
-
