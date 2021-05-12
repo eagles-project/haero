@@ -344,7 +344,7 @@ TEST_CASE("vertical_convergence_dynamics_init", "[convergence]") {
 
     // ptop + sum of all levels' pressure must equal surface pressure
     REQUIRE(FloatingPoint<Real>::zero(convtests.max_ps_err,
-      (std::is_same<float,Real>::value ? 8e-3 : FloatingPoint<Real>::zero_tol)));
+      (std::is_same<float,Real>::value ? 1.6e-2 : FloatingPoint<Real>::zero_tol)));
     // sum of level thicknesses must equal ztop
     REQUIRE(FloatingPoint<Real>::zero(convtests.max_ztop_err,
       (std::is_same<float,Real>::value ? 5.3e-2 : 600*FloatingPoint<Real>::zero_tol)));

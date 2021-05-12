@@ -70,7 +70,7 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
 
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
   ps = hydrostatic_pressure_at_height(0, ac);
-  EKAT_ASSERT_MSG(FloatingPoint<Real>::equiv(ps,AtmosphericConditions::pref),
+  EKAT_ASSERT_MSG(FloatingPoint<Real>::rel(ps,AtmosphericConditions::pref),
     "surface pressure must equal the reference pressure, 1000 hPa.");
 
   Kokkos::deep_copy(w,hw);
@@ -141,7 +141,7 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
 
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
   ps = hydrostatic_pressure_at_height(0, ac);
-  EKAT_ASSERT_MSG(FloatingPoint<Real>::equiv(ps,AtmosphericConditions::pref),
+  EKAT_ASSERT_MSG(FloatingPoint<Real>::rel(ps,AtmosphericConditions::pref),
     "surface pressure must equal the reference pressure, 1000 hPa.");
 
   Kokkos::deep_copy(rho0, hrho0);
@@ -220,7 +220,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,  Atmosphe
   }
 
   ps = p0.back();
-  EKAT_ASSERT(FloatingPoint<Real>::equiv(ps, hpint(PackInfo::last_pack_idx(nlev_+1))[PackInfo::last_vec_end(nlev_+1)-1]));
+  EKAT_ASSERT(FloatingPoint<Real>::rel(ps, hpint(PackInfo::last_pack_idx(nlev_+1))[PackInfo::last_vec_end(nlev_+1)-1]));
   rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
 
   Kokkos::deep_copy(w,hw);
