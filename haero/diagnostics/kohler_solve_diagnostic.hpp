@@ -82,6 +82,9 @@ struct KohlerPolynomial {
     dry_radius(dry_rad_microns),
     dry_radius_cubed(cube(dry_rad_microns)) {
     EKAT_KERNEL_ASSERT(valid_inputs(rel_h, hygro, dry_rad_microns));
+// #ifndef HAERO_USE_CUDA
+//     std::cout << "KohlerPolynomial: log(rh) = " << log_rel_humidity << " hyg = " << hygroscopicity << " dry_radius = " << dry_radius << "\n";
+// #endif
     }
 
 
@@ -99,10 +102,10 @@ struct KohlerPolynomial {
   T operator() (const T& wet_radius) const {
     const T wet_radius_cubed = cube(wet_radius);
     const Real kelvinA = 0.00120746723156361711;
-    T result = log_rel_humidity * wet_radius * wet_radius_cubed -
-      kelvinA * wet_radius_cubed +
-      (hygroscopicity  - log_rel_humidity)* dry_radius_cubed * wet_radius +
-      kelvinA * dry_radius_cubed;
+    T result = (log_rel_humidity * wet_radius -
+      kelvinA )* wet_radius_cubed +
+      ((hygroscopicity  - log_rel_humidity) * wet_radius +
+      kelvinA) * dry_radius_cubed;
 //     const auto nans = isnan(wet_radius);
 //     vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
 //       if (nans[i]) {

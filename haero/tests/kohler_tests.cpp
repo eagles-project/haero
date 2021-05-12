@@ -106,13 +106,13 @@ struct KohlerTestFunctor {
 #ifndef HAERO_USE_CUDA
     if ( (newton_err(pack_idx) > tol).any() ) {
       std::cout << "error exceeds tolerance at pack " << pack_idx << "\n";
-      std::cout << "array indices: ";
+      std::cout << "\tarray indices: ";
       for (int i=0; i<HAERO_PACK_SIZE; ++i) {
         std::cout << PackInfo::array_idx(pack_idx, i) << " ";
       }
-      std::cout << "\nrh " << rh_in(pack_idx) << " hyg " << hyg_in(pack_idx) << " dry_rad " << dry_rad(pack_idx) << "\n";
-      std::cout << "newton sol = " << newton_sol(pack_idx) << "\n";
-      std::cout << "true_sol = " << true_sol(pack_idx) << "\n";
+      std::cout << "\n\trh " << rh_in(pack_idx) << " hyg " << hyg_in(pack_idx) << " dry_rad " << dry_rad(pack_idx) << "\n";
+      std::cout << "\tnewton sol = " << newton_sol(pack_idx) << " n_iter = " << newton_iterations(pack_idx) << "\n";
+      std::cout << "\ttrue_sol = " << true_sol(pack_idx) << "\n";
     }
 #endif
 
@@ -146,6 +146,8 @@ TEST_CASE("KohlerSolve-verification", "") {
 
   const Real conv_tol = (std::is_same<float,Real>::value ? 1.0e-3 : 1.0e-10);
 
+  std::cout << "generating 3-parameter sweep for the Kohler solve with " << cube(N) << " trials.\n";
+
   DeviceType::view_1d<PackType> newton_sol("newton_sol", num_packs);
   DeviceType::view_1d<PackType> newton_error("newton_error", num_packs);
   DeviceType::view_1d<int> newton_iterations("newton_iterations", num_packs);
@@ -169,8 +171,12 @@ TEST_CASE("KohlerSolve-verification", "") {
     }
   });
 
+  std::cout << "returned from padding mask init.\n";
+
+
   std::string dfile = HAERO_TEST_DATA_DIR;
   dfile += "/mm_kohler_roots.txt";
+  std::cout << "reading true solutions from data file: " << dfile << "\n";
   std::ifstream mm_sols(dfile);
   auto h_true_sol = Kokkos::create_mirror_view(true_sol);
   REQUIRE(mm_sols.is_open());
@@ -184,6 +190,8 @@ TEST_CASE("KohlerSolve-verification", "") {
   Kokkos::deep_copy(true_sol, h_true_sol);
   mm_sols.close();
 
+
+  std::cout << "launching test kernel\n";
   Kokkos::parallel_for("KohlerVerificatioTest", num_packs,
     KohlerTestFunctor(newton_sol, newton_error, newton_iterations,
         bisection_sol, bisection_error, bisection_iterations,
@@ -195,6 +203,7 @@ TEST_CASE("KohlerSolve-verification", "") {
   int max_iter_newton;
   int max_iter_bisection;
 
+  std:: cout << "computing reductions to generate error statistics\n";
   Kokkos::parallel_reduce(num_packs, PackMaxReduce<Real>(newton_error), Kokkos::Max<Real>(max_err_newton));
   Kokkos::parallel_reduce(num_packs, PackMaxReduce<Real>(bisection_error), Kokkos::Max<Real>(max_err_bisection));
   Kokkos::parallel_reduce(num_packs, KOKKOS_LAMBDA (const int pack_idx, int& ctr) {

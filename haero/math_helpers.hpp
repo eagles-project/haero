@@ -210,12 +210,14 @@ struct ScalarNewtonSolver {
       const value_type xnp1 = next_newton_scalar_iteration(xroot, fxn, fprimexn);
       iter_diff = abs(xnp1 - xroot);
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
+// #ifndef HAERO_USE_CUDA
+//       std::cout << "\t\t" << "newton iteration " << counter << " x = " << xroot << " f(x) = " << fxn;
+//       std::cout << " f'(x) = " << fprimexn << " xnp1 = " << xnp1 << "\n";
+// #endif
       if (counter >= max_iter) {
-        printf("newton solve warning: max iterations reached\n");
+        printf("newton solve warning: max iterations reached xroot = %g xnp1 = %g |diff| = %g\n",
+          xroot, xnp1, iter_diff);
         keep_going = false;
-#ifndef HAERO_USE_CUDA
-        std::cout << "\txroot = " << xroot << " xnp1 = " << xnp1 << " |diff| = " << iter_diff << "\n";
-#endif
       }
       xroot = xnp1;
     }

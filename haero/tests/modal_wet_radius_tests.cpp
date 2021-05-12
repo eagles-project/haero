@@ -30,7 +30,7 @@ TEST_CASE ("wet_radius_diagnostic", "") {
 
   for (int m=0; m<config.num_modes(); ++m) {
     for (int s=0; s<config.max_species_per_mode(); ++s) {
-      std::cout << "config.population_index(m,s) = " << config.population_index(m,s) << "\n";
+      std::cout << "config.population_index(" << m << ", " << s << ") = " << config.population_index(m,s) << "\n";
     }
   }
   const auto pop_inds = config.create_population_indices_view();
@@ -107,5 +107,25 @@ TEST_CASE ("wet_radius_diagnostic", "") {
 
   }
 
+  // verification
+  const auto mode0spec = config.aerosol_species_for_mode(0);
+  auto h_mode_hyg = Kokkos::create_mirror_view(mode_hygroscopicity);
+  auto h_mode_dry_vol = Kokkos::create_mirror_view(mode_mean_particle_dry_volume);
+  Kokkos::deep_copy(h_mode_hyg, mode_hygroscopicity);
+  Kokkos::deep_copy(h_mode_dry_vol, mode_mean_particle_dry_volume);
+  for (int pack_idx=0; pack_idx<npacks; ++pack_idx) {
+    REQUIRE( FloatingPoint<PackType>::equiv(h_mode_hyg(0,pack_idx), PackType(mode0spec[0].hygroscopicity)) );
+    REQUIRE( FloatingPoint<PackType>::equiv(h_mode_dry_vol(0,pack_idx),  q_aero(0,pack_idx) / mode0spec[0].density / h_num_ratios(0,pack_idx)));
+  }
+
+  const auto mode1spec = config.aerosol_species_for_mode(1);
+  for (int pack_idx=0; pack_idx<npacks; ++pack_idx) {
+    const PackType mode_vol_mr = q_aero(1,pack_idx)/mode1spec[0].density + q_aero(2,pack_idx)/mode1spec[1].density;
+    const PackType mhyg = (q_aero(1,pack_idx)*mode1spec[0].hygroscopicity/mode1spec[0].density +
+        q_aero(2,pack_idx)*mode1spec[1].hygroscopicity/mode1spec[1].density) / mode_vol_mr;
+    REQUIRE( FloatingPoint<PackType>::equiv(h_mode_dry_vol(1,pack_idx), mode_vol_mr / h_num_ratios(1,pack_idx)));
+    REQUIRE( FloatingPoint<PackType>::equiv(h_mode_hyg(1,pack_idx), mhyg) );
+
+  }
 
 }
