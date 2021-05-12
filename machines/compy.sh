@@ -2,8 +2,9 @@
 
 source /etc/profile.d/modules.sh
 
-# Load relevant modules (GNU 10.2.0)
-module purge && module load cmake/3.19.6  gcc/10.2.0   mvapich2/2.3.5   netcdf/4.6.3
+# Load relevant modules:
+#(Intel 20.0)
+module purge && module load cmake/3.19.6  intel/20.0.0   mvapich2/2.3.1   netcdf/4.6.3 mkl/2020
 
 
 # Set third-party library paths
