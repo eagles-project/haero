@@ -37,6 +37,7 @@ if (HAERO_FORTRAN)
 
   set(HAERO_FORTRAN_SOURCES
       haero.F90
+      haero_precision.F90
       ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90)
 endif()
 
