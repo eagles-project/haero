@@ -6,8 +6,8 @@
 namespace skywalker {
 
 // Writes simulation output data to a Python module.
-void write_py_module(const std::vector<InputData>& input,
-                     const std::vector<OutputData>& output,
+void write_py_module(const std::vector<InputData>& inputs,
+                     const std::vector<OutputData>& outputs,
                      const char* py_module_name);
 
 }

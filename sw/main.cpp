@@ -373,7 +373,7 @@ int main(int argc, const char* argv[]) {
 
     // Set up the desired aerosol process and run it, dumping output to
     // "haero_skywalker.py".
-    run_process(aero_config, param_walk, "haero_skywalker");
+    run_process(aero_config, param_walk, "haero_skywalker.py");
   } catch (std::exception& e) {
     printf("%s: error: %s\n", argv[0], e.what());
     exit(1);
