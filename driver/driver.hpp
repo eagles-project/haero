@@ -1,14 +1,14 @@
 #ifndef HAERO_DRIVER_HPP
 #define HAERO_DRIVER_HPP
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 
-#include "haero/mode.hpp"
 #include "haero/aerosol_species.hpp"
 #include "haero/gas_species.hpp"
 #include "haero/haero_config.hpp"
+#include "haero/mode.hpp"
 #include "haero/physical_constants.hpp"
 #include "host_params.hpp"
 
@@ -33,7 +33,6 @@ struct AerosolProcesses {
   /// Model aerosol coagulation?
   bool coagulation;
 };
-
 
 /// This type defines parameters related to atmospheric columns.
 struct GridParams {
@@ -110,7 +109,7 @@ struct SimulationInput {
 /// in the given ensemble.
 void haero_driver(const std::vector<SimulationInput>& ensemble);
 
-} // namespace driver
-} // namespace haero
+}  // namespace driver
+}  // namespace haero
 
 #endif

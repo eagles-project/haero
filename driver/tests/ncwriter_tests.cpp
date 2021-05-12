@@ -1,14 +1,15 @@
-#include "haero/haero_config.hpp"
-#include "haero/mode.hpp"
-#include "haero/aerosol_species.hpp"
+#include <cmath>
+#include <iostream>
+#include <string>
+
+#include "catch2/catch.hpp"
 #include "driver/ncwriter.hpp"
 #include "driver/ncwriter_impl.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include <iostream>
-#include <string>
-#include <cmath>
-#include "catch2/catch.hpp"
+#include "haero/aerosol_species.hpp"
+#include "haero/haero_config.hpp"
+#include "haero/mode.hpp"
 
 using namespace haero;
 using namespace haero::driver;
@@ -18,27 +19,27 @@ using view_2d = kokkos_device_type::view_2d<real_pack_type>;
 using view_1d = kokkos_device_type::view_1d<real_pack_type>;
 
 TEST_CASE("ncwriter", "") {
-
   /// Create a new netcdf file
   const std::string fname = "test_file.nc";
   NcWriter ncf(fname);
-  const NcWriter::text_att_type file_desc = std::make_pair("NcWriter_unit_test",
-    "Testing purposes only; some variables will be undefined.");
+  const NcWriter::text_att_type file_desc = std::make_pair(
+      "NcWriter_unit_test",
+      "Testing purposes only; some variables will be undefined.");
   ncf.add_file_attribute(file_desc);
 
   /** The constructor automatically defines a dimension for time.
 
     no other dimensions and no variables are defined so far.
   */
-  REQUIRE (ncf.get_ndims() == 1);
-  REQUIRE (ncf.get_nvars() == 0);
+  REQUIRE(ncf.get_ndims() == 1);
+  REQUIRE(ncf.get_nvars() == 0);
 
   /**
     Add a dimension for level midpoints and a dimension for level interfaces.
   */
   const int nlev = 10;
   ncf.add_level_dims(nlev);
-  REQUIRE (ncf.get_ndims() == 3);
+  REQUIRE(ncf.get_ndims() == 3);
 
   /**
     Add a dimension for modes
@@ -46,7 +47,7 @@ TEST_CASE("ncwriter", "") {
   std::vector<Mode> modes = create_mam4_modes();
   int nmodes = modes.size();
   ncf.add_mode_dim(modes);
-  REQUIRE (ncf.get_ndims() == 4);
+  REQUIRE(ncf.get_ndims() == 4);
 
   /**
     Add a dimension for species
@@ -73,7 +74,8 @@ TEST_CASE("ncwriter", "") {
   /**
     Define a variable that is just one number (0-dimensional)
   */
-  ncf.define_scalar_var("scalar_var_zero", ekat::units::Units::nondimensional());
+  ncf.define_scalar_var("scalar_var_zero",
+                        ekat::units::Units::nondimensional());
 
   /**
     Create views for basic level and interface variables,
@@ -83,41 +85,48 @@ TEST_CASE("ncwriter", "") {
     which memory space it's in.
   */
   view_1d test_level_var("test_level_var", pack_info::num_packs(nlev));
-  view_1d test_interface_var("interface_var", pack_info::num_packs(nlev+1));
+  view_1d test_interface_var("interface_var", pack_info::num_packs(nlev + 1));
 
-  ncf.define_level_var("level_test_var", ekat::units::Units::nondimensional(), test_level_var);
-  REQUIRE (ncf.get_varid("level_test_var") != NC_EBADID);
+  ncf.define_level_var("level_test_var", ekat::units::Units::nondimensional(),
+                       test_level_var);
+  REQUIRE(ncf.get_varid("level_test_var") != NC_EBADID);
 
-  ncf.define_interface_var("plus_minus_two", ekat::units::Units::nondimensional(), test_interface_var);
-  REQUIRE (ncf.get_varid("plus_minus_two") != NC_EBADID);
+  ncf.define_interface_var("plus_minus_two",
+                           ekat::units::Units::nondimensional(),
+                           test_interface_var);
+  REQUIRE(ncf.get_varid("plus_minus_two") != NC_EBADID);
 
   /**
     Create views for modal aerosols, and define corresponding netCDF variables.
   */
-  view_2d test_modal_var("plus_minus_modenum", nmodes, pack_info::num_packs(nlev));
+  view_2d test_modal_var("plus_minus_modenum", nmodes,
+                         pack_info::num_packs(nlev));
   /**
     Initialize a single column's worth of data on the host, copy to device
   */
   auto hmodal = Kokkos::create_mirror_view(test_modal_var);
-  for (int i = 0; i<nmodes; ++i ) {
-    for (int j = 0; j<nlev; ++j) {
-      hmodal(i, pack_info::pack_idx(j))[pack_info::vec_idx(j)] = i * std::pow(-1,j);
+  for (int i = 0; i < nmodes; ++i) {
+    for (int j = 0; j < nlev; ++j) {
+      hmodal(i, pack_info::pack_idx(j))[pack_info::vec_idx(j)] =
+          i * std::pow(-1, j);
     }
   }
   Kokkos::deep_copy(test_modal_var, hmodal);
 
   /// Test the stripped-down version of modal variable definition
-  ncf.define_level_var("level_var_subview0", ekat::units::Units::nondimensional(),
-    Kokkos::subview(test_modal_var,0,Kokkos::ALL));
+  ncf.define_level_var("level_var_subview0",
+                       ekat::units::Units::nondimensional(),
+                       Kokkos::subview(test_modal_var, 0, Kokkos::ALL));
 
   /**
-    The default data type for data arrays is a 1D std::vector; it's always on the host.
+    The default data type for data arrays is a 1D std::vector; it's always on
+    the host.
 
     Hence, we can write data from a std::vector to the nc file.
   */
   ncf.define_level_var("plus_minus_one", ekat::units::Units::nondimensional());
   std::vector<Real> pm1(nlev);
-  for (int i=0; i<nlev; ++i) {
+  for (int i = 0; i < nlev; ++i) {
     pm1[i] = std::pow(-1, i);
   }
   ncf.add_level_variable_data("plus_minus_one", 0, pm1);
@@ -129,25 +138,26 @@ TEST_CASE("ncwriter", "") {
   int mode_idx = 0;
   int spec_idx = 0;
   auto hpm2 = Kokkos::create_mirror_view(test_interface_var);
-  for (int i=0; i<nlev+1; ++i) {
-    hpm2(pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 2*std::pow(-1,i);
+  for (int i = 0; i < nlev + 1; ++i) {
+    hpm2(pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 2 * std::pow(-1, i);
   }
   Kokkos::deep_copy(test_interface_var, hpm2);
-  ncf.add_variable_data("plus_minus_two", time_idx, mode_idx, spec_idx, test_interface_var);
-
+  ncf.add_variable_data("plus_minus_two", time_idx, mode_idx, spec_idx,
+                        test_interface_var);
 
   /**
     Here we try to add data to a time step index that is out of bounds.
   */
   ++time_idx;
-  REQUIRE_THROWS (ncf.add_level_variable_data("plus_minus_one", time_idx, pm1));
+  REQUIRE_THROWS(ncf.add_level_variable_data("plus_minus_one", time_idx, pm1));
   /**
     Add the time index and try again.
   */
-  const Real t=1.0;
+  const Real t = 1.0;
   ncf.add_time_value(t);
-  REQUIRE_NOTHROW (ncf.add_level_variable_data("plus_minus_one", time_idx,pm1));
-  ncf.add_variable_data("plus_minus_two", time_idx, mode_idx, spec_idx, test_interface_var);
+  REQUIRE_NOTHROW(ncf.add_level_variable_data("plus_minus_one", time_idx, pm1));
+  ncf.add_variable_data("plus_minus_two", time_idx, mode_idx, spec_idx,
+                        test_interface_var);
 
   ncf.close();
   std::cout << ncf.info_string();

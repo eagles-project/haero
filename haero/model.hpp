@@ -1,13 +1,14 @@
 #ifndef HAERO_MODEL_HPP
 #define HAERO_MODEL_HPP
 
-#include "haero/modal_aerosol_config.hpp"
-#include "haero/selected_processes.hpp"
-#include "haero/prognostics.hpp"
+#include <map>
+
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
+#include "haero/modal_aerosol_config.hpp"
+#include "haero/prognostics.hpp"
+#include "haero/selected_processes.hpp"
 #include "haero/tendencies.hpp"
-#include <map>
 
 namespace haero {
 
@@ -15,8 +16,7 @@ namespace haero {
 /// This type represents an aerosol system to be simulated, including all
 /// information about modes, species, chemistry, and selected processes.
 class Model final {
-  public:
-
+ public:
   /// Creates an aerosol model that supports the selected processes.
   /// @param [in] modal_aerosol_config The configuration of aerosols and gas
   ///                                  supported by the model.
@@ -25,8 +25,7 @@ class Model final {
   /// @param [in] num_levels The number of vertical levels in each column within
   ///                        the Context's computational domain
   Model(const ModalAerosolConfig& modal_aerosol_config,
-        const SelectedProcesses& selected_processes,
-        int num_levels);
+        const SelectedProcesses& selected_processes, int num_levels);
 
   /// This factory function creates a model for use with unit tests. It
   /// initializes the Fortran subsystem, but doesn't perform any process
@@ -49,10 +48,11 @@ class Model final {
   Prognostics* create_prognostics(SpeciesColumnView int_aerosols,
                                   SpeciesColumnView cld_aerosols,
                                   SpeciesColumnView gases,
-                                  ModalColumnView   modal_num_concs) const;
+                                  ModalColumnView modal_num_concs) const;
 
-  /// Creates a new empty HostDiagnostics object that can be used with this Model.
-  /// All fields within this new HostDiagnostics are owned and managed by it.
+  /// Creates a new empty HostDiagnostics object that can be used with this
+  /// Model. All fields within this new HostDiagnostics are owned and managed by
+  /// it.
   HostDiagnostics* create_diagnostics() const;
 
   // Processes
@@ -63,19 +63,18 @@ class Model final {
   /// @param [in] t The time at which the process runs.
   /// @param [in] dt The time interval over which the process runs.
   /// @param [in] prognostics The prognostic variables used by this process.
-  /// @param [in] atmosphere The atmospheric state variables used by this process.
+  /// @param [in] atmosphere The atmospheric state variables used by this
+  /// process.
   /// @param [in] diagnostics The diagnostic variables used by this process.
   /// @param [out] tendencies The aerosol tendencies computed.
-  void run_process(AerosolProcessType type,
-                   Real t, Real dt,
-                   const Prognostics& prognostics,
-                   const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics,
-                   Tendencies& tendencies);
+  void run_process(AerosolProcessType type, Real t, Real dt,
+                   const Prognostics& prognostics, const Atmosphere& atmosphere,
+                   const Diagnostics& diagnostics, Tendencies& tendencies);
 
   // Accessors
 
-  /// Returns the modal aerosol configuration associated with this aerosol modeļ.
+  /// Returns the modal aerosol configuration associated with this aerosol
+  /// modeļ.
   KOKKOS_INLINE_FUNCTION
   const ModalAerosolConfig& modal_aerosol_config() const {
     return modal_aerosol_config_;
@@ -89,10 +88,10 @@ class Model final {
 
   /// Returns the number of modes in the model
   KOKKOS_INLINE_FUNCTION
-  int num_modes() const {return modal_aerosol_config_.num_modes();}
+  int num_modes() const { return modal_aerosol_config_.num_modes(); }
 
   KOKKOS_INLINE_FUNCTION
-  int num_gases() const {return modal_aerosol_config_.num_gases();}
+  int num_gases() const { return modal_aerosol_config_.num_gases(); }
 
   /// Returns the total number of distinct aerosol species populations
   /// (mode-species pairs).
@@ -100,8 +99,7 @@ class Model final {
     return modal_aerosol_config_.num_aerosol_populations;
   }
 
-  private:
-
+ private:
   // Default constructor--used only internally
   Model();
 
@@ -132,6 +130,6 @@ class Model final {
   bool uses_fortran_;
 };
 
-}
+}  // namespace haero
 
 #endif

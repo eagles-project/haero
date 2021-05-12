@@ -8,23 +8,18 @@ namespace driver {
 
 /// This exception class stores information about errors encountered in reading
 /// data from a YAML file.
-class YamlException: public std::exception {
-  public:
-
+class YamlException : public std::exception {
+ public:
   /// Constructs an exception containing the given descriptive message.
-  YamlException(const std::string& message):
-    _message(message) {}
+  YamlException(const std::string& message) : _message(message) {}
 
   /// Constructs an exception containing the given formatting string and
   /// C-style variadic arguments (a la printf).
   YamlException(const char* fmt, ...);
 
-  const char* what() const throw() {
-    return _message.c_str();
-  }
+  const char* what() const throw() { return _message.c_str(); }
 
-  private:
-
+ private:
   std::string _message;
 };
 
@@ -36,6 +31,6 @@ class YamlException: public std::exception {
 ///          the file.
 std::vector<SimulationInput> read_yaml(const std::string& filename);
 
-} // namespace driver
-} // namespace haero
+}  // namespace driver
+}  // namespace haero
 #endif

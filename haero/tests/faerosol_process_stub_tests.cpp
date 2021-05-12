@@ -1,16 +1,16 @@
-#include "haero/model.hpp"
-#include "haero/floating_point.hpp"
-#include "haero/diagnostics.hpp"
-#include "faerosol_process_stub.hpp"
-#include "catch2/catch.hpp"
-#include <iostream>
 #include <cmath>
+#include <iostream>
+
+#include "catch2/catch.hpp"
+#include "faerosol_process_stub.hpp"
+#include "haero/diagnostics.hpp"
+#include "haero/floating_point.hpp"
+#include "haero/model.hpp"
 
 using namespace haero;
 
 // These tests demonstrate our minimal Fortran-backed prognostic process stub.
 TEST_CASE("faerosol_process_stub", "") {
-
   static_assert(HAERO_PACK_SIZE == 1,
                 "Fortran not supported for HAERO_PACK_SIZE != 1.");
 
@@ -20,7 +20,8 @@ TEST_CASE("faerosol_process_stub", "") {
   auto gas_species = create_mam4_gas_species();
   auto mode_species = create_mam4_mode_species();
   int num_levels = 72;
-  ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
+  ModalAerosolConfig aero_config(modes, aero_species, mode_species,
+                                 gas_species);
   auto* model = Model::ForUnitTests(aero_config, num_levels);
 
   // Set up some prognosics aerosol data views‥
@@ -41,7 +42,7 @@ TEST_CASE("faerosol_process_stub", "") {
   Kokkos::View<PackType*> press("pressure", num_levels);
   Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);
-  Kokkos::View<PackType*> ht("height", num_levels+1);
+  Kokkos::View<PackType*> ht("height", num_levels + 1);
   Real pblh = 100.0;
   auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel, pblh);
 
@@ -103,7 +104,8 @@ TEST_CASE("faerosol_process_stub", "") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 0.01;
-    stub->run(model->modal_aerosol_config(), t, dt, *progs, *atm, *diags, *tends);
+    stub->run(model->modal_aerosol_config(), t, dt, *progs, *atm, *diags,
+              *tends);
 
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
@@ -162,8 +164,8 @@ TEST_CASE("diag_process_stub", "") {
   auto gas_species = create_mam4_gas_species();
   auto mode_species = create_mam4_mode_species();
   int num_levels = 72;
-  ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
-  auto* model = Model::ForUnitTests(aero_config, num_levels);
+  ModalAerosolConfig aero_config(modes, aero_species, mode_species,
+gas_species); auto* model = Model::ForUnitTests(aero_config, num_levels);
 
   // Set up some prognosics aerosol data views‥
   int num_aero_populations = model->num_aerosol_populations();
@@ -307,4 +309,3 @@ TEST_CASE("diag_process_stub", "") {
   delete model;
 }
 */
-

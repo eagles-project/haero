@@ -81,6 +81,11 @@ jobs:
           -G "Unix Makefiles" \
           ..
 
+    - name: Checking code formatting...
+      run: |
+        cd build
+        make format-check
+
     - name: Building haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
         cd build
