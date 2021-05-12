@@ -38,7 +38,6 @@ void ModalAerosolConfig::index_modal_species(
     EKAT_REQUIRE_MSG(not species_for_mode[m].empty(),
                      aerosol_modes[m].name().c_str()
                          << " mode contains no aerosol species!");
-    h_n_species_per_mode(m) = species_for_mode[m].size();
   }
   Kokkos::deep_copy(d_n_species_per_mode, h_n_species_per_mode);
 

@@ -10,7 +10,8 @@
 module faerosol_process_stub
 
   use iso_c_binding, only: c_ptr
-  use haero, only: wp, model, prognostics_t, atmosphere_t, diagnostics_t, &
+  use haero_precision, only: wp
+  use haero, only: model, prognostics_t, atmosphere_t, diagnostics_t, &
                    tendencies_t, prognostics_from_c_ptr, atmosphere_from_c_ptr,&
                    diagnostics_from_c_ptr, tendencies_from_c_ptr
 

@@ -1,6 +1,7 @@
 #ifndef HAERO_PHYSICAL_CONSTANTS_HPP
 #define HAERO_PHYSICAL_CONSTANTS_HPP
 
+// clang-format off
 // All physical constants in Haero are in SI units unless it's explicitly
 // stated otherwise. Units given in brackets are SI units and are included
 // here only for clarity.
@@ -10,8 +11,7 @@ namespace haero {
 
 namespace constants {
 
-/** @defgroup Physical_constants_double_precision_required Physical constants
-   (double_precision)
+/** @defgroup Physical_constants_double_precision_required Physical constants (double_precision)
 
     Force-double precision for constants in this group.
 
@@ -25,15 +25,14 @@ static constexpr double avogadro = 6.022214076e23;
 static constexpr double boltzmann = 1.380649e-23;
 /// @}
 
-/** @defgroup Physical_constants_single_precision_allowed Physical constants
-   (working_precision)
+/** @defgroup Physical_constants_single_precision_allowed Physical constants (working_precision)
 
     Configurable precision (single or double) constants.
 
     @{
 */
 /// Universal gas constant [J/(K mol)]
-static constexpr Real r_gas = avogadro * boltzmann;
+static constexpr Real r_gas = avogadro*boltzmann;
 
 /// acceleration of gravity [m/s^2]
 static constexpr Real gravity = 9.80616;
@@ -66,8 +65,7 @@ static constexpr Real melting_pt_h2o = freezing_pt_h2o;
 static constexpr Real molec_diffusion_dry_air = 20.1;
 
 /// Water-to-dry-air weight ratio [-]
-static constexpr Real weight_ratio_h2o_air =
-    molec_weight_h2o / molec_weight_dry_air;
+static constexpr Real weight_ratio_h2o_air = molec_weight_h2o / molec_weight_dry_air;
 
 /// Latent heat of evaporation [J/kg]
 static constexpr Real latent_heat_evap = 2.501e6;
@@ -92,7 +90,8 @@ static constexpr Real dry_adiabatic_lapse_rate = 0.0098;
 
 /// @}
 
-}  // namespace constants
+} // namespace constants
 
-}  // namespace haero
+} // namespace haero
+// clang-format on
 #endif

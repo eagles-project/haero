@@ -37,7 +37,6 @@ TEST_CASE("model_ctor", "") {
   // configure the aerosol model
   const auto aero_config =
       ModalAerosolConfig(modes, aero_species, mode_spec_map, gas_species);
-  std::cout << "long config complete" << std::endl;
 
   {
     // All of the above steps can be combined:
