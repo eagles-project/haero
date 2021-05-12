@@ -1,21 +1,18 @@
-#include "catch2/catch.hpp"
 #include <cstdio>
 
-#include "ekat/ekat_pack_utils.hpp"
+#include "catch2/catch.hpp"
 #include "ekat/ekat_pack.hpp"
-
-#include "kokkos/Kokkos_Core.hpp"
-
-#include "haero/model.hpp"
-#include "haero/prognostics.hpp"
+#include "ekat/ekat_pack_utils.hpp"
+#include "haero/aerosol_process.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
-#include "haero/view_pack_helpers.hpp"
-#include "haero/aerosol_process.hpp"
 #include "haero/floating_point.hpp"
+#include "haero/model.hpp"
+#include "haero/prognostics.hpp"
+#include "haero/view_pack_helpers.hpp"
+#include "kokkos/Kokkos_Core.hpp"
 
 using namespace haero;
-
 
 // Useful little function to allocate class on device. Probably move to header
 // later.
@@ -26,159 +23,153 @@ typedef Kokkos::HostSpace MemSpace;
 #endif
 
 class MyAerosolProcess : public AerosolProcess {
-public :
-  MyAerosolProcess(AerosolProcessType type,
-                   const std::string& name,
-                   const int num_lev,
-                   const Diagnostics::Token aer_0,
+ public:
+  MyAerosolProcess(AerosolProcessType type, const std::string &name,
+                   const int num_lev, const Diagnostics::Token aer_0,
                    const Diagnostics::Token aer_1,
-                   const Diagnostics::Token gen_0) :
-   AerosolProcess(type, name),
-   num_levels (num_lev),
-   aersol_0 (aer_0),
-   aersol_1 (aer_1),
-   generic_0 (gen_0)
- {}
+                   const Diagnostics::Token gen_0)
+      : AerosolProcess(type, name),
+        num_levels(num_lev),
+        aersol_0(aer_0),
+        aersol_1(aer_1),
+        generic_0(gen_0) {}
 
   KOKKOS_INLINE_FUNCTION
   virtual ~MyAerosolProcess() {}
 
   KOKKOS_INLINE_FUNCTION
-  MyAerosolProcess(const MyAerosolProcess& pp) :
-   AerosolProcess(pp),
-   num_levels (pp.num_levels),
-   aersol_0 (pp.aersol_0),
-   aersol_1 (pp.aersol_1),
-   generic_0 (pp.generic_0)
- {}
+  MyAerosolProcess(const MyAerosolProcess &pp)
+      : AerosolProcess(pp),
+        num_levels(pp.num_levels),
+        aersol_0(pp.aersol_0),
+        aersol_1(pp.aersol_1),
+        generic_0(pp.generic_0) {}
 
   KOKKOS_FUNCTION
-  virtual void run(const ModalAerosolConfig& modal_aerosol_config,
-                   Real t, Real dt,
-                   const Prognostics& prognostics,
-                   const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics,
-                   Tendencies& tendencies) const {
-
+  virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
+                   Real dt, const Prognostics &prognostics,
+                   const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+                   Tendencies &tendencies) const {
     const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
     const ColumnView temp = atmosphere.temperature;
-    const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
+    const SpeciesColumnView first_aersol = diagnostics.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
-    const ColumnView        generic_var   = diagnostics.var(generic_0);
+    const ColumnView generic_var = diagnostics.var(generic_0);
     SpeciesColumnView aero_tend = tendencies.interstitial_aerosols;
 
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
-    for (int k=0; k<num_levels; ++k) {
+    for (int k = 0; k < num_levels; ++k) {
       generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0;
     }
-    for (int i=0; i<num_levels; ++i) {
-      for (int k=0; k<num_levels; ++k) {
+    for (int i = 0; i < num_levels; ++i) {
+      for (int k = 0; k < num_levels; ++k) {
         generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)] +=
-          temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
+            temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
       }
-      for (int j=0; j<num_aerosol_populations; ++j) {
-        aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
-        for (int k=0; k<num_levels; ++k) {
-          aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] +=
-             int_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] *
-             temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
+      for (int j = 0; j < num_aerosol_populations; ++j) {
+        aero_tend(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
+        for (int k = 0; k < num_levels; ++k) {
+          aero_tend(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)] +=
+              int_aerosols(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] *
+              temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         }
       }
-      for (int j=0; j<num_populations; ++j) {
-        first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
-        for (int k=0; k<num_levels; ++k) {
-          first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] +=
-            i * j * temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
+      for (int j = 0; j < num_populations; ++j) {
+        first_aersol(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = 0;
+        for (int k = 0; k < num_levels; ++k) {
+          first_aersol(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)] +=
+              i * j * temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         }
-        second_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = j*i;
+        second_aersol(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = j * i;
       }
     }
   };
 
   MyAerosolProcess *copy_to_device() {
     const std::string debuggingName(name());
-    MyAerosolProcess *pp = static_cast<MyAerosolProcess *>(
-      Kokkos::kokkos_malloc<MemSpace>(debuggingName + "_malloc", sizeof(MyAerosolProcess)));
-    const MyAerosolProcess &this_pp = *this; // Suck into lambda capture space.
-    Kokkos::parallel_for(debuggingName + "_format", 1,
-                         KOKKOS_LAMBDA(const int) { new (pp) MyAerosolProcess(this_pp); });
+    MyAerosolProcess *pp =
+        static_cast<MyAerosolProcess *>(Kokkos::kokkos_malloc<MemSpace>(
+            debuggingName + "_malloc", sizeof(MyAerosolProcess)));
+    const MyAerosolProcess &this_pp = *this;  // Suck into lambda capture space.
+    Kokkos::parallel_for(
+        debuggingName + "_format", 1,
+        KOKKOS_LAMBDA(const int) { new (pp) MyAerosolProcess(this_pp); });
     return pp;
   }
-private:
+
+ private:
   const int num_levels;
   const Diagnostics::Token aersol_0;
   const Diagnostics::Token aersol_1;
   const Diagnostics::Token generic_0;
 };
 
-
 TEST_CASE("process_tests", "aerosol_process") {
-
   const int num_levels = 72;
-  const int num_gases  = 1;
-  const int num_modes  = 1;
-  const Real t         = 2.3;
-  const Real dt        = 0.15;
+  const int num_gases = 1;
+  const int num_modes = 1;
+  const Real t = 2.3;
+  const Real dt = 0.15;
   int num_vert_packs = num_levels / HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
     num_vert_packs++;
   }
   using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
-  using SpeciesColumnView  = kokkos_device_type::view_2d<PackType>;
-  using ModalColumnView    = kokkos_device_type::view_2d<PackType>;
+  using SpeciesColumnView = kokkos_device_type::view_2d<PackType>;
+  using ModalColumnView = kokkos_device_type::view_2d<PackType>;
 
   SpeciesColumnView dev_gases;
   {
     // example of filling a device view from a std::vector
-    std::vector<std::vector<Real>> host_gases(num_gases, std::vector<Real>(num_levels));
-    for (int i=0; i<num_levels; ++i) {
-      for (int j=0; j<num_gases; ++j) {
-        host_gases[j][i] = i+j;
+    std::vector<std::vector<Real>> host_gases(num_gases,
+                                              std::vector<Real>(num_levels));
+    for (int i = 0; i < num_levels; ++i) {
+      for (int j = 0; j < num_gases; ++j) {
+        host_gases[j][i] = i + j;
       }
     }
     dev_gases = vectors_to_row_packed_2dview(host_gases, "gases");
   }
 
-  SpeciesColumnView dev_int_aerosols("interstitial aerosols", 1, num_vert_packs);
+  SpeciesColumnView dev_int_aerosols("interstitial aerosols", 1,
+                                     num_vert_packs);
   {
     // example of filling a device view from a host view
-    auto host_int_aerosols  =  Kokkos::create_mirror_view(dev_int_aerosols);
-    for (int i=0; i<num_levels; ++i) {
-      host_int_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
+    auto host_int_aerosols = Kokkos::create_mirror_view(dev_int_aerosols);
+    for (int i = 0; i < num_levels; ++i) {
+      host_int_aerosols(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
     }
     Kokkos::deep_copy(dev_int_aerosols, host_int_aerosols);
   }
 
-  SpeciesColumnView dev_cld_aerosols("cloudborne aerosols",   1, num_vert_packs);
-  ModalColumnView   dev_modal_concs("modal number concs", num_modes, num_vert_packs);
-  auto host_cld_aerosols  =  Kokkos::create_mirror_view(dev_cld_aerosols);
-  auto host_modal_concs   =  Kokkos::create_mirror_view(dev_modal_concs);
-  for (int i=0; i<num_levels; ++i) {
-    host_cld_aerosols(0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
-    host_modal_concs (0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
+  SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", 1, num_vert_packs);
+  ModalColumnView dev_modal_concs("modal number concs", num_modes,
+                                  num_vert_packs);
+  auto host_cld_aerosols = Kokkos::create_mirror_view(dev_cld_aerosols);
+  auto host_modal_concs = Kokkos::create_mirror_view(dev_modal_concs);
+  for (int i = 0; i < num_levels; ++i) {
+    host_cld_aerosols(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
+    host_modal_concs(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
   }
   Kokkos::deep_copy(dev_cld_aerosols, host_cld_aerosols);
-  Kokkos::deep_copy(dev_modal_concs,  host_modal_concs);
+  Kokkos::deep_copy(dev_modal_concs, host_modal_concs);
 
-  Prognostics progs(num_modes, {1}, num_gases, num_levels,
-                    dev_int_aerosols,
-                    dev_cld_aerosols,
-                    dev_gases,
-                    dev_modal_concs);
+  Prognostics progs(num_modes, {1}, num_gases, num_levels, dev_int_aerosols,
+                    dev_cld_aerosols, dev_gases, dev_modal_concs);
 
-  Kokkos::View<PackType*> temp("temperature", num_vert_packs);
-  Kokkos::View<PackType*> press("pressure", num_vert_packs);
-  Kokkos::View<PackType*> rel_hum("relative humidity", num_vert_packs);
-  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_vert_packs);
-  int num_iface_packs = (num_levels+1)/HAERO_PACK_SIZE;
-  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels+1)) {
+  Kokkos::View<PackType *> temp("temperature", num_vert_packs);
+  Kokkos::View<PackType *> press("pressure", num_vert_packs);
+  Kokkos::View<PackType *> rel_hum("relative humidity", num_vert_packs);
+  Kokkos::View<PackType *> pdel("hydrostatic_dp", num_vert_packs);
+  int num_iface_packs = (num_levels + 1) / HAERO_PACK_SIZE;
+  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels + 1)) {
     num_iface_packs++;
   }
-  Kokkos::View<PackType*> ht("height", num_iface_packs);
+  Kokkos::View<PackType *> ht("height", num_iface_packs);
   {
-    auto host_temp  =  Kokkos::create_mirror_view(temp);
-    for (int i=0; i<num_levels; ++i) {
+    auto host_temp = Kokkos::create_mirror_view(temp);
+    for (int i = 0; i < num_levels; ++i) {
       host_temp(pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
     }
     Kokkos::deep_copy(temp, host_temp);
@@ -188,12 +179,14 @@ TEST_CASE("process_tests", "aerosol_process") {
 
   std::vector<int> num_aero_species(num_modes);
   std::vector<Mode> modes = create_mam4_modes();
-  std::map<std::string, std::vector<std::string>> mode_species = create_mam4_mode_species();
+  std::map<std::string, std::vector<std::string>> mode_species =
+      create_mam4_mode_species();
   for (int m = 0; m < num_modes; ++m) {
     num_aero_species[m] = mode_species[modes[m].name()].size();
   }
 
-  HostDiagnostics diagnostics_register(num_modes, num_aero_species, num_gases, num_levels);
+  HostDiagnostics diagnostics_register(num_modes, num_aero_species, num_gases,
+                                       num_levels);
   auto aersol_0 = diagnostics_register.create_aerosol_var("First Aerosol");
   auto aersol_1 = diagnostics_register.create_aerosol_var("Second Aerosol");
   auto generic_0 = diagnostics_register.create_var("Generic Aerosol");
@@ -202,10 +195,11 @@ TEST_CASE("process_tests", "aerosol_process") {
   {
     const int num_populations = progs.num_aerosol_populations();
     SpeciesColumnView aero_tend = tends.interstitial_aerosols;
-    auto host_aero_tend  =  Kokkos::create_mirror_view(aero_tend);
-    for (int i=0; i<num_levels; ++i) {
-      for (int j=0; j<num_populations; ++j) {
-        host_aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = .1*i + .1*j;
+    auto host_aero_tend = Kokkos::create_mirror_view(aero_tend);
+    for (int i = 0; i < num_levels; ++i) {
+      for (int j = 0; j < num_populations; ++j) {
+        host_aero_tend(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)] =
+            .1 * i + .1 * j;
       }
     }
     Kokkos::deep_copy(aero_tend, host_aero_tend);
@@ -217,8 +211,9 @@ TEST_CASE("process_tests", "aerosol_process") {
   MyAerosolProcess *device_pp = pp.copy_to_device();
 
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
-  std::vector<GasSpecies> gas_species  = create_mam4_gas_species();
-  ModalAerosolConfig aero_config(modes, aero_species, mode_species, gas_species);
+  std::vector<GasSpecies> gas_species = create_mam4_gas_species();
+  ModalAerosolConfig aero_config(modes, aero_species, mode_species,
+                                 gas_species);
   Model *model = Model::ForUnitTests(aero_config, num_levels);
 
   const Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
@@ -226,14 +221,17 @@ TEST_CASE("process_tests", "aerosol_process") {
       TeamHandleType;
   const auto &teamPolicy =
       Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
-  Kokkos::parallel_for(teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 0u, 1u),
-                         [&](const int &i) {
-     // Const cast because everything in lambda is const. Need to google how to fix.
-     Tendencies* tendency = const_cast<Tendencies*>(&tends);
-     device_pp->run(model->modal_aerosol_config(), t, dt, progs, atmos, diagnostics, *tendency);
-    });
-  });
+  Kokkos::parallel_for(
+      teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
+        Kokkos::parallel_for(
+            Kokkos::TeamThreadRange(team, 0u, 1u), [&](const int &i) {
+              // Const cast because everything in lambda is const. Need to
+              // google how to fix.
+              Tendencies *tendency = const_cast<Tendencies *>(&tends);
+              device_pp->run(model->modal_aerosol_config(), t, dt, progs, atmos,
+                             diagnostics, *tendency);
+            });
+      });
 
   Kokkos::kokkos_free<MemSpace>(device_pp);
 
@@ -241,48 +239,50 @@ TEST_CASE("process_tests", "aerosol_process") {
     using fp_helper = FloatingPoint<float>;
     const SpeciesColumnView int_aerosols = progs.interstitial_aerosols;
     const ColumnView temp = atmos.temperature;
-    const SpeciesColumnView first_aersol  = diagnostics.aerosol_var(aersol_0);
+    const SpeciesColumnView first_aersol = diagnostics.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
-    const ColumnView        generic_var   = diagnostics.var(generic_0);
+    const ColumnView generic_var = diagnostics.var(generic_0);
     SpeciesColumnView aero_tend = tends.interstitial_aerosols;
 
-    auto host_first_aersol  =  Kokkos::create_mirror_view(first_aersol);
-    auto host_second_aersol =  Kokkos::create_mirror_view(second_aersol);
-    auto host_generic_var   =  Kokkos::create_mirror_view(generic_var);
-    auto host_aero_tend     =  Kokkos::create_mirror_view(aero_tend);
-    Kokkos::deep_copy(host_first_aersol,  first_aersol);
+    auto host_first_aersol = Kokkos::create_mirror_view(first_aersol);
+    auto host_second_aersol = Kokkos::create_mirror_view(second_aersol);
+    auto host_generic_var = Kokkos::create_mirror_view(generic_var);
+    auto host_aero_tend = Kokkos::create_mirror_view(aero_tend);
+    Kokkos::deep_copy(host_first_aersol, first_aersol);
     Kokkos::deep_copy(host_second_aersol, second_aersol);
-    Kokkos::deep_copy(host_generic_var,   generic_var);
-    Kokkos::deep_copy(host_aero_tend,     aero_tend);
+    Kokkos::deep_copy(host_generic_var, generic_var);
+    Kokkos::deep_copy(host_aero_tend, aero_tend);
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
-    for (int i=0; i<num_levels; ++i) {
-      for (int k=0; k<num_levels; ++k) {
-        const Real val = num_levels*k;
-        const Real tst = host_generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
+    for (int i = 0; i < num_levels; ++i) {
+      for (int k = 0; k < num_levels; ++k) {
+        const Real val = num_levels * k;
+        const Real tst =
+            host_generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
         REQUIRE(fp_helper::equiv(tst, val));
       }
-      for (int j=0; j<num_aerosol_populations; ++j) {
-        for (int i=0; i<num_levels; ++i) {
-          const Real val = 2556*i;
-          const Real tst = host_aero_tend(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+      for (int j = 0; j < num_aerosol_populations; ++j) {
+        for (int i = 0; i < num_levels; ++i) {
+          const Real val = 2556 * i;
+          const Real tst =
+              host_aero_tend(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
       }
-      for (int j=0; j<num_populations; ++j) {
+      for (int j = 0; j < num_populations; ++j) {
         {
-          const Real val =  2556*(i*j);
-          const Real tst = host_first_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          const Real val = 2556 * (i * j);
+          const Real tst = host_first_aersol(
+              j, pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
         {
-          const Real val = j*i;
-          const Real tst = host_second_aersol(j,pack_info::pack_idx(i))[pack_info::vec_idx(i)];
+          const Real val = j * i;
+          const Real tst = host_second_aersol(
+              j, pack_info::pack_idx(i))[pack_info::vec_idx(i)];
           REQUIRE(fp_helper::equiv(tst, val));
         }
       }
     }
   }
 }
-
-

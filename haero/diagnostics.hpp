@@ -1,13 +1,14 @@
 #ifndef HAERO_DIAGNOSTICS_HPP
 #define HAERO_DIAGNOSTICS_HPP
 
-#include "haero/haero.hpp"
-#include "haero/view_pack_helpers.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include "kokkos/Kokkos_Core.hpp"
 #include <map>
 #include <vector>
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_types.hpp"
+#include "haero/haero.hpp"
+#include "haero/view_pack_helpers.hpp"
+#include "kokkos/Kokkos_Core.hpp"
 
 namespace haero {
 
@@ -16,8 +17,7 @@ namespace haero {
 /// The set of diagnostic variables for such a system is determined by the
 /// parameterizations selected for that system.
 class Diagnostics {
-  public:
-
+ public:
   /// Diagnostic variables are identified by a unique token. This token is
   /// generated when a field is created, and can be retrieved given the name of
   /// an existing field. Tokens are useful for retrieving fields on a device
@@ -38,8 +38,7 @@ class Diagnostics {
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
   Diagnostics(int num_aerosol_modes,
-              const std::vector<int>& num_aerosol_species,
-              int num_gases,
+              const std::vector<int> &num_aerosol_species, int num_gases,
               int num_levels);
 
   /// Destructor.
@@ -85,7 +84,7 @@ class Diagnostics {
   KOKKOS_INLINE_FUNCTION
   ColumnView var(const Token token) const {
     EKAT_KERNEL_REQUIRE_MSG(token < vars_.extent(0),
-      "Diagnostic variable token not found!");
+                            "Diagnostic variable token not found!");
     const ColumnView vars = Kokkos::subview(vars_, token, Kokkos::ALL);
     return vars;
   }
@@ -97,8 +96,9 @@ class Diagnostics {
   KOKKOS_INLINE_FUNCTION
   SpeciesColumnView aerosol_var(const Token token) const {
     EKAT_KERNEL_REQUIRE_MSG(token < aero_vars_.extent(0),
-      "Aerosol diagnostic variable token not found!");
-    const SpeciesColumnView vars = Kokkos::subview(aero_vars_, token, Kokkos::ALL, Kokkos::ALL);
+                            "Aerosol diagnostic variable token not found!");
+    const SpeciesColumnView vars =
+        Kokkos::subview(aero_vars_, token, Kokkos::ALL, Kokkos::ALL);
     return vars;
   }
 
@@ -109,19 +109,18 @@ class Diagnostics {
   KOKKOS_FUNCTION
   SpeciesColumnView gas_var(const Token token) const;
 
-  /// Returns a const view storing the mode-specific diagnostic variable with a name
-  /// corresponding to the given token. If such a variable does not exist, this
-  /// throws an exception.
+  /// Returns a const view storing the mode-specific diagnostic variable with a
+  /// name corresponding to the given token. If such a variable does not exist,
+  /// this throws an exception.
   /// @param [in] token A unique token identifying a diagnostic variable.
   KOKKOS_FUNCTION
   ModalColumnView modal_var(const Token token) const;
 
-  protected:
-
+ protected:
   // Views that store arrays of views
-  using ColumnViewArray        = kokkos_device_type::view_2d<PackType>;
+  using ColumnViewArray = kokkos_device_type::view_2d<PackType>;
   using SpeciesColumnViewArray = kokkos_device_type::view_3d<PackType>;
-  using ModalColumnViewArray   = kokkos_device_type::view_3d<PackType>;
+  using ModalColumnViewArray = kokkos_device_type::view_3d<PackType>;
 
   // Number of aerosol species in each mode.
   const view_1d_int_type num_aero_species_;
@@ -137,10 +136,10 @@ class Diagnostics {
 
   // Named diagnostic variables.  These are arrays of views in which the
   // assigned token can be used to index to the proper sub-view.
-  ColumnViewArray        vars_;
+  ColumnViewArray vars_;
   SpeciesColumnViewArray aero_vars_;
   SpeciesColumnViewArray gas_vars_;
-  ModalColumnViewArray   modal_vars_;
+  ModalColumnViewArray modal_vars_;
 };
 
 /// @class HostDiagnostics
@@ -148,8 +147,7 @@ class Diagnostics {
 /// The set of diagnostic variables for such a system is determined by the
 /// parameterizations selected for that system.
 class HostDiagnostics final : public Diagnostics {
-  public:
-
+ public:
   /// Creates an empty HostDiagnostics to which data can be added.
   /// @param [in] num_aerosol_modes The number of aerosol modes in the system
   /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
@@ -159,9 +157,8 @@ class HostDiagnostics final : public Diagnostics {
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
   HostDiagnostics(int num_aerosol_modes,
-              const std::vector<int>& num_aerosol_species,
-              int num_gases,
-              int num_levels);
+                  const std::vector<int> &num_aerosol_species, int num_gases,
+                  int num_levels);
 
   /// Destructor.
   ~HostDiagnostics();
@@ -182,81 +179,78 @@ class HostDiagnostics final : public Diagnostics {
   /// Returns a unique token that identifies the given (non-modal) variable
   /// within this object. Returns VAR_NOT_FOUND if this variable does not exist.
   /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_var(const std::string& name) const;
+  Token find_var(const std::string &name) const;
 
   /// Creates a diagnostic variable with the given name within this object,
   /// returning a unique token for the new variable.
   /// @param [in] name The name of the diagnostic variable to be created.
-  Token create_var(const std::string& name);
+  Token create_var(const std::string &name);
 
   /// Returns a unique token that identifies the given modal aerosol variable
   /// within this object. Returns VAR_NOT_FOUND if this variable does not exist.
   /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_aerosol_var(const std::string& name) const;
+  Token find_aerosol_var(const std::string &name) const;
 
-  /// Creates a diagnostic modal aerosol variable with the given name within this
-  /// object, returning a unique token for the new variable.
+  /// Creates a diagnostic modal aerosol variable with the given name within
+  /// this object, returning a unique token for the new variable.
   /// @param [in] name The name of the modal diagnostic variable to be created.
-  Token create_aerosol_var(const std::string& name);
+  Token create_aerosol_var(const std::string &name);
 
   /// Returns a unique token that identifies the given gas variable within this
   /// object. Returns VAR_NOT_FOUND if this variable does not exist.
   /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_gas_var(const std::string& name) const;
+  Token find_gas_var(const std::string &name) const;
 
   /// Creates a diagnostic gas species variable with the given name within this
   /// object, returning a unique token for the new variable.
   /// @param [in] name The name of the modal diagnostic variable to be created.
-  Token create_gas_var(const std::string& name);
+  Token create_gas_var(const std::string &name);
 
   /// Returns a unique token that identifies the given modal variable within
   /// this object. Returns VAR_NOT_FOUND if this variable does not exist.
   /// @param [in] name The name of the diagnostic variable of interest.
-  Token find_modal_var(const std::string& name) const;
+  Token find_modal_var(const std::string &name) const;
 
   /// Creates a diagnostic modal variable with the given name within this
   /// object, returning a unique token for the new variable.
   /// @param [in] name The name of the modal diagnostic variable to be created.
-  Token create_modal_var(const std::string& name);
+  Token create_modal_var(const std::string &name);
 
-  private:
-
+ private:
   // Views that store arrays of views
-  using ColumnViewArray        = kokkos_device_type::view_2d<PackType>;
+  using ColumnViewArray = kokkos_device_type::view_2d<PackType>;
   using SpeciesColumnViewArray = kokkos_device_type::view_3d<PackType>;
-  using ModalColumnViewArray   = kokkos_device_type::view_3d<PackType>;
+  using ModalColumnViewArray = kokkos_device_type::view_3d<PackType>;
 
   // Set named string into map and return corresponding token.
-  static Token
-  set_string_to_token(std::map<std::string,Token> &registered_strings,
-                      const std::string &name,
-                      const Token token);
+  static Token set_string_to_token(
+      std::map<std::string, Token> &registered_strings, const std::string &name,
+      const Token token);
 
   // Given named string search map and return corresponding token.
-  static Token
-  get_string_to_token(const std::map<std::string,Token> &registered_strings,
-                      const std::string &name);
+  static Token get_string_to_token(
+      const std::map<std::string, Token> &registered_strings,
+      const std::string &name);
 
   void clear_maps();
   // Functions that call the two functions above with the correct map.
-  Token set_string_to_token_vars (const std::string &name, const Token token) ;
-  Token set_string_to_token_aero (const std::string &name, const Token token) ;
-  Token set_string_to_token_gas  (const std::string &name, const Token token) ;
-  Token set_string_to_token_modal(const std::string &name, const Token token) ;
-  Token get_string_to_token_vars (const std::string &name) const;
-  Token get_string_to_token_aero (const std::string &name) const;
-  Token get_string_to_token_gas  (const std::string &name) const;
+  Token set_string_to_token_vars(const std::string &name, const Token token);
+  Token set_string_to_token_aero(const std::string &name, const Token token);
+  Token set_string_to_token_gas(const std::string &name, const Token token);
+  Token set_string_to_token_modal(const std::string &name, const Token token);
+  Token get_string_to_token_vars(const std::string &name) const;
+  Token get_string_to_token_aero(const std::string &name) const;
+  Token get_string_to_token_gas(const std::string &name) const;
   Token get_string_to_token_modal(const std::string &name) const;
 
   // Maps of Diagnostic variable names to the assigned tokens which are just
   // indexes into the array of views.
-  std::map<std::string,Token> registered_strings_vars;
-  std::map<std::string,Token> registered_strings_aero;
-  std::map<std::string,Token> registered_strings_gas;
-  std::map<std::string,Token> registered_strings_modal;
-
+  std::map<std::string, Token> registered_strings_vars;
+  std::map<std::string, Token> registered_strings_aero;
+  std::map<std::string, Token> registered_strings_gas;
+  std::map<std::string, Token> registered_strings_modal;
 };
 
-}
+}  // namespace haero
 
 #endif

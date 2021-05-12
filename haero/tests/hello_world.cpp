@@ -2,15 +2,11 @@
 
 namespace {
 
-void hello_world()
-{
+void hello_world() {
   REQUIRE(1 == 1);
-  REQUIRE(2+2 != 5);
+  REQUIRE(2 + 2 != 5);
 }
 
-TEST_CASE("hello_world", "[haero_unit_tests]")
-{
-  hello_world();
-}
+TEST_CASE("hello_world", "[haero_unit_tests]") { hello_world(); }
 
-} // anonymous namespace
+}  // anonymous namespace
