@@ -2,7 +2,8 @@
 !> appropriate section in the Processes chapter of the Haero design document.
 module mam_nucleation
 
-  use haero, only: wp, model_t, aerosol_species_t, gas_species_t, &
+  use haero_precision, only: wp
+  use haero, only: model_t, aerosol_species_t, gas_species_t, &
                    prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
                    var_not_found
   use haero_constants, only: pi, R_gas, Avogadro

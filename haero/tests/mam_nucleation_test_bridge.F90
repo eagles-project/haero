@@ -12,7 +12,7 @@ module mam_nucleation_test_bridge
 contains
 
 subroutine ternary_nuc_merik2007_bridge(t, rh, c2, c3, j_log, ntot, nacid, namm, r) bind(c)
-  use haero, only: wp
+  use haero_precision, only: wp
   use mam_nucleation, only: ternary_nuc_merik2007
   implicit none
 
@@ -25,7 +25,7 @@ subroutine ternary_nuc_merik2007_bridge(t, rh, c2, c3, j_log, ntot, nacid, namm,
 end subroutine
 
 subroutine binary_nuc_vehk2002_bridge(temp, rh, so4vol, ratenucl, rateloge, cnum_h2so4, cnum_tot, radius_cluster) bind(c)
-  use haero, only: wp
+  use haero_precision, only: wp
   use mam_nucleation, only: binary_nuc_vehk2002
   implicit none
 
@@ -40,7 +40,7 @@ end subroutine
 subroutine pbl_nuc_wang2008_bridge(factor_pbl_ratenucl, so4vol, flagaa, flagaa2, ratenucl, rateloge, &
   cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster) bind(c)
   use iso_c_binding, only: c_int
-  use haero, only: wp
+  use haero_precision, only: wp
   use mam_nucleation, only: pbl_nuc_wang2008
   use mam_nucleation, only: adjust_factor_pbl_ratenucl
   implicit none
@@ -86,7 +86,7 @@ subroutine mer07_veh02_nuc_mosaic_1box_bridge(   &
   dnclusterdt ) bind(c)
 
   use iso_c_binding, only: c_int, c_ptr
-  use haero, only: wp
+  use haero_precision, only: wp
   use mam_nucleation, only: mer07_veh02_nuc_mosaic_1box
   use mam_nucleation, only: adjust_factor_bin_tern_ratenucl
   use mam_nucleation, only: adjust_factor_pbl_ratenucl
