@@ -2,28 +2,16 @@
 
 namespace {
 
-haero::Real fetch_input_var(const skywalker::InputData& input,
-                            const std::string& name)
-{
-  return 0.0;
-}
-
 // Writes the given input variable to our Python module.
 void write_input_var(FILE* file,
                      const std::vector<skywalker::InputData>& inputs,
                      const std::string& var_name) {
   fprintf(file, "%s = [", var_name.c_str());
   for (auto input: inputs) {
-    auto var = fetch_input_var(input, var_name);
+    auto var = input[var_name];
     fprintf(file, "%g, ", var);
   }
   fprintf(file, "]\n");
-}
-
-haero::Real fetch_output_var(const skywalker::OutputData& output,
-                             const std::string& name)
-{
-  return 0.0;
 }
 
 // Writes the given output variable to our Python module.
@@ -32,7 +20,7 @@ void write_output_var(FILE* file,
                       const std::string& var_name) {
   fprintf(file, "%s = [", var_name.c_str());
   for (auto output: outputs) {
-    auto var = fetch_output_var(output, var_name);
+    auto var = output[var_name];
     fprintf(file, "%g, ", var);
   }
   fprintf(file, "]\n");
@@ -55,6 +43,11 @@ void write_py_module(const std::vector<InputData>& inputs,
   fprintf(file, "# Input is stored here.\n");
   fprintf(file, "input = Object()\n");
   write_input_var(file, inputs, "temperature");
+  write_input_var(file, inputs, "pressure");
+  write_input_var(file, inputs, "relative_humidity");
+  write_input_var(file, inputs, "height");
+  write_input_var(file, inputs, "hydrostatic_dp");
+  write_input_var(file, inputs, "planetary_boundary_layer_height");
 
   // Write output data.
   fprintf(file, "# Output data is stored here.\n");

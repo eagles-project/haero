@@ -12,7 +12,7 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
                          const std::string& filename) {
   using Real = haero::Real;
 
-  ParameterWalk pw;
+  ParameterWalk pw(aerosol_config);
   try {
     auto root = YAML::LoadFile(filename);
 

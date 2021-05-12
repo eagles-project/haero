@@ -51,7 +51,7 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       auto iter = param_walk.ensemble.begin();
       auto name = iter->first;
       const auto& vals = iter->second;
-      inputs[l].override_parameter(aero_config, name, vals[l]);
+      inputs[l][name] = vals[l];
     } else if (num_params == 2) {
       auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
@@ -62,8 +62,8 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       size_t n2 = vals2.size();
       size_t j1 = l/n2;
       size_t j2 = l - n2*j1;
-      inputs[l].override_parameter(aero_config, name1, vals1[j1]);
-      inputs[l].override_parameter(aero_config, name2, vals2[j2]);
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
     } else if (num_params == 3) {
       auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
@@ -79,9 +79,9 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       size_t j1 = l/(n2*n3);
       size_t j2 = (l - n2*n3*j1) / n3;
       size_t j3 = l - n2*n3*j1 - n3*j2;
-      inputs[l].override_parameter(aero_config, name1, vals1[j1]);
-      inputs[l].override_parameter(aero_config, name2, vals2[j2]);
-      inputs[l].override_parameter(aero_config, name3, vals3[j3]);
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
+      inputs[l][name3] = vals3[j3];
     } else if (num_params == 4) {
       auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
@@ -102,10 +102,10 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       size_t j2 = (l - n2*n3*n4*j1) / (n3*n4);
       size_t j3 = (l - n2*n3*n4*j1 - n3*n4*j2) / n4;
       size_t j4 = l - n2*n3*n4*j1 - n3*n4*j2 - n4*j3;
-      inputs[l].override_parameter(aero_config, name1, vals1[j1]);
-      inputs[l].override_parameter(aero_config, name2, vals2[j2]);
-      inputs[l].override_parameter(aero_config, name3, vals3[j3]);
-      inputs[l].override_parameter(aero_config, name4, vals4[j4]);
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
+      inputs[l][name3] = vals3[j3];
+      inputs[l][name4] = vals4[j4];
     } else { // if (num_params == 5)
       auto iter = param_walk.ensemble.begin();
       auto name1 = iter->first;
@@ -131,11 +131,11 @@ gather_inputs(const haero::ModalAerosolConfig& aero_config,
       size_t j3 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2) / (n4*n5);
       size_t j4 = (l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3) / n5;
       size_t j5 = l - n2*n3*n4*n5*j1 - n3*n4*n5*j2 - n4*n5*j3 - n5*j4;
-      inputs[l].override_parameter(aero_config, name1, vals1[j1]);
-      inputs[l].override_parameter(aero_config, name2, vals2[j2]);
-      inputs[l].override_parameter(aero_config, name3, vals3[j3]);
-      inputs[l].override_parameter(aero_config, name4, vals4[j4]);
-      inputs[l].override_parameter(aero_config, name5, vals5[j5]);
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
+      inputs[l][name3] = vals3[j3];
+      inputs[l][name4] = vals4[j4];
+      inputs[l][name5] = vals5[j5];
     }
   }
 
@@ -185,12 +185,13 @@ set_input(const std::vector<InputData>& inputs,
 
 // Retrieves output from prognostic and atmosphere data.
 std::vector<OutputData>
-get_output(const haero::Prognostics& prognostics) {
+get_output(const haero::ModalAerosolConfig& aero_config,
+           const haero::Prognostics& prognostics) {
   int num_levels = prognostics.num_levels();
   int num_modes = prognostics.num_aerosol_modes();
   int num_pops = prognostics.num_aerosol_populations();
   int num_gases = prognostics.num_gases();
-  std::vector<OutputData> outputs(num_levels);
+  std::vector<OutputData> outputs(num_levels, OutputData(aero_config));
   auto int_aero = ekat::scalarize(prognostics.interstitial_aerosols);
   auto cld_aero = ekat::scalarize(prognostics.cloud_aerosols);
   auto gases = ekat::scalarize(prognostics.gases);
@@ -319,7 +320,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       }
 
       // Copy out simulation output.
-      auto outputs = get_output(*prognostics);
+      auto outputs = get_output(aero_config, *prognostics);
 
       // If the planetary boundary layer height is actually a walked parameter,
       // make sure its value is reflected in our input parameters.
