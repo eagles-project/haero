@@ -33,8 +33,9 @@ namespace haero {
   If it is used with PackType, each element of the PackType corresponds to a
   separate KohlerPolynomial, with distinct coefficients.
 
-  @warning This polynomial is severely ill-conditioned, to the point that it is sensitive to
-  order-of-operations changes caused by compiler optimization flags.
+  @warning This polynomial is severely ill-conditioned, to the point that it is
+  sensitive to order-of-operations changes caused by compiler optimization
+  flags.
 */
 template <typename T>
 struct KohlerPolynomial {
@@ -124,8 +125,9 @@ struct KohlerPolynomial {
   T derivative(const T& wet_radius) const {
     const T wet_radius_squared = square(wet_radius);
     const Real kelvinA = 0.00120746723156361711;
-    T result = (4 * log_rel_humidity * wet_radius  - 3 * kelvinA) * wet_radius_squared +
-               (hygroscopicity  - log_rel_humidity) * dry_radius_cubed;
+    T result =
+        (4 * log_rel_humidity * wet_radius - 3 * kelvinA) * wet_radius_squared +
+        (hygroscopicity - log_rel_humidity) * dry_radius_cubed;
     return result;
   }
 
