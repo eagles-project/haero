@@ -32,6 +32,9 @@ namespace haero {
   This struct is templated on scalar type so that it can be used with PackType.
   If it is used with PackType, each element of the PackType corresponds to a
   separate KohlerPolynomial, with distinct coefficients.
+
+  @warning This polynomial is severely ill-conditioned, to the point that it is sensitive to
+  order-of-operations changes caused by compiler optimization flags.
 */
 template <typename T>
 struct KohlerPolynomial {
@@ -86,10 +89,6 @@ struct KohlerPolynomial {
         dry_radius(dry_rad_microns),
         dry_radius_cubed(cube(dry_rad_microns)) {
     EKAT_KERNEL_ASSERT(valid_inputs(rel_h, hygro, dry_rad_microns));
-    // #ifndef HAERO_USE_CUDA
-    //     std::cout << "KohlerPolynomial: log(rh) = " << log_rel_humidity << "
-    //     hyg = " << hygroscopicity << " dry_radius = " << dry_radius << "\n";
-    // #endif
   }
 
   /** Evaluates the Kohler polynomial.
@@ -110,12 +109,6 @@ struct KohlerPolynomial {
     T result = (log_rel_humidity * wet_radius - kelvinA) * wet_radius_cubed +
                ((hygroscopicity - log_rel_humidity) * wet_radius + kelvinA) *
                    dry_radius_cubed;
-    //     const auto nans = isnan(wet_radius);
-    //     vector_simd for (int i=0; i<HAERO_PACK_SIZE; ++i) {
-    //       if (nans[i]) {
-    //         result[i] = 0;
-    //       }
-    //     }
     return result;
   }
 
@@ -131,16 +124,8 @@ struct KohlerPolynomial {
   T derivative(const T& wet_radius) const {
     const T wet_radius_squared = square(wet_radius);
     const Real kelvinA = 0.00120746723156361711;
-    T result = 4 * log_rel_humidity * wet_radius * wet_radius_squared -
-               3 * kelvinA * wet_radius_squared +
-               hygroscopicity * dry_radius_cubed -
-               log_rel_humidity * dry_radius_cubed;
-    //     const auto nans = isnan(wet_radius);
-    //     vector_disabled for (int i=0; i<HAERO_PACK_SIZE; ++i) {
-    //       if (nans[i]) {
-    //         result[i] = FLT_MAX;
-    //       }
-    //     }
+    T result = (4 * log_rel_humidity * wet_radius  - 3 * kelvinA) * wet_radius_squared +
+               (hygroscopicity  - log_rel_humidity) * dry_radius_cubed;
     return result;
   }
 
