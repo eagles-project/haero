@@ -144,7 +144,7 @@ TEST_CASE("driver dynamics", "") {
     HostDynamics zdyn(nlev);
     zdyn.init_from_uniform_heights(conds);
     std::cout << zdyn.info_string();
-    hbtest.run_test(zdyn, conds, FloatingPoint<Real>::zero_tol);
+    hbtest.run_test(zdyn, conds, 4.9*FloatingPoint<Real>::zero_tol);
     onedz.run_test(zdyn, (std::is_same<float, Real>::value
                               ? 1.1e-3
                               : 30 * FloatingPoint<Real>::zero_tol));
@@ -205,7 +205,7 @@ TEST_CASE("driver dynamics", "") {
     HostDynamics zdyn(nlev);
     zdyn.init_from_interface_heights(z_vals, conds);
     std::cout << zdyn.info_string();
-    hbtest.run_test(zdyn, conds);
+    hbtest.run_test(zdyn, conds, 3.4*FloatingPoint<Real>::zero_tol);
     hypsotest.run_test(zdyn, conds, 0.024);
 
     REQUIRE(hbtest.nerr == 0);
@@ -252,7 +252,7 @@ TEST_CASE("driver dynamics", "") {
     pdyn.init_from_uniform_pressures(conds);
     std::cout << pdyn.info_string();
 
-    hbtest.run_test(pdyn, conds);
+    hbtest.run_test(pdyn, conds, 2.7*FloatingPoint<Real>::zero_tol);
     hypsotest.run_test(pdyn, conds, 0.07);
 
     REQUIRE(hbtest.nerr == 0);
@@ -303,7 +303,7 @@ TEST_CASE("driver dynamics", "") {
     HostDynamics pdyn(nlev);
     pdyn.init_from_interface_pressures(p_vals, conds);
     std::cout << pdyn.info_string();
-    hbtest.run_test(pdyn, conds);
+    hbtest.run_test(pdyn, conds, 3.5*FloatingPoint<Real>::zero_tol);
     hypsotest.run_test(pdyn, conds, 0.27);
 
     REQUIRE(hbtest.nerr == 0);
