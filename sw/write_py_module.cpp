@@ -6,7 +6,14 @@ namespace {
 void write_input_var(FILE* file,
                      const std::vector<skywalker::InputData>& inputs,
                      const std::string& var_name) {
-  fprintf(file, "%s = [", var_name.c_str());
+  // If we have a colon in the name, we replace it with an underscore.
+  auto name = var_name;
+  auto colon = name.find(":");
+  while (colon != std::string::npos) {
+    name = name.replace(colon, 1, "_");
+    colon = name.find(":");
+  }
+  fprintf(file, "%s = [", name.c_str());
   for (auto input : inputs) {
     auto var = input[var_name];
     fprintf(file, "%g, ", var);
@@ -46,6 +53,8 @@ void write_py_module(const std::vector<InputData>& inputs,
   // Write input data.
   fprintf(file, "# Input is stored here.\n");
   fprintf(file, "input = Object()\n");
+
+  // Atmosphere state data.
   write_input_var(file, inputs, "temperature");
   write_input_var(file, inputs, "pressure");
   write_input_var(file, inputs, "relative_humidity");
@@ -53,9 +62,44 @@ void write_py_module(const std::vector<InputData>& inputs,
   write_input_var(file, inputs, "hydrostatic_dp");
   write_input_var(file, inputs, "planetary_boundary_layer_height");
 
+  // Now we write out aerosol prognostics.
+  auto aero_config = inputs[0].aero_config;
+  for (int m = 0; m < aero_config.num_modes(); ++m) {
+    auto mode = aero_config.h_aerosol_modes[m];
+    write_input_var(file, inputs, mode.name().c_str());
+    auto species_for_mode = aero_config.aerosol_species_for_mode(m);
+    for (auto species: species_for_mode) {
+      auto species_name = mode.name() + std::string(":") + species.name();
+      write_input_var(file, inputs, species_name.c_str());
+    }
+  }
+
+  // Write out gases.
+  for (int g = 0; g < aero_config.num_gases(); ++g) {
+    auto gas = aero_config.h_gas_species[g];
+    write_input_var(file, inputs, gas.name().c_str());
+  }
+
   // Write output data.
-  fprintf(file, "# Output data is stored here.\n");
+  fprintf(file, "\n# Output data is stored here.\n");
   write_output_var(file, outputs, "num_concs");
+
+  // Aerosol prognostics.
+  for (int m = 0; m < aero_config.num_modes(); ++m) {
+    auto mode = aero_config.h_aerosol_modes[m];
+    write_output_var(file, outputs, mode.name().c_str());
+    auto species_for_mode = aero_config.aerosol_species_for_mode(m);
+    for (auto species: species_for_mode) {
+      auto species_name = mode.name() + std::string(":") + species.name();
+      write_output_var(file, outputs, species_name.c_str());
+    }
+  }
+
+  // Gases.
+  for (int g = 0; g < aero_config.num_gases(); ++g) {
+    auto gas = aero_config.h_gas_species[g];
+    write_output_var(file, outputs, gas.name().c_str());
+  }
 
   fclose(file);
 }
