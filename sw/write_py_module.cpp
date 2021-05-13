@@ -13,7 +13,7 @@ void write_input_var(FILE* file,
     name = name.replace(colon, 1, "_");
     colon = name.find(":");
   }
-  fprintf(file, "%s = [", name.c_str());
+  fprintf(file, "input.%s = [", name.c_str());
   for (auto input : inputs) {
     auto var = input[var_name];
     fprintf(file, "%g, ", var);
@@ -25,7 +25,7 @@ void write_input_var(FILE* file,
 void write_output_var(FILE* file,
                       const std::vector<skywalker::OutputData>& outputs,
                       const std::string& var_name) {
-  fprintf(file, "%s = [", var_name.c_str());
+  fprintf(file, "output.%s = [", var_name.c_str());
   for (auto output : outputs) {
     auto var = output[var_name];
     fprintf(file, "%g, ", var);
@@ -68,8 +68,10 @@ void write_py_module(const std::vector<InputData>& inputs,
     auto mode = aero_config.h_aerosol_modes[m];
     write_input_var(file, inputs, mode.name().c_str());
     auto species_for_mode = aero_config.aerosol_species_for_mode(m);
-    for (auto species: species_for_mode) {
-      auto species_name = mode.name() + std::string(":") + species.name();
+    for (auto species : species_for_mode) {
+      auto sym = species.symbol();
+      transform(sym.begin(), sym.end(), sym.begin(), ::tolower);
+      auto species_name = mode.name() + std::string(":") + sym;
       write_input_var(file, inputs, species_name.c_str());
     }
   }
@@ -77,20 +79,24 @@ void write_py_module(const std::vector<InputData>& inputs,
   // Write out gases.
   for (int g = 0; g < aero_config.num_gases(); ++g) {
     auto gas = aero_config.h_gas_species[g];
-    write_input_var(file, inputs, gas.name().c_str());
+    auto gas_name = gas.symbol();
+    transform(gas_name.begin(), gas_name.end(), gas_name.begin(), ::tolower);
+    write_input_var(file, inputs, gas_name.c_str());
   }
 
   // Write output data.
   fprintf(file, "\n# Output data is stored here.\n");
-  write_output_var(file, outputs, "num_concs");
+  fprintf(file, "output = Object()\n");
 
   // Aerosol prognostics.
   for (int m = 0; m < aero_config.num_modes(); ++m) {
     auto mode = aero_config.h_aerosol_modes[m];
     write_output_var(file, outputs, mode.name().c_str());
     auto species_for_mode = aero_config.aerosol_species_for_mode(m);
-    for (auto species: species_for_mode) {
-      auto species_name = mode.name() + std::string(":") + species.name();
+    for (auto species : species_for_mode) {
+      auto sym = species.symbol();
+      transform(sym.begin(), sym.end(), sym.begin(), ::tolower);
+      auto species_name = mode.name() + std::string(":") + sym;
       write_output_var(file, outputs, species_name.c_str());
     }
   }
@@ -98,7 +104,9 @@ void write_py_module(const std::vector<InputData>& inputs,
   // Gases.
   for (int g = 0; g < aero_config.num_gases(); ++g) {
     auto gas = aero_config.h_gas_species[g];
-    write_output_var(file, outputs, gas.name().c_str());
+    auto gas_name = gas.symbol();
+    transform(gas_name.begin(), gas_name.end(), gas_name.begin(), ::tolower);
+    write_output_var(file, outputs, gas_name.c_str());
   }
 
   fclose(file);
