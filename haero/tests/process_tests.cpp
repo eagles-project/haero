@@ -144,19 +144,25 @@ TEST_CASE("process_tests", "aerosol_process") {
   }
 
   SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", 1, num_vert_packs);
-  ModalColumnView dev_modal_concs("modal number concs", num_modes,
-                                  num_vert_packs);
+  ModalColumnView   dev_int_num_concs("interstitial number concs", num_modes, num_vert_packs);
+  ModalColumnView   dev_cld_num_concs("cloud borne number concs", num_modes, num_vert_packs);
+
   auto host_cld_aerosols = Kokkos::create_mirror_view(dev_cld_aerosols);
-  auto host_modal_concs = Kokkos::create_mirror_view(dev_modal_concs);
+  auto host_int_num_concs =  Kokkos::create_mirror_view(dev_int_num_concs);
+  auto host_cld_num_concs =  Kokkos::create_mirror_view(dev_cld_num_concs);
+
   for (int i = 0; i < num_levels; ++i) {
     host_cld_aerosols(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
-    host_modal_concs(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
+    host_int_num_concs (0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
+    host_cld_num_concs (0,pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
   }
   Kokkos::deep_copy(dev_cld_aerosols, host_cld_aerosols);
-  Kokkos::deep_copy(dev_modal_concs, host_modal_concs);
+  Kokkos::deep_copy(dev_int_num_concs,  host_int_num_concs);
+  Kokkos::deep_copy(dev_cld_num_concs,  host_cld_num_concs);
 
   Prognostics progs(num_modes, {1}, num_gases, num_levels, dev_int_aerosols,
-                    dev_cld_aerosols, dev_gases, dev_modal_concs);
+                    dev_cld_aerosols, dev_gases, dev_int_num_concs,
+                    dev_cld_num_concs);
 
   Kokkos::View<PackType *> temp("temperature", num_vert_packs);
   Kokkos::View<PackType *> press("pressure", num_vert_packs);

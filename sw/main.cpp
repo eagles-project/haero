@@ -57,7 +57,7 @@ void override_parameter(const haero::ModalAerosolConfig& aero_config,
     int mode_index = aero_config.aerosol_mode_index(param_name);
     int gas_index = aero_config.gas_index(param_name);
     if (mode_index != -1) {
-      auto num_concs = ekat::scalarize(prognostics.modal_num_concs);
+      auto num_concs = ekat::scalarize(prognostics.interstitial_num_concs);
       num_concs(mode_index, level) = param_value;
     } else if (gas_index != -1) {
       auto gases = ekat::scalarize(prognostics.gases);
@@ -106,7 +106,7 @@ initialize_input(const haero::ModalAerosolConfig& aero_config,
     auto int_aero = ekat::scalarize(prognostics.interstitial_aerosols);
     auto cld_aero = ekat::scalarize(prognostics.cloud_aerosols);
     auto gases = ekat::scalarize(prognostics.gases);
-    auto num_concs = ekat::scalarize(prognostics.modal_num_concs);
+    auto num_concs = ekat::scalarize(prognostics.interstitial_num_concs);
     for (int l = 0; l < num_levels; ++l) {
       // Atmospheric state
       T(l) = param_walk.temperature;
@@ -292,10 +292,13 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   haero::SpeciesColumnView cld_aerosols("cloud aerosols",
                                         num_aero_populations, num_levels);
   haero::SpeciesColumnView gases("gases", num_gases, num_levels);
-  haero::ModalColumnView modal_num_concs("modal number concs", num_modes,
-                                         num_levels);
+  haero::ModalColumnView int_num_concs("interstitial number concs", num_modes,
+                                       num_levels);
+  haero::ModalColumnView cld_num_concs(" cloudborne number concs", num_modes,
+                                       num_levels);
+
   auto* prognostics = model->create_prognostics(int_aerosols, cld_aerosols,
-                                                gases, modal_num_concs);
+                                                gases, int_num_concs, cld_num_concs);
   auto* diagnostics = model->create_diagnostics();
 
   // Set up an atmospheric state and initialize it with reference data.

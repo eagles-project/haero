@@ -51,13 +51,23 @@ class Prognostics final {
   ///                     are gas mass mixing ratios [kg gas/kg dry air] for a
   ///                     number of adjacent vertical levels equal to
   ///                     HAERO_PACK_SIZE (possibly padded)
-  /// @param [in] modal_num_concs A rank-2 Kokkos View;
+  /// @param [in] interstitial_num_concs A rank-2 Kokkos View;
   ///                             * the first index uniquely identifies an
   ///                               aerosol particle size mode with an
   ///                               associated probability distribution function
   ///                               (PDF)
   ///                             * the second index uniquely identifies a Pack
-  ///                               whose data are modal number concentrations
+  ///                               whose data are interstitial number concentrations
+  ///                               [# particles/kg dry air] for a number of
+  ///                               adjacent vertical levels equal to
+  ///                               HAERO_PACK_SIZE (possibly padded)
+  /// @param [in] cloudborne_num_concs A rank-2 Kokkos View;
+  ///                             * the first index uniquely identifies an
+  ///                               aerosol particle size mode with an
+  ///                               associated probability distribution function
+  ///                               (PDF)
+  ///                             * the second index uniquely identifies a Pack
+  ///                               whose data are cloudborne aerosols number concentrations
   ///                               [# particles/kg dry air] for a number of
   ///                               adjacent vertical levels equal to
   ///                               HAERO_PACK_SIZE (possibly padded)
@@ -65,7 +75,8 @@ class Prognostics final {
               const std::vector<int>& num_aerosol_species, int num_gases,
               int num_levels, SpeciesColumnView int_aerosols,
               SpeciesColumnView cld_aerosols, SpeciesColumnView gases,
-              ModalColumnView modal_num_concs);
+              ModalColumnView   interstitial_num_concs,
+              ModalColumnView   cloudborne_num_concs);
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -111,10 +122,15 @@ class Prognostics final {
   /// vertical levels.
   SpeciesColumnView gases;
 
-  /// Modal number concentrations.
-  /// modal_num_concs_[m][k] -> number concentration of mode m within the kth
+  /// Interstitial aerosols number concentrations.
+  /// interstitial_num_concs_[m][k] -> interstitial aerosols number concentration of mode m within the kth
   /// pack of vertical levels.
-  ModalColumnView modal_num_concs;
+  ModalColumnView interstitial_num_concs;
+
+  /// Cloud borne number concentrations.
+  /// cloudborne_num_concs_[m][k] -> cloud borne number concentration of mode m within the kth
+  /// pack of vertical levels.
+  ModalColumnView cloudborne_num_concs;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations

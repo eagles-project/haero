@@ -48,7 +48,8 @@ class Model final {
   Prognostics* create_prognostics(SpeciesColumnView int_aerosols,
                                   SpeciesColumnView cld_aerosols,
                                   SpeciesColumnView gases,
-                                  ModalColumnView modal_num_concs) const;
+                                  ModalColumnView   interstitial_num_concs,
+                                  ModalColumnView   cloudborne_num_concs) const;
 
   /// Creates a new empty HostDiagnostics object that can be used with this
   /// Model. All fields within this new HostDiagnostics are owned and managed by

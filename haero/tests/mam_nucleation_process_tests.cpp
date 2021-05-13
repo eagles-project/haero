@@ -415,7 +415,8 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   SpeciesColumnView cld_aerosols("cloudborne aerosols", num_aero_populations,
                                  num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
-  ModalColumnView modal_concs("modal number concs", num_modes, num_vert_packs);
+  ModalColumnView int_num_concs("interstitial number concs", num_modes, num_vert_packs);
+  ModalColumnView cld_num_concs("cloudborne number concs", num_modes, num_vert_packs);
 
   // Set up atmospheric data and populate it with some views.
   ColumnView temp("temperature", num_vert_packs);
@@ -450,7 +451,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     Prognostics* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                                   gases, modal_concs);
+                                                   gases, int_num_concs, cld_num_concs);
     Diagnostics* diags = model->create_diagnostics();
     Tendencies* tends = new Tendencies(*progs);
 

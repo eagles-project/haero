@@ -116,7 +116,8 @@ Model::~Model() {
 Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
                                        SpeciesColumnView cld_aerosols,
                                        SpeciesColumnView gases,
-                                       ModalColumnView modal_num_concs) const {
+                                       ModalColumnView   interstitial_num_concs,
+                                       ModalColumnView   cloudborne_num_concs) const {
   std::vector<int> num_aero_species(
       modal_aerosol_config_.h_aerosol_modes.size());
   for (size_t m = 0; m < modal_aerosol_config_.h_aerosol_modes.size(); ++m) {
@@ -126,7 +127,7 @@ Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
   return new Prognostics(num_aero_species.size(), num_aero_species,
                          modal_aerosol_config_.h_gas_species.size(),
                          num_levels_, int_aerosols, cld_aerosols, gases,
-                         modal_num_concs);
+                         interstitial_num_concs, cloudborne_num_concs);
 }
 
 HostDiagnostics* Model::create_diagnostics() const {
