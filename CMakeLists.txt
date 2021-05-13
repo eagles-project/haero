@@ -304,3 +304,17 @@ else()
 endif()
 add_subdirectory(docs)
 
+# Formatting and format checking using clang-format.
+find_program(CLANG_FORMAT clang-format)
+if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
+  add_custom_target(format
+    find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
+    VERBATIM
+    COMMENT "Auto-formatting C++ code...")
+  add_custom_target(format-check
+    find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
+    VERBATIM
+    COMMENT "Checking C++ formatting...")
+endif()

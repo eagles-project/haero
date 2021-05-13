@@ -14,8 +14,7 @@ namespace haero {
 /// * number concentrations for each aerosol mode
 /// All views used by a Tendencies object are managed by that object itself.
 class Tendencies final {
-  public:
-
+ public:
   /// Creates a fully-functional set of tendencies that work with the given
   /// aerosol state.
   /// @param [in] prognostics An assembled Prognostics object that provides the
@@ -48,18 +47,16 @@ class Tendencies final {
   /// @returns a reference to the tendencies, which have been scaled.
   Tendencies& scale(Real factor);
 
-  inline Tendencies& set_zero() {return scale(0);}
+  inline Tendencies& set_zero() { return scale(0); }
 
   /// Acculumates the given set of tendencies into this set, summing the values
   /// of the prognostic variables in place.
   /// @param [in] tendencies The tendencies to be summed into this object.
   void accumulate(const Tendencies& tendencies);
 
-  private:
-
-
+ private:
 };
 
-}
+}  // namespace haero
 
 #endif

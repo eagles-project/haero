@@ -8,8 +8,7 @@ namespace haero {
 /// @class Atmosphere
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
-  public:
-
+ public:
   /// Creates an Atmosphere that stores unmanaged views of atmospheric column
   /// data owned and managed by the atmosphere host model.
   /// @param [in] num_levels the number of vertical levels per column stored by
@@ -27,13 +26,9 @@ class Atmosphere final {
   /// @param [in] pdel The hydrostatic "pressure thickness" defined as the
   ///                  difference in hydrostatic pressure levels at interfaces
   ///                  bounding each vertical level [Pa]
-  Atmosphere(int num_levels,
-             const ColumnView temp,
-             const ColumnView press,
-             const ColumnView rel_hum,
-             const ColumnView ht,
-             const ColumnView pdel,
-             Real pblh);
+  Atmosphere(int num_levels, const ColumnView temp, const ColumnView press,
+             const ColumnView rel_hum, const ColumnView ht,
+             const ColumnView pdel, Real pblh);
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -55,15 +50,15 @@ class Atmosphere final {
 
   /// Sets the planetary boundary height [m].
   KOKKOS_INLINE_FUNCTION
-  void set_planetary_boundary_height(Real pblh) { planetary_boundary_height = pblh; }
+  void set_planetary_boundary_height(Real pblh) {
+    planetary_boundary_height = pblh;
+  }
 
-  private:
-
+ private:
   // Number of vertical levels.
   const int num_levels_;
-
 };
 
-}
+}  // namespace haero
 
 #endif

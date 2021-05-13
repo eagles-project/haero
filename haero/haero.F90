@@ -3,18 +3,17 @@
 module haero
 
   use iso_c_binding
+  use haero_precision, only: wp
 
   implicit none
 
   private
 
-  public :: wp, mode_t, aerosol_species_t, gas_species_t, model_t, &
+  public :: mode_t, aerosol_species_t, gas_species_t, model_t, &
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
 
-  !> Working precision real kind
-  integer, parameter :: wp = c_real
 
   !> This Fortran type is the equivalent of the C++ Mode struct.
   type :: mode_t

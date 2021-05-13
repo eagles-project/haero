@@ -20,6 +20,7 @@ COPY CMakeLists.txt setup ./
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   autoconf \
+  clang-format \
   cmake \
   libopenmpi-dev \
   gcc \

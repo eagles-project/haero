@@ -1,10 +1,10 @@
 #ifndef HAERO_AEROSOL_PROCESS_HPP
 #define HAERO_AEROSOL_PROCESS_HPP
 
-#include "haero/modal_aerosol_config.hpp"
-#include "haero/prognostics.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
+#include "haero/modal_aerosol_config.hpp"
+#include "haero/prognostics.hpp"
 #include "haero/tendencies.hpp"
 
 namespace haero {
@@ -21,14 +21,15 @@ enum AerosolProcessType {
   InterstitialWetRemovalProcess,
   NucleationProcess,
   ResuspensionProcess,
-  Terminator // This isn't a real process type--it only terminates the enum!
+  Terminator  // This isn't a real process type--it only terminates the enum!
 };
 
 /// @class AerosolProcess
 /// This type is an interface (base class) to an aerosol process quantified by
 /// a parametrization that computes a set of tendencies for prognostic variables
 /// within an aerosol system. Each subclass of this type implements a particular
-/// **implementation** of a specific **parametrization** for a particular **process**.
+/// **implementation** of a specific **parametrization** for a particular
+/// **process**.
 ///
 /// To make these ideas more complete, consider the following examples of
 /// important **physical processes** in the ProcessType above.
@@ -49,14 +50,13 @@ enum AerosolProcessType {
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
 class AerosolProcess {
-  public:
-
+ public:
   /// Constructor, called by all AerosolProcess subclasses.
   /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
-  AerosolProcess(AerosolProcessType type, const std::string& name):
-    type_(type), name_(name) {}
+  AerosolProcess(AerosolProcessType type, const std::string& name)
+      : type_(type), name_(name) {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
@@ -67,8 +67,7 @@ class AerosolProcess {
 
   /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
-  AerosolProcess(const AerosolProcess& pp) :
-    type_(pp.type_), name_(pp.name_) {}
+  AerosolProcess(const AerosolProcess& pp) : type_(pp.type_), name_(pp.name_) {}
 
   /// AerosolProcess objects are not assignable.
   AerosolProcess& operator=(const AerosolProcess&) = delete;
@@ -105,17 +104,16 @@ class AerosolProcess {
   ///                this process occurs.
   /// @param [in] prognostics The prognostic variables used by and affected by
   ///                         this process.
-  /// @param [in] atmosphere The atmosphere state variables used by this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this
+  /// process.
   /// @param [in] diagnostics The prognostic variables used by and affected by
   ///                         this process.
   /// @param [out] tendencies A container that stores time derivatives for
   ///                         prognostic variables evolved by this process.
   KOKKOS_FUNCTION
-  virtual void run(const ModalAerosolConfig& modal_aerosol_config,
-                   Real t, Real dt,
-                   const Prognostics& prognostics,
-                   const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics,
+  virtual void run(const ModalAerosolConfig& modal_aerosol_config, Real t,
+                   Real dt, const Prognostics& prognostics,
+                   const Atmosphere& atmosphere, const Diagnostics& diagnostics,
                    Tendencies& tendencies) const = 0;
 
   /// Override this method to return a vector of strings containing the names
@@ -127,35 +125,30 @@ class AerosolProcess {
     return std::vector<std::string>();
   }
 
-  private:
-
+ private:
   const AerosolProcessType type_;
   // Use View as a struct to store a string and allows copy to device.
   // Since std::string can not be used, it was either this or a char *
-  const Kokkos::View<int>  name_;
+  const Kokkos::View<int> name_;
 };
 
 /// @class NullAerosolProcess
 /// This AerosolProcess represents a null process in which no tendencies
 /// are computed. It can be used for all prognostic processes that have been
 /// disabled.
-class NullAerosolProcess: public AerosolProcess {
-  public:
-
+class NullAerosolProcess : public AerosolProcess {
+ public:
   /// Constructor: constructs a null aerosol process of the given type.
   /// @param [in] type The type of aerosol process.
-  explicit NullAerosolProcess(AerosolProcessType type):
-    AerosolProcess(type, "Null prognostic aerosol process") {}
+  explicit NullAerosolProcess(AerosolProcessType type)
+      : AerosolProcess(type, "Null prognostic aerosol process") {}
 
   // Overrides
   KOKKOS_FUNCTION
-  void run(const ModalAerosolConfig& modal_aerosol_config,
-           Real t, Real dt,
-           const Prognostics& prognostics,
-           const Atmosphere& atmosphere,
+  void run(const ModalAerosolConfig& modal_aerosol_config, Real t, Real dt,
+           const Prognostics& prognostics, const Atmosphere& atmosphere,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {}
-
 };
 
 #if HAERO_FORTRAN
@@ -165,10 +158,8 @@ class NullAerosolProcess: public AerosolProcess {
 /// Fortran by wrapping the run method in a Fortran call that creates the
 /// proper Fortran proxies for the model, prognostics, diagnostics, and
 /// tendencies.
-class FAerosolProcess: public AerosolProcess
-{
-  public:
-
+class FAerosolProcess : public AerosolProcess {
+ public:
   /// This type is a pointer to a Fortran function that initializes a process.
   /// Since the model is already available to the Fortran process via Haero's
   /// Fortran helper module, this type of function takes no arguments.
@@ -189,20 +180,23 @@ class FAerosolProcess: public AerosolProcess
   /// @param [in] create_process A pointer to an interoperable Fortran function
   ///                            that returns a C pointer to a newly allocated
   ///                            Fortran-backed prognostic process.
-  FAerosolProcess(AerosolProcessType type,
-                  const std::string& name,
+  FAerosolProcess(AerosolProcessType type, const std::string& name,
                   InitProcessFunction init_process,
                   RunProcessFunction run_process,
-                  FinalizeProcessFunction finalize_process):
-    AerosolProcess(type, name), init_process_(init_process),
-    run_process_(run_process), finalize_process_(finalize_process),
-    initialized_(false) {}
+                  FinalizeProcessFunction finalize_process)
+      : AerosolProcess(type, name),
+        init_process_(init_process),
+        run_process_(run_process),
+        finalize_process_(finalize_process),
+        initialized_(false) {}
 
   /// Copy constructor.
-  FAerosolProcess(const FAerosolProcess& pp) :
-    AerosolProcess(pp), init_process_(pp.init_process_),
-    run_process_(pp.run_process_), finalize_process_(pp.finalize_process_),
-    initialized_(false) {}
+  FAerosolProcess(const FAerosolProcess& pp)
+      : AerosolProcess(pp),
+        init_process_(pp.init_process_),
+        run_process_(pp.run_process_),
+        finalize_process_(pp.finalize_process_),
+        initialized_(false) {}
 
   /// Destructor.
   ~FAerosolProcess() {
@@ -220,10 +214,8 @@ class FAerosolProcess: public AerosolProcess
     }
   }
 
-  void run(const ModalAerosolConfig& modal_aerosol_config,
-           Real t, Real dt,
-           const Prognostics& prognostics,
-           const Atmosphere& atmosphere,
+  void run(const ModalAerosolConfig& modal_aerosol_config, Real t, Real dt,
+           const Prognostics& prognostics, const Atmosphere& atmosphere,
            const Diagnostics& diagnostics,
            Tendencies& tendencies) const override {
     // Set tendencies to zero.
@@ -234,8 +226,7 @@ class FAerosolProcess: public AerosolProcess
                  (void*)&diagnostics, (void*)&tendencies);
   }
 
-  private:
-
+ private:
   // Pointers to Fortran subroutines.
   InitProcessFunction init_process_;
   RunProcessFunction run_process_;
@@ -245,8 +236,8 @@ class FAerosolProcess: public AerosolProcess
   bool initialized_;
 };
 
-#endif // HAERO_FORTRAN
+#endif  // HAERO_FORTRAN
 
-} // namespace haero
+}  // namespace haero
 
 #endif

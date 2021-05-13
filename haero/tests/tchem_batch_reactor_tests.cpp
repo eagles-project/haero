@@ -1,19 +1,18 @@
-#include "haero/model.hpp"
-#include "chemUtil.hpp"
-#include "catch2/catch.hpp"
-#include "haero/floating_point.hpp"
-
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include "catch2/catch.hpp"
+#include "chemUtil.hpp"
+#include "haero/floating_point.hpp"
+#include "haero/model.hpp"
 
 using namespace haero;
 using namespace chemUtil;
 
-TEST_CASE("TChem tendency computation tests", "haero_unit_tests"){
-
+TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
   // lat/lon for sun zenith
-  const real_type latz(20.0); // ! degrees
-  const real_type lonz(300.0);// ! degrees
+  const real_type latz(20.0);   // ! degrees
+  const real_type lonz(300.0);  // ! degrees
 
   // Write out some test data to our current working directory.
   const char* chem_inp = R"INPUT(ELEMENTS
@@ -46,8 +45,7 @@ END
   f = fopen("data/toy-problem/therm.dat", "w");
   fclose(f);
 
-  SECTION("light side of terminator"){
-
+  SECTION("light side of terminator") {
     // lat/lon for column position
     real_type lat = 20.0;
     real_type lon = 37.5;
@@ -56,20 +54,23 @@ END
     real_type initX2 = 1.0e-6;
 
     // calculate k1 reaction rate, based on position of column and sun's zenith
-    real_type k1 = ats<real_type>::sin(lat*PI()/180) * ats<real_type>::sin(latz*PI()/180) +
-                         ats<real_type>::cos(lat*PI()/180) * ats<real_type>::cos(latz*PI()/180) *
-                         ats<real_type>::cos(lon*PI()/180 - lonz*PI()/180);
+    real_type k1 =
+        ats<real_type>::sin(lat * PI() / 180) *
+            ats<real_type>::sin(latz * PI() / 180) +
+        ats<real_type>::cos(lat * PI() / 180) *
+            ats<real_type>::cos(latz * PI() / 180) *
+            ats<real_type>::cos(lon * PI() / 180 - lonz * PI() / 180);
     k1 = k1 > 0 ? k1 : 0;
     real_type k2 = 1;
 
     // arguments to the constructor are: 1) directory containing chem files
-                                      // 2) detail (boolean)
-                                      // 3) nBatch (int)
-                                      // 4) verbose (boolean)
-                                      // 5) theta/latitude (real)
-                                      // 6) lambda/longitude (real)
-                                      // 7) initial mass X (real)
-                                      // 8) initial mass X2 (real)
+    // 2) detail (boolean)
+    // 3) nBatch (int)
+    // 4) verbose (boolean)
+    // 5) theta/latitude (real)
+    // 6) lambda/longitude (real)
+    // 7) initial mass X (real)
+    // 8) initial mass X2 (real)
 
     // provide arbitrarily chosen inputs
     chemSolver chem_solver("toy-problem/", false, 1, false, lat, lon, k1, k2,
@@ -86,14 +87,12 @@ END
     const Real val00 = results_host(0, 0);
     const Real val01 = results_host(0, 1);
     REQUIRE(FloatingPoint<Real>::in_bounds(val00, 0.0, 1.0e14,
-                                       FloatingPoint<Real>::zero_tol));
+                                           FloatingPoint<Real>::zero_tol));
     REQUIRE(FloatingPoint<Real>::in_bounds(val01, -1.0e14, 0.0,
-                                       FloatingPoint<Real>::zero_tol));
-
+                                           FloatingPoint<Real>::zero_tol));
   }
 
-  SECTION("dark side of terminator"){
-
+  SECTION("dark side of terminator") {
     // lat/lon for column position
     real_type lat = 20.0;
     real_type lon = 50.0;
@@ -102,20 +101,23 @@ END
     real_type initX2 = 1.0e-6;
 
     // calculate k1 reaction rate, based on position of column and sun's zenith
-    real_type k1 = ats<real_type>::sin(lat*PI()/180) * ats<real_type>::sin(latz*PI()/180) +
-                         ats<real_type>::cos(lat*PI()/180) * ats<real_type>::cos(latz*PI()/180) *
-                         ats<real_type>::cos(lon*PI()/180 - lonz*PI()/180);
+    real_type k1 =
+        ats<real_type>::sin(lat * PI() / 180) *
+            ats<real_type>::sin(latz * PI() / 180) +
+        ats<real_type>::cos(lat * PI() / 180) *
+            ats<real_type>::cos(latz * PI() / 180) *
+            ats<real_type>::cos(lon * PI() / 180 - lonz * PI() / 180);
     k1 = k1 > 0 ? k1 : 0;
     real_type k2 = 1;
 
     // arguments to the constructor are: 1) directory containing chem files
-                                      // 2) detail (boolean)
-                                      // 3) nBatch (int)
-                                      // 4) verbose (boolean)
-                                      // 5) theta/latitude (real)
-                                      // 6) lambda/longitude (real)
-                                      // 7) initial mass X (real)
-                                      // 8) initial mass X2 (real)
+    // 2) detail (boolean)
+    // 3) nBatch (int)
+    // 4) verbose (boolean)
+    // 5) theta/latitude (real)
+    // 6) lambda/longitude (real)
+    // 7) initial mass X (real)
+    // 8) initial mass X2 (real)
 
     // provide arbitrarily chosen inputs
     chemSolver chem_solver("toy-problem/", false, 1, false, lat, lon, k1, k2,
@@ -132,22 +134,23 @@ END
     const Real val00 = results_host(0, 0);
     const Real val01 = results_host(0, 1);
     REQUIRE(FloatingPoint<Real>::in_bounds(val00, -1.0e14, 0.0,
-                                       FloatingPoint<Real>::zero_tol));
+                                           FloatingPoint<Real>::zero_tol));
     REQUIRE(FloatingPoint<Real>::in_bounds(val01, 0.0, 1.0e14,
-                                       FloatingPoint<Real>::zero_tol));
-
+                                           FloatingPoint<Real>::zero_tol));
   }
 
-  SECTION("zero tendencies"){
-
+  SECTION("zero tendencies") {
     // lat/lon for column position
     real_type lat = 20.0;
     real_type lon = 37.5;
 
     // calculate k1 reaction rate, based on position of column and sun's zenith
-    real_type k1 = ats<real_type>::sin(lat*PI()/180) * ats<real_type>::sin(latz*PI()/180) +
-                         ats<real_type>::cos(lat*PI()/180) * ats<real_type>::cos(latz*PI()/180) *
-                         ats<real_type>::cos(lon*PI()/180 - lonz*PI()/180);
+    real_type k1 =
+        ats<real_type>::sin(lat * PI() / 180) *
+            ats<real_type>::sin(latz * PI() / 180) +
+        ats<real_type>::cos(lat * PI() / 180) *
+            ats<real_type>::cos(latz * PI() / 180) *
+            ats<real_type>::cos(lon * PI() / 180 - lonz * PI() / 180);
     k1 = k1 > 0 ? k1 : 0;
     real_type k2 = 1;
 
@@ -157,13 +160,13 @@ END
     real_type initX2 = (k2 / k1) * pow(initX, 2);
 
     // arguments to the constructor are: 1) directory containing chem files
-                                      // 2) detail (boolean)
-                                      // 3) nBatch (int)
-                                      // 4) verbose (boolean)
-                                      // 5) theta/latitude (real)
-                                      // 6) lambda/longitude (real)
-                                      // 7) initial mass X (real)
-                                      // 8) initial mass X2 (real)
+    // 2) detail (boolean)
+    // 3) nBatch (int)
+    // 4) verbose (boolean)
+    // 5) theta/latitude (real)
+    // 6) lambda/longitude (real)
+    // 7) initial mass X (real)
+    // 8) initial mass X2 (real)
 
     // provide arbitrarily chosen inputs
     chemSolver chem_solver("toy-problem/", false, 1, false, lat, lon, k1, k2,
@@ -181,8 +184,5 @@ END
     const Real val01 = results_host(0, 1);
     REQUIRE(FloatingPoint<Real>::zero(val00, FloatingPoint<Real>::zero_tol));
     REQUIRE(FloatingPoint<Real>::zero(val01, FloatingPoint<Real>::zero_tol));
-
   }
 }
-
-

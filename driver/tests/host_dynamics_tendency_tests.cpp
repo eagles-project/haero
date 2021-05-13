@@ -1,9 +1,10 @@
-#include "driver/host_dynamics_tends.hpp"
+#include <iostream>
+
+#include "catch2/catch.hpp"
 #include "driver/host_dynamics.hpp"
+#include "driver/host_dynamics_tends.hpp"
 #include "driver/host_params.hpp"
 #include "haero/atmosphere.hpp"
-#include "catch2/catch.hpp"
-#include <iostream>
 
 using namespace haero;
 using namespace driver;
