@@ -75,17 +75,18 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
 
   rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
   ps = hydrostatic_pressure_at_height(0, ac);
-  EKAT_ASSERT_MSG(FloatingPoint<Real>::rel(ps,AtmosphericConditions::pref),
-    "surface pressure must equal the reference pressure, 1000 hPa.");
+  EKAT_ASSERT_MSG(
+      FloatingPoint<Real>::rel(ps, AtmosphericConditions::pref),
+      "surface pressure must equal the reference pressure, 1000 hPa.");
 
-  Kokkos::deep_copy(w,hw);
-  Kokkos::deep_copy(phi0,hphi0);
-  Kokkos::deep_copy(phi,phi0);
-  Kokkos::deep_copy(rho0,hrho0);
-  Kokkos::deep_copy(rho,rho0);
-  Kokkos::deep_copy(thetav,hthetav);
-  Kokkos::deep_copy(qv,hqv);
-  Kokkos::deep_copy(p,hp);
+  Kokkos::deep_copy(w, hw);
+  Kokkos::deep_copy(phi0, hphi0);
+  Kokkos::deep_copy(phi, phi0);
+  Kokkos::deep_copy(rho0, hrho0);
+  Kokkos::deep_copy(rho, rho0);
+  Kokkos::deep_copy(thetav, hthetav);
+  Kokkos::deep_copy(qv, hqv);
+  Kokkos::deep_copy(p, hp);
 
   Kokkos::deep_copy(phydro_int, hpint);
 
@@ -148,8 +149,9 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
 
   rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
   ps = hydrostatic_pressure_at_height(0, ac);
-  EKAT_ASSERT_MSG(FloatingPoint<Real>::rel(ps,AtmosphericConditions::pref),
-    "surface pressure must equal the reference pressure, 1000 hPa.");
+  EKAT_ASSERT_MSG(
+      FloatingPoint<Real>::rel(ps, AtmosphericConditions::pref),
+      "surface pressure must equal the reference pressure, 1000 hPa.");
 
   Kokkos::deep_copy(rho0, hrho0);
   Kokkos::deep_copy(rho, rho0);
@@ -238,17 +240,19 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,
   }
 
   ps = p0.back();
-  EKAT_ASSERT(FloatingPoint<Real>::rel(ps, hpint(PackInfo::last_pack_idx(nlev_+1))[PackInfo::last_vec_end(nlev_+1)-1]));
-  rho0surf = AtmosphericConditions::pref/(r_gas_dry_air * ac.Tv0);
+  EKAT_ASSERT(FloatingPoint<Real>::rel(
+      ps, hpint(PackInfo::last_pack_idx(
+              nlev_ + 1))[PackInfo::last_vec_end(nlev_ + 1) - 1]));
+  rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
 
-  Kokkos::deep_copy(w,hw);
-  Kokkos::deep_copy(phi0,hphi0);
-  Kokkos::deep_copy(phi,hphi0);
-  Kokkos::deep_copy(rho0,hrho0);
-  Kokkos::deep_copy(rho,hrho0);
-  Kokkos::deep_copy(thetav,hthetav);
-  Kokkos::deep_copy(qv,hqv);
-  Kokkos::deep_copy(p,hp);
+  Kokkos::deep_copy(w, hw);
+  Kokkos::deep_copy(phi0, hphi0);
+  Kokkos::deep_copy(phi, hphi0);
+  Kokkos::deep_copy(rho0, hrho0);
+  Kokkos::deep_copy(rho, hrho0);
+  Kokkos::deep_copy(thetav, hthetav);
+  Kokkos::deep_copy(qv, hqv);
+  Kokkos::deep_copy(p, hp);
   rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
 
   update_thickness(ac);
