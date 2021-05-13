@@ -256,7 +256,7 @@ TEST_CASE("KohlerSolve-verification", "") {
   std::cout << "\tmax iter = " << max_iter_bisection << "\n";
 
   REQUIRE(max_err_newton < 1.5 * conv_tol);
-  REQUIRE(max_err_bisection < 1.5 * conv_tol);
+  REQUIRE(max_err_bisection < 2.3 * conv_tol);
 
   std::cout << "To generate the verification data, run this program in "
                "Mathematica:\n\n";

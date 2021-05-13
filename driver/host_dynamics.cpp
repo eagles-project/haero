@@ -251,16 +251,6 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,
   Kokkos::deep_copy(p,hp);
   rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
 
-  Kokkos::deep_copy(w, hw);
-  Kokkos::deep_copy(phi0, hphi0);
-  Kokkos::deep_copy(phi, hphi0);
-  Kokkos::deep_copy(rho0, hrho0);
-  Kokkos::deep_copy(rho, hrho0);
-  Kokkos::deep_copy(thetav, hthetav);
-  Kokkos::deep_copy(qv, hqv);
-  Kokkos::deep_copy(p, hp);
->>>>>>> 61a057e2e3a78d7f94cba3440866c9e156681a26
-
   update_thickness(ac);
 }
 
