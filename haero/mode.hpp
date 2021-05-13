@@ -25,8 +25,7 @@ struct Mode final {
   Mode()
       : min_diameter(0),
         max_diameter(0),
-        mean_std_dev(0),
-        log_sigma(0),
+        mean_std_dev(1),
         deliquesence_pt(0),
         crystallization_pt(0) {
     name_view[0] = '\0';
@@ -45,7 +44,6 @@ struct Mode final {
       : min_diameter(min_diam),
         max_diameter(max_diam),
         mean_std_dev(sigma),
-        log_sigma(log(sigma)),
         deliquesence_pt(deliq_pt),
         crystallization_pt(crystal_pt) {
     EKAT_ASSERT(name.size() < NAME_LEN);
@@ -57,7 +55,6 @@ struct Mode final {
       : min_diameter(m.min_diameter),
         max_diameter(m.max_diameter),
         mean_std_dev(m.mean_std_dev),
-        log_sigma(m.log_sigma),
         deliquesence_pt(m.deliquesence_pt),
         crystallization_pt(m.crystallization_pt) {
     for (int i = 0; i < NAME_LEN; ++i) name_view[i] = m.name_view[i];
@@ -68,7 +65,6 @@ struct Mode final {
     min_diameter = m.min_diameter;
     max_diameter = m.max_diameter;
     mean_std_dev = m.mean_std_dev;
-    log_sigma = m.log_sigma;
     deliquesence_pt = m.deliquesence_pt;
     crystallization_pt = m.crystallization_pt;
     for (int i = 0; i < NAME_LEN; ++i) name_view[i] = m.name_view[i];
@@ -90,9 +86,6 @@ struct Mode final {
 
   /// The geometric mean standard deviation for this mode.
   Real mean_std_dev;
-
-  /// The natural logarithm of the mean standard deviation for this mode.
-  Real log_sigma;
 
   /// The deliquescence point (rel. humidity) for this mode.
   Real deliquesence_pt;
