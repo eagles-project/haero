@@ -113,11 +113,10 @@ Model::~Model() {
 #endif  // HAERO_FORTRAN
 }
 
-Prognostics* Model::create_prognostics(SpeciesColumnView int_aerosols,
-                                       SpeciesColumnView cld_aerosols,
-                                       SpeciesColumnView gases,
-                                       ModalColumnView   interstitial_num_concs,
-                                       ModalColumnView   cloudborne_num_concs) const {
+Prognostics* Model::create_prognostics(
+    SpeciesColumnView int_aerosols, SpeciesColumnView cld_aerosols,
+    SpeciesColumnView gases, ModalColumnView interstitial_num_concs,
+    ModalColumnView cloudborne_num_concs) const {
   std::vector<int> num_aero_species(
       modal_aerosol_config_.h_aerosol_modes.size());
   for (size_t m = 0; m < modal_aerosol_config_.h_aerosol_modes.size(); ++m) {

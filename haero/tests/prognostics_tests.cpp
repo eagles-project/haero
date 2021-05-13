@@ -26,10 +26,10 @@ TEST_CASE("prognostics_ctor", "") {
     kokkos_device_type::view_2d<PackType> gases("gases", num_gases,
                                                 num_vert_packs);
     int num_modes = 1;
-    kokkos_device_type::view_2d<PackType> int_num_concs("interstitial number concs", num_modes,
-                                                        num_vert_packs);
-    kokkos_device_type::view_2d<PackType> cld_num_concs("cloudborne number concs", num_modes,
-                                                        num_vert_packs);
+    kokkos_device_type::view_2d<PackType> int_num_concs(
+        "interstitial number concs", num_modes, num_vert_packs);
+    kokkos_device_type::view_2d<PackType> cld_num_concs(
+        "cloudborne number concs", num_modes, num_vert_packs);
 
     Prognostics progs(num_modes, {1}, num_gases, num_levels, int_aerosols,
                       cld_aerosols, gases, int_num_concs, cld_num_concs);

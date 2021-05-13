@@ -8,8 +8,8 @@ Prognostics::Prognostics(int num_aerosol_modes,
                          SpeciesColumnView int_aerosols,
                          SpeciesColumnView cld_aerosols,
                          SpeciesColumnView gases_,
-                         ModalColumnView   interstitial_num_concs_,
-                         ModalColumnView   cloudborne_num_concs_)
+                         ModalColumnView interstitial_num_concs_,
+                         ModalColumnView cloudborne_num_concs_)
     : interstitial_aerosols(int_aerosols),
       cloud_aerosols(cld_aerosols),
       gases(gases_),
@@ -55,14 +55,18 @@ Prognostics::Prognostics(int num_aerosol_modes,
                    "gases must have extent(0) == " << num_gases_);
   EKAT_REQUIRE_MSG(gases_extent_1 == num_vert_packs,
                    "gases must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(interstitial_num_concs_extent_0 == num_aerosol_modes,
-                   "interstitial_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_REQUIRE_MSG(interstitial_num_concs_extent_1 == num_vert_packs,
-                   "interstitial_num_concs must have extent(1) == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(cloudborne_num_concs_extent_0 == num_aerosol_modes,
-                   "cloudborne_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_REQUIRE_MSG(cloudborne_num_concs_extent_1 == num_vert_packs,
-                   "cloudborne_num_concs must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(
+      interstitial_num_concs_extent_0 == num_aerosol_modes,
+      "interstitial_num_concs must have extent(0) == " << num_aerosol_modes);
+  EKAT_REQUIRE_MSG(
+      interstitial_num_concs_extent_1 == num_vert_packs,
+      "interstitial_num_concs must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(
+      cloudborne_num_concs_extent_0 == num_aerosol_modes,
+      "cloudborne_num_concs must have extent(0) == " << num_aerosol_modes);
+  EKAT_REQUIRE_MSG(
+      cloudborne_num_concs_extent_1 == num_vert_packs,
+      "cloudborne_num_concs must have extent(1) == " << num_vert_packs);
 }
 
 Prognostics::~Prognostics() {}
@@ -111,18 +115,16 @@ void* p_gases_c(void* p) {
 }
 
 void* p_interstitial_num_concs_c(void* p) {
-    auto* progs = static_cast<Prognostics*>(p);
-    auto num_concs = progs->interstitial_num_concs;
-    return (void*)num_concs.data();
+  auto* progs = static_cast<Prognostics*>(p);
+  auto num_concs = progs->interstitial_num_concs;
+  return (void*)num_concs.data();
 }
 
 void* p_cloudborne_num_concs_c(void* p) {
-    auto* progs = static_cast<Prognostics*>(p);
-    auto num_concs = progs->cloudborne_num_concs;
-    return (void*)num_concs.data();
+  auto* progs = static_cast<Prognostics*>(p);
+  auto num_concs = progs->cloudborne_num_concs;
+  return (void*)num_concs.data();
 }
-
-
 
 }  // extern "C"
 
