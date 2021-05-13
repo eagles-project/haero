@@ -25,6 +25,8 @@ module haero
     real(wp) :: max_diameter
     !> Geometric mean standard deviation
     real(wp) :: mean_std_dev
+    !> Natural logarithm of the mean standard deviation
+    real(wp) :: log_sigma
     !> Deliquescence relative humidity
     real(wp) :: rhdeliq
     !> Crystallization relative humidity
@@ -366,6 +368,7 @@ contains
     model%modes(mode)%min_diameter = min_d
     model%modes(mode)%max_diameter = max_d
     model%modes(mode)%mean_std_dev = std_dev
+    model%modes(mode)%log_sigma = log(std_dev)
     model%modes(mode)%rhdeliq = rhdeliq
     model%modes(mode)%rhcrystal = rhcrystal
 

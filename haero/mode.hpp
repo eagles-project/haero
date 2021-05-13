@@ -1,10 +1,14 @@
 #ifndef HAERO_MODE_HPP
 #define HAERO_MODE_HPP
 
+#include <cmath>
 #include <string>
 #include <vector>
 
+#include "ekat/ekat_pack.hpp"
 #include "haero/haero.hpp"
+#include "haero/math_helpers.hpp"
+#include "haero/physical_constants.hpp"
 
 namespace haero {
 
@@ -21,7 +25,7 @@ struct Mode final {
   Mode()
       : min_diameter(0),
         max_diameter(0),
-        mean_std_dev(0),
+        mean_std_dev(1),
         deliquesence_pt(0),
         crystallization_pt(0) {
     name_view[0] = '\0';
@@ -35,11 +39,11 @@ struct Mode final {
   /// @param [in] mean_std_dev The geometric standard deviation for this mode.
   /// @param [in] crystal_pt The crystallization point of the mode
   /// @param [in] deliq_pt The deliquescence point of the mode
-  Mode(const std::string &name, Real min_diameter, Real max_diameter,
-       Real mean_std_dev, Real deliq_pt, Real crystal_pt)
-      : min_diameter(min_diameter),
-        max_diameter(max_diameter),
-        mean_std_dev(mean_std_dev),
+  Mode(const std::string &name, Real min_diam, Real max_diam, Real sigma,
+       Real deliq_pt, Real crystal_pt)
+      : min_diameter(min_diam),
+        max_diameter(max_diam),
+        mean_std_dev(sigma),
         deliquesence_pt(deliq_pt),
         crystallization_pt(crystal_pt) {
     EKAT_ASSERT(name.size() < NAME_LEN);
@@ -89,14 +93,25 @@ struct Mode final {
   /// The crystallization point (rel. humidity) for this mode.
   Real crystallization_pt;
 
-  KOKKOS_INLINE_FUNCTION
-  Real arithmetic_mean_diam() const {
-    return 0.5 * (min_diameter + max_diameter);
-  }
-
  private:
   char name_view[NAME_LEN];
 };
+
+/** @brief This function returns the modal geometric mean particle diametr,
+  given the mode's mean volume (3rd log-normal moment) and the modal standard
+  deviation.
+
+  @param mode_mean_particle_volume mean particle volume for mode [m^3]
+  @param log_sigma natural log of the mode's geometric mean std. dev.
+  @return modal mean particle diameter (~ 1st log-normal moment) [m]
+*/
+template <typename T>
+KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter(
+    const T mode_mean_particle_volume, const Real log_sigma) {
+  static constexpr Real pi_sixth = constants::pi / 6;
+  return cbrt(pi_sixth * mode_mean_particle_volume) *
+         exp(-1.5 * square(log_sigma));
+}
 
 inline std::vector<Mode> create_mam4_modes() {
   /// Legacy MAM4 used the same constant crystallization and deliquescence

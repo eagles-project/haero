@@ -1,4 +1,4 @@
-# Add source files for prognostic and diagnostic processes here.
+# Add source files for prognostic processes here.
 
 # C++ process implementations go here. These are just names of C++ source
 # files that implement aerosol prognostic and diagnostic processes.

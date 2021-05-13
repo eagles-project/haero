@@ -24,6 +24,8 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 
 #cmakedefine HAERO_USE_CUDA
 
+#define HAERO_TEST_DATA_DIR "@CMAKE_CURRENT_SOURCE_DIR@/tests/data"
+
 /// Are we building with Fortran support?
 #define HAERO_FORTRAN @HAERO_FORTRAN@
 

@@ -103,11 +103,11 @@ KOKKOS_INLINE_FUNCTION void next_bisection_scalar_iteration<PackType>(
   This struct is used for unit tests and to demonstrate the required
   interface for scalar functions to be used with rootfinding algorithms.
 
-  Each scalar function must implement the operator() (const Real x) method that
+  Each scalar function must implement the T operator() (const T x) method that
   returns the function's value at x.
 
   If it is to be used by the Newton solver, it must also implement the
-  derivative(const Real x) method, which returns f'(x).
+  derivative(const T x) method, which returns f'(x).
 
   For an application example, see KohlerPolynomial.
 */
@@ -137,10 +137,10 @@ struct LegendreCubic {
   This struct is used for unit tests and to demonstrate the required
   interface for scalar functions to be used with rootfinding algorithms.
 
-  Each scalar function must implement the operator() (const Real x) method.
+  Each scalar function must implement the T operator() (const T x) method.
 
   If it is to be used by the Newton solver, it must also implement the
-  derivative(const Real x) method, which returns f'(x).
+  derivative(const T x) method, which returns f'(x).
 
   For an application example, see KohlerPolynomial.
 */
@@ -174,10 +174,8 @@ struct LegendreQuartic {
   converge. It may converge to an incorrect root if a poor initial guess is
   chosen. It requires both function values and derivative values.
 
-  Template parameter ScalarFunction must implement the function_eval(const Real
-  x) and derivative_eval(const Real x) methods.
-
-  The Legendre polynomials above demonstrate the required interface.
+  The Legendre polynomials above demonstrate the required ScalarFunction
+  interface.
 
   For an application example, see KohlerPolynomial.
 
@@ -226,12 +224,20 @@ struct ScalarNewtonSolver {
       const value_type xnp1 =
           next_newton_scalar_iteration(xroot, fxn, fprimexn);
       iter_diff = abs(xnp1 - xroot);
-      xroot = xnp1;
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
+      // #ifndef HAERO_USE_CUDA
+      //       std::cout << "\t\t" << "newton iteration " << counter << " x = "
+      //       << xroot << " f(x) = " << fxn; std::cout << " f'(x) = " <<
+      //       fprimexn << " xnp1 = " << xnp1 << "\n";
+      // #endif
       if (counter >= max_iter) {
-        printf("newton solve warning: max iterations reached\n");
+        printf(
+            "newton solve warning: max iterations reached xroot = %g xnp1 = %g "
+            "|diff| = %g\n",
+            xroot, xnp1, iter_diff);
         keep_going = false;
       }
+      xroot = xnp1;
     }
     return xroot;
   }
@@ -241,19 +247,16 @@ struct ScalarNewtonSolver {
   method. This method has only a linear convergence rate, but it is guaranteed
   to converge if the initial interval contains a root.
 
-  Template parameter ScalarFunction must implement the function_eval(const Real
-  x) method. The derivative_eval(const Real x) method is not necessary to use
-  this solver.
-
-  The Legendre polynomials above demonstrate the required interface.
+  The Legendre polynomials above demonstrate the required ScalarFunction
+  interface.
 
   For an application example, see KohlerPolynomial.
 
 */
-template <typename ScalarFunction, typename ScalarType = Real>
+template <typename ScalarFunction>
 struct BisectionSolver {
   using value_type = typename ScalarFunction::value_type;
-  using scalar_type = typename ScalarFunction::scalar_type;
+
   /// maximum number of iterations allowed
   static constexpr int max_iter = 200;
   /// solution
@@ -263,7 +266,7 @@ struct BisectionSolver {
   /// right endpoint of root search interval
   value_type b;
   /// tolerance
-  value_type conv_tol;
+  Real conv_tol;
   /// function value at left endpoint of search interval
   value_type fa;
   /// next iteration solution
@@ -293,23 +296,23 @@ struct BisectionSolver {
         xnp1(0.5 * (a0 + b0)),
         counter(0),
         iter_diff(b0 - a0),
-        f(fn) {
-    EKAT_KERNEL_ASSERT(b0 > a0);
-  }
+        f(fn) {}
 
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
   KOKKOS_INLINE_FUNCTION
   value_type solve() {
-    while (!FloatingPoint<value_type>::zero(iter_diff, conv_tol)) {
+    bool keep_going = true;
+    while (keep_going) {
       ++counter;
       const value_type fx = f(xroot);
       next_bisection_scalar_iteration(xnp1, a, b, fa, xroot, fx);
       iter_diff = b - a;
       xroot = xnp1;
+      keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       if (counter >= max_iter) {
         printf("bisection solve warning: max iterations reached");
-        break;
+        keep_going = false;
       }
     }
     return xroot;

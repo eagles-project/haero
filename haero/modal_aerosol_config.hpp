@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#include <string>
 
 #include "haero/aerosol_species.hpp"
 #include "haero/gas_species.hpp"
@@ -44,7 +45,7 @@ class ModalAerosolConfig final {
       const std::vector<GasSpecies>& gas_species)
       : d_aerosol_modes(vector_to_1dview(aerosol_modes, "aerosol_modes")),
         d_aerosol_species(vector_to_1dview(aerosol_species, "aerosol_species")),
-
+        d_n_species_per_mode("n_species_per_mode", aerosol_modes.size()),
         // Sum the length of all vectors in the mode_species map.
         // Is the use of std::accumulate here too obscure?
         num_aerosol_populations(std::accumulate(
@@ -89,6 +90,9 @@ class ModalAerosolConfig final {
   DeviceType::view_1d<AerosolSpecies> d_aerosol_species;
   HostType::view_1d<AerosolSpecies> h_aerosol_species;
 
+  DeviceType::view_1d<int> d_n_species_per_mode;
+  HostType::view_1d<int> h_n_species_per_mode;
+
   /// The total number of distinct aerosol species populations in the
   /// model, counting appearances of one species in different modes separately.
   int num_aerosol_populations;
@@ -98,6 +102,15 @@ class ModalAerosolConfig final {
 
   KOKKOS_INLINE_FUNCTION
   int num_gases() const { return d_gas_species.extent(0); }
+
+  inline int max_species_per_mode() const {
+    int result = 0;
+    for (int m = 0; m < num_modes(); ++m) {
+      const auto mode_species = aerosol_species_for_mode(m);
+      result = std::max(result, int(mode_species.size()));
+    }
+    return result;
+  }
 
   /// The list of gas species associated with this aerosol model.
   DeviceType::view_1d<GasSpecies> d_gas_species;
@@ -191,6 +204,21 @@ class ModalAerosolConfig final {
     return (found) ? p : -1;
   }
 
+  /// On device: returns a view containing the population indices for each
+  /// mode/species pair.
+  DeviceType::view_2d<int> create_population_indices_view() const {
+    DeviceType::view_2d<int> result("population_indices", num_modes(),
+                                    max_species_per_mode());
+    auto h_result = Kokkos::create_mirror_view(result);
+    for (int m = 0; m < num_modes(); ++m) {
+      for (int s = 0; s < max_species_per_mode(); ++s) {
+        h_result(m, s) = population_index(m, s);
+      }
+    }
+    Kokkos::deep_copy(result, h_result);
+    return result;
+  }
+
   /// On host: returns the index of a specific gas species, or -1 if the
   /// desired species is not found.
   /// @param [in] gas_symbol The symbolic name of the gas for which the index is
@@ -234,6 +262,8 @@ class ModalAerosolConfig final {
     }
   }
 
+  std::string info_string(const int tab_level = 0) const;
+
  private:
   // The association of aerosol species with modes.
   // species_for_modes_[mode_name] = vector of species names
@@ -251,6 +281,8 @@ inline ModalAerosolConfig create_mam4_modal_aerosol_config() {
                             create_mam4_mode_species(),
                             create_mam4_gas_species());
 }
+
+ModalAerosolConfig create_simple_test_config();
 
 }  // namespace haero
 
