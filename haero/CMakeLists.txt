@@ -62,24 +62,6 @@ file(APPEND ${available_processes_hpp} "#endif\n")
 
 # Gather Haero process implementations (placed in HAERO_DIAGNOSTICS).
 add_subdirectory(diagnostics)
-# Generate a header file that brings in all C++ diagnostic headers.
-set(available_diagnostics_hpp ${CMAKE_CURRENT_BINARY_DIR}/available_diagnostics.hpp)
-file(WRITE ${available_diagnostics_hpp} "#ifndef HAERO_AVAILABLE_DIAGNOSTICS_HPP\n#define HAERO_AVAILABLE_DIAGNOSTICS_HPP\n\n")
-foreach(src ${HAERO_DIAGNOSTICS})
-  if (${src} MATCHES ".cpp")
-    message(STATUS "Adding Haero diagnostic: " ${src})
-    get_filename_component(filename ${src} NAME)
-    string(REPLACE ".cpp" ".hpp" header ${filename})
-    if (${header} MATCHES "fdiagnostic")
-      file (APPEND ${available_diagnostics_hpp} "#if HAERO_FORTRAN\n")
-      file (APPEND ${available_diagnostics_hpp} "#include \"haero/diagnostics/${header}\"\n")
-      file (APPEND ${available_diagnostics_hpp} "#endif\n")
-    else()
-      file (APPEND ${available_diagnostics_hpp} "#include \"haero/diagnostics/${header}\"\n")
-    endif()
-  endif()
-endforeach()
-file(APPEND ${available_diagnostics_hpp} "#endif\n")
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
