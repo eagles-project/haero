@@ -1,12 +1,9 @@
 # Add source files for diagnostic functions here.
 
-# C++ diagnostic implementations go here.  These are the names of the
-# c++ source files that implement diagnostic functions
+# C++ source files for diagnostic functions go here. Many diagnostic functions
+# can be defined in headers, which don't need to appear here.
 set (CXX_DIAGNOSTIC_SOURCES
   kohler_solve_diagnostic.cpp
-  mode_dry_particle_volume_diagnostic.cpp
-  modal_mean_hygroscopicity_diagnostic.cpp
-  modal_wet_radius_diagnostic.cpp
 )
 
 # prepend diagnostics/ to each source file and transmit HAERO_DIAGNOSTICS upward
