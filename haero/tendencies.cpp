@@ -31,10 +31,16 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
   Kokkos::deep_copy(gases, PackType(0));
 
   auto n_view_name = std::string("d/dt[") +
-                     prognostics.modal_num_concs.label() + std::string(")]");
+                     prognostics.interstitial_num_concs.label() +
+                     std::string(")]");
   int num_modes = prognostics.num_aerosol_modes();
-  modal_num_concs = ModalColumnView(n_view_name, num_modes, num_vert_packs);
-  Kokkos::deep_copy(modal_num_concs, PackType(0));
+  interstitial_num_concs =
+      ModalColumnView(n_view_name, num_modes, num_vert_packs);
+  Kokkos::deep_copy(interstitial_num_concs, PackType(0));
+
+  cloudborne_num_concs =
+      ModalColumnView(n_view_name, num_modes, num_vert_packs);
+  Kokkos::deep_copy(cloudborne_num_concs, PackType(0));
 }
 
 Tendencies::~Tendencies() {}
@@ -44,7 +50,7 @@ Tendencies& Tendencies::scale(Real factor) {
   int num_levels = interstitial_aerosols.extent(1);
   int num_vert_packs = PackInfo::num_packs(num_levels);
   int num_gases = gases.extent(0);
-  int num_modes = modal_num_concs.extent(0);
+  int num_modes = interstitial_num_concs.extent(0);
 
   // Scale aerosol species mixing ratios
   Kokkos::parallel_for(
@@ -65,12 +71,21 @@ Tendencies& Tendencies::scale(Real factor) {
         }
       });
 
-  // Scale modal number densities.
+  // Scale interstitial number densities.
   Kokkos::parallel_for(
-      "tendencies::scale (modal num concs)", num_vert_packs,
+      "tendencies::scale (interstitial num concs)", num_vert_packs,
       KOKKOS_LAMBDA(const int k) {
         for (int m = 0; m < num_modes; ++m) {
-          modal_num_concs(m, k) *= factor;
+          interstitial_num_concs(m, k) *= factor;
+        }
+      });
+
+  // Scale cloud borne number densities.
+  Kokkos::parallel_for(
+      "tendencies::scale (cloudborne num concs)", num_vert_packs,
+      KOKKOS_LAMBDA(const int k) {
+        for (int m = 0; m < num_modes; ++m) {
+          cloudborne_num_concs(m, k) *= factor;
         }
       });
 
@@ -82,7 +97,7 @@ void Tendencies::accumulate(const Tendencies& tendencies) {
   int num_levels = interstitial_aerosols.extent(1);
   int num_vert_packs = PackInfo::num_packs(num_levels);
   int num_gases = gases.extent(0);
-  int num_modes = modal_num_concs.extent(0);
+  int num_modes = interstitial_num_concs.extent(0);
 
   // Accumulate aerosol species mixing ratios
   Kokkos::parallel_for(
@@ -105,10 +120,20 @@ void Tendencies::accumulate(const Tendencies& tendencies) {
 
   // Scale modal number densities.
   Kokkos::parallel_for(
-      "tendencies::scale (modal num concs)", num_vert_packs,
+      "tendencies::scale (interstitial num concs)", num_vert_packs,
       KOKKOS_LAMBDA(const int k) {
         for (int m = 0; m < num_modes; ++m) {
-          modal_num_concs(m, k) += tendencies.modal_num_concs(m, k);
+          interstitial_num_concs(m, k) +=
+              tendencies.interstitial_num_concs(m, k);
+        }
+      });
+
+  // Scale modal number densities.
+  Kokkos::parallel_for(
+      "tendencies::scale (cloudborne num concs)", num_vert_packs,
+      KOKKOS_LAMBDA(const int k) {
+        for (int m = 0; m < num_modes; ++m) {
+          cloudborne_num_concs(m, k) += tendencies.cloudborne_num_concs(m, k);
         }
       });
 }
@@ -135,9 +160,15 @@ void* t_gases_c(void* t) {
   return (void*)mix_fracs.data();
 }
 
-void* t_modal_num_concs_c(void* t) {
+void* t_interstitial_num_concs_c(void* t) {
   Tendencies* tends = (Tendencies*)t;
-  auto num_concs = tends->modal_num_concs;
+  auto num_concs = tends->interstitial_num_concs;
+  return (void*)num_concs.data();
+}
+
+void* t_cloudborne_num_concs_c(void* t) {
+  Tendencies* tends = (Tendencies*)t;
+  auto num_concs = tends->cloudborne_num_concs;
   return (void*)num_concs.data();
 }
 
