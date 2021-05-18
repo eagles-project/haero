@@ -18,7 +18,7 @@ haero::Real InputData::operator[](const std::string& param_name) const {
     int mode_index = aero_config.aerosol_mode_index(param_name);
     int gas_index = aero_config.gas_index(param_name);
     if (mode_index != -1) {
-      return number_concs[mode_index];
+      return interstitial_number_concs[mode_index]; // TODO: what about cloud concs?
     } else if (gas_index != -1) {
       return gas_mmrs[gas_index];
     } else {
@@ -57,7 +57,7 @@ haero::Real& InputData::operator[](const std::string& param_name) {
     int mode_index = aero_config.aerosol_mode_index(param_name);
     int gas_index = aero_config.gas_index(param_name);
     if (mode_index != -1) {
-      return number_concs[mode_index];
+      return interstitial_number_concs[mode_index]; // TODO: What about clouds?
     } else if (gas_index != -1) {
       return gas_mmrs[gas_index];
     } else {
@@ -96,7 +96,7 @@ haero::Real OutputData::operator[](const std::string& param_name) const {
     int mode_index = aero_config.aerosol_mode_index(param_name);
     int gas_index = aero_config.gas_index(param_name);
     if (mode_index != -1) {
-      return number_concs[mode_index];
+      return interstitial_number_concs[mode_index]; // TODO: what about clouds?
     } else if (gas_index != -1) {
       return gas_mmrs[gas_index];
     } else {

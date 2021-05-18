@@ -164,7 +164,8 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
 
     // aerosols section
     int num_modes = aerosol_config.num_modes();
-    pw.ref_input.number_concs.resize(num_modes);
+    pw.ref_input.interstitial_number_concs.resize(num_modes);
+    pw.ref_input.cloud_number_concs.resize(num_modes);
     pw.ref_input.interstitial_aero_mmrs.resize(
         aerosol_config.num_aerosol_populations);
     pw.ref_input.cloud_aero_mmrs.resize(aerosol_config.num_aerosol_populations,
@@ -187,16 +188,20 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
             // Get the initial data for the aerosol species in this mode.
             auto mode_species =
                 aerosol_config.aerosol_species_for_mode(mode_index);
-            bool found_number_conc = false;
+            bool found_cloud_number_conc = false,
+                 found_int_number_conc = false;
             found_aerosol[mode_index].resize(mode_species.size());
             for (auto aero_iter = mode.begin(); aero_iter != mode.end();
                  ++aero_iter) {
               auto aero_name = aero_iter->first.as<std::string>();
               auto aero_species = aero_iter->second;
               if (aero_name ==
-                  "number_conc") {  // number conc, not species name!
-                pw.ref_input.number_concs[mode_index] = aero_species.as<Real>();
-                found_number_conc = true;
+                  "cloud_number_conc") {  // number conc, not species name!
+                pw.ref_input.cloud_number_concs[mode_index] = aero_species.as<Real>();
+                found_cloud_number_conc = true;
+              } else if (aero_name == "interstitial_number_conc") {
+                pw.ref_input.interstitial_number_concs[mode_index] = aero_species.as<Real>();
+                found_int_number_conc = true;
               } else {
                 // Find the aerosol index within this species.
                 int aero_index = aerosol_config.aerosol_species_index(
@@ -214,9 +219,14 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
                       aero_species.as<Real>();
                   // TODO: Cloudborne aerosols initialized to 0 for now!
                 }
-                if (not found_number_conc) {
+                if (not found_cloud_number_conc) {
                   throw YamlException(
-                      std::string("Did not find 'number_conc' in '") +
+                      std::string("Did not find 'cloud_number_conc' in '") +
+                      mode_name + std::string("' mode!"));
+                }
+                if (not found_int_number_conc) {
+                  throw YamlException(
+                      std::string("Did not find 'interstitial_number_conc' in '") +
                       mode_name + std::string("' mode!"));
                 }
               }

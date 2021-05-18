@@ -159,7 +159,8 @@ void set_input(const std::vector<InputData>& inputs,
   auto int_aero = ekat::scalarize(prognostics.interstitial_aerosols);
   auto cld_aero = ekat::scalarize(prognostics.cloud_aerosols);
   auto gases = ekat::scalarize(prognostics.gases);
-  auto num_concs = ekat::scalarize(prognostics.modal_num_concs);
+  auto int_num_concs = ekat::scalarize(prognostics.interstitial_num_concs);
+  auto cld_num_concs = ekat::scalarize(prognostics.cloudborne_num_concs);
   for (int l = 0; l < num_levels; ++l) {
     // Atmospheric state
     T(l) = inputs[l].temperature;
@@ -170,7 +171,8 @@ void set_input(const std::vector<InputData>& inputs,
 
     // Aerosol prognostics.
     for (int m = 0; m < num_modes; ++m) {
-      num_concs(m, l) = inputs[l].number_concs[m];
+      int_num_concs(m, l) = inputs[l].interstitial_number_concs[m];
+      cld_num_concs(m, l) = inputs[l].cloud_number_concs[m];
       for (size_t p = 0; p < inputs[l].interstitial_aero_mmrs.size(); ++p) {
         int_aero(p, l) = inputs[l].interstitial_aero_mmrs[p];
         cld_aero(p, l) = inputs[l].cloud_aero_mmrs[p];
@@ -193,12 +195,15 @@ std::vector<OutputData> get_output(const haero::ModalAerosolConfig& aero_config,
   auto int_aero = ekat::scalarize(prognostics.interstitial_aerosols);
   auto cld_aero = ekat::scalarize(prognostics.cloud_aerosols);
   auto gases = ekat::scalarize(prognostics.gases);
-  auto num_concs = ekat::scalarize(prognostics.modal_num_concs);
+  auto int_num_concs = ekat::scalarize(prognostics.interstitial_num_concs);
+  auto cld_num_concs = ekat::scalarize(prognostics.cloudborne_num_concs);
   for (int l = 0; l < num_levels; ++l) {
     // Aerosol prognostics.
-    outputs[l].number_concs.resize(num_modes);
+    outputs[l].interstitial_number_concs.resize(num_modes);
+    outputs[l].cloud_number_concs.resize(num_modes);
     for (int m = 0; m < num_modes; ++m) {
-      outputs[l].number_concs[m] = num_concs(m, l);
+      outputs[l].interstitial_number_concs[m] = int_num_concs(m, l);
+      outputs[l].cloud_number_concs[m] = cld_num_concs(m, l);
     }
     outputs[l].interstitial_aero_mmrs.resize(num_pops);
     outputs[l].cloud_aero_mmrs.resize(num_pops);
@@ -258,7 +263,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   haero::SpeciesColumnView gases("gases", num_gases, num_levels);
   haero::ModalColumnView int_num_concs("interstitial number concs", num_modes,
                                        num_levels);
-  haero::ModalColumnView cld_num_concs(" cloudborne number concs", num_modes,
+  haero::ModalColumnView cld_num_concs("cloud number concs", num_modes,
                                        num_levels);
 
   auto* prognostics = model->create_prognostics(int_aerosols, cld_aerosols,

@@ -108,13 +108,15 @@ void Prognostics::scale_and_add(Real scale_factor,
         }
       });
 
-  int num_modes = modal_num_concs.extent(0);
+  int num_modes = interstitial_num_concs.extent(0);
   Kokkos::parallel_for(
       "Prognostics::scale_and_add (modal num concs)", num_vert_packs,
       KOKKOS_LAMBDA(const int k) {
         for (int m = 0; m < num_modes; ++m) {
-          modal_num_concs(m, k) +=
-              scale_factor * tendencies.modal_num_concs(m, k);
+          interstitial_num_concs(m, k) +=
+              scale_factor * tendencies.interstitial_num_concs(m, k);
+          cloudborne_num_concs(m, k) +=
+              scale_factor * tendencies.cloudborne_num_concs(m, k);
         }
       });
 }
