@@ -48,7 +48,7 @@ static constexpr Real kelvin_droplet_effect_coeff = 0.00120746723156361711;
   Properties of the Kohler Polynomial that are useful to finding its roots:
 
   1. K(0) = kelvin_droplet_effect_coeff * cube(r_dry) > 0
-  2. K(r_dry) > 0
+  2. K(r_dry) = r_dry**4 * hygroscopicity > 0
 
   Properties of the Kohler Polynomial that are useful to finding its roots given
   inputs that are within the bounds defined below:
