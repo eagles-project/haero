@@ -12,8 +12,6 @@
 
 using namespace haero;
 
-std::string mathematica_verification_program();
-
 struct KohlerTestInput {
   DeviceType::view_1d<PackType> relative_humidity;
   DeviceType::view_1d<PackType> hygroscopicity;
@@ -157,6 +155,47 @@ struct PackMaxReduce {
   }
 };
 
+TEST_CASE("KohlerPolynomial properties", "") {
+  // Generate input data
+  static constexpr int N = 20;
+  const KohlerTestInput test_inputs(N);
+
+  const int num_packs = PackInfo::num_packs(cube(N));
+
+  DeviceType::view_1d<PackType> kohler_at_zero("kohler_at_zero", num_packs);
+  DeviceType::view_1d<PackType> kohler_at_rdry("kohler_at_rdry", num_packs);
+  DeviceType::view_1d<PackType> kohler_at_25rdry("kohler_at_25rdry", num_packs);
+
+  Kokkos::parallel_for(
+      num_packs, KOKKOS_LAMBDA(const int pack_idx) {
+        const auto poly =
+            KohlerPolynomial<PackType>(test_inputs.relative_humidity(pack_idx),
+                                       test_inputs.hygroscopicity(pack_idx),
+                                       test_inputs.dry_radius(pack_idx));
+
+        kohler_at_zero(pack_idx) = poly(PackType(0));
+        kohler_at_rdry(pack_idx) = poly(test_inputs.dry_radius(pack_idx));
+        kohler_at_25rdry(pack_idx) =
+            poly(25 * test_inputs.dry_radius(pack_idx));
+      });
+
+  auto h_kohler_at_zero = Kokkos::create_mirror_view(kohler_at_zero);
+  auto h_kohler_at_rdry = Kokkos::create_mirror_view(kohler_at_rdry);
+  auto h_kohler_at_25rdry = Kokkos::create_mirror_view(kohler_at_25rdry);
+  auto h_rdry = Kokkos::create_mirror_view(test_inputs.dry_radius);
+  Kokkos::deep_copy(h_kohler_at_zero, kohler_at_zero);
+  Kokkos::deep_copy(h_kohler_at_rdry, kohler_at_rdry);
+  Kokkos::deep_copy(h_kohler_at_25rdry, kohler_at_25rdry);
+  Kokkos::deep_copy(h_rdry, test_inputs.dry_radius);
+
+  for (int i = 0; i < num_packs; ++i) {
+    REQUIRE(FloatingPoint<PackType>::equiv(
+        h_kohler_at_zero(i), kelvin_droplet_effect_coeff * cube(h_rdry(i))));
+    REQUIRE((h_kohler_at_rdry(i) > 0).all());
+    REQUIRE((h_kohler_at_25rdry(i) < 0).all());
+  }
+}
+
 TEST_CASE("KohlerSolve-verification", "") {
   /// Generate input data
   static constexpr int N = 20;
@@ -263,8 +302,13 @@ TEST_CASE("KohlerSolve-verification", "") {
 #endif
   REQUIRE(max_err_bisection < 2.3 * conv_tol);
 
-  std::cout << "To generate the verification data, run this program in "
-               "Mathematica:\n\n";
+  std::cout << "To generate the verification data with Mathematica, run this "
+               "program:\n\n";
 
   std::cout << KohlerPolynomial<PackType>::mathematica_verification_program(N);
+
+  std::cout << "\n\nTo generate the verification data with Matlab, run this "
+               "program:\n\n";
+
+  std::cout << KohlerPolynomial<PackType>::matlab_verification_program(N);
 }

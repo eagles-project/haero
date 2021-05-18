@@ -126,6 +126,13 @@ struct FloatingPoint<PackType> {
   }
 
   KOKKOS_INLINE_FUNCTION
+  static bool in_bounds(const PackType& x, const PackType& lower,
+                        const PackType& upper, const Real tol = zero_tol) {
+    EKAT_KERNEL_ASSERT(tol > 0);
+    return (x >= (lower - tol)).all() and (x <= (upper + tol)).all();
+  }
+
+  KOKKOS_INLINE_FUNCTION
   static PackType safe_denominator(const PackType& x,
                                    const Real tol = zero_tol) {
     EKAT_KERNEL_ASSERT(tol > 0);

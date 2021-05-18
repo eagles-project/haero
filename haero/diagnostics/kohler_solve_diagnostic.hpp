@@ -10,6 +10,14 @@
 
 namespace haero {
 
+/** Coefficient accounting for Kelvin effect on droplets
+
+   In the documentation, this constant is denoted by A.
+
+  @todo verify that the assumptions that lead to this constant still hold at
+ SCREAM resolutions (e.g., constant temperature, constant surface tension) */
+static constexpr Real kelvin_droplet_effect_coeff = 0.00120746723156361711;
+
 /** @brief Struct that represents the Kohler polynomial.
 
   @f$ K(r_w) = \log(s) r_w^4 - A r_w^3 + (B - \log(s))r_d^3 r_w + A r_d^3 @f$
@@ -36,6 +44,17 @@ namespace haero {
   @warning This polynomial is severely ill-conditioned, to the point that it is
   sensitive to order-of-operations changes caused by compiler optimization
   flags.
+
+  Properties of the Kohler Polynomial that are useful to finding its roots:
+
+  1. K(0) = kelvin_droplet_effect_coeff * cube(r_dry) > 0
+  2. K(r_dry) > 0
+
+  Properties of the Kohler Polynomial that are useful to finding its roots given
+  inputs that are within the bounds defined below:
+
+  1. K(25*r_dry) < 0
+
 */
 template <typename T>
 struct KohlerPolynomial {
@@ -59,14 +78,6 @@ struct KohlerPolynomial {
 
   using value_type = T;
   using scalar_type = typename ekat::ScalarTraits<T>::scalar_type;
-
-  /** Coefficient accounting for Kelvin effect on droplets
-
-   In the documentation, this constant is denoted by A.
-
-  @todo verify that the assumptions that lead to this constant still hold at
- SCREAM resolutions (e.g., constant temperature, constant surface tension) */
-  static constexpr Real kelvin_droplet_effect_coeff = 0.00120746723156361711;
 
   /// Coefficient in the Kohler polynomial
   T log_rel_humidity;
@@ -106,7 +117,7 @@ struct KohlerPolynomial {
   KOKKOS_INLINE_FUNCTION
   T operator()(const T& wet_radius) const {
     const T wet_radius_cubed = cube(wet_radius);
-    const Real kelvinA = 0.00120746723156361711;
+    const Real kelvinA = kelvin_droplet_effect_coeff;
     T result = (log_rel_humidity * wet_radius - kelvinA) * wet_radius_cubed +
                ((hygroscopicity - log_rel_humidity) * wet_radius + kelvinA) *
                    dry_radius_cubed;
@@ -124,7 +135,7 @@ struct KohlerPolynomial {
   KOKKOS_INLINE_FUNCTION
   T derivative(const T& wet_radius) const {
     const T wet_radius_squared = square(wet_radius);
-    const Real kelvinA = 0.00120746723156361711;
+    const Real kelvinA = kelvin_droplet_effect_coeff;
     T result =
         (4 * log_rel_humidity * wet_radius - 3 * kelvinA) * wet_radius_squared +
         (hygroscopicity - log_rel_humidity) * dry_radius_cubed;
@@ -140,8 +151,19 @@ struct KohlerPolynomial {
                                         dry_radius_max_microns));
   }
 
-  static std::string mathematica_verification_program(
-      const int n, const std::string& output_dir = "~");
+  /** @brief Writes a string containing a Mathematica script that may be used to
+    generate the verification data.
+
+    @param [in] n the number of points in each parameter range
+  */
+  static std::string mathematica_verification_program(const int n);
+
+  /** @brief Writes a string containing a Matlab script that may be used to
+    generate the verification data.
+
+    @param [in] n the number of points in each parameter range
+  */
+  static std::string matlab_verification_program(const int n);
 };
 
 /** @brief This functor solves for the positive root of a packed instance of the
@@ -166,14 +188,12 @@ struct KohlerNewtonSolve {
   KOKKOS_INLINE_FUNCTION
   PackType operator()() {
     /// first guess at root needs to be sufficiently positive to avoid
-    /// convergence to the negative root. avg. case suggests an initial guess of
-    /// ~ 10 * dry_radius is good and convergence is achieved within < 10
-    /// iterations worst case (large dry radius, near-saturated air) may require
-    /// initial guesses ~ 25 * dry_radius using the worst case value for all
-    /// guesses causes the number of iterations to go past 30, reducing
-    /// performance. hence, we use the avg case guess and add a guard to
+    /// convergence to the negative real root. On average with an initial guess
+    /// of ~ 10 * dry_radius convergence is achieved in < 10 iterations.  In the
+    /// worst case (large dry radius, near-saturated air) may require initial
+    /// guesses ~ 25 * dry_radius. We use the avg case guess and add a guard to
     /// increase the initial root if the algorithm does not converge to the
-    /// Kohler polynomial's positive root.
+    /// Kohler polynomial's positive real root.
     PackType wet_radius_init(25 * dry_radius_microns);
     PackType result(-1);
     bool keep_going = true;
@@ -224,6 +244,40 @@ struct KohlerBisectionSolve {
         KohlerPolynomial<PackType>(relative_humidity, hygroscopicity,
                                    dry_radius_microns));
     result = solver.solve();
+    n_iter = solver.counter;
+    return result;
+  }
+};
+
+struct KohlerBracketedNewtonSolve {
+  const PackType& relative_humidity;
+  const PackType& hygroscopicity;
+  const PackType& dry_radius_microns;
+  Real conv_tol;
+  int n_iter;
+
+  KOKKOS_INLINE_FUNCTION
+  KohlerBracketedNewtonSolve(const PackType& rel_h, const PackType& hygro,
+                             const PackType& dry_rad, const Real tol)
+      : relative_humidity(rel_h),
+        hygroscopicity(hygro),
+        dry_radius_microns(dry_rad),
+        conv_tol(tol),
+        n_iter(0) {}
+
+  KOKKOS_INLINE_FUNCTION
+  PackType operator()() {
+    PackType a0(0);
+    PackType b0(25 * dry_radius_microns);
+    PackType r0(10 * dry_radius_microns);  // initial guess
+    PackType result(-1);
+    auto solver =
+        math::BracketedNewtonSolver<KohlerPolynomial<PackType>, PackType>(
+            r0, a0, b0, conv_tol,
+            KohlerPolynomial<PackType>(relative_humidity, hygroscopicity,
+                                       dry_radius_microns));
+    result = solver.solve();
+    EKAT_KERNEL_ASSERT((result > 0).all());
     n_iter = solver.counter;
     return result;
   }

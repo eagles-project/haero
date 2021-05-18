@@ -225,19 +225,230 @@ struct ScalarNewtonSolver {
           next_newton_scalar_iteration(xroot, fxn, fprimexn);
       iter_diff = abs(xnp1 - xroot);
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      // #ifndef HAERO_USE_CUDA
-      //       std::cout << "\t\t" << "newton iteration " << counter << " x = "
-      //       << xroot << " f(x) = " << fxn; std::cout << " f'(x) = " <<
-      //       fprimexn << " xnp1 = " << xnp1 << "\n";
-      // #endif
       if (counter >= max_iter) {
+#ifndef HAERO_USE_CUDA
+        std::ostringstream ss;
+        ss << "newton solve warning, max iterations reached: xroot = " << xroot
+           << ", xnp1 = " << xnp1 << ", |diff| = " << iter_diff << "\n";
+        std::cout << ss.str();
+#else
+        static_assert(HAERO_PACK_SIZE == 1, "cuda uses pack size = 1");
         printf(
             "newton solve warning: max iterations reached xroot = %g xnp1 = %g "
             "|diff| = %g\n",
-            xroot, xnp1, iter_diff);
+            xroot[0], xnp1[0], iter_diff[0]);
+#endif
         keep_going = false;
       }
       xroot = xnp1;
+    }
+    return xroot;
+  }
+};
+
+/** padding factor stops BracketedNewtonSolver from getting stuck at an endpoint
+
+  Larger values tend to require more iterations for the solver to converge.
+*/
+static constexpr Real bracket_pad_factor = 1e-7;
+
+/** @brief Newton iterations protected by a bracket that prevents Newton from
+going outside its bounds.
+
+  This solver is a compromise between the speed of Newton's method and the
+robustness of the bisection method. In addition to the requirement that the
+initial interval contains a root, this solver requires that function value at
+the initial interval endpoints have opposite sign.
+*/
+template <typename ScalarFunction, typename ST = Real>
+struct BracketedNewtonSolver {
+  using value_type = typename ScalarFunction::value_type;
+  static_assert(
+      !ekat::ScalarTraits<typename ScalarFunction::value_type>::is_simd,
+      "unpacked impl for non-simd data types.");
+  static_assert(std::is_floating_point<ST>::value, "floating point type.");
+  static constexpr int max_iter = 200;
+  Real xroot;
+  Real a;
+  Real b;
+  Real conv_tol;
+  Real fa;
+  Real fx;
+  Real fb;
+  const ScalarFunction& f;
+  int counter;
+  value_type iter_diff;
+
+  KOKKOS_INLINE_FUNCTION
+  BracketedNewtonSolver(const value_type x0, const Real a0, const value_type b0,
+                        const Real tol, const ScalarFunction& fn)
+      : xroot(x0),
+        a(a0),
+        b(b0),
+        conv_tol(tol),
+        fa(fn(a0)),
+        fx(fn(x0)),
+        fb(fn(b0)),
+        f(fn),
+        counter(0),
+        iter_diff(std::numeric_limits<Real>::max()) {
+    EKAT_KERNEL_ASSERT(b > a);
+    EKAT_KERNEL_ASSERT(fa * fb < 0);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  value_type solve() {
+    bool keep_going = true;
+    while (keep_going) {
+      ++counter;
+      // newton step
+      value_type x = xroot - fx / f.derivative(xroot);
+      // safeguard: require x to be inside current bracket
+      // assure progress: guard against tiny steps
+      const Real pad = bracket_pad_factor * (b - a);
+      if (!FloatingPoint<Real>::in_bounds(x, a + pad, b - pad)) {
+        x = 0.5 * (a + b);
+      }
+      fx = f(x);
+      // update bracket
+      if (fx * fa > 0) {
+        a = x;
+        fa = fx;
+      } else {
+        b = x;
+        fb = fx;
+      }
+      // check convergence
+      iter_diff = abs(x - xroot);
+      keep_going = !FloatingPoint<value_type>::zero(iter_diff, conv_tol);
+      // prevent infinite loops
+      if (counter >= max_iter) {
+#ifndef HAERO_USE_CUDA
+        std::ostringstream ss;
+        ss << "bracketed newton solve warning, max iterations reached: xroot "
+              "= ";
+        ss << xroot << ", x = " << x << ", |diff| = " << iter_diff << "\n";
+        std::cout << ss.str();
+#else
+        printf(
+            "bracketed newton solve warning, max iterations reached: xroot = "
+            "%g xnp1 = %g |diff| = %g\n",
+            xroot, xnp1, iter_diff);
+#endif
+        keep_going = false;
+      }
+      xroot = x;
+    }
+    return xroot;
+  }
+};
+
+template <typename ScalarFunction>
+struct BracketedNewtonSolver<ScalarFunction, PackType> {
+  static_assert(
+      ekat::ScalarTraits<typename ScalarFunction::value_type>::is_simd,
+      "simd impl for packed data types.");
+  static_assert(std::is_floating_point<typename ekat::ScalarTraits<
+                    typename ScalarFunction::value_type>::scalar_type>::value,
+                "floating point type.");
+
+  static constexpr int max_iter = 200;
+
+  PackType xroot;
+  PackType a;
+  PackType b;
+  Real conv_tol;
+  PackType fa;
+  PackType fb;
+  PackType fx;
+  const ScalarFunction& f;
+  int counter;
+  PackType iter_diff;
+
+  KOKKOS_INLINE_FUNCTION
+  BracketedNewtonSolver(const PackType& x0, const Real a0, const Real b0,
+                        const Real tol, const ScalarFunction& fn)
+      : xroot(x0),
+        a(a0),
+        b(b0),
+        conv_tol(tol),
+        fa(fn(PackType(a0))),
+        fb(fn(PackType(b0))),
+        fx(fn(x0)),
+        f(fn),
+        counter(0),
+        iter_diff(std::numeric_limits<Real>::max()) {
+    EKAT_KERNEL_ASSERT((b > a).all());
+    EKAT_KERNEL_ASSERT((fa * fb < 0).all());
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  BracketedNewtonSolver(const PackType& x0, const PackType& a0,
+                        const PackType& b0, const Real tol,
+                        const ScalarFunction& fn)
+      : xroot(x0),
+        a(a0),
+        b(b0),
+        conv_tol(tol),
+        fa(fn(a0)),
+        fb(fn(b0)),
+        fx(fn(x0)),
+        f(fn),
+        counter(0),
+        iter_diff(std::numeric_limits<Real>::max()) {
+    EKAT_KERNEL_ASSERT((b > a).all());
+    EKAT_KERNEL_ASSERT((fa * fb < 0).all());
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  PackType solve() {
+    bool keep_going = true;
+    while (keep_going) {
+      ++counter;
+      // newton step
+      PackType x = xroot - fx / f.derivative(xroot);
+      // safeguard: require x to be inside current bracket
+      // assure progress: guard against tiny steps
+      const PackType pad = bracket_pad_factor * (b - a);
+      const MaskType mbnd = (x > (a + pad)) and (x < (b - pad));
+      vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
+        if (!mbnd[s]) {
+          x[s] = 0.5 * (a[s] + b[s]);
+        }
+      }
+      fx = f(x);
+      // update bracket
+      const auto msign = (fx * fa > 0);
+      vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
+        if (msign[s]) {
+          a[s] = x[s];
+          fa[s] = fx[s];
+        } else {
+          b[s] = x[s];
+          fb[s] = fx[s];
+        }
+      }
+      // check convergence
+      iter_diff = abs(x - xroot);
+      keep_going = !FloatingPoint<PackType>::zero(iter_diff, conv_tol);
+      // prevent infinite loops
+      if (counter >= max_iter) {
+#ifndef HAERO_USE_CUDA
+        std::ostringstream ss;
+        ss << "bracketed newton solve warning, max iterations reached: xroot "
+              "= ";
+        ss << xroot << ", x = " << x << ", |diff| = " << iter_diff << "\n";
+        std::cout << ss.str();
+#else
+        static_assert(HAERO_PACK_SIZE == 1, "cuda uses pack size 1");
+        printf(
+            "bracketed newton solve warning, max iterations reached: xroot = "
+            "%g xnp1 = %g |diff| = %g\n",
+            xroot[0], xnp1[0], iter_diff[0])
+#endif
+        keep_going = false;
+      }
+      xroot = x;
     }
     return xroot;
   }
@@ -249,6 +460,8 @@ struct ScalarNewtonSolver {
 
   The Legendre polynomials above demonstrate the required ScalarFunction
   interface.
+
+  This solver requires the initial interval to contain a root.
 
   For an application example, see KohlerPolynomial.
 
