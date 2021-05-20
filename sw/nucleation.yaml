@@ -9,11 +9,17 @@ timestepping: # [s]
   total_time: 3600
 
 ensemble:
-  temperature: [270, 276, 0.5]
-  relative_humidity: [0, 1, 0.1]
-  qh2so4: [0, 1.e-3, 1.e-4]  # _aero for aerosol data
-  aitken:
-    so4: [0, 0.001]
+  atmosphere:
+    temperature: [270, 276, 0.5]
+    relative_humidity: [0, 1, 0.1]
+
+  gases:
+    h2so4: [0, 1.e-3, 1.e-4]
+
+  aerosols:
+    interstitial:
+      aitken:
+        so4: [0, 0.001]
 
 atmosphere:
   temperature: 273
@@ -25,34 +31,67 @@ atmosphere:
 
 aerosols:
   accumulation:
-    number_conc: 1.e8 # [ # aerosol molecules / kg air]
-    so4: 0.3 # [change to kg aerosol/kg air]
-    pom: 0
-    soa: 0.3
-    bc: 0
-    dst: 0
-    nacl: 0.4
-    mom: 0
+    cloud:
+      number_conc: 1.e8 # [ # aerosol molecules / kg air]
+      so4: 0.3 # [change to kg aerosol/kg air]
+      pom: 0
+      soa: 0.3
+      bc: 0
+      dst: 0
+      nacl: 0.4
+      mom: 0
+    interstitial:
+      number_conc: 1.e8
+      so4: 0.3
+      pom: 0
+      soa: 0.3
+      bc: 0
+      dst: 0
+      nacl: 0.4
+      mom: 0
   aitken:
-    number_conc: 1.e9
-    so4: 0.3
-    soa: 0.3
-    nacl: 0.4
-    mom: 0
+    cloud:
+      number_conc: 1.e9
+      so4: 0.3
+      soa: 0.3
+      nacl: 0.4
+      mom: 0
+    interstitial:
+      number_conc: 1.e9
+      so4: 0.3
+      soa: 0.3
+      nacl: 0.4
+      mom: 0
   coarse:
-    number_conc: 1.e5
-    so4: 0.3
-    pom: 0
-    mom: 0
-    soa: 0.3
-    bc: 0
-    dst: 0
-    nacl: 0.4
+    cloud:
+      number_conc: 1.e5
+      so4: 0.3
+      pom: 0
+      mom: 0
+      soa: 0.3
+      bc: 0
+      dst: 0
+      nacl: 0.4
+    interstitial:
+      number_conc: 1.e5
+      so4: 0.3
+      pom: 0
+      mom: 0
+      soa: 0.3
+      bc: 0
+      dst: 0
+      nacl: 0.4
   primary_carbon:
-    number_conc: 2.e8
-    pom: 0
-    bc: 1
-    mom: 0
+    cloud:
+      number_conc: 2.e8
+      pom: 0
+      bc: 1
+      mom: 0
+    interstitial:
+      number_conc: 2.e8
+      pom: 0
+      bc: 1
+      mom: 0
 
 gases:
   so2: 1.e-4 # [kg gas / kg air]

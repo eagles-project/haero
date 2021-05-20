@@ -3,7 +3,7 @@
 namespace skywalker {
 
 haero::Real InputData::operator[](const std::string& param_name) const {
-  size_t colon = param_name.find(':');
+  size_t colon = param_name.rfind(':'); // find the last colon
   if (colon != std::string::npos) {  // mode:aerosol
     auto mode_name = param_name.substr(0, colon);
     auto aero_name = param_name.substr(colon + 1, param_name.length());
@@ -42,7 +42,7 @@ haero::Real InputData::operator[](const std::string& param_name) const {
 }
 
 haero::Real& InputData::operator[](const std::string& param_name) {
-  size_t colon = param_name.find(':');
+  size_t colon = param_name.rfind(':');
   if (colon != std::string::npos) {  // mode:aerosol
     auto mode_name = param_name.substr(0, colon);
     auto aero_name = param_name.substr(colon + 1, param_name.length());

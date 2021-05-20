@@ -45,6 +45,7 @@ std::vector<InputData> gather_inputs(
   // the overridden parameters. This involves some ugly index magic based on the
   // number of parameters.
   std::vector<InputData> inputs(num_inputs, param_walk.ref_input);
+  printf("num_inputs: %ld\n", num_inputs);
   for (size_t l = 0; l < num_inputs; ++l) {
     if (num_params == 1) {
       auto iter = param_walk.ensemble.begin();
@@ -97,10 +98,14 @@ std::vector<InputData> gather_inputs(
       size_t n2 = vals2.size();
       size_t n3 = vals3.size();
       size_t n4 = vals4.size();
+      printf("names = [%s, %s, %s, %s]\n", name1.c_str(), name2.c_str(), name3.c_str(), name4.c_str());
+      printf("n = [%ld, %ld, %ld, %ld]\n", vals1.size(), n2, n3, n4);
       size_t j1 = l / (n2 * n3 * n4);
       size_t j2 = (l - n2 * n3 * n4 * j1) / (n3 * n4);
       size_t j3 = (l - n2 * n3 * n4 * j1 - n3 * n4 * j2) / n4;
       size_t j4 = l - n2 * n3 * n4 * j1 - n3 * n4 * j2 - n4 * j3;
+      printf("j = [%ld, %ld, %ld, %ld]\n", j1, j2, j3, j4);
+      printf("l = %ld\n", l);
       inputs[l][name1] = vals1[j1];
       inputs[l][name2] = vals2[j2];
       inputs[l][name3] = vals3[j3];

@@ -6,11 +6,129 @@
 #include <cstdarg>
 #include <set>
 
+namespace {
+
+using Real = haero::Real;
+using ModalAerosolConfig = haero::ModalAerosolConfig;
+using YamlException = skywalker::YamlException;
+
+std::vector<Real> parse_value_array(const std::string& name,
+                                    const YAML::Node& value) {
+  size_t len = value.size();
+  if (len == 3) {
+    Real value0 = value[0].as<Real>();
+    Real value1 = value[1].as<Real>();
+    Real value2 = value[2].as<Real>();
+    if (not(value0 < value1)) {  // this should be true in any case!
+      throw YamlException(
+          std::string("Invalid values for '") + name +
+          std::string("': second must be greater than first."));
+    }
+    if (not(value1 < value2)) {  // [start, stop, step]
+      len = static_cast<size_t>((value1 - value0) / value2) + 1;
+      std::vector<Real> values(len);
+      for (int j = 0; j < len; ++j) {
+        values[j] = value0 + j * value2;
+      }
+      return values;
+    } else {
+      return std::vector<Real>({value0, value1, value2});
+    }
+  } else {
+    return value.as<std::vector<Real>>();
+  }
+}
+
+void parse_atm_ensemble_params(const YAML::Node& root,
+                               std::map<std::string, std::vector<Real>>& params) {
+  for (auto iter = root.begin(); iter != root.end(); ++iter) {
+    auto param = iter->second;
+    if (param.IsSequence()) {
+      auto param_name = std::string("atmosphere:") + iter->first.as<std::string>();
+      params[param_name] = parse_value_array(param_name, param);
+    } else {
+      throw YamlException(
+          std::string("Parameter 'atmosphere:") + iter->first.as<std::string>() +
+          std::string("' is not a sequence of values!\n"));
+    }
+  }
+}
+
+void parse_aero_ensemble_params(const ModalAerosolConfig& aerosol_config,
+                                const YAML::Node& root,
+                                std::map<std::string, std::vector<Real>>& params) {
+  for (auto riter = root.begin(); riter != root.end(); ++riter) {
+    auto group_name = riter->first.as<std::string>();
+    auto group = riter->second;
+    if (group.IsMap()) {
+      if ((group_name != "cloud") and (group_name != "interstitial")) {
+        continue;
+      }
+      for (auto giter = group.begin(); giter != group.end(); ++giter) {
+        auto mode_name = giter->first.as<std::string>();
+        int mode_index = aerosol_config.aerosol_mode_index(mode_name, false);
+        auto mode = giter->second;
+        if (mode_index != -1) {  // it's an aerosol mode!
+          for (auto iter = mode.begin(); iter != mode.end(); ++iter) {
+            // Is this a valid aerosol species?
+            auto aero_name = iter->first.as<std::string>();
+            // Find the aerosol index within this species.
+            int aero_index = aerosol_config.aerosol_species_index(
+                mode_index, aero_name, false);
+            if (aero_index == -1) {
+              throw YamlException(
+                  std::string("Found invalid aerosol species '") + aero_name +
+                  std::string("' within mode '") + mode_name +
+                  std::string("' in the ensemble section!"));
+            }
+            auto mmr_name = std::string("aerosols:") + group_name +
+              std::string(":") + mode_name + std::string(":") + aero_name;
+            auto aero_species = iter->second;
+            params[mmr_name] = parse_value_array(mmr_name, aero_species);
+          }
+        } else {
+          throw YamlException(
+              std::string("Parameter 'aerosols:") + group_name + std::string(":") +
+              mode_name + std::string("' is not a valid aerosol mode!\n"));
+        }
+      }
+    } else {
+      throw YamlException(
+          std::string("Parameter 'aerosols:") + group_name +
+          std::string("' is not a map!\n"));
+    }
+  }
+}
+
+void parse_gas_ensemble_params(const ModalAerosolConfig& aerosol_config,
+                               const YAML::Node& root,
+                               std::map<std::string, std::vector<Real>>& params) {
+  for (auto iter = root.begin(); iter != root.end(); ++iter) {
+    auto param = iter->second;
+    if (param.IsSequence()) {
+      auto gas_name = iter->first.as<std::string>();
+      int gas_index = aerosol_config.gas_index(gas_name, false);
+      if (gas_index == -1) {
+        throw YamlException(
+          std::string("Parameter 'gases:") + gas_name +
+          std::string("' is not a valid gas species!\n"));
+      }
+      gas_name = std::string("gases:") + gas_name;
+      params[gas_name] = parse_value_array(gas_name, param);
+    } else {
+      throw YamlException(
+          std::string("Parameter 'gases:") + iter->first.as<std::string>() +
+          std::string("' is not a sequence!\n"));
+    }
+  }
+}
+
+}
+
 namespace skywalker {
 
 ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
                          const std::string& filename) {
-  using Real = haero::Real;
 
   ParameterWalk pw(aerosol_config);
   try {
@@ -32,12 +150,12 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
     if (root["timestepping"] and root["timestepping"].IsMap()) {
       auto ts = root["timestepping"];
       if (ts["dt"]) {
-        pw.ref_input.dt = ts["dt"].as<haero::Real>();
+        pw.ref_input.dt = ts["dt"].as<Real>();
       } else {
         throw YamlException("'dt' not found in timestepping section!\n");
       }
       if (ts["total_time"]) {
-        pw.ref_input.total_time = ts["total_time"].as<haero::Real>();
+        pw.ref_input.total_time = ts["total_time"].as<Real>();
       } else {
         throw YamlException(
             "'total_time' not found in timestepping section!\n");
@@ -49,68 +167,20 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
 
     // enѕemble section
     if (root["ensemble"] and root["ensemble"].IsMap()) {
-      auto params = root["ensemble"];
-      for (auto iter = params.begin(); iter != params.end(); ++iter) {
-        auto param = iter->second;
-        if (param.IsSequence()) {
-          auto param_name = iter->first.as<std::string>();
-          size_t len = param.size();
-          if (len == 3) {
-            Real value0 = param[0].as<Real>();
-            Real value1 = param[1].as<Real>();
-            Real value2 = param[2].as<Real>();
-            if (not(value0 < value1)) {  // this should be true in any case!
-              throw YamlException(
-                  std::string("Invalid values for ") + param_name +
-                  std::string(": second must be greater than first."));
-            }
-            if (not(value1 < value2)) {  // [start, stop, step]
-              len = static_cast<size_t>((value1 - value0) / value2) + 1;
-              pw.ensemble[param_name].resize(len);
-              for (int j = 0; j < len; ++j) {
-                pw.ensemble[param_name][j] = value0 + j * value2;
-              }
-            } else {
-              pw.ensemble[param_name] = {value0, value1, value2};
-            }
-          } else {
-            pw.ensemble[param_name] = param.as<std::vector<Real>>();
-          }
-        } else if (param.IsMap()) {  // could be an aerosol or gas species mmr
-          auto param_name = iter->first.as<std::string>();
-          int mode_index = aerosol_config.aerosol_mode_index(param_name, false);
-          if (mode_index != -1) {  // it's an aerosol mode!
-            for (auto iter = param.begin(); iter != param.end(); ++iter) {
-              // Is this a valid aerosol species?
-              auto aero_name = iter->first.as<std::string>();
-              // Find the aerosol index within this species.
-              int aero_index = aerosol_config.aerosol_species_index(
-                  mode_index, aero_name, false);
-              if (aero_index == -1) {
-                throw YamlException(
-                    std::string("Found invalid aerosol species '") + aero_name +
-                    std::string("' within mode '") + param_name +
-                    std::string("' in the ensemble section!"));
-              }
-              auto mmr_name = param_name + std::string(":") + aero_name;
-              auto aero_species = iter->second;
-              pw.ensemble[mmr_name] = aero_species.as<std::vector<Real>>();
-            }
-          } else {
-            // Maybe it's a gas species?
-            int gas_index = aerosol_config.gas_index(param_name);
-            if (gas_index == -1) {
-              throw YamlException(
-                  std::string("Parameter '") + iter->first.as<std::string>() +
-                  std::string(
-                      "' is not a valid aerosol mode or gas species!\n"));
-            }
-            pw.ensemble[param_name] = param.as<std::vector<Real>>();
-          }
+      auto ensemble = root["ensemble"];
+      for (auto eiter = ensemble.begin(); eiter != ensemble.end(); ++eiter) {
+        auto group_name = eiter->first.as<std::string>();
+        if ((group_name != "atmosphere") and (group_name != "gases") and
+            (group_name != "aerosols")) {
+          continue;
+        }
+        auto group = eiter->second;
+        if (group_name == "atmosphere") {
+          parse_atm_ensemble_params(group, pw.ensemble);
+        } else if (group_name == "gases") {
+          parse_gas_ensemble_params(aerosol_config, group, pw.ensemble);
         } else {
-          throw YamlException(
-              std::string("Parameter '") + iter->first.as<std::string>() +
-              std::string("' is not a sequence of values or a map!\n"));
+          parse_aero_ensemble_params(aerosol_config, group, pw.ensemble);
         }
       }
     } else {
@@ -170,89 +240,95 @@ ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
         aerosol_config.num_aerosol_populations);
     pw.ref_input.cloud_aero_mmrs.resize(aerosol_config.num_aerosol_populations,
                                         0.0);
-    std::vector<int> found_mode(num_modes, 0);
-    std::vector<std::vector<int>> found_aerosol(num_modes);
     if (root["aerosols"] and root["aerosols"].IsMap()) {
       auto aerosols = root["aerosols"];
-      for (auto iter = aerosols.begin(); iter != aerosols.end(); ++iter) {
-        auto mode_name = iter->first.as<std::string>();
-        auto mode = iter->second;
-        if (mode.IsMap()) {
-          // Determine the mode's index.
-          int mode_index = aerosol_config.aerosol_mode_index(mode_name, false);
-          if (mode_index != -1) {
-            found_mode[mode_index] = 1;
-          }
+      for (auto aiter = aerosols.begin(); aiter != aerosols.end(); ++aiter) {
+        auto group_name = aiter->first.as<std::string>();
+        if ((group_name != "cloud") and (group_name != "interstitial")) {
+          continue;
+        }
+        auto group = aiter->second;
+        std::vector<int> found_mode(num_modes, 0);
+        std::vector<std::vector<int>> found_aerosol(num_modes);
+        for (auto iter = group.begin(); iter != group.end(); ++iter) {
 
-          if (mode_index < num_modes) {
-            // Get the initial data for the aerosol species in this mode.
-            auto mode_species =
+          auto mode_name = iter->first.as<std::string>();
+          auto mode = iter->second;
+          if (mode.IsMap()) {
+            // Determine the mode's index.
+            int mode_index = aerosol_config.aerosol_mode_index(mode_name, false);
+            if (mode_index != -1) {
+              found_mode[mode_index] = 1;
+            }
+
+            if (mode_index < num_modes) {
+              // Get the initial data for the aerosol species in this mode.
+              auto mode_species =
                 aerosol_config.aerosol_species_for_mode(mode_index);
-            bool found_cloud_number_conc = false,
-                 found_int_number_conc = false;
-            found_aerosol[mode_index].resize(mode_species.size());
-            for (auto aero_iter = mode.begin(); aero_iter != mode.end();
-                 ++aero_iter) {
-              auto aero_name = aero_iter->first.as<std::string>();
-              auto aero_species = aero_iter->second;
-              if (aero_name ==
-                  "cloud_number_conc") {  // number conc, not species name!
-                pw.ref_input.cloud_number_concs[mode_index] = aero_species.as<Real>();
-                found_cloud_number_conc = true;
-              } else if (aero_name == "interstitial_number_conc") {
-                pw.ref_input.interstitial_number_concs[mode_index] = aero_species.as<Real>();
-                found_int_number_conc = true;
-              } else {
-                // Find the aerosol index within this species.
-                int aero_index = aerosol_config.aerosol_species_index(
-                    mode_index, aero_name, false);
-                if (aero_index == -1) {
-                  throw YamlException(
-                      std::string("Found invalid aerosol species '") +
-                      aero_name + std::string("' within mode '") + mode_name +
-                      std::string("' in the aerosols section!"));
+              bool found_number_conc = false;
+              found_aerosol[mode_index].resize(mode_species.size());
+              for (auto aero_iter = mode.begin(); aero_iter != mode.end();
+                  ++aero_iter) {
+                auto aero_name = aero_iter->first.as<std::string>();
+                auto aero_species = aero_iter->second;
+                if (aero_name == "number_conc") {  // number conc, not species name!
+                  if (group_name == "interstitial") {
+                    pw.ref_input.interstitial_number_concs[mode_index] = aero_species.as<Real>();
+                  } else {
+                    pw.ref_input.cloud_number_concs[mode_index] = aero_species.as<Real>();
+                  }
+                  found_number_conc = true;
                 } else {
-                  found_aerosol[mode_index][aero_index] = 1;
-                  int pop_index =
+                  // Find the aerosol index within this species.
+                  int aero_index = aerosol_config.aerosol_species_index(
+                      mode_index, aero_name, false);
+                  if (aero_index == -1) {
+                    throw YamlException(
+                        std::string("Found invalid aerosol species '") +
+                        aero_name + std::string("' within mode '") + mode_name +
+                        std::string("' in the aerosols section!"));
+                  } else {
+                    found_aerosol[mode_index][aero_index] = 1;
+                    int pop_index =
                       aerosol_config.population_index(mode_index, aero_index);
-                  pw.ref_input.interstitial_aero_mmrs[pop_index] =
-                      aero_species.as<Real>();
-                  // TODO: Cloudborne aerosols initialized to 0 for now!
-                }
-                if (not found_cloud_number_conc) {
-                  throw YamlException(
-                      std::string("Did not find 'cloud_number_conc' in '") +
-                      mode_name + std::string("' mode!"));
-                }
-                if (not found_int_number_conc) {
-                  throw YamlException(
-                      std::string("Did not find 'interstitial_number_conc' in '") +
-                      mode_name + std::string("' mode!"));
+                    if (group_name == "interstitial") {
+                      pw.ref_input.interstitial_aero_mmrs[pop_index] =
+                        aero_species.as<Real>();
+                    } else {
+                      pw.ref_input.cloud_aero_mmrs[pop_index] =
+                        aero_species.as<Real>();
+                    }
+                  }
+                  if (not found_number_conc) {
+                    throw YamlException(
+                        std::string("Did not find 'cloud_number_conc' in ") +
+                        group_name + std::string("'") +
+                        mode_name + std::string("' mode!"));
+                  }
                 }
               }
+            } else {
+              throw YamlException(std::string("Found invalid aerosol mode '") +
+                  mode_name +
+                  std::string("' in the aerosols section!"));
             }
-          } else {
-            throw YamlException(std::string("Found invalid aerosol mode '") +
-                                mode_name +
-                                std::string("' in the aerosols section!"));
           }
         }
-      }
-
-      // Did we find all the modes we need?
-      for (size_t m = 0; m < found_mode.size(); ++m) {
-        auto mode_name = aerosol_config.h_aerosol_modes(m).name();
-        if (found_mode[m] == 0) {
-          throw YamlException(std::string("Didn't find mode '") + mode_name +
-                              std::string("' in aerosols section."));
-        } else {
-          for (size_t a = 0; a < found_aerosol[m].size(); ++a) {
-            if (found_aerosol[m][a] == 0) {
-              auto mode_species = aerosol_config.aerosol_species_for_mode(m);
-              throw YamlException(std::string("Didn't find aerosol '") +
-                                  mode_species[a].symbol() +
-                                  std::string("' in mode '") + mode_name +
-                                  std::string("' of aerosols section."));
+        // Did we find all the modes we need?
+        for (size_t m = 0; m < found_mode.size(); ++m) {
+          auto mode_name = aerosol_config.h_aerosol_modes(m).name();
+          if (found_mode[m] == 0) {
+            throw YamlException(std::string("Didn't find mode '") + mode_name +
+                std::string("' in aerosols:") + group_name + std::string(" section."));
+          } else {
+            for (size_t a = 0; a < found_aerosol[m].size(); ++a) {
+              if (found_aerosol[m][a] == 0) {
+                auto mode_species = aerosol_config.aerosol_species_for_mode(m);
+                throw YamlException(std::string("Didn't find aerosol '") +
+                    mode_species[a].symbol() +
+                    std::string("' in mode '") + mode_name +
+                    std::string("' of aerosols:") + group_name + std::string(" section."));
+              }
             }
           }
         }
