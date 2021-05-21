@@ -116,17 +116,17 @@ struct KohlerTestFunctor {
     KohlerNewtonSolve newton(rh_in(pack_idx), hyg_in(pack_idx),
                              dry_rad(pack_idx), tol);
     newton_sol(pack_idx) = newton();
-    newton_err(pack_idx) = abs(newton_sol(pack_idx) - true_sol(pack_idx))/true_sol(pack_idx);
+    newton_err(pack_idx) = abs(newton_sol(pack_idx) - true_sol(pack_idx));
     newton_iterations(pack_idx) = newton.n_iter;
     KohlerBisectionSolve bisection(rh_in(pack_idx), hyg_in(pack_idx),
                                    dry_rad(pack_idx), tol);
     bisection_sol(pack_idx) = bisection();
-    bisection_err(pack_idx) = abs(bisection_sol(pack_idx) - true_sol(pack_idx))/true_sol(pack_idx);
+    bisection_err(pack_idx) = abs(bisection_sol(pack_idx) - true_sol(pack_idx));
     bisection_iterations(pack_idx) = bisection.n_iter;
 
     KohlerBracketedNewtonSolve bracket(rh_in(pack_idx), hyg_in(pack_idx), dry_rad(pack_idx), tol);
     bracket_sol(pack_idx) = bracket();
-    bracket_err(pack_idx) = abs(bracket_sol(pack_idx) - true_sol(pack_idx))/true_sol(pack_idx);
+    bracket_err(pack_idx) = abs(bracket_sol(pack_idx) - true_sol(pack_idx));
     bracket_iterations(pack_idx) = bracket.n_iter;
 
     vector_simd for (int s=0; s<HAERO_PACK_SIZE; ++s) {
@@ -214,14 +214,34 @@ TEST_CASE("KohlerPolynomial properties", "") {
   Kokkos::deep_copy(h_hygro, test_inputs.hygroscopicity);
   Kokkos::deep_copy(h_relh, test_inputs.relative_humidity);
 
+  const Real relative_error_tol = 8.06e-6;
+  const Real absolute_error_tol = 4000*FloatingPoint<Real>::zero_tol;
+
   for (int i = 0; i < num_packs; ++i) {
     REQUIRE(FloatingPoint<PackType>::equiv(
         h_kohler_at_zero(i), kelvin_droplet_effect_coeff * cube(h_rdry(i))));
-
-    REQUIRE( FloatingPoint<PackType>::rel(h_kohler_at_rdry(i), h_rdry(i)*cube(h_rdry(i))* h_hygro(i) , 4.75e-6) );
-    REQUIRE( (h_kohler_at_rdry(i) > 0).all());
+    REQUIRE( (FloatingPoint<PackType>::equiv(h_kohler_at_rdry(i), h_rdry(i)*cube(h_rdry(i))* h_hygro(i), absolute_error_tol) or FloatingPoint<PackType>::rel(h_kohler_at_rdry(i), h_rdry(i)*cube(h_rdry(i))*h_hygro(i), relative_error_tol) ) );
+    /*REQUIRE*/ if ( !( FloatingPoint<PackType>::equiv(h_kohler_at_rdry(i), h_rdry(i)*cube(h_rdry(i))* h_hygro(i), absolute_error_tol)   or FloatingPoint<PackType>::rel(h_kohler_at_rdry(i), h_rdry(i)*cube(h_rdry(i))*h_hygro(i),relative_error_tol) )) {
+      std::cout << "rel. err. K(r_dry): " << abs(h_kohler_at_rdry(i) -
+        h_rdry(i)*cube(h_rdry(i))*h_hygro(i)) / (h_rdry(i)*cube(h_rdry(i))*h_hygro(i)) <<
+        " abs. err.: " << abs(h_kohler_at_rdry(i) - h_rdry(i)*cube(h_rdry(i))*h_hygro(i)) << "\n";
+    }
+    if (!( h_kohler_at_rdry(i) > 0).all() ) {
+      std::cout << "K(r_dry) = " << h_kohler_at_rdry(i) << " for rh = " << h_relh(i) << " hyg = " << h_hygro(i) << " rdry = " << h_rdry(i) << " correct value = " << h_rdry(i) * cube(h_rdry(i)) * h_hygro(i) << "\n";
+    }
+    CHECK( (h_kohler_at_rdry(i) > 0).all());
     REQUIRE((h_kohler_at_25rdry(i) < 0).all());
   }
+
+  std::cout << "Kohler properties tested:\n";
+  std::cout << "\tK(0)     = r_dry**3 * kevlinA > 0\n";
+  std::cout << "\tK(r_dry) = r_dry**4 * hygro > 0 \n";
+  std::cout << "\tK(25*r_dry) < 0\n";
+  std::cout << "Kohler polynomial property tests used the following error tolerances:\n";
+  std::cout << "\tabsolute error tol: " << absolute_error_tol << "\n";
+  std::cout << "\trelative error tol: " << relative_error_tol << "\n";
+  std::cout << line_delim();
+
 }
 
 TEST_CASE("KohlerSolve-verification", "") {
@@ -336,6 +356,19 @@ TEST_CASE("KohlerSolve-verification", "") {
   std::cout << "\t max err = " << max_err_bracket << "\n";
   std::cout << "\tmax iter = " << max_iter_bracket << "\n";
 
+  std::cout << "To generate the verification data with Mathematica, run this "
+               "program:\n\n";
+  std::cout << line_delim();
+
+  std::cout << KohlerPolynomial<PackType>::mathematica_verification_program(N);
+
+  std::cout << line_delim();
+  std::cout << "\n\nTo generate the verification data with Matlab, run this "
+               "program:\n\n";
+  std::cout << line_delim();
+  std::cout << KohlerPolynomial<PackType>::matlab_verification_program(N);
+  std::cout << line_delim();
+
 #if HAERO_DOUBLE_PRECISION || !defined(NDEBUG)
   REQUIRE(max_err_newton < 1.5 * conv_tol);
 #else
@@ -345,13 +378,4 @@ TEST_CASE("KohlerSolve-verification", "") {
   REQUIRE(max_err_bisection < 2.3 * conv_tol);
   REQUIRE(max_err_bracket < 2.3 * conv_tol);
 
-  std::cout << "To generate the verification data with Mathematica, run this "
-               "program:\n\n";
-
-  std::cout << KohlerPolynomial<PackType>::mathematica_verification_program(N);
-
-  std::cout << "\n\nTo generate the verification data with Matlab, run this "
-               "program:\n\n";
-
-  std::cout << KohlerPolynomial<PackType>::matlab_verification_program(N);
 }

@@ -23,6 +23,9 @@ std::string& tolower(std::string& s);
 /// Get the filename extension from a string containing a filename
 std::string get_filename_ext(const std::string& fname);
 
+/// Write a horizontal line to a string
+std::string line_delim();
+
 /** @brief Returns true if a std::vector's elements are either increasing or
   decreasing.
 

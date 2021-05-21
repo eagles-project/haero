@@ -509,7 +509,8 @@ struct BisectionSolver {
         xnp1(0.5 * (a0 + b0)),
         counter(0),
         iter_diff(b0 - a0),
-        f(fn) {}
+        f(fn) {
+        }
 
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
