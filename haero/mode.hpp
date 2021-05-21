@@ -12,6 +12,9 @@
 
 namespace haero {
 
+  // Constants
+  static constexpr Real pi_sixth = constants::pi/6;
+
 /// @struct Mode
 /// This struct represents an aerosol particle mode and contains all associated
 /// metadata. It is not polymorphic, so don't derive any subclass from it.
@@ -93,11 +96,32 @@ struct Mode final {
   /// The crystallization point (rel. humidity) for this mode.
   Real crystallization_pt;
 
+  /** @brief This function returns the minimum volume to number ratio,
+      which is computed using the maximum diameter(units:meters) and
+      modal standard deviation
+
+      @return modal minimum volume to number ratio [m^-3] FIXME: Check the units again
+  */
+  KOKKOS_INLINE_FUNCTION  Real min_vol_to_num_ratio() {
+    return 1/(pi_sixth*(std::pow(max_diameter,3))*exp(4.5*square(log(mean_std_dev))));
+  }
+
+  /** @brief This function returns the maximum volume to number ratio,
+      which is computed using the minimum diameter(units:meters) and
+      modal standard deviation
+
+      @return modal maximum volume to number ratio [m^-3] FIXME: Check the units again
+  */
+
+  KOKKOS_INLINE_FUNCTION Real max_vol_to_num_ratio() {
+  return 1/(pi_sixth*(std::pow(min_diameter,3))*exp(4.5*square(log(mean_std_dev))));
+  }
+
  private:
   char name_view[NAME_LEN];
 };
 
-/** @brief This function returns the modal geometric mean particle diametr,
+/** @brief This function returns the modal geometric mean particle diameter,
   given the mode's mean volume (3rd log-normal moment) and the modal standard
   deviation.
 
@@ -108,7 +132,6 @@ struct Mode final {
 template <typename T>
 KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter(
     const T mode_mean_particle_volume, const Real log_sigma) {
-  static constexpr Real pi_sixth = constants::pi / 6;
   return cbrt(pi_sixth * mode_mean_particle_volume) *
          exp(-1.5 * square(log_sigma));
 }
