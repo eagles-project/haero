@@ -12,8 +12,8 @@
 
 namespace haero {
 
-  // Constants
-  static constexpr Real pi_sixth = constants::pi/6;
+// Constants
+static constexpr Real pi_sixth = constants::pi / 6;
 
 /// @struct Mode
 /// This struct represents an aerosol particle mode and contains all associated
@@ -100,21 +100,25 @@ struct Mode final {
       which is computed using the maximum diameter(units:meters) and
       modal standard deviation
 
-      @return modal minimum volume to number ratio [m^-3] FIXME: Check the units again
+      @return modal minimum volume to number ratio [m^-3] FIXME: Check the units
+     again
   */
-  KOKKOS_INLINE_FUNCTION  Real min_vol_to_num_ratio() {
-    return 1/(pi_sixth*(std::pow(max_diameter,3))*exp(4.5*square(log(mean_std_dev))));
+  KOKKOS_INLINE_FUNCTION Real min_vol_to_num_ratio() {
+    return 1 / (pi_sixth * (std::pow(max_diameter, 3)) *
+                exp(4.5 * square(log(mean_std_dev))));
   }
 
   /** @brief This function returns the maximum volume to number ratio,
       which is computed using the minimum diameter(units:meters) and
       modal standard deviation
 
-      @return modal maximum volume to number ratio [m^-3] FIXME: Check the units again
+      @return modal maximum volume to number ratio [m^-3] FIXME: Check the units
+     again
   */
 
   KOKKOS_INLINE_FUNCTION Real max_vol_to_num_ratio() {
-  return 1/(pi_sixth*(std::pow(min_diameter,3))*exp(4.5*square(log(mean_std_dev))));
+    return 1 / (pi_sixth * (std::pow(min_diameter, 3)) *
+                exp(4.5 * square(log(mean_std_dev))));
   }
 
  private:
