@@ -16,7 +16,7 @@ module haero
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
 
   !parameters
-  real(wp), parameter :: pi_sixth = pi/6_wp
+  real(wp), parameter :: pi_sixth = pi/6.0_wp
 
   !> This Fortran type is the equivalent of the C++ Mode struct.
   type :: mode_t
@@ -618,7 +618,6 @@ contains
     class(mode_t),   intent(in) :: imode
 
     real(wp) :: max_vol2num
-    real(wp) :: pi = 3.14_wp
     max_vol2num = 1.0_wp/(pi_sixth*(imode%min_diameter**3.0_wp)*exp(4.5_wp*(log(imode%mean_std_dev))**2.0_wp))
 
   end function m_max_vol_to_num_ratio
