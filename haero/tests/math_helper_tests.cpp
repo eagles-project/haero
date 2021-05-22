@@ -109,20 +109,20 @@ TEST_CASE("rootfinding-PackType", "") {
   h_exact_roots(1) = quartic_root;
   Kokkos::deep_copy(exact_roots, h_exact_roots);
 
-  SECTION("NewtonSolver") {
-    Kokkos::View<PackType[2]> num_sol("num_sol");
-    auto h_num_sol = Kokkos::create_mirror_view(num_sol);
-    h_num_sol(0) = PackType(x0);
-    h_num_sol(1) = PackType(x0);
-    Kokkos::deep_copy(num_sol, h_num_sol);
+  Kokkos::View<PackType[2]> num_sol("num_sol");
+  auto h_num_sol = Kokkos::create_mirror_view(num_sol);
+  h_num_sol(0) = PackType(x0);
+  h_num_sol(1) = PackType(x0);
+  Kokkos::deep_copy(num_sol, h_num_sol);
 
-    Kokkos::View<ekat::Pack<int, HAERO_PACK_SIZE>[2]> niterations(
+  Kokkos::View<ekat::Pack<int, HAERO_PACK_SIZE>[2]> niterations(
         "niterations");
-    auto h_niterations = Kokkos::create_mirror_view(niterations);
-    h_niterations(0) = 0;
-    h_niterations(1) = 0;
-    Kokkos::deep_copy(niterations, h_niterations);
+  auto h_niterations = Kokkos::create_mirror_view(niterations);
+  h_niterations(0) = 0;
+  h_niterations(1) = 0;
+  Kokkos::deep_copy(niterations, h_niterations);
 
+  SECTION("NewtonSolver") {
     Kokkos::parallel_for(
         1, KOKKOS_LAMBDA(const int i) {
           const LegendreCubic<PackType> p3;
@@ -140,10 +140,38 @@ TEST_CASE("rootfinding-PackType", "") {
     Kokkos::deep_copy(h_num_sol, num_sol);
     Kokkos::deep_copy(h_niterations, niterations);
 
-    std::cout << "Packed newton rel. error (cubic) = "
+    std::cout << "packed newton rel. error (cubic) = "
               << abs(h_num_sol(0) - cubic_root) / cubic_root
               << ", niterations = " << h_niterations(0) << "\n";
-    std::cout << "Packed newton rel. error (quartic) = "
+    std::cout << "packed newton rel. error (quartic) = "
+              << abs(h_num_sol(1) - quartic_root) / quartic_root
+              << ", niterations = " << h_niterations(1) << "\n";
+
+    REQUIRE(FloatingPoint<PackType>::equiv(h_num_sol(0), cubic_root, conv_tol));
+    REQUIRE(
+        FloatingPoint<PackType>::equiv(h_num_sol(1), quartic_root, conv_tol));
+  }
+
+  SECTION("Bisection Solver") {
+
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA (const int i) {
+      const LegendreCubic<PackType> p3;
+      const LegendreQuartic<PackType> p4;
+      auto cubic_solver = BisectionSolver<LegendreCubic<PackType>>(PackType(a0), PackType(b0), conv_tol, p3);
+      auto quartic_solver = BisectionSolver<LegendreQuartic<PackType>>(PackType(a0), PackType(b0), conv_tol, p4);
+      num_sol(0) = cubic_solver.solve();
+      num_sol(1) = quartic_solver.solve();
+      niterations(0) = cubic_solver.counter;
+      niterations(1) = quartic_solver.counter;
+    });
+
+    Kokkos::deep_copy(h_num_sol, num_sol);
+    Kokkos::deep_copy(h_niterations, niterations);
+
+    std::cout << "packed bisection rel. error (cubic) = "
+              << abs(h_num_sol(0) - cubic_root) / cubic_root
+              << ", niterations = " << h_niterations(0) << "\n";
+    std::cout << "packed bisection rel. error (quartic) = "
               << abs(h_num_sol(1) - quartic_root) / quartic_root
               << ", niterations = " << h_niterations(1) << "\n";
 
@@ -153,28 +181,16 @@ TEST_CASE("rootfinding-PackType", "") {
   }
 
   SECTION("Bracketed Newton Solver") {
-    Kokkos::View<PackType[2]> num_sol("num_sol");
-    auto h_num_sol = Kokkos::create_mirror_view(num_sol);
-    h_num_sol(0) = PackType(x0);
-    h_num_sol(1) = PackType(x0);
-    Kokkos::deep_copy(num_sol, h_num_sol);
-
-    Kokkos::View<ekat::Pack<int, HAERO_PACK_SIZE>[2]> niterations(
-        "niterations");
-    auto h_niterations = Kokkos::create_mirror_view(niterations);
-    h_niterations(0) = 0;
-    h_niterations(1) = 0;
-    Kokkos::deep_copy(niterations, h_niterations);
 
     Kokkos::parallel_for(
         1, KOKKOS_LAMBDA(const int i) {
           const LegendreCubic<PackType> p3;
           const LegendreQuartic<PackType> p4;
           auto cubic_solver =
-              BracketedNewtonSolver<LegendreCubic<PackType>, PackType>(
+              BracketedNewtonSolver<LegendreCubic<PackType>>(
                   num_sol(0), a0, b0, conv_tol, p3);
           auto quartic_solver =
-              BracketedNewtonSolver<LegendreQuartic<PackType>, PackType>(
+              BracketedNewtonSolver<LegendreQuartic<PackType>>(
                   num_sol(1), a0, b0, conv_tol, p4);
           num_sol(0) = cubic_solver.solve();
           num_sol(1) = quartic_solver.solve();
@@ -185,10 +201,10 @@ TEST_CASE("rootfinding-PackType", "") {
     Kokkos::deep_copy(h_num_sol, num_sol);
     Kokkos::deep_copy(h_niterations, niterations);
 
-    std::cout << "bracketed newton rel. error (cubic) = "
+    std::cout << "packed bracketed newton rel. error (cubic) = "
               << abs(h_num_sol(0) - cubic_root) / cubic_root
               << ", niterations = " << h_niterations(0) << "\n";
-    std::cout << "bracketed newton rel. error (quartic) = "
+    std::cout << "packed bracketed newton rel. error (quartic) = "
               << abs(h_num_sol(1) - quartic_root) / quartic_root
               << ", niterations = " << h_niterations(1) << "\n";
 

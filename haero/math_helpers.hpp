@@ -8,6 +8,7 @@
 #include "floating_point.hpp"
 #include "haero.hpp"
 #include "physical_constants.hpp"
+#include "check_helpers.hpp"
 
 namespace haero {
 
@@ -37,66 +38,6 @@ KOKKOS_INLINE_FUNCTION T sphere_radius_from_volume(const T vol) {
 }
 
 namespace math {
-
-/** @brief Performs a single iteration of Newton's method for finding the root
-  of a scalar equation, e.g.,  @f$ f(x) = 0 @f$.
-
-  @param [in] xn Current solution, @f$ x_n @f$
-  @param [in] fx Function value at current solution, @f$ f(x_n) @f$
-  @param [in] fpx Function derivative at current solution, @f$ f'(x_n) @f$
-  @return Next iterate,  @f$ x_{n+1} @f$
-*/
-template <typename T>
-KOKKOS_INLINE_FUNCTION T next_newton_scalar_iteration(const T& xn, const T& fx,
-                                                      const T& fpx) {
-  static_assert(std::is_floating_point<
-                    typename ekat::ScalarTraits<T>::scalar_type>::value,
-                "floating point type.");
-  return xn - fx / fpx;
-}
-
-/** @brief Performs a single iteration of the recursive bisection algorithm for
-  finding roots of scalar equations @f$ f(x) = 0 @f$.
-
-  @param [out] xnp1 Next iterate, @f$ x_{n+1} @f$
-  @param [inout] an Left endpoint of current search interval, @f$ a_n @f$
-  @param [inout] bn Right endpoint of current search interval, @f$ b_n @f$
-  @param [inout] fan Function value at left endpoint of current search interval,
-  @f$ f(a_n) @f$
-  @param [in] xn Current solution, @f$ x_n @f$
-  @param [in] fx Function value at current solution, @f$ f(x_n) @f$
-
-*/
-template <typename T>
-KOKKOS_INLINE_FUNCTION void next_bisection_scalar_iteration(T& xnp1, T& an,
-                                                            T& bn, T& fan,
-                                                            const T& xn,
-                                                            const T& fx) {
-  static_assert(std::is_floating_point<
-                    typename ekat::ScalarTraits<T>::scalar_type>::value,
-                "floating point type.");
-  xnp1 = 0.5 * (an + bn);
-  if (fx * fan < 0) {
-    bn = xn;
-  } else {
-    an = xn;
-    fan = fx;
-  }
-}
-
-template <>
-KOKKOS_INLINE_FUNCTION void next_bisection_scalar_iteration<PackType>(
-    PackType& xnp1, PackType& an, PackType& bn, PackType& fan,
-    const PackType& xn, const PackType& fx) {
-  xnp1 = 0.5 * (an + bn);
-  const auto m = (fx * fan < 0);
-  const auto not_m = !m;
-  ekat_masked_loop(m, s) { bn[s] = xn[s]; };
-  ekat_masked_loop(not_m, s) {
-    an[s] = xn[s];
-    fan[s] = fx[s];
-  };
-}
 
 /** @brief Cubic Legendre polynomial, @f$ P_3(x) @f$
 
@@ -219,10 +160,7 @@ struct ScalarNewtonSolver {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
-      const value_type fxn = f(xroot);
-      const value_type fprimexn = f.derivative(xroot);
-      const value_type xnp1 =
-          next_newton_scalar_iteration(xroot, fxn, fprimexn);
+      const value_type xnp1 = xroot - f(xroot) / f.derivative(xroot);
       iter_diff = abs(xnp1 - xroot);
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       if (counter >= max_iter) {
@@ -260,44 +198,46 @@ robustness of the bisection method. In addition to the requirement that the
 initial interval contains a root, this solver requires that function value at
 the initial interval endpoints have opposite sign.
 */
-template <typename ScalarFunction, typename ST = Real>
+template <typename ScalarFunction>
 struct BracketedNewtonSolver {
   using value_type = typename ScalarFunction::value_type;
-  static_assert(
-      !ekat::ScalarTraits<typename ScalarFunction::value_type>::is_simd,
-      "unpacked impl for non-simd data types.");
-  static_assert(std::is_floating_point<ST>::value, "floating point type.");
   static constexpr int max_iter = 200;
-  Real xroot;
-  Real a;
-  Real b;
+  value_type xroot;
+  value_type a;
+  value_type b;
   Real conv_tol;
-  Real fa;
-  Real fx;
-  Real fb;
+  value_type fa;
+  value_type fx;
+  value_type fb;
   const ScalarFunction& f;
   int counter;
   value_type iter_diff;
 
   KOKKOS_INLINE_FUNCTION
-  BracketedNewtonSolver(const value_type x0, const Real a0, const value_type b0,
+  BracketedNewtonSolver(const value_type x0, const Real a0, const Real b0,
                         const Real tol, const ScalarFunction& fn)
       : xroot(x0),
         a(a0),
         b(b0),
         conv_tol(tol),
-        fa(fn(a0)),
+        fa(fn(value_type(a0))),
         fx(fn(x0)),
-        fb(fn(b0)),
+        fb(fn(value_type(b0))),
         f(fn),
         counter(0),
         iter_diff(std::numeric_limits<Real>::max()) {
-    EKAT_KERNEL_ASSERT(b > a);
-    EKAT_KERNEL_ASSERT(fa * fb < 0);
+    EKAT_KERNEL_ASSERT( Check<value_type>::is_positive(b-a) );
+    EKAT_KERNEL_ASSERT( Check<value_type>::is_negative(fa*fb) );
   }
 
   KOKKOS_INLINE_FUNCTION
   value_type solve() {
+    return solve_impl<value_type>();
+  }
+
+  template <typename VT>
+  KOKKOS_INLINE_FUNCTION
+  typename std::enable_if<std::is_floating_point<VT>::value, value_type>::type solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
@@ -341,76 +281,19 @@ struct BracketedNewtonSolver {
     }
     return xroot;
   }
-};
 
-template <typename ScalarFunction>
-struct BracketedNewtonSolver<ScalarFunction, PackType> {
-  static_assert(
-      ekat::ScalarTraits<typename ScalarFunction::value_type>::is_simd,
-      "simd impl for packed data types.");
-  static_assert(std::is_floating_point<typename ekat::ScalarTraits<
-                    typename ScalarFunction::value_type>::scalar_type>::value,
-                "floating point type.");
-
-  static constexpr int max_iter = 200;
-
-  PackType xroot;
-  PackType a;
-  PackType b;
-  Real conv_tol;
-  PackType fa;
-  PackType fb;
-  PackType fx;
-  const ScalarFunction& f;
-  int counter;
-  PackType iter_diff;
-
+  template <typename VT>
   KOKKOS_INLINE_FUNCTION
-  BracketedNewtonSolver(const PackType& x0, const Real a0, const Real b0,
-                        const Real tol, const ScalarFunction& fn)
-      : xroot(x0),
-        a(a0),
-        b(b0),
-        conv_tol(tol),
-        fa(fn(PackType(a0))),
-        fb(fn(PackType(b0))),
-        fx(fn(x0)),
-        f(fn),
-        counter(0),
-        iter_diff(std::numeric_limits<Real>::max()) {
-    EKAT_KERNEL_ASSERT((b > a).all());
-    EKAT_KERNEL_ASSERT((fa * fb < 0).all());
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  BracketedNewtonSolver(const PackType& x0, const PackType& a0,
-                        const PackType& b0, const Real tol,
-                        const ScalarFunction& fn)
-      : xroot(x0),
-        a(a0),
-        b(b0),
-        conv_tol(tol),
-        fa(fn(a0)),
-        fb(fn(b0)),
-        fx(fn(x0)),
-        f(fn),
-        counter(0),
-        iter_diff(std::numeric_limits<Real>::max()) {
-    EKAT_KERNEL_ASSERT((b > a).all());
-    EKAT_KERNEL_ASSERT((fa * fb < 0).all());
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  PackType solve() {
+  typename std::enable_if<VT::packtag, value_type>::type solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
       // newton step
-      PackType x = xroot - fx / f.derivative(xroot);
+      VT x = xroot - fx / f.derivative(xroot);
       // safeguard: require x to be inside current bracket
       // assure progress: guard against tiny steps
-      const PackType pad = bracket_pad_factor * (b - a);
-      const MaskType mbnd = (x > (a + pad)) and (x < (b - pad));
+      const VT pad = bracket_pad_factor * (b - a);
+      const auto mbnd = (x > (a + pad)) and (x < (b - pad));
       vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
         if (!mbnd[s]) {
           x[s] = 0.5 * (a[s] + b[s]);
@@ -430,7 +313,7 @@ struct BracketedNewtonSolver<ScalarFunction, PackType> {
       }
       // check convergence
       iter_diff = abs(x - xroot);
-      keep_going = !FloatingPoint<PackType>::zero(iter_diff, conv_tol);
+      keep_going = !FloatingPoint<VT>::zero(iter_diff, conv_tol);
       // prevent infinite loops
       if (counter >= max_iter) {
 #ifndef HAERO_USE_CUDA
@@ -453,6 +336,117 @@ struct BracketedNewtonSolver<ScalarFunction, PackType> {
     return xroot;
   }
 };
+
+// template <typename ScalarFunction>
+// struct BracketedNewtonSolver<ScalarFunction, PackType> {
+//   static_assert(
+//       ekat::ScalarTraits<typename ScalarFunction::value_type>::is_simd,
+//       "simd impl for packed data types.");
+//   static_assert(std::is_floating_point<typename ekat::ScalarTraits<
+//                     typename ScalarFunction::value_type>::scalar_type>::value,
+//                 "floating point type.");
+//
+//   static constexpr int max_iter = 200;
+//
+//   PackType xroot;
+//   PackType a;
+//   PackType b;
+//   Real conv_tol;
+//   PackType fa;
+//   PackType fb;
+//   PackType fx;
+//   const ScalarFunction& f;
+//   int counter;
+//   PackType iter_diff;
+//
+//   KOKKOS_INLINE_FUNCTION
+//   BracketedNewtonSolver(const PackType& x0, const Real a0, const Real b0,
+//                         const Real tol, const ScalarFunction& fn)
+//       : xroot(x0),
+//         a(a0),
+//         b(b0),
+//         conv_tol(tol),
+//         fa(fn(PackType(a0))),
+//         fb(fn(PackType(b0))),
+//         fx(fn(x0)),
+//         f(fn),
+//         counter(0),
+//         iter_diff(std::numeric_limits<Real>::max()) {
+//     EKAT_KERNEL_ASSERT((b > a).all());
+//     EKAT_KERNEL_ASSERT((fa * fb < 0).all());
+//   }
+//
+//   KOKKOS_INLINE_FUNCTION
+//   BracketedNewtonSolver(const PackType& x0, const PackType& a0,
+//                         const PackType& b0, const Real tol,
+//                         const ScalarFunction& fn)
+//       : xroot(x0),
+//         a(a0),
+//         b(b0),
+//         conv_tol(tol),
+//         fa(fn(a0)),
+//         fb(fn(b0)),
+//         fx(fn(x0)),
+//         f(fn),
+//         counter(0),
+//         iter_diff(std::numeric_limits<Real>::max()) {
+//     EKAT_KERNEL_ASSERT((b > a).all());
+//     EKAT_KERNEL_ASSERT((fa * fb < 0).all());
+//   }
+//
+//   KOKKOS_INLINE_FUNCTION
+//   PackType solve() {
+//     bool keep_going = true;
+//     while (keep_going) {
+//       ++counter;
+//       // newton step
+//       PackType x = xroot - fx / f.derivative(xroot);
+//       // safeguard: require x to be inside current bracket
+//       // assure progress: guard against tiny steps
+//       const PackType pad = bracket_pad_factor * (b - a);
+//       const MaskType mbnd = (x > (a + pad)) and (x < (b - pad));
+//       vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
+//         if (!mbnd[s]) {
+//           x[s] = 0.5 * (a[s] + b[s]);
+//         }
+//       }
+//       fx = f(x);
+//       // update bracket
+//       const auto msign = (fx * fa > 0);
+//       vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
+//         if (msign[s]) {
+//           a[s] = x[s];
+//           fa[s] = fx[s];
+//         } else {
+//           b[s] = x[s];
+//           fb[s] = fx[s];
+//         }
+//       }
+//       // check convergence
+//       iter_diff = abs(x - xroot);
+//       keep_going = !FloatingPoint<PackType>::zero(iter_diff, conv_tol);
+//       // prevent infinite loops
+//       if (counter >= max_iter) {
+// #ifndef HAERO_USE_CUDA
+//         std::ostringstream ss;
+//         ss << "bracketed newton solve warning, max iterations reached: xroot "
+//               "= ";
+//         ss << xroot << ", x = " << x << ", |diff| = " << iter_diff << "\n";
+//         std::cout << ss.str();
+// #else
+//         static_assert(HAERO_PACK_SIZE == 1, "cuda uses pack size 1");
+//         printf(
+//             "bracketed newton solve warning, max iterations reached: xroot = "
+//             "%g xnp1 = %g |diff| = %g\n",
+//             xroot[0], xnp1[0], iter_diff[0])
+// #endif
+//         keep_going = false;
+//       }
+//       xroot = x;
+//     }
+//     return xroot;
+//   }
+// };
 
 /** @brief Scalar rootfinding algorithm that employs the recursive bisection
   method. This method has only a linear convergence rate, but it is guaranteed
@@ -516,12 +510,51 @@ struct BisectionSolver {
   /// tolerance is not met before the maximum number of iterations is achieved.
   KOKKOS_INLINE_FUNCTION
   value_type solve() {
+    return solve_impl<value_type>();
+  }
+
+  template <typename VT>
+  KOKKOS_INLINE_FUNCTION
+  typename std::enable_if<std::is_floating_point<VT>::value, value_type>::type solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
       const value_type fx = f(xroot);
-      next_bisection_scalar_iteration(xnp1, a, b, fa, xroot, fx);
+      xnp1 = 0.5*(a + b);
+      if (fx * fa < 0) {
+        b = xroot;
+      }
+      else {
+        a = xroot;
+        fa = fx;
+      }
       iter_diff = b - a;
+      xroot = xnp1;
+      keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
+      if (counter >= max_iter) {
+        printf("bisection solve warning: max iterations reached");
+        keep_going = false;
+      }
+    }
+    return xroot;
+  }
+
+  template <typename VT>
+  KOKKOS_INLINE_FUNCTION
+  typename std::enable_if<VT::packtag, value_type>::type solve_impl() {
+    bool keep_going = true;
+    while (keep_going) {
+      ++counter;
+      xnp1 = 0.5*(a+b);
+      const value_type fx = f(xroot);
+      const auto m = (fx * fa < 0);
+      const auto notm = !m;
+      ekat_masked_loop(m, s)    {b[s] = xroot[s];};
+      ekat_masked_loop(notm, s) {
+        a[s] = xroot[s];
+        fa[s] = fx[s];
+      };
+      iter_diff = b-a;
       xroot = xnp1;
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       if (counter >= max_iter) {
