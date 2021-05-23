@@ -174,7 +174,7 @@ struct ScalarNewtonSolver {
         printf(
             "newton solve warning: max iterations reached xroot = %g xnp1 = %g "
             "|diff| = %g\n",
-            xroot[0], xnp1[0], iter_diff[0]);
+            xroot, xnp1, iter_diff);
 #endif
         keep_going = false;
       }
@@ -245,7 +245,8 @@ struct BracketedNewtonSolver {
       value_type x = xroot - fx / f.derivative(xroot);
       // safeguard: require x to be inside current bracket
       // assure progress: guard against tiny steps
-      const Real pad = bracket_pad_factor * (b - a);
+      const Real pad_fac = bracket_pad_factor;
+      const Real pad = pad_fac * (b - a);
       if (!FloatingPoint<Real>::in_bounds(x, a + pad, b - pad)) {
         x = 0.5 * (a + b);
       }
@@ -273,7 +274,7 @@ struct BracketedNewtonSolver {
         printf(
             "bracketed newton solve warning, max iterations reached: xroot = "
             "%g xnp1 = %g |diff| = %g\n",
-            xroot, xnp1, iter_diff);
+            xroot, x, iter_diff);
 #endif
         keep_going = false;
       }
@@ -292,7 +293,8 @@ struct BracketedNewtonSolver {
       VT x = xroot - fx / f.derivative(xroot);
       // safeguard: require x to be inside current bracket
       // assure progress: guard against tiny steps
-      const VT pad = bracket_pad_factor * (b - a);
+      const Real pad_fac = bracket_pad_factor;
+      const VT pad = pad_fac * (b - a);
       const auto mbnd = (x > (a + pad)) and (x < (b - pad));
       vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
         if (!mbnd[s]) {
@@ -327,7 +329,7 @@ struct BracketedNewtonSolver {
         printf(
             "bracketed newton solve warning, max iterations reached: xroot = "
             "%g xnp1 = %g |diff| = %g\n",
-            xroot[0], xnp1[0], iter_diff[0])
+            xroot[0], x[0], iter_diff[0]);
 #endif
         keep_going = false;
       }

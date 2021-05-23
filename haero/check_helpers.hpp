@@ -17,8 +17,10 @@ namespace haero {
 */
 template <typename ScalarType>
 struct Check {
+  KOKKOS_INLINE_FUNCTION
   static bool is_negative(const ScalarType& x) { return (x < 0); }
 
+  KOKKOS_INLINE_FUNCTION
   static bool is_positive(const ScalarType& x) { return (x > 0); }
 };
 
@@ -32,8 +34,10 @@ template <typename ScalarType>
 struct Check<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
   using ValueType = ekat::Pack<ScalarType, HAERO_PACK_SIZE>;
 
+  KOKKOS_INLINE_FUNCTION
   static bool is_negative(const ValueType& x) { return (x < 0).all(); }
 
+  KOKKOS_INLINE_FUNCTION
   static bool is_positive(const ValueType& x) { return (x > 0).all(); }
 };
 
