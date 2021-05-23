@@ -135,7 +135,6 @@ struct KohlerTestFunctor {
     }
 
 #ifndef HAERO_USE_CUDA
-    // #ifndef NDEBUG
     if ((newton_err(pack_idx) > 2 * tol).any()) {
       std::cout << "error exceeds tolerance at pack " << pack_idx << "\n";
       std::cout << "\tarray indices: ";
@@ -148,7 +147,6 @@ struct KohlerTestFunctor {
                 << " n_iter = " << newton_iterations(pack_idx) << "\n";
       std::cout << "\ttrue_sol = " << true_sol(pack_idx) << "\n";
     }
-// #endif
 #endif
     if (pack_idx == rh_in.extent(0) - 1) {
       ekat_masked_loop(!pack_masks(pack_idx), s) {

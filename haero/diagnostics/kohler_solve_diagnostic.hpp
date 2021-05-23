@@ -9,9 +9,6 @@
 #include "haero/math_helpers.hpp"
 
 namespace haero {
-
-static constexpr bool kohler_convert_float = std::is_same<Real, float>::value;
-
 /** Coefficient accounting for Kelvin effect on droplets
 
    In the documentation, this constant is denoted by A.
@@ -124,14 +121,6 @@ struct KohlerPolynomial {
     const T result = (log_rel_humidity * rwet - kelvinA) * cube(rwet) +
                      ((hygroscopicity - log_rel_humidity) * rwet + kelvinA) *
                          dry_radius_cubed;
-    //     if ( isnan(result).any() ) {
-    //       std::cout << "K(" << wet_radius << ") = " << result << ": nan
-    //       found.  log(rh)  = " << log_rel_humidity << " hyg = " <<
-    //       hygroscopicity
-    //       << " dry_radius = " << dry_radius << " cube rwet = " << cube(rwet)
-    //       << " dry_rad_cube = " << dry_radius_cubed << "\n";
-    //       EKAT_REQUIRE(false);
-    //     }
     return result;
   }
 
@@ -151,13 +140,6 @@ struct KohlerPolynomial {
     const T result =
         (4 * log_rel_humidity * rwet - 3 * kelvinA) * wet_radius_squared +
         (hygroscopicity - log_rel_humidity) * dry_radius_cubed;
-    //     if ( isnan(result).any() ) {
-    //       std::cout << "K'(" << wet_radius << ") = " << result << ": nan
-    //       found at rh  = " << exp(log_rel_humidity) << " hyg = " <<
-    //       hygroscopicity
-    //       << " dry_radius = " << dry_radius << "\n";
-    // //       EKAT_REQUIRE(false);
-    //     }
     return result;
   }
 
