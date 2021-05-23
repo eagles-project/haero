@@ -138,8 +138,8 @@ struct KohlerTestFunctor {
     }
 
 #ifndef HAERO_USE_CUDA
-#ifndef NDEBUG
-    if ( (newton_err(pack_idx) > tol).any() ) {
+// #ifndef NDEBUG
+    if ( (newton_err(pack_idx) > 2*tol).any() ) {
       std::cout << "error exceeds tolerance at pack " << pack_idx << "\n";
       std::cout << "\tarray indices: ";
       for (int i = 0; i < HAERO_PACK_SIZE; ++i) {
@@ -151,7 +151,7 @@ struct KohlerTestFunctor {
                 << " n_iter = " << newton_iterations(pack_idx) << "\n";
       std::cout << "\ttrue_sol = " << true_sol(pack_idx) << "\n";
     }
-#endif
+// #endif
 #endif
     if (pack_idx == rh_in.extent(0) - 1) {
       ekat_masked_loop(!pack_masks(pack_idx), s) {
@@ -295,7 +295,7 @@ TEST_CASE("KohlerSolve-verification", "") {
   Kokkos::deep_copy(true_sol, h_true_sol);
   mm_sols.close();
 
-  std::cout << "launching test kernel\n";
+  std::cout << "launching test kernel with convergence tol = " << conv_tol << "\n";
   Kokkos::parallel_for(
       "KohlerVerificatioTest", num_packs,
       KohlerTestFunctor(newton_sol, newton_error, newton_iterations,
@@ -361,16 +361,9 @@ TEST_CASE("KohlerSolve-verification", "") {
   std::cout << KohlerPolynomial<>::matlab_verification_program(N);
   std::cout << line_delim();
 
-#if HAERO_DOUBLE_PRECISION || !defined(NDEBUG)
   REQUIRE(max_err_newton < 1.5 * conv_tol);
-  REQUIRE(max_err_bracket < 2.3 * conv_tol);
-#else
-  std::cout
-      << "DISABLED Newton Solver test due to single precision/release build\n";
-  std::cout
-      << "DISABLED Bracketed Newton Solver test due to single precision/release build\n";
-#endif
-  REQUIRE(max_err_bisection < 2.3 * conv_tol);
+  REQUIRE(max_err_bracket < 1.5 * conv_tol);
+  REQUIRE(max_err_bisection < 1.5 * conv_tol);
 
 
 }
