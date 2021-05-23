@@ -60,8 +60,9 @@ static constexpr Real kelvin_droplet_effect_coeff = 0.00120746723156361711;
 */
 template <typename T = ekat::Pack<double, HAERO_PACK_SIZE>>
 struct KohlerPolynomial {
-  static_assert( std::is_same<typename ekat::ScalarTraits<T>::scalar_type, double>::value,
-    "double precision required.");
+  static_assert(
+      std::is_same<typename ekat::ScalarTraits<T>::scalar_type, double>::value,
+      "double precision required.");
 
   /// Minimum value of relative humidity
   static constexpr double rel_humidity_min = 0.05;
@@ -96,15 +97,14 @@ struct KohlerPolynomial {
     @param dry_rad_microns particle dry radius [ 1e-6 m ]
   */
   template <typename U>
-  KOKKOS_INLINE_FUNCTION
-  KohlerPolynomial(const U& rel_h, const U& hygro, const U& dry_rad_microns)
+  KOKKOS_INLINE_FUNCTION KohlerPolynomial(const U& rel_h, const U& hygro,
+                                          const U& dry_rad_microns)
       : log_rel_humidity(log(rel_h)),
         hygroscopicity(hygro),
         dry_radius(dry_rad_microns),
-        dry_radius_cubed(cube(dry_rad_microns))
-        {
-          EKAT_KERNEL_ASSERT(valid_inputs(T(rel_h), T(hygro), T(dry_rad_microns)));
-        }
+        dry_radius_cubed(cube(dry_rad_microns)) {
+    EKAT_KERNEL_ASSERT(valid_inputs(T(rel_h), T(hygro), T(dry_rad_microns)));
+  }
 
   /** Evaluates the Kohler polynomial.
 
@@ -118,18 +118,20 @@ struct KohlerPolynomial {
     @return Polynomial value, wet_radius in microns [ 1e-6 m]
   */
   template <typename U>
-  KOKKOS_INLINE_FUNCTION
-  T operator()(const U& wet_radius) const {
+  KOKKOS_INLINE_FUNCTION T operator()(const U& wet_radius) const {
     const T rwet = T(wet_radius);
     const Real kelvinA = kelvin_droplet_effect_coeff;
     const T result = (log_rel_humidity * rwet - kelvinA) * cube(rwet) +
-               ((hygroscopicity - log_rel_humidity) * rwet + kelvinA) *
-                   dry_radius_cubed;
-//     if ( isnan(result).any() ) {
-//       std::cout << "K(" << wet_radius << ") = " << result << ": nan found.  log(rh)  = " << log_rel_humidity << " hyg = " << hygroscopicity
-//       << " dry_radius = " << dry_radius << " cube rwet = " << cube(rwet) << " dry_rad_cube = " << dry_radius_cubed << "\n";
-//       EKAT_REQUIRE(false);
-//     }
+                     ((hygroscopicity - log_rel_humidity) * rwet + kelvinA) *
+                         dry_radius_cubed;
+    //     if ( isnan(result).any() ) {
+    //       std::cout << "K(" << wet_radius << ") = " << result << ": nan
+    //       found.  log(rh)  = " << log_rel_humidity << " hyg = " <<
+    //       hygroscopicity
+    //       << " dry_radius = " << dry_radius << " cube rwet = " << cube(rwet)
+    //       << " dry_rad_cube = " << dry_radius_cubed << "\n";
+    //       EKAT_REQUIRE(false);
+    //     }
     return result;
   }
 
@@ -142,18 +144,20 @@ struct KohlerPolynomial {
     @return Polynomial slope at input value
   */
   template <typename U>
-  KOKKOS_INLINE_FUNCTION
-  T derivative(const U& wet_radius) const {
+  KOKKOS_INLINE_FUNCTION T derivative(const U& wet_radius) const {
     const T rwet = T(wet_radius);
     const T wet_radius_squared = square(rwet);
     const Real kelvinA = kelvin_droplet_effect_coeff;
-    const T result = (4 * log_rel_humidity * rwet - 3 * kelvinA) * wet_radius_squared +
+    const T result =
+        (4 * log_rel_humidity * rwet - 3 * kelvinA) * wet_radius_squared +
         (hygroscopicity - log_rel_humidity) * dry_radius_cubed;
-//     if ( isnan(result).any() ) {
-//       std::cout << "K'(" << wet_radius << ") = " << result << ": nan found at rh  = " << exp(log_rel_humidity) << " hyg = " << hygroscopicity
-//       << " dry_radius = " << dry_radius << "\n";
-// //       EKAT_REQUIRE(false);
-//     }
+    //     if ( isnan(result).any() ) {
+    //       std::cout << "K'(" << wet_radius << ") = " << result << ": nan
+    //       found at rh  = " << exp(log_rel_humidity) << " hyg = " <<
+    //       hygroscopicity
+    //       << " dry_radius = " << dry_radius << "\n";
+    // //       EKAT_REQUIRE(false);
+    //     }
     return result;
   }
 
@@ -206,10 +210,10 @@ struct KohlerNewtonSolve {
   PackType operator()() {
     double_pack wet_radius_init(25 * dry_radius_microns);
     double_pack result(-1);
-    const auto kpoly = KohlerPolynomial<double_pack>(relative_humidity, hygroscopicity,
-                                     dry_radius_microns);
+    const auto kpoly = KohlerPolynomial<double_pack>(
+        relative_humidity, hygroscopicity, dry_radius_microns);
     auto solver = math::ScalarNewtonSolver<KohlerPolynomial<double_pack>>(
-          wet_radius_init, conv_tol, kpoly);
+        wet_radius_init, conv_tol, kpoly);
     result = solver.solve();
     n_iter = solver.counter;
     return PackType(result);
@@ -241,8 +245,8 @@ struct KohlerBisectionSolve {
     double_pack left_endpt(0.9 * dry_radius_microns);
     double_pack right_endpt(200.0);
     double_pack result(-1);
-    const auto kpoly = KohlerPolynomial<double_pack>(relative_humidity, hygroscopicity,
-                                   dry_radius_microns);
+    const auto kpoly = KohlerPolynomial<double_pack>(
+        relative_humidity, hygroscopicity, dry_radius_microns);
     auto solver = math::BisectionSolver<KohlerPolynomial<double_pack>>(
         left_endpt, right_endpt, conv_tol, kpoly);
     result = solver.solve();
@@ -278,11 +282,10 @@ struct KohlerBracketedNewtonSolve {
     const double b0 = 25 * ekat::max(dry_radius_microns);
     double_pack r0(10 * dry_radius_microns);  // initial guess
     double_pack result(-1);
-    const auto kpoly = KohlerPolynomial<double_pack>(relative_humidity, hygroscopicity,
-                                       dry_radius_microns);
-    auto solver =
-        math::BracketedNewtonSolver<KohlerPolynomial<double_pack>>(
-            r0, a0, b0, conv_tol, kpoly);
+    const auto kpoly = KohlerPolynomial<double_pack>(
+        relative_humidity, hygroscopicity, dry_radius_microns);
+    auto solver = math::BracketedNewtonSolver<KohlerPolynomial<double_pack>>(
+        r0, a0, b0, conv_tol, kpoly);
     result = solver.solve();
     EKAT_KERNEL_ASSERT((result > 0).all());
     n_iter = solver.counter;

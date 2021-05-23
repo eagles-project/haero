@@ -115,8 +115,7 @@ TEST_CASE("rootfinding-PackType", "") {
   h_num_sol(1) = PackType(x0);
   Kokkos::deep_copy(num_sol, h_num_sol);
 
-  Kokkos::View<ekat::Pack<int, HAERO_PACK_SIZE>[2]> niterations(
-        "niterations");
+  Kokkos::View<ekat::Pack<int, HAERO_PACK_SIZE>[2]> niterations("niterations");
   auto h_niterations = Kokkos::create_mirror_view(niterations);
   h_niterations(0) = 0;
   h_niterations(1) = 0;
@@ -153,17 +152,19 @@ TEST_CASE("rootfinding-PackType", "") {
   }
 
   SECTION("Bisection Solver") {
-
-    Kokkos::parallel_for(1, KOKKOS_LAMBDA (const int i) {
-      const LegendreCubic<PackType> p3;
-      const LegendreQuartic<PackType> p4;
-      auto cubic_solver = BisectionSolver<LegendreCubic<PackType>>(PackType(a0), PackType(b0), conv_tol, p3);
-      auto quartic_solver = BisectionSolver<LegendreQuartic<PackType>>(PackType(a0), PackType(b0), conv_tol, p4);
-      num_sol(0) = cubic_solver.solve();
-      num_sol(1) = quartic_solver.solve();
-      niterations(0) = cubic_solver.counter;
-      niterations(1) = quartic_solver.counter;
-    });
+    Kokkos::parallel_for(
+        1, KOKKOS_LAMBDA(const int i) {
+          const LegendreCubic<PackType> p3;
+          const LegendreQuartic<PackType> p4;
+          auto cubic_solver = BisectionSolver<LegendreCubic<PackType>>(
+              PackType(a0), PackType(b0), conv_tol, p3);
+          auto quartic_solver = BisectionSolver<LegendreQuartic<PackType>>(
+              PackType(a0), PackType(b0), conv_tol, p4);
+          num_sol(0) = cubic_solver.solve();
+          num_sol(1) = quartic_solver.solve();
+          niterations(0) = cubic_solver.counter;
+          niterations(1) = quartic_solver.counter;
+        });
 
     Kokkos::deep_copy(h_num_sol, num_sol);
     Kokkos::deep_copy(h_niterations, niterations);
@@ -181,14 +182,12 @@ TEST_CASE("rootfinding-PackType", "") {
   }
 
   SECTION("Bracketed Newton Solver") {
-
     Kokkos::parallel_for(
         1, KOKKOS_LAMBDA(const int i) {
           const LegendreCubic<PackType> p3;
           const LegendreQuartic<PackType> p4;
-          auto cubic_solver =
-              BracketedNewtonSolver<LegendreCubic<PackType>>(
-                  num_sol(0), a0, b0, conv_tol, p3);
+          auto cubic_solver = BracketedNewtonSolver<LegendreCubic<PackType>>(
+              num_sol(0), a0, b0, conv_tol, p3);
           auto quartic_solver =
               BracketedNewtonSolver<LegendreQuartic<PackType>>(
                   num_sol(1), a0, b0, conv_tol, p4);

@@ -3,12 +3,12 @@
 
 #include <cmath>
 
+#include "check_helpers.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 #include "floating_point.hpp"
 #include "haero.hpp"
 #include "physical_constants.hpp"
-#include "check_helpers.hpp"
 
 namespace haero {
 
@@ -226,18 +226,18 @@ struct BracketedNewtonSolver {
         f(fn),
         counter(0),
         iter_diff(std::numeric_limits<Real>::max()) {
-    EKAT_KERNEL_ASSERT( Check<value_type>::is_positive(b-a) );
-    EKAT_KERNEL_ASSERT( Check<value_type>::is_negative(fa*fb) );
+    EKAT_KERNEL_ASSERT(Check<value_type>::is_positive(b - a));
+    EKAT_KERNEL_ASSERT(Check<value_type>::is_negative(fa * fb));
   }
 
   KOKKOS_INLINE_FUNCTION
-  value_type solve() {
-    return solve_impl<value_type>();
-  }
+  value_type solve() { return solve_impl<value_type>(); }
 
   template <typename VT>
   KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<std::is_floating_point<VT>::value, value_type>::type solve_impl() {
+      typename std::enable_if<std::is_floating_point<VT>::value,
+                              value_type>::type
+      solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
@@ -283,8 +283,8 @@ struct BracketedNewtonSolver {
   }
 
   template <typename VT>
-  KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<VT::packtag, value_type>::type solve_impl() {
+  KOKKOS_INLINE_FUNCTION typename std::enable_if<VT::packtag, value_type>::type
+  solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
@@ -343,7 +343,8 @@ struct BracketedNewtonSolver {
 //       ekat::ScalarTraits<typename ScalarFunction::value_type>::is_simd,
 //       "simd impl for packed data types.");
 //   static_assert(std::is_floating_point<typename ekat::ScalarTraits<
-//                     typename ScalarFunction::value_type>::scalar_type>::value,
+//                     typename
+//                     ScalarFunction::value_type>::scalar_type>::value,
 //                 "floating point type.");
 //
 //   static constexpr int max_iter = 200;
@@ -429,14 +430,16 @@ struct BracketedNewtonSolver {
 //       if (counter >= max_iter) {
 // #ifndef HAERO_USE_CUDA
 //         std::ostringstream ss;
-//         ss << "bracketed newton solve warning, max iterations reached: xroot "
+//         ss << "bracketed newton solve warning, max iterations reached: xroot
+//         "
 //               "= ";
 //         ss << xroot << ", x = " << x << ", |diff| = " << iter_diff << "\n";
 //         std::cout << ss.str();
 // #else
 //         static_assert(HAERO_PACK_SIZE == 1, "cuda uses pack size 1");
 //         printf(
-//             "bracketed newton solve warning, max iterations reached: xroot = "
+//             "bracketed newton solve warning, max iterations reached: xroot =
+//             "
 //             "%g xnp1 = %g |diff| = %g\n",
 //             xroot[0], xnp1[0], iter_diff[0])
 // #endif
@@ -503,28 +506,26 @@ struct BisectionSolver {
         xnp1(0.5 * (a0 + b0)),
         counter(0),
         iter_diff(b0 - a0),
-        f(fn) {
-        }
+        f(fn) {}
 
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
   KOKKOS_INLINE_FUNCTION
-  value_type solve() {
-    return solve_impl<value_type>();
-  }
+  value_type solve() { return solve_impl<value_type>(); }
 
   template <typename VT>
   KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<std::is_floating_point<VT>::value, value_type>::type solve_impl() {
+      typename std::enable_if<std::is_floating_point<VT>::value,
+                              value_type>::type
+      solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
       const value_type fx = f(xroot);
-      xnp1 = 0.5*(a + b);
+      xnp1 = 0.5 * (a + b);
       if (fx * fa < 0) {
         b = xroot;
-      }
-      else {
+      } else {
         a = xroot;
         fa = fx;
       }
@@ -540,21 +541,21 @@ struct BisectionSolver {
   }
 
   template <typename VT>
-  KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<VT::packtag, value_type>::type solve_impl() {
+  KOKKOS_INLINE_FUNCTION typename std::enable_if<VT::packtag, value_type>::type
+  solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
-      xnp1 = 0.5*(a+b);
+      xnp1 = 0.5 * (a + b);
       const value_type fx = f(xroot);
       const auto m = (fx * fa < 0);
       const auto notm = !m;
-      ekat_masked_loop(m, s)    {b[s] = xroot[s];};
+      ekat_masked_loop(m, s) { b[s] = xroot[s]; };
       ekat_masked_loop(notm, s) {
         a[s] = xroot[s];
         fa[s] = fx[s];
       };
-      iter_diff = b-a;
+      iter_diff = b - a;
       xroot = xnp1;
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       if (counter >= max_iter) {

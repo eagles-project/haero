@@ -29,9 +29,9 @@ struct KohlerTestInput {
     const Real drelh = (KohlerPolynomial<>::rel_humidity_max -
                         KohlerPolynomial<>::rel_humidity_min) /
                        (n - 1);
-    const Real dhyg = (KohlerPolynomial<>::hygro_max -
-                       KohlerPolynomial<>::hygro_min) /
-                      (n - 1);
+    const Real dhyg =
+        (KohlerPolynomial<>::hygro_max - KohlerPolynomial<>::hygro_min) /
+        (n - 1);
     const Real ddry = (KohlerPolynomial<>::dry_radius_max_microns -
                        KohlerPolynomial<>::dry_radius_min_microns) /
                       (n - 1);
@@ -42,8 +42,7 @@ struct KohlerTestInput {
 
     int ind = 0;
     for (int i = 0; i < n; ++i) {
-      const Real rel_h =
-          KohlerPolynomial<>::rel_humidity_min + i * drelh;
+      const Real rel_h = KohlerPolynomial<>::rel_humidity_min + i * drelh;
       for (int j = 0; j < n; ++j) {
         const Real hyg = KohlerPolynomial<>::hygro_min + j * dhyg;
         for (int k = 0; k < n; ++k) {
@@ -81,20 +80,17 @@ struct KohlerTestFunctor {
   DeviceType::view_1d<MaskType> pack_masks;
   Real tol;
 
-  KohlerTestFunctor(DeviceType::view_1d<PackType> nsol,
-                    DeviceType::view_1d<PackType> nerr,
-                    DeviceType::view_1d<int> niter,
-                    DeviceType::view_1d<PackType> bsol,
-                    DeviceType::view_1d<PackType> berr,
-                    DeviceType::view_1d<int> biter,
-                    DeviceType::view_1d<PackType> brksol,
-                    DeviceType::view_1d<PackType> brkerr,
-                    DeviceType::view_1d<int> brkiter,
-                    const DeviceType::view_1d<PackType> rh,
-                    const DeviceType::view_1d<PackType> hyg,
-                    const DeviceType::view_1d<PackType> drad,
-                    const DeviceType::view_1d<PackType> tsol,
-                    const DeviceType::view_1d<MaskType> masks, const Real ctol)
+  KohlerTestFunctor(
+      DeviceType::view_1d<PackType> nsol, DeviceType::view_1d<PackType> nerr,
+      DeviceType::view_1d<int> niter, DeviceType::view_1d<PackType> bsol,
+      DeviceType::view_1d<PackType> berr, DeviceType::view_1d<int> biter,
+      DeviceType::view_1d<PackType> brksol,
+      DeviceType::view_1d<PackType> brkerr, DeviceType::view_1d<int> brkiter,
+      const DeviceType::view_1d<PackType> rh,
+      const DeviceType::view_1d<PackType> hyg,
+      const DeviceType::view_1d<PackType> drad,
+      const DeviceType::view_1d<PackType> tsol,
+      const DeviceType::view_1d<MaskType> masks, const Real ctol)
       : newton_sol(nsol),
         newton_err(nerr),
         newton_iterations(niter),
@@ -124,12 +120,13 @@ struct KohlerTestFunctor {
     bisection_err(pack_idx) = abs(bisection_sol(pack_idx) - true_sol(pack_idx));
     bisection_iterations(pack_idx) = bisection.n_iter;
 
-    KohlerBracketedNewtonSolve bracket(rh_in(pack_idx), hyg_in(pack_idx), dry_rad(pack_idx), tol);
+    KohlerBracketedNewtonSolve bracket(rh_in(pack_idx), hyg_in(pack_idx),
+                                       dry_rad(pack_idx), tol);
     bracket_sol(pack_idx) = bracket();
     bracket_err(pack_idx) = abs(bracket_sol(pack_idx) - true_sol(pack_idx));
     bracket_iterations(pack_idx) = bracket.n_iter;
 
-    vector_simd for (int s=0; s<HAERO_PACK_SIZE; ++s) {
+    vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
       if (!pack_masks(pack_idx)[s]) {
         newton_err(pack_idx)[s] = 0;
         bisection_err(pack_idx)[s] = 0;
@@ -138,8 +135,8 @@ struct KohlerTestFunctor {
     }
 
 #ifndef HAERO_USE_CUDA
-// #ifndef NDEBUG
-    if ( (newton_err(pack_idx) > 2*tol).any() ) {
+    // #ifndef NDEBUG
+    if ((newton_err(pack_idx) > 2 * tol).any()) {
       std::cout << "error exceeds tolerance at pack " << pack_idx << "\n";
       std::cout << "\tarray indices: ";
       for (int i = 0; i < HAERO_PACK_SIZE; ++i) {
@@ -193,13 +190,14 @@ TEST_CASE("KohlerPolynomial properties", "") {
       num_packs, KOKKOS_LAMBDA(const int pack_idx) {
         const auto poly =
             KohlerPolynomial<>(test_inputs.relative_humidity(pack_idx),
-                                       test_inputs.hygroscopicity(pack_idx),
-                                       test_inputs.dry_radius(pack_idx));
+                               test_inputs.hygroscopicity(pack_idx),
+                               test_inputs.dry_radius(pack_idx));
 
         kohler_at_zero(pack_idx) = PackType(poly(PackType(0)));
-        kohler_at_rdry(pack_idx) = PackType(poly(test_inputs.dry_radius(pack_idx)));
-        kohler_at_25rdry(pack_idx) = PackType(
-            poly(25 * test_inputs.dry_radius(pack_idx)));
+        kohler_at_rdry(pack_idx) =
+            PackType(poly(test_inputs.dry_radius(pack_idx)));
+        kohler_at_25rdry(pack_idx) =
+            PackType(poly(25 * test_inputs.dry_radius(pack_idx)));
       });
 
   auto h_kohler_at_zero = Kokkos::create_mirror_view(kohler_at_zero);
@@ -220,20 +218,21 @@ TEST_CASE("KohlerPolynomial properties", "") {
     REQUIRE(FloatingPoint<PackType>::equiv(
         h_kohler_at_zero(i), kelvin_droplet_effect_coeff * cube(h_rdry(i))));
 
-    if (!( h_kohler_at_rdry(i) > 0).all() ) {
-      std::cout << "K(r_dry) = " << h_kohler_at_rdry(i) << " for rh = " << h_relh(i) << " hyg = " << h_hygro(i) << " rdry = " << h_rdry(i) << " correct value = " << h_rdry(i) * cube(h_rdry(i)) * h_hygro(i) << "\n";
+    if (!(h_kohler_at_rdry(i) > 0).all()) {
+      std::cout << "K(r_dry) = " << h_kohler_at_rdry(i)
+                << " for rh = " << h_relh(i) << " hyg = " << h_hygro(i)
+                << " rdry = " << h_rdry(i) << " correct value = "
+                << h_rdry(i) * cube(h_rdry(i)) * h_hygro(i) << "\n";
     }
-    REQUIRE( (h_kohler_at_rdry(i) > 0).all());
+    REQUIRE((h_kohler_at_rdry(i) > 0).all());
     REQUIRE((h_kohler_at_25rdry(i) < 0).all());
   }
-
 
   std::cout << "Kohler properties tested:\n";
   std::cout << "\tK(0)     = r_dry**3 * kevlinA > 0\n";
   std::cout << "\tK(r_dry) > 0 \n";
   std::cout << "\tK(25*r_dry) < 0\n";
   std::cout << line_delim();
-
 }
 
 TEST_CASE("KohlerSolve-verification", "") {
@@ -295,7 +294,8 @@ TEST_CASE("KohlerSolve-verification", "") {
   Kokkos::deep_copy(true_sol, h_true_sol);
   mm_sols.close();
 
-  std::cout << "launching test kernel with convergence tol = " << conv_tol << "\n";
+  std::cout << "launching test kernel with convergence tol = " << conv_tol
+            << "\n";
   Kokkos::parallel_for(
       "KohlerVerificatioTest", num_packs,
       KohlerTestFunctor(newton_sol, newton_error, newton_iterations,
@@ -318,7 +318,7 @@ TEST_CASE("KohlerSolve-verification", "") {
   Kokkos::parallel_reduce(num_packs, PackMaxReduce<Real>(bisection_error),
                           Kokkos::Max<Real>(max_err_bisection));
   Kokkos::parallel_reduce(num_packs, PackMaxReduce<Real>(bracket_error),
-    Kokkos::Max<Real>(max_err_bracket));
+                          Kokkos::Max<Real>(max_err_bracket));
   Kokkos::parallel_reduce(
       num_packs,
       KOKKOS_LAMBDA(const int pack_idx, int& ctr) {
@@ -334,9 +334,14 @@ TEST_CASE("KohlerSolve-verification", "") {
                    : bisection_iterations(pack_idx));
       },
       Kokkos::Max<int>(max_iter_bisection));
-  Kokkos::parallel_reduce(num_packs, KOKKOS_LAMBDA (const int pack_idx, int& ctr) {
-      ctr = (ctr > bracket_iterations(pack_idx) ? ctr : bracket_iterations(pack_idx));
-    }, Kokkos::Max<int>(max_iter_bracket));
+  Kokkos::parallel_reduce(
+      num_packs,
+      KOKKOS_LAMBDA(const int pack_idx, int& ctr) {
+        ctr =
+            (ctr > bracket_iterations(pack_idx) ? ctr
+                                                : bracket_iterations(pack_idx));
+      },
+      Kokkos::Max<int>(max_iter_bracket));
 
   std::cout << "Newton solve:\n";
   std::cout << "\t max err = " << max_err_newton << "\n";
@@ -364,6 +369,4 @@ TEST_CASE("KohlerSolve-verification", "") {
   REQUIRE(max_err_newton < 1.5 * conv_tol);
   REQUIRE(max_err_bracket < 1.5 * conv_tol);
   REQUIRE(max_err_bisection < 1.5 * conv_tol);
-
-
 }

@@ -7,24 +7,20 @@ namespace haero {
 
 /** @brief Boolean helper class for performing "Checks."
 
-  Primarily, these checks are used inside our various *ASSERT* and *REQUIRE* statements,
-  when we have to support both POD and ekat::Packs.  See math_helpers.hpp for examples.
+  Primarily, these checks are used inside our various *ASSERT* and *REQUIRE*
+  statements, when we have to support both POD and ekat::Packs.  See
+  math_helpers.hpp for examples.
 
-  Before you add to this class, be sure to also check floating_point.hpp.  In that file
-  we define a very similar set of boolean functions; however, those specifically account for
-  floating point roundoff error.  These do not.
+  Before you add to this class, be sure to also check floating_point.hpp.  In
+  that file we define a very similar set of boolean functions; however, those
+  specifically account for floating point roundoff error.  These do not.
 */
 template <typename ScalarType>
 struct Check {
-  static bool is_negative(const ScalarType& x) {
-    return (x < 0);
-  }
+  static bool is_negative(const ScalarType& x) { return (x < 0); }
 
-  static bool is_positive(const ScalarType& x) {
-    return (x > 0);
-  }
+  static bool is_positive(const ScalarType& x) { return (x > 0); }
 };
-
 
 /** @brief Boolean helper class for performing "Checks."
 
@@ -33,17 +29,13 @@ struct Check {
   for _all_ values of the pack, or _any_ value.
 */
 template <typename ScalarType>
-struct Check<ekat::Pack<ScalarType,HAERO_PACK_SIZE>> {
+struct Check<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
   using ValueType = ekat::Pack<ScalarType, HAERO_PACK_SIZE>;
 
-  static bool is_negative(const ValueType& x) {
-    return (x<0).all();
-  }
+  static bool is_negative(const ValueType& x) { return (x < 0).all(); }
 
-  static bool is_positive(const ValueType& x) {
-    return (x>0).all();
-  }
+  static bool is_positive(const ValueType& x) { return (x > 0).all(); }
 };
 
-} // namespace haero
+}  // namespace haero
 #endif

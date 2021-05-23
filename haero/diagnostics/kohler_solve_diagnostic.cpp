@@ -82,6 +82,6 @@ std::string KohlerPolynomial<T>::matlab_verification_program(const int n) {
 }
 
 // ETI
-template struct KohlerPolynomial<ekat::Pack<double,HAERO_PACK_SIZE>>;
+template struct KohlerPolynomial<ekat::Pack<double, HAERO_PACK_SIZE>>;
 
 }  // namespace haero
