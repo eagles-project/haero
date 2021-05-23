@@ -25,10 +25,13 @@ TEST_CASE("tendencies_ctor", "") {
   kokkos_device_type::view_2d<PackType> gases("gases", num_gases,
                                               num_vert_packs);
   int num_modes = 1;
-  kokkos_device_type::view_2d<PackType> modal_concs("modal number concs",
-                                                    num_modes, num_vert_packs);
+  kokkos_device_type::view_2d<PackType> int_num_concs(
+      "interstitial number concs", num_modes, num_vert_packs);
+  kokkos_device_type::view_2d<PackType> cld_num_concs(
+      "cloud borne number concs", num_modes, num_vert_packs);
+
   Prognostics progs(num_modes, {1}, num_gases, num_levels, int_aerosols,
-                    cld_aerosols, gases, modal_concs);
+                    cld_aerosols, gases, int_num_concs, cld_num_concs);
 
   // Now create tendencies for it, and make sure the vitals match up.
   Tendencies tends(progs);
@@ -42,8 +45,10 @@ TEST_CASE("tendencies_ctor", "") {
   REQUIRE(tends_cld_aeros.extent(0) == progs_cld_aeros.extent(0));
   REQUIRE(tends_cld_aeros.extent(1) == progs_cld_aeros.extent(1));
 
-  const auto& tends_modal_num_concs = tends.modal_num_concs;
-  const auto& progs_modal_num_concs = progs.modal_num_concs;
-  REQUIRE(tends_modal_num_concs.extent(0) == progs_modal_num_concs.extent(0));
-  REQUIRE(tends_modal_num_concs.extent(1) == progs_modal_num_concs.extent(1));
+  const auto& tends_interstitial_num_concs = tends.interstitial_num_concs;
+  const auto& progs_interstitial_num_concs = progs.interstitial_num_concs;
+  REQUIRE(tends_interstitial_num_concs.extent(0) ==
+          progs_interstitial_num_concs.extent(0));
+  REQUIRE(tends_interstitial_num_concs.extent(1) ==
+          progs_interstitial_num_concs.extent(1));
 }

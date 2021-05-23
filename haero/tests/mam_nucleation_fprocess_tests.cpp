@@ -333,8 +333,10 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols",
                                         num_aero_populations, num_levels);
   Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
-  Kokkos::View<PackType**> modal_concs("modal number concs", num_modes,
-                                       num_levels);
+  Kokkos::View<PackType**> int_num_concs("interstitial number concs", num_modes,
+                                         num_levels);
+  Kokkos::View<PackType**> cld_num_concs("cloud borne number concs", num_modes,
+                                         num_levels);
 
   // Set up atmospheric data and populate it with some views.
   Kokkos::View<PackType*> temp("temperature", num_levels);
@@ -369,7 +371,7 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                            modal_concs);
+                                            int_num_concs, cld_num_concs);
     auto* diags = model->create_diagnostics();
     auto* tends = new Tendencies(*progs);
 

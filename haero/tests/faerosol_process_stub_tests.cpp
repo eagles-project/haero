@@ -33,8 +33,10 @@ TEST_CASE("faerosol_process_stub", "") {
   int num_gases = gas_species.size();
   Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
   int num_modes = modes.size();
-  Kokkos::View<PackType**> modal_concs("modal number concs", num_modes,
-                                       num_levels);
+  Kokkos::View<PackType**> int_num_concs("interstitial number concs", num_modes,
+                                         num_levels);
+  Kokkos::View<PackType**> cld_num_concs("cloud borne number concs", num_modes,
+                                         num_levels);
 
   // Set up atmospheric data and populate it with some views. It's not
   // important for this data to be valid, since it's unused by these stubs.
@@ -72,7 +74,7 @@ TEST_CASE("faerosol_process_stub", "") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                            modal_concs);
+                                            int_num_concs, cld_num_concs);
     auto* diags = model->create_diagnostics();
     auto* tends = new Tendencies(*progs);
 
@@ -91,7 +93,7 @@ TEST_CASE("faerosol_process_stub", "") {
     Real n0 = 1e6;
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
-        modal_concs(m, k) = n0;
+        int_num_concs(m, k) = n0;
       }
     }
 
@@ -125,7 +127,7 @@ TEST_CASE("faerosol_process_stub", "") {
     }
 
     // Aerosol modal number concentrations are unchanged.
-    auto dndt = tends->modal_num_concs;
+    auto dndt = tends->interstitial_num_concs;
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         REQUIRE(FloatingPoint<Real>::equiv(dndt(m, k)[0], 0.0));

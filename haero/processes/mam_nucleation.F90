@@ -254,8 +254,8 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   dqdt_i => tendencies%interstitial_aerosols()
 
   ! Modal number density and tendencies
-  n => prognostics%modal_num_concs()
-  dndt => tendencies%modal_num_concs()
+  n => prognostics%interstitial_num_concs()
+  dndt => tendencies%interstitial_num_concs()
 
   ! Atmospheric state variables
   press => atmosphere%pressure()

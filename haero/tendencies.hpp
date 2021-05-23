@@ -35,8 +35,11 @@ class Tendencies final {
   /// Gas mole fraction tendencies.
   SpeciesColumnView gases;
 
-  /// Modal number concentration tendencies.
-  ModalColumnView modal_num_concs;
+  /// Interstitial number concentration tendencies.
+  ModalColumnView interstitial_num_concs;
+
+  /// Cloudborne number concentration tendencies.
+  ModalColumnView cloudborne_num_concs;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
