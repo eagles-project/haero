@@ -26,7 +26,6 @@ TEST_CASE("mode_ctor", "") {
       (aitken.min_vol_to_num_ratio<Real>() - comp_min_vol_to_num_ratio) /
       aitken.min_vol_to_num_ratio<Real>();
 
-
   if (!FloatingPoint<Real>::zero(rel_diff_min_vol)) {
     std::cout << "rel_diff_min_vol = " << rel_diff_min_vol << "\n";
   }
