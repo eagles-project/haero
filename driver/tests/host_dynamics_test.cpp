@@ -145,9 +145,7 @@ TEST_CASE("driver dynamics", "") {
     zdyn.init_from_uniform_heights(conds);
     std::cout << zdyn.info_string();
     hbtest.run_test(zdyn, conds, 4.9 * FloatingPoint<Real>::zero_tol);
-    onedz.run_test(zdyn, (std::is_same<float, Real>::value
-                              ? 1.1e-3
-                              : 2.1e-12));
+    onedz.run_test(zdyn, (std::is_same<float, Real>::value ? 1.1e-3 : 2.1e-12));
     hypsotest.run_test(zdyn, conds, 1.5e-2);
 
     REQUIRE(hbtest.nerr == 0);
@@ -376,9 +374,8 @@ TEST_CASE("vertical_convergence_dynamics_init", "[convergence]") {
                                           : FloatingPoint<Real>::zero_tol)));
     // sum of level thicknesses must equal ztop
     REQUIRE(FloatingPoint<Real>::zero(
-        convtests.max_ztop_err, (std::is_same<float, Real>::value
-                                     ? 5.3e-2
-                                     : 5.1e-11)));
+        convtests.max_ztop_err,
+        (std::is_same<float, Real>::value ? 5.3e-2 : 5.1e-11)));
 
 #if HAERO_DOUBLE_PRECISION
     // rate of average error in hydrostatic equation should converge at 2nd
