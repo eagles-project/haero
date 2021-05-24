@@ -4,6 +4,7 @@ module haero
 
   use iso_c_binding
   use haero_precision, only: wp
+  use haero_constants, only: pi_sixth
 
   implicit none
 
@@ -31,7 +32,13 @@ module haero
     real(wp) :: rhdeliq
     !> Crystallization relative humidity
     real(wp) :: rhcrystal
-  end type
+
+    contains
+      !> Given the max diameter, min_vol_to_num_ratio computes minimum volume to number ratio for a mode
+      procedure :: min_vol_to_num_ratio => m_min_vol_to_num_ratio
+      !> Given the min diameter, max_vol_to_num_ratio computes maximum volume to number ratio for a mode
+      procedure :: max_vol_to_num_ratio => m_max_vol_to_num_ratio
+   end type mode_t
 
   !> This Fortran type is the equivalent of the C++ AerosolSpecies struct.
   type :: aerosol_species_t
@@ -587,6 +594,32 @@ contains
     g_index = 0
   end function
 
+  !> For a given mode, computes minimum value of volume to number ratio
+  !> Since it is propotional to negative power 3 of the diameter,
+  !> minimum volume to number ratio is computed using max diameter
+  function m_min_vol_to_num_ratio(imode) result(min_vol2num)
+
+    implicit none
+    class(mode_t),   intent(in) :: imode
+
+    real(wp) :: min_vol2num
+    min_vol2num = 1.0_wp/(pi_sixth*(imode%max_diameter**3.0_wp)*exp(4.5_wp*(log(imode%mean_std_dev))**2.0_wp))
+
+  end function m_min_vol_to_num_ratio
+
+  !> For a given mode, computes maximum value of volume to number ratio
+  !> Since it is propotional to negative power 3 of the diameter,
+  !> minimum volume to number ratio is computed using min diameter
+  function m_max_vol_to_num_ratio(imode) result(max_vol2num)
+
+    implicit none
+    class(mode_t),   intent(in) :: imode
+
+    real(wp) :: max_vol2num
+    max_vol2num = 1.0_wp/(pi_sixth*(imode%min_diameter**3.0_wp)*exp(4.5_wp*(log(imode%mean_std_dev))**2.0_wp))
+
+  end function m_max_vol_to_num_ratio
+
   !> Provides access to the interstitial aerosol mixing fractions array
   !> for the given mode in the given prognostics object.
   !> @param [in] p A pointer to a prognostics object.
@@ -942,4 +975,3 @@ contains
   end function
 
 end module
-
