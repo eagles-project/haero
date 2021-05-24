@@ -21,6 +21,7 @@ else() # CPU -- use OpenMP as "device" for non-Apple architectures.
   endif()
 endif()
 message(STATUS "Configuring for Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
+message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
 
 # Check our pack size
 if (NOT HAERO_PACK_SIZE)

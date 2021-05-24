@@ -80,8 +80,8 @@ struct FloatingPoint {
   }
 };
 
-template <>
-struct FloatingPoint<PackType> {
+template <typename ScalarType>
+struct FloatingPoint<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
   /// Default tolerance for floating point comparisons
   static constexpr Real zero_tol =
       (std::is_same<Real, float>::value) ? 1.0E-7 : 1.0E-13;
@@ -89,7 +89,8 @@ struct FloatingPoint<PackType> {
   /// Define floating point zero by @f$\lvert x \rvert < \epsilon_{tol}@f$
   /// return true if *all* pack values meet the tolerance criterion
   KOKKOS_INLINE_FUNCTION
-  static bool zero(const PackType& x, const Real tol = zero_tol) {
+  static bool zero(const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x,
+                   const Real tol = zero_tol) {
     EKAT_KERNEL_ASSERT(tol > 0);
     return (ekat::abs(x) < tol).all();
   }
@@ -98,7 +99,8 @@ struct FloatingPoint<PackType> {
   // \epsilon_{tol}@f$ return true if *all* pack values meet the tolerance
   // criterion
   KOKKOS_INLINE_FUNCTION
-  static bool equiv(const PackType& x0, const PackType& x1,
+  static bool equiv(const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x0,
+                    const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x1,
                     const Real tol = zero_tol) {
     EKAT_KERNEL_ASSERT(tol > 0);
     return (abs(x0 - x1) < tol).all();
@@ -109,7 +111,8 @@ struct FloatingPoint<PackType> {
   // \rvert)} < \epsilon_{tol}@f$ return true if *all* pack values meet the
   // tolerance criterion
   KOKKOS_INLINE_FUNCTION
-  static bool rel(const PackType& x0, const PackType& x1,
+  static bool rel(const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x0,
+                  const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x1,
                   const Real tol = zero_tol) {
     EKAT_KERNEL_ASSERT(tol > 0);
     const Real max0 = ekat::max(x0);
@@ -119,15 +122,26 @@ struct FloatingPoint<PackType> {
   }
 
   KOKKOS_INLINE_FUNCTION
-  static bool in_bounds(const PackType& x, const Real lower, const Real upper,
+  static bool in_bounds(const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x,
+                        const Real lower, const Real upper,
                         const Real tol = zero_tol) {
     EKAT_KERNEL_ASSERT(tol > 0);
     return (x >= (lower - tol)).all() and (x <= (upper + tol)).all();
   }
 
   KOKKOS_INLINE_FUNCTION
-  static PackType safe_denominator(const PackType& x,
-                                   const Real tol = zero_tol) {
+  static bool in_bounds(const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x,
+                        const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& lower,
+                        const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& upper,
+                        const Real tol = zero_tol) {
+    EKAT_KERNEL_ASSERT(tol > 0);
+    return (x >= (lower - tol)).all() and (x <= (upper + tol)).all();
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static PackType safe_denominator(
+      const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x,
+      const Real tol = zero_tol) {
     EKAT_KERNEL_ASSERT(tol > 0);
     return x / (ekat::square(x) + tol * tol);
   }

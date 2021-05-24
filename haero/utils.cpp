@@ -12,6 +12,8 @@ std::string indent_string(const int tab_lev) {
   return result;
 }
 
+std::string line_delim() { return "------------------------------\n"; }
+
 std::string& tolower(std::string& s) {
   for (auto& c : s) {
     c = std::tolower(c);
