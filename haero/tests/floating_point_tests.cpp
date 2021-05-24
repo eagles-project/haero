@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <limits>
 #include "catch2/catch.hpp"
 #include "haero/floating_point.hpp"
 
@@ -25,6 +25,10 @@ TEST_CASE("FloatingPointHelper-sp", "single precision") {
 
   REQUIRE(std::isinf(lower / 0));
   REQUIRE(lower * FloatingPoint<float>::safe_denominator(0) == 0);
+
+  std::cout << "std::numeric_limits<float>::epsilon() = " << std::numeric_limits<float>::epsilon() << "\n";
+  std::cout << "std::numeric_limits<double>::epsilon() = " << std::numeric_limits<double>::epsilon() << "\n";
+
 }
 
 TEST_CASE("FloatingPointHelper-dp", "double precision") {
