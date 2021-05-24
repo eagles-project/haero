@@ -17,11 +17,6 @@ TEST_CASE("mode_ctor", "") {
   REQUIRE(aitken.max_diameter == Real(5.2e-8));
   REQUIRE(aitken.mean_std_dev == Real(1.6));
 
-  // For single precision calculations, we expect accuracy till 7 decimal digits
-  // (1e-7)
-  static constexpr Real exp_sngl_prc_accuracy =
-      1e-7;  // expected single precision accuracy
-
   // compute min_vol_to_num ratio
   const Real comp_min_vol_to_num_ratio =
       1 / (constants::pi_sixth * cube(5.2e-8) * exp(4.5 * square(log(1.6))));
@@ -29,8 +24,9 @@ TEST_CASE("mode_ctor", "") {
   // compute relative difference for min_vol_to_num_ratio
   const Real rel_diff_min_vol =
       (aitken.min_vol_to_num_ratio<Real>() - comp_min_vol_to_num_ratio) /
-      aitken.min_vol_to_num_ratio<Real>();
-  REQUIRE(rel_diff_min_vol <= exp_sngl_prc_accuracy);
+    comp_min_vol_to_num_ratio;
+
+  REQUIRE(FloatingPoint<Real>::zero(rel_diff_min_vol,std::numeric_limits<Real>::epsilon()) );
 
   // compute max_vol_to_num ratio
   const Real comp_max_vol_to_num_ratio =
@@ -40,5 +36,5 @@ TEST_CASE("mode_ctor", "") {
   const Real rel_diff_max_vol =
       (aitken.max_vol_to_num_ratio<Real>() - comp_max_vol_to_num_ratio) /
       aitken.max_vol_to_num_ratio<Real>();
-  REQUIRE(rel_diff_max_vol <= exp_sngl_prc_accuracy);
+  REQUIRE(FloatingPoint<Real>::zero(rel_diff_max_vol, std::numeric_limits<Real>::epsilon()) );
 }
