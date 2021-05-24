@@ -46,13 +46,13 @@ struct KohlerTestInput {
       for (int j = 0; j < n; ++j) {
         const Real hyg = KohlerPolynomial<>::hygro_min + j * dhyg;
         for (int k = 0; k < n; ++k) {
-          const Real drad =
+          const Real dry_rad =
               KohlerPolynomial<>::dry_radius_min_microns + k * ddry;
           const int pack_idx = PackInfo::pack_idx(ind);
           const int vec_idx = PackInfo::vec_idx(ind++);
           h_relative_humidity(pack_idx)[vec_idx] = rel_h;
           h_hygroscopicity(pack_idx)[vec_idx] = hyg;
-          h_dry_radius(pack_idx)[vec_idx] = drad;
+          h_dry_radius(pack_idx)[vec_idx] = dry_rad;
         }
       }
     }
@@ -81,28 +81,28 @@ struct KohlerTestFunctor {
   Real tol;
 
   KohlerTestFunctor(
-      DeviceType::view_1d<PackType> nsol, DeviceType::view_1d<PackType> nerr,
-      DeviceType::view_1d<int> niter, DeviceType::view_1d<PackType> bsol,
-      DeviceType::view_1d<PackType> berr, DeviceType::view_1d<int> biter,
-      DeviceType::view_1d<PackType> brksol,
-      DeviceType::view_1d<PackType> brkerr, DeviceType::view_1d<int> brkiter,
+      DeviceType::view_1d<PackType> n_sol, DeviceType::view_1d<PackType> n_err,
+      DeviceType::view_1d<int> n_iter, DeviceType::view_1d<PackType> b_sol,
+      DeviceType::view_1d<PackType> b_err, DeviceType::view_1d<int> b_iter,
+      DeviceType::view_1d<PackType> brk_sol,
+      DeviceType::view_1d<PackType> brk_err, DeviceType::view_1d<int> brk_iter,
       const DeviceType::view_1d<PackType> rh,
       const DeviceType::view_1d<PackType> hyg,
-      const DeviceType::view_1d<PackType> drad,
+      const DeviceType::view_1d<PackType> dry_rad,
       const DeviceType::view_1d<PackType> tsol,
       const DeviceType::view_1d<MaskType> masks, const Real ctol)
-      : newton_sol(nsol),
-        newton_err(nerr),
-        newton_iterations(niter),
-        bisection_sol(bsol),
-        bisection_err(berr),
-        bisection_iterations(biter),
-        bracket_sol(brksol),
-        bracket_err(brkerr),
-        bracket_iterations(brkiter),
+      : newton_sol(n_sol),
+        newton_err(n_err),
+        newton_iterations(n_iter),
+        bisection_sol(b_sol),
+        bisection_err(b_err),
+        bisection_iterations(b_iter),
+        bracket_sol(brk_sol),
+        bracket_err(brk_err),
+        bracket_iterations(brk_iter),
         rh_in(rh),
         hyg_in(hyg),
-        dry_rad(drad),
+        dry_rad(dry_rad),
         true_sol(tsol),
         pack_masks(masks),
         tol(ctol) {}
@@ -174,6 +174,14 @@ struct PackMaxReduce {
 };
 
 TEST_CASE("KohlerPolynomial properties", "") {
+  /**
+    Properties of the Kohler polynomial
+
+    Property 1: K(0) = A * r_dry^3  (checked with k_at_zero)
+    Property 2: K(r_dry) > 0  (checked with k_at_rdry)
+    Property 3: K(25*r_dry) < 0 (checked with k_at_25rdry)
+  */
+
   // Generate input data
   static constexpr int N = 20;
   const KohlerTestInput test_inputs(N);
@@ -212,7 +220,7 @@ TEST_CASE("KohlerPolynomial properties", "") {
   Kokkos::deep_copy(h_relh, test_inputs.relative_humidity);
 
   for (int i = 0; i < num_packs; ++i) {
-    // check K(0) = A r_dry**3
+    // check Property 1
     REQUIRE(FloatingPoint<PackType>::equiv(
         h_kohler_at_zero(i), kelvin_droplet_effect_coeff * cube(h_rdry(i))));
 
@@ -222,7 +230,9 @@ TEST_CASE("KohlerPolynomial properties", "") {
                 << " rdry = " << h_rdry(i) << " correct value = "
                 << h_rdry(i) * cube(h_rdry(i)) * h_hygro(i) << "\n";
     }
+    // check Property 2
     REQUIRE((h_kohler_at_rdry(i) > 0).all());
+    // check Property 3
     REQUIRE((h_kohler_at_25rdry(i) < 0).all());
   }
 
