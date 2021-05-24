@@ -100,7 +100,8 @@ struct Mode final {
       @return modal minimum volume to number ratio [m^-3] FIXME: Check the units
      again
   */
-  KOKKOS_INLINE_FUNCTION Real min_vol_to_num_ratio() {
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T min_vol_to_num_ratio() {
     return 1 / (constants::pi_sixth * (cube(max_diameter)) *
                 exp(4.5 * square(log(mean_std_dev))));
   }
@@ -112,8 +113,8 @@ struct Mode final {
       @return modal maximum volume to number ratio [m^-3] FIXME: Check the units
      again
   */
-
-  KOKKOS_INLINE_FUNCTION Real max_vol_to_num_ratio() {
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T max_vol_to_num_ratio() {
     return 1 / (constants::pi_sixth * (cube(min_diameter)) *
                 exp(4.5 * square(log(mean_std_dev))));
   }

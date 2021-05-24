@@ -24,13 +24,13 @@ TEST_CASE("mode_ctor", "") {
   const Real comp_min_vol_to_num_ratio = 1/(constants::pi_sixth * cube(5.2e-8) * exp(4.5*square(log(1.6))));
 
   //compute relative difference for min_vol_to_num_ratio
-  const Real rel_diff_min_vol = (aitken.min_vol_to_num_ratio() - comp_min_vol_to_num_ratio)/aitken.min_vol_to_num_ratio();
+  const Real rel_diff_min_vol = (aitken.min_vol_to_num_ratio<Real>() - comp_min_vol_to_num_ratio)/aitken.min_vol_to_num_ratio<Real>();
   REQUIRE(rel_diff_min_vol <= exp_sngl_prc_accuracy );
 
   //compute max_vol_to_num ratio
   const Real comp_max_vol_to_num_ratio = 1/(constants::pi_sixth * cube(8.7e-9) * exp(4.5*square(log(1.6))));
 
   //compute relative difference for max_vol_to_num_ratio
-  const Real rel_diff_max_vol = (aitken.max_vol_to_num_ratio() - comp_max_vol_to_num_ratio)/aitken.max_vol_to_num_ratio();
+  const Real rel_diff_max_vol = (aitken.max_vol_to_num_ratio<Real>() - comp_max_vol_to_num_ratio)/aitken.max_vol_to_num_ratio<Real>();
   REQUIRE(rel_diff_max_vol <= exp_sngl_prc_accuracy );
 }
