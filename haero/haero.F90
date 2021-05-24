@@ -4,7 +4,7 @@ module haero
 
   use iso_c_binding
   use haero_precision, only: wp
-  use haero_constants, only: pi
+  use haero_constants, only: pi_sixth
 
   implicit none
 
@@ -15,8 +15,6 @@ module haero
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found
 
-  !parameters
-  real(wp), parameter :: pi_sixth = pi/6.0_wp
 
   !> This Fortran type is the equivalent of the C++ Mode struct.
   type :: mode_t

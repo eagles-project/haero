@@ -12,9 +12,6 @@
 
 namespace haero {
 
-// Constants
-static constexpr Real pi_sixth = constants::pi / 6;
-
 /// @struct Mode
 /// This struct represents an aerosol particle mode and contains all associated
 /// metadata. It is not polymorphic, so don't derive any subclass from it.
@@ -104,7 +101,7 @@ struct Mode final {
      again
   */
   KOKKOS_INLINE_FUNCTION Real min_vol_to_num_ratio() {
-    return 1 / (pi_sixth * (std::pow(max_diameter, 3)) *
+    return 1 / (constants::pi_sixth * (cube(max_diameter)) *
                 exp(4.5 * square(log(mean_std_dev))));
   }
 
@@ -117,7 +114,7 @@ struct Mode final {
   */
 
   KOKKOS_INLINE_FUNCTION Real max_vol_to_num_ratio() {
-    return 1 / (pi_sixth * (std::pow(min_diameter, 3)) *
+    return 1 / (constants::pi_sixth * (cube(min_diameter)) *
                 exp(4.5 * square(log(mean_std_dev))));
   }
 
@@ -136,7 +133,7 @@ struct Mode final {
 template <typename T>
 KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter(
     const T mode_mean_particle_volume, const Real log_sigma) {
-  return cbrt(pi_sixth * mode_mean_particle_volume) *
+  return cbrt(constants::pi_sixth * mode_mean_particle_volume) *
          exp(-1.5 * square(log_sigma));
 }
 

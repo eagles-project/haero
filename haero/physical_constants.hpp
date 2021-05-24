@@ -19,6 +19,8 @@ namespace constants {
 */
 /// pi
 static constexpr double pi = 3.14159265358979323846264;
+/// 1/6th of the pi (required for lognormally distributed particle size/volume calculations)
+static constexpr double pi_sixth = pi/6;
 /// Avogadro's constant [#/mol]
 static constexpr double avogadro = 6.022214076e23;
 /// Boltzmann's constant [J/K]
