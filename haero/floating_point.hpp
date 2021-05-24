@@ -19,8 +19,7 @@ struct FloatingPoint {
                 "floating point type required.");
 
   /// Default tolerance for floating point comparisons
-  static constexpr T zero_tol =
-      (std::is_same<T, float>::value) ? 1.0E-7 : 1.0E-13;
+  static constexpr T zero_tol = std::numeric_limits<Real>::epsilon();
 
   /// Define floating point zero by @f$\lvert x \rvert < \epsilon_{tol}@f$
   KOKKOS_INLINE_FUNCTION
@@ -83,8 +82,7 @@ struct FloatingPoint {
 template <typename ScalarType>
 struct FloatingPoint<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
   /// Default tolerance for floating point comparisons
-  static constexpr Real zero_tol =
-      (std::is_same<Real, float>::value) ? 1.0E-7 : 1.0E-13;
+  static constexpr Real zero_tol = std::numeric_limits<Real>::epsilon();
 
   /// Define floating point zero by @f$\lvert x \rvert < \epsilon_{tol}@f$
   /// return true if *all* pack values meet the tolerance criterion
