@@ -50,8 +50,6 @@ module haero
     real(wp) :: molecular_wt
     !> Carbon weight [kg/mol]
     real(wp) :: carbon_wt
-    !> Dry radius [m]
-    real(wp) :: dry_radius
     !> Material density [kg/m^3]
     real(wp) :: density
     !> Hygroscopicity
@@ -394,7 +392,7 @@ contains
   end subroutine
 
   subroutine haerotran_set_aero_species(mode, species, name, symbol, &
-    molecular_wt, dry_radius, density, hygroscopicity) bind(c)
+    molecular_wt, density, hygroscopicity) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     implicit none
 
@@ -403,14 +401,12 @@ contains
     type(c_ptr), value, intent(in) :: name
     type(c_ptr), value, intent(in) :: symbol
     real(c_real), value, intent(in) :: molecular_wt
-    real(c_real), value, intent(in) :: dry_radius
     real(c_real), value, intent(in) :: density
     real(c_real), value, intent(in) :: hygroscopicity
 
     model%aero_species(mode, species)%name = c_to_f_string(name)
     model%aero_species(mode, species)%symbol = c_to_f_string(symbol)
     model%aero_species(mode, species)%molecular_wt = molecular_wt
-    model%aero_species(mode, species)%dry_radius = dry_radius
     model%aero_species(mode, species)%density = density
     model%aero_species(mode, species)%hygroscopicity = hygroscopicity
     model%num_mode_species(mode) = max(species, model%num_mode_species(mode))

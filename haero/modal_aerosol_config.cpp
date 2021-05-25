@@ -38,6 +38,7 @@ void ModalAerosolConfig::index_modal_species(
     EKAT_REQUIRE_MSG(not species_for_mode[m].empty(),
                      aerosol_modes[m].name().c_str()
                          << " mode contains no aerosol species!");
+    h_n_species_per_mode(m) = species_for_mode[m].size();
   }
   Kokkos::deep_copy(d_n_species_per_mode, h_n_species_per_mode);
 
@@ -105,7 +106,7 @@ ModalAerosolConfig create_simple_test_config() {
   std::vector<AerosolSpecies> aeros(2);
   for (int s = 0; s < nspec; ++s) {
     aeros[s] = AerosolSpecies(spec_names[s], spec_symbs[s], "test_aerosol",
-                              spec_molec_weights[s], spec_dry_radius[s],
+                              spec_molec_weights[s],
                               spec_dens[s], spec_hygro[s]);
     mode_spec_map[mode_names[1]].push_back(spec_symbs[s]);
   }

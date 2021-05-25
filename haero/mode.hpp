@@ -149,7 +149,6 @@ inline std::vector<Mode> create_mam4_modes() {
   static constexpr Real rh_deliq = 0.8;
   const std::vector<std::string> mode_names = {"accumulation", "aitken",
                                                "coarse", "primary_carbon"};
-  const std::vector<Real> mode_mean_diam = {1.1e-7, 2.6e-8, 2e-6, 5e-8};
   const std::vector<Real> mode_min_diam = {5.35e-8, 8.7e-9, 1e-6, 1e-8};
   const std::vector<Real> mode_max_diam = {4.4e-7, 5.2e-8, 4e-6, 1e-7};
   const std::vector<Real> mode_std_dev = {1.8, 1.6, 1.8, 1.6};
