@@ -24,10 +24,13 @@ TEST_CASE("mode_ctor", "") {
   // compute relative difference for min_vol_to_num_ratio
   const Real rel_diff_min_vol =
       (aitken.min_vol_to_num_ratio<Real>() - comp_min_vol_to_num_ratio) /
-      comp_min_vol_to_num_ratio;
+      aitken.min_vol_to_num_ratio<Real>();
 
+  if (!FloatingPoint<Real>::zero(rel_diff_min_vol)) {
+    std::cout << "rel_diff_min_vol = " << rel_diff_min_vol << "\n";
+  }
   REQUIRE(FloatingPoint<Real>::zero(rel_diff_min_vol,
-                                    std::numeric_limits<Real>::epsilon()));
+                                    5 * std::numeric_limits<Real>::epsilon()));
 
   // compute max_vol_to_num ratio
   const Real comp_max_vol_to_num_ratio =
@@ -37,6 +40,11 @@ TEST_CASE("mode_ctor", "") {
   const Real rel_diff_max_vol =
       (aitken.max_vol_to_num_ratio<Real>() - comp_max_vol_to_num_ratio) /
       aitken.max_vol_to_num_ratio<Real>();
+
+  if (!FloatingPoint<Real>::zero(rel_diff_max_vol)) {
+    std::cout << "rel_diff_min_vol = " << rel_diff_max_vol << "\n";
+  }
+
   REQUIRE(FloatingPoint<Real>::zero(rel_diff_max_vol,
-                                    std::numeric_limits<Real>::epsilon()));
+                                    5 * std::numeric_limits<Real>::epsilon()));
 }
