@@ -14,7 +14,29 @@ namespace haero {
 
 /// @struct Mode
 /// This struct represents an aerosol particle mode and contains all associated
-/// metadata. It is not polymorphic, so don't derive any subclass from it.
+/// metadata. By definition, these metadata are immutable (constant in time).
+/// The struct is not polymorphic, so don't derive any subclass from it.
+///
+/// This class represents the log-normal distribution that defines the mode via
+/// the mean_std_dev member variable.  The other parameter necessary to define
+/// the log-normal function is a variable (a function of mass- and number-
+/// mixing ratios) and is not included in this class.
+///
+///  The member variables min_diameter and max_diameter do not define the bounds
+///  of the log-normal distribution (which, matematically, are 0 and positive
+///  infinity).  Rather, these min/max values are used to trigger a mass and
+///  number redistribution elsewhere in the code; they signify the bounds beyond
+///  which particles are considered to better belong in a different mode.
+///
+///
+/// Crystalization and deliquesence refer to the non-cloud water uptake process,
+/// by which liquid water condenses into aerosol droplets.  They are relative
+/// humidity values.  When the environmental relative humidity lies below the
+/// cyrstalization point, water uptake does not occur.  When it lies between the
+/// crystallization and deliquesence point, water uptake does occur, but not at
+/// its maximum rate.   When the environmental relative humidty exceeds the
+/// deliquesence_pt, particles achieve their maximum amount of liquid water.
+///
 struct Mode final {
   static const int NAME_LEN = 128;
 
@@ -93,6 +115,34 @@ struct Mode final {
   /// The crystallization point (rel. humidity) for this mode.
   Real crystallization_pt;
 
+  /** @brief This function returns the modal geometric mean particle diameter,
+  given the mode's mean volume (~ to 3rd log-normal moment) and the modal standard
+  deviation.
+
+  @param mode_mean_particle_volume mean particle volume for mode [m^3 per particle]
+  @return modal mean particle diameter [m per particle]
+*/
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T
+  modal_mean_particle_diameter_from_volume(const T mode_mean_particle_volume) {
+    return cbrt(constants::pi_sixth * mode_mean_particle_volume) *
+           exp(-1.5 * square(log(mean_std_dev)));
+  }
+
+  /** @brief This function is the inverse of
+    modal_mean_particle_diameter_from_volume; given the modal mean geometric
+    diamaeter, it returns the corresponding volume.
+
+    @param [in] geom_diam geometric mean diameter [m per particle]
+    @return mean volume [m^3 per particle]
+  */
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T
+  modal_mean_particle_volume_from_diameter(const T geom_diam) {
+    return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) /
+           constants::pi_sixth;
+  }
+
   /** @brief This function returns the minimum volume to number ratio,
       which is computed using the maximum diameter(units:meters) and
       modal standard deviation
@@ -102,8 +152,7 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T min_vol_to_num_ratio() {
-    return 1 / (constants::pi_sixth * (cube(max_diameter)) *
-                exp(4.5 * square(log(mean_std_dev))));
+    return 1 / modal_mean_particle_volume_from_diameter(max_diameter);
   }
 
   /** @brief This function returns the maximum volume to number ratio,
@@ -115,28 +164,14 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T max_vol_to_num_ratio() {
-    return 1 / (constants::pi_sixth * (cube(min_diameter)) *
-                exp(4.5 * square(log(mean_std_dev))));
+    return 1 / modal_mean_particle_volume_from_diameter(min_diameter);
   }
+
+
 
  private:
   char name_view[NAME_LEN];
 };
-
-/** @brief This function returns the modal geometric mean particle diameter,
-  given the mode's mean volume (3rd log-normal moment) and the modal standard
-  deviation.
-
-  @param mode_mean_particle_volume mean particle volume for mode [m^3]
-  @param log_sigma natural log of the mode's geometric mean std. dev.
-  @return modal mean particle diameter (~ 1st log-normal moment) [m]
-*/
-template <typename T>
-KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter(
-    const T mode_mean_particle_volume, const Real log_sigma) {
-  return cbrt(constants::pi_sixth * mode_mean_particle_volume) *
-         exp(-1.5 * square(log_sigma));
-}
 
 inline std::vector<Mode> create_mam4_modes() {
   /// Legacy MAM4 used the same constant crystallization and deliquescence
