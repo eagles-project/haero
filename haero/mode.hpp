@@ -142,8 +142,7 @@ struct Mode final {
   KOKKOS_INLINE_FUNCTION T
   modal_mean_particle_volume_from_diameter(const T geom_diam) const {
     const Real pio6 = constants::pi_sixth;
-    return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) *
-           pio6;
+    return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) * pio6;
   }
 
   /** @brief This function returns the minimum volume to number ratio,
