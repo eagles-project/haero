@@ -1,12 +1,15 @@
 #include <iomanip>
 #include <iostream>
 
-#include "available_diagnostics.hpp"
 #include "catch2/catch.hpp"
 #include "haero/aerosol_species.hpp"
 #include "haero/check_helpers.hpp"
 #include "haero/math_helpers.hpp"
 #include "haero/modal_aerosol_config.hpp"
+#include "haero/diagnostics/kohler_solve_diagnostic.hpp"
+#include "haero/diagnostics/modal_mean_hygroscopicity_diagnostic.hpp"
+#include "haero/diagnostics/modal_wet_radius_diagnostic.hpp"
+#include "haero/diagnostics/mode_dry_particle_volume_diagnostic.hpp"
 #include "haero/mode.hpp"
 
 using namespace haero;
