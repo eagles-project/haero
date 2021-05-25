@@ -35,7 +35,7 @@ namespace haero {
 /// cyrstalization point, water uptake does not occur.  When it lies between the
 /// crystallization and deliquesence point, water uptake does occur, but not at
 /// its maximum rate.   When the environmental relative humidty exceeds the
-/// deliquesence_pt, particles achieve their maximum amount of liquid water.
+/// deliquescence_pt, particles achieve their maximum amount of liquid water.
 ///
 struct Mode final {
   static const int NAME_LEN = 128;
@@ -48,7 +48,7 @@ struct Mode final {
       : min_diameter(0),
         max_diameter(0),
         mean_std_dev(1),
-        deliquesence_pt(0),
+        deliquescence_pt(0),
         crystallization_pt(0) {
     name_view[0] = '\0';
   }
@@ -66,7 +66,7 @@ struct Mode final {
       : min_diameter(min_diam),
         max_diameter(max_diam),
         mean_std_dev(sigma),
-        deliquesence_pt(deliq_pt),
+        deliquescence_pt(deliq_pt),
         crystallization_pt(crystal_pt) {
     EKAT_ASSERT(name.size() < NAME_LEN);
     strncpy(name_view, name.c_str(), NAME_LEN);
@@ -77,7 +77,7 @@ struct Mode final {
       : min_diameter(m.min_diameter),
         max_diameter(m.max_diameter),
         mean_std_dev(m.mean_std_dev),
-        deliquesence_pt(m.deliquesence_pt),
+        deliquescence_pt(m.deliquescence_pt),
         crystallization_pt(m.crystallization_pt) {
     for (int i = 0; i < NAME_LEN; ++i) name_view[i] = m.name_view[i];
   }
@@ -87,7 +87,7 @@ struct Mode final {
     min_diameter = m.min_diameter;
     max_diameter = m.max_diameter;
     mean_std_dev = m.mean_std_dev;
-    deliquesence_pt = m.deliquesence_pt;
+    deliquescence_pt = m.deliquescence_pt;
     crystallization_pt = m.crystallization_pt;
     for (int i = 0; i < NAME_LEN; ++i) name_view[i] = m.name_view[i];
     return *this;
@@ -110,7 +110,7 @@ struct Mode final {
   Real mean_std_dev;
 
   /// The deliquescence point (rel. humidity) for this mode.
-  Real deliquesence_pt;
+  Real deliquescence_pt;
 
   /// The crystallization point (rel. humidity) for this mode.
   Real crystallization_pt;
@@ -124,8 +124,8 @@ struct Mode final {
 */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T
-  modal_mean_particle_diameter_from_volume(const T mode_mean_particle_volume) {
-    return cbrt(constants::pi_sixth * mode_mean_particle_volume) *
+  modal_mean_particle_diameter_from_volume(const T mode_mean_particle_volume) const {
+    return cbrt(mode_mean_particle_volume / constants::pi_sixth) *
            exp(-1.5 * square(log(mean_std_dev)));
   }
 
@@ -138,8 +138,8 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T
-  modal_mean_particle_volume_from_diameter(const T geom_diam) {
-    return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) /
+  modal_mean_particle_volume_from_diameter(const T geom_diam) const {
+    return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) *
            constants::pi_sixth;
   }
 
