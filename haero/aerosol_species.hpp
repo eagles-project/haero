@@ -33,11 +33,9 @@ struct AerosolSpecies final {
   /// @param [in] dry_rad The dry radius [m] of the species' particle size
   /// @param [in] hygro Base hygroscopicity of the species
   AerosolSpecies(const std::string& name, const std::string& symbol,
-                 const std::string& description, Real molecular_wt,
-                Real dens, Real hygro)
-      : molecular_weight(molecular_wt),
-        density(dens),
-        hygroscopicity(hygro) {
+                 const std::string& description, Real molecular_wt, Real dens,
+                 Real hygro)
+      : molecular_weight(molecular_wt), density(dens), hygroscopicity(hygro) {
     EKAT_ASSERT(name.size() < NAME_LEN);
     EKAT_ASSERT(symbol.size() < NAME_LEN);
     strncpy(name_view, name.c_str(), NAME_LEN);
