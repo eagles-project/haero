@@ -116,15 +116,16 @@ struct Mode final {
   Real crystallization_pt;
 
   /** @brief This function returns the modal geometric mean particle diameter,
-  given the mode's mean volume (~ to 3rd log-normal moment) and the modal standard
-  deviation.
+  given the mode's mean volume (~ to 3rd log-normal moment) and the modal
+  standard deviation.
 
-  @param mode_mean_particle_volume mean particle volume for mode [m^3 per particle]
+  @param mode_mean_particle_volume mean particle volume for mode [m^3 per
+  particle]
   @return modal mean particle diameter [m per particle]
 */
   template <typename T>
-  KOKKOS_INLINE_FUNCTION T
-  modal_mean_particle_diameter_from_volume(const T mode_mean_particle_volume) const {
+  KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter_from_volume(
+      const T mode_mean_particle_volume) const {
     return cbrt(mode_mean_particle_volume / constants::pi_sixth) *
            exp(-1.5 * square(log(mean_std_dev)));
   }
@@ -166,8 +167,6 @@ struct Mode final {
   KOKKOS_INLINE_FUNCTION T max_vol_to_num_ratio() {
     return 1 / modal_mean_particle_volume_from_diameter(min_diameter);
   }
-
-
 
  private:
   char name_view[NAME_LEN];
