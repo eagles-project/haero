@@ -14,7 +14,7 @@ void write_input_var(FILE* file,
     colon = name.find(":");
   }
   fprintf(file, "input.%s = [", name.c_str());
-  for (auto input : inputs) {
+  for (const auto& input : inputs) {
     auto var = input[var_name];
     fprintf(file, "%g, ", var);
   }
@@ -26,7 +26,7 @@ void write_output_var(FILE* file,
                       const std::vector<skywalker::OutputData>& outputs,
                       const std::string& var_name) {
   fprintf(file, "output.%s = [", var_name.c_str());
-  for (auto output : outputs) {
+  for (const auto& output : outputs) {
     auto var = output[var_name];
     fprintf(file, "%g, ", var);
   }
@@ -66,7 +66,8 @@ void write_py_module(const std::vector<InputData>& inputs,
   auto aero_config = inputs[0].aero_config;
   for (int m = 0; m < aero_config.num_modes(); ++m) {
     auto mode = aero_config.h_aerosol_modes[m];
-    write_input_var(file, inputs, mode.name().c_str());
+    auto number_conc_name = mode.name() + std::string(":number_conc");
+    write_input_var(file, inputs, number_conc_name.c_str());
     auto species_for_mode = aero_config.aerosol_species_for_mode(m);
     for (auto species : species_for_mode) {
       auto sym = species.symbol();

@@ -32,7 +32,7 @@ void parse_number_conc(const haero::ModalAerosolConfig& aero_config,
   size_t penultimate_colon = param_name.rfind(':', last_colon-1);
   auto mode_name = param_name.substr(penultimate_colon+1, last_colon-penultimate_colon-1);
   cloud = (param_name.find("cloud:") != std::string::npos);
-  mode_index = aero_config.aerosol_mode_index(param_name);
+  mode_index = aero_config.aerosol_mode_index(mode_name);
 }
 
 void parse_gas(const haero::ModalAerosolConfig& aero_config,
@@ -94,8 +94,14 @@ haero::Real& InputData::operator[](const std::string& param_name) {
     int pop_index;
     parse_aerosol(aero_config, param_name, cloud, pop_index);
     if (cloud) {
+      if (cloud_aero_mmrs.size() <= pop_index) {
+        cloud_aero_mmrs.resize(pop_index+1);
+      }
       return cloud_aero_mmrs[pop_index];
     } else {
+      if (interstitial_aero_mmrs.size() <= pop_index) {
+        interstitial_aero_mmrs.resize(pop_index+1);
+      }
       return interstitial_aero_mmrs[pop_index];
     }
   } else if (is_number_conc(param_name)) {
@@ -103,13 +109,22 @@ haero::Real& InputData::operator[](const std::string& param_name) {
     int mode_index;
     parse_number_conc(aero_config, param_name, cloud, mode_index);
     if (cloud) {
+      if (cloud_aero_mmrs.size() <= mode_index) {
+        cloud_aero_mmrs.resize(mode_index+1);
+      }
       return cloud_number_concs[mode_index];
     } else {
+      if (interstitial_number_concs.size() <= mode_index) {
+        interstitial_number_concs.resize(mode_index+1);
+      }
       return interstitial_number_concs[mode_index];
     }
   } else if (is_gas(param_name)) {
     int gas_index;
     parse_gas(aero_config, param_name, gas_index);
+    if (gas_mmrs.size() <= gas_index) {
+      gas_mmrs.resize(gas_index+1);
+    }
     return gas_mmrs[gas_index];
   } else {
     if (param_name == "temperature") {
