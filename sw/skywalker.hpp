@@ -11,6 +11,7 @@ struct InputData {
   explicit InputData(const haero::ModalAerosolConfig& aero_config)
       : aero_config(aero_config) {}
   InputData() = delete;
+  InputData(const InputData& rhs) = default;
 
   const haero::ModalAerosolConfig& aero_config;
 
