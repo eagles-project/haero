@@ -100,6 +100,11 @@ struct KohlerPolynomial {
         hygroscopicity(hygro),
         dry_radius(dry_rad_microns),
         dry_radius_cubed(cube(dry_rad_microns)) {
+    if (!valid_inputs(T(rel_h), T(hygro), T(dry_rad_microns))) {
+      std::cout << "KohlerPolynomial warning, invalid inputs: rel_h = " << rel_h
+                << " hyg = " << hygro << " dry_rad = " << dry_rad_microns
+                << "\n";
+    }
     EKAT_KERNEL_ASSERT(valid_inputs(T(rel_h), T(hygro), T(dry_rad_microns)));
   }
 
@@ -144,12 +149,18 @@ struct KohlerPolynomial {
   }
 
   KOKKOS_INLINE_FUNCTION
-  bool valid_inputs(const T& relh, const T& hyg, const T& dry_rad) {
+  bool valid_inputs(const T& relh, const T& hyg, const T& dry_rad) const {
     return (FloatingPoint<T>::in_bounds(relh, rel_humidity_min,
                                         rel_humidity_max) and
             FloatingPoint<T>::in_bounds(hyg, hygro_min, hygro_max) and
             FloatingPoint<T>::in_bounds(dry_rad, dry_radius_min_microns,
                                         dry_radius_max_microns));
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  bool valid_inputs() const {
+    return valid_inputs(exp(this->log_rel_humidity), this->hygroscopicity,
+                        this->dry_radius);
   }
 
   /** @brief Writes a string containing a Mathematica script that may be used to

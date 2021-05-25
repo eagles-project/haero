@@ -12,6 +12,8 @@ namespace haero {
 
   The mean particle volume is proportional to the 3rd moment of the mode's
   log-normal PDF.
+
+  @f$ \overline{V} = \frac{1}{N_m}\sum_{s\in m} \frac{q_s}{\rho_s} @f$
 */
 struct ModalMeanParticleVolume {
   ColumnView modal_mean_volume;                                // output
