@@ -91,8 +91,11 @@ TEST_CASE("wet_radius_diagnostic", "") {
   Kokkos::deep_copy(num_ratios, h_num_ratios);
 
   // Allocate a view to hold AerosolSpecies for each mode, individually
-  DeviceType::view_1d<AerosolSpecies> aerosols_in_mode(
-      "aerosols_in_mode", config.max_species_per_mode());
+  DeviceType::view_2d<AerosolSpecies> aerosols_in_mode(
+      "aerosols_in_mode", nmodes, config.max_species_per_mode());
+  Kokkos::parallel_for(nmodes, KOKKOS_LAMBDA (const int m) {
+    config.aerosol_species_for_mode(m, Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL));
+  });
 
   // modal averages
   ModalColumnView mode_wet_radius("mode_wet_radius", nmodes, npacks);
@@ -102,27 +105,27 @@ TEST_CASE("wet_radius_diagnostic", "") {
   ModalColumnView mode_dry_particle_radius("mode_dry_particle_radius", nmodes,
                                            npacks);
 
+  std::cout << "starting kernels\n";
   // on host, loop over each mode
   for (int m = 0; m < nmodes; ++m) {
-    // populate the device view with correct aerosol species for mode m
-    config.aerosol_species_for_mode(m, aerosols_in_mode);
-
     // compute the modal mean particle volume
     Kokkos::parallel_for(
         npacks,
         ModalMeanParticleVolume(
             Kokkos::subview(mode_mean_particle_dry_volume, m, Kokkos::ALL),
-            q_aero, num_ratios, aerosols_in_mode,
+            q_aero, num_ratios, Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL),
             Kokkos::subview(pop_inds, m, Kokkos::ALL),
             config.h_n_species_per_mode(m), m));
+    std::cout << "\tdry particle volume ready\n";
 
     // compute the modal mean hygroscopicity
     Kokkos::parallel_for(
         npacks,
         ModalHygroscopicity(
             Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL), q_aero,
-            aerosols_in_mode, Kokkos::subview(pop_inds, m, Kokkos::ALL),
+            Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL), Kokkos::subview(pop_inds, m, Kokkos::ALL),
             config.h_n_species_per_mode(m)));
+    std::cout << "\thygroscopicity ready\n";
 
     // compute the modal mean dry particle *radius* (not diameter)
     Kokkos::parallel_for(
@@ -132,6 +135,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
                         .modal_mean_particle_diameter_from_volume(
                             mode_mean_particle_dry_volume(m, pack_idx));
         });
+    std::cout << "\tdry particle radius ready\n";
 
     // compute the modal avg wet radius
     Kokkos::parallel_for(
@@ -139,8 +143,12 @@ TEST_CASE("wet_radius_diagnostic", "") {
                     Kokkos::subview(mode_wet_radius, m, Kokkos::ALL),
                     Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL),
                     Kokkos::subview(mode_dry_particle_radius, m, Kokkos::ALL),
-                    relative_humidity, config.d_aerosol_modes[m]));
+                    relative_humidity, config.h_aerosol_modes[m]));
+    std::cout << "\twet radius ready\n";
   }
+
+  std::cout << "kernel evaluations complete.\n" << std::endl;
+
   // for verification: copy kernel results to host
   auto h_mode_hyg = Kokkos::create_mirror_view(mode_hygroscopicity);
   auto h_mode_dry_vol =
@@ -161,7 +169,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
         h_mode_hyg(0, pack_idx), PackType(mode0spec[0].hygroscopicity)));
     // check particle dry volume matches exact value
     REQUIRE(FloatingPoint<PackType>::equiv(h_mode_dry_vol(0, pack_idx),
-                                           q_aero(0, pack_idx) /
+                                           h_q_aero(0, pack_idx) /
                                                mode0spec[0].density /
                                                h_num_ratios(0, pack_idx)));
 
@@ -177,11 +185,11 @@ TEST_CASE("wet_radius_diagnostic", "") {
   // modal averages
   const auto mode1spec = config.aerosol_species_for_mode(1);
   for (int pack_idx = 0; pack_idx < npacks; ++pack_idx) {
-    const PackType mode_vol_mr = q_aero(1, pack_idx) / mode1spec[0].density +
-                                 q_aero(2, pack_idx) / mode1spec[1].density;
-    const PackType mhyg = (q_aero(1, pack_idx) * mode1spec[0].hygroscopicity /
+    const PackType mode_vol_mr = h_q_aero(1, pack_idx) / mode1spec[0].density +
+                                 h_q_aero(2, pack_idx) / mode1spec[1].density;
+    const PackType mhyg = (h_q_aero(1, pack_idx) * mode1spec[0].hygroscopicity /
                                mode1spec[0].density +
-                           q_aero(2, pack_idx) * mode1spec[1].hygroscopicity /
+                           h_q_aero(2, pack_idx) * mode1spec[1].hygroscopicity /
                                mode1spec[1].density) /
                           mode_vol_mr;
     // check modal avg particle dry volume

@@ -100,11 +100,6 @@ struct KohlerPolynomial {
         hygroscopicity(hygro),
         dry_radius(dry_rad_microns),
         dry_radius_cubed(cube(dry_rad_microns)) {
-    if (!valid_inputs(T(rel_h), T(hygro), T(dry_rad_microns))) {
-      std::cout << "KohlerPolynomial warning, invalid inputs: rel_h = " << rel_h
-                << " hyg = " << hygro << " dry_rad = " << dry_rad_microns
-                << "\n";
-    }
     EKAT_KERNEL_ASSERT(valid_inputs(T(rel_h), T(hygro), T(dry_rad_microns)));
   }
 

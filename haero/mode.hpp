@@ -126,7 +126,8 @@ struct Mode final {
   template <typename T>
   KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter_from_volume(
       const T mode_mean_particle_volume) const {
-    return cbrt(mode_mean_particle_volume / constants::pi_sixth) *
+    const Real pio6 = constants::pi_sixth;
+    return cbrt(mode_mean_particle_volume / pio6) *
            exp(-1.5 * square(log(mean_std_dev)));
   }
 
@@ -140,8 +141,9 @@ struct Mode final {
   template <typename T>
   KOKKOS_INLINE_FUNCTION T
   modal_mean_particle_volume_from_diameter(const T geom_diam) const {
+    const Real pio6 = constants::pi_sixth;
     return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) *
-           constants::pi_sixth;
+           pio6;
   }
 
   /** @brief This function returns the minimum volume to number ratio,
