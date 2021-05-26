@@ -1,4 +1,4 @@
-#include "kohler_solve_diagnostic.hpp"
+#include "kohler_solve.hpp"
 
 #include <iomanip>
 #include <sstream>

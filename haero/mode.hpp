@@ -140,9 +140,6 @@ struct Mode final {
   template <typename T>
   KOKKOS_INLINE_FUNCTION T
   mean_particle_volume_from_diameter(const T geom_diam) const {
-    return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) *
-           constants::pi_sixth;
-  modal_mean_particle_volume_from_diameter(const T geom_diam) const {
     const Real pio6 = constants::pi_sixth;
     return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) * pio6;
   }

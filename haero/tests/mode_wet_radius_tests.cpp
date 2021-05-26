@@ -3,12 +3,12 @@
 
 #include "catch2/catch.hpp"
 #include "haero/aerosol_species.hpp"
-#include "haero/check_helpers.hpp"
-#include "haero/diagnostics/kohler_solve_diagnostic.hpp"
-#include "haero/diagnostics/modal_mean_hygroscopicity_diagnostic.hpp"
-#include "haero/diagnostics/modal_wet_radius_diagnostic.hpp"
-#include "haero/diagnostics/mode_dry_particle_volume_diagnostic.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/check.hpp"
+#include "haero/diagnostics/kohler_solve.hpp"
+#include "haero/diagnostics/mode_hygroscopicity.hpp"
+#include "haero/diagnostics/mode_wet_radius.hpp"
+#include "haero/diagnostics/mode_dry_particle_volume.hpp"
+#include "haero/math.hpp"
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/mode.hpp"
 

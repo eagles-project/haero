@@ -4,7 +4,7 @@
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
 #include "haero/mode.hpp"
-#include "kohler_solve_diagnostic.hpp"
+#include "kohler_solve.hpp"
 
 namespace haero {
 
