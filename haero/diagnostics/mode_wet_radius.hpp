@@ -68,13 +68,15 @@ struct ModeWetRadius {
 
     // for all other rel. humidities, we need the Kohler equation to find the
     // wet radius
-    const auto kpoly = KohlerPolynomial<ekat::Pack<double, HAERO_PACK_SIZE>>(
+    typedef ekat::Pack<double, HAERO_PACK_SIZE> double_pack;
+    const auto kpoly = KohlerPolynomial<double_pack>(
         needs_kohler, relative_humidity(pack_idx),
         modal_hygroscopicity(pack_idx),
         to_microns * modal_dry_radius_meters(pack_idx));
-    auto solver = math::ScalarNewtonSolver<
-        KohlerPolynomial<ekat::Pack<double, HAERO_PACK_SIZE>>>(
-        25 * to_microns * modal_dry_radius_meters(pack_idx), tol, kpoly);
+    const double_pack r_wet_initial(25 * to_microns *
+                                    modal_dry_radius_meters(pack_idx));
+    auto solver = math::ScalarNewtonSolver<KohlerPolynomial<double_pack>>(
+        r_wet_initial, tol, kpoly);
     wet_radius_meters(pack_idx).set(needs_kohler, to_meters * solver.solve());
 
     //     ekat_masked_loop(needs_kohler, s) {
