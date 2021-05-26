@@ -63,38 +63,52 @@ struct ModeWetRadius {
 
     // below crystallization point, or for particles that are smaller than 1 nm,
     // there is no water uptake --- the particle radius is the dry radius
-    ekat_masked_loop(use_dry_radius, s) {
-      wet_radius_meters(pack_idx)[s] = modal_dry_radius_meters(pack_idx)[s];
-    };
+    wet_radius_meters(pack_idx).set(use_dry_radius, modal_dry_radius_meters(pack_idx));
 
     // for all other rel. humidities, we need the Kohler equation to find the
     // wet radius
-    ekat_masked_loop(needs_kohler, s) {
-      const auto kpoly = KohlerPolynomial<double>(
-          relative_humidity(pack_idx)[s], modal_hygroscopicity(pack_idx)[s],
-          to_microns * modal_dry_radius_meters(pack_idx)[s]);
-      auto solver = math::ScalarNewtonSolver<KohlerPolynomial<double>>(
-          25 * to_microns * modal_dry_radius_meters(pack_idx)[s], tol, kpoly);
-      wet_radius_meters(pack_idx)[s] = to_meters * solver.solve();
-    };
+    const auto kpoly = KohlerPolynomial<ekat::Pack<double,HAERO_PACK_SIZE>>(needs_kohler,
+      relative_humidity(pack_idx), modal_hygroscopicity(pack_idx),
+      to_microns*modal_dry_radius_meters(pack_idx));
+    auto solver = math::ScalarNewtonSolver<KohlerPolynomial<ekat::Pack<double,HAERO_PACK_SIZE>>>(
+    25*to_microns*modal_dry_radius_meters(pack_idx), tol, kpoly);
+    wet_radius_meters(pack_idx).set(needs_kohler, to_meters*solver.solve());
+
+//     ekat_masked_loop(needs_kohler, s) {
+//       const auto kpoly = KohlerPolynomial<double>(
+//           relative_humidity(pack_idx)[s], modal_hygroscopicity(pack_idx)[s],
+//           to_microns * modal_dry_radius_meters(pack_idx)[s]);
+//       auto solver = math::ScalarNewtonSolver<KohlerPolynomial<double>>(
+//           25 * to_microns * modal_dry_radius_meters(pack_idx)[s], tol, kpoly);
+//       wet_radius_meters(pack_idx)[s] = to_meters * solver.solve();
+//     };
 
     // for relative humidities between the crystallization and deliquescence
     // points, adjust wet radius due to hysteresis.
-    ekat_masked_loop(rh_mid, s) {
-      const Real dry_vol = mode.mean_particle_volume_from_diameter(
-          2 * modal_dry_radius_meters(pack_idx)[s]);
-      Real wet_vol = mode.mean_particle_volume_from_diameter(
-          2 * wet_radius_meters(pack_idx)[s]);
-      EKAT_KERNEL_ASSERT(wet_vol >= dry_vol);
-      const Real water_vol =
-          (wet_vol - dry_vol) *
-          (relative_humidity(pack_idx)[s] - mode.crystallization_pt) *
-          hysteresis_fac;
-      EKAT_KERNEL_ASSERT(water_vol >= 0);
-      wet_vol = dry_vol + water_vol;
-      wet_radius_meters(pack_idx)[s] =
-          0.5 * mode.mean_particle_diameter_from_volume(wet_vol);
-    };
+    const PackType dry_vol = mode.mean_particle_volume_from_diameter(2*modal_dry_radius_meters(pack_idx));
+    PackType wet_vol = mode.mean_particle_volume_from_diameter(2*wet_radius_meters(pack_idx));
+    EKAT_KERNEL_ASSERT( (wet_vol >= dry_vol).all() );
+    const PackType water_vol = (wet_vol - dry_vol) * (relative_humidity(pack_idx) - PackType(mode.crystallization_pt)) * hysteresis_fac;
+//     EKAT_KERNEL_ASSERT( (water_vol >= 0).all() );
+    wet_vol = dry_vol + water_vol;
+    const PackType rwet = 0.5*mode.mean_particle_diameter_from_volume(wet_vol);
+    wet_radius_meters(pack_idx).set(rh_mid, rwet);
+
+//     ekat_masked_loop(rh_mid, s) {
+//       const Real dry_vol = mode.mean_particle_volume_from_diameter(
+//           2 * modal_dry_radius_meters(pack_idx)[s]);
+//       Real wet_vol = mode.mean_particle_volume_from_diameter(
+//           2 * wet_radius_meters(pack_idx)[s]);
+//       EKAT_KERNEL_ASSERT(wet_vol >= dry_vol);
+//       const Real water_vol =
+//           (wet_vol - dry_vol) *
+//           (relative_humidity(pack_idx)[s] - mode.crystallization_pt) *
+//           hysteresis_fac;
+//       EKAT_KERNEL_ASSERT(water_vol >= 0);
+//       wet_vol = dry_vol + water_vol;
+//       wet_radius_meters(pack_idx)[s] =
+//           0.5 * mode.mean_particle_diameter_from_volume(wet_vol);
+//     };
   }
 };
 
