@@ -5,9 +5,9 @@
 #include "haero/aerosol_species.hpp"
 #include "haero/check.hpp"
 #include "haero/diagnostics/kohler_solve.hpp"
+#include "haero/diagnostics/mode_dry_particle_volume.hpp"
 #include "haero/diagnostics/mode_hygroscopicity.hpp"
 #include "haero/diagnostics/mode_wet_radius.hpp"
-#include "haero/diagnostics/mode_dry_particle_volume.hpp"
 #include "haero/math.hpp"
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/mode.hpp"
@@ -137,9 +137,9 @@ TEST_CASE("wet_radius_diagnostic", "") {
     Kokkos::parallel_for(
         npacks, KOKKOS_LAMBDA(const int pack_idx) {
           mode_dry_particle_radius(m, pack_idx) =
-              0.5 * config.d_aerosol_modes[m]
-                        .mean_particle_diameter_from_volume(
-                            mode_mean_particle_dry_volume(m, pack_idx));
+              0.5 *
+              config.d_aerosol_modes[m].mean_particle_diameter_from_volume(
+                  mode_mean_particle_dry_volume(m, pack_idx));
         });
     std::cout << "\tdry particle radius ready\n";
 
@@ -180,8 +180,8 @@ TEST_CASE("wet_radius_diagnostic", "") {
                                                h_num_ratios(0, pack_idx)));
 
     // check that wet radius >= dry radius always
-    REQUIRE(Check<PackType>::is_greater_or_equal(h_mode_wet_radius(0, pack_idx),
-                                    h_mode_dry_radius(0, pack_idx)));
+    REQUIRE(Check<PackType>::is_greater_or_equal(
+        h_mode_wet_radius(0, pack_idx), h_mode_dry_radius(0, pack_idx)));
   }
   std::cout << "Tested mode 0 hygroscopicity == exact value\n";
   std::cout << "Tested mode 0 dry_volume == exact value \n";
@@ -204,8 +204,8 @@ TEST_CASE("wet_radius_diagnostic", "") {
     // check modal avg hygroscopicity
     REQUIRE(FloatingPoint<PackType>::equiv(h_mode_hyg(1, pack_idx), mhyg));
     // check that wet radius >= dry radius always
-    REQUIRE(Check<PackType>::is_greater_or_equal(h_mode_wet_radius(1, pack_idx),
-                                    h_mode_dry_radius(1, pack_idx)));
+    REQUIRE(Check<PackType>::is_greater_or_equal(
+        h_mode_wet_radius(1, pack_idx), h_mode_dry_radius(1, pack_idx)));
   }
 
   std::cout << "Tested mode 1 hygroscopicity == exact value\n";

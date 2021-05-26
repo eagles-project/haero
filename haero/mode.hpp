@@ -123,8 +123,8 @@ struct Mode final {
   @return modal mean particle diameter [m per particle]
 */
   template <typename T>
-  KOKKOS_INLINE_FUNCTION T mean_particle_diameter_from_volume(
-      const T mode_mean_particle_volume) const {
+  KOKKOS_INLINE_FUNCTION T
+  mean_particle_diameter_from_volume(const T mode_mean_particle_volume) const {
     const Real pio6 = constants::pi_sixth;
     return cbrt(mode_mean_particle_volume / pio6) *
            exp(-1.5 * square(log(mean_std_dev)));
