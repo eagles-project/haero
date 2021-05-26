@@ -49,8 +49,15 @@ struct ModalWetRadius {
     // KohlerPolynomial's minimum
     const auto too_small =
         (to_microns * modal_dry_radius_meters(pack_idx) < dry_rmin);
+    // we use the dry radius for conditions where water uptake does not occur
+    // (either the air is too dry, or the particles are too small).
     const auto use_dry_radius = (rh_low || too_small);
+    // All other cases require the solution of the Kohler equation
     const auto needs_kohler = !use_dry_radius;
+    // When the environment has enough moisture to support water uptake, but is
+    // less than the deliquescence_pt, the amount of water is reduced by
+    // hysteresis.  Here, we use a very simple linear function to approximate
+    // this effect.
     const Real hysteresis_fac =
         1 / (mode.deliquescence_pt - mode.crystallization_pt);
 
