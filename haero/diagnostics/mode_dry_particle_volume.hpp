@@ -15,7 +15,7 @@ namespace haero {
 
   @f$ \overline{V} = \frac{1}{N_m}\sum_{s\in m} \frac{q_s}{\rho_s} @f$
 */
-struct ModalMeanParticleVolume {
+struct ModeDryParticleVolume {
   ColumnView modal_mean_volume;                                // output
   SpeciesColumnView mass_mixing_ratios;                        // input
   ModalColumnView number_mixing_ratios;                        // input
@@ -25,11 +25,10 @@ struct ModalMeanParticleVolume {
   int mode_idx;                                                // input
 
   KOKKOS_INLINE_FUNCTION
-  ModalMeanParticleVolume(ColumnView vol, const SpeciesColumnView mass_mrs,
-                          const ModalColumnView number_mrs,
-                          DeviceType::view_1d<AerosolSpecies> aeros,
-                          DeviceType::view_1d<int> pops, const int n,
-                          const int m)
+  ModeDryParticleVolume(ColumnView vol, const SpeciesColumnView mass_mrs,
+                        const ModalColumnView number_mrs,
+                        DeviceType::view_1d<AerosolSpecies> aeros,
+                        DeviceType::view_1d<int> pops, const int n, const int m)
       : modal_mean_volume(vol),
         mass_mixing_ratios(mass_mrs),
         number_mixing_ratios(number_mrs),

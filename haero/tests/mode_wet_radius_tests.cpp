@@ -116,7 +116,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
     // compute the modal mean particle volume
     Kokkos::parallel_for(
         npacks,
-        ModalMeanParticleVolume(
+        ModeDryParticleVolume(
             Kokkos::subview(mode_mean_particle_dry_volume, m, Kokkos::ALL),
             q_aero, num_ratios,
             Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL),
@@ -126,7 +126,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
 
     // compute the modal mean hygroscopicity
     Kokkos::parallel_for(
-        npacks, ModalHygroscopicity(
+        npacks, ModeHygroscopicity(
                     Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL),
                     q_aero, Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL),
                     Kokkos::subview(pop_inds, m, Kokkos::ALL),
@@ -145,11 +145,11 @@ TEST_CASE("wet_radius_diagnostic", "") {
 
     // compute the modal avg wet radius
     Kokkos::parallel_for(
-        npacks, ModalWetRadius(
-                    Kokkos::subview(mode_wet_radius, m, Kokkos::ALL),
-                    Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL),
-                    Kokkos::subview(mode_dry_particle_radius, m, Kokkos::ALL),
-                    relative_humidity, config.h_aerosol_modes[m]));
+        npacks,
+        ModeWetRadius(Kokkos::subview(mode_wet_radius, m, Kokkos::ALL),
+                      Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL),
+                      Kokkos::subview(mode_dry_particle_radius, m, Kokkos::ALL),
+                      relative_humidity, config.h_aerosol_modes[m]));
     std::cout << "\twet radius ready\n";
   }
 

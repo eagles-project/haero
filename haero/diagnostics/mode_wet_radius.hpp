@@ -8,7 +8,7 @@
 
 namespace haero {
 
-struct ModalWetRadius {
+struct ModeWetRadius {
   static constexpr Real meters2microns = 1e3;
   static constexpr Real microns2meters = 1e-3;
   static constexpr Real dry_radius_min_microns =
@@ -22,8 +22,8 @@ struct ModalWetRadius {
   Real tol;
 
   KOKKOS_INLINE_FUNCTION
-  ModalWetRadius(ColumnView rwet, const ColumnView hyg, const ColumnView rdry,
-                 const ColumnView rh, const Mode& m)
+  ModeWetRadius(ColumnView rwet, const ColumnView hyg, const ColumnView rdry,
+                const ColumnView rh, const Mode& m)
       : wet_radius_meters(rwet),
         modal_hygroscopicity(hyg),
         modal_dry_radius_meters(rdry),

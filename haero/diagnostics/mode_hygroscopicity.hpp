@@ -7,7 +7,7 @@
 
 namespace haero {
 
-struct ModalHygroscopicity {
+struct ModeHygroscopicity {
   ColumnView hygroscopicity;
   SpeciesColumnView mass_mixing_ratios;
   DeviceType::view_1d<const AerosolSpecies> aerosols_in_mode;
@@ -15,9 +15,9 @@ struct ModalHygroscopicity {
   int n_aerosols_in_mode;
 
   KOKKOS_INLINE_FUNCTION
-  ModalHygroscopicity(ColumnView hyg, const SpeciesColumnView mass_mrs,
-                      const DeviceType::view_1d<AerosolSpecies> aeros,
-                      const DeviceType::view_1d<int> pops, const int n)
+  ModeHygroscopicity(ColumnView hyg, const SpeciesColumnView mass_mrs,
+                     const DeviceType::view_1d<AerosolSpecies> aeros,
+                     const DeviceType::view_1d<int> pops, const int n)
       : hygroscopicity(hyg),
         mass_mixing_ratios(mass_mrs),
         aerosols_in_mode(aeros),
