@@ -3,7 +3,7 @@
 
 #include "catch2/catch.hpp"
 #include "haero/haero.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 
 using namespace haero;
 

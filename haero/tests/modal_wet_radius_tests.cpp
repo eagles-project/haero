@@ -4,8 +4,8 @@
 #include "available_diagnostics.hpp"
 #include "catch2/catch.hpp"
 #include "haero/aerosol_species.hpp"
-#include "haero/check_helpers.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/check.hpp"
+#include "haero/math.hpp"
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/mode.hpp"
 
@@ -129,7 +129,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
         npacks, KOKKOS_LAMBDA(const int pack_idx) {
           mode_dry_particle_radius(m, pack_idx) =
               0.5 * config.d_aerosol_modes[m]
-                        .modal_mean_particle_diameter_from_volume(
+                        .mean_particle_diameter_from_volume(
                             mode_mean_particle_dry_volume(m, pack_idx));
         });
 
@@ -166,7 +166,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
                                                h_num_ratios(0, pack_idx)));
 
     // check that wet radius >= dry radius always
-    REQUIRE(Check<PackType>::is_gte(h_mode_wet_radius(0, pack_idx),
+    REQUIRE(Check<PackType>::is_greater_or_equal(h_mode_wet_radius(0, pack_idx),
                                     h_mode_dry_radius(0, pack_idx)));
   }
   std::cout << "Tested mode 0 hygroscopicity == exact value\n";
@@ -190,7 +190,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
     // check modal avg hygroscopicity
     REQUIRE(FloatingPoint<PackType>::equiv(h_mode_hyg(1, pack_idx), mhyg));
     // check that wet radius >= dry radius always
-    REQUIRE(Check<PackType>::is_gte(h_mode_wet_radius(1, pack_idx),
+    REQUIRE(Check<PackType>::is_greater_or_equal(h_mode_wet_radius(1, pack_idx),
                                     h_mode_dry_radius(1, pack_idx)));
   }
 

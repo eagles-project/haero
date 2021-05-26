@@ -66,7 +66,7 @@ std::vector<AerosolSpecies> read_aerosol_species(const YAML::Node& root) {
       } else {
         auto name = snode["name"].as<std::string>();
         species.push_back(
-            AerosolSpecies(name, symbol, "(no description)", 1.0, 1.0, /* 1.0,*/
+            AerosolSpecies(name, symbol, "(no description)", 1.0, 1.0,
                            1.0));  // FIXME: Need real material props!
       }
     }

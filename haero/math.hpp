@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-#include "check_helpers.hpp"
+#include "check.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 #include "floating_point.hpp"
@@ -27,24 +27,6 @@ KOKKOS_INLINE_FUNCTION
   static_assert(std::is_arithmetic<T>::value, "arithmetic type");
   return x * x * x;
 }
-
-// template <typename T>
-// KOKKOS_INLINE_FUNCTION T sphere_radius_from_volume(const T vol) {
-//   static_assert(std::is_floating_point<
-//                     typename ekat::ScalarTraits<T>::scalar_type>::value,
-//                 "floating point type");
-//   static constexpr Real four_thirds_pi = 4 * constants::pi / 3.0;
-//   return cbrt(vol / four_thirds_pi);
-// }
-//
-// template <typename T>
-// KOKKOS_INLINE_FUNCTION T sphere_volume_from_radius(const T r) {
-//   static_assert(std::is_floating_point<
-//                     typename ekat::ScalarTraits<T>::scalar_type>::value,
-//                 "floating point type.");
-//   static constexpr Real four_thirds_pi = 4 * constants::pi / 3.0;
-//   return four_thirds_pi * cube(r);
-// }
 
 namespace math {
 

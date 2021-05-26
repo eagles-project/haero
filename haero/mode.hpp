@@ -7,7 +7,7 @@
 
 #include "ekat/ekat_pack.hpp"
 #include "haero/haero.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 #include "haero/physical_constants.hpp"
 
 namespace haero {
@@ -22,12 +22,11 @@ namespace haero {
 /// the log-normal function is a variable (a function of mass- and number-
 /// mixing ratios) and is not included in this class.
 ///
-///  The member variables min_diameter and max_diameter do not define the bounds
-///  of the log-normal distribution (which, matematically, are 0 and positive
-///  infinity).  Rather, these min/max values are used to trigger a mass and
-///  number redistribution elsewhere in the code; they signify the bounds beyond
-///  which particles are considered to better belong in a different mode.
-///
+/// The member variables min_diameter and max_diameter do not define the bounds
+/// of the log-normal distribution (which, matematically, are 0 and positive
+/// infinity).  Rather, these min/max values are used to trigger a mass and
+/// number redistribution elsewhere in the code; they signify the bounds beyond
+/// which particles are considered to better belong in a different mode.
 ///
 /// Crystalization and deliquesence refer to the non-cloud water uptake process,
 /// by which liquid water condenses into aerosol droplets.  They are relative
@@ -124,7 +123,7 @@ struct Mode final {
   @return modal mean particle diameter [m per particle]
 */
   template <typename T>
-  KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter_from_volume(
+  KOKKOS_INLINE_FUNCTION T mean_particle_diameter_from_volume(
       const T mode_mean_particle_volume) const {
     return cbrt(mode_mean_particle_volume / constants::pi_sixth) *
            exp(-1.5 * square(log(mean_std_dev)));
@@ -139,7 +138,7 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T
-  modal_mean_particle_volume_from_diameter(const T geom_diam) const {
+  mean_particle_volume_from_diameter(const T geom_diam) const {
     return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) *
            constants::pi_sixth;
   }
@@ -153,7 +152,7 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T min_vol_to_num_ratio() {
-    return 1 / modal_mean_particle_volume_from_diameter(max_diameter);
+    return 1 / mean_particle_volume_from_diameter(max_diameter);
   }
 
   /** @brief This function returns the maximum volume to number ratio,
@@ -165,7 +164,7 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T max_vol_to_num_ratio() {
-    return 1 / modal_mean_particle_volume_from_diameter(min_diameter);
+    return 1 / mean_particle_volume_from_diameter(min_diameter);
   }
 
  private:

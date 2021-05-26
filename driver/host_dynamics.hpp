@@ -7,7 +7,7 @@
 #include "Kokkos_Core.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/haero.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 #include "host_params.hpp"
 #include "ncwriter.hpp"
 

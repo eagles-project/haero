@@ -29,7 +29,7 @@ struct Check {
   }
 
   KOKKOS_INLINE_FUNCTION
-  static bool is_gte(const ScalarType& a, const ScalarType& b) {
+  static bool is_greater_or_equal(const ScalarType& a, const ScalarType& b) {
     return (a >= b);
   }
 };
@@ -56,7 +56,7 @@ struct Check<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
   }
 
   KOKKOS_INLINE_FUNCTION
-  static bool is_gte(const ValueType& a, const ValueType& b) {
+  static bool is_greater_or_equal(const ValueType& a, const ValueType& b) {
     return (a >= b).all();
   }
 };

@@ -6,7 +6,7 @@
 #include "ekat/ekat_scalar_traits.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 
 namespace haero {
 /** Coefficient accounting for Kelvin effect on droplets

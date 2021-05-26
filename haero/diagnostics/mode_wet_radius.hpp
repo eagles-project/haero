@@ -74,9 +74,9 @@ struct ModalWetRadius {
     // for relative humidities between the crystallization and deliquescence
     // points, adjust wet radius due to hysteresis.
     ekat_masked_loop(rh_mid, s) {
-      const Real dry_vol = mode.modal_mean_particle_volume_from_diameter(
+      const Real dry_vol = mode.mean_particle_volume_from_diameter(
           2 * modal_dry_radius_meters(pack_idx)[s]);
-      Real wet_vol = mode.modal_mean_particle_volume_from_diameter(
+      Real wet_vol = mode.mean_particle_volume_from_diameter(
           2 * wet_radius_meters(pack_idx)[s]);
       EKAT_KERNEL_ASSERT(wet_vol >= dry_vol);
       const Real water_vol =
@@ -86,7 +86,7 @@ struct ModalWetRadius {
       EKAT_KERNEL_ASSERT(water_vol >= 0);
       wet_vol = dry_vol + water_vol;
       wet_radius_meters(pack_idx)[s] =
-          0.5 * mode.modal_mean_particle_diameter_from_volume(wet_vol);
+          0.5 * mode.mean_particle_diameter_from_volume(wet_vol);
     };
   }
 };
