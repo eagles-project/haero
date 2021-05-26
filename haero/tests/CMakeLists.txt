@@ -48,7 +48,7 @@ EkatCreateUnitTest(math_tests math_tests.cpp
 EkatCreateUnitTest(kohler_tests kohler_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
-EkatCreateUnitTest(modal_wet_radius mode_wet_radius_tests.cpp
+EkatCreateUnitTest(mode_wet_radius mode_wet_radius_tests.cpp
                   LIBS ${HAERO_LIBRARIES})
 
 #----------------------------------------------------

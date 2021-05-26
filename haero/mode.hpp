@@ -48,8 +48,7 @@ struct Mode final {
         max_diameter(0),
         mean_std_dev(1),
         crystallization_pt(0),
-        deliquescence_pt(0)
-         {
+        deliquescence_pt(0) {
     name_view[0] = '\0';
   }
   /// Creates a new aerosol particle mode.
@@ -67,8 +66,7 @@ struct Mode final {
         max_diameter(max_diam),
         mean_std_dev(sigma),
         crystallization_pt(crystal_pt),
-        deliquescence_pt(deliq_pt)
-         {
+        deliquescence_pt(deliq_pt) {
     EKAT_ASSERT(max_diam > min_diam);
     EKAT_ASSERT(deliq_pt > crystal_pt);
     EKAT_ASSERT(sigma >= 1);
@@ -82,8 +80,7 @@ struct Mode final {
         max_diameter(m.max_diameter),
         mean_std_dev(m.mean_std_dev),
         crystallization_pt(m.crystallization_pt),
-        deliquescence_pt(m.deliquescence_pt)
-         {
+        deliquescence_pt(m.deliquescence_pt) {
     for (int i = 0; i < NAME_LEN; ++i) name_view[i] = m.name_view[i];
   }
 
@@ -119,8 +116,6 @@ struct Mode final {
 
   /// The deliquescence point (rel. humidity) for this mode.
   Real deliquescence_pt;
-
-
 
   /** @brief This function returns the modal geometric mean particle diameter,
   given the mode's mean volume (~ to 3rd log-normal moment) and the modal
