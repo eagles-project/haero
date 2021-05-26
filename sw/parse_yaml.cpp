@@ -58,20 +58,20 @@ void parse_aero_ensemble_params(const ModalAerosolConfig& aerosol_config,
                                 const YAML::Node& root,
                                 std::map<std::string, std::vector<Real>>& params) {
   for (auto riter = root.begin(); riter != root.end(); ++riter) {
-    auto group_name = riter->first.as<std::string>();
-    auto group = riter->second;
-    if (group.IsMap()) {
-      if ((group_name != "cloud") and (group_name != "interstitial")) {
-        continue;
-      }
-      for (auto giter = group.begin(); giter != group.end(); ++giter) {
-        auto mode_name = giter->first.as<std::string>();
-        int mode_index = aerosol_config.aerosol_mode_index(mode_name, false);
-        auto mode = giter->second;
-        if (mode_index != -1) {  // it's an aerosol mode!
-          for (auto iter = mode.begin(); iter != mode.end(); ++iter) {
+    auto mode_name = riter->first.as<std::string>();
+    int mode_index = aerosol_config.aerosol_mode_index(mode_name, false);
+    auto mode = riter->second;
+    if (mode_index != -1) {  // it's an aerosol mode!
+      for (auto miter = mode.begin(); miter != mode.end(); ++miter) {
+        auto group_name = miter->first.as<std::string>();
+        auto group = miter->second;
+        if (group.IsMap()) {
+          if ((group_name != "cloud") and (group_name != "interstitial")) {
+            continue;
+          }
+          for (auto giter = group.begin(); giter != group.end(); ++giter) {
             // Is this a valid aerosol species?
-            auto aero_name = iter->first.as<std::string>();
+            auto aero_name = giter->first.as<std::string>();
             // Find the aerosol index within this species.
             int aero_index = aerosol_config.aerosol_species_index(
                 mode_index, aero_name, false);
@@ -84,18 +84,18 @@ void parse_aero_ensemble_params(const ModalAerosolConfig& aerosol_config,
             auto mmr_name = std::string("aerosols.") + group_name +
                             std::string(".") + mode_name + std::string(".") +
                             aero_name; // also works for number_conc
-            auto aero_species = iter->second;
+            auto aero_species = giter->second;
             params[mmr_name] = parse_value_array(mmr_name, aero_species);
           }
         } else {
           throw YamlException(
-              std::string("Parameter 'aerosols:") + group_name + std::string(":") +
-              mode_name + std::string("' is not a valid aerosol mode!\n"));
+              std::string("Parameter 'aerosols:") + mode_name + std::string(":") +
+              group_name + std::string("' is not a valid aerosol mode!\n"));
         }
       }
     } else {
       throw YamlException(
-          std::string("Parameter 'aerosols:") + group_name +
+          std::string("Parameter 'aerosols:") + mode_name +
           std::string("' is not a map!\n"));
     }
   }

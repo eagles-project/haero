@@ -17,8 +17,8 @@ ensemble:
     h2so4: [0, 1.e-3, 1.e-4]
 
   aerosols:
-    interstitial:
-      aitken:
+    aitken:
+      interstitial:
         so4: [0, 0.001]
 
 atmosphere:
