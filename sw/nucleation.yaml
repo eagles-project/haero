@@ -10,11 +10,10 @@ timestepping: # [s]
 
 ensemble:
   atmosphere:
-    temperature: [270, 276, 0.5]
-    relative_humidity: [0, 1, 0.1]
+    relative_humidity: [0, 1, 0.01]
 
   gases:
-    h2so4: [0, 1.e-3, 1.e-4]
+    h2so4: [0, 1.e-2, 1.e-4]
 
   aerosols:
     aitken:
