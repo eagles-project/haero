@@ -249,7 +249,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   auto inputs = gather_inputs(aero_config, param_walk);
 
   printf("skywalker: running %ld simulations and writing output to '%s'...\n",
-    inputs.size(), py_module_name);
+         inputs.size(), py_module_name);
 
   // Create a model initialized for a number of vertical levels equal to the
   // number of (0D) simulations we need for our parameter walk.
@@ -269,8 +269,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   haero::ModalColumnView cld_num_concs("cloud number concs", num_modes,
                                        num_levels);
 
-  auto* prognostics = model->create_prognostics(int_aerosols, cld_aerosols,
-                                                gases, int_num_concs, cld_num_concs);
+  auto* prognostics = model->create_prognostics(
+      int_aerosols, cld_aerosols, gases, int_num_concs, cld_num_concs);
   auto* diagnostics = model->create_diagnostics();
 
   // Set up an atmospheric state and initialize it with reference data.
