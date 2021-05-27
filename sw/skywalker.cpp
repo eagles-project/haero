@@ -2,6 +2,9 @@
 
 namespace {
 
+// Used to return a reference for a parameter with an invalid name.
+haero::Real zero_value = 0;
+
 bool is_aerosol(const std::string& param_name) {
   return (param_name.find("aerosols.") != std::string::npos);
 }
@@ -153,10 +156,12 @@ haero::Real& InputData::operator[](const std::string& param_name) {
                std::string::npos) {
       return planetary_boundary_layer_height;
     } else {
-      return temperature;  // Not great...
+      zero_value = 0.0;
+      return zero_value;
     }
   } else {
-    return temperature;
+    zero_value = 0.0;
+    return zero_value;
   }
 }
 
