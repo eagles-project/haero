@@ -12,7 +12,7 @@
 #include "driver/ncwriter_impl.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "haero/atmosphere.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 
 #define private \
  public  // unit tests need to access HostDynamics private variables

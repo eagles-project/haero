@@ -7,14 +7,35 @@
 
 #include "ekat/ekat_pack.hpp"
 #include "haero/haero.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 #include "haero/physical_constants.hpp"
 
 namespace haero {
 
 /// @struct Mode
 /// This struct represents an aerosol particle mode and contains all associated
-/// metadata. It is not polymorphic, so don't derive any subclass from it.
+/// metadata. By definition, these metadata are immutable (constant in time).
+/// The struct is not polymorphic, so don't derive any subclass from it.
+///
+/// This class represents the log-normal distribution that defines the mode via
+/// the mean_std_dev member variable.  The other parameter necessary to define
+/// the log-normal function is a variable (a function of mass- and number-
+/// mixing ratios) and is not included in this class.
+///
+/// The member variables min_diameter and max_diameter do not define the bounds
+/// of the log-normal distribution (which, matematically, are 0 and positive
+/// infinity).  Rather, these min/max values are used to trigger a mass and
+/// number redistribution elsewhere in the code; they signify the bounds beyond
+/// which particles are considered to better belong in a different mode.
+///
+/// Crystalization and deliquesence refer to the non-cloud water uptake process,
+/// by which liquid water condenses into aerosol droplets.  They are relative
+/// humidity values.  When the environmental relative humidity lies below the
+/// cyrstalization point, water uptake does not occur.  When it lies between the
+/// crystallization and deliquesence point, water uptake does occur, but not at
+/// its maximum rate.   When the environmental relative humidty exceeds the
+/// deliquescence_pt, particles achieve their maximum amount of liquid water.
+///
 struct Mode final {
   static const int NAME_LEN = 128;
 
@@ -26,8 +47,8 @@ struct Mode final {
       : min_diameter(0),
         max_diameter(0),
         mean_std_dev(1),
-        deliquesence_pt(0),
-        crystallization_pt(0) {
+        crystallization_pt(0),
+        deliquescence_pt(0) {
     name_view[0] = '\0';
   }
   /// Creates a new aerosol particle mode.
@@ -40,12 +61,15 @@ struct Mode final {
   /// @param [in] crystal_pt The crystallization point of the mode
   /// @param [in] deliq_pt The deliquescence point of the mode
   Mode(const std::string &name, Real min_diam, Real max_diam, Real sigma,
-       Real deliq_pt, Real crystal_pt)
+       Real crystal_pt, Real deliq_pt)
       : min_diameter(min_diam),
         max_diameter(max_diam),
         mean_std_dev(sigma),
-        deliquesence_pt(deliq_pt),
-        crystallization_pt(crystal_pt) {
+        crystallization_pt(crystal_pt),
+        deliquescence_pt(deliq_pt) {
+    EKAT_ASSERT(max_diam > min_diam);
+    EKAT_ASSERT(deliq_pt > crystal_pt);
+    EKAT_ASSERT(sigma >= 1);
     EKAT_ASSERT(name.size() < NAME_LEN);
     strncpy(name_view, name.c_str(), NAME_LEN);
   }
@@ -55,8 +79,8 @@ struct Mode final {
       : min_diameter(m.min_diameter),
         max_diameter(m.max_diameter),
         mean_std_dev(m.mean_std_dev),
-        deliquesence_pt(m.deliquesence_pt),
-        crystallization_pt(m.crystallization_pt) {
+        crystallization_pt(m.crystallization_pt),
+        deliquescence_pt(m.deliquescence_pt) {
     for (int i = 0; i < NAME_LEN; ++i) name_view[i] = m.name_view[i];
   }
 
@@ -65,8 +89,8 @@ struct Mode final {
     min_diameter = m.min_diameter;
     max_diameter = m.max_diameter;
     mean_std_dev = m.mean_std_dev;
-    deliquesence_pt = m.deliquesence_pt;
     crystallization_pt = m.crystallization_pt;
+    deliquescence_pt = m.deliquescence_pt;
     for (int i = 0; i < NAME_LEN; ++i) name_view[i] = m.name_view[i];
     return *this;
   }
@@ -87,11 +111,41 @@ struct Mode final {
   /// The geometric mean standard deviation for this mode.
   Real mean_std_dev;
 
-  /// The deliquescence point (rel. humidity) for this mode.
-  Real deliquesence_pt;
-
   /// The crystallization point (rel. humidity) for this mode.
   Real crystallization_pt;
+
+  /// The deliquescence point (rel. humidity) for this mode.
+  Real deliquescence_pt;
+
+  /** @brief This function returns the modal geometric mean particle diameter,
+  given the mode's mean volume (~ to 3rd log-normal moment) and the modal
+  standard deviation.
+
+  @param mode_mean_particle_volume mean particle volume for mode [m^3 per
+  particle]
+  @return modal mean particle diameter [m per particle]
+*/
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T
+  mean_particle_diameter_from_volume(const T mode_mean_particle_volume) const {
+    const Real pio6 = constants::pi_sixth;
+    return cbrt(mode_mean_particle_volume / pio6) *
+           exp(-1.5 * square(log(mean_std_dev)));
+  }
+
+  /** @brief This function is the inverse of
+    modal_mean_particle_diameter_from_volume; given the modal mean geometric
+    diamaeter, it returns the corresponding volume.
+
+    @param [in] geom_diam geometric mean diameter [m per particle]
+    @return mean volume [m^3 per particle]
+  */
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T
+  mean_particle_volume_from_diameter(const T geom_diam) const {
+    const Real pio6 = constants::pi_sixth;
+    return cube(geom_diam) * exp(4.5 * square(log(mean_std_dev))) * pio6;
+  }
 
   /** @brief This function returns the minimum volume to number ratio,
       which is computed using the maximum diameter(units:meters) and
@@ -102,8 +156,7 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T min_vol_to_num_ratio() {
-    return 1 / (constants::pi_sixth * (cube(max_diameter)) *
-                exp(4.5 * square(log(mean_std_dev))));
+    return 1 / mean_particle_volume_from_diameter(max_diameter);
   }
 
   /** @brief This function returns the maximum volume to number ratio,
@@ -115,28 +168,12 @@ struct Mode final {
   */
   template <typename T>
   KOKKOS_INLINE_FUNCTION T max_vol_to_num_ratio() {
-    return 1 / (constants::pi_sixth * (cube(min_diameter)) *
-                exp(4.5 * square(log(mean_std_dev))));
+    return 1 / mean_particle_volume_from_diameter(min_diameter);
   }
 
  private:
   char name_view[NAME_LEN];
 };
-
-/** @brief This function returns the modal geometric mean particle diameter,
-  given the mode's mean volume (3rd log-normal moment) and the modal standard
-  deviation.
-
-  @param mode_mean_particle_volume mean particle volume for mode [m^3]
-  @param log_sigma natural log of the mode's geometric mean std. dev.
-  @return modal mean particle diameter (~ 1st log-normal moment) [m]
-*/
-template <typename T>
-KOKKOS_INLINE_FUNCTION T modal_mean_particle_diameter(
-    const T mode_mean_particle_volume, const Real log_sigma) {
-  return cbrt(constants::pi_sixth * mode_mean_particle_volume) *
-         exp(-1.5 * square(log_sigma));
-}
 
 inline std::vector<Mode> create_mam4_modes() {
   /// Legacy MAM4 used the same constant crystallization and deliquescence
@@ -149,7 +186,6 @@ inline std::vector<Mode> create_mam4_modes() {
   static constexpr Real rh_deliq = 0.8;
   const std::vector<std::string> mode_names = {"accumulation", "aitken",
                                                "coarse", "primary_carbon"};
-  const std::vector<Real> mode_mean_diam = {1.1e-7, 2.6e-8, 2e-6, 5e-8};
   const std::vector<Real> mode_min_diam = {5.35e-8, 8.7e-9, 1e-6, 1e-8};
   const std::vector<Real> mode_max_diam = {4.4e-7, 5.2e-8, 4e-6, 1e-7};
   const std::vector<Real> mode_std_dev = {1.8, 1.6, 1.8, 1.6};

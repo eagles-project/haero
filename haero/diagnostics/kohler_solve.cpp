@@ -1,4 +1,4 @@
-#include "kohler_solve_diagnostic.hpp"
+#include "kohler_solve.hpp"
 
 #include <iomanip>
 #include <sstream>
@@ -82,6 +82,9 @@ std::string KohlerPolynomial<T>::matlab_verification_program(const int n) {
 }
 
 // ETI
+// double precison is required by the KohlerPolynomial class, so we intstantiate
+// the two most common types here.
 template struct KohlerPolynomial<ekat::Pack<double, HAERO_PACK_SIZE>>;
+template struct KohlerPolynomial<double>;
 
 }  // namespace haero

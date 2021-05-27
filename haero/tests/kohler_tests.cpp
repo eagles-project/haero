@@ -5,9 +5,9 @@
 
 #include "catch2/catch.hpp"
 #include "ekat/util/ekat_math_utils.hpp"
-#include "haero/diagnostics/kohler_solve_diagnostic.hpp"
+#include "haero/diagnostics/kohler_solve.hpp"
 #include "haero/haero.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 #include "haero/utils.hpp"
 
 using namespace haero;

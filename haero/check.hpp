@@ -22,6 +22,16 @@ struct Check {
 
   KOKKOS_INLINE_FUNCTION
   static bool is_positive(const ScalarType& x) { return (x > 0); }
+
+  KOKKOS_INLINE_FUNCTION
+  static bool is_greater(const ScalarType& a, const ScalarType& b) {
+    return (a > b);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static bool is_greater_or_equal(const ScalarType& a, const ScalarType& b) {
+    return (a >= b);
+  }
 };
 
 /** @brief Boolean helper class for performing "Checks."
@@ -39,6 +49,16 @@ struct Check<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
 
   KOKKOS_INLINE_FUNCTION
   static bool is_positive(const ValueType& x) { return (x > 0).all(); }
+
+  KOKKOS_INLINE_FUNCTION
+  static bool is_greater(const ValueType& a, const ValueType& b) {
+    return (a > b).all();
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static bool is_greater_or_equal(const ValueType& a, const ValueType& b) {
+    return (a >= b).all();
+  }
 };
 
 }  // namespace haero

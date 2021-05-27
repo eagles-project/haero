@@ -38,6 +38,7 @@ void ModalAerosolConfig::index_modal_species(
     EKAT_REQUIRE_MSG(not species_for_mode[m].empty(),
                      aerosol_modes[m].name().c_str()
                          << " mode contains no aerosol species!");
+    h_n_species_per_mode(m) = species_for_mode[m].size();
   }
   Kokkos::deep_copy(d_n_species_per_mode, h_n_species_per_mode);
 
@@ -80,7 +81,7 @@ ModalAerosolConfig create_simple_test_config() {
   const int nmodes = 2;
   const std::vector<std::string> mode_names = {"test_mode0", "test_mode1"};
   const std::vector<std::pair<Real, Real>> mode_min_max_diams = {
-      std::make_pair(1e-8, 1e-7), std::make_pair(1e-7, 1e-6)};
+      std::make_pair(1e-7, 1e-6), std::make_pair(1e-6, 1e-5)};
   const std::vector<Real> mode_sigmas = {1, 1.5};
   const Real rh_deliq = 0.8;
   const Real rh_cryst = 0.35;
@@ -99,14 +100,13 @@ ModalAerosolConfig create_simple_test_config() {
   const std::vector<std::string> spec_symbs = {"TS0", "TS1"};
   const Real g_to_kg = 1e-3;
   const std::vector<Real> spec_molec_weights = {g_to_kg * 10, g_to_kg * 100};
-  const std::vector<Real> spec_dry_radius = {5e-8, 5e-7};
   const std::vector<Real> spec_hygro = {0.5, 1};
   const std::vector<Real> spec_dens = {1e3, 2e3};
   std::vector<AerosolSpecies> aeros(2);
   for (int s = 0; s < nspec; ++s) {
-    aeros[s] = AerosolSpecies(spec_names[s], spec_symbs[s], "test_aerosol",
-                              spec_molec_weights[s], spec_dry_radius[s],
-                              spec_dens[s], spec_hygro[s]);
+    aeros[s] =
+        AerosolSpecies(spec_names[s], spec_symbs[s], "test_aerosol",
+                       spec_molec_weights[s], spec_dens[s], spec_hygro[s]);
     mode_spec_map[mode_names[1]].push_back(spec_symbs[s]);
   }
   mode_spec_map[mode_names[0]].push_back(spec_symbs[0]);

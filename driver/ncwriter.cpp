@@ -127,9 +127,7 @@ void NcWriter::add_aerosol_dim(const std::vector<AerosolSpecies>& species) {
     retval = nc_put_var1_double(ncid, species_molec_weight_var_id, &idx,
                                 &species[i].molecular_weight);
     CHECK_NCERR(retval);
-    retval = nc_put_var1_double(ncid, species_dryrad_varid, &idx,
-                                &species[i].dry_radius);
-    CHECK_NCERR(retval);
+
     retval =
         nc_put_var1_double(ncid, species_dens_varid, &idx, &species[i].density);
     CHECK_NCERR(retval);
@@ -140,9 +138,7 @@ void NcWriter::add_aerosol_dim(const std::vector<AerosolSpecies>& species) {
     retval = nc_put_var1_float(ncid, species_molec_weight_var_id, &idx,
                                &species[i].molecular_weight);
     CHECK_NCERR(retval);
-    retval = nc_put_var1_float(ncid, species_dryrad_varid, &idx,
-                               &species[i].dry_radius);
-    CHECK_NCERR(retval);
+
     retval =
         nc_put_var1_float(ncid, species_dens_varid, &idx, &species[i].density);
     CHECK_NCERR(retval);

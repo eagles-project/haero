@@ -3,7 +3,7 @@
 # C++ source files for diagnostic functions go here. Many diagnostic functions
 # can be defined in headers, which don't need to appear here.
 set (CXX_DIAGNOSTIC_SOURCES
-  kohler_solve_diagnostic.cpp
+  kohler_solve.cpp
 )
 
 # prepend diagnostics/ to each source file and transmit HAERO_DIAGNOSTICS upward

@@ -6,7 +6,7 @@
 #include "ekat/ekat_scalar_traits.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
-#include "haero/math_helpers.hpp"
+#include "haero/math.hpp"
 
 namespace haero {
 /** Coefficient accounting for Kelvin effect on droplets
@@ -103,6 +103,17 @@ struct KohlerPolynomial {
     EKAT_KERNEL_ASSERT(valid_inputs(T(rel_h), T(hygro), T(dry_rad_microns)));
   }
 
+  template <typename U>
+  KOKKOS_INLINE_FUNCTION KohlerPolynomial(const MaskType& m, const U& rel_h,
+                                          const U& hygro,
+                                          const U& dry_rad_microns)
+      : log_rel_humidity(log(rel_h)),
+        hygroscopicity(hygro),
+        dry_radius(dry_rad_microns),
+        dry_radius_cubed(cube(dry_rad_microns)) {
+    EKAT_KERNEL_ASSERT(valid_inputs(m, T(rel_h), T(hygro), T(dry_rad_microns)));
+  }
+
   /** Evaluates the Kohler polynomial.
 
     @f$ K(r_w) = \log(s) r_w^4 - A r_w^3 + (B - \log(s))r_d^3 r_w + A r_d^3 @f$
@@ -144,12 +155,53 @@ struct KohlerPolynomial {
   }
 
   KOKKOS_INLINE_FUNCTION
-  bool valid_inputs(const T& relh, const T& hyg, const T& dry_rad) {
+  bool valid_inputs(const T& relh, const T& hyg, const T& dry_rad) const {
     return (FloatingPoint<T>::in_bounds(relh, rel_humidity_min,
                                         rel_humidity_max) and
             FloatingPoint<T>::in_bounds(hyg, hygro_min, hygro_max) and
             FloatingPoint<T>::in_bounds(dry_rad, dry_radius_min_microns,
                                         dry_radius_max_microns));
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  bool valid_inputs() const {
+    return valid_inputs(exp(this->log_rel_humidity), this->hygroscopicity,
+                        this->dry_radius);
+  }
+
+  template <typename ST = T>
+  KOKKOS_INLINE_FUNCTION
+      typename std::enable_if<ekat::ScalarTraits<ST>::is_simd, bool>::type
+      valid_inputs(const MaskType& m) const {
+    const T relative_humidity = exp(this->log_rel_humidity);
+    const double rhmin = rel_humidity_min;
+    const double rhmax = rel_humidity_max;
+    const double hmin = hygro_min;
+    const double hmax = hygro_max;
+    const double rmin = dry_radius_min_microns;
+    const double rmax = dry_radius_max_microns;
+    const auto in_bounds_mask =
+        (relative_humidity >= rhmin) && (relative_humidity <= rhmax) &&
+        (this->hygroscopicity >= hmin) && (this->hygroscopicity <= hmax) &&
+        (this->dry_radius >= rmin) && (this->dry_radius <= rmax);
+    return (in_bounds_mask || (!m)).all();
+  }
+
+  template <typename ST = T>
+  KOKKOS_INLINE_FUNCTION
+      typename std::enable_if<ekat::ScalarTraits<ST>::is_simd, bool>::type
+      valid_inputs(const MaskType& m, const T& relh, const T& hyg,
+                   const T& dry_rad) const {
+    const double rhmin = rel_humidity_min;
+    const double rhmax = rel_humidity_max;
+    const double hmin = hygro_min;
+    const double hmax = hygro_max;
+    const double rmin = dry_radius_min_microns;
+    const double rmax = dry_radius_max_microns;
+    const auto in_bounds_mask = (relh >= rhmin) && (relh <= rhmax) &&
+                                (hyg >= hmin) && (hyg <= hmax) &&
+                                (dry_rad >= rmin) && (dry_rad <= rmax);
+    return (in_bounds_mask || (!m)).all();
   }
 
   /** @brief Writes a string containing a Mathematica script that may be used to
