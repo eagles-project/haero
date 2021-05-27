@@ -212,16 +212,16 @@ The $k$th moment is given in this case by,
 In particular,
 \begin{subequations}
   \begin{align}
-    M_0^{(i)} &= \int_0^\infty n_i(D_p)\,d D_p = N_i,\\
+    M_0^{(i)} &= \int_0^\infty n_i(D_p)\,d D_p = N_i, \label{eq:zero_moment}\\
     M_1^{(i)} &= \int_0^\infty D_p n_i(D_p)\,d D_p = N_iD_{g,i}\exp({\frac{1}{2}\log^2\sigma_{g,i}}),\\
     M_2^{(i)} &= \int_0^\infty D_p^2n_i(D_p)\,d D_p = N_iD_{g,i}^2\exp(2\log^2\sigma_{g,i}),\\
-    M_3^{(i)} &= \int_0^\infty D_p^3n_i(D_p)\,d D_p = N_iD_{g,i}^3\exp(\frac{9}{2}\log^2\sigma_{g,i})
+    M_3^{(i)} &= \int_0^\infty D_p^3n_i(D_p)\,d D_p = N_iD_{g,i}^3\exp(\frac{9}{2}\log^2\sigma_{g,i}) \label{eq:third_moment}
   \end{align}
 \end{subequations}
 
 
 \begin{defn}[Particle size]
-  Particle size $\overline{D_i}$ for the $i$th mode is defined by the arithmetic mean diameter associated with the 3rd moment \cite[eqn.~(1)]{Whitby1981}, 
+  Particle size $\overline{D_i}$ for the $i$th mode is defined by the mean diameter associated with the 3rd moment \cite[eqn.~(1)]{Whitby1981}, 
   \begin{equation}
     \overline{D_i} = \left(M_3^{(i)}/N_i)\right)^{1/3} = D_{g,i}\exp\left(\frac{3}{2}\log^2\sigma_{g,i}\right)
   \end{equation}
@@ -281,10 +281,15 @@ equations, via right hand side terms in \refeq{moments}. These are the
   Aerosol dynamics can be represented well by two moments, $M_0^{(i)}$ and $M_3^{(i)}$.
   We therefore need to find equations that describe the time evolution of $M_0^{(i)}$ and $M_3^{(i)}$ in terms of known E3SM variables.
   \begin{itemize}
-    \item The number of moles of aerosol per kg of air is $N_i/N_A$, where $N_A$ is the Avogadro Constant.
-    \item The mass mixing ratio of aerosol (kg aer.\,/ kg air) is therefore $\displaystyle q^{(i)} = \frac{N_i M_w}{N_A} = \frac{\mathcal{M}_0^{(i)}M_w}{N_A}$, where $M_w$ is the molecular weight (kg/mol) of the aerosol particles in mode $i$.
-    \item The mass density of aerosol particles in mode $i$ is therefore, $\rho_{aer}^{(i)} =\rho_{air} \;q^{(i)}$.
-    \item The total mass of aerosol particles is then $\displaystyle M_{aer}^{(i)}=\rho_{aer}^{(i)} \overline{V_i} = \frac{\pi}{6}\frac{\rho_{aer}^{(i)}\mathcal{M}_3^{(i)}}{\mathcal{M}_0^{(i)}}$.
+%    \item The number of moles of aerosol per kg of air is $N_i/N_A$, where $N_A$ is the Avogadro Constant.
+%    \item The mass mixing ratio of aerosol (kg aer.\,/ kg air) is therefore $\displaystyle q^{(i)} = \frac{N_i M_w}{N_A} = \frac{\mathcal{M}_0^{(i)}M_w}{N_A}$, where $M_w$ is the molecular weight (kg/mol) of the aerosol particles in mode $i$.
+%    \item The mass density of aerosol particles in mode $i$ is therefore, $\rho_{aer}^{(i)} =\rho_{air} \;q^{(i)}$.
+%    \item The total mass of aerosol particles is then $\displaystyle M_{aer}^{(i)}=\rho_{aer}^{(i)} \overline{V_i} = \frac{\pi}{6}\frac{\rho_{aer}^{(i)}\mathcal{M}_3^{(i)}}{\mathcal{M}_0^{(i)}}$.
+    \item Modal number concentrations $N_m$ are defined and transported for each mode (units: [\# / kg air]) as prognostic model variables (tracers).
+    These are the $\mathcal{M}_0$ moments for each mode, \eqref{eq:zero_moment}.
+    \item Species mass mixing ratios $q_{s,m}$ are defined for each species $s$ in each mode $m$ (units: [ kg aerosol / kg air ]) as prognostic model variables (tracers).
+    Therefore, the third moments $\mathcal{M}_3$ of each mode are found using the density of each aerosols species.
+    \item Volume mixing ratios are diagnosed by $V_{s,m} = q_{s,m}/\rho_{s,m}$ (units: [m$^3$ aerosol / kg air], where $\rho_{s,m}$ is the constant species density (units: [kg aerosol / m$^3$]).
   \end{itemize}
 \end{assume}
 
@@ -392,12 +397,62 @@ We assume that each particle is composed of several, potentially different, chem
   Quantitatively, the internal mixing assumption implies that the volume of each individual particle is the sum of the volumes of its various constituents; in this case, the species within the mode.  
 \end{assume}
 
-These assumption has several implications:
-\begin{enumerate}
-  \item All species within mode $i$ share the same particle size distribution; as a corollary, they also share the same number concentration,
-  \begin{equation}
-    N_{i,q} = M_0^{(i)} = N_i,
+These assumptions lead to the following modal averages.
+
+\begin{defn}[Mode aerosol mass mixing ratio]
+  The mass mixing ratio of species $s$ in mode $m$ is denoted by $q_{sm}$.
+  The mass mixing ration of the mode is then
+  \begin{equation}\labeleq{mode_mixing_ratio}
+    q_{m} = \sum_{s\in m} q_{sm}    \quad \text{kg aerosol / kg air}.
   \end{equation}
-  for all species $q$ in mode $i$.
-\end{enumerate}
+\end{defn}
+
+\begin{defn}[Modally averaged aerosol density]
+The density of aerosol species $s$ in mode $m$ is denoted $\rho_{sm}$.
+The average modal density is
+\begin{equation}\labeleq{mode_density}
+  \rho_m = \sum_{s\in m}q_{sm} \rho_{sm} \left(\sum_{s\in m} q_{sm}\right)^{-1} = \frac{\sum_{s\in m}q_{sm}\rho_{sm}}{q_m} \quad \text{kg aerosol / m$^3$ aerosol}
+\end{equation}
+\end{defn}
+
+\begin{defn}[Modally averaged hygroscopicity]
+  The hygroscopicity of species $s$ in mode $m$ is denoted $b_{sm}$. 
+  The mode-averaged hygroscopicity is
+  \begin{equation}\labeleq{mode_hygro}
+    b_m = \sum_{s\in m} \frac{q_{sm} b_{sm}}{\rho_{sm}}\left(\sum_{s\in m} \frac{q_{sm}}{\rho_{sm}}\right)^{-1}
+    \quad \text{nondimensional}.
+  \end{equation}
+\end{defn}
+
+\begin{defn}[Modal mean particle volume]
+  The per-particle mean volume for each mode $m$ is,
+  \begin{equation}\labeleq{mode_particle_volume}
+    {V_{m}} = \frac{1}{N_m}\sum_{s\in m} \frac{q_{sm}}{\rho_{sm}} \quad \text{m$^3$ per particle}.
+  \end{equation}
+\end{defn}
+
+\begin{defn}[Modal geometric mean particle diameter]
+  The geometric mean diameter of the particles in mode $m$ is
+  \begin{equation}\labeleq{mode_particle_diameter}
+    {D_{m}} = \sqrt[3]{\frac{\pi}{6}{V_{Pm}}}\exp\left(-\frac{3}{2}\log^2 \sigma_m\right)  \quad \text{m}.
+  \end{equation}
+
+\end{defn}
+
+
+
+
+%These assumption has several implications:
+%\begin{enumerate}
+%  \item All species within mode $i$ share the same particle size distribution.
+%  \item  They also share the same number concentration,
+%  \begin{equation}
+%    N_{i,q} = M_0^{(i)} = N_i,
+%  \end{equation}
+%  for all species $q$ in mode $i$.
+%  \item And they share the same mean particle volume,
+%  \begin{equation}
+%    \overline{V_i} = \frac{ \sum_{s\in m} }{  }
+%  \end{equation}
+%\end{enumerate}
 
