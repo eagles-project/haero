@@ -207,8 +207,7 @@ std::vector<InputData> ParameterWalk::gather_inputs() const {
 
   // Count up the number of inputs defined by the parameter walk thingy.
   size_t num_inputs = 1;
-  for (auto iter = ensemble.begin();
-       iter != ensemble.end(); ++iter) {
+  for (auto iter = ensemble.begin(); iter != ensemble.end(); ++iter) {
     if ((iter->first != "planetary_boundary_layer_height") and
         (iter->first != "dt")) {
       num_inputs *= iter->second.size();
