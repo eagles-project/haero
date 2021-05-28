@@ -307,10 +307,13 @@ where $E_{cv}$ and $E_{rv}$ denote the evaporation rates between cloud liquid/wa
 The ventillation coefficient $C_{vt} = 1.6 + 5.7\text{E-}2V_r^{3/2}$ for rain falling at speed $V_r$ relative to the air, and $e_s(T)$ is the saturation vapor pressure for a planar liquid water surface at temperature $T$.  
 The latter two values are approximated as \cite[eqn.~(15))]{SoongOgura1973},
   \begin{align}
-    V_r & = 36.34 (1\text{E}3\rho q_r)^{0.1346} \text{ m/s},\\
+    V_r & = 36.34 (1\text{E}3\rho q_r)^{0.1364} \text{ m/s},\\
     e_s(T) & = 6.1094\exp\left( \frac{17.625 (T-273)}{T-29.96} \right)\text{ hPa}.
   \end{align}
 \end{subequations}
+\textbf{Note:} The exponent 0.1364 in the fall velocity expression is as written in \cite[eqn. (15)]{SoongOgura1973}; in  \cite[eqn.~(2.15)]{KlempWilhelmson1978} it's written as 0.1346.  
+The authors of \cite{KlempWilhelmson1978} modify the expression used in \cite{SoongOgura1973} to include a reference density term (and make a similar modification to the ventilation coefficient). 
+Since this modification is unrelated to the exponent, we have assumed that 0.1346 is a typographical error and we use the value from \cite{SoongOgura1973} in this work.
 
 A second step \cite[eqns.(A7)--(A10)]{SoongOgura1973} conducts an adjustment for supersaturated air, $q_v > q_{vs}$, after the time stepping procedure implied by \eqref{eq:evap} is finished.
 Let these values be denoted by a star: $\theta_v^*$, $q_v^*$, $q_c^*$, etc. 

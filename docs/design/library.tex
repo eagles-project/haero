@@ -361,6 +361,16 @@ type :: mode_t
 end type
 \end{lstlisting}
 
+The log-normal PDF for each mode is defined by two quantities, the (constant) mean standard deviation contained within the \texttt{Mode} class, and the geometric mean.
+The geometric mean is a variable function of the mass mixing ratios of all species contained within the mode and the number mixing ratio of the mode itself. 
+Since these are time-dependent variables, they are not contained in the \texttt{Mode} class, which is for constant metadata only.
+
+We also note that, mathematically, the log-normal size distributions of each mode do not have a maximum or minimum; they are bounded by 0 and $\infty$.
+The \texttt{min\_diameter} and \texttt{max\_diameter} member variables should therefore not be interpreted in the context of the log-normal functions defined by e.g., \eqref{eq:log_normal_pdf_log}.
+Instead they represent the boundaries beyond which particles are better described by a different mode.  
+These minimum and maximum sizes are used to trigger redistribution of particles' mass and number mixing ratios between modes.
+
+
 In principle, a Haero calculation can support any number of modes, but care
 must be taken to ensure that the modal assumptions remain valid, and that
 the parametrizations selected can accommodate the given modes.
@@ -622,118 +632,118 @@ is managed by the host model.
 {\em This data structure is new, so we'll be adding and changing these state
 variables a bit in the near future.}
 
-\subsection{Diagnostics Type}
-\labelsubsection{lib:diagnostics}
-
-The \texttt{Diagnostics} C++ class stores a dynamically-determined set of
-diagnostic variables that correspond to the specific parameterizations available
-to the aerosol model that created it. The variables are identified by unique
-tokens that can be retrieved by name.
-
-\lstset{language=[11]c++}
-\begin{lstlisting}
-class Diagnostics final {
-  public:
-  // Returns the number of aerosol modes in the system.
-  int num_aerosol_modes() const;
-
-  // Returns the number of aerosol species in the mode with the given index.
-  int num_aerosol_species(int mode_index) const;
-
-  // Returns the number of gas species in the system.
-  int num_gas_species() const;
-
-  // Returns the number of vertical levels in the system.
-  int num_levels() const;
-
-  // Returns a unique token that identifies the given (non-modal) variable
-  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_var(const std::string& name) const;
-
-  // Returns the view storing the diagnostic variable with a name corresponding
-  // to the given token. If such a variable does not exist, this throws an
-  // exception.
-  ColumnView& var(const Token token);
-
-  // Returns a unique token that identifies the given modal aerosol variable
-  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_aerosol_var(const std::string& name) const;
-
-  // Returns the view storing the modal aerosol diagnostic variable with a name
-  // corresponding to the given token. If such a variable does not exist, this
-  // throws an exception.
-  SpeciesColumnView& aerosol_var(const Token token);
-
-  // Returns a unique token that identifies the given gas variable within this
-  // object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_gas_var(const std::string& name) const;
-
-  // Returns the view storing the gas diagnostic variable with a name
-  // corresponding to the given token. If such a variable does not exist, this
-  // throws an exception.
-  SpeciesColumnView& gas_var(const Token token);
-
-  // Returns a unique token that identifies the given modal variable within
-  // this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_modal_var(const std::string& name) const;
-
-  // Returns the view storing the mode-specific diagnostic variable with a name
-  // corresponding to the given token. If such a variable does not exist, this
-  // throws an exception.
-  ModalColumnView& modal_var(const Token token);
-};
-\end{lstlisting}
-
-The Fortran version of \texttt{Diagnostics}, like its \texttt{Prognostics} counterpart,
-uses bound procedures to provide access to its array data. Each one of these
-bound procedures accepts a single dummy argument: the name of the desired
-diagnostic variable. This Fortran pseudocode illustrates the interface for the
-\texttt{Diagnostics} derived-type \texttt{diagnostics\_t}.
-
-\lstset{language=[03]{fortran}}
-\begin{lstlisting}
-  type :: diagnostics_t
-  contains
-    ! Returns a token that can be used to retrieve a variable with the given
-    ! name from a diagnostics object, or var_not_found (-1) if no such variable
-    ! exists.
-    procedure :: find_var(name) -> token
-    ! Provides access to the given (non-modal) variable in the given
-    ! diagnostics object, given its token
-    procedure :: var(token) -> array pointer
-    ! Returns a token that can be used to retrieve an aerosol variable with the
-    ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
-    ! variable exists.
-    procedure :: find_aerosol_var(name) -> token
-    ! Provides access to the given (non-modal) variable in the given
-    ! diagnostics object, given its token.
-    procedure :: aerosol_var(token) -> array pointer
-    ! Returns a token that can be used to retrieve a gas variable with the
-    ! given name from a diagnostics object, or var_not_found (-1) if no such
-    ! variable exists.
-    procedure :: find_gas_var(name) -> token
-    ! Provides access to the given gas variable in the given diagnostics object,
-    ! given its token.
-    procedure :: gas_var(token) -> array pointer
-    ! Returns a token that can be used to retrieve a modal variable with the
-    ! given name from a diagnostics object, or var_not_found (-1) if no such
-    ! variable exists.
-    procedure :: has_modal_var(name) -> token
-    ! Provides access to the given modal variable in the given
-    ! diagnostics object, given its token.
-    procedure :: modal_var(token) -> array pointer
-  end type
-\end{lstlisting}
-
-At this point, you might wonder how a \texttt{Diagnostics} variable knows which
-variables it needs. In fact, the \texttt{Diagnostics} class provides functions for
-creating variables that it needs. The C++ \texttt{Model} variable used to create
-a \texttt{Diagnostics} variable knows this information, and automatically calls
-these functions for you.
-
-For examples of how the \texttt{Prognostics}, \texttt{Atmosphere}, and
-\texttt{Diagnostics} types are used in practice, take a look at one of the
-existing aerosol process implementations.
+%\subsection{Diagnostics Functions}
+%\labelsubsection{lib:diagnostics}
+%
+%The \texttt{Diagnostics} C++ class stores a dynamically-determined set of
+%diagnostic variables that correspond to the specific parameterizations available
+%to the aerosol model that created it. The variables are identified by unique
+%tokens that can be retrieved by name.
+%
+%\lstset{language=[11]c++}
+%\begin{lstlisting}
+%class Diagnostics final {
+%  public:
+%  // Returns the number of aerosol modes in the system.
+%  int num_aerosol_modes() const;
+%
+%  // Returns the number of aerosol species in the mode with the given index.
+%  int num_aerosol_species(int mode_index) const;
+%
+%  // Returns the number of gas species in the system.
+%  int num_gas_species() const;
+%
+%  // Returns the number of vertical levels in the system.
+%  int num_levels() const;
+%
+%  // Returns a unique token that identifies the given (non-modal) variable
+%  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+%  Token find_var(const std::string& name) const;
+%
+%  // Returns the view storing the diagnostic variable with a name corresponding
+%  // to the given token. If such a variable does not exist, this throws an
+%  // exception.
+%  ColumnView& var(const Token token);
+%
+%  // Returns a unique token that identifies the given modal aerosol variable
+%  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+%  Token find_aerosol_var(const std::string& name) const;
+%
+%  // Returns the view storing the modal aerosol diagnostic variable with a name
+%  // corresponding to the given token. If such a variable does not exist, this
+%  // throws an exception.
+%  SpeciesColumnView& aerosol_var(const Token token);
+%
+%  // Returns a unique token that identifies the given gas variable within this
+%  // object. Returns VAR_NOT_FOUND if this variable does not exist.
+%  Token find_gas_var(const std::string& name) const;
+%
+%  // Returns the view storing the gas diagnostic variable with a name
+%  // corresponding to the given token. If such a variable does not exist, this
+%  // throws an exception.
+%  SpeciesColumnView& gas_var(const Token token);
+%
+%  // Returns a unique token that identifies the given modal variable within
+%  // this object. Returns VAR_NOT_FOUND if this variable does not exist.
+%  Token find_modal_var(const std::string& name) const;
+%
+%  // Returns the view storing the mode-specific diagnostic variable with a name
+%  // corresponding to the given token. If such a variable does not exist, this
+%  // throws an exception.
+%  ModalColumnView& modal_var(const Token token);
+%};
+%\end{lstlisting}
+%
+%The Fortran version of \texttt{Diagnostics}, like its \texttt{Prognostics} counterpart,
+%uses bound procedures to provide access to its array data. Each one of these
+%bound procedures accepts a single dummy argument: the name of the desired
+%diagnostic variable. This Fortran pseudocode illustrates the interface for the
+%\texttt{Diagnostics} derived-type \texttt{diagnostics\_t}.
+%
+%\lstset{language=[03]{fortran}}
+%\begin{lstlisting}
+%  type :: diagnostics_t
+%  contains
+%    ! Returns a token that can be used to retrieve a variable with the given
+%    ! name from a diagnostics object, or var_not_found (-1) if no such variable
+%    ! exists.
+%    procedure :: find_var(name) -> token
+%    ! Provides access to the given (non-modal) variable in the given
+%    ! diagnostics object, given its token
+%    procedure :: var(token) -> array pointer
+%    ! Returns a token that can be used to retrieve an aerosol variable with the
+%    ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
+%    ! variable exists.
+%    procedure :: find_aerosol_var(name) -> token
+%    ! Provides access to the given (non-modal) variable in the given
+%    ! diagnostics object, given its token.
+%    procedure :: aerosol_var(token) -> array pointer
+%    ! Returns a token that can be used to retrieve a gas variable with the
+%    ! given name from a diagnostics object, or var_not_found (-1) if no such
+%    ! variable exists.
+%    procedure :: find_gas_var(name) -> token
+%    ! Provides access to the given gas variable in the given diagnostics object,
+%    ! given its token.
+%    procedure :: gas_var(token) -> array pointer
+%    ! Returns a token that can be used to retrieve a modal variable with the
+%    ! given name from a diagnostics object, or var_not_found (-1) if no such
+%    ! variable exists.
+%    procedure :: has_modal_var(name) -> token
+%    ! Provides access to the given modal variable in the given
+%    ! diagnostics object, given its token.
+%    procedure :: modal_var(token) -> array pointer
+%  end type
+%\end{lstlisting}
+%
+%At this point, you might wonder how a \texttt{Diagnostics} variable knows which
+%variables it needs. In fact, the \texttt{Diagnostics} class provides functions for
+%creating variables that it needs. The C++ \texttt{Model} variable used to create
+%a \texttt{Diagnostics} variable knows this information, and automatically calls
+%these functions for you.
+%
+%For examples of how the \texttt{Prognostics}, \texttt{Atmosphere}, and
+%\texttt{Diagnostics} types are used in practice, take a look at one of the
+%existing aerosol process implementations.
 
 \section{Aerosol Processes in Haero}
 \labelsection{lib:processes}
@@ -1030,5 +1040,5 @@ uses it to update its diagnostic variable. In other words, it has no internal
 state of its own---it's just a function that you can call whenever you need
 to update a particular diagnostic variable.
 
-{\em MORE NEEDED HERE! At the moment, we're not prepared to say much more than
-this. Watch this space.}
+
+
