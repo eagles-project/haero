@@ -2,8 +2,7 @@
 #include "ekat/ekat_session.hpp"
 #include "haero/available_processes.hpp"
 #include "haero/model.hpp"
-#include "parse_yaml.hpp"
-#include "write_py_module.hpp"
+#include "skywalker.hpp"
 
 using namespace skywalker;
 
@@ -250,7 +249,7 @@ int main(int argc, const char* argv[]) {
   // Read the input file and extract input.
   std::string input_file(argv[1]);
   try {
-    auto param_walk = parse_yaml(aero_config, input_file);
+    auto param_walk = load_ensemble(aero_config, input_file);
 
     // Set up the desired aerosol process and run it, dumping output to
     // "haero_skywalker.py".

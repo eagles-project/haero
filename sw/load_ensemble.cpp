@@ -1,6 +1,7 @@
-#include "parse_yaml.hpp"
+#include "skywalker.hpp"
 
 #include <yaml-cpp/yaml.h>
+#include "haero/modal_aerosol_config.hpp"
 
 #include <algorithm>
 #include <cstdarg>
@@ -8,8 +9,8 @@
 
 namespace {
 
+using Real = skywalker::Real;
 using ModalAerosolConfig = haero::ModalAerosolConfig;
-using Real = haero::Real;
 using ParameterWalk = skywalker::ParameterWalk;
 using YamlException = skywalker::YamlException;
 
@@ -338,8 +339,8 @@ void parse_gases_section(const YAML::Node& gases,
 
 namespace skywalker {
 
-ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
-                         const std::string& filename) {
+ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
+                            const std::string& filename) {
   ParameterWalk pw(aerosol_config);
   try {
     auto root = YAML::LoadFile(filename);

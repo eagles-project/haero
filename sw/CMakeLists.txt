@@ -1,7 +1,22 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${HAERO_INCDIRS} ${HAERO_DRIVER_INCDIRS})
 
-add_executable(skywalker main.cpp skywalker.cpp parse_yaml.cpp write_py_module.cpp)
-target_link_libraries(skywalker yaml_cpp;${HAERO_LIBRARIES})
+# Generate skywalker.hpp with the correct floating point precision type.
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/skywalker.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/skywalker.hpp
+  @ONLY
+)
 
-install(TARGETS skywalker DESTINATION bin)
+# Here we build a skywalker library that can be used by our MAM box model.
+add_library(skywalker skywalker.cpp load_ensemble.cpp write_py_module.cpp)
+set_target_properties(skywalker PROPERTIES OUTPUT_NAME skywalker_${HAERO_REAL_TYPE})
+
+# Here's our Haero skywalker executable.
+add_executable(skywalker_exe main.cpp)
+set_target_properties(skywalker_exe PROPERTIES OUTPUT_NAME skywalker)
+target_link_libraries(skywalker_exe skywalker;yaml_cpp;${HAERO_LIBRARIES})
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.hpp DESTINATION include)
+install(TARGETS skywalker DESTINATION lib)
+install(TARGETS skywalker_exe DESTINATION bin)
 

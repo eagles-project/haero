@@ -1,9 +1,11 @@
 #include "skywalker.hpp"
 
+#include "haero/modal_aerosol_config.hpp"
+
 namespace {
 
-// Used to return a reference for a parameter with an invalid name.
-haero::Real zero_value = 0;
+// Provides a reference to a zero value.
+skywalker::Real zero_value;
 
 bool is_aerosol(const std::string& param_name) {
   return (param_name.find("aerosols.") != std::string::npos);
@@ -58,7 +60,7 @@ void parse_gas(const haero::ModalAerosolConfig& aero_config,
 
 namespace skywalker {
 
-haero::Real InputData::operator[](const std::string& param_name) const {
+Real InputData::operator[](const std::string& param_name) const {
   if (is_number_conc(param_name)) {
     bool cloud;
     int mode_index;
@@ -103,7 +105,7 @@ haero::Real InputData::operator[](const std::string& param_name) const {
   }
 }
 
-haero::Real& InputData::operator[](const std::string& param_name) {
+Real& InputData::operator[](const std::string& param_name) {
   if (is_number_conc(param_name)) {
     bool cloud;
     int mode_index;
@@ -165,7 +167,7 @@ haero::Real& InputData::operator[](const std::string& param_name) {
   }
 }
 
-haero::Real OutputData::operator[](const std::string& param_name) const {
+Real OutputData::operator[](const std::string& param_name) const {
   if (is_number_conc(param_name)) {
     bool cloud;
     int mode_index;
@@ -207,10 +209,10 @@ std::vector<InputData> ParameterWalk::gather_inputs() const {
 
   // Count up the number of inputs defined by the parameter walk thingy.
   size_t num_inputs = 1;
-  for (auto iter = ensemble.begin(); iter != ensemble.end(); ++iter) {
-    if ((iter->first != "planetary_boundary_layer_height") and
-        (iter->first != "dt")) {
-      num_inputs *= iter->second.size();
+  for (auto member: ensemble) {
+    if ((member.first != "planetary_boundary_layer_height") and
+        (member.first != "dt")) {
+      num_inputs *= member.second.size();
     }
   }
 
