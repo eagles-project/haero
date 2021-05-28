@@ -31,7 +31,8 @@ struct InputData {
   // Gas mass mixing ratios [kg gas / kg air]
   std::vector<haero::Real> gas_mmrs;
 
-  // Fetches the parameter with the given name.
+  // Fetches the parameter with the given name. If no parameter is found, these
+  // operators return a zero value (or a reference to a zeroed value).
   haero::Real operator[](const std::string& param_name) const;
   haero::Real& operator[](const std::string& param_name);
 };
@@ -70,7 +71,8 @@ struct OutputData {
   // Gas mass mixing ratios [kg gas / kg air]
   std::vector<haero::Real> gas_mmrs;
 
-  // Fetches the parameter with the given name.
+  // Fetches the parameter with the given name. If no parameter is found, this
+  // operator returns a zero value.
   haero::Real operator[](const std::string& param_name) const;
 };
 
