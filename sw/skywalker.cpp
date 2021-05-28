@@ -1,6 +1,5 @@
-#include "skywalker.hpp"
-
 #include "haero/modal_aerosol_config.hpp"
+#include "skywalker.hpp"
 
 namespace {
 
@@ -195,26 +194,19 @@ Real OutputData::operator[](const std::string& param_name) const {
   }
 }
 
-// Gathers all input from the given parameter walk given a fixed aerosol model
-// configuration.
-std::vector<InputData> ParameterWalk::gather_inputs() const {
-  // How many non-plbh parameters are we overriding?
-  int num_params = ensemble.size();
-  if (ensemble.find("planetary_boundary_layer_height") != ensemble.end()) {
-    num_params--;
+std::vector<InputData> ParameterWalk::gather_inputs(const std::set<std::string>& excluded_params) const {
+  // Count up the number of inputs defined by the parameter walk thingy,
+  // excluding those parameters specified.
+  size_t num_inputs = 1, num_params = 0;
+  for (auto param: ensemble) {
+    if (excluded_params.find(param.first) == excluded_params.end()) { // not excluded
+      num_inputs *= param.second.size(); // set of parameter values
+      num_params++;
+    }
   }
   EKAT_REQUIRE_MSG(((num_params >= 1) and (num_params <= 5)),
                    "Invalid number of overridden parameters ("
                        << num_params << ", must be 1-5).");
-
-  // Count up the number of inputs defined by the parameter walk thingy.
-  size_t num_inputs = 1;
-  for (auto member: ensemble) {
-    if ((member.first != "planetary_boundary_layer_height") and
-        (member.first != "dt")) {
-      num_inputs *= member.second.size();
-    }
-  }
 
   // Start from reference data and build a list of inputs corresponding to all
   // the overridden parameters. This involves some ugly index magic based on the

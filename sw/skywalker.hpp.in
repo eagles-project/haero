@@ -2,6 +2,7 @@
 #define HAERO_SKYWALKER_HPP
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -16,7 +17,6 @@ class ModalAerosolConfig;
 namespace skywalker {
 
 using Real = @HAERO_REAL_TYPE@;
-
 using ModalAerosolConfig = haero::ModalAerosolConfig;
 
 // Reference input data for simulations.
@@ -52,7 +52,7 @@ struct InputData {
 
 // Data structure that stores parameter walking information.
 struct ParameterWalk {
-  explicit ParameterWalk(const haero::ModalAerosolConfig& aero_config)
+  explicit ParameterWalk(const ModalAerosolConfig& aero_config)
       : aero_config(aero_config), process(), ref_input(aero_config) {}
   ParameterWalk() = delete;
 
@@ -68,9 +68,12 @@ struct ParameterWalk {
   // ensemble: parameters to walk (name -> vector of values)
   std::map<std::string, std::vector<Real>> ensemble;
 
-  // Gathers all input for this parameter walk into a vector of InputData.
-  // configuration.
-  std::vector<InputData> gather_inputs() const;
+  /// Gathers all input for this parameter walk into a vector of InputData,
+  /// using the parameters stored in the ensemble member above.
+  /// @param excluded_params a list of names of parameters to exclude from the
+  ///                        the "parameter walk" if present. These parameters
+  ///                        are set to their reference values.
+  std::vector<InputData> gather_inputs(const std::set<std::string>& excluded_params = {}) const;
 };
 
 // Here's a container that associates input parameters with output data.

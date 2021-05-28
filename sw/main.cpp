@@ -117,8 +117,9 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
     dts.push_back(param_walk.ref_input.dt);
   }
 
-  // Create an ensemble's worth of input data from our parameter walker.
-  auto inputs = param_walk.gather_inputs();
+  // Create an ensemble's worth of input data from our parameter walker,
+  // excluding "dt" and "pblh" parameters from the walk.
+  auto inputs = param_walk.gather_inputs({"dt", "planetary_boundary_layer_height"});
 
   printf("skywalker: running %ld simulations and writing output to '%s'...\n",
          inputs.size(), py_module_name);
