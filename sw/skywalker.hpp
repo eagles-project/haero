@@ -54,6 +54,10 @@ struct ParameterWalk {
 
   // ensemble: parameters to walk (name -> vector of values)
   std::map<std::string, std::vector<haero::Real>> ensemble;
+
+  // Gathers all input for this parameter walk into a vector of InputData.
+  // configuration.
+  std::vector<InputData> gather_inputs() const;
 };
 
 // Here's a container that associates input parameters with output data.

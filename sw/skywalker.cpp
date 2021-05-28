@@ -193,4 +193,128 @@ haero::Real OutputData::operator[](const std::string& param_name) const {
   }
 }
 
+// Gathers all input from the given parameter walk given a fixed aerosol model
+// configuration.
+std::vector<InputData> ParameterWalk::gather_inputs() const {
+  // How many non-plbh parameters are we overriding?
+  int num_params = ensemble.size();
+  if (ensemble.find("planetary_boundary_layer_height") != ensemble.end()) {
+    num_params--;
+  }
+  EKAT_REQUIRE_MSG(((num_params >= 1) and (num_params <= 5)),
+                   "Invalid number of overridden parameters ("
+                       << num_params << ", must be 1-5).");
+
+  // Count up the number of inputs defined by the parameter walk thingy.
+  size_t num_inputs = 1;
+  for (auto iter = ensemble.begin();
+       iter != ensemble.end(); ++iter) {
+    if ((iter->first != "planetary_boundary_layer_height") and
+        (iter->first != "dt")) {
+      num_inputs *= iter->second.size();
+    }
+  }
+
+  // Start from reference data and build a list of inputs corresponding to all
+  // the overridden parameters. This involves some ugly index magic based on the
+  // number of parameters.
+  std::vector<InputData> inputs(num_inputs, ref_input);
+  for (size_t l = 0; l < num_inputs; ++l) {
+    if (num_params == 1) {
+      auto iter = ensemble.begin();
+      auto name = iter->first;
+      const auto& vals = iter->second;
+      inputs[l][name] = vals[l];
+    } else if (num_params == 2) {
+      auto iter = ensemble.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      size_t n2 = vals2.size();
+      size_t j1 = l / n2;
+      size_t j2 = l - n2 * j1;
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
+    } else if (num_params == 3) {
+      auto iter = ensemble.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      iter++;
+      auto name3 = iter->first;
+      const auto& vals3 = iter->second;
+      size_t n2 = vals2.size();
+      size_t n3 = vals3.size();
+      size_t j1 = l / (n2 * n3);
+      size_t j2 = (l - n2 * n3 * j1) / n3;
+      size_t j3 = l - n2 * n3 * j1 - n3 * j2;
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
+      inputs[l][name3] = vals3[j3];
+    } else if (num_params == 4) {
+      auto iter = ensemble.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      iter++;
+      auto name3 = iter->first;
+      const auto& vals3 = iter->second;
+      iter++;
+      auto name4 = iter->first;
+      const auto& vals4 = iter->second;
+      size_t n2 = vals2.size();
+      size_t n3 = vals3.size();
+      size_t n4 = vals4.size();
+      size_t j1 = l / (n2 * n3 * n4);
+      size_t j2 = (l - n2 * n3 * n4 * j1) / (n3 * n4);
+      size_t j3 = (l - n2 * n3 * n4 * j1 - n3 * n4 * j2) / n4;
+      size_t j4 = l - n2 * n3 * n4 * j1 - n3 * n4 * j2 - n4 * j3;
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
+      inputs[l][name3] = vals3[j3];
+      inputs[l][name4] = vals4[j4];
+    } else {  // if (num_params == 5)
+      auto iter = ensemble.begin();
+      auto name1 = iter->first;
+      const auto& vals1 = iter->second;
+      iter++;
+      auto name2 = iter->first;
+      const auto& vals2 = iter->second;
+      iter++;
+      auto name3 = iter->first;
+      const auto& vals3 = iter->second;
+      iter++;
+      auto name4 = iter->first;
+      const auto& vals4 = iter->second;
+      iter++;
+      auto name5 = iter->first;
+      const auto& vals5 = iter->second;
+      size_t n2 = vals2.size();
+      size_t n3 = vals3.size();
+      size_t n4 = vals4.size();
+      size_t n5 = vals5.size();
+      size_t j1 = l / (n2 * n3 * n4 * n5);
+      size_t j2 = (l - n2 * n3 * n4 * n5 * j1) / (n3 * n4 * n5);
+      size_t j3 = (l - n2 * n3 * n4 * n5 * j1 - n3 * n4 * n5 * j2) / (n4 * n5);
+      size_t j4 =
+          (l - n2 * n3 * n4 * n5 * j1 - n3 * n4 * n5 * j2 - n4 * n5 * j3) / n5;
+      size_t j5 = l - n2 * n3 * n4 * n5 * j1 - n3 * n4 * n5 * j2 -
+                  n4 * n5 * j3 - n5 * j4;
+      inputs[l][name1] = vals1[j1];
+      inputs[l][name2] = vals2[j2];
+      inputs[l][name3] = vals3[j3];
+      inputs[l][name4] = vals4[j4];
+      inputs[l][name5] = vals5[j5];
+    }
+  }
+
+  return inputs;
+}
+
 }  // namespace skywalker
