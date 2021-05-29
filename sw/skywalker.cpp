@@ -311,3 +311,76 @@ std::vector<InputData> ParameterWalk::gather_inputs(const std::set<std::string>&
 }
 
 }  // namespace skywalker
+
+//----------------------------
+// Skywalker Fortran bindings
+//----------------------------
+
+extern "C" {
+
+typedef skywalker::Real Real;
+
+/// Parses the given file, assuming the given named aerosol configuration,
+/// returning an opaque pointer to the ensemble data.
+/// @param [in] aerosol_config The named aerosol configuration. The only valid
+///                            configuration at this time is "mam4".
+/// @param [in] filename The name of the YAML file containing ensemble data.
+void* sw_load_ensemble(const char* aerosol_config, const char* filename) {
+  return nullptr;
+}
+
+/// Returns the number of inputs (members) for the given ensemble data.
+int sw_ensemble_size(void* ensemble) {
+  return 0;
+}
+
+/// Fetches an opaque pointer to the ith set of input data from the given
+/// ensemble.
+void* sw_ensemble_input(void* ensemble, int i) {
+  return nullptr;
+}
+
+/// Fetches timestepping data from the given ensemble input data pointer.
+void sw_input_get_timestepping(void* input, Real* dt, Real* total_time) {
+}
+
+/// Fetches atmosphere data from the given ensemble input data pointer.
+void sw_input_get_atmosphere(void* input, Real* temperature, Real* pressure,
+                             Real* relative_humidty, Real* height,
+                             Real* hydrostatic_dp,
+                             Real* planetary_boundary_layer_height) {
+}
+
+/// Fetches aerosol data from the given ensemble input data pointer.
+void sw_input_get_aerosols(void* input, Real* interstitial_number_concs,
+                           Real* cloud_number_concs, Real* interstitial_aero_mmrs,
+                           Real* cloud_aero_mmrs) {
+}
+
+/// Fetches gas data from the given ensemble input data pointer.
+void sw_input_get_gases(void* input, Real* gas_mmrs) {
+}
+
+/// Fetches an opaque pointer to the ith set of output data from the given
+/// ensemble.
+void* sw_ensemble_output(void* ensemble, int i) {
+  return nullptr;
+}
+
+/// Sets aerosol data for the given ensemble output data pointer.
+void sw_output_set_aerosols(void* output, Real* interstitial_number_concs,
+                            Real* cloud_number_concs, Real* interstitial_aero_mmrs,
+                            Real* cloud_aero_mmrs) {
+}
+
+/// Sets gas data for the given ensemble output data pointer.
+void sw_output_set_gases(void* output, Real* gas_mmrs) {
+}
+
+
+/// Frees all memory associated with the ensemble, including input and output
+/// data.
+void sw_enѕemble_free(void* ensemble) {
+}
+
+}
