@@ -1,6 +1,8 @@
 #include "haero/modal_aerosol_config.hpp"
 #include "skywalker.hpp"
 
+#include <strings.h>
+
 namespace {
 
 // Provides a reference to a zero value.
@@ -315,10 +317,39 @@ std::vector<InputData> ParameterWalk::gather_inputs(const std::set<std::string>&
 //----------------------------
 // Skywalker Fortran bindings
 //----------------------------
+// The Skywalker Fortran interface is tailored to the needs of the MAM box
+// model. At any given time, its design is likely to reflect the needs of a
+// handful of legacy MAM-related codes for comparison with Haero. In this
+// sense, it's not a "faithful" Fortran representation of the Skywalker C++
+// library.
 
 extern "C" {
 
-typedef skywalker::Real Real;
+using Real = skywalker::Real;
+using ModalAerosolConfig = haero::ModalAerosolConfig;
+using InputData = skywalker::InputData;
+using OutputData = skywalker::OutputData;
+using EnsembleData = std::pair<std::vector<InputData>, std::vector<OutputData>>;
+
+// This container holds "live" instances of aerosol config metadata.
+static std::map<std::string, ModalAerosolConfig>* fortran_aero_configs_ = nullptr;
+
+static void destroy_aero_configs() {
+  delete fortran_aero_configs_;
+  fortran_aero_configs_ = nullptr;
+}
+
+// This container holds "live" instances of Skywalker Fortran ensemble data,
+// which is managed by this Fortran bridge.
+static std::set<EnsembleData*>* fortran_ensembles_ = nullptr;
+
+static void destroy_ensembles() {
+  for (auto ensemble: *fortran_ensembles_) {
+    delete ensemble;
+  }
+  delete fortran_ensembles_;
+  fortran_ensembles_ = nullptr;
+}
 
 /// Parses the given file, assuming the given named aerosol configuration,
 /// returning an opaque pointer to the ensemble data.
@@ -326,61 +357,163 @@ typedef skywalker::Real Real;
 ///                            configuration at this time is "mam4".
 /// @param [in] filename The name of the YAML file containing ensemble data.
 void* sw_load_ensemble(const char* aerosol_config, const char* filename) {
-  return nullptr;
+  // Construct an aerosol config from the given string.
+  if (fortran_aero_configs_ == nullptr) {
+    fortran_aero_configs_ = new std::map<std::string, ModalAerosolConfig>();
+    atexit(destroy_aero_configs);
+  }
+  auto config_iter = fortran_aero_configs_->find(aerosol_config);
+  ModalAerosolConfig config;
+  if (config_iter != fortran_aero_configs_->end()) {
+    config = config_iter->second;
+  } else {
+    if (strcasecmp(aerosol_config, "mam4") == 0) {
+      config = haero::create_mam4_modal_aerosol_config();
+      fortran_aero_configs_->emplace("mam4", config);
+    } else {
+      return nullptr; // no dice!
+    }
+  }
+
+  // Create a ParameterWalk object from the given config and file.
+  auto param_walk = skywalker::load_ensemble(config, filename);
+
+  // Create an ensemble, allocating storage for output data equal in length
+  // to the given input data.
+  auto ensemble = new EnsembleData;
+  ensemble->first = param_walk.gather_inputs();
+  ensemble->second = std::vector<OutputData>(ensemble->first.size(), OutputData(config));
+  // Size up the output data arrays to make our life easier down the line.
+  for (size_t i = 0; i < ensemble->first.size(); ++i) {
+    const auto& input = ensemble->first[i];
+    auto output = ensemble->second[i];
+    output.interstitial_number_concs.resize(input.interstitial_number_concs.size());
+    output.cloud_number_concs.resize(input.cloud_number_concs.size());
+    output.interstitial_aero_mmrs.resize(input.interstitial_aero_mmrs.size());
+    output.cloud_aero_mmrs.resize(input.cloud_aero_mmrs.size());
+    output.gas_mmrs.resize(input.gas_mmrs.size());
+  }
+
+  // Track this ensemble, storing its pointer for future reference.
+  if (fortran_ensembles_ == nullptr) {
+    fortran_ensembles_ = new std::set<EnsembleData*>();
+    atexit(destroy_ensembles);
+  }
+  fortran_ensembles_->emplace(ensemble);
+  auto ensemble_ptr = reinterpret_cast<void*>(ensemble);
+  return ensemble_ptr;
 }
 
 /// Returns the number of inputs (members) for the given ensemble data.
 int sw_ensemble_size(void* ensemble) {
-  return 0;
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  return data->first.size();
 }
 
 /// Fetches an opaque pointer to the ith set of input data from the given
 /// ensemble.
 void* sw_ensemble_input(void* ensemble, int i) {
-  return nullptr;
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  EKAT_REQUIRE(i >= 0);
+  EKAT_REQUIRE(i < data->first.size());
+  InputData* input = &(data->first[i]);
+  return reinterpret_cast<void*>(input);
 }
 
 /// Fetches timestepping data from the given ensemble input data pointer.
 void sw_input_get_timestepping(void* input, Real* dt, Real* total_time) {
+  auto inp = reinterpret_cast<InputData*>(input);
+  *dt = inp->dt;
+  *total_time = inp->total_time;
 }
 
 /// Fetches atmosphere data from the given ensemble input data pointer.
 void sw_input_get_atmosphere(void* input, Real* temperature, Real* pressure,
-                             Real* relative_humidty, Real* height,
+                             Real* relative_humidity, Real* height,
                              Real* hydrostatic_dp,
                              Real* planetary_boundary_layer_height) {
+  auto inp = reinterpret_cast<InputData*>(input);
+  *temperature = inp->temperature;
+  *pressure = inp->pressure;
+  *relative_humidity = inp->relative_humidity;
+  *height = inp->height;
+  *hydrostatic_dp = inp->hydrostatic_dp;
+  *planetary_boundary_layer_height = inp->planetary_boundary_layer_height;
 }
 
-/// Fetches aerosol data from the given ensemble input data pointer.
+/// Fetches aerosol data from the given ensemble input data pointer. All output
+/// arguments are arrays that are properly sized to store aerosol data. Since
+/// our legacy codes all know these sizes, we provide no way to query them in
+/// this Fortran bridge.
 void sw_input_get_aerosols(void* input, Real* interstitial_number_concs,
                            Real* cloud_number_concs, Real* interstitial_aero_mmrs,
                            Real* cloud_aero_mmrs) {
+  auto inp = reinterpret_cast<InputData*>(input);
+  std::copy(inp->interstitial_number_concs.begin(), inp->interstitial_number_concs.end(),
+            interstitial_number_concs);
+  std::copy(inp->cloud_number_concs.begin(), inp->cloud_number_concs.end(),
+            cloud_number_concs);
+  std::copy(inp->interstitial_aero_mmrs.begin(), inp->interstitial_aero_mmrs.end(),
+            interstitial_aero_mmrs);
+  std::copy(inp->cloud_aero_mmrs.begin(), inp->cloud_aero_mmrs.end(),
+            cloud_aero_mmrs);
 }
 
-/// Fetches gas data from the given ensemble input data pointer.
+/// Fetches gas data from the given ensemble input data pointer. The output
+/// argument is an array properly sized to store gas mass mixing ratios. Since
+/// our legacy codes all know this size, we provide no way to query it in this
+/// Fortran bridge.
 void sw_input_get_gases(void* input, Real* gas_mmrs) {
+  auto inp = reinterpret_cast<InputData*>(input);
+  std::copy(inp->gas_mmrs.begin(), inp->gas_mmrs.end(), gas_mmrs);
 }
 
 /// Fetches an opaque pointer to the ith set of output data from the given
 /// ensemble.
 void* sw_ensemble_output(void* ensemble, int i) {
-  return nullptr;
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  EKAT_REQUIRE(i >= 0);
+  EKAT_REQUIRE(i < data->first.size());
+  OutputData* output = &(data->second[i]);
+  return reinterpret_cast<void*>(output);
 }
 
 /// Sets aerosol data for the given ensemble output data pointer.
 void sw_output_set_aerosols(void* output, Real* interstitial_number_concs,
                             Real* cloud_number_concs, Real* interstitial_aero_mmrs,
                             Real* cloud_aero_mmrs) {
+  auto outp = reinterpret_cast<OutputData*>(output);
+  size_t num_modes = outp->interstitial_number_concs.size();
+  size_t num_pops = outp->interstitial_aero_mmrs.size();
+  std::copy(interstitial_number_concs, interstitial_number_concs + num_modes,
+            outp->interstitial_number_concs.begin());
+  std::copy(cloud_number_concs, cloud_number_concs + num_modes,
+            outp->cloud_number_concs.begin());
+  std::copy(interstitial_aero_mmrs, interstitial_aero_mmrs + num_pops,
+            outp->interstitial_aero_mmrs.begin());
+  std::copy(cloud_aero_mmrs, cloud_aero_mmrs + num_pops,
+            outp->cloud_aero_mmrs.begin());
 }
 
 /// Sets gas data for the given ensemble output data pointer.
 void sw_output_set_gases(void* output, Real* gas_mmrs) {
+  auto outp = reinterpret_cast<OutputData*>(output);
+  size_t num_gases = outp->gas_mmrs.size();
+  std::copy(gas_mmrs, gas_mmrs + num_gases, outp->gas_mmrs.begin());
 }
 
 
 /// Frees all memory associated with the ensemble, including input and output
 /// data.
 void sw_enѕemble_free(void* ensemble) {
+  if (fortran_ensembles_ != nullptr) {
+    auto data = reinterpret_cast<EnsembleData*>(ensemble);
+    auto iter = fortran_ensembles_->find(data);
+    if (iter != fortran_ensembles_->end()) {
+      fortran_ensembles_->erase(iter);
+      delete data;
+    }
+  }
 }
 
 }
