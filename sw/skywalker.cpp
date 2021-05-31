@@ -410,6 +410,38 @@ int sw_ensemble_size(void* ensemble) {
   return data->first.size();
 }
 
+/// Fetches array sizes for members in the given ensemble.
+void sw_ensemble_get_array_sizes(void* ensemble, int* num_modes,
+                                 int* num_populations, int* num_gases) {
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  EKAT_REQUIRE(not data->first.empty());
+
+  // Get the aerosol configuration from the first ensemble member.
+  const auto& config = data->first[0].aero_config;
+
+  // Read off the data.
+  *num_modes = config.num_modes();
+  *num_populations = config.num_aerosol_populations;
+  *num_gases = config.num_gases();
+}
+
+/// Fetches the number of aerosols present in each mode, which can be used
+/// to map between population and aerosol indices. The output array is sized
+/// to store the number of aerosols in each mode.
+void sw_ensemble_get_modal_aerosol_sizes(void* ensemble, int* aerosols_per_mode) {
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  EKAT_REQUIRE(not data->first.empty());
+
+  // Get the aerosol configuration from the first ensemble member.
+  const auto& config = data->first[0].aero_config;
+
+  // Fetch the numbers of species per mode.
+  for (int m = 0; m < config.num_modes(); ++m) {
+    const auto mode_species = config.aerosol_species_for_mode(m);
+    aerosols_per_mode[m] = int(mode_species.size());
+  }
+}
+
 /// Fetches an opaque pointer to the ith set of input data from the given
 /// ensemble.
 void* sw_ensemble_input(void* ensemble, int i) {
@@ -442,9 +474,7 @@ void sw_input_get_atmosphere(void* input, Real* temperature, Real* pressure,
 }
 
 /// Fetches aerosol data from the given ensemble input data pointer. All output
-/// arguments are arrays that are properly sized to store aerosol data. Since
-/// our legacy codes all know these sizes, we provide no way to query them in
-/// this Fortran bridge.
+/// arguments are arrays that are properly sized to store aerosol data.
 void sw_input_get_aerosols(void* input, Real* interstitial_number_concs,
                            Real* cloud_number_concs, Real* interstitial_aero_mmrs,
                            Real* cloud_aero_mmrs) {
@@ -460,9 +490,7 @@ void sw_input_get_aerosols(void* input, Real* interstitial_number_concs,
 }
 
 /// Fetches gas data from the given ensemble input data pointer. The output
-/// argument is an array properly sized to store gas mass mixing ratios. Since
-/// our legacy codes all know this size, we provide no way to query it in this
-/// Fortran bridge.
+/// argument is an array properly sized to store gas mass mixing ratios.
 void sw_input_get_gases(void* input, Real* gas_mmrs) {
   auto inp = reinterpret_cast<InputData*>(input);
   std::copy(inp->gas_mmrs.begin(), inp->gas_mmrs.end(), gas_mmrs);
@@ -502,6 +530,12 @@ void sw_output_set_gases(void* output, Real* gas_mmrs) {
   std::copy(gas_mmrs, gas_mmrs + num_gases, outp->gas_mmrs.begin());
 }
 
+// Writes out a Python module containing input and output data for the
+// ǥiven ensemble to the given filename.
+void sw_ensemble_write_py_module(void* ensemble, const char* filename) {
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  skywalker::write_py_module(data->first, data->second, filename);
+}
 
 /// Frees all memory associated with the ensemble, including input and output
 /// data.

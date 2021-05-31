@@ -1,4 +1,5 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${HAERO_INCDIRS} ${HAERO_DRIVER_INCDIRS})
+include_directories(${PROJECT_BINARY_DIR}/haero)
 
 # Generate skywalker.hpp with the correct floating point precision type.
 configure_file(
@@ -8,7 +9,7 @@ configure_file(
 )
 
 # Here we build a skywalker library that can be used by our MAM box model.
-add_library(skywalker skywalker.cpp load_ensemble.cpp write_py_module.cpp)
+add_library(skywalker skywalker.cpp load_ensemble.cpp write_py_module.cpp skywalker.F90)
 set_target_properties(skywalker PROPERTIES OUTPUT_NAME skywalker_${HAERO_REAL_TYPE})
 
 # Here's our Haero skywalker executable.
