@@ -356,7 +356,11 @@ static void destroy_ensembles() {
 /// @param [in] aerosol_config The named aerosol configuration. The only valid
 ///                            configuration at this time is "mam4".
 /// @param [in] filename The name of the YAML file containing ensemble data.
-void* sw_load_ensemble(const char* aerosol_config, const char* filename) {
+/// @param [in] model_impl The name of the model implementation (typically
+///                        "haero" or "mam").
+void* sw_load_ensemble(const char* aerosol_config,
+                       const char* filename,
+                       const char* model_impl) {
   // Construct an aerosol config from the given string.
   if (fortran_aero_configs_ == nullptr) {
     fortran_aero_configs_ = new std::map<std::string, ModalAerosolConfig>();
@@ -376,7 +380,7 @@ void* sw_load_ensemble(const char* aerosol_config, const char* filename) {
   }
 
   // Create a ParameterWalk object from the given config and file.
-  auto param_walk = skywalker::load_ensemble(config, filename);
+  auto param_walk = skywalker::load_ensemble(config, filename, model_impl);
 
   // Create an ensemble, allocating storage for output data equal in length
   // to the given input data.

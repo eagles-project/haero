@@ -61,13 +61,15 @@ module skywalker
      contains
        ! Writes a Python module containing input/output data to a file
        procedure :: write_py_module => e_write_py_module
+       ! Frees resources allocated to the ensemble
+       procedure :: free => e_free
    end type ensemble_t
 
   interface
 
-    type(c_ptr) function sw_load_ensemble(aerosol_config, filename) bind(c)
+    type(c_ptr) function sw_load_ensemble(aerosol_config, filename, model_impl) bind(c)
       use iso_c_binding, only: c_ptr
-      type(c_ptr), value, intent(in) :: aerosol_config, filename
+      type(c_ptr), value, intent(in) :: aerosol_config, filename, model_impl
     end function
 
     integer(c_int) function sw_ensemble_size(ensemble) bind(c)
@@ -190,7 +192,9 @@ contains
     integer :: i, m, s, p, max_mode_size
     real(c_real), dimension(:), pointer :: int_aero_data, cld_aero_data
 
-    ensemble%ptr = sw_load_ensemble(f_to_c_string(aerosol_config), f_to_c_string(filename))
+    ensemble%ptr = sw_load_ensemble(f_to_c_string(aerosol_config), &
+                                    f_to_c_string(filename), &
+                                    f_to_c_string("mam"))
     if (.not. c_associated(ensemble%ptr)) then
       print *, "Could not load a ", aerosol_config, " from ", filename
       stop
@@ -222,6 +226,8 @@ contains
       allocate(ensemble%inputs(i)%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%inputs(i)%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%inputs(i)%gas_mmrs(ensemble%num_gases))
+      allocate(ensemble%outputs(i)%interstitial_number_concs(ensemble%num_modes))
+      allocate(ensemble%outputs(i)%cloud_number_concs(ensemble%num_modes))
       allocate(ensemble%outputs(i)%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%outputs(i)%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%outputs(i)%gas_mmrs(ensemble%num_gases))
@@ -294,6 +300,30 @@ contains
 
     ! Clean up.
     deallocate(mode_array_sizes, int_aero_data, cld_aero_data)
+  end subroutine
+
+  ! Frees all resources allcated to the given ensemble object.
+  subroutine e_free(ensemble)
+    use iso_c_binding, only: c_ptr
+    implicit none
+
+    class(ensemble_t), intent(inout) :: ensemble
+    integer :: i
+
+    do i = 1, ensemble%size
+      deallocate(ensemble%inputs(i)%interstitial_number_concs)
+      deallocate(ensemble%inputs(i)%cloud_number_concs)
+      deallocate(ensemble%inputs(i)%interstitial_aero_mmrs)
+      deallocate(ensemble%inputs(i)%cloud_aero_mmrs)
+      deallocate(ensemble%inputs(i)%gas_mmrs)
+      deallocate(ensemble%outputs(i)%interstitial_number_concs)
+      deallocate(ensemble%outputs(i)%cloud_number_concs)
+      deallocate(ensemble%outputs(i)%interstitial_aero_mmrs)
+      deallocate(ensemble%outputs(i)%cloud_aero_mmrs)
+      deallocate(ensemble%outputs(i)%gas_mmrs)
+    end do
+    deallocate(ensemble%inputs)
+    deallocate(ensemble%outputs)
   end subroutine
 
 end module
