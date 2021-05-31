@@ -23,3 +23,12 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.hpp
 install(TARGETS skywalker DESTINATION lib)
 install(TARGETS skywalker_exe DESTINATION bin)
 
+# Generate skywalker.cmake with installation information
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/skywalker.cmake.in
+  ${PROJECT_BINARY_DIR}/cmake/skywalker.cmake
+  @ONLY
+)
+install(FILES ${PROJECT_BINARY_DIR}/cmake/skywalker.cmake
+        DESTINATION cmake)
+
