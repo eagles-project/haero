@@ -329,9 +329,14 @@ using Real = skywalker::Real;
 using ModalAerosolConfig = haero::ModalAerosolConfig;
 using InputData = skywalker::InputData;
 using OutputData = skywalker::OutputData;
-using EnsembleData = std::pair<std::vector<InputData>, std::vector<OutputData>>;
 
-// This container holds "live" instances of aerosol config metadata.
+struct EnsembleData {
+  std::string process;
+  std::vector<InputData> inputs;
+  std::vector<OutputData> outputs;
+};
+
+// This container holds "live" instances of named aerosol config metadata.
 static std::map<std::string, ModalAerosolConfig>* fortran_aero_configs_ = nullptr;
 
 static void destroy_aero_configs() {
@@ -385,12 +390,13 @@ void* sw_load_ensemble(const char* aerosol_config,
   // Create an ensemble, allocating storage for output data equal in length
   // to the given input data.
   auto ensemble = new EnsembleData;
-  ensemble->first = param_walk.gather_inputs();
-  ensemble->second = std::vector<OutputData>(ensemble->first.size(), OutputData(config));
+  ensemble->process = param_walk.process;
+  ensemble->inputs = param_walk.gather_inputs();
+  ensemble->outputs = std::vector<OutputData>(ensemble->inputs.size(), OutputData(config));
   // Size up the output data arrays to make our life easier down the line.
-  for (size_t i = 0; i < ensemble->first.size(); ++i) {
-    const auto& input = ensemble->first[i];
-    auto output = ensemble->second[i];
+  for (size_t i = 0; i < ensemble->inputs.size(); ++i) {
+    const auto& input = ensemble->inputs[i];
+    auto output = ensemble->outputs[i];
     output.interstitial_number_concs.resize(input.interstitial_number_concs.size());
     output.cloud_number_concs.resize(input.cloud_number_concs.size());
     output.interstitial_aero_mmrs.resize(input.interstitial_aero_mmrs.size());
@@ -408,20 +414,26 @@ void* sw_load_ensemble(const char* aerosol_config,
   return ensemble_ptr;
 }
 
+/// Returns the name of the process being studied by the ensemble.
+const char* sw_ensemble_process(void* ensemble) {
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  return data->process.c_str();
+}
+
 /// Returns the number of inputs (members) for the given ensemble data.
 int sw_ensemble_size(void* ensemble) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  return data->first.size();
+  return data->inputs.size();
 }
 
 /// Fetches array sizes for members in the given ensemble.
 void sw_ensemble_get_array_sizes(void* ensemble, int* num_modes,
                                  int* num_populations, int* num_gases) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  EKAT_REQUIRE(not data->first.empty());
+  EKAT_REQUIRE(not data->inputs.empty());
 
   // Get the aerosol configuration from the first ensemble member.
-  const auto& config = data->first[0].aero_config;
+  const auto& config = data->inputs[0].aero_config;
 
   // Read off the data.
   *num_modes = config.num_modes();
@@ -434,10 +446,10 @@ void sw_ensemble_get_array_sizes(void* ensemble, int* num_modes,
 /// to store the number of aerosols in each mode.
 void sw_ensemble_get_modal_aerosol_sizes(void* ensemble, int* aerosols_per_mode) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  EKAT_REQUIRE(not data->first.empty());
+  EKAT_REQUIRE(not data->inputs.empty());
 
   // Get the aerosol configuration from the first ensemble member.
-  const auto& config = data->first[0].aero_config;
+  const auto& config = data->inputs[0].aero_config;
 
   // Fetch the numbers of species per mode.
   for (int m = 0; m < config.num_modes(); ++m) {
@@ -451,8 +463,8 @@ void sw_ensemble_get_modal_aerosol_sizes(void* ensemble, int* aerosols_per_mode)
 void* sw_ensemble_input(void* ensemble, int i) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   EKAT_REQUIRE(i >= 0);
-  EKAT_REQUIRE(i < data->first.size());
-  InputData* input = &(data->first[i]);
+  EKAT_REQUIRE(i < data->inputs.size());
+  InputData* input = &(data->inputs[i]);
   return reinterpret_cast<void*>(input);
 }
 
@@ -505,8 +517,8 @@ void sw_input_get_gases(void* input, Real* gas_mmrs) {
 void* sw_ensemble_output(void* ensemble, int i) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   EKAT_REQUIRE(i >= 0);
-  EKAT_REQUIRE(i < data->first.size());
-  OutputData* output = &(data->second[i]);
+  EKAT_REQUIRE(i < data->inputs.size());
+  OutputData* output = &(data->outputs[i]);
   return reinterpret_cast<void*>(output);
 }
 
@@ -538,7 +550,7 @@ void sw_output_set_gases(void* output, Real* gas_mmrs) {
 // ǥiven ensemble to the given filename.
 void sw_ensemble_write_py_module(void* ensemble, const char* filename) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  skywalker::write_py_module(data->first, data->second, filename);
+  skywalker::write_py_module(data->inputs, data->outputs, filename);
 }
 
 /// Frees all memory associated with the ensemble, including input and output

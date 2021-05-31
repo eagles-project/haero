@@ -49,6 +49,8 @@ module skywalker
    type :: ensemble_t
      ! C pointer
      type(c_ptr) :: ptr
+     ! Name of the aerosol process being studied by this ensemble
+     character(len=255) :: process
      ! The number of members in the ensemble
      integer :: size
      ! Number of aerosol modes and populations, and number of gases
@@ -70,6 +72,11 @@ module skywalker
     type(c_ptr) function sw_load_ensemble(aerosol_config, filename, model_impl) bind(c)
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: aerosol_config, filename, model_impl
+    end function
+
+    type(c_ptr) function sw_ensemble_process(ensemble) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: ensemble
     end function
 
     integer(c_int) function sw_ensemble_size(ensemble) bind(c)
@@ -157,31 +164,11 @@ module skywalker
 
 contains
 
-  !> This helper function converts the given Fortran string to a C string.
-  function f_to_c_string(f_string) result(c_string)
-    use, intrinsic :: iso_c_binding
-    implicit none
-    character(len=*), target :: f_string
-    character(len=:), pointer :: f_ptr
-    type(c_ptr) :: c_string
-
-    interface
-        function new_c_string(f_str_ptr, f_str_len) bind (c) result(c_string)
-        use, intrinsic :: iso_c_binding
-            type(c_ptr), value :: f_str_ptr
-            integer(c_int), value :: f_str_len
-            type(c_ptr) :: c_string
-        end function new_c_string
-    end interface
-
-    f_ptr => f_string
-    c_string = new_c_string(c_loc(f_ptr), len(f_string))
-  end function f_to_c_string
-
   ! Given an aerosol configuration string and a skywalker input file, fetch an
   ! ensemble's worth of input data.
   function load_ensemble(aerosol_config, filename) result(ensemble)
     use iso_c_binding, only: c_int, c_ptr, c_associated, c_loc
+    use haero, only: f_to_c_string, c_to_f_string
     implicit none
 
     character(len=*), intent(in) :: aerosol_config
@@ -195,6 +182,7 @@ contains
     ensemble%ptr = sw_load_ensemble(f_to_c_string(aerosol_config), &
                                     f_to_c_string(filename), &
                                     f_to_c_string("mam"))
+    ensemble%process = c_to_f_string(sw_ensemble_process(ensemble%ptr))
     if (.not. c_associated(ensemble%ptr)) then
       print *, "Could not load a ", aerosol_config, " from ", filename
       stop
@@ -259,6 +247,7 @@ contains
   ! ensemble to a file with the given name.
   subroutine e_write_py_module(ensemble, filename)
     use iso_c_binding, only: c_ptr
+    use haero, only: f_to_c_string
     implicit none
 
     class(ensemble_t), intent(in) :: ensemble
