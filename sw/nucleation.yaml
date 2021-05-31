@@ -9,11 +9,16 @@ timestepping: # [s]
   total_time: 3600
 
 ensemble:
-  temperature: [270, 276, 0.5]
-  relative_humidity: [0, 1, 0.1]
-  qh2so4: [0, 1.e-3, 1.e-4]  # _aero for aerosol data
-  aitken:
-    so4: [0, 0.001]
+  atmosphere:
+    relative_humidity: [0, 1, 0.01]
+
+  gases:
+    h2so4: [0, 1.e-2, 1.e-4]
+
+  aerosols:
+    aitken:
+      interstitial:
+        so4: [0, 0.001]
 
 atmosphere:
   temperature: 273
@@ -21,40 +26,74 @@ atmosphere:
   relative_humidity: 0.95
   height: 3000
   hydrostatic_dp: 200
+  planetary_boundary_layer_height: 1100
 
 aerosols:
   accumulation:
-    number_conc: 1.e8 # [ # aerosol molecules / kg air]
-    so4: 0.3 # [change to kg aerosol/kg air]
-    pom: 0
-    soa: 0.3
-    bc: 0
-    dst: 0
-    nacl: 0.4
-    mom: 0
+    interstitial: # number_conc is [1/kg air], aerosols are [kg aerosol/kg air]
+      number_conc: 0.7836255100E+08
+      so4: 0.1140491823e-9
+      pom: 0
+      soa: 0.1140491823e-9
+      bc: 0
+      dst: 0
+      nacl: 0.1520655763e-9
+      mom: 0
+    cloud:
+      number_conc: 0
+      so4: 0
+      pom: 0
+      soa: 0
+      bc: 0
+      dst: 0
+      nacl: 0
+      mom: 0
   aitken:
-    number_conc: 1.e9
-    so4: 0.3
-    soa: 0.3
-    nacl: 0.4
-    mom: 0
+    interstitial:
+      number_conc: 0.7836255100e+09
+      so4: 0.8596967327e-11
+      soa: 0.8596967327e-11
+      nacl: 0.1146262310e-10
+      mom: 0
+    cloud:
+      number_conc: 0
+      so4: 0
+      soa: 0
+      nacl: 0
+      mom: 0
   coarse:
-    number_conc: 1.e5
-    so4: 0.3
-    pom: 0
-    mom: 0
-    soa: 0.3
-    bc: 0
-    dst: 0
-    nacl: 0.4
+    interstitial:
+      number_conc: 0.7836255100e+05
+      so4: 0.6854947093e-09
+      pom: 0
+      mom: 0
+      soa: 0.6854947093e-09
+      bc: 0
+      dst: 0
+      nacl: 0.9139929457e-09
+    cloud:
+      number_conc: 0
+      so4: 0
+      pom: 0
+      mom: 0
+      soa: 0
+      bc: 0
+      dst: 0
+      nacl: 0
   primary_carbon:
-    number_conc: 2.e8
-    pom: 0
-    bc: 1
-    mom: 0
+    interstitial:
+      number_conc: 0.1567251020e+09
+      pom: 0
+      bc: 0.4712086072e-10
+      mom: 0
+    cloud:
+      number_conc: 0
+      pom: 0
+      bc: 0
+      mom: 0
 
-gases:
-  so2: 1.e-4 # [kg gas / kg air]
+gases: # [kg gas / kg air]
+  so2: 1.e-4
   h2so4: 1.e-13
   soag: 5.e-10
   o3: 0

@@ -1,5 +1,7 @@
 #include "haero/prognostics.hpp"
 
+#include "haero/tendencies.hpp"
+
 namespace haero {
 
 Prognostics::Prognostics(int num_aerosol_modes,
@@ -27,10 +29,7 @@ Prognostics::Prognostics(int num_aerosol_modes,
   EKAT_REQUIRE_MSG(
       num_aerosol_modes == num_aerosol_species.size(),
       "num_aerosol_species must be a vector of length " << num_aerosol_modes);
-  int num_vert_packs = num_levels_ / HAERO_PACK_SIZE;
-  if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
-    num_vert_packs++;
-  }
+  int num_vert_packs = PackInfo::num_packs(num_levels_);
   const int int_aerosols_extent_0 = int_aerosols.extent(0);
   const int int_aerosols_extent_1 = int_aerosols.extent(1);
   const int cld_aerosols_extent_0 = cld_aerosols.extent(0);
@@ -89,7 +88,37 @@ int Prognostics::num_levels() const { return num_levels_; }
 
 void Prognostics::scale_and_add(Real scale_factor,
                                 const Tendencies& tendencies) {
-  EKAT_REQUIRE_MSG(false, "scale_and_add() is not yet implemented!");
+  int num_vert_packs = PackInfo::num_packs(num_levels_);
+  Kokkos::parallel_for(
+      "Prognostics::scale_and_add (aerosols)", num_vert_packs,
+      KOKKOS_LAMBDA(const int k) {
+        for (int p = 0; p < num_aero_populations_; ++p) {
+          interstitial_aerosols(p, k) +=
+              scale_factor * tendencies.interstitial_aerosols(p, k);
+          cloud_aerosols(p, k) +=
+              scale_factor * tendencies.cloud_aerosols(p, k);
+        }
+      });
+
+  Kokkos::parallel_for(
+      "Prognostics::scale_and_add (gas species)", num_vert_packs,
+      KOKKOS_LAMBDA(const int k) {
+        for (int g = 0; g < num_gases_; ++g) {
+          gases(g, k) += scale_factor * tendencies.gases(g, k);
+        }
+      });
+
+  int num_modes = interstitial_num_concs.extent(0);
+  Kokkos::parallel_for(
+      "Prognostics::scale_and_add (modal num concs)", num_vert_packs,
+      KOKKOS_LAMBDA(const int k) {
+        for (int m = 0; m < num_modes; ++m) {
+          interstitial_num_concs(m, k) +=
+              scale_factor * tendencies.interstitial_num_concs(m, k);
+          cloudborne_num_concs(m, k) +=
+              scale_factor * tendencies.cloudborne_num_concs(m, k);
+        }
+      });
 }
 
 // Interoperable C functions for providing data to Fortran.
