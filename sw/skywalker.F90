@@ -165,14 +165,17 @@ module skywalker
 contains
 
   ! Given an aerosol configuration string and a skywalker input file, fetch an
-  ! ensemble's worth of input data.
-  function load_ensemble(aerosol_config, filename) result(ensemble)
+  ! ensemble's worth of input data. Here, model_impl is a string indicating
+  ! which underlying aerosol mode skywalker will use to select an appropriate
+  ! aerosol process. It's usually "haero" or "mam".
+  function load_ensemble(aerosol_config, filename, model_impl) result(ensemble)
     use iso_c_binding, only: c_int, c_ptr, c_associated, c_loc
     use haero, only: f_to_c_string, c_to_f_string
     implicit none
 
     character(len=*), intent(in) :: aerosol_config
     character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: model_impl
     type(ensemble_t) :: ensemble
 
     integer(c_int), dimension(:), pointer :: mode_array_sizes
@@ -181,7 +184,7 @@ contains
 
     ensemble%ptr = sw_load_ensemble(f_to_c_string(aerosol_config), &
                                     f_to_c_string(filename), &
-                                    f_to_c_string("mam"))
+                                    f_to_c_string(model_impl))
     ensemble%process = c_to_f_string(sw_ensemble_process(ensemble%ptr))
     if (.not. c_associated(ensemble%ptr)) then
       print *, "Could not load a ", aerosol_config, " from ", filename
