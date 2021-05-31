@@ -123,9 +123,10 @@ void parse_gas_ensemble_params(
 
 void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
   if (not process[pw.model_impl]) {
-    throw YamlException("'haero' entry not found in process section!");
+    throw YamlException(std::string("'") + pw.model_impl +
+      std::string("' entry not found in process section!"));
   }
-  pw.process = process["haero"].as<std::string>();
+  pw.process = process[pw.model_impl].as<std::string>();
 }
 
 void parse_timestepping_section(const YAML::Node& ts, ParameterWalk& pw) {
