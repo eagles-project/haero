@@ -17,7 +17,9 @@ add_executable(skywalker_exe main.cpp)
 set_target_properties(skywalker_exe PROPERTIES OUTPUT_NAME skywalker)
 target_link_libraries(skywalker_exe skywalker;yaml_cpp;${HAERO_LIBRARIES})
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.hpp DESTINATION include)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.hpp
+              ${CMAKE_CURRENT_BINARY_DIR}/skywalker.mod
+        DESTINATION include)
 install(TARGETS skywalker DESTINATION lib)
 install(TARGETS skywalker_exe DESTINATION bin)
 
