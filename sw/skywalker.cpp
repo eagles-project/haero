@@ -1,7 +1,8 @@
-#include "haero/modal_aerosol_config.hpp"
 #include "skywalker.hpp"
 
 #include <strings.h>
+
+#include "haero/modal_aerosol_config.hpp"
 
 namespace {
 
@@ -196,13 +197,15 @@ Real OutputData::operator[](const std::string& param_name) const {
   }
 }
 
-std::vector<InputData> ParameterWalk::gather_inputs(const std::set<std::string>& excluded_params) const {
+std::vector<InputData> ParameterWalk::gather_inputs(
+    const std::set<std::string>& excluded_params) const {
   // Count up the number of inputs defined by the parameter walk thingy,
   // excluding those parameters specified.
   size_t num_inputs = 1, num_params = 0;
-  for (auto param: ensemble) {
-    if (excluded_params.find(param.first) == excluded_params.end()) { // not excluded
-      num_inputs *= param.second.size(); // set of parameter values
+  for (auto param : ensemble) {
+    if (excluded_params.find(param.first) ==
+        excluded_params.end()) {          // not excluded
+      num_inputs *= param.second.size();  // set of parameter values
       num_params++;
     }
   }
@@ -337,7 +340,8 @@ struct EnsembleData {
 };
 
 // This container holds "live" instances of named aerosol config metadata.
-static std::map<std::string, ModalAerosolConfig>* fortran_aero_configs_ = nullptr;
+static std::map<std::string, ModalAerosolConfig>* fortran_aero_configs_ =
+    nullptr;
 
 static void destroy_aero_configs() {
   delete fortran_aero_configs_;
@@ -349,7 +353,7 @@ static void destroy_aero_configs() {
 static std::set<EnsembleData*>* fortran_ensembles_ = nullptr;
 
 static void destroy_ensembles() {
-  for (auto ensemble: *fortran_ensembles_) {
+  for (auto ensemble : *fortran_ensembles_) {
     delete ensemble;
   }
   delete fortran_ensembles_;
@@ -363,8 +367,7 @@ static void destroy_ensembles() {
 /// @param [in] filename The name of the YAML file containing ensemble data.
 /// @param [in] model_impl The name of the model implementation (typically
 ///                        "haero" or "mam").
-void* sw_load_ensemble(const char* aerosol_config,
-                       const char* filename,
+void* sw_load_ensemble(const char* aerosol_config, const char* filename,
                        const char* model_impl) {
   // Construct an aerosol config from the given string.
   if (fortran_aero_configs_ == nullptr) {
@@ -380,7 +383,7 @@ void* sw_load_ensemble(const char* aerosol_config,
       config = haero::create_mam4_modal_aerosol_config();
       fortran_aero_configs_->emplace("mam4", config);
     } else {
-      return nullptr; // no dice!
+      return nullptr;  // no dice!
     }
   }
 
@@ -392,12 +395,14 @@ void* sw_load_ensemble(const char* aerosol_config,
   auto ensemble = new EnsembleData;
   ensemble->process = param_walk.process;
   ensemble->inputs = param_walk.gather_inputs();
-  ensemble->outputs = std::vector<OutputData>(ensemble->inputs.size(), OutputData(config));
+  ensemble->outputs =
+      std::vector<OutputData>(ensemble->inputs.size(), OutputData(config));
   // Size up the output data arrays to make our life easier down the line.
   for (size_t i = 0; i < ensemble->inputs.size(); ++i) {
     const auto& input = ensemble->inputs[i];
     auto output = ensemble->outputs[i];
-    output.interstitial_number_concs.resize(input.interstitial_number_concs.size());
+    output.interstitial_number_concs.resize(
+        input.interstitial_number_concs.size());
     output.cloud_number_concs.resize(input.cloud_number_concs.size());
     output.interstitial_aero_mmrs.resize(input.interstitial_aero_mmrs.size());
     output.cloud_aero_mmrs.resize(input.cloud_aero_mmrs.size());
@@ -444,7 +449,8 @@ void sw_ensemble_get_array_sizes(void* ensemble, int* num_modes,
 /// Fetches the number of aerosols present in each mode, which can be used
 /// to map between population and aerosol indices. The output array is sized
 /// to store the number of aerosols in each mode.
-void sw_ensemble_get_modal_aerosol_sizes(void* ensemble, int* aerosols_per_mode) {
+void sw_ensemble_get_modal_aerosol_sizes(void* ensemble,
+                                         int* aerosols_per_mode) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   EKAT_REQUIRE(not data->inputs.empty());
 
@@ -492,15 +498,16 @@ void sw_input_get_atmosphere(void* input, Real* temperature, Real* pressure,
 /// Fetches aerosol data from the given ensemble input data pointer. All output
 /// arguments are arrays that are properly sized to store aerosol data.
 void sw_input_get_aerosols(void* input, Real* interstitial_number_concs,
-                           Real* cloud_number_concs, Real* interstitial_aero_mmrs,
+                           Real* cloud_number_concs,
+                           Real* interstitial_aero_mmrs,
                            Real* cloud_aero_mmrs) {
   auto inp = reinterpret_cast<InputData*>(input);
-  std::copy(inp->interstitial_number_concs.begin(), inp->interstitial_number_concs.end(),
-            interstitial_number_concs);
+  std::copy(inp->interstitial_number_concs.begin(),
+            inp->interstitial_number_concs.end(), interstitial_number_concs);
   std::copy(inp->cloud_number_concs.begin(), inp->cloud_number_concs.end(),
             cloud_number_concs);
-  std::copy(inp->interstitial_aero_mmrs.begin(), inp->interstitial_aero_mmrs.end(),
-            interstitial_aero_mmrs);
+  std::copy(inp->interstitial_aero_mmrs.begin(),
+            inp->interstitial_aero_mmrs.end(), interstitial_aero_mmrs);
   std::copy(inp->cloud_aero_mmrs.begin(), inp->cloud_aero_mmrs.end(),
             cloud_aero_mmrs);
 }
@@ -524,7 +531,8 @@ void* sw_ensemble_output(void* ensemble, int i) {
 
 /// Sets aerosol data for the given ensemble output data pointer.
 void sw_output_set_aerosols(void* output, Real* interstitial_number_concs,
-                            Real* cloud_number_concs, Real* interstitial_aero_mmrs,
+                            Real* cloud_number_concs,
+                            Real* interstitial_aero_mmrs,
                             Real* cloud_aero_mmrs) {
   auto outp = reinterpret_cast<OutputData*>(output);
   size_t num_modes = outp->interstitial_number_concs.size();
@@ -565,5 +573,4 @@ void sw_enѕemble_free(void* ensemble) {
     }
   }
 }
-
 }

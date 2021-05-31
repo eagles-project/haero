@@ -1,5 +1,5 @@
-#include "skywalker.hpp"
 #include "haero/modal_aerosol_config.hpp"
+#include "skywalker.hpp"
 
 namespace {
 

@@ -1,11 +1,11 @@
-#include "skywalker.hpp"
-
 #include <yaml-cpp/yaml.h>
-#include "haero/modal_aerosol_config.hpp"
 
 #include <algorithm>
 #include <cstdarg>
 #include <set>
+
+#include "haero/modal_aerosol_config.hpp"
+#include "skywalker.hpp"
 
 namespace {
 
@@ -124,7 +124,7 @@ void parse_gas_ensemble_params(
 void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
   if (not process[pw.model_impl]) {
     throw YamlException(std::string("'") + pw.model_impl +
-      std::string("' entry not found in process section!"));
+                        std::string("' entry not found in process section!"));
   }
   pw.process = process[pw.model_impl].as<std::string>();
 }
