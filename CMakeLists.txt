@@ -53,12 +53,11 @@ endif()
 # We declare the project right away.
 enable_language(CXX)
 if (ENABLE_FORTRAN)
-  set (HAERO_FORTRAN 1)
-  enable_language(Fortran) # (needed for skywalker library in any case)
+  set(HAERO_FORTRAN 1)
+  enable_language(Fortran)
 else()
   set(HAERO_FORTRAN 0)
 endif()
-
 project (haero)
 
 # Set all installation folders for third-party libraries, and figure out which
