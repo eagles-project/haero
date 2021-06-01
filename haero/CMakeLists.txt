@@ -20,6 +20,10 @@ add_custom_target(update_version_info ALL
   COMMENT "Updating haero version information..."
 )
 
+# We need the haero_precision F90 module even if Fortran is not enabled (for
+# the skywalker library).
+set(HAERO_FORTRAN_SOURCES haero_precision.F90)
+
 if (HAERO_FORTRAN)
   # Generate a Fortran module with physical constants, from our C++ header.
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
@@ -32,10 +36,9 @@ if (HAERO_FORTRAN)
     COMMENT "Generating haero_constants.F90..."
   )
 
-  set(HAERO_FORTRAN_SOURCES
-      haero.F90
-      haero_precision.F90
-      ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90)
+list(APPEND HAERO_FORTRAN_SOURCES
+     haero.F90
+     ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90)
 endif()
 
 
