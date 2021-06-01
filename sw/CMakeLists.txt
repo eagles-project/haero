@@ -9,7 +9,11 @@ configure_file(
 )
 
 # Here we build a skywalker library that can be used by our MAM box model.
-add_library(skywalker skywalker.cpp load_ensemble.cpp write_py_module.cpp skywalker.F90)
+if (HAERO_FORTRAN)
+  set(SW_FORTRAN_SOURCES skywalker.F90)
+endif()
+add_library(skywalker skywalker.cpp load_ensemble.cpp write_py_module.cpp
+            ${SW_FORTRAN_SOURCES})
 set_target_properties(skywalker PROPERTIES OUTPUT_NAME skywalker_${HAERO_REAL_TYPE})
 add_dependencies(skywalker haero)
 
@@ -19,8 +23,12 @@ set_target_properties(skywalker_exe PROPERTIES OUTPUT_NAME skywalker)
 target_link_libraries(skywalker_exe skywalker;yaml_cpp;${HAERO_LIBRARIES})
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.hpp
-              ${CMAKE_CURRENT_BINARY_DIR}/skywalker.mod
-        DESTINATION include)
+        DESTINATION include/skywalker)
+if (HAERO_FORTRAN)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.mod
+                ${PROJECT_BINARY_DIR}/haero/haero_precision.mod
+          DESTINATION include/skywalker)
+endif()
 install(TARGETS skywalker DESTINATION lib)
 install(TARGETS skywalker_exe DESTINATION bin)
 

@@ -25,5 +25,5 @@ else()
 endif()
 set_target_properties(ekat PROPERTIES IMPORTED_LOCATION "@EKAT_LIBRARY@")
 
-set(SKYWALKER_INCLUDE_DIR "${SKYWALKER_PREFIX}/include")
+set(SKYWALKER_INCLUDE_DIR "${SKYWALKER_PREFIX}/include/skywalker")
 set(SKYWALKER_LIBRARIES skywalker;haero;yaml_cpp;ekat)
