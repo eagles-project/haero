@@ -86,7 +86,6 @@ set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 install(TARGETS haero DESTINATION lib)
 install(FILES haero.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
-              ${CMAKE_CURRENT_BINARY_DIR}/haero_precision.mod
               diagnostics.hpp
               floating_point.hpp
               mode.hpp
@@ -98,6 +97,12 @@ install(FILES haero.hpp
               utils.hpp
               view_pack_helpers.hpp
         DESTINATION include/haero)
+if (HAERO_FORTRAN)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/haero.mod
+                ${CMAKE_CURRENT_BINARY_DIR}/haero_precision.mod
+                ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.mod
+          DESTINATION include/haero)
+endif()
 
 # Library unit tests.
 add_subdirectory(tests)

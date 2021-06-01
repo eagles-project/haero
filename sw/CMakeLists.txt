@@ -26,7 +26,9 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.hpp
         DESTINATION include/skywalker)
 if (HAERO_FORTRAN)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/skywalker.mod
+                ${PROJECT_BINARY_DIR}/haero/haero.mod
                 ${PROJECT_BINARY_DIR}/haero/haero_precision.mod
+                ${PROJECT_BINARY_DIR}/haero/haero_constants.mod
           DESTINATION include/skywalker)
 endif()
 install(TARGETS skywalker DESTINATION lib)
