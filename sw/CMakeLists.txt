@@ -11,6 +11,7 @@ configure_file(
 # Here we build a skywalker library that can be used by our MAM box model.
 add_library(skywalker skywalker.cpp load_ensemble.cpp write_py_module.cpp skywalker.F90)
 set_target_properties(skywalker PROPERTIES OUTPUT_NAME skywalker_${HAERO_REAL_TYPE})
+add_dependencies(skywalker haero)
 
 # Here's our Haero skywalker executable.
 add_executable(skywalker_exe main.cpp)
