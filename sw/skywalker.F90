@@ -277,13 +277,13 @@ contains
           p = p + 1
         end do
       end do
-      call sw_input_set_aerosols(ensemble%outputs(i)%ptr, &
+      call sw_output_set_aerosols(ensemble%outputs(i)%ptr, &
         c_loc(ensemble%outputs(i)%interstitial_number_concs), &
         c_loc(ensemble%outputs(i)%cloud_number_concs), &
         c_loc(int_aero_data), c_loc(cld_aero_data))
 
       ! Gas data
-      call sw_input_set_gases(ensemble%inputs(i)%ptr, &
+      call sw_output_set_gases(ensemble%inputs(i)%ptr, &
         c_loc(ensemble%inputs(i)%gas_mmrs))
     end do
 
