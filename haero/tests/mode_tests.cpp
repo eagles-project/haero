@@ -36,23 +36,23 @@ TEST_CASE("mode_ctor", "") {
   {
     // compute min_vol_to_num ratio
     const Real comp_min_vol_to_num_ratio =
-      1 / aitken.mean_particle_volume_from_diameter<Real>(5.2e-8);
+        1 / aitken.mean_particle_volume_from_diameter<Real>(5.2e-8);
 
     // compute relative difference for min_vol_to_num_ratio
     REQUIRE(FloatingPoint<Real>::rel(comp_min_vol_to_num_ratio,
-          aitken.min_vol_to_num_ratio<Real>(),
-          5 * std::numeric_limits<Real>::epsilon()));
+                                     aitken.min_vol_to_num_ratio<Real>(),
+                                     5 * std::numeric_limits<Real>::epsilon()));
   }
 
   // Verify `max_vol_to_num_ratio` calculation
   {
     // compute max_vol_to_num ratio
     const Real comp_max_vol_to_num_ratio =
-      1 / aitken.mean_particle_volume_from_diameter<Real>(8.7e-9);
+        1 / aitken.mean_particle_volume_from_diameter<Real>(8.7e-9);
 
     // compute relative difference for max_vol_to_num_ratio
     REQUIRE(FloatingPoint<Real>::rel(comp_max_vol_to_num_ratio,
-          aitken.max_vol_to_num_ratio<Real>(),
-          5 * std::numeric_limits<Real>::epsilon()));
+                                     aitken.max_vol_to_num_ratio<Real>(),
+                                     5 * std::numeric_limits<Real>::epsilon()));
   }
 }
