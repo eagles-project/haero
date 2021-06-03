@@ -27,9 +27,11 @@ TEST_CASE("mode_ctor", "") {
   {
     static constexpr Real geom_diam = 5.2e-8;
     static constexpr Real mean_std_dev = 1.6;
-    REQUIRE(aitken.mean_particle_volume_from_diameter<Real>(geom_diam) ==
-            (constants::pi_sixth * cube(geom_diam) *
-             exp(4.5 * square(log(mean_std_dev)))));
+    REQUIRE(FloatingPoint<Real>::rel(
+        aitken.mean_particle_volume_from_diameter<Real>(geom_diam),
+        (constants::pi_sixth * cube(geom_diam) *
+         exp(4.5 * square(log(mean_std_dev)))),
+        5 * std::numeric_limits<Real>::epsilon()));
   }
 
   // Verify `min_vol_to_num_ratio` calculation
