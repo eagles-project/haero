@@ -2,8 +2,7 @@
 #include "ekat/ekat_session.hpp"
 #include "haero/available_processes.hpp"
 #include "haero/model.hpp"
-#include "parse_yaml.hpp"
-#include "write_py_module.hpp"
+#include "skywalker.hpp"
 
 using namespace skywalker;
 
@@ -118,8 +117,10 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
     dts.push_back(param_walk.ref_input.dt);
   }
 
-  // Create an ensemble's worth of input data from our parameter walker.
-  auto inputs = param_walk.gather_inputs();
+  // Create an ensemble's worth of input data from our parameter walker,
+  // excluding "dt" and "pblh" parameters from the walk.
+  auto inputs =
+      param_walk.gather_inputs({"dt", "planetary_boundary_layer_height"});
 
   printf("skywalker: running %ld simulations and writing output to '%s'...\n",
          inputs.size(), py_module_name);
@@ -250,7 +251,7 @@ int main(int argc, const char* argv[]) {
   // Read the input file and extract input.
   std::string input_file(argv[1]);
   try {
-    auto param_walk = parse_yaml(aero_config, input_file);
+    auto param_walk = load_ensemble(aero_config, input_file);
 
     // Set up the desired aerosol process and run it, dumping output to
     // "haero_skywalker.py".

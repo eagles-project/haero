@@ -1,4 +1,5 @@
-#include "write_py_module.hpp"
+#include "haero/modal_aerosol_config.hpp"
+#include "skywalker.hpp"
 
 namespace {
 

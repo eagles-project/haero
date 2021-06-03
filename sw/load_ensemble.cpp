@@ -1,15 +1,16 @@
-#include "parse_yaml.hpp"
-
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
 #include <cstdarg>
 #include <set>
 
+#include "haero/modal_aerosol_config.hpp"
+#include "skywalker.hpp"
+
 namespace {
 
+using Real = skywalker::Real;
 using ModalAerosolConfig = haero::ModalAerosolConfig;
-using Real = haero::Real;
 using ParameterWalk = skywalker::ParameterWalk;
 using YamlException = skywalker::YamlException;
 
@@ -121,10 +122,11 @@ void parse_gas_ensemble_params(
 }
 
 void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
-  if (not process["haero"]) {
-    throw YamlException("'haero' entry not found in process section!");
+  if (not process[pw.model_impl]) {
+    throw YamlException(std::string("'") + pw.model_impl +
+                        std::string("' entry not found in process section!"));
   }
-  pw.process = process["haero"].as<std::string>();
+  pw.process = process[pw.model_impl].as<std::string>();
 }
 
 void parse_timestepping_section(const YAML::Node& ts, ParameterWalk& pw) {
@@ -338,9 +340,10 @@ void parse_gases_section(const YAML::Node& gases,
 
 namespace skywalker {
 
-ParameterWalk parse_yaml(const haero::ModalAerosolConfig& aerosol_config,
-                         const std::string& filename) {
-  ParameterWalk pw(aerosol_config);
+ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
+                            const std::string& filename,
+                            const std::string& model_impl) {
+  ParameterWalk pw(aerosol_config, model_impl);
   try {
     auto root = YAML::LoadFile(filename);
 

@@ -1,0 +1,143 @@
+#ifndef HAERO_SKYWALKER_HPP
+#define HAERO_SKYWALKER_HPP
+
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
+// Forward declarations (for library portability). Nothing here is needed
+// directly by clients of the skywalker library.
+namespace haero {
+
+class ModalAerosolConfig;
+
+}
+
+namespace skywalker {
+
+using Real = @HAERO_REAL_TYPE@;
+using ModalAerosolConfig = haero::ModalAerosolConfig;
+
+// Reference input data for simulations.
+struct InputData {
+  explicit InputData(const haero::ModalAerosolConfig& aero_config)
+      : aero_config(aero_config) {}
+  InputData() = delete;
+  InputData(const InputData& rhs) = default;
+
+  const haero::ModalAerosolConfig& aero_config;
+
+  // timestepping parameters
+  Real dt, total_time;
+
+  // atmospheric state parameters
+  Real temperature, pressure, relative_humidity, height, hydrostatic_dp,
+      planetary_boundary_layer_height;
+
+  // aerosol initial data
+
+  // Modal aerosol number concentrations [# aero molecules / kg air]
+  std::vector<Real> interstitial_number_concs, cloud_number_concs;
+  // Aerosol mass mixing ratios [kg aerosol / kg air]
+  std::vector<Real> interstitial_aero_mmrs, cloud_aero_mmrs;
+  // Gas mass mixing ratios [kg gas / kg air]
+  std::vector<Real> gas_mmrs;
+
+  // Fetches the parameter with the given name. If no parameter is found, these
+  // operators return a zero value (or a reference to a zeroed value).
+  Real operator[](const std::string& param_name) const;
+  Real& operator[](const std::string& param_name);
+};
+
+// Data structure that stores parameter walking information.
+struct ParameterWalk {
+  /// Constructor
+  /// @param aero_config The modal aerosol configuration describing the system
+  ///                    to be walked in this parameter study
+  /// @param model_impl The name of the aerosol model implementatin for the walk
+  ///                   (usually "haero" or "mam").
+  ParameterWalk(const ModalAerosolConfig& aero_config,
+                const std::string& model_impl)
+      : aero_config(aero_config), model_impl(model_impl), process(),
+        ref_input(aero_config) {}
+  ParameterWalk() = delete;
+
+  // aerosol configuration
+  const haero::ModalAerosolConfig& aero_config;
+
+  // model implementation name
+  const std::string model_impl;
+
+  // process name
+  std::string process;
+
+  // reference input data
+  InputData ref_input;
+
+  // ensemble: parameters to walk (name -> vector of values)
+  std::map<std::string, std::vector<Real>> ensemble;
+
+  /// Gathers all input for this parameter walk into a vector of InputData,
+  /// using the parameters stored in the ensemble member above.
+  /// @param excluded_params a list of names of parameters to exclude from the
+  ///                        the "parameter walk" if present. These parameters
+  ///                        are set to their reference values.
+  std::vector<InputData> gather_inputs(const std::set<std::string>& excluded_params = {}) const;
+};
+
+// Here's a container that associates input parameters with output data.
+struct OutputData {
+  explicit OutputData(const haero::ModalAerosolConfig& aero_config)
+      : aero_config(aero_config) {}
+  OutputData() = delete;
+
+  const haero::ModalAerosolConfig& aero_config;
+
+  // Modal aerosol number concentrations [# aero molecules / kg air]
+  std::vector<Real> interstitial_number_concs, cloud_number_concs;
+  // Aerosol mass mixing ratios [kg aerosol / kg air]
+  std::vector<Real> interstitial_aero_mmrs, cloud_aero_mmrs;
+  // Gas mass mixing ratios [kg gas / kg air]
+  std::vector<Real> gas_mmrs;
+
+  // Fetches the parameter with the given name. If no parameter is found, this
+  // operator returns a zero value.
+  Real operator[](const std::string& param_name) const;
+};
+
+/// This exception class stores information about errors encountered in reading
+/// data from a YAML file.
+class YamlException : public std::exception {
+ public:
+  /// Constructs an exception containing the given descriptive message.
+  YamlException(const std::string& message) : _message(message) {}
+
+  const char* what() const throw() { return _message.c_str(); }
+
+ private:
+  std::string _message;
+};
+
+/// This function reads ensemble input from a YAML input file, producing a
+/// ParameterWalk object to be used for walking parameter space. If an error is
+/// encountered, this throws a skywalker::YamlException.
+/// \param [in] aerosol_config A selected modal aerosol configuration that
+///                            defines how the input is interpreted.
+/// \param [in] filename The name of the file to be read
+/// \param [in] model_impl The name of the implementation for the aerosol
+///                        model. Typically "haero" or "mam" (default: "haero")
+/// \returns A set of data and metadata used by skywalker to run a parameter
+///          study
+ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
+                            const std::string& filename,
+                            const std::string& model_impl = "haero");
+
+// Writes simulation input/output data to a Python module.
+void write_py_module(const std::vector<InputData>& inputs,
+                     const std::vector<OutputData>& outputs,
+                     const char* py_module_name);
+
+}  // namespace skywalker
+
+#endif
