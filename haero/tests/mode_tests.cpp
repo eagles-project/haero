@@ -9,7 +9,7 @@
 
 using namespace haero;
 
-/// @breif Test the following methods by calculating expected values by hand:
+/// @brief Test the following methods by calculating expected values by hand:
 /// - mean_particle_volume_from_diameter
 /// - min_vol_to_num_ratio
 /// - max_vol_to_num_ratio
