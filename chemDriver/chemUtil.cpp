@@ -11,6 +11,12 @@ chemFiles::chemFiles(std::string chemDir){
   outputFile = prefixPath + "omega.dat";
 }
 
+// chemSolver::chemSolver(SimulationInput sim_inp)
+// {
+//   k1 = sim_inp.reactions.products[]
+//   parse_problem_specific(SimulationInput sim_inp);
+// }
+
 chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
                        bool iverbose,
                        Real k1, Real k2,
@@ -76,8 +82,7 @@ chemSolver::chemSolver(std::string chemDir, bool detail, int inBatch,
 
   // this bit is a little over my head
   const ordinal_type level = 1;
-  const ordinal_type per_team_extent =
-    getWorkSpaceSize(kmcd);
+  const ordinal_type per_team_extent = getWorkSpaceSize(kmcd);
   const ordinal_type per_team_scratch =
     TChem::Scratch<real_type_1d_view>::shmem_size(per_team_extent);
   policy.set_scratch_size(level, Kokkos::PerTeam(per_team_scratch));

@@ -1,11 +1,7 @@
-#include <algorithm>
 #include <cstdarg>
 #include <yaml-cpp/yaml.h>
 #include "read_chem_input.hpp"
 #include <map>
-
-// ***TESTING***
-#include <cstdio>
 
 namespace haero {
 namespace chemDriver {
@@ -45,23 +41,28 @@ std::vector<ChemicalSpecies> read_species(const YAML::Node& root) {
   return species;
 }
 
-std::vector<EnvironmentalConditions> read_env_conditions(const YAML::Node& root) {
-  std::vector<EnvironmentalConditions> env_conditions;
+EnvironmentalConditions read_env_conditions(const YAML::Node& root) {
+  EnvironmentalConditions env_conditions;
   if (root["environmental_conditions"] and root["environmental_conditions"].IsMap()) {
     auto node = root["environmental_conditions"];
-    for (auto iter = node.begin(); iter != node.end(); ++iter) {
-      std::string name = iter->first.as<std::string>();
-      auto mnode = iter->second;
-      if (not mnode["initial_value"]) {
-        throw YamlException("environmental_conditions entry has no initial "
-                            "value (initial_value).");
-      } else if (not mnode["units"]) {
-        throw YamlException("environmental_conditions entry has no units (units).");
-      } else {
-        env_conditions.push_back(EnvironmentalConditions(name,
-                             mnode["initial_value"].as<Real>(),
-                             mnode["units"].as<std::string>()));
-      }
+    if (not node["temperature"])
+    {
+      throw YamlException("environmental_conditions contains no temperature "
+                          "entry (temperature).");
+    }
+    if (not node["pressure"])
+    {
+      throw YamlException("environmental_conditions contains no pressure "
+                          "entry (pressure).");
+    }
+    else
+    {
+      auto mnode = node["temperature"];
+      env_conditions.initial_temp = mnode["initial_value"].as<Real>();
+      env_conditions.units_temp = mnode["units"].as<std::string>();
+      mnode = node["pressure"];
+      env_conditions.initial_pressure = mnode["initial_value"].as<Real>();
+      env_conditions.units_pressure = mnode["units"].as<std::string>();
     }
   }
   else {
@@ -141,6 +142,41 @@ std::vector<Reaction> read_reactions(const YAML::Node& root) {
   return reactions;
 }
 
+// validate that the reactions only contain species that are given in the
+// species section
+void validate_reactions(SimulationInput sim_inp)
+{
+  // construct a list of species names
+  std::vector<std::string> species_list;
+  for (auto species : sim_inp.species)
+  {
+    species_list.push_back(species.name);
+  }
+  // loop over reactions
+  for (auto rxn : sim_inp.reactions)
+  {
+    // determine if reactants are in the species list vector
+    for (auto rxt : rxn.reactants)
+    {
+      // Note: find() returns vec.end() if it is not found
+      if (std::find(species_list.begin(), species_list.end(), rxt.first) == species_list.end())
+      {
+        std::string str = "Reactant " + rxt.first + " not in species list";
+        throw YamlException(str);
+      }
+    }
+    // determine if products are in the species list
+    for (auto prod : rxn.products)
+    {
+      if (std::find(species_list.begin(), species_list.end(), prod.first) == species_list.end())
+      {
+        std::string str = "Product " + prod.first + " not in species list";
+        throw YamlException(str);
+      }
+    }
+  }
+}
+
 } // anonymous namespace
 
 SimulationInput read_chem_input(const std::string& filename)
@@ -154,6 +190,8 @@ SimulationInput read_chem_input(const std::string& filename)
     sim_inp.species = read_species(root);
     sim_inp.env_conditions = read_env_conditions(root);
     sim_inp.reactions = read_reactions(root);
+    // ensure that reactions contain only products/reactants in the species list
+    validate_reactions(sim_inp);
 
     return sim_inp;
   }
