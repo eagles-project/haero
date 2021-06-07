@@ -3,13 +3,14 @@
 // and solves the chemical system using TChem.
 
 #include <cstdio>
+
 #include "chemDriver.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_session.hpp"
 #include "haero/haero.hpp"
+#include "haero/physical_constants.hpp"
 #include "read_chem_input.hpp"
 #include "tests/toy-problem/toy_problem.hpp"
-#include "haero/physical_constants.hpp"
 
 using namespace std;
 using namespace haero;
@@ -49,9 +50,9 @@ int main(int argc, const char** argv) {
 
   ekat::initialize_ekat_session(argc, const_cast<char**>(argv), true);
   {
-
     // this creates the toy-problem-specific input file for TChem
-    // FIXME: learn more about this and whether they've switched to the yaml input spec
+    // FIXME: learn more about this and whether they've switched to the yaml
+    // input spec
     create_chem_files();
     ChemSolver chem_solver(sim_input);
 

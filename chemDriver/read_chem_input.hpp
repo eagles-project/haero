@@ -8,23 +8,18 @@ namespace chemDriver {
 
 /// This exception class stores information about errors encountered in reading
 /// data from a YAML file.
-class YamlException: public std::exception {
-  public:
-
+class YamlException : public std::exception {
+ public:
   /// Constructs an exception containing the given descriptive message.
-  YamlException(const std::string& message):
-    _message(message) {}
+  YamlException(const std::string& message) : _message(message) {}
 
   /// Constructs an exception containing the given formatting string and
   /// C-style variadic arguments (a la printf).
   YamlException(const char* fmt, ...);
 
-  const char* what() const throw() {
-    return _message.c_str();
-  }
+  const char* what() const throw() { return _message.c_str(); }
 
-  private:
-
+ private:
   std::string _message;
 };
 
@@ -32,10 +27,10 @@ class YamlException: public std::exception {
 // /// is encountered, this throws a YamlException. The input spec for the YAML
 // /// file is documented in Haero's design document.
 // /// \param [in] filename The name of the file to be read.
-// /// \returns A vector containing one or more sets of simulation input read from
-// ///          the file.
+// /// \returns A vector containing one or more sets of simulation input read
+// /// from the file.
 SimulationInput read_chem_input(const std::string& filename);
 
-} // namespace chemDriver
-} // namespace haero
+}  // namespace chemDriver
+}  // namespace haero
 #endif

@@ -1,13 +1,14 @@
 #include "toy_problem.hpp"
+
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #include <cstdio>
 
 namespace haero {
 namespace chemDriver {
 
 void create_chem_files() {
-
   // Write out some test data to our current working directory.
   const char* chem_inp = R"INPUT(ELEMENTS
 X /1/
@@ -36,9 +37,7 @@ END
   fclose(f);
   f = fopen("therm.dat", "w");
   fclose(f);
-
 }
 
-} // namespace chemDriver
-} // namespace haero
-
+}  // namespace chemDriver
+}  // namespace haero

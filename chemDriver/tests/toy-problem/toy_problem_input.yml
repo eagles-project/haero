@@ -1,10 +1,4 @@
 
-toy_problem_inputs:
-  lat_zenith: 20.0
-  lon_zenith: 300.0
-  lat_column: 20.0
-  lon_column: 37.5
-
 tchem_inputs:
   detail: false
   nbatch: 2

@@ -1,20 +1,21 @@
+#include "toy_problem.hpp"
+
 #include "catch2/catch.hpp"
 #include "chemDriver/chemDriver.hpp"
-#include "toy_problem.hpp"
 #include "chemDriver/read_chem_input.hpp"
 #include "haero/floating_point.hpp"
 
 using namespace haero;
 using namespace haero::chemDriver;
 
-TEST_CASE("TChem tendency computation tests", "haero_unit_tests"){
-
+TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
   SimulationInput sim_input = read_chem_input("toy_problem_input.yml");
   // this creates the toy-problem-specific input file for TChem
-      // FIXME: learn more about this and whether they've switched to the yaml input spec
+  // FIXME: learn more about this and whether they've switched to the yaml input
+  // spec
   create_chem_files();
 
-  SECTION("light side of terminator"){
+  SECTION("light side of terminator") {
     {
       ChemSolver chem_solver(sim_input);
 
@@ -43,8 +44,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests"){
     }
   }
 
-  SECTION("zero tendencies"){
-
+  SECTION("zero tendencies") {
     // calculate initial X2 concentration such that tendencies will be zero
     Real initX = sim_input.species[0].initial_value;
     Real k1 = sim_input.reactions[0].rate_coefficients["A"];
@@ -74,15 +74,12 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests"){
                                       FloatingPoint<Real>::zero_tol));
     REQUIRE(FloatingPoint<Real>::zero(val01 - val11,
                                       FloatingPoint<Real>::zero_tol));
-
   }
 
-  SECTION("dark side of terminator"){
-
+  SECTION("dark side of terminator") {
     // change the k1 reaction rate to zero, corresponding to column on dark side
     sim_input.reactions[0].rate_coefficients["A"] = 0.0;
     {
-
       ChemSolver chem_solver(sim_input);
 
       // run the problem on device
@@ -109,6 +106,4 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests"){
                                         FloatingPoint<Real>::zero_tol));
     }
   }
-
 }
-

@@ -6,7 +6,7 @@ namespace chemDriver {
 
 void create_chem_files();
 
-} // namespace chemDriver
-} // namespace haero
+}  // namespace chemDriver
+}  // namespace haero
 
 #endif
