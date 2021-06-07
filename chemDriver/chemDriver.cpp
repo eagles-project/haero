@@ -1,5 +1,6 @@
 #include "chemDriver.hpp"
 
+#include <cstdarg>
 #include <cstdio>
 
 #include "haero/physical_constants.hpp"
