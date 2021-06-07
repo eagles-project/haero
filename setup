@@ -185,7 +185,7 @@ BUILD_TYPE=Debug
 #-----------------------------------------------------------------------------
 #                     Build the standalone haero driver?
 #-----------------------------------------------------------------------------
-# Choose one of the foillowing.
+# Choose one of the following.
 
 # Build the standalone driver for haero.
 BUILD_DRIVER=ON
@@ -196,7 +196,7 @@ BUILD_DRIVER=ON
 #-----------------------------------------------------------------------------
 #                     Build the standalone chem driver?
 #-----------------------------------------------------------------------------
-# Choose one of the foillowing.
+# Choose one of the following.
 
 # Build the chem driver for haero.
 BUILD_CHEM_DRIVER=ON

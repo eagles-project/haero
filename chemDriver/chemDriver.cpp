@@ -37,18 +37,26 @@ YamlException::YamlException(const char* fmt, ...) {
   va_end(args);
   _message.assign(ss);
 }
-}  // namespace
+}  // end anonymous namespace
 
+/// ChemicalSpecies constructor
 ChemicalSpecies::ChemicalSpecies(std::string mname, Real minitial_value,
                                  std::string munits)
     : name(mname), initial_value(minitial_value), units(munits) {}
 
+/// EnvironmentalConditions constructor
 EnvironmentalConditions::EnvironmentalConditions(Real T0, std::string T_units,
                                                  Real P0, std::string P_units)
     : initial_temp(T0),
       units_temp(T_units),
       initial_pressure(P0),
       units_pressure(P_units) {}
+
+/// Reaction constructor: enumerates the reaction type and sets default rate
+/// coefficients if values are not provided in the yaml input
+/// NOTE: the default values correspond to those used by MusicBox
+// FIXME: currently only have arrhenius and troe, but we'll cross that bridge
+// when we come to it
 Reaction::Reaction(std::string mtype_str,
                    std::map<std::string, Real> mreactants,
                    std::map<std::string, Real> mproducts,
@@ -59,7 +67,11 @@ Reaction::Reaction(std::string mtype_str,
   // use the type string to set the enumerated type for the reaction and assign
   // the rate coefficients, either based on input or to default values
   if (type_str.compare("arrhenius") == 0) {
+    // assign the corresponding enum
     type = arrhenius;
+    // determine whether a rate coefficient was provided by the input yaml
+    // if not, assign that coefficient the default value
+    // Note: find() returns vec.end() if it is not found
     rate_coefficients["A"] =
         (mrate_coefficients.find("A") != mrate_coefficients.end())
             ? mrate_coefficients["A"]
@@ -120,12 +132,19 @@ Reaction::Reaction(std::string mtype_str,
   }
 }
 
+/// ChemSolver constructor: initializes all the required views on device and
+/// sets some kokkos-related parameters
 ChemSolver::ChemSolver(SimulationInput& sim_inp)
     : reactions(sim_inp.reactions) {
+  // parse the tchem section of the input yaml
   parse_tchem_inputs(sim_inp);
 
+  // set the kokkos parallel policy
+  // FIXME: determine whether this lines up with the overall haero goals, as
+  // what's here was copied over from the TChem implementation
   policy = policy_type(TChem::exec_space(), nBatch, Kokkos::AUTO());
 
+  // set the temp and pressure that we got from the simulation input
   temperature = sim_inp.env_conditions.initial_temp;
   pressure = sim_inp.env_conditions.initial_pressure;
   units_temp = sim_inp.env_conditions.units_temp;
@@ -143,14 +162,16 @@ ChemSolver::ChemSolver(SimulationInput& sim_inp)
   Kokkos::deep_copy(state, state_host);
 
   // optionally print some configuration info
-  // (note: this doesn't appear to do anything when compiled in serial)
-  TChem::exec_space::print_configuration(std::cout, detail);
-  TChem::host_exec_space::print_configuration(std::cout, detail);
+  // (note: this doesn't appear to do anything when compiled for serial)
+  if (verbose) {
+    TChem::exec_space::print_configuration(std::cout, verbose);
+    TChem::host_exec_space::print_configuration(std::cout, verbose);
+  }
 
-  // construct kmd and use the view for testing
+  // construct the KMD object
   kmd = TChem::KineticModelData(cfiles.chemFile, cfiles.thermFile);
   std::ofstream output(cfiles.thermFile);
-  // create a const version
+  // create a const version, as required by TChem/kokkos
   kmcd = kmd.createConstData<TChem::exec_space>();
 
   // initialize omega (tendency output)
@@ -165,6 +186,7 @@ ChemSolver::ChemSolver(SimulationInput& sim_inp)
   policy.set_scratch_size(level, Kokkos::PerTeam(per_team_scratch));
 }
 
+/// print summary information about ChemSolver, as it relates to TChem
 void ChemSolver::print_summary(const ChemFiles& cfiles) {
   printf("---------------------------------------------------\n");
   printf(
@@ -178,11 +200,13 @@ void ChemSolver::print_summary(const ChemFiles& cfiles) {
          t_device_batch / Real(nBatch));
 }  // end ChemSolver::print_summary
 
-real_type_2d_view ChemSolver::get_results() {
+/// get
+real_type_2d_view ChemSolver::get_tendencies() {
   // reset timer
   timer.reset();
 
-  // calculate the reaction rates
+  // calculate the reaction rates (based on current temp/pressure and the given
+  // rate coefficients)
   set_reaction_rates();
 
   // run the model
@@ -195,7 +219,7 @@ real_type_2d_view ChemSolver::get_results() {
     auto omega_host = Kokkos::create_mirror_view(omega);
     Kokkos::deep_copy(omega_host, omega);
 
-    /// all values are same (print only the first one)
+    /// print the first (of nBatch) values
     {
       auto omega_host_at_0 = Kokkos::subview(omega_host, 0, Kokkos::ALL());
       TChem::Test::writeReactionRates(cfiles.outputFile, kmcd.nSpec,
@@ -203,18 +227,16 @@ real_type_2d_view ChemSolver::get_results() {
     }
   }
   return omega;
-}  // end ChemSolver::get_results
+}  // end ChemSolver::get_tendencies
 
+/// get the TChem-specific inputs from the input yaml
 void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
   // Try to load the input from the yaml file
   try {
     auto root = YAML::LoadFile(sim_inp.input_file);
     if (root["tchem_inputs"] and root["tchem_inputs"].IsMap()) {
       auto node = root["tchem_inputs"];
-      if (not node["detail"]) {
-        throw YamlException(
-            "problem specific entry has no detail boolean (detail).");
-      } else if (not node["nbatch"]) {
+      if (not node["nbatch"]) {
         throw YamlException(
             "problem specific entry does not specify number "
             "of batches (nbatch).");
@@ -222,7 +244,6 @@ void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
         throw YamlException(
             "problem specific entry has no verbose boolean (verbose).");
       } else {
-        detail = node["detail"].as<bool>();
         nBatch = node["nbatch"].as<int>();
         verbose = node["verbose"].as<bool>();
       }
@@ -236,10 +257,20 @@ void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
   }
 }
 
+/// set the reaction rates, given the coefficient from input and the current
+/// temperature and pressure
+// FIXME: currently the ordering here corresponds to the hard-coded input files
+// that are generated in toy_problem.cpp (and consequently the input yaml)
+// --will probably have to be careful when we update the TChem input file
+// handling
+// FIXME: may want to consider doing this in parallel, closer to the tendency
+// calculations, depending on how we intend to parallelize over batches in haero
+// FIXME: make this work for Troe reactions, when the time comes
 void ChemSolver::set_reaction_rates() {
   int nRxn = reactions.size();
   std::vector<Real> rxn_rate(nRxn);
 
+  // make the rate calculation for each reaction in the reactions vector
   for (int i = 0; i < nRxn; ++i) {
     switch (reactions[i].type) {
       case arrhenius: {
@@ -253,6 +284,7 @@ void ChemSolver::set_reaction_rates() {
                       pow((temperature / D), B) * (1.0 + E * pressure);
         break;
       }
+      // FIXME: WIP
       case troe: {
         rxn_rate[i] = 2.5;
         break;
@@ -269,7 +301,7 @@ void ChemSolver::set_reaction_rates() {
   auto kfor_host = Kokkos::create_mirror_view(kfor);
   auto krev_host = Kokkos::create_mirror_view(krev);
 
-  // assign the constructor arguments to the corresponding mirror view
+  // assign the calculated rates to the corresponding mirror view
   for (int i = 0; i < nBatch; ++i) {
     for (int j = 0; j < nRxn; ++j) {
       kfor_host(i, j) = rxn_rate[j];
@@ -282,6 +314,7 @@ void ChemSolver::set_reaction_rates() {
   Kokkos::deep_copy(krev, krev_host);
 }
 
+/// ChemSolver destructor that removes the temporary TChem input files from disk
 ChemSolver::~ChemSolver() {
   // delete the temporary chem files
   // NOTE: for now, removing the output file, too
@@ -290,11 +323,11 @@ ChemSolver::~ChemSolver() {
   remove(cfiles.outputFile.data());
 }
 
-}  // namespace chemDriver
-}  // namespace haero
+}  // end namespace chemDriver
+}  // end namespace haero
 
 /*
-***NOTE: everything in this namespace is copied directly from TChem***
+NOTE: everything in this namespace is copied directly from TChem
 */
 namespace from_tchem {
 
@@ -423,11 +456,11 @@ KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
   team_invoke_detail(member, X, omega, kfor, krev, ropFor, ropRev, iter, kmcd);
 }
 
-template <typename PolicyType,
-          // typename RealType1DViewType,
-          typename RealType2DViewType, typename KineticModelConstType>
+template <typename PolicyType, typename RealType2DViewType,
+          typename KineticModelConstType>
 //
-void SourceTermToyProblem_TemplateRun(  /// input
+void SourceTermToyProblem_TemplateRun(
+    /// input
     const std::string& profile_name,
     /// team size setting
     const PolicyType& policy, const RealType2DViewType& kfor,
@@ -463,7 +496,8 @@ void SourceTermToyProblem_TemplateRun(  /// input
   Kokkos::Profiling::popRegion();
 }
 
-void SourceTermToyProblem::runDeviceBatch(  /// input
+void SourceTermToyProblem::runDeviceBatch(
+    /// input
     typename UseThisTeamPolicy<exec_space>::type& policy,
     const real_type_2d_view& kfor, const real_type_2d_view& krev,
     const real_type_2d_view& state,
@@ -477,4 +511,4 @@ void SourceTermToyProblem::runDeviceBatch(  /// input
       policy, kfor, krev, state, SourceTermToyProblem, kmcd);
 }
 
-}  // namespace from_tchem
+}  // end namespace from_tchem

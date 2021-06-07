@@ -9,18 +9,22 @@ using namespace haero;
 using namespace haero::chemDriver;
 
 TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
+  /// create the SimulationInput object by parsing the yaml file
   SimulationInput sim_input = read_chem_input("toy_problem_input.yml");
-  // this creates the toy-problem-specific input file for TChem
+
+  // this function creates the toy-problem-specific (chemkin?) input file for
+  // TChem
   // FIXME: learn more about this and whether they've switched to the yaml input
   // spec
   create_chem_files();
 
   SECTION("light side of terminator") {
     {
+      // create the ChemSolver object
       ChemSolver chem_solver(sim_input);
 
       // run the problem on device
-      real_type_2d_view results = chem_solver.get_results();
+      real_type_2d_view results = chem_solver.get_tendencies();
 
       // create mirror view and deep copy to host
       auto results_host = Kokkos::create_mirror_view(results);
@@ -51,10 +55,11 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     Real k2 = sim_input.reactions[1].rate_coefficients["A"];
     sim_input.species[1].initial_value = (k2 / k1) * pow(initX, 2);
 
+    // create the ChemSolver object
     ChemSolver chem_solver(sim_input);
 
     // run the problem on device
-    real_type_2d_view results = chem_solver.get_results();
+    real_type_2d_view results = chem_solver.get_tendencies();
 
     // create mirror view and deep copy to host
     auto results_host = Kokkos::create_mirror_view(results);
@@ -83,7 +88,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       ChemSolver chem_solver(sim_input);
 
       // run the problem on device
-      real_type_2d_view results = chem_solver.get_results();
+      real_type_2d_view results = chem_solver.get_tendencies();
 
       // create mirror view and deep copy to host
       auto results_host = Kokkos::create_mirror_view(results);

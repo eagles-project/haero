@@ -17,12 +17,22 @@ YamlException::YamlException(const char* fmt, ...) {
   _message.assign(ss);
 }
 
+/// anonymous namespace containing the read_xxx() functions that are used by
+/// the read_chem_input() function to build a SimulationInput object
 namespace {
 
+/// Note that all of the read_xxx() functions work in more or less the same way.
+/// As such, only the first is rigorously commented.
+
+/// function to read a number of species and extract their name, initial value,
+/// and units
 std::vector<ChemicalSpecies> read_species(const YAML::Node& root) {
+  // create a blank vector of ChemicalSpecies
   std::vector<ChemicalSpecies> species;
+  // do we have a species section in the input file?
   if (root["species"] and root["species"].IsMap()) {
     auto node = root["species"];
+    // loop over the provided number of species
     for (auto iter = node.begin(); iter != node.end(); ++iter) {
       std::string name = iter->first.as<std::string>();
       auto mnode = iter->second;
@@ -32,6 +42,8 @@ std::vector<ChemicalSpecies> read_species(const YAML::Node& root) {
       } else if (not mnode["units"]) {
         throw YamlException("species entry has no units (units).");
       } else {
+        // call the ChemicalSpecies constructor with the necessary info from the
+        // input yaml and insert it into the vector
         species.push_back(ChemicalSpecies(name,
                                           mnode["initial_value"].as<Real>(),
                                           mnode["units"].as<std::string>()));
@@ -43,6 +55,8 @@ std::vector<ChemicalSpecies> read_species(const YAML::Node& root) {
   return species;
 }
 
+/// function to read the environmental conditions (temperature and pressure),
+/// and extract their initial value and units
 EnvironmentalConditions read_env_conditions(const YAML::Node& root) {
   EnvironmentalConditions env_conditions;
   if (root["environmental_conditions"] and
@@ -71,6 +85,10 @@ EnvironmentalConditions read_env_conditions(const YAML::Node& root) {
   return env_conditions;
 }
 
+/// function to read a number of reactions and extract the reactants, products,
+/// and rate coefficients
+/// Note that each of these fields is a map between a string value (name) and
+/// the corresponding coefficient (stoichiometric or rate)
 std::vector<Reaction> read_reactions(const YAML::Node& root) {
   std::vector<Reaction> reactions;
   std::map<std::string, Real> mreactants;
@@ -130,8 +148,8 @@ std::vector<Reaction> read_reactions(const YAML::Node& root) {
   return reactions;
 }
 
-// validate that the reactions only contain species that are given in the
-// species section
+//  function to validate that the reactions only contain species that are given
+/// in the species section
 void validate_reactions(SimulationInput sim_inp) {
   // construct a list of species names
   std::vector<std::string> species_list;
@@ -149,7 +167,7 @@ void validate_reactions(SimulationInput sim_inp) {
         throw YamlException(str);
       }
     }
-    // determine if products are in the species list
+    // determine if products are in the species list vector
     for (auto prod : rxn.products) {
       if (std::find(species_list.begin(), species_list.end(), prod.first) ==
           species_list.end()) {
@@ -160,15 +178,19 @@ void validate_reactions(SimulationInput sim_inp) {
   }
 }
 
-}  // anonymous namespace
+}  // end anonymous namespace
 
+/// function to read the chemistry input yaml file and construct a
+/// SimulationInput object from what is found there
 SimulationInput read_chem_input(const std::string& filename) {
   // Try to load the input from the yaml file
   try {
     auto root = YAML::LoadFile(filename);
 
     SimulationInput sim_inp;
+    // save the filename for use by the ChemSolver
     sim_inp.input_file = filename;
+    // get the required info from the file, using the above functions
     sim_inp.species = read_species(root);
     sim_inp.env_conditions = read_env_conditions(root);
     sim_inp.reactions = read_reactions(root);
@@ -183,5 +205,5 @@ SimulationInput read_chem_input(const std::string& filename) {
   }
 }
 
-}  // namespace chemDriver
-}  // namespace haero
+}  // end namespace chemDriver
+}  // end namespace haero

@@ -37,8 +37,10 @@ void usage(const char* exe) {
   exit(1);
 }
 
-}  // anonymous namespace
+}  // end anonymous namespace
 
+// this is a work in progress--for now we just run the toy problem and print
+// the results to screen
 int main(int argc, const char** argv) {
   print_banner();
 
@@ -57,13 +59,13 @@ int main(int argc, const char** argv) {
     ChemSolver chem_solver(sim_input);
 
     // run the problem on device
-    real_type_2d_view results = chem_solver.get_results();
+    real_type_2d_view results = chem_solver.get_tendencies();
 
     // create mirror view and deep copy to host
     auto results_host = Kokkos::create_mirror_view(results);
     Kokkos::deep_copy(results_host, results);
 
-    // eq (4) tendency should be positive, eq (5) negative
+    // get the values and print to screen
     const Real val00 = results_host(0, 0);
     const Real val01 = results_host(0, 1);
     const Real val10 = results_host(1, 0);

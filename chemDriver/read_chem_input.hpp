@@ -23,14 +23,12 @@ class YamlException : public std::exception {
   std::string _message;
 };
 
-// /// This function reads simulation input from a YAML input file. If an error
-// /// is encountered, this throws a YamlException. The input spec for the YAML
-// /// file is documented in Haero's design document.
-// /// \param [in] filename The name of the file to be read.
-// /// \returns A vector containing one or more sets of simulation input read
-// /// from the file.
+/// This function reads simulation input from a YAML input file. If an error
+/// is encountered, this throws a YamlException.
+/// \param [in] filename The name of the file to be read.
+/// \returns SimulationInput object that is meant to be passed to ChemSolver
 SimulationInput read_chem_input(const std::string& filename);
 
-}  // namespace chemDriver
-}  // namespace haero
+}  // end namespace chemDriver
+}  // end namespace haero
 #endif
