@@ -49,6 +49,8 @@ class chemSolver{
     Kokkos::Impl::Timer timer;
     // the below are required for the call to get_results()
     // *-----------------------------------------------------------------------*
+    // lat/lon views
+    real_type_1d_view theta, lambda;
     // 2D views containing chemical state, and omega for tendency results
     real_type_2d_view state, omega, reactRate;
     // TChem kinetic model data
@@ -62,6 +64,7 @@ class chemSolver{
   public:
     // constructor
     chemSolver(std::string chemDir, bool detail, int inBatch, bool iverbose,
+               Real itheta, Real ilambda,
                Real k1, Real k2,
                Real initX, Real initX2);
     // runs chemical model and saves the results (tendencies) to the output file
@@ -86,6 +89,8 @@ namespace from_tchem {
     //
     static void runDeviceBatch( /// input
       typename UseThisTeamPolicy<exec_space>::type& policy,
+      const real_type_1d_view& theta,
+      const real_type_1d_view& lambda,
       const real_type_2d_view& reactRate,
       const real_type_2d_view& state,
       /// output
