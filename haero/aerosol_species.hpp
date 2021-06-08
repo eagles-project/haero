@@ -105,7 +105,7 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
                                               "marine organic matter"};
   const std::vector<std::string> aer_symbs = {"SO4", "POM",  "SOA", "BC",
                                               "DST", "NaCl", "MOM"};
-  const std::vector<Real> aer_mw = {115.107, 12.011,  12.011, 12.011,
+  const std::vector<Real> aer_mw = { 96.060, 12.011,  12.011, 12.011,
                                     135.064, 58.4425, 250093};
   const std::vector<Real> aer_dens = {1770, 1000, 1000, 1700, 2600, 1900, 1601};
   const std::vector<Real> aer_hygro = {0.507, 1e-10, 0.14, 1e-10,
