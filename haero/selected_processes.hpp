@@ -90,6 +90,25 @@ struct SelectedProcesses final {
   /// The selected nucleation model
   Nucleation nucleation;
 
+
+  /// Available process models for nucleation, in which interstitial aerosol
+  /// mass is formed by gathering condensed vapor from surrounding gas.
+  enum Calcsize {
+    /// MAM legacy C++ nucleation process
+    MAMCalcsize,
+#if HAERO_FORTRAN
+    /// MAM legacy Fortran nucleation process
+    MAMFCalcsize,
+#endif
+    /// No nucleation process
+    NoCalcsize
+  };
+  /// The selected nucleation model
+  Calcsize calcsize;
+
+
+
+
   /// Available process models for resuspension, in which cloud-borne aerosol
   /// particles are converted to interstitial aerosols.
   enum Resuspension {

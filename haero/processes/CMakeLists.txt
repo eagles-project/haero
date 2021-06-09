@@ -4,6 +4,7 @@
 # files that implement aerosol prognostic and diagnostic processes.
 set(CXX_PROCESS_SOURCES
     mam_nucleation_process.cpp
+    mam_calcsize_process.cpp
 )
 
 # Prepend processes/ to each source file and transmit HAERO_PROCESSES upward.
