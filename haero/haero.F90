@@ -353,7 +353,6 @@ contains
 
     integer(c_int), value, intent(in) :: num_modes
 
-
     model%num_modes = num_modes
     allocate(model%modes(num_modes))
     allocate(model%num_mode_species(num_modes))
@@ -390,6 +389,7 @@ contains
     model%modes(mode)%log_sigma = log(std_dev)
     model%modes(mode)%rhdeliq = rhdeliq
     model%modes(mode)%rhcrystal = rhcrystal
+
   end subroutine
 
   subroutine haerotran_set_aero_species(mode, species, name, symbol, &
