@@ -147,6 +147,11 @@ subroutine init(model)
   type(aerosol_species_t) so4, nh4
   integer :: m
 
+  ! Make this multiply callable.  No check
+  ! is done that the lengths have not changed.
+  ! This needs to be done for unit testing when
+  ! the order and number of tests run is unknown
+  ! so each test needs to be able to call init.
   if (.not. allocated(dgnum_aer)) then 
     ! Extract mode properties.
     allocate(dgnum_aer(model%num_modes))

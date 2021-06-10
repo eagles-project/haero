@@ -98,13 +98,12 @@ inline std::vector<GasSpecies> create_mam4_gas_species() {
       "trichlorofluoromethane",
       "dichlorodifluoromethane",
       "NH3"};
-  const std::vector<std::string> gsymbs = {"O3",  "H2O2", "H2SO4", "SO2",
-                                           "DMS", "SOAG", "O2",    "CO2",
-                                           "N2O", "CH4",  "CFC11", "CFC12",
-                                           "NH3"};
-  const std::vector<Real> gmws = {47.9982, 34.0136, 98.0784, 64.0648,
-                                  62.1324, 12.011,  31.988,  44.009,
-                                  44.013,  16.04,   137.37,  120.91, 50.0};
+  const std::vector<std::string> gsymbs = {
+      "O3",  "H2O2", "H2SO4", "SO2",   "DMS",   "SOAG", "O2",
+      "CO2", "N2O",  "CH4",   "CFC11", "CFC12", "NH3"};
+  const std::vector<Real> gmws = {47.9982, 34.0136, 98.0784, 64.0648, 62.1324,
+                                  12.011,  31.988,  44.009,  44.013,  16.04,
+                                  137.37,  120.91,  50.0};
   static constexpr Real g_to_kg = 0.001;
   std::vector<GasSpecies> result;
   for (int i = 0; i < gnames.size(); ++i) {

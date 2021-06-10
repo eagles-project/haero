@@ -59,7 +59,7 @@ class MAMNucleationProcess : public AerosolProcess {
 
   const Real onethird = 1.0 / 3.0;
 
-  //min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3,
+  // min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3,
   const Real qh2so4_cutoff = 4.0e-16;
 
   // The index of the Aitken mode
@@ -89,9 +89,8 @@ class MAMNucleationProcess : public AerosolProcess {
   //  1=merikanto et al (2007) ternary   2=vehkamaki et al (2002) binary
   // 11=merikanto ternary + first-order boundary layer
   // 12=merikanto ternary + second-order boundary layer
-  const int  newnuc_method_flagaa = 11;
+  const int newnuc_method_flagaa = 11;
   // integer, parameter :: newnuc_method_flagaa = 12
-
 
   /// arguments (out) computed in call to function mer07_veh02_nuc_mosaic_1box
   ///    these are used to duplicate the outputs of yang zhang's original test
@@ -109,16 +108,16 @@ class MAMNucleationProcess : public AerosolProcess {
   /// Real  radius_cluster the radius of cluster (nm)
 
   // The geometric mean particle diameters for all aerosol modes
-  view_1d_scalar_type  dgnum_aer;
+  view_1d_scalar_type dgnum_aer;
 
   /// The minimum particle diameters for all aerosol modes
-  view_1d_scalar_type  dgnumlo_aer;
+  view_1d_scalar_type dgnumlo_aer;
 
   /// The maximum particle diameters for all aerosol modes
-  view_1d_scalar_type  dgnumhi_aer;
+  view_1d_scalar_type dgnumhi_aer;
 
   // The mass density of SO4 aerosol as assumed by the host atm model
-  const Real dens_so4a_host = 1.0; // FIXME
+  const Real dens_so4a_host = 1.0;  // FIXME
 
   // The molecular weight of NH4 aerosol as assumed by the host atm model
   Real mw_nh4a_host;
@@ -129,33 +128,29 @@ class MAMNucleationProcess : public AerosolProcess {
  public:
   MAMNucleationProcess();
 
-  
-  MAMNucleationProcess(
-    const AerosolProcessType type, 
-    const std::string& name,
-    const ModalAerosolConfig &config) :
-    AerosolProcess(type, name),
-    dgnum_aer  ("mean particle diameters", config.num_modes()),
-    dgnumlo_aer("minimum particle diameters", config.num_modes()),
-    dgnumhi_aer("maximum particle diameters", config.num_modes())
-  {
+  MAMNucleationProcess(const AerosolProcessType type, const std::string &name,
+                       const ModalAerosolConfig &config)
+      : AerosolProcess(type, name),
+        dgnum_aer("mean particle diameters", config.num_modes()),
+        dgnumlo_aer("minimum particle diameters", config.num_modes()),
+        dgnumhi_aer("maximum particle diameters", config.num_modes()) {
     {
       auto dgum = Kokkos::create_mirror_view(dgnum_aer);
-      for (int m=0; m<config.num_modes(); ++m) 
+      for (int m = 0; m < config.num_modes(); ++m)
         dgum(m) = config.h_aerosol_modes(m).mean_std_dev;
-       Kokkos::deep_copy(dgnum_aer, dgum);
+      Kokkos::deep_copy(dgnum_aer, dgum);
     }
     {
       auto dgumlo = Kokkos::create_mirror_view(dgnumlo_aer);
-      for (int m=0; m<config.num_modes(); ++m) 
+      for (int m = 0; m < config.num_modes(); ++m)
         dgumlo(m) = config.h_aerosol_modes(m).min_diameter;
-       Kokkos::deep_copy(dgnumlo_aer, dgumlo);
+      Kokkos::deep_copy(dgnumlo_aer, dgumlo);
     }
     {
       auto dgumhi = Kokkos::create_mirror_view(dgnumhi_aer);
-      for (int m=0; m<config.num_modes(); ++m) 
+      for (int m = 0; m < config.num_modes(); ++m)
         dgumhi(m) = config.h_aerosol_modes(m).max_diameter;
-       Kokkos::deep_copy(dgnumhi_aer, dgumhi);
+      Kokkos::deep_copy(dgnumhi_aer, dgumhi);
     }
     nait = config.aerosol_mode_index("aitken");
     iaer_so4 = config.aerosol_species_index(nait, "SO4");
@@ -175,7 +170,7 @@ class MAMNucleationProcess : public AerosolProcess {
         adjust_factor_bin_tern_ratenucl(pp.adjust_factor_bin_tern_ratenucl),
         igas_h2so4(pp.igas_h2so4),
         igas_nh3(pp.igas_nh3),
-        iaer_so4(pp.iaer_so4) { }
+        iaer_so4(pp.iaer_so4) {}
 
   /// MAMNucleationProcess objects are not assignable.
   AerosolProcess &operator=(const MAMNucleationProcess &) = delete;
@@ -190,7 +185,7 @@ class MAMNucleationProcess : public AerosolProcess {
   virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
                    Real dt, const Prognostics &prognostics,
                    const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-                   Tendencies &tendencies) const override {};
+                   Tendencies &tendencies) const override{};
 
   /// Set the Adjustment factor for nucleation rate corrected for the planetary
   /// boundary layer.  This is used in calculating the boundary nucleation rate
@@ -210,15 +205,15 @@ class MAMNucleationProcess : public AerosolProcess {
     newnuc_adjust_factor_dnaitdt = v;
   }
 
-
   /// Computes tendencies due to aerosol nucleation (new particle formation).
   /// Treats both nucleation and subsequent growth of new particles to aitken
   /// mode size. Uses the following parameterizations:
-  /// * Vehkamaki et al. (2002), parameterization for binary homogeneous nucleation
+  /// * Vehkamaki et al. (2002), parameterization for binary homogeneous
+  /// nucleation
   ///   (h2so4-h2o)
-  /// * Kerminen and Kulmala (2002), parameterization for new particle loss during
+  /// * Kerminen and Kulmala (2002), parameterization for new particle loss
+  /// during
   ///   growth to aitken size
-
 
   ///   @param [in]   deltat            model timestep (s)
   ///   @param [in]   temp              temperature (K)
@@ -232,35 +227,24 @@ class MAMNucleationProcess : public AerosolProcess {
   ///   @param [in]    qnum_cur         Modal number concentration buffer
   ///   @param [in]    qaer_cur         Modal aerosol mixing ratios buffer
   ///   @param [in]    qwtr_cur         Modal water content buffer
-  ///   @param [out]   dndt_ait         number nuc rate (#/kmol-air/s) from number nuc amt
-  ///   @param [out]   dmdt_ait         mass nuc rate (kg/kmol-air/s) from mass nuc amts
+  ///   @param [out]   dndt_ait         number nuc rate (#/kmol-air/s) from
+  ///   number nuc amt
+  ///   @param [out]   dmdt_ait         mass nuc rate (kg/kmol-air/s) from mass
+  ///   nuc amts
   ///   @param [out]   dso4dt_ait       (kmol/kmol-air/s)
   ///   @param [out]   dnh4dt_ait       (kmol/kmol-air/s)
   ///   @param [in/out] nclusterdt      cluster nucleation rate (#/m3/s)
 
   template <typename Pack>
   KOKKOS_INLINE_FUNCTION void compute_tendencies(
-    const Real deltat,
-    const Pack temp,
-    const Pack pmid,
-    const Pack aircon,
-    const Pack zmid,
-    const Pack pblh,
-    const Pack relhum,
-    const Pack uptkrate_h2so4,
-    const Pack del_h2so4_gasprod,
-    const Pack del_h2so4_aeruptk,
-    const view_1d_pack_type qgas_cur,
-    const view_1d_pack_type qgas_avg,
-    const view_1d_pack_type qnum_cur,
-    const view_2d_pack_type qaer_cur,
-    const view_1d_pack_type qwtr_cur,
-    Pack &dndt_ait,
-    Pack &dmdt_ait,
-    Pack &dso4dt_ait,
-    Pack &dnh4dt_ait,
-    Pack &dnclusterdt) const {
-
+      const Real deltat, const Pack temp, const Pack pmid, const Pack aircon,
+      const Pack zmid, const Pack pblh, const Pack relhum,
+      const Pack uptkrate_h2so4, const Pack del_h2so4_gasprod,
+      const Pack del_h2so4_aeruptk, const view_1d_pack_type qgas_cur,
+      const view_1d_pack_type qgas_avg, const view_1d_pack_type qnum_cur,
+      const view_2d_pack_type qaer_cur, const view_1d_pack_type qwtr_cur,
+      Pack &dndt_ait, Pack &dmdt_ait, Pack &dso4dt_ait, Pack &dnh4dt_ait,
+      Pack &dnclusterdt) const {
     using Mask = ekat::Mask<Pack::n>;
     static const Real pi = constants::pi;
     dndt_ait = 0.0;
@@ -274,49 +258,47 @@ class MAMNucleationProcess : public AerosolProcess {
     // qh2so4_avg = average qh2so4 over time-step
     const Pack qh2so4_cur = qgas_cur[igas_h2so4];
 
-    Mask qh2so4_le_cutoff(false); 
-    if (gaexch_h2so4_uptake_optaa == 1 &&
-        newnuc_h2so4_conc_optaa   == 1) {
+    Mask qh2so4_le_cutoff(false);
+    if (gaexch_h2so4_uptake_optaa == 1 && newnuc_h2so4_conc_optaa == 1) {
       // skip if h2so4 vapor < qh2so4_cutoff
       qh2so4_le_cutoff = Mask(qh2so4_cur <= qh2so4_cutoff);
     }
 
     Pack tmp_uptkrate;
-    if (gaexch_h2so4_uptake_optaa == 1 &&
-        newnuc_h2so4_conc_optaa   == 1) {
+    if (gaexch_h2so4_uptake_optaa == 1 && newnuc_h2so4_conc_optaa == 1) {
+      // estimate qh2so4_avg using the method in standard cam5.2
+      // modal_aero_newnuc
 
-      // estimate qh2so4_avg using the method in standard cam5.2 modal_aero_newnuc
-
-      const Pack tmpa = max( 0.0, del_h2so4_gasprod );
+      const Pack tmpa = max(0.0, del_h2so4_gasprod);
       Pack tmp_q3 = qh2so4_cur;
       // tmp_q2 = qh2so4 before aeruptk
       // (note tmp_q3, tmp_q2 both >= 0.0)
-      const Pack tmp_q2 = tmp_q3 + max( 0.0, -del_h2so4_aeruptk );
+      const Pack tmp_q2 = tmp_q3 + max(0.0, -del_h2so4_aeruptk);
 
       // tmpb = log( tmp_q2/tmp_q3 ) BUT with some checks added
       Pack tmpb(0.0);
       {
-        const Pack tmpc (tmp_q2 * exp( -20.0 ));
+        const Pack tmpc(tmp_q2 * exp(-20.0));
         const Mask tmp_q2_gt_tmp_q3(tmp_q2 > tmp_q3);
-        const Mask tmp_q3_le_tmpc  (tmp_q3 <= tmpc);
-        tmp_q3.set(tmp_q2_gt_tmp_q3 &&  tmp_q3_le_tmpc, tmpc);
-        tmpb.set  (tmp_q2_gt_tmp_q3 &&  tmp_q3_le_tmpc, 20.0);
-        tmpb.set  (tmp_q2_gt_tmp_q3 && !tmp_q3_le_tmpc, log( tmp_q2/tmp_q3 ));
+        const Mask tmp_q3_le_tmpc(tmp_q3 <= tmpc);
+        tmp_q3.set(tmp_q2_gt_tmp_q3 && tmp_q3_le_tmpc, tmpc);
+        tmpb.set(tmp_q2_gt_tmp_q3 && tmp_q3_le_tmpc, 20.0);
+        tmpb.set(tmp_q2_gt_tmp_q3 && !tmp_q3_le_tmpc, log(tmp_q2 / tmp_q3));
       }
       // d[ln(qh2so4)]/dt (1/s) from uptake (condensation) to aerosol
-      tmp_uptkrate = tmpb/deltat;
+      tmp_uptkrate = tmpb / deltat;
 
       // qh2so4_avg = estimated average qh2so4
       // when production & loss are done simultaneously
       {
         const Mask tmpb_le_0p1(tmpb <= 0.1);
-        Pack tmpc(!tmpb_le_0p1, tmpa/tmpb);
-        qh2so4_avg.set(tmpb_le_0p1,
-          tmp_q3*(1.0 + 0.5*tmpb) - 0.5*tmpa,
-          (tmp_q3 - tmpc)*((exp(tmpb)-1.0)/tmpb) + tmpc);
+        Pack tmpc(!tmpb_le_0p1, tmpa / tmpb);
+        qh2so4_avg.set(tmpb_le_0p1, tmp_q3 * (1.0 + 0.5 * tmpb) - 0.5 * tmpa,
+                       (tmp_q3 - tmpc) * ((exp(tmpb) - 1.0) / tmpb) + tmpc);
       }
     } else {
-      // use qh2so4_avg and first-order loss rate calculated in mam_gasaerexch_1subarea
+      // use qh2so4_avg and first-order loss rate calculated in
+      // mam_gasaerexch_1subarea
       qh2so4_avg = qgas_avg[igas_h2so4];
       tmp_uptkrate = uptkrate_h2so4;
     }
@@ -325,20 +307,20 @@ class MAMNucleationProcess : public AerosolProcess {
     Pack qnh3_cur(0.0);
     if (0 <= igas_nh3) qnh3_cur = max(0.0, qgas_cur[igas_nh3]);
     // dry-diameter limits for "grown" new particles
-    const Real dplom_mode = exp( 0.67*log(dgnumlo_aer[nait])
-                                + 0.33*log(dgnum_aer[nait]) );
+    const Real dplom_mode =
+        exp(0.67 * log(dgnumlo_aer[nait]) + 0.33 * log(dgnum_aer[nait]));
     const Real dphim_mode = dgnumhi_aer[nait];
 
     // mass1p_... = mass (kg) of so4 & nh4 in a single particle of diameter ...
     // (assuming same dry density for so4 & nh4)
     // mass1p_aitlo - dp = dplom_mode(1)
     // mass1p_aithi - dp = dphim_mode(1)
-    Pack tmpa ( dens_so4a_host*pi/6.0 );
-    const Pack mass1p_aitlo = tmpa*cube(dplom_mode);
-    const Pack mass1p_aithi = tmpa*cube(dphim_mode);
+    Pack tmpa(dens_so4a_host * pi / 6.0);
+    const Pack mass1p_aitlo = tmpa * cube(dplom_mode);
+    const Pack mass1p_aithi = tmpa * cube(dphim_mode);
 
     // limit RH to between 0.1% and 99%
-    const Pack relhumnn = max( 0.01, min( 0.99, relhum ) );
+    const Pack relhumnn = max(0.01, min(0.99, relhum));
 
     // call routine to get nucleation rates
     const int ldiagveh02 = -1;
@@ -350,47 +332,38 @@ class MAMNucleationProcess : public AerosolProcess {
     Pack qnh3_del;
     Pack dens_nh4so4a;
     mer07_veh02_nuc_mosaic_1box<Pack>(
-      newnuc_method_flagaa,
-      deltat,
-      temp,
-      relhumnn,
-      pmid,   zmid, pblh,
-      qh2so4_cur, qh2so4_avg,
-      qnh3_cur,
-      tmp_uptkrate,
-      mw_so4a_host,
-      1, 1,
-      &dplom_mode, &dphim_mode,
-      itmp,
-      qnuma_del, qso4a_del, qnh4a_del,
-      qh2so4_del, qnh3_del, dens_nh4so4a,
-      ldiagveh02, &dnclusterdt);
+        newnuc_method_flagaa, deltat, temp, relhumnn, pmid, zmid, pblh,
+        qh2so4_cur, qh2so4_avg, qnh3_cur, tmp_uptkrate, mw_so4a_host, 1, 1,
+        &dplom_mode, &dphim_mode, itmp, qnuma_del, qso4a_del, qnh4a_del,
+        qh2so4_del, qnh3_del, dens_nh4so4a, ldiagveh02, &dnclusterdt);
 
     // convert qnuma_del from (#/mol-air) to (#/kmol-air)
     qnuma_del *= 1.0e3;
 
     // number nuc rate (#/kmol-air/s) from number nuc amt
-    dndt_ait = qnuma_del/deltat;
+    dndt_ait = qnuma_del / deltat;
 
     // fraction of mass nuc going to so4
-    tmpa = mw_so4a_host*qso4a_del;
-    const Pack tmpb      = igas_nh3 > 0?  tmpa + qnh4a_del*mw_nh4a_host : tmpa;
-    const Pack tmp_frso4 = igas_nh3 > 0?  max(tmpa, 1.0e-35 )/max( tmpb, 1.0e-35 ) : 1.0;
+    tmpa = mw_so4a_host * qso4a_del;
+    const Pack tmpb = igas_nh3 > 0 ? tmpa + qnh4a_del * mw_nh4a_host : tmpa;
+    const Pack tmp_frso4 =
+        igas_nh3 > 0 ? max(tmpa, 1.0e-35) / max(tmpb, 1.0e-35) : 1.0;
 
     // mass nuc rate (kg/kmol-air/s) from mass nuc amts
-    dmdt_ait = max( 0.0, (tmpb/deltat) );
+    dmdt_ait = max(0.0, (tmpb / deltat));
 
     {
       // mirage2 code checked for complete h2so4 depletion here,
       // but this is now done in mer07_veh02_nuc_mosaic_1box
-      const Pack mass1p = dmdt_ait/dndt_ait;
+      const Pack mass1p = dmdt_ait / dndt_ait;
 
       // apply particle size constraints
       // reduce dndt to increase new particle size
-      dndt_ait.set(mass1p < mass1p_aitlo, dmdt_ait/mass1p_aitlo);
+      dndt_ait.set(mass1p < mass1p_aitlo, dmdt_ait / mass1p_aitlo);
 
       // reduce dmdt to decrease new particle size
-      dmdt_ait.set (!(mass1p < mass1p_aitlo) && mass1p > mass1p_aithi,  dndt_ait*mass1p_aithi);
+      dmdt_ait.set(!(mass1p < mass1p_aitlo) && mass1p > mass1p_aithi,
+                   dndt_ait * mass1p_aithi);
     }
     // ignore newnuc if number rate < 100 #/kmol-air/s ~= 0.3 #/mg-air/d
     dndt_ait.set(dndt_ait < 1.0e2, 0.0);
@@ -402,16 +375,16 @@ class MAMNucleationProcess : public AerosolProcess {
     dmdt_ait *= newnuc_adjust_factor_dnaitdt;
 
     // Zero out if below cutoff
-    dndt_ait   .set(qh2so4_le_cutoff,  0.0);
-    dmdt_ait   .set(qh2so4_le_cutoff,  0.0);
-    dnh4dt_ait .set(qh2so4_le_cutoff,  0.0);
-    dso4dt_ait .set(qh2so4_le_cutoff,  0.0);
-    dnclusterdt.set(qh2so4_le_cutoff,  0.0);
+    dndt_ait.set(qh2so4_le_cutoff, 0.0);
+    dmdt_ait.set(qh2so4_le_cutoff, 0.0);
+    dnh4dt_ait.set(qh2so4_le_cutoff, 0.0);
+    dso4dt_ait.set(qh2so4_le_cutoff, 0.0);
+    dnclusterdt.set(qh2so4_le_cutoff, 0.0);
 
     // dso4dt_ait, dnh4dt_ait are (kmol/kmol-air/s)
-    dso4dt_ait = dmdt_ait*tmp_frso4/mw_so4a_host;
+    dso4dt_ait = dmdt_ait * tmp_frso4 / mw_so4a_host;
     if (0.0 < mw_nh4a_host)
-      dnh4dt_ait = dmdt_ait*(1.0 - tmp_frso4)/mw_nh4a_host;
+      dnh4dt_ait = dmdt_ait * (1.0 - tmp_frso4) / mw_nh4a_host;
   }
 
   /// mer07_veh02_nuc_mosaic_1box
@@ -657,7 +630,8 @@ class MAMNucleationProcess : public AerosolProcess {
       }
     }
 
-    rateloge = rateloge + log(max(Real(1.0e-38), adjust_factor_bin_tern_ratenucl));
+    rateloge =
+        rateloge + log(max(Real(1.0e-38), adjust_factor_bin_tern_ratenucl));
 
     // do boundary layer nuc
     if ((newnuc_method_flagaa == 11) || (newnuc_method_flagaa == 12)) {
@@ -1007,9 +981,9 @@ class MAMNucleationProcess : public AerosolProcess {
       //    has very little impact on the results
       const Pack tmp_diam(rateloge_lt_tmp_rateloge,
                           radius_cluster * 2.0e-7);  // diameter in cm
-      const Pack tmp_volu(rateloge_lt_tmp_rateloge,
-                          cube(tmp_diam) *
-                              (constants::pi / 6.0));  // volume in cm^3
+      const Pack tmp_volu(
+          rateloge_lt_tmp_rateloge,
+          cube(tmp_diam) * (constants::pi / 6.0));  // volume in cm^3
       const Pack tmp_mass(rateloge_lt_tmp_rateloge,
                           tmp_volu * 1.8);  // mass in g
       cnum_h2so4.set(rateloge_lt_tmp_rateloge,
@@ -1209,10 +1183,8 @@ class MAMNucleationProcess : public AerosolProcess {
               (0.33765136625580167 * cube(t)) / square(log(c2)) -
               (629.7882041830943 * rh) / (cube(c3) * log(c2)) +
               (7.772806552631709 * rh * t) / (cube(c3) * log(c2)) -
-              (0.031974053936299256 * rh * square(t)) /
-                  (cube(c3) * log(c2)) +
-              (0.00004383764128775082 * rh * cube(t)) /
-                  (cube(c3) * log(c2)) +
+              (0.031974053936299256 * rh * square(t)) / (cube(c3) * log(c2)) +
+              (0.00004383764128775082 * rh * cube(t)) / (cube(c3) * log(c2)) +
               1200.472096232311 * log(c2) - 17.37107890065621 * t * log(c2) +
               0.08170681335921742 * square(t) * log(c2) -
               0.00012534476159729881 * cube(t) * log(c2) -
@@ -1242,30 +1214,21 @@ class MAMNucleationProcess : public AerosolProcess {
               (732006.8180571689 * square(log(c3))) / log(c2) +
               (9100.06398573816 * t * square(log(c3))) / log(c2) -
               (37.771091915932004 * square(t) * (log(c3) * log(c3))) / log(c2) +
-              (0.05235455395566905 * cube(t) * square(log(c3))) /
-                  log(c2) -
+              (0.05235455395566905 * cube(t) * square(log(c3))) / log(c2) -
               1911.0303773001353 * log(c2) * square(log(c3)) +
               23.6903969622286 * t * log(c2) * square(log(c3)) -
               0.09807872005428583 * square(t) * log(c2) * (log(c3) * log(c3)) +
-              0.00013564560238552576 * cube(t) * log(c2) *
-                  square(log(c3)) -
+              0.00013564560238552576 * cube(t) * log(c2) * square(log(c3)) -
               3180.5610833308 * cube(log(c3)) +
               39.08268568672095 * t * cube(log(c3)) -
               0.16048521066690752 * square(t) * cube(log(c3)) +
-              0.00022031380023793877 * cube(t) *
-                  cube(log(c3)) +
+              0.00022031380023793877 * cube(t) * cube(log(c3)) +
               (40751.075322248245 * cube(log(c3))) / log(c2) -
-              (501.66977622013934 * t * cube(log(c3))) /
-                  log(c2) +
-              (2.063469732254135 * square(t) * cube(log(c3))) /
-                  log(c2) -
-              (0.002836873785758324 * cube(t) *
-               cube(log(c3))) /
-                  log(c2) +
-              2.792313345723013 * square(log(c2)) *
-                  cube(log(c3)) -
-              0.03422552111802899 * t * square(log(c2)) *
-                  cube(log(c3)) +
+              (501.66977622013934 * t * cube(log(c3))) / log(c2) +
+              (2.063469732254135 * square(t) * cube(log(c3))) / log(c2) -
+              (0.002836873785758324 * cube(t) * cube(log(c3))) / log(c2) +
+              2.792313345723013 * square(log(c2)) * cube(log(c3)) -
+              0.03422552111802899 * t * square(log(c2)) * cube(log(c3)) +
               0.00014019195277521142 * square(t) * (log(c2) * log(c2)) *
                   cube(log(c3)) -
               1.9201227328396297e-7 * cube(t) * square(log(c2)) *
@@ -1282,64 +1245,60 @@ class MAMNucleationProcess : public AerosolProcess {
               0.004954549700267233 * square(t) * log(c3) * log(rh) +
               7.096309866238719e-6 * cube(t) * log(c3) * log(rh) +
               3.1712136610383244 * cube(log(c3)) * log(rh) -
-              0.037822330602328806 * t * cube(log(c3)) *
-                  log(rh) +
-              0.0001500555743561457 * square(t) * cube(log(c3)) *
-                  log(rh) -
-              1.9828365865570703e-7 * cube(t) *
-                  cube(log(c3)) * log(rh));
+              0.037822330602328806 * t * cube(log(c3)) * log(rh) +
+              0.0001500555743561457 * square(t) * cube(log(c3)) * log(rh) -
+              1.9828365865570703e-7 * cube(t) * cube(log(c3)) * log(rh));
 
-      ntot.set(
-          t_onset_gt_t,
-          57.40091052369212 - 0.2996341884645408 * t +
-              0.0007395477768531926 * square(t) - 5.090604835032423 * log(c2) +
-              0.011016634044531128 * t * log(c2) +
-              0.06750032251225707 * square(log(c2)) -
-              0.8102831333223962 * log(c3) +
-              0.015905081275952426 * t * log(c3) -
-              0.2044174683159531 * log(c2) * log(c3) +
-              0.08918159167625832 * square(log(c3)) -
-              0.0004969033586666147 * t * square(log(c3)) +
-              0.005704394549007816 * cube(log(c3)) +
-              3.4098703903474368 * j_log - 0.014916956508210809 * t * j_log +
-              0.08459090011666293 * log(c3) * j_log -
-              0.00014800625143907616 * t * log(c3) * j_log +
-              0.00503804694656905 * square(j_log));
+      ntot.set(t_onset_gt_t, 57.40091052369212 - 0.2996341884645408 * t +
+                                 0.0007395477768531926 * square(t) -
+                                 5.090604835032423 * log(c2) +
+                                 0.011016634044531128 * t * log(c2) +
+                                 0.06750032251225707 * square(log(c2)) -
+                                 0.8102831333223962 * log(c3) +
+                                 0.015905081275952426 * t * log(c3) -
+                                 0.2044174683159531 * log(c2) * log(c3) +
+                                 0.08918159167625832 * square(log(c3)) -
+                                 0.0004969033586666147 * t * square(log(c3)) +
+                                 0.005704394549007816 * cube(log(c3)) +
+                                 3.4098703903474368 * j_log -
+                                 0.014916956508210809 * t * j_log +
+                                 0.08459090011666293 * log(c3) * j_log -
+                                 0.00014800625143907616 * t * log(c3) * j_log +
+                                 0.00503804694656905 * square(j_log));
 
-      r.set(t_onset_gt_t,
-            3.2888553966535506e-10 - 3.374171768439839e-12 * t +
-                1.8347359507774313e-14 * square(t) +
-                2.5419844298881856e-12 * log(c2) -
-                9.498107643050827e-14 * t * log(c2) +
-                7.446266520834559e-13 * square(log(c2)) +
-                2.4303397746137294e-11 * log(c3) +
-                1.589324325956633e-14 * t * log(c3) -
-                2.034596219775266e-12 * log(c2) * log(c3) -
-                5.59303954457172e-13 * square(log(c3)) -
-                4.889507104645867e-16 * t * square(log(c3)) +
-                1.3847024107506764e-13 * cube(log(c3)) +
-                4.141077193427042e-15 * j_log -
-                2.6813110884009767e-14 * t * j_log +
-                1.2879071621313094e-12 * log(c3) * j_log -
-                3.80352446061867e-15 * t * log(c3) * j_log -
-                1.8790172502456827e-14 * square(j_log));
+      r.set(t_onset_gt_t, 3.2888553966535506e-10 - 3.374171768439839e-12 * t +
+                              1.8347359507774313e-14 * square(t) +
+                              2.5419844298881856e-12 * log(c2) -
+                              9.498107643050827e-14 * t * log(c2) +
+                              7.446266520834559e-13 * square(log(c2)) +
+                              2.4303397746137294e-11 * log(c3) +
+                              1.589324325956633e-14 * t * log(c3) -
+                              2.034596219775266e-12 * log(c2) * log(c3) -
+                              5.59303954457172e-13 * square(log(c3)) -
+                              4.889507104645867e-16 * t * square(log(c3)) +
+                              1.3847024107506764e-13 * cube(log(c3)) +
+                              4.141077193427042e-15 * j_log -
+                              2.6813110884009767e-14 * t * j_log +
+                              1.2879071621313094e-12 * log(c3) * j_log -
+                              3.80352446061867e-15 * t * log(c3) * j_log -
+                              1.8790172502456827e-14 * square(j_log));
 
-      nacid.set(
-          t_onset_gt_t,
-          -4.7154180661803595 + 0.13436423483953885 * t -
-              0.00047184686478816176 * square(t) - 2.564010713640308 * log(c2) +
-              0.011353312899114723 * t * log(c2) +
-              0.0010801941974317014 * square(log(c2)) +
-              0.5171368624197119 * log(c3) -
-              0.0027882479896204665 * t * log(c3) +
-              0.8066971907026886 * square(log(c3)) -
-              0.0031849094214409335 * t * square(log(c3)) -
-              0.09951184152927882 * cube(log(c3)) +
-              0.00040072788891745513 * t * cube(log(c3)) +
-              1.3276469271073974 * j_log - 0.006167654171986281 * t * j_log -
-              0.11061390967822708 * log(c3) * j_log +
-              0.0004367575329273496 * t * log(c3) * j_log +
-              0.000916366357266258 * square(j_log));
+      nacid.set(t_onset_gt_t, -4.7154180661803595 + 0.13436423483953885 * t -
+                                  0.00047184686478816176 * square(t) -
+                                  2.564010713640308 * log(c2) +
+                                  0.011353312899114723 * t * log(c2) +
+                                  0.0010801941974317014 * square(log(c2)) +
+                                  0.5171368624197119 * log(c3) -
+                                  0.0027882479896204665 * t * log(c3) +
+                                  0.8066971907026886 * square(log(c3)) -
+                                  0.0031849094214409335 * t * square(log(c3)) -
+                                  0.09951184152927882 * cube(log(c3)) +
+                                  0.00040072788891745513 * t * cube(log(c3)) +
+                                  1.3276469271073974 * j_log -
+                                  0.006167654171986281 * t * j_log -
+                                  0.11061390967822708 * log(c3) * j_log +
+                                  0.0004367575329273496 * t * log(c3) * j_log +
+                                  0.000916366357266258 * square(j_log));
 
       namm.set(
           t_onset_gt_t,
