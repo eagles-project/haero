@@ -6,10 +6,89 @@ module mam_nucleation_test_bridge
   private
 
   ! Module functions
+  public :: compute_tendencies_bridge
   public :: ternary_nuc_merik2007_bridge
   public :: binary_nuc_vehk2002_bridge
 
 contains
+
+subroutine init_bridge()  bind(c) 
+  use haero, only: model
+  use mam_nucleation, only: init
+  implicit none
+  call init(model)
+end subroutine
+  
+subroutine compute_tendencies_bridge( &
+  factor_bin_tern_ratenucl, &
+  factor_pbl_ratenucl, &
+  deltat, &
+  temp,  &
+  pmid,  &
+  aircon,  &
+  zmid,  &
+  pblh,  &
+  relhum, &
+  uptkrate_h2so4, &
+  del_h2so4_gasprod,  &
+  del_h2so4_aeruptk, &
+  qgas_cur, &
+  qgas_avg, &
+  qnum_cur, &
+  qaer_cur, &
+  qwtr_cur, &
+  dndt_ait,  &
+  dmdt_ait,  &
+  dso4dt_ait,  &
+  dnh4dt_ait, &
+  dnclusterdt) bind(c)
+
+  use haero, only: model
+  use haero_precision, only: wp
+  use mam_nucleation, only: compute_tendencies
+  use mam_nucleation, only: adjust_factor_bin_tern_ratenucl
+  use mam_nucleation, only: adjust_factor_pbl_ratenucl
+  use mam_nucleation, only: newnuc_adjust_factor_dnaitdt
+  implicit none
+
+  ! Arguments
+  real(wp), intent(in) :: factor_bin_tern_ratenucl
+  real(wp), intent(in) :: factor_pbl_ratenucl
+  real(wp), intent(in) :: deltat           ! model timestep (s)
+  real(wp), intent(in) :: temp             ! temperature (K)
+  real(wp), intent(in) :: pmid             ! pressure at model levels (Pa)
+  real(wp), intent(in) :: aircon           ! air molar concentration (kmol/m3)
+  real(wp), intent(in) :: zmid             ! midpoint height above surface (m)
+  real(wp), intent(in) :: pblh             ! pbl height (m)
+  real(wp), intent(in) :: relhum           ! relative humidity (0-1)
+  real(wp), intent(in) :: uptkrate_h2so4
+  real(wp), intent(in) :: del_h2so4_gasprod
+  real(wp), intent(in) :: del_h2so4_aeruptk
+  real(wp), intent(in), dimension(model%num_gases) :: qgas_cur
+  real(wp), intent(in), dimension(model%num_gases) :: qgas_avg
+  real(wp), intent(in), dimension(model%num_modes) :: qnum_cur
+  real(wp), dimension(maxval(model%num_mode_species), model%num_modes) :: qaer_cur
+  real(wp), intent(in), dimension(model%num_modes) :: qwtr_cur
+  real(wp), intent(out) :: dndt_ait
+  real(wp), intent(out) :: dmdt_ait
+  real(wp), intent(out) :: dnh4dt_ait
+  real(wp), intent(out) :: dso4dt_ait
+  real(wp), intent(inout) :: dnclusterdt   ! cluster nucleation rate (#/m3/s)
+
+  ! Call the actual subroutine.
+  ! But first set this public value on the module that the function will use.
+  adjust_factor_bin_tern_ratenucl = factor_bin_tern_ratenucl
+  adjust_factor_pbl_ratenucl      = factor_pbl_ratenucl
+  newnuc_adjust_factor_dnaitdt    = 1.0
+
+  ! Call the actual subroutine.
+  call compute_tendencies(deltat, &
+  temp, pmid, aircon, zmid, pblh, relhum, &
+  uptkrate_h2so4, del_h2so4_gasprod, del_h2so4_aeruptk, &
+  qgas_cur, qgas_avg, qnum_cur, qaer_cur, qwtr_cur, &
+  dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &
+  dnclusterdt)
+end subroutine
 
 subroutine ternary_nuc_merik2007_bridge(t, rh, c2, c3, j_log, ntot, nacid, namm, r) bind(c)
   use haero_precision, only: wp

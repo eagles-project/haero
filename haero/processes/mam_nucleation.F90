@@ -12,10 +12,17 @@ module mam_nucleation
   private
 
   ! Module functions
-  public :: init, run, finalize, ternary_nuc_merik2007, binary_nuc_vehk2002, &
-    pbl_nuc_wang2008, mer07_veh02_nuc_mosaic_1box
+  public :: init, run, finalize
+
+
+  public :: compute_tendencies
+  public :: ternary_nuc_merik2007
+  public :: binary_nuc_vehk2002
+  public :: pbl_nuc_wang2008 
+  public :: mer07_veh02_nuc_mosaic_1box
   public :: adjust_factor_pbl_ratenucl
   public :: adjust_factor_bin_tern_ratenucl
+  public :: newnuc_adjust_factor_dnaitdt
 
   !-------------------
   ! Module parameters
@@ -93,10 +100,10 @@ module mam_nucleation
   integer :: gaexch_h2so4_uptake_optaa
 
   !> Index of H2SO4 gas
-  integer :: igas_h2so4
+  integer :: igas_h2so4 
 
   !> Index of NH3 gas
-  integer :: igas_nh3
+  integer :: igas_nh3 
 
   !> Index of NH4 aerosol within the Aitken mode
   integer :: iaer_nh4
@@ -140,50 +147,58 @@ subroutine init(model)
   type(aerosol_species_t) so4, nh4
   integer :: m
 
-  ! Extract mode properties.
-  allocate(dgnum_aer(model%num_modes))
-  allocate(dgnumlo_aer(model%num_modes))
-  allocate(dgnumhi_aer(model%num_modes))
-  do m = 1,model%num_modes
-    dgnum_aer(m) = model%modes(m)%mean_std_dev
-    dgnumlo_aer(m) = model%modes(m)%min_diameter
-    dgnumhi_aer(m) = model%modes(m)%max_diameter
-  end do
+  ! Make this multiply callable.  No check
+  ! is done that the lengths have not changed.
+  ! This needs to be done for unit testing when
+  ! the order and number of tests run is unknown
+  ! so each test needs to be able to call init.
+  if (.not. allocated(dgnum_aer)) then 
+    ! Extract mode properties.
+    allocate(dgnum_aer(model%num_modes))
+    allocate(dgnumlo_aer(model%num_modes))
+    allocate(dgnumhi_aer(model%num_modes))
 
-  ! Allocate gas and aerosol state buffers.
-  allocate(qgas_cur(model%num_gases))
-  allocate(qgas_avg(model%num_gases))
-  allocate(qnum_cur(model%num_modes))
-  allocate(qaer_cur(maxval(model%num_mode_species), model%num_modes))
-  allocate(qwtr_cur(model%num_modes))
+    do m = 1,model%num_modes
+      dgnum_aer(m) = model%modes(m)%mean_std_dev
+      dgnumlo_aer(m) = model%modes(m)%min_diameter
+      dgnumhi_aer(m) = model%modes(m)%max_diameter
+    end do
 
-  ! Record the aitken mode index.
-  nait = model%mode_index("aitken")
+    ! Allocate gas and aerosol state buffers.
+    allocate(qgas_cur(model%num_gases))
+    allocate(qgas_avg(model%num_gases))
+    allocate(qnum_cur(model%num_modes))
+    allocate(qaer_cur(maxval(model%num_mode_species), model%num_modes))
+    allocate(qwtr_cur(model%num_modes))
 
-  ! Record the index for SO4 aerosol within the Aitken mode and fetch some
-  ! properties.
-  iaer_so4 = model%aerosol_index(nait, "SO4")
-  if (iaer_so4 > 0) then
-    so4 = model%aero_species(nait, iaer_so4)
-    mw_so4a_host = so4%molecular_wt
-  end if
+    ! Record the aitken mode index.
+    nait = model%mode_index("aitken")
 
-  ! Record the index for NH4 aerosol within the Aitken mode and fetch some
-  ! properties.
-  iaer_nh4 = model%aerosol_index(nait, "NH4")
-  if (iaer_nh4 > 0) then
-    nh4 = model%aero_species(nait, iaer_nh4)
-    mw_nh4a_host = nh4%molecular_wt
-  end if
+    ! Record the index for SO4 aerosol within the Aitken mode and fetch some
+    ! properties.
+    iaer_so4 = model%aerosol_index(nait, "SO4")
+    if (iaer_so4 > 0) then
+      so4 = model%aero_species(nait, iaer_so4)
+      mw_so4a_host = so4%molecular_wt
+    end if
 
-  ! Record the index for H2SO4 gas (source of new nuclei).
-  igas_h2so4 = model%gas_index("H2SO4")
+    ! Record the index for NH4 aerosol within the Aitken mode and fetch some
+    ! properties.
+    iaer_nh4 = model%aerosol_index(nait, "NH4")
+    if (iaer_nh4 > 0) then
+      nh4 = model%aero_species(nait, iaer_nh4)
+      mw_nh4a_host = nh4%molecular_wt
+    end if
 
-  ! Set some defaults
-  gaexch_h2so4_uptake_optaa = 2
-  newnuc_h2so4_conc_optaa = 2
-  dens_so4a_host = 1.0_wp ! FIXME
+    ! Record the index for H2SO4 gas (source of new nuclei).
+    igas_h2so4 = model%gas_index("H2SO4")
+    igas_nh3   = model%gas_index("NH3")
 
+    ! Set some defaults
+    gaexch_h2so4_uptake_optaa = 2
+    newnuc_h2so4_conc_optaa = 2
+    dens_so4a_host = 1.0_wp ! FIXME
+  end if 
 end subroutine
 
 subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
@@ -425,6 +440,8 @@ subroutine compute_tendencies(deltat, &
   dnh4dt_ait = 0.0_wp
   dso4dt_ait = 0.0_wp
   dnclusterdt = 0.0_wp
+  qh2so4_avg = 0.0_wp
+  qh2so4_cur = 0.0_wp
 
   ! qh2so4_cur = current qh2so4, after aeruptk
   ! qh2so4_avg = average qh2so4 over time-step
@@ -434,7 +451,7 @@ subroutine compute_tendencies(deltat, &
       (newnuc_h2so4_conc_optaa   == 1)) then
     ! estimate qh2so4_avg using the method in standard cam5.2 modal_aero_newnuc
 
-    ! skip if h2so4 vapor < qh2so4_cutoff
+    ! skip if h2so4 vapor < qqgas_curh2so4_cutoff
     if (qh2so4_cur <= qh2so4_cutoff) goto 80000
 
     tmpa = max( 0.0_wp, del_h2so4_gasprod )
@@ -514,7 +531,6 @@ subroutine compute_tendencies(deltat, &
 
   ! number nuc rate (#/kmol-air/s) from number nuc amt
   dndt_ait = qnuma_del/deltat
-
   ! fraction of mass nuc going to so4
   tmpa = qso4a_del*mw_so4a_host
   if (igas_nh3 > 0) then
@@ -527,7 +543,6 @@ subroutine compute_tendencies(deltat, &
 
   ! mass nuc rate (kg/kmol-air/s) from mass nuc amts
   dmdt_ait = max( 0.0_wp, (tmpb/deltat) )
-
   dndt_aitsv1 = dndt_ait
   dmdt_aitsv1 = dmdt_ait
   dndt_aitsv2 = 0.0_wp
@@ -851,7 +866,7 @@ subroutine mer07_veh02_nuc_mosaic_1box(   &
     ((tmp_m1/dens_ammsulf) + (tmp_m2/dens_ammbisulf)   &
     + (tmp_m3/dens_sulfacid))
   dens_nh4so4a = dens_part
-  mass_part  = voldry_part*dens_part
+  mass_part  = voldry_part * dens_part
   ! (mol aerosol nh4)/(mol aerosol so4)
   molenh4a_per_moleso4a = 2.0_wp*tmp_n1 + tmp_n2
   ! (kg dry aerosol)/(mol aerosol so4)
