@@ -29,6 +29,8 @@ if (HAERO_FORTRAN)
   #   refers to a Fortran module named mam_nucleation whose source lives in
   #   mam_nucleation.F90, within this directory.
   faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
+  faerosol_process(MAMCalcsizeFProcess CalcsizeProcess mam_calcsize)
+  #diagnostic_fprocess(MAMWaterUptakeFProcess WaterUptakeProcess mam_water_uptake)
 
 endif()
 
