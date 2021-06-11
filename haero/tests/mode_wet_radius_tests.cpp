@@ -56,8 +56,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
   ColumnView relative_humidity("rel_humidity", npacks);
   auto h_relative_humidity = Kokkos::create_mirror_view(relative_humidity);
   const Real drelh =
-      (KohlerPoly::rel_humidity_max - KohlerPoly::rel_humidity_min) /
-      (nlev);
+      (KohlerPoly::rel_humidity_max - KohlerPoly::rel_humidity_min) / (nlev);
   for (int k = 0; k < nlev; ++k) {
     const int pack_idx = PackInfo::pack_idx(k);
     const int vec_idx = PackInfo::vec_idx(k);
