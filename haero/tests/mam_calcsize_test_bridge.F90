@@ -7,7 +7,7 @@ module mam_calcsize_bridge
 
   ! Module functions
   public :: mam_calcsize_init, &
-            mam_calcsize_run, &
+       run_bridge, &
             mam_calcsize_finalize, &
             compute_diameter_bridge
 
@@ -23,7 +23,7 @@ subroutine mam_calcsize_init() bind(c)
 end subroutine
 
 ! Runs the prognostic process, computing tendencies
-subroutine mam_calcsize_run(t, dt, progs, atm, diags, tends) bind(c)
+subroutine run_bridge(t, dt, progs, atm, diags, tends) bind(c)
   use iso_c_binding, only: c_ptr, c_f_pointer
   use haero_precision, only: wp
   use haero, only: model, &
@@ -53,9 +53,10 @@ subroutine mam_calcsize_run(t, dt, progs, atm, diags, tends) bind(c)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 
+  print*,'BALLI- I am in RUN'
   ! Call the actual subroutine.
-  call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
-end subroutine mam_calcsize_run
+  !call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+end subroutine run_bridge
 
 pure function compute_diameter_bridge(vol2num) result(diameter) bind(c)
 
