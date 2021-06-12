@@ -3,6 +3,7 @@
 #define HAERO_mam_calcsize_TEST_BRIDGE_HPP
 
 #include "haero/haero.hpp"
+#include "haero/model.hpp"
 
 using namespace haero;
 
