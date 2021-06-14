@@ -1,10 +1,10 @@
 #ifndef HAERO_READ_CHEM_INPUT_HPP
 #define HAERO_READ_CHEM_INPUT_HPP
 
-#include "chemDriver.hpp"
+#include "chem_driver.hpp"
 
 namespace haero {
-namespace chemDriver {
+namespace chem_driver {
 
 /// This exception class stores information about errors encountered in reading
 /// data from a YAML file.
@@ -29,6 +29,6 @@ class YamlException : public std::exception {
 /// \returns SimulationInput object that is meant to be passed to ChemSolver
 SimulationInput read_chem_input(const std::string& filename);
 
-}  // end namespace chemDriver
+}  // end namespace chem_driver
 }  // end namespace haero
 #endif

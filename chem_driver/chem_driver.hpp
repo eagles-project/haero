@@ -13,7 +13,7 @@
 #include "tchem/TChem_Util.hpp"
 
 namespace haero {
-namespace chemDriver {
+namespace chem_driver {
 
 // some aliases
 using ordinal_type = TChem::ordinal_type;
@@ -31,7 +31,8 @@ struct ChemicalSpecies {
   /// units
   std::string units;
   /// constructor
-  ChemicalSpecies(std::string name, Real initial_value, std::string units);
+  ChemicalSpecies(const std::string& name, Real initial_value,
+                  const std::string& units);
 };
 
 /// This type contains the environmental conditions for the simulation
@@ -41,8 +42,8 @@ struct EnvironmentalConditions {
   /// units
   std::string units_temp, units_pressure;
   /// constructors: the one with arguments is currently unused but here in case
-  EnvironmentalConditions(Real T0, std::string T_units, Real P0,
-                          std::string P_units);
+  EnvironmentalConditions(Real T0, const std::string& T_units, Real P0,
+                          const std::string& P_units);
   EnvironmentalConditions() = default;
 };
 
@@ -62,9 +63,10 @@ struct Reaction {
   /// coefficients that are used to calculate the reaction rate
   std::map<std::string, Real> rate_coefficients;
   /// constructor
-  Reaction(std::string type_str, std::map<std::string, Real> reactants,
-           std::map<std::string, Real> products,
-           std::map<std::string, Real> rate_coefficients);
+  Reaction(const std::string& type_str,
+           const std::map<std::string, Real>& reactants,
+           const std::map<std::string, Real>& products,
+           const std::map<std::string, Real>& rate_coefficients);
   /// copy constructor: used when copying the reactions from SimulationInput
   /// to ChemSolver
   Reaction(const Reaction& rxn) {
@@ -105,7 +107,7 @@ class ChemSolver {
   /// verbose output flag
   bool verbose;
   /// number of chemical batches/samples that will have the given composition
-  int nBatch;
+  int nbatch;
   /// 2D views containing chemical state, reaction rates, and omega (results)
   real_type_2d_view state, kfor, krev, omega;
   /// timer variables
@@ -129,8 +131,9 @@ class ChemSolver {
   void print_summary(const ChemFiles& cfiles);
   /// parses the yaml file for user-provided inputs required by TChem
   void parse_tchem_inputs(SimulationInput& sim_inp);
-  /// sets the reaction rates: currently called prior to get_tendencies() and uses
-  /// current temp and pressure, along with the user-provided rate coefficients
+  /// sets the reaction rates: currently called prior to get_tendencies() and
+  /// uses current temp and pressure, along with the user-provided rate
+  /// coefficients
   void set_reaction_rates();
 
  public:
@@ -144,12 +147,14 @@ class ChemSolver {
   real_type_2d_view get_tendencies();
 };
 
-}  // end namespace chemDriver
+}  // end namespace chem_driver
 }  // end namespace haero
 
 // NOTE: everything in this namespace is copied directly from the TChem
 // implementation of the toy problem
 namespace from_tchem {
+
+using Real = haero::Real;
 
 struct SourceTermToyProblem {
   template <typename KineticModelConstDataType>
@@ -173,6 +178,45 @@ struct SourceTermToyProblem {
 template <typename KineticModelConstDataType>
 KOKKOS_INLINE_FUNCTION static ordinal_type getWorkSpaceSize(
     const KineticModelConstDataType& kmcd);
+
+template <typename MemberType, typename RealType1DViewType,
+          typename OrdinalType1DViewType, typename KineticModelConstDataType>
+KOKKOS_INLINE_FUNCTION static void team_invoke_detail(
+    const MemberType& member,
+    /// input
+    const RealType1DViewType& concX,
+    /// output
+    const RealType1DViewType& omega,  /// (kmcd.nSpec)
+    const RealType1DViewType& kfor, const RealType1DViewType& krev,
+    const RealType1DViewType& ropFor, const RealType1DViewType& ropRev,
+    const OrdinalType1DViewType& iter,
+    /// const input from kinetic model
+    const KineticModelConstDataType& kmcd);
+
+template <typename MemberType, typename WorkViewType,
+          typename RealType1DViewType, typename KineticModelConstDataType>
+KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
+    const MemberType& member,
+    /// input
+    const RealType1DViewType& kfor, const RealType1DViewType& krev,
+    const RealType1DViewType& X,  /// (kmcd.nSpec)
+    /// output
+    const RealType1DViewType& omega,  /// (kmcd.nSpec)
+    /// workspace
+    const WorkViewType& work,
+    /// const input from kinetic model
+    const KineticModelConstDataType& kmcd);
+
+template <typename PolicyType, typename RealType2DViewType,
+          typename KineticModelConstType>
+void SourceTermToyProblem_TemplateRun(
+    /// input
+    const std::string& profile_name,
+    /// team size setting
+    const PolicyType& policy, const RealType2DViewType& kfor,
+    const RealType2DViewType& krev, const RealType2DViewType& state,
+    const RealType2DViewType& SourceTermToyProblem,
+    const KineticModelConstType& kmcd);
 
 }  // namespace from_tchem
 

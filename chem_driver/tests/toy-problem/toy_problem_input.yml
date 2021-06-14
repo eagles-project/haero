@@ -1,6 +1,6 @@
 
 # TChem-specific inputs
-tchem_inputs:
+tchem:
   # whether to print verbose output to screen
   verbose: false
   # number of chemistry batches (all currently run the exact same chem problem)

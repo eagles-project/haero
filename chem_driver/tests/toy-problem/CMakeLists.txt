@@ -1,5 +1,3 @@
-# include_directories(${CHEM_DRIVER_INCDIRS})
-
 add_library(toy_problem toy_problem.cpp)
 
 add_dependencies(toy_problem chem_standalone)

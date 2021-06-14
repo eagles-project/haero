@@ -4,7 +4,7 @@
 
 #include <cstdio>
 
-#include "chemDriver.hpp"
+#include "chem_driver.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_session.hpp"
 #include "haero/haero.hpp"
@@ -14,7 +14,7 @@
 
 using namespace std;
 using namespace haero;
-using namespace haero::chemDriver;
+using namespace haero::chem_driver;
 
 namespace {
 
@@ -40,7 +40,7 @@ void usage(const char* exe) {
 }  // end anonymous namespace
 
 // this is a work in progress--for now we just run the toy problem and print
-// the results to screen
+// the results to screen, as a prototype for usage
 int main(int argc, const char** argv) {
   print_banner();
 

@@ -1,4 +1,4 @@
-#include "chemDriver.hpp"
+#include "chem_driver.hpp"
 
 #include <cstdarg>
 #include <cstdio>
@@ -6,7 +6,7 @@
 #include "haero/physical_constants.hpp"
 
 namespace haero {
-namespace chemDriver {
+namespace chem_driver {
 
 using namespace from_tchem;
 
@@ -40,13 +40,15 @@ YamlException::YamlException(const char* fmt, ...) {
 }  // end anonymous namespace
 
 /// ChemicalSpecies constructor
-ChemicalSpecies::ChemicalSpecies(std::string mname, Real minitial_value,
-                                 std::string munits)
+ChemicalSpecies::ChemicalSpecies(const std::string& mname, Real minitial_value,
+                                 const std::string& munits)
     : name(mname), initial_value(minitial_value), units(munits) {}
 
 /// EnvironmentalConditions constructor
-EnvironmentalConditions::EnvironmentalConditions(Real T0, std::string T_units,
-                                                 Real P0, std::string P_units)
+EnvironmentalConditions::EnvironmentalConditions(Real T0,
+                                                 const std::string& T_units,
+                                                 Real P0,
+                                                 const std::string& P_units)
     : initial_temp(T0),
       units_temp(T_units),
       initial_pressure(P0),
@@ -57,10 +59,10 @@ EnvironmentalConditions::EnvironmentalConditions(Real T0, std::string T_units,
 /// NOTE: the default values correspond to those used by MusicBox
 // FIXME: currently only have arrhenius and troe, but we'll cross that bridge
 // when we come to it
-Reaction::Reaction(std::string mtype_str,
-                   std::map<std::string, Real> mreactants,
-                   std::map<std::string, Real> mproducts,
-                   std::map<std::string, Real> mrate_coefficients)
+Reaction::Reaction(const std::string& mtype_str,
+                   const std::map<std::string, Real>& mreactants,
+                   const std::map<std::string, Real>& mproducts,
+                   const std::map<std::string, Real>& mrate_coefficients)
     : type_str(mtype_str), reactants(mreactants), products(mproducts) {
   // convert reaction type string to lowercase
   transform(type_str.begin(), type_str.end(), type_str.begin(), ::tolower);
@@ -74,57 +76,57 @@ Reaction::Reaction(std::string mtype_str,
     // Note: find() returns vec.end() if it is not found
     rate_coefficients["A"] =
         (mrate_coefficients.find("A") != mrate_coefficients.end())
-            ? mrate_coefficients["A"]
+            ? mrate_coefficients.at("A")
             : 1.0;
     rate_coefficients["Ea"] =
         (mrate_coefficients.find("Ea") != mrate_coefficients.end())
-            ? mrate_coefficients["Ea"]
+            ? mrate_coefficients.at("Ea")
             : 0.0;
     rate_coefficients["B"] =
         (mrate_coefficients.find("B") != mrate_coefficients.end())
-            ? mrate_coefficients["B"]
+            ? mrate_coefficients.at("B")
             : 0.0;
     rate_coefficients["D"] =
         (mrate_coefficients.find("D") != mrate_coefficients.end())
-            ? mrate_coefficients["D"]
+            ? mrate_coefficients.at("D")
             : 300.0;
     rate_coefficients["E"] =
         (mrate_coefficients.find("E") != mrate_coefficients.end())
-            ? mrate_coefficients["E"]
+            ? mrate_coefficients.at("E")
             : 0.0;
   } else if (type_str.compare("troe") == 0) {
     type = troe;
     rate_coefficients["k0_A"] =
         (mrate_coefficients.find("k0_A") != mrate_coefficients.end())
-            ? mrate_coefficients["k0_A"]
+            ? mrate_coefficients.at("k0_A")
             : 1.0;
     rate_coefficients["k0_B"] =
         (mrate_coefficients.find("k0_B") != mrate_coefficients.end())
-            ? mrate_coefficients["k0_B"]
+            ? mrate_coefficients.at("k0_B")
             : 0.0;
     rate_coefficients["k0_C"] =
         (mrate_coefficients.find("k0_C") != mrate_coefficients.end())
-            ? mrate_coefficients["k0_C"]
+            ? mrate_coefficients.at("k0_C")
             : 0.0;
     rate_coefficients["kinf_A"] =
         (mrate_coefficients.find("kinf_A") != mrate_coefficients.end())
-            ? mrate_coefficients["kinf_A"]
+            ? mrate_coefficients.at("kinf_A")
             : 1.0;
     rate_coefficients["kinf_B"] =
         (mrate_coefficients.find("kinf_B") != mrate_coefficients.end())
-            ? mrate_coefficients["kinf_B"]
+            ? mrate_coefficients.at("kinf_B")
             : 0.0;
     rate_coefficients["kinf_C"] =
         (mrate_coefficients.find("kinf_C") != mrate_coefficients.end())
-            ? mrate_coefficients["kinf_C"]
+            ? mrate_coefficients.at("kinf_C")
             : 0.0;
     rate_coefficients["Fc"] =
         (mrate_coefficients.find("Fc") != mrate_coefficients.end())
-            ? mrate_coefficients["Fc"]
+            ? mrate_coefficients.at("Fc")
             : 0.6;
     rate_coefficients["N"] =
         (mrate_coefficients.find("N") != mrate_coefficients.end())
-            ? mrate_coefficients["N"]
+            ? mrate_coefficients.at("N")
             : 1.0;
   } else {
     std::cout << "ERROR: reaction type currently unsupported."
@@ -142,7 +144,7 @@ ChemSolver::ChemSolver(SimulationInput& sim_inp)
   // set the kokkos parallel policy
   // FIXME: determine whether this lines up with the overall haero goals, as
   // what's here was copied over from the TChem implementation
-  policy = policy_type(TChem::exec_space(), nBatch, Kokkos::AUTO());
+  policy = policy_type(TChem::exec_space(), nbatch, Kokkos::AUTO());
 
   // set the temp and pressure that we got from the simulation input
   temperature = sim_inp.env_conditions.initial_temp;
@@ -152,9 +154,9 @@ ChemSolver::ChemSolver(SimulationInput& sim_inp)
 
   // set the initial state, based on input
   int nSpecies = sim_inp.species.size();
-  state = real_type_2d_view("StateVector", nBatch, nSpecies);
+  state = real_type_2d_view("StateVector", nbatch, nSpecies);
   auto state_host = Kokkos::create_mirror_view(state);
-  for (int i = 0; i < nBatch; ++i) {
+  for (int i = 0; i < nbatch; ++i) {
     for (int j = 0; j < nSpecies; ++j) {
       state_host(i, j) = sim_inp.species[j].initial_value;
     }
@@ -175,7 +177,7 @@ ChemSolver::ChemSolver(SimulationInput& sim_inp)
   kmcd = kmd.createConstData<TChem::exec_space>();
 
   // initialize omega (tendency output)
-  omega = real_type_2d_view("NetProductionRate", nBatch, kmcd.nSpec);
+  omega = real_type_2d_view("NetProductionRate", nbatch, kmcd.nSpec);
 
   // FIXME: this bit is a little over my head--should probably consider the
   // implications of what's happening here
@@ -192,12 +194,12 @@ void ChemSolver::print_summary(const ChemFiles& cfiles) {
   printf(
       "Testing Arguments: \n batch size %d\n chemfile %s\n thermfile %s\n "
       "outputfile %s\n verbose %s\n",
-      nBatch, cfiles.chemFile.c_str(), cfiles.thermFile.c_str(),
+      nbatch, cfiles.chemFile.c_str(), cfiles.thermFile.c_str(),
       // inputFile.c_str(),
       cfiles.outputFile.c_str(), verbose ? "true" : "false");
   printf("---------------------------------------------------\n");
   printf("Time reaction rates %e [sec] %e [sec/sample]\n", t_device_batch,
-         t_device_batch / Real(nBatch));
+         t_device_batch / Real(nbatch));
 }  // end ChemSolver::print_summary
 
 /// get
@@ -219,7 +221,7 @@ real_type_2d_view ChemSolver::get_tendencies() {
     auto omega_host = Kokkos::create_mirror_view(omega);
     Kokkos::deep_copy(omega_host, omega);
 
-    /// print the first (of nBatch) values
+    /// print the first (of nbatch) values
     {
       auto omega_host_at_0 = Kokkos::subview(omega_host, 0, Kokkos::ALL());
       TChem::Test::writeReactionRates(cfiles.outputFile, kmcd.nSpec,
@@ -234,8 +236,8 @@ void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
   // Try to load the input from the yaml file
   try {
     auto root = YAML::LoadFile(sim_inp.input_file);
-    if (root["tchem_inputs"] and root["tchem_inputs"].IsMap()) {
-      auto node = root["tchem_inputs"];
+    if (root["tchem"] and root["tchem"].IsMap()) {
+      auto node = root["tchem"];
       if (not node["nbatch"]) {
         throw YamlException(
             "problem specific entry does not specify number "
@@ -244,11 +246,17 @@ void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
         throw YamlException(
             "problem specific entry has no verbose boolean (verbose).");
       } else {
-        nBatch = node["nbatch"].as<int>();
+        nbatch = node["nbatch"].as<int>();
         verbose = node["verbose"].as<bool>();
       }
     } else {
-      throw YamlException("No tchem_inputs section was found!");
+      printf(
+          "No tchem section was found--using default values: verbose = false"
+          ", nbatch = 1.\n");
+      // FIXME: depending on how we ultimately parallelize, the nbatch default
+      // may have to be set more cleverly
+      nbatch = 1;
+      verbose = false;
     }
   } catch (YAML::BadFile& e) {
     throw YamlException(e.what());
@@ -294,15 +302,15 @@ void ChemSolver::set_reaction_rates() {
 
   // NOTE: so far, we aren't considering reversible reactions,
   // so we set those rates to zero--this could change
-  kfor = real_type_2d_view("ForwardRate", nBatch, reactions.size());
-  krev = real_type_2d_view("ReverseRate", nBatch, reactions.size());
+  kfor = real_type_2d_view("ForwardRate", nbatch, reactions.size());
+  krev = real_type_2d_view("ReverseRate", nbatch, reactions.size());
 
   /// create a mirror view to store input
   auto kfor_host = Kokkos::create_mirror_view(kfor);
   auto krev_host = Kokkos::create_mirror_view(krev);
 
   // assign the calculated rates to the corresponding mirror view
-  for (int i = 0; i < nBatch; ++i) {
+  for (int i = 0; i < nbatch; ++i) {
     for (int j = 0; j < nRxn; ++j) {
       kfor_host(i, j) = rxn_rate[j];
       krev_host(i, j) = 0;
@@ -323,15 +331,13 @@ ChemSolver::~ChemSolver() {
   remove(cfiles.outputFile.data());
 }
 
-}  // end namespace chemDriver
+}  // end namespace chem_driver
 }  // end namespace haero
 
 /*
 NOTE: everything in this namespace is copied directly from TChem
 */
 namespace from_tchem {
-
-using Real = haero::Real;
 
 template <typename KineticModelConstDataType>
 KOKKOS_INLINE_FUNCTION static ordinal_type getWorkSpaceSize(
@@ -458,7 +464,6 @@ KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
 
 template <typename PolicyType, typename RealType2DViewType,
           typename KineticModelConstType>
-//
 void SourceTermToyProblem_TemplateRun(
     /// input
     const std::string& profile_name,

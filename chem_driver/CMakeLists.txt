@@ -3,7 +3,7 @@ set(CHEM_DRIVER_INCDIRS ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${HAERO_INCDIRS} ${CHEM_DRIVER_INCDIRS})
 
 add_library(chem_standalone read_chem_input.cpp
-                            chemDriver.cpp)
+                            chem_driver.cpp)
 
 add_dependencies(chem_standalone haero yaml_cpp)
 

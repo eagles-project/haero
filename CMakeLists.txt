@@ -293,7 +293,7 @@ endif()
 
 if (HAERO_ENABLE_CHEM_DRIVER)
   message(STATUS "Building chem_driver.")
-  add_subdirectory(chemDriver)
+  add_subdirectory(chem_driver)
 endif()
 # Skywalker--a tool for exploring aerosol processes in low-dimensional parameter spaces
 add_subdirectory(sw)

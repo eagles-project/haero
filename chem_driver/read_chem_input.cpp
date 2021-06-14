@@ -6,7 +6,7 @@
 #include <map>
 
 namespace haero {
-namespace chemDriver {
+namespace chem_driver {
 
 YamlException::YamlException(const char* fmt, ...) {
   char ss[256];
@@ -33,9 +33,9 @@ std::vector<ChemicalSpecies> read_species(const YAML::Node& root) {
   if (root["species"] and root["species"].IsMap()) {
     auto node = root["species"];
     // loop over the provided number of species
-    for (auto iter = node.begin(); iter != node.end(); ++iter) {
-      std::string name = iter->first.as<std::string>();
-      auto mnode = iter->second;
+    for (auto iter : node) {
+      std::string name = iter.first.as<std::string>();
+      auto mnode = iter.second;
       if (not mnode["initial_value"]) {
         throw YamlException(
             "species entry has no initial value (initial_value).");
@@ -97,10 +97,9 @@ std::vector<Reaction> read_reactions(const YAML::Node& root) {
   // do we have a reaction node?
   if (root["reactions"] and root["reactions"].IsSequence()) {
     // define the reaction node
-    auto reactionNode = root["reactions"];
+    auto reaction_node = root["reactions"];
     // loop over reaction nodes
-    for (std::size_t i = 0; i < reactionNode.size(); i++) {
-      auto mnode = reactionNode[i];
+    for (auto mnode : reaction_node) {
       if (not mnode["type"]) {
         throw YamlException("reactions entry has no initial type (type).");
       } else if (not mnode["reactants"]) {
@@ -113,24 +112,24 @@ std::vector<Reaction> read_reactions(const YAML::Node& root) {
             "(rate_coefficients).");
       } else {
         if (mnode["reactants"] and mnode["reactants"].IsMap()) {
-          auto reacNode = mnode["reactants"];
-          for (auto iter = reacNode.begin(); iter != reacNode.end(); ++iter) {
+          auto react_node = mnode["reactants"];
+          for (auto iter : react_node) {
             mreactants.insert(std::pair<std::string, Real>(
-                iter->first.as<std::string>(), iter->second.as<Real>()));
+                iter.first.as<std::string>(), iter.second.as<Real>()));
           }
         }
         if (mnode["products"] and mnode["products"].IsMap()) {
-          auto prodNode = mnode["products"];
-          for (auto iter = prodNode.begin(); iter != prodNode.end(); ++iter) {
+          auto prod_node = mnode["products"];
+          for (auto iter : prod_node) {
             mproducts.insert(std::pair<std::string, Real>(
-                iter->first.as<std::string>(), iter->second.as<Real>()));
+                iter.first.as<std::string>(), iter.second.as<Real>()));
           }
         }
         if (mnode["rate_coefficients"] and mnode["rate_coefficients"].IsMap()) {
-          auto rcNode = mnode["rate_coefficients"];
-          for (auto iter = rcNode.begin(); iter != rcNode.end(); ++iter) {
+          auto rc_node = mnode["rate_coefficients"];
+          for (auto iter : rc_node) {
             mcoeffs.insert(std::pair<std::string, Real>(
-                iter->first.as<std::string>(), iter->second.as<Real>()));
+                iter.first.as<std::string>(), iter.second.as<Real>()));
           }
         }
         reactions.push_back(Reaction(mnode["type"].as<std::string>(),
@@ -205,5 +204,5 @@ SimulationInput read_chem_input(const std::string& filename) {
   }
 }
 
-}  // end namespace chemDriver
+}  // end namespace chem_driver
 }  // end namespace haero
