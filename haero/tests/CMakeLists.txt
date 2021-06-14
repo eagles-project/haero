@@ -74,3 +74,14 @@ if (HAERO_FORTRAN)
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
   endif()
 endif()
+
+#----------------------------------------------------
+# Chemistry unit tests
+#----------------------------------------------------
+
+if (HAERO_DOUBLE_PRECISION)
+  add_library(chemUtil chemUtil.cpp)
+  add_dependencies(chemUtil tchem)
+  EkatCreateUnitTest(tchem_batch_reactor_tests tchem_batch_reactor_tests.cpp
+                     LIBS chemUtil;${HAERO_LIBRARIES})
+endif()
