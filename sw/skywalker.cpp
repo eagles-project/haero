@@ -563,7 +563,7 @@ void sw_ensemble_write_py_module(void* ensemble, const char* filename) {
 
 /// Frees all memory associated with the ensemble, including input and output
 /// data.
-void sw_enѕemble_free(void* ensemble) {
+void sw_ensemble_free(void* ensemble) {
   if (fortran_ensembles_ != nullptr) {
     auto data = reinterpret_cast<EnsembleData*>(ensemble);
     auto iter = fortran_ensembles_->find(data);
