@@ -320,11 +320,12 @@ if (NOT EXISTS ${TINES_LIBRARY})
     set(TINES_DEPENDS ekat)
   endif()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
+  set(cxx_flags "-I${EKAT_LIBRARY_DIR}/../include/kokkos -I${PROJECT_BINARY_DIR}/include")
   set(TINES_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
 		       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
 		       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                       -DCMAKE_CXX_FLAGS=-I${EKAT_LIBRARY_DIR}/../include/kokkos
+           -DCMAKE_CXX_FLAGS=${cxx_flags}
                        -DTINES_ENABLE_VERBOSE=OFF
                        -DTINES_ENABLE_TEST=OFF
                        -DTINES_ENABLE_EXAMPLE=OFF
@@ -389,6 +390,7 @@ else()
   add_library(tchem SHARED IMPORTED GLOBAL)
 endif()
 set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY})
+set(cxx_flags "-I${EKAT_LIBRARY_DIR}/../include/kokkos -I${PROJECT_BINARY_DIR}/include")
 if (NOT EXISTS ${TCHEM_LIBRARY})
   update_submodules()
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
@@ -409,13 +411,13 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
     # toward the kokkos/ subdirectory of our include path in this case (for some
     # reason).
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx
-                         -DCMAKE_CXX_FLAGS=-I${EKAT_LIBRARY_DIR}/../include/kokkos)
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
   else()
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
   endif()
 
+  set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS} -DCMAKE_CXX_FLAGS=${cxx_flags})
   ExternalProject_Add(tchem_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/TChem
                       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/TChem/src
