@@ -13,6 +13,7 @@ WORKDIR /haero
 COPY ext ext
 COPY haero haero
 COPY driver driver
+COPY sw sw
 COPY docs docs
 COPY cmake cmake
 COPY tools tools
