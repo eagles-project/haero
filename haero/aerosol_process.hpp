@@ -182,7 +182,7 @@ class FAerosolProcess : public AerosolProcess {
   /// Pointers to Fortran subroutines that set parameters for a process.
   typedef void (*SetIntegerParamSubroutine)(const char* name, int value);
   typedef void (*SetLogicalParamSubroutine)(const char* name, bool value);
-  typedef void (*SetRealParamSubroutine)   (const char* name, Real value);
+  typedef void (*SetRealParamSubroutine)(const char* name, Real value);
 
   /// Constructor.
   /// @param [in] type The type of aerosol process modeled by the subclass.
@@ -192,7 +192,8 @@ class FAerosolProcess : public AerosolProcess {
   ///                          that initializes the Fortran-backed process.
   /// @param [in] run_process A pointer to an interoperable Fortran subroutine
   ///                         that runs the Fortran-backed process.
-  /// @param [in] finalize_process A pointer to an interoperable Fortran subroutine
+  /// @param [in] finalize_process A pointer to an interoperable Fortran
+  /// subroutine
   ///                              that frees resources for the Fortran-backed
   ///                              process.
   /// @param [in] set_integer_param A pointer to an interoperable Fortran
@@ -210,8 +211,7 @@ class FAerosolProcess : public AerosolProcess {
                   FinalizeProcessSubroutine finalize_process,
                   SetIntegerParamSubroutine set_integer_param,
                   SetLogicalParamSubroutine set_logical_param,
-                  SetRealParamSubroutine set_real_param
-                  )
+                  SetRealParamSubroutine set_real_param)
       : AerosolProcess(type, name),
         init_process_(init_process),
         run_process_(run_process),

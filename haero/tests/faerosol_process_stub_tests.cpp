@@ -155,4 +155,3 @@ TEST_CASE("faerosol_process_stub", "") {
   delete atm;
   delete model;
 }
-

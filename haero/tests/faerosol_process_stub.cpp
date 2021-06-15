@@ -20,12 +20,10 @@ extern void process_stub_set_real_param(const char* name, Real value);
 namespace haero {
 
 FAerosolProcessStub::FAerosolProcessStub()
-    : FAerosolProcess(haero::ActivationProcess,
-                      "Aerosol process stub (Fortran)", process_stub_init,
-                      process_stub_run, process_stub_finalize,
-                      process_stub_set_integer_param,
-                      process_stub_set_logical_param,
-                      process_stub_set_real_param) {
-}
+    : FAerosolProcess(
+          haero::ActivationProcess, "Aerosol process stub (Fortran)",
+          process_stub_init, process_stub_run, process_stub_finalize,
+          process_stub_set_integer_param, process_stub_set_logical_param,
+          process_stub_set_real_param) {}
 
 }  // namespace haero
