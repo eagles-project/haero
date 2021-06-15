@@ -53,9 +53,8 @@ subroutine run_bridge(t, dt, progs, atm, diags, tends) bind(c)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 
-  print*,'BALLI- I am in RUN'
   ! Call the actual subroutine.
-  !call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+  call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 end subroutine run_bridge
 
 pure function compute_diameter_bridge(vol2num) result(diameter) bind(c)

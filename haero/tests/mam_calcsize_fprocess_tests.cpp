@@ -9,13 +9,13 @@ using namespace haero;
 
 // These tests demonstrate our minimal Fortran-backed prognostic process stub.
 TEST_CASE("mam_calcsize_run", "") {
-5B  static_assert(HAERO_PACK_SIZE == 1,
+  static_assert(HAERO_PACK_SIZE == 1,
                 "Fortran not supported for HAERO_PACK_SIZE != 1.");
 
   // We create a phony model to be used for these tests.
-  auto modes = create_mam4_modes();
+  auto modes        = create_mam4_modes();
   auto aero_species = create_mam4_aerosol_species();
-  auto gas_species = create_mam4_gas_species();
+  auto gas_species  = create_mam4_gas_species();
   auto mode_species = create_mam4_mode_species();
   int num_levels = 72;
   ModalAerosolConfig aero_config(modes, aero_species, mode_species,
@@ -50,7 +50,7 @@ TEST_CASE("mam_calcsize_run", "") {
 
   // Test process tendencies.
   SECTION("tendencies") {
-    auto* stub = new MAMCalcsizeProcess();
+    //auto* stub = new MAMCalcsizeProcess();
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
@@ -75,6 +75,7 @@ TEST_CASE("mam_calcsize_run", "") {
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
         int_num_concs(m, k) = n0;
+        cld_num_concs(m, k) = 0;
       }
     }
 
@@ -87,8 +88,8 @@ TEST_CASE("mam_calcsize_run", "") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 0.01;
-    stub->run(model->modal_aerosol_config(), t, dt, *progs, *atm, *diags,
-              *tends);
+    run_bridge(model->modal_aerosol_config(), t, dt, *progs, *atm, *diags,
+               *tends);
     /*
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.

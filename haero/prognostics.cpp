@@ -49,7 +49,7 @@ Prognostics::Prognostics(int num_aerosol_modes,
       cld_aerosols_extent_0 == num_aero_populations_,
       "cld_aerosols must have extent(0) == " << num_aero_populations_);
   EKAT_REQUIRE_MSG(cld_aerosols_extent_1 == num_vert_packs,
-                   "int_aerosols must have extent(1) == " << num_vert_packs);
+                   "cld_aerosols must have extent(1) == " << num_vert_packs);
   EKAT_REQUIRE_MSG(gases_extent_0 == num_gases_,
                    "gases must have extent(0) == " << num_gases_);
   EKAT_REQUIRE_MSG(gases_extent_1 == num_vert_packs,
