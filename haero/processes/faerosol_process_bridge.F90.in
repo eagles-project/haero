@@ -8,7 +8,10 @@ module @F90_MODULE_NAME@_bridge
   ! Module functions
   public :: @F90_MODULE_NAME@_init, &
             @F90_MODULE_NAME@_run, &
-            @F90_MODULE_NAME@_finalize
+            @F90_MODULE_NAME@_finalize, &
+            @F90_MODULE_NAME@_set_integer_param, &
+            @F90_MODULE_NAME@_set_logical_param, &
+            @F90_MODULE_NAME@_set_real_param
 
 contains
 
@@ -63,6 +66,48 @@ subroutine @F90_MODULE_NAME@_finalize() bind(c)
   implicit none
 
   call finalize(model)
+end subroutine
+
+! Sets an integer parameter within the module
+subroutine @F90_MODULE_NAME@_set_integer_param(name, val) bind(c)
+  use iso_c_binding, only: c_ptr, c_int
+  use haero, only: c_to_f_string
+  use @F90_MODULE_NAME@, only: set_integer_param
+  implicit none
+
+  type(c_ptr), value, intent(in)    :: name ! parameter name
+  integer(c_int), value, intent(in) :: val  ! parameter value
+
+  call set_integer_param(c_to_f_string(name), val)
+end subroutine
+
+! Sets a logical parameter within the module
+subroutine @F90_MODULE_NAME@_set_logical_param(name, val) bind(c)
+  use iso_c_binding, only: c_ptr, c_bool
+  use haero, only: c_to_f_string
+  use @F90_MODULE_NAME@, only: set_logical_param
+  implicit none
+
+  type(c_ptr), value, intent(in)     :: name ! parameter name
+  logical(c_bool), value, intent(in) :: val  ! parameter value
+
+  logical :: f_val
+
+  f_val = val
+  call set_logical_param(c_to_f_string(name), f_val)
+end subroutine
+
+! Sets a real-valued parameter within the module
+subroutine @F90_MODULE_NAME@_set_real_param(name, val) bind(c)
+  use iso_c_binding, only: c_ptr, c_real
+  use haero, only: c_to_f_string
+  use @F90_MODULE_NAME@, only: set_real_param
+  implicit none
+
+  type(c_ptr), value, intent(in)  :: name ! parameter name
+  real(c_real), value, intent(in) :: val  ! parameter value
+
+  call set_real_param(c_to_f_string(name), val)
 end subroutine
 
 end module

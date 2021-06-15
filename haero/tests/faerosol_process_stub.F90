@@ -21,9 +21,13 @@ module faerosol_process_stub
   ! Process parameters
   real(wp) :: decay_rate ! Decay rate for cloudborne aerosols
 
-  public :: process_stub_init, &
-            process_stub_run, &
-            process_stub_finalize
+  ! Module interface
+  public :: process_stub_init, process_stub_run, process_stub_finalize
+
+  ! Parameter setters
+  public :: process_stub_set_integer_param, &
+            process_stub_set_logical_param, &
+            process_stub_set_real_param
 
   ! C function for obtaining decay rate.
   interface
@@ -37,9 +41,6 @@ contains
 !> Performs initialization.
 subroutine process_stub_init() bind(c)
   implicit none
-
-  ! Initialize process parameters.
-  decay_rate = process_stub_decay_rate()
 end subroutine
 
 !> Calls the update for the process, computing tendencies for each affected
@@ -112,6 +113,36 @@ subroutine process_stub_finalize() bind(c)
   implicit none
 
   ! Deallocate any process-specific resources
+end subroutine
+
+! Parameter setters -- we only support setting "decay_rate" to a real value.
+subroutine process_stub_set_integer_param(name, val) bind(c)
+  use iso_c_binding, only: c_ptr, c_int
+  implicit none
+
+  type(c_ptr), value, intent(in) :: name
+  integer(c_int), value, intent(in) :: val
+end subroutine
+
+subroutine process_stub_set_logical_param(name, val) bind(c)
+  use iso_c_binding, only: c_ptr, c_bool
+  implicit none
+
+  type(c_ptr), value, intent(in) :: name
+  logical(c_bool), value, intent(in) :: val
+end subroutine
+
+subroutine process_stub_set_real_param(name, val) bind(c)
+  use iso_c_binding, only: c_ptr, c_real
+  use haero, only: c_to_f_string
+  implicit none
+
+  type(c_ptr), value, intent(in) :: name
+  real(c_real), value, intent(in) :: val
+
+  if (trim(c_to_f_string(name)) == "decay_rate") then
+    decay_rate = val
+  end if
 end subroutine
 
 end module

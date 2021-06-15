@@ -116,6 +116,12 @@ class AerosolProcess {
                    const Atmosphere& atmosphere, const Diagnostics& diagnostics,
                    Tendencies& tendencies) const = 0;
 
+  /// Override these methods to allow a host model to set named parameters
+  /// for this aerosol process.
+  virtual void set_param(const std::string& name, int value) {}
+  virtual void set_param(const std::string& name, bool value) {}
+  virtual void set_param(const std::string& name, Real value) {}
+
   /// Override this method to return a vector of strings containing the names
   /// of diagnostic variables required by this aerosol process in order to
   /// compute its tendencies. The Model that runs this aerosol process checks
@@ -160,34 +166,59 @@ class NullAerosolProcess : public AerosolProcess {
 /// tendencies.
 class FAerosolProcess : public AerosolProcess {
  public:
-  /// This type is a pointer to a Fortran function that initializes a process.
+  /// A pointer to a Fortran subroutine that initializes a process.
   /// Since the model is already available to the Fortran process via Haero's
   /// Fortran helper module, this type of function takes no arguments.
-  typedef void (*InitProcessFunction)(void);
+  typedef void (*InitProcessSubroutine)(void);
 
-  /// This type is a pointer to a Fortran function that runs a process.
-  typedef void (*RunProcessFunction)(Real t, Real dt, void* progs, void* atm,
-                                     void* diags, void* tends);
+  /// A pointer to a Fortran subroutine that runs a process.
+  typedef void (*RunProcessSubroutine)(Real t, Real dt, void* progs, void* atm,
+                                       void* diags, void* tends);
 
-  /// This type is a pointer to a Fortran function that finalizes a process,
+  /// A pointer to a Fortran subroutine that finalizes a process,
   /// deallocating any resources allocated in the process's init function.
-  typedef void (*FinalizeProcessFunction)(void);
+  typedef void (*FinalizeProcessSubroutine)(void);
+
+  /// Pointers to Fortran subroutines that set parameters for a process.
+  typedef void (*SetIntegerParamSubroutine)(const char* name, int value);
+  typedef void (*SetLogicalParamSubroutine)(const char* name, bool value);
+  typedef void (*SetRealParamSubroutine)   (const char* name, Real value);
 
   /// Constructor.
   /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
-  /// @param [in] create_process A pointer to an interoperable Fortran function
-  ///                            that returns a C pointer to a newly allocated
-  ///                            Fortran-backed prognostic process.
+  /// @param [in] init_process A pointer to an interoperable Fortran subroutine
+  ///                          that initializes the Fortran-backed process.
+  /// @param [in] run_process A pointer to an interoperable Fortran subroutine
+  ///                         that runs the Fortran-backed process.
+  /// @param [in] finalize_process A pointer to an interoperable Fortran subroutine
+  ///                              that frees resources for the Fortran-backed
+  ///                              process.
+  /// @param [in] set_integer_param A pointer to an interoperable Fortran
+  ///                               subroutine that sets an integer parameter
+  ///                               for the Fortran-backed process.
+  /// @param [in] set_logical_param A pointer to an interoperable Fortran
+  ///                               subroutine that sets a logical parameter
+  ///                               for the Fortran-backed process.
+  /// @param [in] set_real_param A pointer to an interoperable Fortran
+  ///                            subroutine that sets a real-valued parameter
+  ///                            for the Fortran-backed process.
   FAerosolProcess(AerosolProcessType type, const std::string& name,
-                  InitProcessFunction init_process,
-                  RunProcessFunction run_process,
-                  FinalizeProcessFunction finalize_process)
+                  InitProcessSubroutine init_process,
+                  RunProcessSubroutine run_process,
+                  FinalizeProcessSubroutine finalize_process,
+                  SetIntegerParamSubroutine set_integer_param,
+                  SetLogicalParamSubroutine set_logical_param,
+                  SetRealParamSubroutine set_real_param
+                  )
       : AerosolProcess(type, name),
         init_process_(init_process),
         run_process_(run_process),
         finalize_process_(finalize_process),
+        set_integer_param_(set_integer_param),
+        set_logical_param_(set_logical_param),
+        set_real_param_(set_real_param),
         initialized_(false) {}
 
   /// Copy constructor.
@@ -196,6 +227,9 @@ class FAerosolProcess : public AerosolProcess {
         init_process_(pp.init_process_),
         run_process_(pp.run_process_),
         finalize_process_(pp.finalize_process_),
+        set_integer_param_(pp.set_integer_param_),
+        set_logical_param_(pp.set_logical_param_),
+        set_real_param_(pp.set_real_param_),
         initialized_(false) {}
 
   /// Destructor.
@@ -226,11 +260,27 @@ class FAerosolProcess : public AerosolProcess {
                  (void*)&diagnostics, (void*)&tendencies);
   }
 
+  void set_param(const std::string& name, int value) override {
+    set_integer_param_(name.c_str(), value);
+  }
+
+  void set_param(const std::string& name, bool value) override {
+    set_logical_param_(name.c_str(), value);
+  }
+
+  void set_param(const std::string& name, Real value) override {
+    set_real_param_(name.c_str(), value);
+  }
+
  private:
   // Pointers to Fortran subroutines.
-  InitProcessFunction init_process_;
-  RunProcessFunction run_process_;
-  FinalizeProcessFunction finalize_process_;
+  InitProcessSubroutine init_process_;
+  RunProcessSubroutine run_process_;
+  FinalizeProcessSubroutine finalize_process_;
+
+  SetIntegerParamSubroutine set_integer_param_;
+  SetLogicalParamSubroutine set_logical_param_;
+  SetRealParamSubroutine set_real_param_;
 
   // Has the process been initialized?
   bool initialized_;

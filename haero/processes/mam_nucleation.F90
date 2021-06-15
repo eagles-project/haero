@@ -11,18 +11,31 @@ module mam_nucleation
   implicit none
   private
 
-  ! Module functions
+  ! Module interface
   public :: init, run, finalize
 
+  !> Settable parameters:
+  !> * aitken_adjust_factor (real) - Adjustment factor for Aitken number
+  !>     concentration tendency
+  !> * h2so4_uptake_opt (integer) - Controls treatment of H2SO4 uptake:
+  !> * h2so4_condense_opt (integer) - Controls treatment of H2SO4 condensation:
+  !>     1 = sequential   calc. of gas-chem prod, then condensation loss
+  !>     2 = simultaneous calc. of gas-chem prod and condensation loss
+  !> * pbl_adjust_factor (real) - adjustment factor for nucleation rate
+  !>     corrected for the planetary boundary layer.
+  !> * nuc_adjust_factor (real) - adjustment factor for nucleation rate with
+  !>     binary/ternary nucleation.
+  public :: set_integer_param, set_logical_param, set_real_param
 
+  ! These are exposed only for testing purposes.
   public :: compute_tendencies
   public :: ternary_nuc_merik2007
   public :: binary_nuc_vehk2002
-  public :: pbl_nuc_wang2008 
+  public :: pbl_nuc_wang2008
   public :: mer07_veh02_nuc_mosaic_1box
-  public :: adjust_factor_pbl_ratenucl
-  public :: adjust_factor_bin_tern_ratenucl
-  public :: newnuc_adjust_factor_dnaitdt
+  public :: aitken_adjust_factor
+  public :: pbl_adjust_factor
+  public :: nuc_adjust_factor
 
   !-------------------
   ! Module parameters
@@ -97,13 +110,13 @@ module mam_nucleation
   real(wp), dimension(:), allocatable :: qwtr_cur
 
   !> This is an option flag for H2SO4 uptake.
-  integer :: gaexch_h2so4_uptake_optaa
+  integer :: h2so4_uptake_opt
 
   !> Index of H2SO4 gas
-  integer :: igas_h2so4 
+  integer :: igas_h2so4
 
   !> Index of NH3 gas
-  integer :: igas_nh3 
+  integer :: igas_nh3
 
   !> Index of NH4 aerosol within the Aitken mode
   integer :: iaer_nh4
@@ -123,17 +136,17 @@ module mam_nucleation
   !> Controls treatment of H2SO4 condensation
   !>    1 = sequential   calc. of gas-chem prod then condensation loss
   !>    2 = simultaneous calc. of gas-chem prod and  condensation loss
-  integer :: newnuc_h2so4_conc_optaa
+  integer :: h2so4_condense_opt
 
   !> Adjustment factor for Aitken number concentration tendency
-  real(wp) :: newnuc_adjust_factor_dnaitdt
+  real(wp) :: aitken_adjust_factor
 
   !> Adjustment factor for nucleation rate with binary/ternary nucleation.
-  real(wp) :: adjust_factor_bin_tern_ratenucl
+  real(wp) :: nuc_adjust_factor
 
   !> Adjustment factor for nucleation rate corrected for the planetary boundary
   !> layer.
-  real(wp) :: adjust_factor_pbl_ratenucl
+  real(wp) :: pbl_adjust_factor
 
 contains
 
@@ -152,7 +165,7 @@ subroutine init(model)
   ! This needs to be done for unit testing when
   ! the order and number of tests run is unknown
   ! so each test needs to be able to call init.
-  if (.not. allocated(dgnum_aer)) then 
+  if (.not. allocated(dgnum_aer)) then
     ! Extract mode properties.
     allocate(dgnum_aer(model%num_modes))
     allocate(dgnumlo_aer(model%num_modes))
@@ -195,10 +208,10 @@ subroutine init(model)
     igas_nh3   = model%gas_index("NH3")
 
     ! Set some defaults
-    gaexch_h2so4_uptake_optaa = 2
-    newnuc_h2so4_conc_optaa = 2
+    h2so4_uptake_opt = 2
+    h2so4_condense_opt = 2
     dens_so4a_host = 1.0_wp ! FIXME
-  end if 
+  end if
 end subroutine
 
 subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
@@ -381,6 +394,43 @@ subroutine finalize(model)
 
 end subroutine
 
+subroutine set_integer_param(name, val)
+  implicit none
+
+  character(len=*), intent(in) :: name
+  integer, intent(in) :: val
+
+  if (trim(name) == "h2so4_uptake_opt") then
+    h2so4_uptake_opt = val
+  else if (trim(name) == "h2so4_condense_opt") then
+    h2so4_condense_opt = val
+  end if
+end subroutine
+
+subroutine set_logical_param(name, val)
+  implicit none
+
+  character(len=*), intent(in) :: name
+  logical, intent(in) :: val
+
+  ! No logical parameters to set!
+end subroutine
+
+subroutine set_real_param(name, val)
+  implicit none
+
+  character(len=*), intent(in) :: name
+  real(wp), intent(in) :: val
+
+  if (trim(name) == "aitken_adjust_factor") then
+    aitken_adjust_factor = val
+  else if (trim(name) == "pbl_adjust_factor") then
+    pbl_adjust_factor = val
+  else if (trim(name) == "nuc_adjust_factor") then
+    nuc_adjust_factor = val
+  end if
+end subroutine
+
 ! Computes tendencies due to aerosol nucleation (new particle formation).
 ! Treats both nucleation and subsequent growth of new particles to aitken
 ! mode size. Uses the following parameterizations:
@@ -447,8 +497,7 @@ subroutine compute_tendencies(deltat, &
   ! qh2so4_avg = average qh2so4 over time-step
   qh2so4_cur = qgas_cur(igas_h2so4)
 
-  if ((gaexch_h2so4_uptake_optaa == 1) .and. &
-      (newnuc_h2so4_conc_optaa   == 1)) then
+  if ((h2so4_uptake_opt == 1) .and. (h2so4_condense_opt == 1)) then
     ! estimate qh2so4_avg using the method in standard cam5.2 modal_aero_newnuc
 
     ! skip if h2so4 vapor < qqgas_curh2so4_cutoff
@@ -576,8 +625,8 @@ subroutine compute_tendencies(deltat, &
 
   ! *** apply adjustment factor to avoid unrealistically high
   ! aitken number concentrations in mid and upper troposphere
-  dndt_ait = dndt_ait * newnuc_adjust_factor_dnaitdt
-  dmdt_ait = dmdt_ait * newnuc_adjust_factor_dnaitdt
+  dndt_ait = dndt_ait * aitken_adjust_factor
+  dmdt_ait = dmdt_ait * aitken_adjust_factor
 
   80000 continue
 
@@ -777,7 +826,7 @@ subroutine mer07_veh02_nuc_mosaic_1box(   &
     newnuc_method_flagaa2 = 2
   end if
 
-  rateloge  = rateloge + log(max(1.0e-38_wp, adjust_factor_bin_tern_ratenucl))
+  rateloge  = rateloge + log(max(1.0e-38_wp, nuc_adjust_factor))
 
   ! do boundary layer nuc
   if ((newnuc_method_flagaa == 11) .or.   &
@@ -998,7 +1047,7 @@ end subroutine
 subroutine pbl_nuc_wang2008( so4vol,   &
   newnuc_method_flagaa, newnuc_method_flagaa2,   &
   ratenucl, rateloge,   &
-  cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster ) 
+  cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster )
 
   implicit none
 
@@ -1030,7 +1079,7 @@ subroutine pbl_nuc_wang2008( so4vol,   &
     return
   end if
 
-  tmp_ratenucl = tmp_ratenucl * adjust_factor_pbl_ratenucl
+  tmp_ratenucl = tmp_ratenucl * pbl_adjust_factor
   tmp_rateloge = log( max( 1.0e-38_wp, tmp_ratenucl ) )
 
   ! exit if pbl nuc rate is lower than (incoming) ternary/binary rate
