@@ -182,26 +182,20 @@ void validate_reactions(SimulationInput sim_inp) {
 /// function to read the chemistry input yaml file and construct a
 /// SimulationInput object from what is found there
 SimulationInput read_chem_input(const std::string& filename) {
-  // Try to load the input from the yaml file
-  try {
-    auto root = YAML::LoadFile(filename);
+  // load the input from the yaml file
+  auto root = YAML::LoadFile(filename);
 
-    SimulationInput sim_inp;
-    // save the filename for use by the ChemSolver
-    sim_inp.input_file = filename;
-    // get the required info from the file, using the above functions
-    sim_inp.species = read_species(root);
-    sim_inp.env_conditions = read_env_conditions(root);
-    sim_inp.reactions = read_reactions(root);
-    // ensure that reactions contain only products/reactants in the species list
-    validate_reactions(sim_inp);
+  SimulationInput sim_inp;
+  // save the filename for use by the ChemSolver
+  sim_inp.input_file = filename;
+  // get the required info from the file, using the above functions
+  sim_inp.species = read_species(root);
+  sim_inp.env_conditions = read_env_conditions(root);
+  sim_inp.reactions = read_reactions(root);
+  // ensure that reactions contain only products/reactants in the species list
+  validate_reactions(sim_inp);
 
-    return sim_inp;
-  } catch (YAML::BadFile& e) {
-    throw YamlException(e.what());
-  } catch (YAML::ParserException& e) {
-    throw YamlException(e.what());
-  }
+  return sim_inp;
 }
 
 }  // end namespace chem_driver
