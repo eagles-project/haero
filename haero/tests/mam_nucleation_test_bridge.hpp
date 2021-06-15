@@ -9,6 +9,20 @@ using haero::Real;
 extern "C" {
 
 // Fortran subroutines that implement this process.
+
+extern void init_bridge();
+
+extern void compute_tendencies_bridge(
+    const Real &factor_bin_tern_ratenucl,
+    const Real &adjust_factor_pbl_ratenucl, const Real &deltat,
+    const Real &temp, const Real &pmid, const Real &aircon, const Real &zmid,
+    const Real &pblh, const Real &relhum, const Real &uptkrate_h2so4,
+    const Real &del_h2so4_gasprod, const Real &del_h2so4_aeruptk,
+    const Real *qgas_cur, const Real *qgas_avg, const Real *qnum_cur,
+    const Real *qaer_cur, const Real *qwtr_cur, Real &dndt_ait_f,
+    Real &dmdt_ait_f, Real &dso4dt_ait_f, Real &dnh4dt_ait_f,
+    Real &nclusterdt_f);
+
 extern void ternary_nuc_merik2007_bridge(const Real t, const Real rh,
                                          const Real c2, const Real c3,
                                          Real &j_log, Real &ntot, Real &nacid,
