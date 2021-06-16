@@ -11,6 +11,11 @@ extern void @F90_MODULE_NAME@_init();
 extern void @F90_MODULE_NAME@_run(Real t, Real dt, void* progs, void* atm, void* diags, void* tends);
 extern void @F90_MODULE_NAME@_finalize();
 
+// Fortran subroutines that set process parameters.
+extern void @F90_MODULE_NAME@_set_integer_param(const char* name, int value);
+extern void @F90_MODULE_NAME@_set_logical_param(const char* name, bool value);
+extern void @F90_MODULE_NAME@_set_real_param(const char* name, Real value);
+
 } // extern "C"
 
 namespace haero {
@@ -20,7 +25,10 @@ namespace haero {
     "@CXX_CLASS_NAME@ (Fortran @PROCESS_ENUM_TYPE@)",
     @F90_MODULE_NAME@_init,
     @F90_MODULE_NAME@_run,
-    @F90_MODULE_NAME@_finalize) {
+    @F90_MODULE_NAME@_finalize,
+    @F90_MODULE_NAME@_set_integer_param,
+    @F90_MODULE_NAME@_set_logical_param,
+    @F90_MODULE_NAME@_set_real_param) {
 }
 
 } // end haero namespace

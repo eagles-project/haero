@@ -12,13 +12,13 @@ module mam_nucleation_test_bridge
 
 contains
 
-subroutine init_bridge()  bind(c) 
+subroutine init_bridge()  bind(c)
   use haero, only: model
   use mam_nucleation, only: init
   implicit none
   call init(model)
 end subroutine
-  
+
 subroutine compute_tendencies_bridge( &
   factor_bin_tern_ratenucl, &
   factor_pbl_ratenucl, &
@@ -46,9 +46,9 @@ subroutine compute_tendencies_bridge( &
   use haero, only: model
   use haero_precision, only: wp
   use mam_nucleation, only: compute_tendencies
-  use mam_nucleation, only: adjust_factor_bin_tern_ratenucl
-  use mam_nucleation, only: adjust_factor_pbl_ratenucl
-  use mam_nucleation, only: newnuc_adjust_factor_dnaitdt
+  use mam_nucleation, only: nuc_adjust_factor
+  use mam_nucleation, only: pbl_adjust_factor
+  use mam_nucleation, only: aitken_adjust_factor
   implicit none
 
   ! Arguments
@@ -77,9 +77,9 @@ subroutine compute_tendencies_bridge( &
 
   ! Call the actual subroutine.
   ! But first set this public value on the module that the function will use.
-  adjust_factor_bin_tern_ratenucl = factor_bin_tern_ratenucl
-  adjust_factor_pbl_ratenucl      = factor_pbl_ratenucl
-  newnuc_adjust_factor_dnaitdt    = 1.0
+  nuc_adjust_factor = factor_bin_tern_ratenucl
+  pbl_adjust_factor      = factor_pbl_ratenucl
+  aitken_adjust_factor    = 1.0
 
   ! Call the actual subroutine.
   call compute_tendencies(deltat, &
@@ -121,7 +121,7 @@ subroutine pbl_nuc_wang2008_bridge(factor_pbl_ratenucl, so4vol, flagaa, flagaa2,
   use iso_c_binding, only: c_int
   use haero_precision, only: wp
   use mam_nucleation, only: pbl_nuc_wang2008
-  use mam_nucleation, only: adjust_factor_pbl_ratenucl
+  use mam_nucleation, only: pbl_adjust_factor
   implicit none
 
   ! Arguments
@@ -133,7 +133,7 @@ subroutine pbl_nuc_wang2008_bridge(factor_pbl_ratenucl, so4vol, flagaa, flagaa2,
 
   ! Call the actual subroutine.
   ! But first set this public value on the module that the function will use.
-  adjust_factor_pbl_ratenucl = factor_pbl_ratenucl
+  pbl_adjust_factor = factor_pbl_ratenucl
   call pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge, &
     cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster)
 end subroutine
@@ -167,8 +167,8 @@ subroutine mer07_veh02_nuc_mosaic_1box_bridge(   &
   use iso_c_binding, only: c_int, c_ptr
   use haero_precision, only: wp
   use mam_nucleation, only: mer07_veh02_nuc_mosaic_1box
-  use mam_nucleation, only: adjust_factor_bin_tern_ratenucl
-  use mam_nucleation, only: adjust_factor_pbl_ratenucl
+  use mam_nucleation, only: nuc_adjust_factor
+  use mam_nucleation, only: pbl_adjust_factor
   use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
@@ -218,8 +218,8 @@ subroutine mer07_veh02_nuc_mosaic_1box_bridge(   &
 
   ! Call the actual subroutine.
   ! But first set this public value on the module that the function will use.
-  adjust_factor_bin_tern_ratenucl = factor_bin_tern_ratenucl
-  adjust_factor_pbl_ratenucl      = factor_pbl_ratenucl
+  nuc_adjust_factor = factor_bin_tern_ratenucl
+  pbl_adjust_factor = factor_pbl_ratenucl
   call mer07_veh02_nuc_mosaic_1box(newnuc_method_flagaa, dtnuc, temp_in, rh_in, press_in,   &
     zm_in, pblh_in,   &
     qh2so4_cur, qh2so4_avg, qnh3_cur, h2so4_uptkrate,   &

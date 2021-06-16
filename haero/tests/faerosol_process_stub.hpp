@@ -10,8 +10,8 @@ namespace haero {
 /// mode systems. See prog_process_stub.f90 for a complete description.
 class FAerosolProcessStub : public FAerosolProcess {
  public:
-  /// Create a prognostic process with the specified exponential decay rate.
-  explicit FAerosolProcessStub(Real decay_rate);
+  /// Create a prognostic process stub for testing.
+  FAerosolProcessStub();
 };
 
 }  // namespace haero
