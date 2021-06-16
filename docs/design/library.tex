@@ -793,6 +793,15 @@ a Fortran subroutine.
         subroutine body implementing finalization can be empty.
 \end{enumerate}
 
+In addition, the process may support named parameters that can be set to
+specific values. Some examples of these kinds of parameters are
+
+\begin{itemize}
+  \item Integer-valued parameters that select one of several supported algorithms
+  \item Boolean flags for enabling or disabling features
+  \item Real-valued scale factors for quantities based on tuning or assumptions
+\end{itemize}
+
 Haero provides an object-oriented approach for implementing a process in terms
 of this simple interface. In an object-oriented approach, an abstract interface
 is encoded in a ``base class''---a data type that declares the necessary
@@ -831,13 +840,22 @@ class AerosolProcess {
                    const Atmosphere& atmosphere,
                    const Diagnostics& diagnostics,
                    Tendencies& tendencies) const = 0;
+
+  // Override these methods to set a parameter to a given value based on its
+  // name.
+  virtual void set_param(const std::string& name, int value) {}
+  virtual void set_param(const std::string& name, bool value) {}
+  virtual void set_param(const std::string& name, Real value) {}
 };
 \end{lstlisting}
 
 In addition to the ``constructor'' function used to create an instance of a
 \texttt{AerosolProcess}, this interface declares three functions (\texttt{init},
 \texttt{run}, and the destructor function \texttt{\~AerosolProcess})
-that correspond to the three behaviors described above.
+that correspond to the three behaviors described above and must be overridden.
+Additionally, one or more of the \texttt{set\_param} methods can be overridden
+to support process-specific parameters. These parameters should be documented
+with the process.
 
 The constructor accepts a process type that indicates what stage of the aerosol
 life cycle it represents. An \texttt{AerosolProcessType} data structure is an
@@ -909,7 +927,20 @@ module <module_name>
                    diagnostics_t, tendencies_t
   ...
   implicit none
+
+  ! Aerosol process interface subroutines
   public :: init, run, finalize
+
+  ! Parameter setting subroutines
+  public :: set_integer_param, set_logical_param, set_real_param
+
+  ! Module variables, including settable parameters
+  integer :: my_option
+  logical :: my_flag
+  real(wp) :: my_scale_factor
+
+  ! SAVE keyword for retaining module variables
+  save
 
 contains
 
@@ -946,10 +977,50 @@ subroutine finalize(model)
   ...
 end subroutine
 
+subroutine set_integer_param(name, val)
+  implicit none
+
+  ! Arguments
+  character(len=*), intent(in) :: name
+  integer, intent(in)          :: val
+
+  if (trim(name) == "my_option") then
+    my_option = val
+  end if
+end subroutine
+
+subroutine set_logical_param(name, val)
+  implicit none
+
+  ! Arguments
+  character(len=*), intent(in) :: name
+  logical, intent(in)          :: val
+
+  if (trim(name) == "my_flag") then
+    my_flag = val
+  end if
+end subroutine
+
+subroutine set_real_param(name, val)
+  implicit none
+
+  ! Arguments
+  character(len=*), intent(in) :: name
+  real(wp), intent(in)         :: val
+
+  if (trim(name) == "my_scale_factor") then
+    my_scale_factor = val
+  end if
+end subroutine
+
 ...
 
 end module
 \end{lstlisting}
+
+Note that you {\bf must} implement subroutines for \texttt{set\_integer\_param},
+\texttt{set\_logical\_param}, and \texttt{set\_real\_param}, even if your process
+doesn't support settable parameters.
 
 To implement an aerosol process in Fortran, you create such a module in a
 Fortran source file and then declare it as a \texttt{faerosol\_process} in the
