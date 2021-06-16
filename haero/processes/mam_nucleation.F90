@@ -79,8 +79,9 @@ module mam_nucleation
 
   ! These variables are adapted from MAM's modal_aero_microp_control module
   ! and initialized in the init subroutine. Here they are variables, not
-  ! properties, because their values depend on the particular model
-  ! configuration.
+  ! parameters, because their values depend on the particular model
+  ! configuration. Accordingly, their values must be retained between calls.
+  save
 
   !> The index of the Aitken mode
   integer :: nait

@@ -18,8 +18,8 @@ module faerosol_process_stub
   implicit none
   private
 
-  ! Process parameters
-  real(wp) :: decay_rate ! Decay rate for cloudborne aerosols
+  ! Process parameters (mark with save attribute)
+  real(wp), save :: decay_rate ! Decay rate for cloudborne aerosols
 
   ! Module interface
   public :: process_stub_init, process_stub_run, process_stub_finalize
