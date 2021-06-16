@@ -181,10 +181,12 @@ struct KohlerPolynomial {
     const double rmin = dry_radius_min_microns;
     const double rmax = dry_radius_max_microns;
     const double tol = FloatingPoint<double>::zero_tol;
-    const auto in_bounds_mask =
-        (relative_humidity >= (rhmin-tol)) && (relative_humidity <= (rhmax+tol)) &&
-        (this->hygroscopicity >= (hmin-tol)) && (this->hygroscopicity <= (hmax+tol)) &&
-        (this->dry_radius >= (rmin-tol)) && (this->dry_radius <= (rmax+tol));
+    const auto in_bounds_mask = (relative_humidity >= (rhmin - tol)) &&
+                                (relative_humidity <= (rhmax + tol)) &&
+                                (this->hygroscopicity >= (hmin - tol)) &&
+                                (this->hygroscopicity <= (hmax + tol)) &&
+                                (this->dry_radius >= (rmin - tol)) &&
+                                (this->dry_radius <= (rmax + tol));
     return (in_bounds_mask || (!m)).all();
   }
 
@@ -200,9 +202,10 @@ struct KohlerPolynomial {
     const double rmin = dry_radius_min_microns;
     const double rmax = dry_radius_max_microns;
     const double tol = FloatingPoint<double>::zero_tol;
-    const auto in_bounds_mask = (relh >= (rhmin-tol)) && (relh <= (rhmax+tol)) &&
-                                (hyg >= (hmin-tol)) && (hyg <= (hmax+tol)) &&
-                                (dry_rad >= (rmin-tol)) && (dry_rad <= (rmax+tol));
+    const auto in_bounds_mask =
+        (relh >= (rhmin - tol)) && (relh <= (rhmax + tol)) &&
+        (hyg >= (hmin - tol)) && (hyg <= (hmax + tol)) &&
+        (dry_rad >= (rmin - tol)) && (dry_rad <= (rmax + tol));
     return (in_bounds_mask || (!m)).all();
   }
 
