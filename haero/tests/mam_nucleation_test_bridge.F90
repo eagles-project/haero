@@ -12,13 +12,13 @@ module mam_nucleation_test_bridge
 
 contains
 
-subroutine init_bridge()  bind(c) 
+subroutine init_bridge()  bind(c)
   use haero, only: model
   use mam_nucleation, only: init
   implicit none
   call init(model)
 end subroutine
-  
+
 subroutine compute_tendencies_bridge( &
   factor_bin_tern_ratenucl, &
   factor_pbl_ratenucl, &
@@ -46,9 +46,9 @@ subroutine compute_tendencies_bridge( &
   use haero, only: model
   use haero_precision, only: wp
   use mam_nucleation, only: compute_tendencies
-  use mam_nucleation, only: adjust_factor_bin_tern_ratenucl
-  use mam_nucleation, only: adjust_factor_pbl_ratenucl
-  use mam_nucleation, only: newnuc_adjust_factor_dnaitdt
+  use mam_nucleation, only: nuc_adjust_factor
+  use mam_nucleation, only: pbl_adjust_factor
+  use mam_nucleation, only: aitken_adjust_factor
   implicit none
 
   ! Arguments
@@ -77,9 +77,9 @@ subroutine compute_tendencies_bridge( &
 
   ! Call the actual subroutine.
   ! But first set this public value on the module that the function will use.
-  adjust_factor_bin_tern_ratenucl = factor_bin_tern_ratenucl
-  adjust_factor_pbl_ratenucl      = factor_pbl_ratenucl
-  newnuc_adjust_factor_dnaitdt    = 1.0
+  nuc_adjust_factor = factor_bin_tern_ratenucl
+  pbl_adjust_factor      = factor_pbl_ratenucl
+  aitken_adjust_factor    = 1.0
 
   ! Call the actual subroutine.
   call compute_tendencies(deltat, &
