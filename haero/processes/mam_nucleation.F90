@@ -33,9 +33,6 @@ module mam_nucleation
   public :: binary_nuc_vehk2002
   public :: pbl_nuc_wang2008
   public :: mer07_veh02_nuc_mosaic_1box
-  public :: aitken_adjust_factor
-  public :: pbl_adjust_factor
-  public :: nuc_adjust_factor
 
   !-------------------
   ! Module parameters
