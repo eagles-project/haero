@@ -187,24 +187,20 @@ class MAMNucleationProcess : public AerosolProcess {
                    const Atmosphere &atmosphere, const Diagnostics &diagnostics,
                    Tendencies &tendencies) const override{};
 
-  /// Set the Adjustment factor for nucleation rate corrected for the planetary
-  /// boundary layer.  This is used in calculating the boundary nucleation rate
-  /// in pbl_nuc_wang2008.
-  void set_adjust_factor_pbl_ratenucl(const Real v) {
-    adjust_factor_pbl_ratenucl = v;
+  /// Set the named parameter to the given value.
+  /// It is a fatal error to pass an unknown name.
+  virtual void set_param(const std::string &name, Real value) final {
+    if ("adjust_factor_pbl_ratenucl" == name) {
+      adjust_factor_pbl_ratenucl = value;
+    } else if ("adjust_factor_bin_tern_ratenucl" == name) {
+      adjust_factor_bin_tern_ratenucl = value;
+    } else if ("newnuc_adjust_factor_dnaitdt" == name) {
+      newnuc_adjust_factor_dnaitdt = value;
+    } else {
+      EKAT_REQUIRE_MSG(
+          false, "Parameter name does not match any in known parameter list.");
+    }
   }
-
-  /// Set the Adjustment factor for nucleation rate with binary/ternary
-  /// nucleation. This is used in calculating the boundary nucleation rate in
-  /// mer07_veh02_nuc_mosaic_1box(.
-  void set_adjust_factor_bin_tern_ratenucl(const Real v) {
-    adjust_factor_bin_tern_ratenucl = v;
-  }
-
-  void set_newnuc_adjust_factor_dnaitdt(const Real v) {
-    newnuc_adjust_factor_dnaitdt = v;
-  }
-
   /// Computes tendencies due to aerosol nucleation (new particle formation).
   /// Treats both nucleation and subsequent growth of new particles to aitken
   /// mode size. Uses the following parameterizations:

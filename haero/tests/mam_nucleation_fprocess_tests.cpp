@@ -80,11 +80,11 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
 
     const Real adjust_factor_bin_tern_ratenucl = random();
     const Real adjust_factor_pbl_ratenucl = random();
-    mam_nucleation_process.set_adjust_factor_bin_tern_ratenucl(
-        adjust_factor_bin_tern_ratenucl);
-    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(
-        adjust_factor_pbl_ratenucl);
-    mam_nucleation_process.set_newnuc_adjust_factor_dnaitdt(1.0);
+    mam_nucleation_process.set_param("adjust_factor_bin_tern_ratenucl",
+                                     adjust_factor_bin_tern_ratenucl);
+    mam_nucleation_process.set_param("adjust_factor_pbl_ratenucl",
+                                     adjust_factor_pbl_ratenucl);
+    mam_nucleation_process.set_param("newnuc_adjust_factor_dnaitdt", 1.0);
 
     PackType dndt_ait(0);
     PackType dmdt_ait(0);
@@ -262,8 +262,8 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_fprocess") {
     const Pack so4vol(5.e4 + 1.e8 * random());  // range 5x10^4 - 10^9
     const int flagaa = 11 + 2 * random();       // range 11-12
     const Real adjust_factor_pbl_ratenucl = random();
-    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(
-        adjust_factor_pbl_ratenucl);
+    mam_nucleation_process.set_param("adjust_factor_pbl_ratenucl",
+                                     adjust_factor_pbl_ratenucl);
 
     ekat::Pack<int, 1> flagaa2(0);
     Pack ratenucl(0);
@@ -371,10 +371,10 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
 
     const Real adjust_factor_bin_tern_ratenucl = random();
     const Real adjust_factor_pbl_ratenucl = random();
-    mam_nucleation_process.set_adjust_factor_bin_tern_ratenucl(
-        adjust_factor_bin_tern_ratenucl);
-    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(
-        adjust_factor_pbl_ratenucl);
+    mam_nucleation_process.set_param("adjust_factor_bin_tern_ratenucl",
+                                     adjust_factor_bin_tern_ratenucl);
+    mam_nucleation_process.set_param("adjust_factor_pbl_ratenucl",
+                                     adjust_factor_pbl_ratenucl);
 
     ekat::Pack<int, 1> isize_nuc(0);
     Pack qnuma_del(0);

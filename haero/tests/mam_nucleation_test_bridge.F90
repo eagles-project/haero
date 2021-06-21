@@ -46,9 +46,7 @@ subroutine compute_tendencies_bridge( &
   use haero, only: model
   use haero_precision, only: wp
   use mam_nucleation, only: compute_tendencies
-  use mam_nucleation, only: nuc_adjust_factor
-  use mam_nucleation, only: pbl_adjust_factor
-  use mam_nucleation, only: aitken_adjust_factor
+  use mam_nucleation, only: set_real_param
   implicit none
 
   ! Arguments
@@ -74,12 +72,14 @@ subroutine compute_tendencies_bridge( &
   real(wp), intent(out) :: dnh4dt_ait
   real(wp), intent(out) :: dso4dt_ait
   real(wp), intent(inout) :: dnclusterdt   ! cluster nucleation rate (#/m3/s)
+ 
+  real(wp), parameter :: aitken_adjust_factor = 1.0
 
   ! Call the actual subroutine.
   ! But first set this public value on the module that the function will use.
-  nuc_adjust_factor = factor_bin_tern_ratenucl
-  pbl_adjust_factor      = factor_pbl_ratenucl
-  aitken_adjust_factor    = 1.0
+  call set_real_param("nuc_adjust_factor"   , factor_bin_tern_ratenucl)
+  call set_real_param("pbl_adjust_factor"   , factor_pbl_ratenucl)
+  call set_real_param("aitken_adjust_factor", aitken_adjust_factor)
 
   ! Call the actual subroutine.
   call compute_tendencies(deltat, &
@@ -121,7 +121,7 @@ subroutine pbl_nuc_wang2008_bridge(factor_pbl_ratenucl, so4vol, flagaa, flagaa2,
   use iso_c_binding, only: c_int
   use haero_precision, only: wp
   use mam_nucleation, only: pbl_nuc_wang2008
-  use mam_nucleation, only: pbl_adjust_factor
+  use mam_nucleation, only: set_real_param
   implicit none
 
   ! Arguments
@@ -133,7 +133,7 @@ subroutine pbl_nuc_wang2008_bridge(factor_pbl_ratenucl, so4vol, flagaa, flagaa2,
 
   ! Call the actual subroutine.
   ! But first set this public value on the module that the function will use.
-  pbl_adjust_factor = factor_pbl_ratenucl
+  call set_real_param("pbl_adjust_factor", factor_pbl_ratenucl)
   call pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl, rateloge, &
     cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster)
 end subroutine
@@ -167,8 +167,7 @@ subroutine mer07_veh02_nuc_mosaic_1box_bridge(   &
   use iso_c_binding, only: c_int, c_ptr
   use haero_precision, only: wp
   use mam_nucleation, only: mer07_veh02_nuc_mosaic_1box
-  use mam_nucleation, only: nuc_adjust_factor
-  use mam_nucleation, only: pbl_adjust_factor
+  use mam_nucleation, only: set_real_param
   use iso_c_binding, only: c_ptr, c_f_pointer
   implicit none
 
@@ -218,8 +217,8 @@ subroutine mer07_veh02_nuc_mosaic_1box_bridge(   &
 
   ! Call the actual subroutine.
   ! But first set this public value on the module that the function will use.
-  nuc_adjust_factor = factor_bin_tern_ratenucl
-  pbl_adjust_factor = factor_pbl_ratenucl
+  call set_real_param("nuc_adjust_factor", factor_bin_tern_ratenucl)
+  call set_real_param("pbl_adjust_factor", factor_pbl_ratenucl)
   call mer07_veh02_nuc_mosaic_1box(newnuc_method_flagaa, dtnuc, temp_in, rh_in, press_in,   &
     zm_in, pblh_in,   &
     qh2so4_cur, qh2so4_avg, qnh3_cur, h2so4_uptkrate,   &

@@ -168,8 +168,8 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_packed") {
     const double adjust_factor_pbl_ratenucl = random();
     for (int p = 0; p < PackType::n; ++p)
       so4vol_p[p] = 5.e4 + 1.e8 * random();  // range 5x10^4 - 10^9
-    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(
-        adjust_factor_pbl_ratenucl);
+    mam_nucleation_process.set_param("adjust_factor_pbl_ratenucl",
+                                     adjust_factor_pbl_ratenucl);
 
     ekat::Pack<int, PackType::n> flagaa2_p(0);
     PackType ratenucl_p(0), rateloge_p(0), cnum_tot_p(0), cnum_h2so4_p(0),
@@ -278,10 +278,10 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
 
     const Real adjust_factor_bin_tern_ratenucl = random();
     const Real adjust_factor_pbl_ratenucl = random();
-    mam_nucleation_process.set_adjust_factor_bin_tern_ratenucl(
-        adjust_factor_bin_tern_ratenucl);
-    mam_nucleation_process.set_adjust_factor_pbl_ratenucl(
-        adjust_factor_pbl_ratenucl);
+    mam_nucleation_process.set_param("adjust_factor_bin_tern_ratenucl",
+                                     adjust_factor_bin_tern_ratenucl);
+    mam_nucleation_process.set_param("adjust_factor_pbl_ratenucl",
+                                     adjust_factor_pbl_ratenucl);
 
     ekat::Pack<int, PackType::n> isize_nuc_p(0);
     PackType qnuma_del_p(0);
