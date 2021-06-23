@@ -106,6 +106,20 @@ struct SelectedProcesses final {
   /// The selected calcsize model
   Calcsize calcsize;
 
+  enum RenameSubarea {
+    /// MAM legacy C++ RenameSubarea process
+    MAMRenameSubarea,
+#if HAERO_FORTRAN
+    /// MAM legacy Fortran rename_subarea process
+    MAMFRenameSubarea,
+#endif
+    /// No RenameSubarea process
+    NoRenameSubarea,
+  };
+
+  /// The selected rename_subarea model
+  RenameSubarea rename_subarea;
+
   /// Available process models for resuspension, in which cloud-borne aerosol
   /// particles are converted to interstitial aerosols.
   enum Resuspension {
