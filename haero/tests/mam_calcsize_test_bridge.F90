@@ -1,26 +1,16 @@
 !> This module is a bridge between the MAMCalcsizeFProcess C++ class and the
 !> mam_calcsize Fortran module.
-module mam_calcsize_bridge
+module mam_calcsize_test_bridge
 
   implicit none
   private
 
   ! Module functions
-  public :: mam_calcsize_init, &
-       run_bridge, &
-            mam_calcsize_finalize, &
-            compute_diameter_bridge
+  public :: run_bridge, &
+       finalize_bridge, &
+       compute_diameter_bridge
 
 contains
-
-! Initializes the prognostic process.
-subroutine mam_calcsize_init() bind(c)
-  use haero, only: model
-  use mam_calcsize, only: init
-  implicit none
-
-  call init(model)
-end subroutine
 
 ! Runs the prognostic process, computing tendencies
 subroutine run_bridge(t, dt, progs, atm, diags, tends) bind(c)
@@ -47,12 +37,19 @@ subroutine run_bridge(t, dt, progs, atm, diags, tends) bind(c)
   type(diagnostics_t) :: diagnostics
   type(tendencies_t)  :: tendencies
 
+  real(wp), pointer, dimension(:,:) :: q_i
+  integer :: i
+
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
   atmosphere = atmosphere_from_c_ptr(atm)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 
+  q_i => prognostics%interstitial_aerosols()
+  do i = 1, 72
+     print*,'BALLI:', q_i(1,i),i
+  enddo
   ! Call the actual subroutine.
   call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 end subroutine run_bridge
@@ -74,12 +71,12 @@ pure function compute_diameter_bridge(vol2num) result(diameter) bind(c)
 end function compute_diameter_bridge
 
 ! Finalizes the prognostic process
-subroutine mam_calcsize_finalize() bind(c)
+subroutine finalize_bridge() bind(c)
   use haero, only: model
   use mam_calcsize, only: finalize
   implicit none
 
   call finalize(model)
-end subroutine mam_calcsize_finalize
+end subroutine finalize_bridge
 
-end module
+end module mam_calcsize_test_bridge

@@ -13,6 +13,9 @@ module mam_calcsize
             set_logical_param, &
             set_real_param
 
+  !global parameters
+  real(wp), parameter :: third   = 1.0_wp/3.0_wp
+
 contains
   subroutine init(model)
 
@@ -23,6 +26,9 @@ contains
   end subroutine init
 
   subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+
+    use haero_constants, only: pi_sixth
+
     implicit none
 
     ! Arguments
@@ -38,7 +44,12 @@ contains
     integer  :: imode, nmodes, nlevs, nspec, max_nspec
 
     integer  :: s_spec_ind, e_spec_ind ! species starting and ending index in the population array for a mode
-    integer  :: ierr
+    integer  :: ierr, ilev, klev
+
+    real(wp) :: v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor
+
+    real(wp) :: drv_a, drv_c
+    real(wp) :: num_a, num_c
 
     real(wp) :: dgncur_a(model%num_levels, model%num_modes) !interstitial particle diameter[m](FIXME: This should be diagnostic variable)
     real(wp) :: dgncur_c(model%num_levels, model%num_modes) !cldborne particle diameter [m](FIXME: This should be diagnostic variable)
@@ -48,10 +59,13 @@ contains
 
     real(wp) :: dryvol_a(model%num_levels), dryvol_c(model%num_levels) !dry volume of a particle[FIXME:units????]
 
-    real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios [FIXME:units???]
-    real(wp), pointer, dimension(:,:) :: q_c    ! cldborne aerosol mix ratios [FIXME:units???]
+    real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios [kg/kg(of air)]]
+    real(wp), pointer, dimension(:,:) :: q_c    ! cldborne aerosol mix ratios [kg/kg(of air)]
 
-    real(wp), allocatable, dimension(:) :: dens !specie density array for each mode
+    real(wp), pointer, dimension(:,:) :: n_i    ! interstitial aerosol number mixing ratios [#/kg(of air)]
+    real(wp), pointer, dimension(:,:) :: n_c    ! cldborne aerosol number mixing ratios [#/kg(of air)]
+
+    real(wp), allocatable, dimension(:) :: density !specie density array for each mode
 
     !parameters
     integer, parameter :: top_lev = 1 ![FIXME: This may not be always true]
@@ -65,16 +79,23 @@ contains
     !maximum number of species in the mode with max species
     max_nspec = maxval(model%num_mode_species(:))
 
-    !interstitial mix ratios
+    !interstitial mass and number mixing ratios
     q_i => prognostics%interstitial_aerosols()
+    n_i => prognostics%interstitial_num_concs()
 
-    !cloud-borne mix ratios
-    q_c => prognostics%interstitial_aerosols()!prognostics%cloudborne_aerosols() !FIXME: THis should be cloud borne, i am getting an error currently
+    !cloud-borne mass and number mixing ratios
+    q_c => prognostics%cloudborne_aerosols()
+    n_c => prognostics%cloudborne_num_concs()
+
+    do ilev = 1, nlevs
+       print*,'incalc:', q_i(ilev,1), q_c(ilev,1),ilev
+    enddo
+
 
     !allocate variable to store densities of all species in a mode (use max_nspec to allocate, so as to avoid allocation in a nmodes loop)
-    allocate(dens(max_nspec), STAT=ierr)
+    allocate(density(max_nspec), STAT=ierr)
     if (ierr .ne. 0) then
-       print *,'Could not allocate dens array, error code=', ierr
+       print *,'Could not allocate density array, error code=', ierr
        stop
     endif
 
@@ -87,7 +108,9 @@ contains
        !interstitial and cloudborne aerosols
 
        !NOTE: In Haero we do not carry default dgnum, so we initialize dgncur_* and v2ncur_* to zero
-       !That is why, we do not need to send "list_idx" as an argument
+       !That is why, we do not need to send "list_idx" as an argument. This call can be removed
+       !as there is no need to initialize these fields with zero, they will be updated eventually
+       !with valid values
        call set_initial_sz_and_volumes (imode, top_lev, nlevs, dgncur_a, v2ncur_a, dryvol_a)
 
        !for cloud-borne aerosols
@@ -96,7 +119,7 @@ contains
        !----------------------------------------------------------------------
        !Compute dry volume mixrats (aerosol diameter)
        !Current default: number mmr is prognosed
-       !       Algorithm:calculate aerosol diameter from mass, number, and fixed sigmag
+       !       Algorithm:calculate aerosol diameter from mass, number, and fixed standard deviation of a mode
        !
        !sigmag ("sigma g") is "geometric standard deviation for aerosol mode"
        !
@@ -117,13 +140,48 @@ contains
        endif
 
        !capture densities for each specie in this mode
-       dens(1:max_nspec) = 0.0_wp !initialize the whole array to zero
-       dens(1:nspec) = model%aero_species(imode, :)%density !assign dens till nspec (as nspec can be different from max_nspec)
+       density(1:max_nspec) = 0.0_wp !initialize the whole array to zero [FIXME: NaN would be better than zero]
+       density(1:nspec) = model%aero_species(imode, :)%density !assign density till nspec (as nspec can be different for each mode)
 
-       call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, dens, q_i, q_c, dryvol_a, dryvol_c)
+       call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
 
-    enddo
-    deallocate(dens)
+       !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
+       v2nmin = model%modes(imode)%min_vol_to_num_ratio()
+       v2nmax = model%modes(imode)%max_vol_to_num_ratio()
+       dgnmin = model%modes(imode)%min_diameter
+       dgnmax = model%modes(imode)%max_diameter
+       print*,'min_max:', imode, v2nmin,v2nmax,dgnmin,dgnmax
+       !FIXME: compute relaxed counterparts as well
+
+       do klev = top_lev, nlevs
+
+          drv_a = dryvol_a(klev)
+          num_a = max( 0.0_wp, n_i(klev,imode))
+
+          drv_c = dryvol_c(klev)
+          num_c = max( 0.0_wp, n_c(klev,imode))
+
+          !compute a common factor
+          cmn_factor = exp(4.5_wp*log(model%modes(imode)%mean_std_dev)**2.0_wp)*pi_sixth
+
+          !FIXME: size adjustment is done here based on volume to num ratios
+
+          !FIXME: in (or better done after) the following update_dgn_voltonum calls, we need to update mmr as well
+          !but we are currently skipping that update. That update wil require additional arguments
+
+          !update diameters and volume to num ratios for interstitial aerosols
+          call update_dgn_voltonum(klev, imode, drv_a, num_a, &
+               v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
+               dgncur_a, v2ncur_a)
+
+          !update diameters and volume to num ratios for cloudborne aerosols
+          call update_dgn_voltonum(klev, imode, drv_c, num_c, &
+               v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
+               dgncur_c, v2ncur_c)
+       enddo! klev
+
+    enddo! imodes
+    deallocate(density)
 
   end subroutine run
 
@@ -143,14 +201,12 @@ contains
     integer, intent(in) :: imode   !mode index
 
     !outputs
-    real(wp), intent(out) :: dgncur(:,:) !diameter
-    real(wp), intent(out) :: v2ncur(:,:) !volume to number
-    real(wp), intent(out) :: dryvol(:)   !dry volume
+    real(wp), intent(out) :: dgncur(:,:) !diameter [m]
+    real(wp), intent(out) :: v2ncur(:,:) !volume to number [FIXME:units???]
+    real(wp), intent(out) :: dryvol(:)   !dry volume [m3/kg(of air)]
 
     !local variables
-    integer  :: icol, klev
-    real(wp) :: dgnum, sigmag, voltonumb
-
+    integer  :: klev
 
     do klev = top_lev, nlevs
        dgncur(klev,imode) = 0.0_wp !diameter
@@ -163,7 +219,7 @@ contains
   end subroutine set_initial_sz_and_volumes
 
 
-  subroutine compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, dens, q_i, q_c, dryvol_a, dryvol_c)
+  subroutine compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
 
     !-----------------------------------------------------------------------------
     !Purpose: Compute initial dry volume based on mmr and specie density
@@ -175,42 +231,68 @@ contains
     implicit none
 
     !inputs
-    integer,  intent(in) :: top_lev, nlevs  !for model level loop
-    integer,  intent(in) :: imode         !mode index
+    integer,  intent(in) :: top_lev, nlevs         !for model level loop
+    integer,  intent(in) :: imode                  !mode index
     integer,  intent(in) :: s_spec_ind, e_spec_ind !start and end indices of population array for this mode
 
-    real(wp), intent(in) :: dens(:)
-    real(wp), intent(in) :: q_i(:,:), q_c(:,:)       !interstitial and cldborne mix ratios [FIXME:units???]
+    real(wp), intent(in) :: density(:)             !species density [kg/m3]
+    real(wp), intent(in) :: q_i(:,:), q_c(:,:)     !interstitial and cldborne mix ratios [kg/kg(of air)]
 
     !in-outs
-    real(wp), intent(inout) :: dryvol_a(:)                    ! interstital aerosol dry volume [FIXME:units??]
-    real(wp), intent(inout) :: dryvol_c(:)                    ! cloud borne aerosol dry volume [FIXME:units??]
+    real(wp), intent(inout) :: dryvol_a(:)         ! interstital aerosol dry volume [m3/kg(of air)]
+    real(wp), intent(inout) :: dryvol_c(:)         ! cloud borne aerosol dry volume [m3/kg(of air)]
 
     !local vars
-    integer  :: ispec, klev, spec_ind
-    real(wp) :: dummwdens !density inverse
+    integer  :: ispec, klev, density_ind
+    real(wp) :: inv_density !density inverse [m3/kg]
 
-
-    character(len=32) :: spec_name
-
-    spec_ind = 0 !species index for dens array goes from 1 to nspec
     do ispec = s_spec_ind, e_spec_ind
+       density_ind = ispec - s_spec_ind + 1 !density array index goes from 1 to nspec
 
-     spec_ind = spec_ind + 1 !increment index for dens array
-     ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
-     dummwdens = 1.0_wp / dens(spec_ind) !inverse of density
-     print*,'spec_ind:', spec_ind,s_spec_ind, e_spec_ind
+       ! need qmass*inv_density = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
+       inv_density = 1.0_wp / density(density_ind) !inverse of density
 
-     !compute dry volume as a function of space (i,k)
-     do klev = top_lev, nlevs
-        dryvol_a(klev) = dryvol_a(klev) + max(0.0_wp,q_i(ispec,klev))*dummwdens
-        dryvol_c(klev) = dryvol_c(klev) + max(0.0_wp,q_c(ispec,klev))*dummwdens
-        print*,q_i(ispec,klev), 1.0_wp - 10.0_wp*epsilon(1.0_wp)
-     end do
-  end do ! nspec loop
+       !compute dry volume as a function of space (i,k)
+       do klev = top_lev, nlevs
+          dryvol_a(klev) = dryvol_a(klev) + max(0.0_wp,q_i(klev,ispec))*inv_density
+          dryvol_c(klev) = dryvol_c(klev) + max(0.0_wp,q_c(klev,ispec))*inv_density
+       end do
+    end do ! nspec loop
 
 
   end subroutine compute_dry_volume
+
+  subroutine update_dgn_voltonum(klev, imode, drv, num, &
+       v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
+       dgncur, v2ncur)
+
+    implicit none
+
+    !inputs
+    integer,  intent(in) :: klev, imode
+    real(wp), intent(in) :: drv ![m3/kg(of air)]
+    real(wp), intent(in) :: num ![#/kg(of air)]
+    real(wp), intent(in) :: v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor
+
+    !output
+    real(wp), intent(inout) :: dgncur(:,:), v2ncur(:,:)
+
+    !compute diameter and volume to number ratios only if volume is greater than zero
+    if (drv > 0.0_wp) then
+       if (num <= drv*v2nmin) then
+          dgncur(klev,imode) = dgnmin
+          v2ncur(klev,imode) = v2nmin
+       else if (num >= drv*v2nmax) then
+          dgncur(klev,imode) = dgnmax !BALLI-check if it is dgnyy is actually max!!!
+          v2ncur(klev,imode) = v2nmax
+       else
+          dgncur(klev,imode) = (drv/(cmn_factor*num))**third
+          v2ncur(klev,imode) = num/drv
+       end if
+    end if
+
+    return
+  end subroutine update_dgn_voltonum
 
 
   pure function compute_diameter(vol2num) result(diameter)
