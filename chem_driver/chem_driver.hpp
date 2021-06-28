@@ -69,13 +69,16 @@ struct Reaction {
            const std::map<std::string, Real>& rate_coefficients);
   /// copy constructor: used when copying the reactions from SimulationInput
   /// to ChemSolver
-  Reaction(const Reaction& rxn) {
-    type = rxn.type;
-    type_str = rxn.type_str;
-    reactants = rxn.reactants;
-    products = rxn.products;
-    rate_coefficients = rxn.rate_coefficients;
-  };
+  Reaction(const Reaction& rxn)
+      : type{rxn.type},
+        type_str{rxn.type_str},
+        reactants{rxn.reactants},
+        products{rxn.products},
+        rate_coefficients{rxn.rate_coefficients} {}
+  /// method for either getting the coefficient from SimulationInput
+  /// or using defaults
+  void get_or_default(const std::map<std::string, Real>& mrate_coefficients,
+                      const std::string& name);
 };
 
 /// This type contains the data required to initialize and run a simulation

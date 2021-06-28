@@ -8,6 +8,16 @@
 namespace haero {
 namespace chem_driver {
 
+namespace {
+// default reaction rate coefficients
+// Note: these are the default values used by Musica/MusicBox
+const std::map<std::string, Real> default_rxn_coeffs = {
+    {"A", 1.0},      {"Ea", 0.0},     {"B", 0.0},      {"D", 300.0},
+    {"E", 0.0},      {"k0_A", 1.0},   {"k0_B", 0.0},   {"k0_C", 0.0},
+    {"kinf_A", 1.0}, {"kinf_B", 0.0}, {"kinf_C", 0.0}, {"Fc", 0.6},
+    {"N", 1.0}};
+}  // namespace
+
 using namespace from_tchem;
 
 // anonymous namespace to hold this YamlException class
@@ -56,7 +66,6 @@ EnvironmentalConditions::EnvironmentalConditions(Real T0,
 
 /// Reaction constructor: enumerates the reaction type and sets default rate
 /// coefficients if values are not provided in the yaml input
-/// NOTE: the default values correspond to those used by MusicBox
 // FIXME: currently only have arrhenius and troe, but we'll cross that bridge
 // when we come to it
 Reaction::Reaction(const std::string& mtype_str,
@@ -71,67 +80,41 @@ Reaction::Reaction(const std::string& mtype_str,
   if (type_str.compare("arrhenius") == 0) {
     // assign the corresponding enum
     type = arrhenius;
-    // determine whether a rate coefficient was provided by the input yaml
-    // if not, assign that coefficient the default value
-    // Note: find() returns vec.end() if it is not found
-    rate_coefficients["A"] =
-        (mrate_coefficients.find("A") != mrate_coefficients.end())
-            ? mrate_coefficients.at("A")
-            : 1.0;
-    rate_coefficients["Ea"] =
-        (mrate_coefficients.find("Ea") != mrate_coefficients.end())
-            ? mrate_coefficients.at("Ea")
-            : 0.0;
-    rate_coefficients["B"] =
-        (mrate_coefficients.find("B") != mrate_coefficients.end())
-            ? mrate_coefficients.at("B")
-            : 0.0;
-    rate_coefficients["D"] =
-        (mrate_coefficients.find("D") != mrate_coefficients.end())
-            ? mrate_coefficients.at("D")
-            : 300.0;
-    rate_coefficients["E"] =
-        (mrate_coefficients.find("E") != mrate_coefficients.end())
-            ? mrate_coefficients.at("E")
-            : 0.0;
+    // get the rate coefficient from the SimulationInput, otherwise use the
+    // default value
+    get_or_default(mrate_coefficients, "A");
+    get_or_default(mrate_coefficients, "Ea");
+    get_or_default(mrate_coefficients, "B");
+    get_or_default(mrate_coefficients, "D");
+    get_or_default(mrate_coefficients, "E");
   } else if (type_str.compare("troe") == 0) {
     type = troe;
-    rate_coefficients["k0_A"] =
-        (mrate_coefficients.find("k0_A") != mrate_coefficients.end())
-            ? mrate_coefficients.at("k0_A")
-            : 1.0;
-    rate_coefficients["k0_B"] =
-        (mrate_coefficients.find("k0_B") != mrate_coefficients.end())
-            ? mrate_coefficients.at("k0_B")
-            : 0.0;
-    rate_coefficients["k0_C"] =
-        (mrate_coefficients.find("k0_C") != mrate_coefficients.end())
-            ? mrate_coefficients.at("k0_C")
-            : 0.0;
-    rate_coefficients["kinf_A"] =
-        (mrate_coefficients.find("kinf_A") != mrate_coefficients.end())
-            ? mrate_coefficients.at("kinf_A")
-            : 1.0;
-    rate_coefficients["kinf_B"] =
-        (mrate_coefficients.find("kinf_B") != mrate_coefficients.end())
-            ? mrate_coefficients.at("kinf_B")
-            : 0.0;
-    rate_coefficients["kinf_C"] =
-        (mrate_coefficients.find("kinf_C") != mrate_coefficients.end())
-            ? mrate_coefficients.at("kinf_C")
-            : 0.0;
-    rate_coefficients["Fc"] =
-        (mrate_coefficients.find("Fc") != mrate_coefficients.end())
-            ? mrate_coefficients.at("Fc")
-            : 0.6;
-    rate_coefficients["N"] =
-        (mrate_coefficients.find("N") != mrate_coefficients.end())
-            ? mrate_coefficients.at("N")
-            : 1.0;
+    get_or_default(mrate_coefficients, "k0_A");
+    get_or_default(mrate_coefficients, "k0_B");
+    get_or_default(mrate_coefficients, "k0_C");
+    get_or_default(mrate_coefficients, "kinf_A");
+    get_or_default(mrate_coefficients, "kinf_B");
+    get_or_default(mrate_coefficients, "kinf_C");
+    get_or_default(mrate_coefficients, "Fc");
+    get_or_default(mrate_coefficients, "N");
   } else {
     std::cout << "ERROR: reaction type currently unsupported."
               << "\n";
   }
+}
+
+/// method for either getting the coefficient from SimulationInput
+/// or using defaults
+void Reaction::get_or_default(
+    const std::map<std::string, Real>& mrate_coefficients,
+    const std::string& name) {
+  // determine whether a rate coefficient was provided by the input yaml
+  // if not, assign that coefficient the default value
+  // Note: find() returns vec.end() if it is not found
+  rate_coefficients[name] =
+      (mrate_coefficients.find(name) != mrate_coefficients.end())
+          ? mrate_coefficients.at(name)
+          : default_rxn_coeffs.at(name);
 }
 
 /// ChemSolver constructor: initializes all the required views on device and
@@ -233,35 +216,28 @@ real_type_2d_view ChemSolver::get_tendencies() {
 
 /// get the TChem-specific inputs from the input yaml
 void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
-  // Try to load the input from the yaml file
-  try {
-    auto root = YAML::LoadFile(sim_inp.input_file);
-    if (root["tchem"] and root["tchem"].IsMap()) {
-      auto node = root["tchem"];
-      if (not node["nbatch"]) {
-        throw YamlException(
-            "problem specific entry does not specify number "
-            "of batches (nbatch).");
-      } else if (not node["verbose"]) {
-        throw YamlException(
-            "problem specific entry has no verbose boolean (verbose).");
-      } else {
-        nbatch = node["nbatch"].as<int>();
-        verbose = node["verbose"].as<bool>();
-      }
+  auto root = YAML::LoadFile(sim_inp.input_file);
+  if (root["tchem"] and root["tchem"].IsMap()) {
+    auto node = root["tchem"];
+    if (not node["nbatch"]) {
+      throw YamlException(
+          "problem specific entry does not specify number "
+          "of batches (nbatch).");
+    } else if (not node["verbose"]) {
+      throw YamlException(
+          "problem specific entry has no verbose boolean (verbose).");
     } else {
-      printf(
-          "No tchem section was found--using default values: verbose = false"
-          ", nbatch = 1.\n");
-      // FIXME: depending on how we ultimately parallelize, the nbatch default
-      // may have to be set more cleverly
-      nbatch = 1;
-      verbose = false;
+      nbatch = node["nbatch"].as<int>();
+      verbose = node["verbose"].as<bool>();
     }
-  } catch (YAML::BadFile& e) {
-    throw YamlException(e.what());
-  } catch (YAML::ParserException& e) {
-    throw YamlException(e.what());
+  } else {
+    printf(
+        "No tchem section was found--using default values: verbose = false"
+        ", nbatch = 1.\n");
+    // FIXME: depending on how we ultimately parallelize, the nbatch default
+    // may have to be set more cleverly
+    nbatch = 1;
+    verbose = false;
   }
 }
 
@@ -378,14 +354,12 @@ KOKKOS_INLINE_FUNCTION static void team_invoke_detail(
         const Real rop_at_i = rop(i);
         for (ordinal_type j = 0; j < kmcd.reacNreac(i); ++j) {
           const ordinal_type kspec = kmcd.reacSidx(i, j);
-          // omega(kspec) += kmcd.reacNuki(i,j)*rop_at_i;
           const Real val = kmcd.reacNuki(i, j) * rop_at_i;
           Kokkos::atomic_fetch_add(&omega(kspec), val);
         }
         const ordinal_type joff = kmcd.reacSidx.extent(1) / 2;
         for (ordinal_type j = 0; j < kmcd.reacNprod(i); ++j) {
           const ordinal_type kspec = kmcd.reacSidx(i, j + joff);
-          // omega(kspec) += kmcd.reacNuki(i,j+joff)*rop_at_i;
           const Real val = kmcd.reacNuki(i, j + joff) * rop_at_i;
           Kokkos::atomic_fetch_add(&omega(kspec), val);
         }
