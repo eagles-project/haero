@@ -56,7 +56,6 @@ TEST_CASE("mam_calcsize_run", "") {
   // This will drive the "run" method of calcsize
   SECTION("calcsize_run") {
     auto* process = new MAMCalcsizeFProcess();
-    process->init(aero_config);
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
@@ -98,7 +97,9 @@ TEST_CASE("mam_calcsize_run", "") {
 
     //clean up
     delete process, tends;
+
   } //section:calcsize_run
 
   delete atm;
+
 }//TEST_CASE mam_calcsize_run

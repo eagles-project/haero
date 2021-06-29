@@ -47,7 +47,7 @@ contains
     integer  :: imode, nmodes, nlevs, nspec, max_nspec
 
     integer  :: s_spec_ind, e_spec_ind ! species starting and ending index in the population (q_i and q_c) arrays for a mode
-    integer  :: ierr, ilev, klev
+    integer  :: ierr, klev
 
     real(wp) :: v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor !max and mins for diameter and volume to number ratios
 
@@ -94,11 +94,6 @@ contains
     q_c => prognostics%cloudborne_aerosols()
     n_c => prognostics%cloudborne_num_concs()
 
-    do ilev = 1, nlevs
-       print*,'incalc:', q_i(ilev,1), q_c(ilev,1),n_i(ilev,1), n_c(ilev,1),ilev
-    enddo
-
-
     !allocate variable to store densities of all species in a mode
     !(use max_nspec to allocate, so as to avoid allocation in the nmodes loop below)
     allocate(density(max_nspec), STAT=ierr)
@@ -106,8 +101,6 @@ contains
        print *,'Could not allocate density array, error code=', ierr
        stop
     endif
-
-    !print*,nmodes, nlevs, max_nspec
 
     !Loop through each mode and find particle diameter
     do imode = 1, nmodes
@@ -137,7 +130,6 @@ contains
        endif
 
        nspec = model%num_mode_species(imode) !total number of species in mode "imode"
-       !print*,'nspec:', nspec
 
        !capture densities for each specie in this mode
        density(1:max_nspec) = huge(density) !initialize the whole array to a huge value [FIXME: NaN would be better than huge]
@@ -145,19 +137,14 @@ contains
 
        !FIXME:Density needs to be fixed, the values are not right as they are all for the coarse mode currently, probably for simplification!
 
-       !print*,'nlevs:', nlevs, s_spec_ind, e_spec_ind
        call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
-
-       do ilev = 1, nlevs
-          !print*,'dryvol:', dryvol_a(ilev), dryvol_c(ilev),ilev
-       enddo
 
        !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
        v2nmin = model%modes(imode)%min_vol_to_num_ratio()
        v2nmax = model%modes(imode)%max_vol_to_num_ratio()
        dgnmin = model%modes(imode)%min_diameter
        dgnmax = model%modes(imode)%max_diameter
-       !print*,'min_max:', imode, v2nmin,v2nmax,dgnmin,dgnmax
+
        !FIXME: compute relaxed counterparts as well
 
        do klev = top_lev, nlevs
@@ -167,10 +154,10 @@ contains
 
           drv_c = dryvol_c(klev)
           num_c = max( 0.0_wp, n_c(klev,imode))
-          !print*,'nums:', num_a, num_c
+
           !compute a common factor
           cmn_factor = exp(4.5_wp*log(model%modes(imode)%mean_std_dev)**2.0_wp)*pi_sixth
-          !print*,'cmn_factor', cmn_factor
+
           !FIXME: size adjustment is done here based on volume to num ratios
 
           !FIXME: in (or better done after) the following update_dgn_voltonum calls, we need to update mmr as well
@@ -186,7 +173,6 @@ contains
                v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
                dgncur_c, v2ncur_c)
 
-          print*,'dgncurs:', dgncur_a(klev, imode), v2ncur_a(klev, imode), dgncur_c(klev, imode), v2ncur_c(klev, imode)
        enddo! klev
 
     enddo! imodes
@@ -267,7 +253,6 @@ contains
           dryvol_c(klev) = dryvol_c(klev) + max(0.0_wp,q_c(klev,ispec))*inv_density
        end do
     end do ! nspec loop
-
 
   end subroutine compute_dry_volume
 

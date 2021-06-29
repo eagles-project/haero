@@ -6,8 +6,7 @@ module mam_calcsize_test_bridge
   private
 
   ! Module functions
-  public :: run_bridge, &
-       finalize_bridge
+  public :: run_bridge
 
 contains
 
@@ -36,30 +35,14 @@ subroutine run_bridge(t, dt, progs, atm, diags, tends) bind(c)
   type(diagnostics_t) :: diagnostics
   type(tendencies_t)  :: tendencies
 
-  real(wp), pointer, dimension(:,:) :: q_i
-  integer :: i
-
   ! Get Fortran data types from our C pointers.
   prognostics = prognostics_from_c_ptr(progs)
   atmosphere = atmosphere_from_c_ptr(atm)
   diagnostics = diagnostics_from_c_ptr(diags)
   tendencies = tendencies_from_c_ptr(tends)
 
-  q_i => prognostics%interstitial_aerosols()
-  do i = 1, 72
-     print*,'BALLI:', q_i(1,i),i
-  enddo
   ! Call the actual subroutine.
   call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 end subroutine run_bridge
-
-! Finalizes the prognostic process
-subroutine finalize_bridge() bind(c)
-  use haero, only: model
-  use mam_calcsize, only: finalize
-  implicit none
-
-  call finalize(model)
-end subroutine finalize_bridge
 
 end module mam_calcsize_test_bridge
