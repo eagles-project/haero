@@ -49,7 +49,7 @@ class RegionOfValidity final {
       auto aero_bounds =
           BoundsArray("aero bounds", int_aero_bounds_.extent(0) + 1);
       int pos = *iter;
-      for (int p = aero_indices.extent(0)-1; p > pos; --p) {
+      for (int p = aero_indices.extent(0) - 1; p > pos; --p) {
         aero_indices(p) = int_aero_indices_(p - 1);
         aero_bounds(p) = int_aero_bounds_(p - 1);
       }
@@ -81,7 +81,7 @@ class RegionOfValidity final {
       auto aero_bounds =
           BoundsArray("aero bounds", int_aero_bounds_.extent(0) + 1);
       int pos = *iter;
-      for (int p = aero_indices.extent(0)-1; p > pos; --p) {
+      for (int p = aero_indices.extent(0) - 1; p > pos; --p) {
         aero_indices(p) = cld_aero_indices_(p - 1);
         aero_bounds(p) = cld_aero_bounds_(p - 1);
       }
@@ -110,7 +110,7 @@ class RegionOfValidity final {
       auto gas_indices = IndexArray("gas indices", gas_indices_.extent(0) + 1);
       auto gas_bounds = BoundsArray("gas bounds", gas_bounds_.extent(0) + 1);
       int pos = *iter;
-      for (int g = gas_indices.extent(0)-1; g > pos; --g) {
+      for (int g = gas_indices.extent(0) - 1; g > pos; --g) {
         gas_indices(g) = gas_indices_(g - 1);
         gas_bounds(g) = gas_bounds_(g - 1);
       }
