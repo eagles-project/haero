@@ -28,7 +28,7 @@ TEST_CASE("mam_calcsize_run", "") {
   auto aero_config = create_mam4_modal_aerosol_config(); //create MAM4 configuration
 
   static constexpr int num_levels{72}; //number of levels
-  Model* model = get_model_for_unit_tests(aero_config, num_levels); //get an instance of "model"
+  auto* model = get_model_for_unit_tests(aero_config, num_levels); //get an instance of "model"
 
   const int num_gases{aero_config.h_gas_species.size()}; //number of gases
   const int num_modes{aero_config.h_aerosol_modes.size()}; //number of modes
@@ -52,18 +52,18 @@ TEST_CASE("mam_calcsize_run", "") {
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels); //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1); //[m]
   Real pblh{100.0}; //planetary BL height [m]
-  std::unique_ptr<Atmosphere> atm = std::make_unique<Atmosphere>(num_levels, temp, press, rel_hum, ht, pdel, pblh); //create atmosphere object
+  auto atm = std::make_unique<Atmosphere>(num_levels, temp, press, rel_hum, ht, pdel, pblh); //create atmosphere object
 
   // This will drive the "run" method of calcsize
   SECTION("calcsize_run") {
-    std::unique_ptr<MAMCalcsizeFProcess> process = std::make_unique<MAMCalcsizeFProcess>();
+    auto process = std::make_unique<MAMCalcsizeFProcess>();
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
                                             int_num_concs, cld_num_concs);
     auto* diags = model->create_diagnostics();
-    std::unique_ptr<Tendencies> tends = std::make_unique<Tendencies>(*progs);
+    auto tends = std::make_unique<Tendencies>(*progs);
 
     // Define a pseudo-random generator [0-1) that is consistent across platforms.
     // Manually checked the first 100,000 values to be unique.
