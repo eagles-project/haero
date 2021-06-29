@@ -1,3 +1,4 @@
+#include <memory>
 #include "catch2/catch.hpp"
 #include "mam_calcsize_test_bridge.hpp"
 #include "haero/processes/mam_calcsize_process.hpp"
@@ -51,18 +52,18 @@ TEST_CASE("mam_calcsize_run", "") {
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels); //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1); //[m]
   Real pblh{100.0}; //planetary BL height [m]
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel, pblh); //create atmosphere object
+  std::unique_ptr<Atmosphere> atm = std::make_unique<Atmosphere>(num_levels, temp, press, rel_hum, ht, pdel, pblh); //create atmosphere object
 
   // This will drive the "run" method of calcsize
   SECTION("calcsize_run") {
-    auto* process = new MAMCalcsizeFProcess();
+    std::unique_ptr<MAMCalcsizeFProcess> process = std::make_unique<MAMCalcsizeFProcess>();
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
                                             int_num_concs, cld_num_concs);
     auto* diags = model->create_diagnostics();
-    auto* tends = new Tendencies(*progs);
+    std::unique_ptr<Tendencies> tends = std::make_unique<Tendencies>(*progs);
 
     // Define a pseudo-random generator [0-1) that is consistent across platforms.
     // Manually checked the first 100,000 values to be unique.
@@ -95,11 +96,6 @@ TEST_CASE("mam_calcsize_run", "") {
     Real t = 0.0, dt = 30.0;
     process->run(aero_config, t, dt, *progs, *atm, *diags, *tends);
 
-    //clean up
-    delete process, tends;
-
   } //section:calcsize_run
-
-  delete atm;
 
 }//TEST_CASE mam_calcsize_run
