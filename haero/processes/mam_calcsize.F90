@@ -25,6 +25,9 @@ contains
     type(model_t), intent(in) :: model
   end subroutine init
 
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
+
   subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 
     use haero_constants, only: pi_sixth
@@ -43,10 +46,10 @@ contains
     !local variables
     integer  :: imode, nmodes, nlevs, nspec, max_nspec
 
-    integer  :: s_spec_ind, e_spec_ind ! species starting and ending index in the population array for a mode
+    integer  :: s_spec_ind, e_spec_ind ! species starting and ending index in the population (q_i and q_c) arrays for a mode
     integer  :: ierr, ilev, klev
 
-    real(wp) :: v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor
+    real(wp) :: v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor !max and mins for diameter and volume to number ratios
 
     real(wp) :: drv_a, drv_c
     real(wp) :: num_a, num_c
@@ -57,7 +60,7 @@ contains
     real(wp) :: v2ncur_a(model%num_levels, model%num_modes) !interstitial particle diameter[FIXME: units????]
     real(wp) :: v2ncur_c(model%num_levels, model%num_modes) !cldborne vol2num ratio [FIXME:units???]
 
-    real(wp) :: dryvol_a(model%num_levels), dryvol_c(model%num_levels) !dry volume of a particle[FIXME:units????]
+    real(wp) :: dryvol_a(model%num_levels), dryvol_c(model%num_levels) !dry volume of a particle[m3/kg(of air)]
 
     real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios [kg/kg(of air)]]
     real(wp), pointer, dimension(:,:) :: q_c    ! cldborne aerosol mix ratios [kg/kg(of air)]
@@ -65,10 +68,14 @@ contains
     real(wp), pointer, dimension(:,:) :: n_i    ! interstitial aerosol number mixing ratios [#/kg(of air)]
     real(wp), pointer, dimension(:,:) :: n_c    ! cldborne aerosol number mixing ratios [#/kg(of air)]
 
-    real(wp), allocatable, dimension(:) :: density !specie density array for each mode
+    real(wp), allocatable, dimension(:) :: density !specie density array for each mode [kg/m3]
 
     !parameters
     integer, parameter :: top_lev = 1 ![FIXME: This may not be always true]
+
+    !------------------------------
+    !Extract relevant data
+    !------------------------------
 
     !number of levels
     nlevs = model%num_levels
@@ -76,7 +83,7 @@ contains
     !number of modes
     nmodes = model%num_modes
 
-    !maximum number of species in the mode with max species
+    !number of species in the mode with the max species
     max_nspec = maxval(model%num_mode_species(:))
 
     !interstitial mass and number mixing ratios
@@ -88,18 +95,19 @@ contains
     n_c => prognostics%cloudborne_num_concs()
 
     do ilev = 1, nlevs
-       print*,'incalc:', q_i(ilev,1), q_c(ilev,1),ilev
+       print*,'incalc:', q_i(ilev,1), q_c(ilev,1),n_i(ilev,1), n_c(ilev,1),ilev
     enddo
 
 
-    !allocate variable to store densities of all species in a mode (use max_nspec to allocate, so as to avoid allocation in a nmodes loop)
+    !allocate variable to store densities of all species in a mode
+    !(use max_nspec to allocate, so as to avoid allocation in the nmodes loop below)
     allocate(density(max_nspec), STAT=ierr)
     if (ierr .ne. 0) then
        print *,'Could not allocate density array, error code=', ierr
        stop
     endif
 
-    print*,nmodes, nlevs, max_nspec
+    !print*,nmodes, nlevs, max_nspec
 
     !Loop through each mode and find particle diameter
     do imode = 1, nmodes
@@ -109,48 +117,47 @@ contains
 
        !NOTE: In Haero we do not carry default dgnum, so we initialize dgncur_* and v2ncur_* to zero
        !That is why, we do not need to send "list_idx" as an argument. This call can be removed
-       !as there is no need to initialize these fields with zero, they will be updated eventually
-       !with valid values
-       call set_initial_sz_and_volumes (imode, top_lev, nlevs, dgncur_a, v2ncur_a, dryvol_a)
-
-       !for cloud-borne aerosols
-       call set_initial_sz_and_volumes (imode, top_lev, nlevs, dgncur_c, v2ncur_c, dryvol_c)
+       !as there is no need to initialize these fields to zero, they will be updated eventually
+       !with the valid values
+       call set_initial_sz_and_volumes (imode, top_lev, nlevs, dgncur_a, v2ncur_a, dryvol_a) !for interstitial aerosols
+       call set_initial_sz_and_volumes (imode, top_lev, nlevs, dgncur_c, v2ncur_c, dryvol_c) !for cloud-borne aerosols
 
        !----------------------------------------------------------------------
-       !Compute dry volume mixrats (aerosol diameter)
-       !Current default: number mmr is prognosed
-       !       Algorithm:calculate aerosol diameter from mass, number, and fixed standard deviation of a mode
-       !
-       !sigmag ("sigma g") is "geometric standard deviation for aerosol mode"
-       !
-       !Volume = sum_over_components{ component_mass mixrat / density }
+       !Algorithm to compute dry aerosol diameter:
+       !calculate aerosol diameter volume, volume is computed from mass and density
        !----------------------------------------------------------------------
-
-       nspec = model%num_mode_species(imode) !total number of species in mode "imode"
 
        !find start and end index of species in this mode in the "population" array
        !The indices are same for interstitial and cloudborne species
+       s_spec_ind = model%population_offsets(imode)       !start index
+       e_spec_ind = model%population_offsets(imode+1) - 1 !end index of species for all (modes expect the last mode)
 
-       print*,'nspec:', nspec
-       s_spec_ind = model%population_offsets(imode) ! start index
-       if(imode.ne.nmodes) then ! for all modes expect the last mode
-          e_spec_ind = model%population_offsets(imode+1) - 1! end index
-       else !when imode == nmodes
+       if(imode.eq.nmodes) then ! for last mode
           e_spec_ind = model%num_populations !if imode==nmodes, end index is the total number of species
        endif
 
+       nspec = model%num_mode_species(imode) !total number of species in mode "imode"
+       !print*,'nspec:', nspec
+
        !capture densities for each specie in this mode
-       density(1:max_nspec) = 0.0_wp !initialize the whole array to zero [FIXME: NaN would be better than zero]
+       density(1:max_nspec) = huge(density) !initialize the whole array to a huge value [FIXME: NaN would be better than huge]
        density(1:nspec) = model%aero_species(imode, :)%density !assign density till nspec (as nspec can be different for each mode)
 
+       !FIXME:Density needs to be fixed, the values are not right as they are all for the coarse mode currently, probably for simplification!
+
+       !print*,'nlevs:', nlevs, s_spec_ind, e_spec_ind
        call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
+
+       do ilev = 1, nlevs
+          !print*,'dryvol:', dryvol_a(ilev), dryvol_c(ilev),ilev
+       enddo
 
        !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
        v2nmin = model%modes(imode)%min_vol_to_num_ratio()
        v2nmax = model%modes(imode)%max_vol_to_num_ratio()
        dgnmin = model%modes(imode)%min_diameter
        dgnmax = model%modes(imode)%max_diameter
-       print*,'min_max:', imode, v2nmin,v2nmax,dgnmin,dgnmax
+       !print*,'min_max:', imode, v2nmin,v2nmax,dgnmin,dgnmax
        !FIXME: compute relaxed counterparts as well
 
        do klev = top_lev, nlevs
@@ -160,10 +167,10 @@ contains
 
           drv_c = dryvol_c(klev)
           num_c = max( 0.0_wp, n_c(klev,imode))
-
+          !print*,'nums:', num_a, num_c
           !compute a common factor
           cmn_factor = exp(4.5_wp*log(model%modes(imode)%mean_std_dev)**2.0_wp)*pi_sixth
-
+          !print*,'cmn_factor', cmn_factor
           !FIXME: size adjustment is done here based on volume to num ratios
 
           !FIXME: in (or better done after) the following update_dgn_voltonum calls, we need to update mmr as well
@@ -178,6 +185,8 @@ contains
           call update_dgn_voltonum(klev, imode, drv_c, num_c, &
                v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
                dgncur_c, v2ncur_c)
+
+          print*,'dgncurs:', dgncur_a(klev, imode), v2ncur_a(klev, imode), dgncur_c(klev, imode), v2ncur_c(klev, imode)
        enddo! klev
 
     enddo! imodes
@@ -262,6 +271,9 @@ contains
 
   end subroutine compute_dry_volume
 
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
+
   subroutine update_dgn_voltonum(klev, imode, drv, num, &
        v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
        dgncur, v2ncur)
@@ -283,7 +295,7 @@ contains
           dgncur(klev,imode) = dgnmin
           v2ncur(klev,imode) = v2nmin
        else if (num >= drv*v2nmax) then
-          dgncur(klev,imode) = dgnmax !BALLI-check if it is dgnyy is actually max!!!
+          dgncur(klev,imode) = dgnmax
           v2ncur(klev,imode) = v2nmax
        else
           dgncur(klev,imode) = (drv/(cmn_factor*num))**third
@@ -294,21 +306,8 @@ contains
     return
   end subroutine update_dgn_voltonum
 
-
-  pure function compute_diameter(vol2num) result(diameter)
-
-    use haero_precision, only: wp
-
-    implicit none
-
-    real(wp), intent(in) :: vol2num
-
-    real(wp) :: diameter
-
-    diameter = vol2num + 1
-
-  end function compute_diameter
-
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
 
   subroutine finalize(model)
     implicit none
@@ -317,6 +316,8 @@ contains
     type(model_t), intent(in) :: model
   end subroutine finalize
 
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
 
   subroutine set_integer_param(name, val)
     implicit none
@@ -327,6 +328,9 @@ contains
     ! No integers to set!
   end subroutine set_integer_param
 
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
+
   subroutine set_logical_param(name, val)
     implicit none
 
@@ -335,6 +339,9 @@ contains
 
     ! No logicals to set!
   end subroutine set_logical_param
+
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
 
   subroutine set_real_param(name, val)
     implicit none

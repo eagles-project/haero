@@ -16,7 +16,6 @@ extern "C" {
                          const Atmosphere& atmosphere,
                          const Diagnostics& diagnostics,
                          Tendencies& tendencies);
-  extern Real compute_diameter_bridge(const Real vol2num);
 
 }  // extern "C"
 
