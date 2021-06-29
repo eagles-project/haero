@@ -85,57 +85,15 @@ class AerosolProcess {
 
   /// Returns the region of validity for this aerosol process.
   const RegionOfValidity& region_of_validity() const {
-    return validity_region_.getRegionOfValidity();
+    return validity_region_;
   }
+
+  /// Returns the region of validity for this aerosol process (non-const).
+  RegionOfValidity& region_of_validity() { return validity_region_; }
 
   //------------------------------------------------------------------------
   //                            Public Interface
   //------------------------------------------------------------------------
-
-  /// Sets the temperature range for which this aerosol process returns valid
-  /// results.
-  /// @param [in] min_temp The minimum temperature [K] at which this aerosol
-  ///                      process behaves properly (default: 0 K)
-  /// @param [in] max_temp The maximum temperature [K] at which this aerosol
-  ///                      process behaves properly (default: 500 K).
-  void set_temp_range(Real min_temp, Real max_temp) {
-    EKAT_ASSERT(min_temp >= 0);
-    validity_region_.temp_bounds = {min_temp, max_temp};
-  }
-
-  /// Sets the relative humidity range for which this aerosol process returns
-  /// valid results.
-  /// @param [in] min_rel_hum The minimum relative humidity [-] at which this
-  ///                         aerosol process behaves properly (default: 0)
-  /// @param [in] max_rel_hum The maximum relatіve humidity [-] at which this
-  ///                         aerosol process behaves properly (default: 1).
-  void set_rel_hum_range(Real min_rel_hum, Real max_rel_hum) {
-    EKAT_ASSERT(min_rel_hum >= 0);
-    EKAT_ASSERT(max_rel_hum <= 1);
-    validity_region_.rel_hum_bounds = {min_rel_hum, max_rel_hum};
-  }
-
-  /// Sets the range of mass mixing ratios for a specific gas species, for which
-  /// this aerosol process returns valid results.
-  /// @param [in] symbol  The symbolic name for the gas species of interest
-  /// @param [in] min_mmr The minimum mass mixing ratio [kg gas/kg air] at which
-  ///                     this aerosol process behaves properly (default: 0
-  ///                     kg/kg)
-  /// @param [in] max_mmr The maximum mass mixing ratio [kg gas/kg air] at which
-  ///                     this aerosol process behaves properly (default: 1
-  ///                     kg/kg)
-  void set_gas_mmr_range(const std::string& symbol, Real min_mmr,
-                         Real max_mmr) {
-    EKAT_ASSERT(min_mmr >= 0);
-    EKAT_ASSERT(max_mmr <= 1);  // TODO: what's the actual max here?
-    auto token = validity_region_.find_gas_bounds(symbol);
-    if (token == RegionOfValidity::BOUNDS_NOT_FOUND) {
-      token = validity_region_.add_gas_bounds(symbol);
-    }
-    auto& bounds = validity_region_.gas_bounds(token);
-    bounds.first = min_mmr;
-    bounds.second = max_mmr;
-  }
 
   /// Validates input aerosol and atmosphere data, returning true if all data
   /// falls within this process's region of validity, and false if not.
@@ -199,7 +157,7 @@ class AerosolProcess {
   // Use View as a struct to store a string and allows copy to device.
   // Since std::string can not be used, it was either this or a char *
   const Kokkos::View<int> name_;
-  HostRegionOfValidity validity_region_;
+  RegionOfValidity validity_region_;
 };
 
 /// @class NullAerosolProcess
