@@ -5,6 +5,7 @@
 #include "haero/diagnostics.hpp"
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/prognostics.hpp"
+#include "haero/region_of_validity.hpp"
 #include "haero/tendencies.hpp"
 
 namespace haero {
@@ -56,7 +57,7 @@ class AerosolProcess {
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
   AerosolProcess(AerosolProcessType type, const std::string& name)
-      : type_(type), name_(name) {}
+      : type_(type), name_(name), validity_region_() {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
@@ -82,9 +83,71 @@ class AerosolProcess {
   /// Returns the name of this process/parametrization/realization.
   std::string name() const { return name_.label(); }
 
+  /// Returns the region of validity for this aerosol process.
+  const RegionOfValidity& region_of_validity() const {
+    return validity_region_.getRegionOfValidity();
+  }
+
   //------------------------------------------------------------------------
-  //                Methods to be overridden by subclasses
+  //                            Public Interface
   //------------------------------------------------------------------------
+
+  /// Sets the temperature range for which this aerosol process returns valid
+  /// results.
+  /// @param [in] min_temp The minimum temperature [K] at which this aerosol
+  ///                      process behaves properly (default: 0 K)
+  /// @param [in] max_temp The maximum temperature [K] at which this aerosol
+  ///                      process behaves properly (default: 500 K).
+  void set_temp_range(Real min_temp, Real max_temp) {
+    EKAT_ASSERT(min_temp >= 0);
+    validity_region_.temp_bounds = {min_temp, max_temp};
+  }
+
+  /// Sets the relative humidity range for which this aerosol process returns
+  /// valid results.
+  /// @param [in] min_rel_hum The minimum relative humidity [-] at which this
+  ///                         aerosol process behaves properly (default: 0)
+  /// @param [in] max_rel_hum The maximum relatіve humidity [-] at which this
+  ///                         aerosol process behaves properly (default: 1).
+  void set_rel_hum_range(Real min_rel_hum, Real max_rel_hum) {
+    EKAT_ASSERT(min_rel_hum >= 0);
+    EKAT_ASSERT(max_rel_hum <= 1);
+    validity_region_.rel_hum_bounds = {min_rel_hum, max_rel_hum};
+  }
+
+  /// Sets the range of mass mixing ratios for a specific gas species, for which
+  /// this aerosol process returns valid results.
+  /// @param [in] symbol  The symbolic name for the gas species of interest
+  /// @param [in] min_mmr The minimum mass mixing ratio [kg gas/kg air] at which
+  ///                     this aerosol process behaves properly (default: 0
+  ///                     kg/kg)
+  /// @param [in] max_mmr The maximum mass mixing ratio [kg gas/kg air] at which
+  ///                     this aerosol process behaves properly (default: 1
+  ///                     kg/kg)
+  void set_gas_mmr_range(const std::string& symbol, Real min_mmr,
+                         Real max_mmr) {
+    EKAT_ASSERT(min_mmr >= 0);
+    EKAT_ASSERT(max_mmr <= 1);  // TODO: what's the actual max here?
+    auto token = validity_region_.find_gas_bounds(symbol);
+    if (token == RegionOfValidity::BOUNDS_NOT_FOUND) {
+      token = validity_region_.add_gas_bounds(symbol);
+    }
+    auto& bounds = validity_region_.gas_bounds(token);
+    bounds.first = min_mmr;
+    bounds.second = max_mmr;
+  }
+
+  /// Validates input aerosol and atmosphere data, returning true if all data
+  /// falls within this process's region of validity, and false if not.
+  /// @param [in] prognostics The prognostic variables used by and affected by
+  ///                         this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this
+  ///                        process.
+  bool validate(const Prognostics& prognostics,
+                const Atmosphere& atmosphere) const {
+    return (validity_region_.contains(atmosphere) and
+            validity_region_.contains(prognostics));
+  }
 
   /// Override this method if your aerosol process needs to be initialized
   /// with information about the model. The default implementation does nothing.
@@ -105,7 +168,7 @@ class AerosolProcess {
   /// @param [in] prognostics The prognostic variables used by and affected by
   ///                         this process.
   /// @param [in] atmosphere The atmosphere state variables used by this
-  /// process.
+  ///                        process.
   /// @param [in] diagnostics The prognostic variables used by and affected by
   ///                         this process.
   /// @param [out] tendencies A container that stores time derivatives for
@@ -136,6 +199,7 @@ class AerosolProcess {
   // Use View as a struct to store a string and allows copy to device.
   // Since std::string can not be used, it was either this or a char *
   const Kokkos::View<int> name_;
+  HostRegionOfValidity validity_region_;
 };
 
 /// @class NullAerosolProcess

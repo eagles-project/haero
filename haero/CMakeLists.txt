@@ -71,6 +71,7 @@ add_library(haero
             modal_aerosol_config.cpp
             model.cpp
             prognostics.cpp
+            region_of_validity.cpp
             selected_processes.cpp
             tendencies.cpp
             utils.cpp
