@@ -11,7 +11,7 @@ namespace haero {
     MAMRenameSubareaProcess();
 
     KOKKOS_INLINE_FUNCTION
-    virtual ~MAMCalcsizeProcess() {}
+    virtual ~MAMRenameSubareaProcess() {}
 
     virtual void init(const ModalAerosolConfig &modal_aerosol_config) override;
 

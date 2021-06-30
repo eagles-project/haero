@@ -57,22 +57,6 @@ subroutine run_bridge(t, dt, progs, atm, diags, tends) bind(c)
   call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 end subroutine run_bridge
 
-pure function compute_diameter_bridge(vol2num) result(diameter) bind(c)
-
-  use haero_precision, only: wp
-  use mam_rename_subarea, only:compute_diameter
-
-  implicit none
-
-  real(wp), value, intent(in) :: vol2num
-
-  real(wp) :: diameter
-
-  !diameter = vol2num + 1
-  diameter = compute_diameter(vol2num)
-
-end function compute_diameter_bridge
-
 ! Finalizes the prognostic process
 subroutine mam_rename_subarea_finalize() bind(c)
   use haero, only: model

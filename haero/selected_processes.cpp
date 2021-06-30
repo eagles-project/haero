@@ -73,9 +73,10 @@ AerosolProcess* select_aerosol_process(AerosolProcessType type,
     }
   } else if (type == RenameSubareaProcess) {
     if (selections.rename_subarea == SelectedProcesses::MAMRenameSubarea) {
-      process = new MAMRenamSubareaProcess();
+      process = new MAMRenameSubareaProcess();
 #if HAERO_FORTRAN
     } else if (selections.rename_subarea == SelectedProcesses::MAMFRenameSubarea) {
+      process = new MAMRenameSubareaFProcess();
 #endif
     } else if (selections.rename_subarea == SelectedProcesses::NoRenameSubarea) {
       process = new NullAerosolProcess(type);

@@ -32,6 +32,7 @@ if (HAERO_FORTRAN)
   faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
   faerosol_process(MAMCalcsizeFProcess CalcsizeProcess mam_calcsize)
   faerosol_process(MAMResizeSubareaFProcess RenameSubareaProcess mam_rename_subarea)
+  faerosol_process(MAMRenameSubareaFProcess RenameSubareaProcess mam_rename_subarea)
 
 endif()
 
