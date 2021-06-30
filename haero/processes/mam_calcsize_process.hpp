@@ -9,13 +9,12 @@ namespace haero {
 
 /// @class MAMCalcsizeProcess
 class MAMCalcsizeProcess : public AerosolProcess {
-
  public:
   MAMCalcsizeProcess();
 
   MAMCalcsizeProcess(const AerosolProcessType type, const std::string &name,
-                       const ModalAerosolConfig &config)
-    : AerosolProcess(type, name){ }
+                     const ModalAerosolConfig &config)
+      : AerosolProcess(type, name) {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
@@ -23,8 +22,7 @@ class MAMCalcsizeProcess : public AerosolProcess {
 
   /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
-  MAMCalcsizeProcess(const MAMCalcsizeProcess &pp)
-    : AerosolProcess(pp) {}
+  MAMCalcsizeProcess(const MAMCalcsizeProcess &pp) : AerosolProcess(pp) {}
 
   /// MAMCalcsizeProcess objects are not assignable.
   AerosolProcess &operator=(const MAMCalcsizeProcess &) = delete;

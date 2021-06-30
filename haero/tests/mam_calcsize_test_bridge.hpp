@@ -11,11 +11,10 @@ extern "C" {
 
 // Fortran subroutines that implement this process.
 
-  extern Real run_bridge(const ModalAerosolConfig& modal_aerosol_config,
-                         Real t, Real dt, const Prognostics& prognostics,
-                         const Atmosphere& atmosphere,
-                         const Diagnostics& diagnostics,
-                         Tendencies& tendencies);
+extern Real run_bridge(const ModalAerosolConfig& modal_aerosol_config, Real t,
+                       Real dt, const Prognostics& prognostics,
+                       const Atmosphere& atmosphere,
+                       const Diagnostics& diagnostics, Tendencies& tendencies);
 
 }  // extern "C"
 
