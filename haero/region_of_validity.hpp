@@ -14,10 +14,18 @@ namespace haero {
 /// in terms of bounds on atmospheric and aerosol prognostic states.
 class RegionOfValidity final {
  public:
-  using Bounds = std::pair<Real, Real>;
+  using Bounds = Kokkos::pair<Real, Real>;
 
   /// Constructor
-  RegionOfValidity() : temp_bounds({0, 500}), rel_hum_bounds({0, 1}) {}
+  RegionOfValidity()
+      : temp_bounds({0, 500}),
+        rel_hum_bounds({0, 1}),
+        int_aero_indices_("Interstitial aerosol indices", 0),
+        cld_aero_indices_("Cloudborne aerosol indices", 0),
+        int_aero_bounds_("Interstitial aerosol bounds", 0),
+        cld_aero_bounds_("Cloudborne aerosol bounds", 0),
+        gas_indices_("Gas indices", 0),
+        gas_bounds_("Gas bounds", 0) {}
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -37,28 +45,8 @@ class RegionOfValidity final {
   /// @param [in] max_mmr The maximum valid mass mixing ratio [kg aero/kg air]
   void set_interstitial_aerosol_mmr_bounds(int pop_index, Real min_mmr,
                                            Real max_mmr) {
-    EKAT_ASSERT(pop_index >= 0);
-    EKAT_ASSERT(min_mmr < max_mmr);
-
-    int* begin = int_aero_indices_.data();
-    int* end = begin + int_aero_indices_.extent(0);
-    int* iter = std::lower_bound(begin, end, pop_index);
-    if ((iter == end) || (*iter != pop_index)) {  // index must be inserted
-      auto aero_indices =
-          IndexArray("aero indices", int_aero_indices_.extent(0) + 1);
-      auto aero_bounds =
-          BoundsArray("aero bounds", int_aero_bounds_.extent(0) + 1);
-      int pos = *iter;
-      for (int p = aero_indices.extent(0) - 1; p > pos; --p) {
-        aero_indices(p) = int_aero_indices_(p - 1);
-        aero_bounds(p) = int_aero_bounds_(p - 1);
-      }
-      aero_indices(pos) = pop_index;
-      int_aero_indices_ = aero_indices;
-      int_aero_bounds_ = aero_bounds;
-    }
-    int_aero_bounds_(pop_index).first = min_mmr;
-    int_aero_bounds_(pop_index).second = max_mmr;
+    insert_bounds_at_index_(pop_index, min_mmr, max_mmr, int_aero_indices_,
+                            int_aero_bounds_);
   }
 
   /// Adds a set of bounds for the cloudborne aerosol species with the given
@@ -69,28 +57,8 @@ class RegionOfValidity final {
   /// @param [in] min_mmr The minimum valid mass mixing ratio [kg aero/kg air]
   /// @param [in] max_mmr The maximum valid mass mixing ratio [kg aero/kg air]
   void set_cloud_aerosol_mmr_bounds(int pop_index, Real min_mmr, Real max_mmr) {
-    EKAT_ASSERT(pop_index >= 0);
-    EKAT_ASSERT(min_mmr < max_mmr);
-
-    int* begin = cld_aero_indices_.data();
-    int* end = begin + cld_aero_indices_.extent(0);
-    int* iter = std::lower_bound(begin, end, pop_index);
-    if ((iter == end) || (*iter != pop_index)) {  // index must be inserted
-      auto aero_indices =
-          IndexArray("aero indices", int_aero_indices_.extent(0) + 1);
-      auto aero_bounds =
-          BoundsArray("aero bounds", int_aero_bounds_.extent(0) + 1);
-      int pos = *iter;
-      for (int p = aero_indices.extent(0) - 1; p > pos; --p) {
-        aero_indices(p) = cld_aero_indices_(p - 1);
-        aero_bounds(p) = cld_aero_bounds_(p - 1);
-      }
-      aero_indices(pos) = pop_index;
-      cld_aero_indices_ = aero_indices;
-      cld_aero_bounds_ = aero_bounds;
-    }
-    cld_aero_bounds_(pop_index).first = min_mmr;
-    cld_aero_bounds_(pop_index).second = max_mmr;
+    insert_bounds_at_index_(pop_index, min_mmr, max_mmr, int_aero_indices_,
+                            int_aero_bounds_);
   }
 
   /// Adds a set of bounds for the gas species with the given index. Callable
@@ -100,26 +68,8 @@ class RegionOfValidity final {
   /// @param [in] min_mmr The minimum valid mass mixing ratio [kg gas/kg air]
   /// @param [in] max_mmr The maximum valid mass mixing ratio [kg gas/kg air]
   void set_gas_mmr_bounds(int gas_index, Real min_mmr, Real max_mmr) {
-    EKAT_ASSERT(gas_index >= 0);
-    EKAT_ASSERT(min_mmr < max_mmr);
-
-    int* begin = gas_indices_.data();
-    int* end = begin + gas_indices_.extent(0);
-    int* iter = std::lower_bound(begin, end, gas_index);
-    if ((iter == end) || (*iter != gas_index)) {  // index must be inserted
-      auto gas_indices = IndexArray("gas indices", gas_indices_.extent(0) + 1);
-      auto gas_bounds = BoundsArray("gas bounds", gas_bounds_.extent(0) + 1);
-      int pos = *iter;
-      for (int g = gas_indices.extent(0) - 1; g > pos; --g) {
-        gas_indices(g) = gas_indices_(g - 1);
-        gas_bounds(g) = gas_bounds_(g - 1);
-      }
-      gas_indices(pos) = gas_index;
-      gas_indices_ = gas_indices;
-      gas_bounds_ = gas_bounds;
-    }
-    gas_bounds_(gas_index).first = min_mmr;
-    gas_bounds_(gas_index).second = max_mmr;
+    insert_bounds_at_index_(gas_index, min_mmr, max_mmr, gas_indices_,
+                            gas_bounds_);
   }
 
   /// Minimum and maximum bounds on the mass mixing ratio for the cloudborne
@@ -173,53 +123,60 @@ class RegionOfValidity final {
   /// within this region of validity, false otherwise.
   KOKKOS_INLINE_FUNCTION
   bool contains(const Prognostics& prognostics) const {
+    return (mmrs_are_valid_(prognostics.interstitial_aerosols,
+                            int_aero_indices_, int_aero_bounds_) and
+            mmrs_are_valid_(prognostics.cloud_aerosols, cld_aero_indices_,
+                            cld_aero_bounds_) and
+            mmrs_are_valid_(prognostics.gases, gas_indices_, gas_bounds_));
+  }
+
+ private:
+  using IndexArray = kokkos_device_type::view_1d<int>;
+  using BoundsArray = kokkos_device_type::view_1d<Bounds>;
+
+  // This helper inserts a new entry into an IndexArray/BoundsArray pair at
+  // the appropriate (sorted) position.
+  void insert_bounds_at_index_(int index, Real min, Real max,
+                               IndexArray& indices, BoundsArray& bounds) {
+    EKAT_ASSERT(index >= 0);
+    EKAT_ASSERT(min < max);
+
+    int* begin = indices.data();
+    int* end = begin + indices.extent(0);
+    int* iter = std::lower_bound(begin, end, index);
+    int pos = (iter == end) ? 0 : *iter;
+    if ((iter == end) || (*iter != index)) {  // index must be inserted
+      Kokkos::resize(indices, indices.extent(0) + 1);
+      Kokkos::resize(bounds, bounds.extent(0) + 1);
+      for (int p = indices.extent(0) - 1; p > pos; --p) {
+        indices(p) = indices(p - 1);
+        bounds(p) = bounds(p - 1);
+      }
+      indices(pos) = index;
+    }
+    bounds(pos).first = min;
+    bounds(pos).second = max;
+  }
+
+  // This helper returns true if the mass mixing ratios in the given
+  // array fall within the bounds in the given indices/bounds arrays.
+  bool mmrs_are_valid_(const SpeciesColumnView& mmrs, const IndexArray& indices,
+                       const BoundsArray& bounds) const {
     int violations = 0;
 
     // Interstitial aerosol MMRs
-    for (int p = 0; p < int_aero_indices_.extent(0); ++p) {
-      int pop_index = int_aero_indices_(p);
-      const auto& bounds = int_aero_bounds_(pop_index);
-      if (pop_index < prognostics.num_aerosol_populations()) {
+    for (int p = 0; p < indices.extent(0); ++p) {
+      int index = indices(p);
+      Real min = bounds(index).first;
+      Real max = bounds(index).second;
+      int num_mmrs = mmrs.extent(0);
+      int num_levels = mmrs.extent(1);
+      if (index < num_mmrs) {
         Kokkos::parallel_reduce(
-            "RegionOfValidity::contains(aero)", prognostics.num_levels(),
+            "RegionOfValidity::contains(aero)", num_levels,
             KOKKOS_LAMBDA(const int k, int& violation) {
-              const auto& q = prognostics.interstitial_aerosols(pop_index, k);
-              auto invalid_mmr =
-                  haero::MaskType((q < bounds.first) or (q > bounds.second));
-              violation += invalid_mmr.any();
-            },
-            violations);
-      }
-    }
-
-    // Cloudborne aerosol MMRs
-    for (int p = 0; p < cld_aero_indices_.extent(0); ++p) {
-      int pop_index = cld_aero_indices_(p);
-      const auto& bounds = cld_aero_bounds_(pop_index);
-      if (pop_index < prognostics.num_aerosol_populations()) {
-        Kokkos::parallel_reduce(
-            "RegionOfValidity::contains(aero)", prognostics.num_levels(),
-            KOKKOS_LAMBDA(const int k, int& violation) {
-              const auto& q = prognostics.cloud_aerosols(pop_index, k);
-              auto invalid_mmr =
-                  haero::MaskType((q < bounds.first) or (q > bounds.second));
-              violation += invalid_mmr.any();
-            },
-            violations);
-      }
-    }
-
-    // Gas MMRs
-    for (int g = 0; g < gas_indices_.extent(0); ++g) {
-      int gas_index = gas_indices_(g);
-      const auto& bounds = gas_bounds_(gas_index);
-      if (gas_index < prognostics.num_gases()) {
-        Kokkos::parallel_reduce(
-            "RegionOfValidity::contains(aero)", prognostics.num_levels(),
-            KOKKOS_LAMBDA(const int k, int& violation) {
-              const auto& q = prognostics.gases(gas_index, k);
-              auto invalid_mmr =
-                  haero::MaskType((q < bounds.first) or (q > bounds.second));
+              const auto& q = mmrs(index, k);
+              auto invalid_mmr = haero::MaskType((q < min) or (q > max));
               violation += invalid_mmr.any();
             },
             violations);
@@ -228,11 +185,8 @@ class RegionOfValidity final {
     return (violations == 0);
   }
 
- protected:
   /// Minimum and maximum bounds on specific gas species, indexed by (case-
   /// insensitive) symbols. Arrays are sorted in ascending index order.
-  using IndexArray = kokkos_device_type::view_1d<int>;
-  using BoundsArray = kokkos_device_type::view_1d<Bounds>;
   IndexArray int_aero_indices_, cld_aero_indices_;
   BoundsArray int_aero_bounds_, cld_aero_bounds_;
   IndexArray gas_indices_;
