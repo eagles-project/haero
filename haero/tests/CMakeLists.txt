@@ -33,6 +33,9 @@ EkatCreateUnitTest(prognostics_tests prognostics_tests.cpp
 EkatCreateUnitTest(tendencies_tests tendencies_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(region_of_validity_tests region_of_validity_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 EkatCreateUnitTest(kokkos_team_execute kokkos_team_execute.cpp
                    LIBS ${HAERO_LIBRARIES})
 

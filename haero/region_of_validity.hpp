@@ -24,6 +24,10 @@ class RegionOfValidity final {
         cld_aero_indices_("Cloudborne aerosol indices", 0),
         int_aero_bounds_("Interstitial aerosol bounds", 0),
         cld_aero_bounds_("Cloudborne aerosol bounds", 0),
+        int_n_indices_("Interstitial number conc indices", 0),
+        cld_n_indices_("Cloudborne number conc indices", 0),
+        int_n_bounds_("Interstitial number conc bounds", 0),
+        cld_n_bounds_("Cloudborne number conc bounds", 0),
         gas_indices_("Gas indices", 0),
         gas_bounds_("Gas bounds", 0) {}
 
@@ -61,6 +65,28 @@ class RegionOfValidity final {
                             int_aero_bounds_);
   }
 
+  /// Adds a set of bounds for the interstitial aerosol number densities for the
+  /// mode with the given index. Callable from host only.
+  /// @param [in] mode_index The index of the mode of interest
+  /// @param [in] min_n The minimum valid number concentration [m-3]
+  /// @param [in] max_n The maximum valid number concentration [m-3]
+  void set_interstitial_aerosol_num_conc_bounds(int mode_index, Real min_n,
+                                                Real max_n) {
+    insert_bounds_at_index_(mode_index, min_n, max_n, int_aero_indices_,
+                            int_aero_bounds_);
+  }
+
+  /// Adds a set of bounds for the cloudborne aerosol number densities for the
+  /// mode with the given index. Callable from host only.
+  /// @param [in] mode_index The index of the mode of interest
+  /// @param [in] min_n The minimum valid number concentration [m-3]
+  /// @param [in] max_n The maximum valid number concentration [m-3]
+  void set_cloud_aerosol_num_conc_bounds(int mode_index, Real min_n,
+                                         Real max_n) {
+    insert_bounds_at_index_(mode_index, min_n, max_n, cld_aero_indices_,
+                            cld_aero_bounds_);
+  }
+
   /// Adds a set of bounds for the gas species with the given index. Callable
   /// from host only.
   /// @param [in] gas_index The index of the gas as it appears in the set of
@@ -72,31 +98,41 @@ class RegionOfValidity final {
                             gas_bounds_);
   }
 
-  /// Minimum and maximum bounds on the mass mixing ratio for the cloudborne
-  /// aerosol corresponding to the given population index.
-  KOKKOS_INLINE_FUNCTION
-  const Bounds& interstitial_aerosol_bounds(int pop_index) const {
-    EKAT_KERNEL_ASSERT(pop_index >= 0);
-    EKAT_KERNEL_ASSERT(pop_index < int_aero_bounds_.extent(0));
-    return int_aero_bounds_(pop_index);
+  /// Minimum and maximum bounds on the mass mixing ratio for the interstitial
+  /// aerosol corresponding to the given population index. Callable from host
+  /// only.
+  const Bounds interstitial_aerosol_mmr_bounds(int pop_index) const {
+    return get_bounds_(int_aero_indices_, int_aero_bounds_, pop_index, 0.0,
+                       1.0);
   }
 
   /// Minimum and maximum bounds on the mass mixing ratio for the cloudborne
-  /// aerosol corresponding to the given population index.
+  /// aerosol corresponding to the given population index. Callable from host
+  /// only.
+  const Bounds cloud_aerosol_mmr_bounds(int pop_index) const {
+    return get_bounds_(cld_aero_indices_, cld_aero_bounds_, pop_index, 0.0,
+                       1.0);
+  }
+
+  /// Minimum and maximum bounds on the number concentration for the
+  /// interstitial aerosols in the mode with the given index. Callable from host
+  /// only.
+  const Bounds interstitial_aerosol_num_conc_bounds(int mode_index) const {
+    return get_bounds_(int_n_indices_, int_n_bounds_, mode_index, 0.0, 1e20);
+  }
+
+  /// Minimum and maximum bounds on the number concentration for the cloudborne
+  /// aerosols in the mode with the given index. Callable from host only.
   KOKKOS_INLINE_FUNCTION
-  const Bounds& cloud_aerosol_bounds(int pop_index) const {
-    EKAT_KERNEL_ASSERT(pop_index >= 0);
-    EKAT_KERNEL_ASSERT(pop_index < cld_aero_bounds_.extent(0));
-    return cld_aero_bounds_(pop_index);
+  const Bounds cloud_aerosol_num_conc_bounds(int mode_index) const {
+    return get_bounds_(cld_n_indices_, cld_n_bounds_, mode_index, 0.0, 1e20);
   }
 
   /// Minimum and maximum bounds on the mass mixing ratio for the gas species
-  /// corresponding to the given index.
+  /// corresponding to the given index. Callable from host only.
   KOKKOS_INLINE_FUNCTION
-  const Bounds& gas_bounds(int gas_index) const {
-    EKAT_KERNEL_ASSERT(gas_index >= 0);
-    EKAT_KERNEL_ASSERT(gas_index < gas_bounds_.extent(0));
-    return gas_bounds_(gas_index);
+  const Bounds gas_mmr_bounds(int gas_index) const {
+    return get_bounds_(gas_indices_, gas_bounds_, gas_index, 0.0, 1.0);
   }
 
   /// Returns true if all state data in the given atmosphere container falls
@@ -127,6 +163,10 @@ class RegionOfValidity final {
                             int_aero_indices_, int_aero_bounds_) and
             mmrs_are_valid_(prognostics.cloud_aerosols, cld_aero_indices_,
                             cld_aero_bounds_) and
+            num_concs_are_valid_(prognostics.interstitial_num_concs,
+                                 int_n_indices_, int_n_bounds_) and
+            num_concs_are_valid_(prognostics.cloudborne_num_concs,
+                                 cld_n_indices_, cld_n_bounds_) and
             mmrs_are_valid_(prognostics.gases, gas_indices_, gas_bounds_));
   }
 
@@ -158,13 +198,27 @@ class RegionOfValidity final {
     bounds(pos).second = max;
   }
 
+  // This helper returns the bounds found in the given array at the given
+  // index, or the default bounds if the index is not found.
+  Bounds get_bounds_(const IndexArray& indices, const BoundsArray& bounds,
+                     int index, Real default_min, Real default_max) const {
+    EKAT_ASSERT(index >= 0);
+    int* begin = indices.data();
+    int* end = begin + indices.extent(0);
+    int* iter = std::lower_bound(begin, end, index);
+    if ((iter == end) || (*iter != index)) {
+      return Bounds({default_min, default_max});
+    } else {
+      return bounds(*iter);
+    }
+  }
+
   // This helper returns true if the mass mixing ratios in the given
   // array fall within the bounds in the given indices/bounds arrays.
+  KOKKOS_INLINE_FUNCTION
   bool mmrs_are_valid_(const SpeciesColumnView& mmrs, const IndexArray& indices,
                        const BoundsArray& bounds) const {
     int violations = 0;
-
-    // Interstitial aerosol MMRs
     for (int p = 0; p < indices.extent(0); ++p) {
       int index = indices(p);
       Real min = bounds(index).first;
@@ -185,10 +239,39 @@ class RegionOfValidity final {
     return (violations == 0);
   }
 
+  // This helper returns true if the number concentrations in the given array
+  // fall within the bounds in the given indices/bounds arrays.
+  KOKKOS_INLINE_FUNCTION
+  bool num_concs_are_valid_(const ModalColumnView& concs,
+                            const IndexArray& indices,
+                            const BoundsArray& bounds) const {
+    int violations = 0;
+    for (int p = 0; p < indices.extent(0); ++p) {
+      int index = indices(p);
+      Real min = bounds(index).first;
+      Real max = bounds(index).second;
+      int num_concs = concs.extent(0);
+      int num_levels = concs.extent(1);
+      if (index < num_concs) {
+        Kokkos::parallel_reduce(
+            "RegionOfValidity::contains(aero)", num_levels,
+            KOKKOS_LAMBDA(const int k, int& violation) {
+              const auto& q = concs(index, k);
+              auto invalid_n = haero::MaskType((q < min) or (q > max));
+              violation += invalid_n.any();
+            },
+            violations);
+      }
+    }
+    return (violations == 0);
+  }
+
   /// Minimum and maximum bounds on specific gas species, indexed by (case-
   /// insensitive) symbols. Arrays are sorted in ascending index order.
   IndexArray int_aero_indices_, cld_aero_indices_;
   BoundsArray int_aero_bounds_, cld_aero_bounds_;
+  IndexArray int_n_indices_, cld_n_indices_;
+  BoundsArray int_n_bounds_, cld_n_bounds_;
   IndexArray gas_indices_;
   BoundsArray gas_bounds_;
 };
