@@ -244,15 +244,15 @@ contains
     do ispec = s_spec_ind, e_spec_ind
        density_ind = ispec - s_spec_ind + 1 !density array index goes from 1 to nspec
 
-       ! need qmass*inv_density = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
        inv_density = 1.0_wp / density(density_ind) !inverse of density
 
        !compute dry volume as a function of space (i,k)
        do klev = top_lev, nlevs
+          ! volume is mass*inv_density = [kg/kg(of air)] * [1/(kg/m3)] = [m3/kg(of air)]
           dryvol_a(klev) = dryvol_a(klev) + max(0.0_wp,q_i(klev,ispec))*inv_density
           dryvol_c(klev) = dryvol_c(klev) + max(0.0_wp,q_c(klev,ispec))*inv_density
        end do
-    end do ! nspec loop
+    end do
 
   end subroutine compute_dry_volume
 
