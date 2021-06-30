@@ -1,5 +1,3 @@
-!> This module is a bridge between the MAMCalcsizeFProcess C++ class and the
-!> mam_calcsize Fortran module.
 module mam_calcsize_test_bridge
 
   implicit none
