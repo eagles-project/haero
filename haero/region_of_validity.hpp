@@ -140,8 +140,9 @@ class RegionOfValidity final {
   KOKKOS_INLINE_FUNCTION
   bool contains(const Atmosphere& atmosphere) const {
     int violations = 0;
+    int num_levels = atmosphere.temperature.extent(0);
     Kokkos::parallel_reduce(
-        "RegionOfValidity::contains(atm)", atmosphere.num_levels(),
+        "RegionOfValidity::contains(atm)", num_levels,
         KOKKOS_LAMBDA(const int k, int& violation) {
           const auto& T = atmosphere.temperature(k);
           auto invalid_T = haero::MaskType((T < temp_bounds.first) or
