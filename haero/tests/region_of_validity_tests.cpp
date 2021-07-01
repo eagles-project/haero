@@ -104,7 +104,6 @@ TEST_CASE("region_of_validity", "") {
       REQUIRE(rov.contains(atm));
 
       // Suppose now that we require data to be positive!
-      printf("mmr = %g\n", int_aerosols(0, 0)[0]);
       rov.set_interstitial_aerosol_mmr_bounds(0, 1e4, 1e11);
       REQUIRE(not rov.contains(progs));
       rov.temp_bounds.first = 273.0;
