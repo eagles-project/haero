@@ -1,5 +1,3 @@
-!> This module is a bridge between the MAMNucleationFProcess C++ class and the
-!> mam_nucleation Fortran module.
 module mam_nucleation_test_bridge
 
   implicit none
