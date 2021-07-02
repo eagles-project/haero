@@ -154,6 +154,7 @@ ChemSolver::ChemSolver(SimulationInput& sim_inp)
   }
 
   // construct the KMD object
+  // create kmd via yaml input?
   kmd = TChem::KineticModelData(cfiles.chemFile, cfiles.thermFile);
   std::ofstream output(cfiles.thermFile);
   // create a const version, as required by TChem/kokkos
@@ -418,12 +419,12 @@ KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
     const WorkViewType& work,
     /// const input from kinetic model
     const KineticModelConstDataType& kmcd) {
-  /// FIXME: not exactly clear on what's happening here with work/iter
+  // mjs: keep an eye on this to make sure it's working properly
   auto w = (Real*)work.data();
-  // auto mkfor = RealType1DViewType(w, kmcd.nReac);
-  // w += kmcd.nReac;
-  // auto mkrev = RealType1DViewType(w, kmcd.nReac);
-  // w += kmcd.nReac;
+  auto mkfor = RealType1DViewType(w, kmcd.nReac);
+  w += kmcd.nReac;
+  auto mkrev = RealType1DViewType(w, kmcd.nReac);
+  w += kmcd.nReac;
   auto ropFor = RealType1DViewType(w, kmcd.nReac);
   w += kmcd.nReac;
   auto ropRev = RealType1DViewType(w, kmcd.nReac);
