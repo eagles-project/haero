@@ -185,13 +185,24 @@ BUILD_TYPE=Debug
 #-----------------------------------------------------------------------------
 #                     Build the standalone haero driver?
 #-----------------------------------------------------------------------------
-# Choose one of the foillowing.
+# Choose one of the following.
 
 # Build the standalone driver for haero.
 BUILD_DRIVER=ON
 
 # Skip the standalone driver and its dependencies.
 #BUILD_DRIVER=OFF
+
+#-----------------------------------------------------------------------------
+#                     Build the standalone chem driver?
+#-----------------------------------------------------------------------------
+# Choose one of the following.
+
+# Build the chem driver for haero.
+BUILD_CHEM_DRIVER=ON
+
+# Skip the chem driver and its dependencies.
+#BUILD_CHEM_DRIVER=OFF
 
 #-----------------------------------------------------------------------------
 #                               Verbose builds
@@ -381,6 +392,7 @@ cmake \
  -DCMAKE_CXX_COMPILER=\$CXX \
  -DHAERO_PRECISION=\$PRECISION \
  -DHAERO_ENABLE_DRIVER=\$BUILD_DRIVER \
+ -DHAERO_ENABLE_CHEM_DRIVER=\$BUILD_CHEM_DRIVER \
  -DHAERO_DEVICE=\$DEVICE \
  -DHAERO_DEVICE_ARCH=\$DEVICE_ARCH \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \

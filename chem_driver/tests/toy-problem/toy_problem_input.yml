@@ -1,0 +1,60 @@
+
+# TChem-specific inputs
+tchem:
+  # whether to print verbose output to screen
+  verbose: false
+  # number of chemistry batches (all currently run the exact same chem problem)
+  nbatch: 2
+
+# All below here are inputs specific to atmospheric chemistry and are based on
+# those that MusicBox uses
+
+# species section, containing the species that participate in the chemical
+# system, along with their initial values and units.
+# Note that a species must be given here in order to participate in a reaction
+# that is given below, or an error will be thrown
+species:
+  # compound name
+  X:
+    initial_value: 1.0e-6
+    # units string (format: unit1exponent1 unit2exponent2)
+    units: molecule m-3
+  X2:
+    initial_value: 1.0e-6
+    units: molecule m-3
+
+# environmental conditions section, containing the initial value and units
+# for temperature and pressure
+environmental_conditions:
+  temperature:
+    initial_value: 298.15
+    units: K
+  pressure:
+    initial_value: 101325
+    units: Pa
+
+# reactions section, containing a sequence (vector) of reactions
+# each reaction must have a type (arrhenius, troe, etc.), and the reactants,
+# products, and rate_coefficients sections must be maps between the relevant
+# member(s) and value
+# Note that the species in the reactants and products must be contained in the
+# species section of this file or an error will be thrown.
+# Also note that any rate coefficients not provided below will be assigned
+# default values, as given in the design document, corresponding to those used
+# by MusicBox.
+# FIXME: put this in the design document
+reactions:
+  - type: ARRHENIUS
+    reactants:
+      X2: 1.0
+    products:
+      X: 2.0
+    rate_coefficients:
+      A: 0.00172025021466
+  - type: arrhenius
+    reactants:
+      X: 2.0
+    products:
+      X2: 1.0
+    rate_coefficients:
+      A: 1.0
