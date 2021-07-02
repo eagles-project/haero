@@ -115,6 +115,7 @@ TEST_CASE("region_of_validity", "") {
       progs.interstitial_aerosols(0, k) = 1e4;
       atm.temperature(k) = 273.0;
     }
+    REQUIRE(rov.contains(progs));
     REQUIRE(rov.contains(atm));
   }
 }
