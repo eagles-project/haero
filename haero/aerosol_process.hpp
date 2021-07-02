@@ -5,6 +5,7 @@
 #include "haero/diagnostics.hpp"
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/prognostics.hpp"
+#include "haero/region_of_validity.hpp"
 #include "haero/tendencies.hpp"
 
 namespace haero {
@@ -56,7 +57,7 @@ class AerosolProcess {
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
   AerosolProcess(AerosolProcessType type, const std::string& name)
-      : type_(type), name_(name) {}
+      : type_(type), name_(name), validity_region_() {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
@@ -82,9 +83,29 @@ class AerosolProcess {
   /// Returns the name of this process/parametrization/realization.
   std::string name() const { return name_.label(); }
 
+  /// Returns the region of validity for this aerosol process.
+  const RegionOfValidity& region_of_validity() const {
+    return validity_region_;
+  }
+
+  /// Returns the region of validity for this aerosol process (non-const).
+  RegionOfValidity& region_of_validity() { return validity_region_; }
+
   //------------------------------------------------------------------------
-  //                Methods to be overridden by subclasses
+  //                            Public Interface
   //------------------------------------------------------------------------
+
+  /// Validates input aerosol and atmosphere data, returning true if all data
+  /// falls within this process's region of validity, and false if not.
+  /// @param [in] prognostics The prognostic variables used by and affected by
+  ///                         this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this
+  ///                        process.
+  bool validate(const Prognostics& prognostics,
+                const Atmosphere& atmosphere) const {
+    return (validity_region_.contains(atmosphere) and
+            validity_region_.contains(prognostics));
+  }
 
   /// Override this method if your aerosol process needs to be initialized
   /// with information about the model. The default implementation does nothing.
@@ -105,7 +126,7 @@ class AerosolProcess {
   /// @param [in] prognostics The prognostic variables used by and affected by
   ///                         this process.
   /// @param [in] atmosphere The atmosphere state variables used by this
-  /// process.
+  ///                        process.
   /// @param [in] diagnostics The prognostic variables used by and affected by
   ///                         this process.
   /// @param [out] tendencies A container that stores time derivatives for
@@ -136,6 +157,7 @@ class AerosolProcess {
   // Use View as a struct to store a string and allows copy to device.
   // Since std::string can not be used, it was either this or a char *
   const Kokkos::View<int> name_;
+  RegionOfValidity validity_region_;
 };
 
 /// @class NullAerosolProcess
