@@ -14,14 +14,19 @@ namespace haero {
 /// nucleation rates at tropospheric conditions, Journal of Geophysical Research
 /// 112 (2007).
 
+/// These parameterizations are valid for the following ranges:
+/// temperature:                235 - 295 K
+/// relative humidity:          0.05 - 0.95
+/// H2SO4 number concentration: 5e4 - 1e9 cm-3
+/// NH3 molar mixing ratio:     0.1 - 1000 ppt
+
 namespace merikanto2007 {
 
 /// Computes the logarithm of the ternary nucleation rate [cm-3 s-1] as
-/// parameterized by Merikanto et al (2007), eq 8. NOTE THE DIFFERENT UNITS in
-/// log J as computed by this function!
+/// parameterized by Merikanto et al (2007), eq 8.
 /// @param [in] temp The atmospherіc temperature [K]
 /// @param [in] rel_hum The relative humidity [-]
-/// @param [in] c_h2so4 The number concentration of H2SO4 gas [m-3]
+/// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
 /// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
 KOKKOS_INLINE_FUNCTION
 PackType log_nucleation_rate(const Pack& temp,
@@ -60,7 +65,7 @@ PackType log_nucleation_rate(const Pack& temp,
   }
 
   // Compute the logarithm of the nucleation rate [cm-3 s-1] using eq 8.
-  auto c = 1e-6 * c_h2so4; // H2SO4 concentration in [cm-3]
+  auto c = c_h2so4;
   auto xi = xi_nh3;
   return -12.86185 + f[1]*rel_hum + f[2]*log(rel_hum) +
          f[3]*log(c) + f[4]*square(log(c)) + f[5]/square(log(c)) +
@@ -76,7 +81,7 @@ PackType log_nucleation_rate(const Pack& temp,
 /// parameterization for the nucleation rate (eq 8) cannot be used (in which
 /// case the authors suggest setting the nucleation rate to zero).
 /// @param [in] rel_hum The relative humidity [-]
-/// @param [in] c_h2so4 The number concentration of H2SO4 gas [m-3]
+/// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
 /// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
 KOKKOS_INLINE_FUNCTION
 PackType onset_temp(const Pack& rel_hum,
@@ -91,21 +96,20 @@ PackType onset_temp(const Pack& rel_hum,
               0.15576469879527022 * square(log(xi_nh3)));
 }
 
-/// Computes the radius of a critical cluster [m] as parameterized in Merikanto
-/// et al (2007), eq 11
+/// Computes the radius of a critical cluster [nm] as parameterized in Merikanto
+/// et al (2007), eq 11.
 /// @param [in] log_J The logarithm of the nucleation rate ["log (cm-3 s-1)"]
 /// @param [in] temp The atmospherіc temperature [K]
-/// @param [in] c_h2so4 The number concentration of H2SO4 gas [# m-3]
+/// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
 /// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
 KOKKOS_INLINE_FUNCTION
 PackType critical_radius(const Pack& log_J,
                          const Pack& temp,
                          const Pack& c_h2so4,
                          const Pack& xi_nh3) {
-  auto c = 1e-6 * c_h2so4; // H2SO4 concentration in [cm-3]
+  auto c = c_h2so4;
   auto xi = xi_nh3;
-  return 1e-9 *
-    Pack(0.328886 - 0.00337417*temp + 0.0000183474 * square(temp)
+  return Pack(0.328886 - 0.00337417*temp + 0.0000183474 * square(temp)
        + 0.00254198*log(c) - 0.0000949811*temp*log(c)
        + 0.000744627*square(log(c)) + 0.0243034*log(xi)
        + 0.0000158932*temp*log(xi) - 0.00203460*log(c)*log(xi)
@@ -116,17 +120,17 @@ PackType critical_radius(const Pack& log_J,
 }
 
 /// Computes the total number of molecules in a critical cluster as
-/// parameterized in Merikanto et al (2007), eq 12
+/// parameterized in Merikanto et al (2007), eq 12.
 /// @param [in] log_J The logarithm of the nucleation rate ["log (cm-3 s-1)"]
 /// @param [in] temp The atmospherіc temperature [K]
-/// @param [in] c_h2so4 The number concentration of H2SO4 gas [# m-3]
+/// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
 /// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
 KOKKOS_INLINE_FUNCTION
 PackType num_critical_molecules(const Pack& log_J,
                                 const Pack& temp,
                                 const Pack& c_h2so4,
                                 const Pack& xi_nh3) {
-  auto c = 1e-6 * c_h2so4; // H2SO4 concentration in [cm-3]
+  auto c = c_h2so4;
   auto xi = xi_nh3;
   return Pack(57.4009 - 0.299634*temp + 0.000739548*square(temp)
             - 5.09060*log(c) + 0.0110166*temp*log(c) + 0.0675003*square(log(c))
@@ -138,17 +142,17 @@ PackType num_critical_molecules(const Pack& log_J,
 }
 
 /// Computes the total number of H2SO4 molecules in a critical cluster as
-/// parameterized in Merikanto et al (2007).
+/// parameterized in Merikanto et al (2007), eq 13.
 /// @param [in] log_J The logarithm of the nucleation rate ["log (cm-3 s-1)"]
 /// @param [in] temp The atmospherіc temperature [K]
-/// @param [in] c_h2so4 The number concentration of H2SO4 gas [# m-3]
+/// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
 /// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
 KOKKOS_INLINE_FUNCTION
 PackType num_h2so4_molecules(const Pack& log_J,
                              const Pack& temp,
                              const Pack& c_h2so4,
                              const Pack& xi_nh3) {
-  auto c = 1e-6 * c_h2so4; // H2SO4 concentration in [cm-3]
+  auto c = c_h2so4;
   auto xi = xi_nh3;
   return Pack(-4.71542 + 0.134364*temp - 0.000471847*square(temp)
             - 2.56401*log(c) + 0.0113533*temp*log(c) + 0.00108019*square(log(c))
@@ -160,17 +164,17 @@ PackType num_h2so4_molecules(const Pack& log_J,
 }
 
 /// Computes the total number of NH3 molecules in a critical cluster as
-/// parameterized in Merikanto et al (2007).
+/// parameterized in Merikanto et al (2007), eq 14.
 /// @param [in] log_J The logarithm of the nucleation rate ["log (cm-3 s-1)"]
 /// @param [in] temp The atmospherіc temperature [K]
-/// @param [in] c_h2so4 The number concentration of H2SO4 gas [# m-3]
+/// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
 /// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
 KOKKOS_INLINE_FUNCTION
 PackType num_nh3_molecules(const Pack& log_J,
                            const Pack& temp,
                            const Pack& c_h2so4,
                            const Pack& xi_nh3) {
-  auto c = 1e-6 * c_h2so4; // H2SO4 concentration in [cm-3]
+  auto c = c_h2so4;
   auto xi = xi_nh3;
   return Pack(71.2007 - 0.840960*temp + 0.00248030*square(temp)
             + 2.77986*log(c) - 0.0147502*temp*log(c) + 0.0122645*square(log(c))
@@ -180,6 +184,21 @@ PackType num_nh3_molecules(const Pack& log_J,
             + 0.520297*log_J - 0.00241987*temp*log_J
             + 0.0791639*log(xi)*log_J - 0.000302159*temp*log(xi)*log_J
             + 0.00469770*square(log_J));
+}
+
+/// Computes the logarithm of the threshold number concentration of H2SO4 [cm-3]
+/// that produces a nucleation rate of 1 cm-3 s-1 at the given temperature and
+/// molar mixing ratio of NH3.
+/// @param [in] temp The atmospherіc temperature [K]
+/// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
+KOKKOS_INLINE_FUNCTION
+PackType log_h2so4_nucleation_threshold(const Pack& temp, const Pack& xi_nh3) {
+  auto xi = xi_nh3;
+  return Pack(-40.5988 + 5.00845/xi + 0.00995956*xi + 0.231207*temp
+            - 0.0191883*temp/xi - 0.0000312301*temp*xi + 15.4213*log(xi)
+            - 0.06366755*temp*log(xi) - 3.48925*square(log(xi))
+            + 0.0143679*temp*square(log(xi)) + 0.234708*cube(log(xi))
+            - 0.000995330*temp*cube(log(xi)));
 }
 
 } // namespace merikanto2007
