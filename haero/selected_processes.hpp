@@ -90,6 +90,22 @@ struct SelectedProcesses final {
   /// The selected nucleation model
   Nucleation nucleation;
 
+  /// Available process models for calcsize, in which we compute dry diameter of
+  /// the the particles and do the inter-mode mass and number transfer based on
+  /// the new size (for both interstitial and cloud borne aerosol)
+  enum Calcsize {
+    /// MAM legacy C++ calcsize process
+    MAMCalcsize,
+#if HAERO_FORTRAN
+    /// MAM legacy Fortran calcsize process
+    MAMFCalcsize,
+#endif
+    /// No calcsize process
+    NoCalcsize
+  };
+  /// The selected calcsize model
+  Calcsize calcsize;
+
   /// Available process models for resuspension, in which cloud-borne aerosol
   /// particles are converted to interstitial aerosols.
   enum Resuspension {
