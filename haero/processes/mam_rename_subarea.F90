@@ -13,6 +13,21 @@ module mam_rename_subarea
             set_real_param, &
             find_renaming_pairs
 
+  ! Dummy variables which will eventually be fields extracted from the model
+  ! ---
+  real(wp) :: dgnumlo_aer(1), &
+              dgnumhi_aer(1), &
+              alnsg_aer(1), &
+              dgnum_aer(1), &
+              fac_m2v_aer(1)
+
+  integer :: max_mode, &
+             rename_method_optaa, &
+             ntot_amode, &
+             naer, &
+             max_aer
+  ! ---
+
 contains
   subroutine init(model)
 
@@ -44,6 +59,326 @@ contains
     ! Arguments
     type(model_t), intent(in) :: model
   end subroutine finalize
+
+
+      subroutine mam_rename_1subarea(                               &
+         nstep,             lchnk,                                  &
+         i,                 k,                jsub,                 &
+         latndx,            lonndx,           lund,                 &
+         iscldy_subarea,                                            &
+         mtoo_renamexf,                                             &
+         n_mode,                                                    &
+         qnum_cur,                                                  &
+         qaer_cur,          qaer_del_grow4rnam,                     &
+         qwtr_cur,                                                  &
+         qnumcw_cur,                                                &
+         qaercw_cur,        qaercw_del_grow4rnam                    )
+
+       ! Note that the original code used error functions from shr_spfn_mod
+       ! or error_function modules. These calls were replaced with the GNU erf
+       ! function.
+
+      logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
+      integer,  intent(in)    :: nstep                 ! model time-step number
+      integer,  intent(in)    :: lchnk                 ! chunk identifier
+      integer,  intent(in)    :: i, k                  ! column and level indices
+      integer,  intent(in)    :: jsub                  ! sub-area index
+      integer,  intent(in)    :: latndx, lonndx        ! lat and lon indices
+      integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
+      integer,  intent(in)    :: mtoo_renamexf(max_mode)
+      integer,  intent(in)    :: n_mode                ! current number of modes (including temporary)
+
+      real(wp), intent(inout), dimension( 1:max_mode ) :: &
+         qnum_cur
+      real(wp), intent(inout), dimension( 1:max_aer, 1:max_mode ) :: &
+         qaer_cur
+      real(wp), intent(in   ), dimension( 1:max_aer, 1:max_mode ) :: &
+         qaer_del_grow4rnam
+      real(wp), intent(inout), dimension( 1:max_mode ) :: &
+         qwtr_cur
+
+      real(wp), intent(inout), optional, dimension( 1:max_mode ) :: &
+         qnumcw_cur
+      real(wp), intent(inout), optional, dimension( 1:max_aer, 1:max_mode ) :: &
+         qaercw_cur
+      real(wp), intent(in   ), optional, dimension( 1:max_aer, 1:max_mode ) :: &
+         qaercw_del_grow4rnam
+
+
+! !DESCRIPTION:
+! computes TMR (tracer mixing ratio) tendencies for "mode renaming"
+!    during a continuous growth process
+! currently this transfers number and mass (and surface) from the aitken
+!    to accumulation mode after gas condensation or stratiform-cloud
+!    aqueous chemistry
+! (convective cloud aqueous chemistry not yet implemented)
+!
+! !REVISION HISTORY:
+!
+
+! local variables
+      integer :: iaer
+      integer :: mfrm, mtoo
+      integer :: n, npair
+
+      integer, parameter :: ldiag1 = 0
+
+      real(wp), parameter :: onethird = 1.0_wp/3.0_wp
+
+      real(wp) :: deldryvol_a(ntot_amode)
+      real(wp) :: deldryvol_c(ntot_amode)
+      real(wp) :: dp_belowcut(max_mode)
+      real(wp) :: dp_cut(max_mode)
+      real(wp) :: dgn_aftr, dgn_xfer
+      real(wp) :: dgn_t_new, dgn_t_old, dgn_t_oldaa
+      real(wp) :: dryvol_t_del, dryvol_t_new
+      real(wp) :: dryvol_t_old, dryvol_t_oldaa, dryvol_t_oldbnd
+      real(wp) :: dryvol_a(ntot_amode)
+      real(wp) :: dryvol_c(ntot_amode)
+      real(wp) :: dryvol_smallest(ntot_amode)
+      real(wp) :: factoraa(ntot_amode)
+      real(wp) :: factoryy(ntot_amode)
+      real(wp) :: lndp_cut(max_mode)
+      real(wp) :: lndgn_new, lndgn_old
+      real(wp) :: lndgv_new, lndgv_old
+      real(wp) :: num_t_old, num_t_oldbnd
+      real(wp) :: tailfr_volnew, tailfr_volold
+      real(wp) :: tailfr_numnew, tailfr_numold
+      real(wp) :: tmpa, tmpb, tmpd
+      real(wp) :: tmp_alnsg2(max_mode)
+      real(wp) :: v2nhirlx(ntot_amode), v2nlorlx(ntot_amode)
+      real(wp) :: xfercoef, xfertend
+      real(wp) :: xferfrac_vol, xferfrac_num, xferfrac_max
+      real(wp) :: yn_tail, yv_tail
+
+      xferfrac_max = 1.0_wp - 10.0_wp*epsilon(1.0_wp)   ! 1-eps !FIXME: This can be a parameter???
+
+      !------------------------------------------------------------------------
+      !Find mapping between different modes, so that we can move aerosol
+      !particles from one mode to another
+      !------------------------------------------------------------------------
+
+      !FIXME: All the arrays in find_renaming_pairs subroutine call should be
+      !initialized to HUGE or NaNs as they are partially populated
+
+      ! Find (from->to) pairs of modes which can participate in inter-mode particle transfer
+      call find_renaming_pairs (ntot_amode, mtoo_renamexf, & !input
+           npair, factoraa, factoryy, v2nlorlx, &            !output
+           v2nhirlx, tmp_alnsg2, dp_cut, &                   !output
+           lndp_cut, dp_belowcut, dryvol_smallest)           !output
+
+      if (npair <= 0) return ! if no transfer required, return
+
+      !^^^^^^^^^^^^^^^^^^ BSINGH - ENDS REFACTOR ^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+      !BSINGH- original comments to be adjusted
+! calculate variable used in the renamingm mode" of each renaming pair
+! also compute dry-volume change during the continuous growth process
+
+! dryvol_smallest is a very small volume mixing ratio (m3-AP/kmol-air)
+! used for avoiding overflow.  it corresponds to dp = 1 nm
+! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
+
+      !Original Comments ENDS
+
+! compute aerosol dry-volume for the "from mode" of each renaming pair
+! also compute dry-volume change during the continuous growth process
+      do n = 1, ntot_amode
+         mtoo = mtoo_renamexf(n)
+         if (mtoo <= 0) cycle
+
+         tmpa = 0.0_wp ; tmpb = 0.0_wp
+         do iaer = 1, naer
+!   fac_m2v_aer converts (kmol-AP/kmol-air) to (m3-AP/kmol-air)
+            tmpa = tmpa + qaer_cur(iaer,n)*fac_m2v_aer(iaer)
+            tmpb = tmpb + qaer_del_grow4rnam(iaer,n)*fac_m2v_aer(iaer)
+         end do
+         dryvol_a(n) = tmpa-tmpb ! dry volume before growth
+         deldryvol_a(n) = tmpb   ! change to dry volume due to growth
+
+         if ( iscldy_subarea ) then
+         tmpa = 0.0_wp ; tmpb = 0.0_wp
+         do iaer = 1, naer
+!   fac_m2v_aer converts (kmol-AP/kmol-air) to (m3-AP/kmol-air)
+            tmpa = tmpa + qaercw_cur(iaer,n)*fac_m2v_aer(iaer)
+            tmpb = tmpb + qaercw_del_grow4rnam(iaer,n)*fac_m2v_aer(iaer)
+         end do
+         dryvol_c(n) = tmpa-tmpb
+         deldryvol_c(n) = tmpb
+         end if ! ( iscldy_subarea ) then
+
+      end do
+
+
+!
+!   loop over renaming pairs
+!
+mainloop1_ipair:  do n = 1, ntot_amode
+
+      mfrm = n
+      mtoo = mtoo_renamexf(n)
+      if (mtoo <= 0) cycle mainloop1_ipair
+
+!   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode
+!      in m^3-AP/kmol-air
+!   dryvol_t_new is the new total dry-volume
+!      (old/new = before/after the continuous growth)
+!   num_t_old is total number in particles/kmol-air
+      if ( iscldy_subarea ) then
+         dryvol_t_old = dryvol_a(mfrm) + dryvol_c(mfrm)
+         dryvol_t_del = deldryvol_a(mfrm) + deldryvol_c(mfrm)
+         num_t_old = (qnum_cur(mfrm) + qnumcw_cur(mfrm))
+      else
+         dryvol_t_old = dryvol_a(mfrm)
+         dryvol_t_del = deldryvol_a(mfrm)
+         num_t_old = qnum_cur(mfrm)
+      end if
+      dryvol_t_new = dryvol_t_old + dryvol_t_del
+
+!   no renaming if dryvol_t_new ~ 0 or dryvol_t_del ~ 0
+      if (dryvol_t_new .le. dryvol_smallest(mfrm)) cycle mainloop1_ipair
+      dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(mfrm) )
+      if (rename_method_optaa .ne. 40) then
+         if (dryvol_t_del .le. 1.0e-6*dryvol_t_oldbnd) cycle mainloop1_ipair
+      end if
+
+      num_t_old = max( 0.0_wp, num_t_old )
+      dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(mfrm) )
+      num_t_oldbnd = min( dryvol_t_oldbnd*v2nlorlx(mfrm), num_t_old )
+      num_t_oldbnd = max( dryvol_t_oldbnd*v2nhirlx(mfrm), num_t_oldbnd )
+
+!   no renaming if dgnum < "base" dgnum,
+      dgn_t_new = (dryvol_t_new/(num_t_oldbnd*factoraa(mfrm)))**onethird
+      if (dgn_t_new .le. dgnum_aer(mfrm)) cycle mainloop1_ipair
+
+!   compute new fraction of number and mass in the tail (dp > dp_cut)
+      lndgn_new = log( dgn_t_new )
+      lndgv_new = lndgn_new + tmp_alnsg2(mfrm)
+      yn_tail = (lndp_cut(mfrm) - lndgn_new)*factoryy(mfrm)
+      yv_tail = (lndp_cut(mfrm) - lndgv_new)*factoryy(mfrm)
+      tailfr_numnew = 0.5_wp*erf( yn_tail )
+      tailfr_volnew = 0.5_wp*erf( yv_tail )
+
+!   compute old fraction of number and mass in the tail (dp > dp_cut)
+      dgn_t_old =   &
+            (dryvol_t_oldbnd/(num_t_oldbnd*factoraa(mfrm)))**onethird
+      dgn_t_oldaa = dgn_t_old
+      dryvol_t_oldaa = dryvol_t_old
+
+      if (rename_method_optaa .eq. 40) then
+         if (dgn_t_old .gt. dp_belowcut(mfrm)) then
+            ! this revised volume corresponds to dgn_t_old == dp_belowcut, and same number conc
+            dryvol_t_old = dryvol_t_old * (dp_belowcut(mfrm)/dgn_t_old)**3
+            dgn_t_old = dp_belowcut(mfrm)
+         end if
+         if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_wp*dryvol_t_oldbnd) cycle mainloop1_ipair
+      else if (dgn_t_new .ge. dp_cut(mfrm)) then
+!         if dgn_t_new exceeds dp_cut, use the minimum of dgn_t_old and
+!         dp_belowcut to guarantee some transfer
+          dgn_t_old = min( dgn_t_old, dp_belowcut(mfrm) )
+      end if
+      lndgn_old = log( dgn_t_old )
+      lndgv_old = lndgn_old + tmp_alnsg2(mfrm)
+      yn_tail = (lndp_cut(mfrm) - lndgn_old)*factoryy(mfrm)
+      yv_tail = (lndp_cut(mfrm) - lndgv_old)*factoryy(mfrm)
+      tailfr_numold = 0.5_wp*erf( yn_tail )
+      tailfr_volold = 0.5_wp*erf( yv_tail )
+
+!   transfer fraction is difference between new and old tail-fractions
+!   transfer fraction for number cannot exceed that of mass
+      tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
+      if (tmpa .le. 0.0_wp) cycle mainloop1_ipair
+
+      xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
+      xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+      xferfrac_num = tailfr_numnew - tailfr_numold
+      xferfrac_num = max( 0.0_wp, min( xferfrac_num, xferfrac_vol ) )
+#if ( defined( CAMBOX_ACTIVATE_THIS ) )
+      if ( ldiag98 ) write(lun98,'(/a,2i3,1p,10e11.3)') &
+         'rename i,k, xf n/v', i, k, xferfrac_num, xferfrac_vol
+#endif
+
+#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
+!   diagnostic output start ----------------------------------------
+       if (ldiag1 > 0) then
+       icol_diag = -1
+       if ((lonndx(i) == 37) .and. (latndx(i) == 23)) icol_diag = i
+       if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
+ !      write(lund,97010) fromwhere, nstep, lchnk, i, k, ipair
+       write(lund,97010) fromwhere, nstep, latndx(i), lonndx(i), k, ipair
+       write(lund,97020) 'drv olda/oldbnd/old/new/del',   &
+             dryvol_t_oldaa, dryvol_t_oldbnd, dryvol_t_old, dryvol_t_new, dryvol_t_del
+       write(lund,97020) 'num old/oldbnd, dgnold/new ',   &
+             num_t_old, num_t_oldbnd, dgn_t_old, dgn_t_new
+       write(lund,97020) 'tailfr v_old/new, n_old/new',   &
+             tailfr_volold, tailfr_volnew, tailfr_numold, tailfr_numnew
+       tmpa = max(1.0d-10,xferfrac_vol) / max(1.0d-10,xferfrac_num)
+       dgn_xfer = dgn_t_new * tmpa**onethird
+       tmpa = max(1.0d-10,(1.0d0-xferfrac_vol)) /   &
+               max(1.0d-10,(1.0d0-xferfrac_num))
+       dgn_aftr = dgn_t_new * tmpa**onethird
+       write(lund,97020) 'xferfrac_v/n; dgn_xfer/aftr',   &
+             xferfrac_vol, xferfrac_num, dgn_xfer, dgn_aftr
+ !97010      format( / 'RENAME ', a, '  nx,lc,i,k,ip', i8, 4i4 )
+ 97010      format( / 'RENAME ', a, '  nx,lat,lon,k,ip', i8, 4i4 )
+ 97020      format( a, 6(1pe15.7) )
+       end if
+       end if ! (ldiag1 > 0)
+!   diagnostic output end   ------------------------------------------
+#endif
+
+
+!
+!   compute changes to number and species masses
+!
+      tmpd = qnum_cur(mfrm)*xferfrac_num
+      qnum_cur(mfrm) = qnum_cur(mfrm) - tmpd
+      qnum_cur(mtoo) = qnum_cur(mtoo) + tmpd
+      do iaer = 1, naer
+         tmpd = qaer_cur(iaer,mfrm)*xferfrac_vol
+         qaer_cur(iaer,mfrm) = qaer_cur(iaer,mfrm) - tmpd
+         qaer_cur(iaer,mtoo) = qaer_cur(iaer,mtoo) + tmpd
+      end do ! iaer
+
+      if ( iscldy_subarea ) then
+      tmpd = qnumcw_cur(mfrm)*xferfrac_num
+      qnumcw_cur(mfrm) = qnumcw_cur(mfrm) - tmpd
+      qnumcw_cur(mtoo) = qnumcw_cur(mtoo) + tmpd
+      do iaer = 1, naer
+         tmpd = qaercw_cur(iaer,mfrm)*xferfrac_vol
+         qaercw_cur(iaer,mfrm) = qaercw_cur(iaer,mfrm) - tmpd
+         qaercw_cur(iaer,mtoo) = qaercw_cur(iaer,mtoo) + tmpd
+      end do ! iaer
+      end if ! ( iscldy_subarea ) then
+
+
+#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
+!   diagnostic output start ----------------------------------------
+                if (ldiag1 > 0) then
+                if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
+                  if (lstooa .gt. 0) then
+                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
+                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
+                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend),   &
+                        deltat*dqdt(i,k,lstooa), deltat*(dqdt(i,k,lstooa) + xfertend)
+                  else
+                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
+                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
+                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend)
+                  end if
+                end if
+                end if
+!   diagnostic output end   ------------------------------------------
+#endif
+
+
+      end do mainloop1_ipair
+
+
+      return
+      end subroutine mam_rename_1subarea
 
 
   subroutine find_renaming_pairs (nmodes, to_mode_of_mode, &    !input

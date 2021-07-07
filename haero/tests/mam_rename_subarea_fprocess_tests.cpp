@@ -52,8 +52,6 @@ TEST_CASE("mam_rename_subarea_run", "") {
       std::make_unique<Atmosphere>(num_levels, temp, press, rel_hum, ht, pdel,
                                    pblh);  // create atmosphere object
 
-  auto a = haero::AerosolProcess();
-
   SECTION("rename_subarea_run") {
     auto process = std::make_unique<MAMRenameSubareaFProcess>();
     // Initialize prognostic and diagnostic variables, and construct a
