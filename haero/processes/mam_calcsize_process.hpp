@@ -32,10 +32,10 @@ class MAMCalcsizeProcess : public AerosolProcess {
   //------------------------------------------------------------------------
 
   KOKKOS_FUNCTION
-  virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
-                   Real dt, const Prognostics &prognostics,
-                   const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-                   Tendencies &tendencies) const override{};
+  void run(const ModalAerosolConfig &modal_aerosol_config, Real t, Real dt,
+           const Prognostics &prognostics, const Atmosphere &atmosphere,
+           const Diagnostics &diagnostics,
+           Tendencies &tendencies) const override{};
 };
 
 }  // namespace haero

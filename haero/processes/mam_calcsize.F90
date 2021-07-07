@@ -160,16 +160,16 @@ contains
 
           !FIXME: size adjustment is done here based on volume to num ratios
 
-          !FIXME: in (or better done after) the following update_dgn_voltonum calls, we need to update mmr as well
+          !FIXME: in (or better done after) the following update_diameter_and_vol2num calls, we need to update mmr as well
           !but we are currently skipping that update. That update wil require additional arguments
 
           !update diameters and volume to num ratios for interstitial aerosols
-          call update_dgn_voltonum(klev, imode, drv_a, num_a, &
+          call update_diameter_and_vol2num(klev, imode, drv_a, num_a, &
                v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
                dgncur_a, v2ncur_a)
 
           !update diameters and volume to num ratios for cloudborne aerosols
-          call update_dgn_voltonum(klev, imode, drv_c, num_c, &
+          call update_diameter_and_vol2num(klev, imode, drv_c, num_c, &
                v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
                dgncur_c, v2ncur_c)
 
@@ -180,15 +180,12 @@ contains
 
   end subroutine run
 
-
+  !-----------------------------------------------------------------------------
+  !Set initial defaults for the dry diameter, volume to num
+  ! and dry volume
+  !-----------------------------------------------------------------------------
   subroutine set_initial_sz_and_volumes(imode, top_lev, nlevs, dgncur, v2ncur, dryvol)
 
-    !-----------------------------------------------------------------------------
-    !Purpose: Set initial defaults for the dry diameter, volume to num
-    ! and dry volume
-    !
-    !Called by: run
-    !-----------------------------------------------------------------------------
     implicit none
 
     !inputs
@@ -214,14 +211,12 @@ contains
   end subroutine set_initial_sz_and_volumes
 
 
-  subroutine compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
-
-    !-----------------------------------------------------------------------------
-    !Purpose: Compute initial dry volume based on mmr and specie density
-    ! volume = mmr/density
-    !
-    !Called by: modal_aero_calcsize_sub
-    !-----------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
+  !Compute initial dry volume based on bulk mass mixing ratio (mmr) and specie density
+  ! volume = mmr/density
+  !-----------------------------------------------------------------------------
+  subroutine compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, &
+       q_i, q_c, dryvol_a, dryvol_c)
 
     implicit none
 
@@ -257,9 +252,10 @@ contains
   end subroutine compute_dry_volume
 
   !----------------------------------------------------------------------------------------
+  ! Compute particle diameter and volume to number ratios using dry bulk volume (drv)
   !----------------------------------------------------------------------------------------
 
-  subroutine update_dgn_voltonum(klev, imode, drv, num, &
+  subroutine update_diameter_and_vol2num(klev, imode, drv, num, &
        v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
        dgncur, v2ncur)
 
@@ -274,22 +270,21 @@ contains
     !output
     real(wp), intent(inout) :: dgncur(:,:), v2ncur(:,:)
 
-    !compute diameter and volume to number ratios only if volume is greater than zero
     if (drv > 0.0_wp) then
        if (num <= drv*v2nmin) then
-          dgncur(klev,imode) = dgnmin
-          v2ncur(klev,imode) = v2nmin
+          dgncur(klev,imode) = dgnmin !set to minimum diameter for this mode
+          v2ncur(klev,imode) = v2nmin !set to minimum vol2num ratio for this mode
        else if (num >= drv*v2nmax) then
-          dgncur(klev,imode) = dgnmax
-          v2ncur(klev,imode) = v2nmax
+          dgncur(klev,imode) = dgnmax !set to maximum diameter for this mode
+          v2ncur(klev,imode) = v2nmax !set to maximum vol2num ratio for this mode
        else
-          dgncur(klev,imode) = (drv/(cmn_factor*num))**third
+          dgncur(klev,imode) = (drv/(cmn_factor*num))**third !compute diameter based on dry volume (drv)
           v2ncur(klev,imode) = num/drv
        end if
     end if
 
     return
-  end subroutine update_dgn_voltonum
+  end subroutine update_diameter_and_vol2num
 
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------

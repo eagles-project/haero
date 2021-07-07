@@ -66,7 +66,7 @@ if (HAERO_FORTRAN)
   # Fortran
   add_library(haero_faerosol_process_stubs
               faerosol_process_stub.cpp faerosol_process_stub.F90
-              mam_nucleation_test_bridge.F90 mam_calcsize_test_bridge.F90)
+              mam_nucleation_test_bridge.F90)
   add_dependencies(haero_faerosol_process_stubs haero)
   EkatCreateUnitTest(faerosol_process_stub_tests faerosol_process_stub_tests.cpp
                      LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
