@@ -93,21 +93,3 @@ TEST_CASE("merikanto2007_figure_3") {
   }
   fclose(fp);
 }
-
-TEST_CASE("merikanto2007_log_h2so4_nucleation_threshold") {
-  // Compute the nucleation threshold for a given temperature and NH3 mix ratio.
-  PackType temp(240), xi(10);
-  auto thresh_c_h2so4 =
-      exp(merikanto2007::log_h2so4_nucleation_threshold(temp, xi));
-
-  // Compute the onset temperature to make sure we're below it.
-  PackType rel_hum(0.5);
-  auto onset_temp =
-      merikanto2007::onset_temperature(rel_hum, thresh_c_h2so4, xi);
-  REQUIRE(temp[0] < onset_temp[0]);
-
-  // Compute the log of the nucleation rate and make sure it's zero or less.
-  auto log_J =
-      merikanto2007::log_nucleation_rate(temp, rel_hum, thresh_c_h2so4, xi);
-  REQUIRE(log_J[0] <= 0);
-}
