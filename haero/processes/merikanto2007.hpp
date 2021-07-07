@@ -12,7 +12,9 @@ namespace haero {
 /// The functions in this file implement parameterizations described in
 /// Merikanto et al, New parameterization of sulfuric acid-ammonia-water ternary
 /// nucleation rates at tropospheric conditions, Journal of Geophysical Research
-/// 112 (2007).
+/// 112 (2007). Also included are corrections described in Merikanto et al,
+/// Correction to "New parameterization...", Journal of Geophysical Research
+/// 114 (2009).
 
 /// These parameterizations are valid for the following ranges:
 /// temperature:                235 - 295 K
@@ -31,31 +33,53 @@ namespace merikanto2007 {
 KOKKOS_INLINE_FUNCTION
 PackType log_nucleation_rate(const PackType& temp, const PackType& rel_hum,
                              const PackType& c_h2so4, const PackType& xi_nh3) {
-  // Compute the 20 polynomial fit functions f_i.
+  // Compute the 20 polynomial fit functions f_i(T).
 
-  // Polynomial coefficients (Table 1).
-  static const Real a[21][4] = {
+  // Polynomial coefficients (Table 1). According to the correction (Merikanto
+  // et al, 2009),
+  // double precision is required.
+  static const double a[21][4] = {
       {0, 0, 0, 0},  // <-- padding so we can use one-based indexing
-      {-358.234, 4.86304, -0.0217555, 0.0000321287},
-      {-980.923, 10.0542, -0.0330664, 0.0000342740},
-      {1200.47, -17.3711, 0.0817068, -0.000125345},
-      {-14.8330, 0.293263, -0.00164975, 2.84407e-6},
-      {-4.39129e6, 56383.9, -239.836, 0.337651},
-      {4.90553, -0.0546302, 0.000202584, -2.50241e-7},
-      {-231376, 2919.29, -12.2865, 0.0172493},
-      {75061.2, -931.880, 3.86327, -0.00534947},
-      {-3180.56, 39.0827, -0.160485, 0.000220314},
-      {-100.216, 0.977887, -0.00305118, 2.96732e-6},
-      {5599.91, -70.7090, 0.297880, -0.000418665},
-      {2.36093e6, -29752.1, 125.050, -0.175300},
-      {16597.8, -175.237, 0.603322, -0.000673179},
-      {-89.3896, 1.15334, -0.00495455, 7.09631e-6},
-      {-629.788, 7.77281, -0.0319741, 0.0000438376},
-      {-732007, 9100.06, -37.7711, 0.0523546},
-      {40751.1, -501.670, 2.06347, -0.00283687},
-      {-1911.03, 23.6904, -0.0980787, 0.000135646},
-      {2.79231, -0.0342255, 0.000140192, -1.92012e-7},
-      {3.17121, -0.0378223, 0.000150056, -1.98284e-7}};
+      {-358.233770505299, 4.8630382337426985, -0.02175548069741675,
+       0.00003212869941055865},
+      {-980.923146020468, 10.054155220444462, -0.03306644502023841,
+       0.000034274041225891804},
+      {1200.472096232311, -17.37107890065621, 0.08170681335921742,
+       -0.00012534476159729881},
+      {-14.833042158178936, 0.2932631303555295, -0.0016497524241142845,
+       2.844074805239367e-6},
+      {-4.39129415725234e6, 56383.93843154586, -239.835990963361,
+       0.33765136625580167},
+      {4.905527742256349, -0.05463019231872484, 0.00020258394697064567,
+       -2.502406532869512 - 7},
+      {-231375.56676032578, 2919.2852552424706, -12.286497122264588,
+       0.017249301826661612},
+      {75061.15281456841, -931.8802278173565, 3.863266220840964,
+       -0.005349472062284983},
+      {-3180.5610833308, 39.08268568672095, -0.16048521066690752,
+       0.00022031380023793877},
+      {-100.21645273730675, 0.977886555834732, -0.0030511783284506377,
+       2.967320346100855e-6},
+      {5599.912337254629, -70.70896612937771, 0.2978801613269466,
+       -0.00041866525019504},
+      {2.360931724951942e6, -29752.130254319443, 125.04965118142027,
+       -0.1752996881934318},
+      {16597.75554295064, -175.2365504237746, 0.6033215603167458,
+       -0.0006731787599587544},
+      {-89.38961120336789, 1.153344219304926, -0.00495454549700267233,
+       7.096309866238719e-6},
+      {-629.7882041830943, 7.772806552631709, -0.031974053936299256,
+       0.00004383764128775082},
+      {-732006.8180571689, 9100.06398573816, -37.771091915932004,
+       0.05235455395566905},
+      {40751.075322248245, -501.66977622013934, 2.063469732254135,
+       -0.002836873785758324},
+      {-1911.0303773001353, 23.6903969622286, -0.09807872005428583,
+       0.00013564560238552576},
+      {2.792313345723013, -0.03422552111802899, 0.00014019195277521142,
+       -1.9201227328396297e-7},
+      {3.1712136610383244, -0.037822330602328806, 0.0001500555743561457,
+       -1.9828365865570703e-7}};
   PackType f[21];
   for (int i = 0; i <= 20; ++i) {
     f[i] = PackType(a[i][0] + a[i][1] * temp + a[i][2] * square(temp) +
@@ -70,14 +94,15 @@ PackType log_nucleation_rate(const PackType& temp, const PackType& rel_hum,
          f[7] * log(xi) + f[8] * square(log(xi)) + f[9] * cube(log(xi)) +
          f[10] * rel_hum * log(xi) + f[11] * log(c) * log(xi) +
          f[12] * log(xi) / log(c) + f[13] * log(rel_hum) / log(c) +
-         f[14] * log(rel_hum) * log(xi) + f[15] / (cube(xi) * log(c)) +
+         f[14] * log(rel_hum) * log(xi) +
+         f[15] * rel_hum / (cube(xi) * log(c)) +
          f[16] * square(log(xi)) / log(c) + f[17] * cube(log(xi)) / log(c) +
          f[18] * log(c) * square(log(xi)) +
          f[19] * square(log(c)) * cube(log(xi)) +
          f[20] * log(rel_hum) * cube(log(xi));
 }
 
-/// Computes the "onset temperature" [K] (eq 10) below which Merikanto's
+/// Computes the "onset temperature" [K] (eq 10) above which Merikanto's
 /// parameterization for the nucleation rate (eq 8) cannot be used (in which
 /// case the authors suggest setting the nucleation rate to zero).
 /// @param [in] rel_hum The relative humidity [-]
@@ -88,7 +113,7 @@ PackType onset_temperature(const PackType& rel_hum, const PackType& c_h2so4,
                            const PackType& xi_nh3) {
   return PackType(143.600 + 1.01789 * rel_hum + 10.1964 * log(c_h2so4) -
                   0.184988 * square(log(c_h2so4)) - 17.1618 * log(xi_nh3) +
-                  (109.9247 * log(xi_nh3)) / log(c_h2so4) +
+                  109.9247 * log(xi_nh3) / log(c_h2so4) +
                   0.773412 * log(c_h2so4) * log(xi_nh3) -
                   0.155764 * square(log(xi_nh3)));
 }

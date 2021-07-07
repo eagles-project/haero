@@ -12,7 +12,9 @@ namespace haero {
 /// The functions in this file implement parameterizations described in
 /// Vehkamaki et al, An improved parameterization for sulfuric acid–water /
 /// nucleation rates for tropospheric and stratospheric conditions,
-/// Journal of Geophysical Research 107 (2002).
+/// Journal of Geophysical Research 107 (2002). Also included are corrections
+/// described in Vehkamaki et al, Correction to "An improved...",
+/// Journal of Geophysical Research: Atmospheres 118 (2013).
 
 /// These parameterizations are valid for the following ranges:
 /// temperature:                230.15 - 300.15 K
