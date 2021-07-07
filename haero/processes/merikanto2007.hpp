@@ -84,15 +84,13 @@ PackType log_nucleation_rate(const PackType& temp, const PackType& rel_hum,
 /// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
 /// @param [in] xi_nh3 The molar mixing ratio of NH3 [ppt]
 KOKKOS_INLINE_FUNCTION
-PackType onset_temp(const PackType& rel_hum, const PackType& c_h2so4,
-                    const PackType& xi_nh3) {
-  return PackType(143.6002929064716 + 1.0178856665693992 * rel_hum +
-                  10.196398812974294 * log(c_h2so4) -
-                  0.1849879416839113 * square(log(c_h2so4)) -
-                  17.161783213150173 * log(xi_nh3) +
-                  (109.92469248546053 * log(xi_nh3)) / log(c_h2so4) +
-                  0.7734119613144357 * log(c_h2so4) * log(xi_nh3) -
-                  0.15576469879527022 * square(log(xi_nh3)));
+PackType onset_temperature(const PackType& rel_hum, const PackType& c_h2so4,
+                           const PackType& xi_nh3) {
+  return PackType(143.600 + 1.01789 * rel_hum + 10.1964 * log(c_h2so4) -
+                  0.184988 * square(log(c_h2so4)) - 17.1618 * log(xi_nh3) +
+                  (109.9247 * log(xi_nh3)) / log(c_h2so4) +
+                  0.773412 * log(c_h2so4) * log(xi_nh3) -
+                  0.155764 * square(log(xi_nh3)));
 }
 
 /// Computes the radius of a critical cluster [nm] as parameterized in Merikanto
