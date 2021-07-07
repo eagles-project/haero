@@ -1,7 +1,7 @@
 #include <cstdio>
 
 #include "catch2/catch.hpp"
-#include "haero/processes/vehkamaki_functions.hpp"
+#include "haero/processes/vehkamaki2002.hpp"
 
 using namespace haero;
 
@@ -13,8 +13,8 @@ using namespace haero;
 // Pandis, 2016).
 
 // Compare the output of this test with Vehkamaki et al (2002), figure 7.
-TEST_CASE("vehkamaki2002_h2so4_nucleation_threshold") {
-  FILE* fp = fopen("vehkamaki2002_h2so4_nucleation_threshold.dat", "w");
+TEST_CASE("vehkamaki2002_figure_7") {
+  FILE* fp = fopen("vehkamaki2002_figure_7.dat", "w");
   for (int i = 0; i < 12; ++i) {
     PackType temp(190.15 + 10 * i);
     for (int j = 0; j < 10; ++j) {
@@ -28,8 +28,8 @@ TEST_CASE("vehkamaki2002_h2so4_nucleation_threshold") {
 
 // Compare the output of this test with Seinfeld and Pandis, figure 11.11.
 // Alas, we can only test one temperature value within the region of validity!
-TEST_CASE("vehkamaki2002_h2so4_critical_mole_faction") {
-  FILE* fp = fopen("vehkamaki2002_h2so4_critical_mole_fraction.dat", "w");
+TEST_CASE("vehkamaki2002_sp_figure_11.11") {
+  FILE* fp = fopen("vehkamaki2002_sp_figure_11.11.dat", "w");
   PackType temp(273.0);
   for (int i = 0; i < 9; ++i) {
     PackType rel_hum(0.2 + i * 0.1);
@@ -43,8 +43,8 @@ TEST_CASE("vehkamaki2002_h2so4_critical_mole_faction") {
 
 // Compare the output of this test with Vehkamaki et al (2002), figure 8
 // (dotted line).
-TEST_CASE("vehkamaki2002_nucleation_rate") {
-  FILE* fp = fopen("vehkamaki2002_nucleation_rate.dat", "w");
+TEST_CASE("vehkamaki2002_figure_8_dotted") {
+  FILE* fp = fopen("vehkamaki2002_figure_8_dotted.dat", "w");
   PackType temp(236.0), rel_hum(0.55);
   for (int i = 0; i < 100; ++i) {
     PackType c_h2so4(1e6 + 1e7 * i);
@@ -58,8 +58,8 @@ TEST_CASE("vehkamaki2002_nucleation_rate") {
 
 // Compare the output of this test with Vehkamaki et al (2002), figure 8
 // (dashed line).
-TEST_CASE("vehkamaki2002_n_tot") {
-  FILE* fp = fopen("vehkamaki2002_n_tot.dat", "w");
+TEST_CASE("vehkamaki2002_figure_8_dashed") {
+  FILE* fp = fopen("vehkamaki2002_figure_8_dashed.dat", "w");
   PackType temp(236.0), rel_hum(0.55);
   for (int i = 0; i < 100; ++i) {
     PackType c_h2so4(1e6 + 1e7 * i);

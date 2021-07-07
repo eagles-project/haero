@@ -57,7 +57,10 @@ EkatCreateUnitTest(mode_wet_radius mode_wet_radius_tests.cpp
 #----------------------------------------------------
 # Unit tests for low-level aerosol parameterizations
 #----------------------------------------------------
-EkatCreateUnitTest(vehkamaki_function_tests vehkamaki_function_tests.cpp
+EkatCreateUnitTest(vehkamaki2002_tests vehkamaki2002_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
+EkatCreateUnitTest(merikanto2007_tests merikanto2007_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
 #----------------------------------------------------
