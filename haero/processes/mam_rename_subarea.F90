@@ -58,7 +58,7 @@ contains
   subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     implicit none
 
-    ! Parameters
+    ! --- Parameters
     type(model_t), intent(in)         :: model
     real(wp), value, intent(in)       :: t
     real(wp), value, intent(in)       :: dt
@@ -67,7 +67,12 @@ contains
     type(diagnostics_t), intent(in)   :: diagnostics
     type(tendencies_t), intent(inout) :: tendencies
 
+    ! --- Local variables
+
+    ! Total number of modes
     integer  :: nmodes
+
+    ! Contains information about the destination mode for a given mode
     integer  :: dst_mode_of_mode(model%num_modes)
 
     ! total number of pairs to be found
@@ -126,10 +131,11 @@ contains
     ! Local variables
     integer :: imode
 
-    rename_subarea_log 'Populating log of stddev array'
+    rename_subarea_log 'Populating log of stddev array:'
 
     do imode = 1, model%num_modes
       alnsg(imode) = log(model%modes(imode)%mean_std_dev)
+      rename_subarea_log 'imode=', imode, 'alnsg=', alnsg(imode)
     end do
 
   end subroutine populate_ln_of_std_dev
@@ -206,13 +212,13 @@ contains
 
     ! if there can be no possible pairs, just return
     if (all(dst_mode_of_mode(:)<=0)) then
-      rename_subarea_log 'Got all(dst_mode_of_mode(:)<=0), returning early'
+      rename_subarea_log 'Found no possible mode pairs, returning early'
       return
     endif
 
     ! Find >=1 pair
     do imode = 1, nmodes
-      rename_subarea_log 'Searching for pairs with imode = ', imode
+      rename_subarea_log 'Searching for pairs with imode=', imode
 
       ! Destination mode for mode _imode_
       dst_mode = dst_mode_of_mode(imode)
@@ -301,6 +307,10 @@ contains
     real(wp), intent(inout) :: size_factor(:) !size factor
 
     size_factor(imode) = (pi_sixth)*exp(4.5*(alnsg**2))
+
+    rename_subarea_log 'size_factor=', size_factor(imode), 'with:'
+    rename_subarea_log 'imode=', imode
+    rename_subarea_log 'alnsg=', alnsg
 
   end subroutine compute_size_factor
 
