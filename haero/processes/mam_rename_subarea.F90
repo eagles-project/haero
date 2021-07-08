@@ -68,7 +68,7 @@ contains
     type(tendencies_t), intent(inout) :: tendencies
 
     integer  :: nmodes
-    integer  :: to_mode_of_mode(model%num_modes)
+    integer  :: dst_mode_of_mode(model%num_modes)
 
     ! total number of pairs to be found
     integer  :: num_pairs
@@ -94,7 +94,7 @@ contains
     real(wp) :: alnsg(model%num_modes)
 
     nmodes = model%num_modes
-    to_mode_of_mode(:) = [0, 2, 0, 0]
+    dst_mode_of_mode(:) = [0, 2, 0, 0]
 
     rename_subarea_log 'Calling find_renaming_pairs'
     rename_subarea_log 'Got num_modes = ', nmodes
@@ -103,7 +103,7 @@ contains
 
     ! TODO: new parameters needed for _find_renaming_pairs_; extract data from
     ! _model_ and pass to _find_renaming_pairs_. DONT pass model to subroutines.
-    call find_renaming_pairs(nmodes, to_mode_of_mode, alnsg, &         ! input
+    call find_renaming_pairs(nmodes, dst_mode_of_mode, alnsg, &         ! input
        num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & ! output
        v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff, &     ! output
        ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    ! output
@@ -141,122 +141,158 @@ contains
     type(model_t), intent(in) :: model
   end subroutine finalize
 
-  subroutine find_renaming_pairs (nmodes, to_mode_of_mode, alnsg_aer, &    !input
+  subroutine find_renaming_pairs (nmodes, dst_mode_of_mode, alnsg_aer, &    !input
        num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & !output
        v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff, &     !output
        ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    !output
 
-    !arguments (intent-ins)
+    ! --- arguments (intent-ins)
 
+    ! Natural log of std deviation
     real(wp), intent(in) :: alnsg_aer(:)
-    integer,  intent(in) :: nmodes              !total number of modes
-    integer,  intent(in) :: to_mode_of_mode(:)  !array carry info about the "to" mode of a particular mode
 
-    !intent-outs
-    integer,  intent(out) :: num_pairs         ! total number of pairs to be found
-    real(wp), intent(out) :: sz_factor(:), fmode_dist_tail_fac(:) !precomputed factors to be used later
-    real(wp), intent(out) :: v2n_lo_rlx(:), v2n_hi_rlx(:)         !relaxed volume to num high and low ratio limits
-    real(wp), intent(out) :: ln_diameter_tail_fac(:)              !log of diameter factor for distribution tail
-    real(wp), intent(out) :: diameter_cutoff(:), ln_dia_cutoff(:) !cutoff (threshold) for deciding the  do inter-mode transfer
-    real(wp), intent(out) :: diameter_belowcutoff(:), dryvol_smallest(:) ! some limiters/factors
+    ! total number of modes
+    integer,  intent(in) :: nmodes
 
-    !local variables
-    integer  :: to_mode, from_mode, imode
+    ! Array for information about the destination mode of a particular mode
+    integer,  intent(in) :: dst_mode_of_mode(:)
+
+    ! --- intent-outs
+
+    ! total number of pairs to be found
+    integer,  intent(out) :: num_pairs
+
+    ! precomputed factors to be used later
+    real(wp), intent(out) :: sz_factor(:), fmode_dist_tail_fac(:)
+
+    ! relaxed volume to num high and low ratio limits
+    real(wp), intent(out) :: v2n_lo_rlx(:), v2n_hi_rlx(:)
+
+    ! log of diameter factor for distribution tail
+    real(wp), intent(out) :: ln_diameter_tail_fac(:)
+
+    ! cutoff (threshold) for deciding whether or not to do inter-mode transfer
+    real(wp), intent(out) :: diameter_cutoff(:), ln_dia_cutoff(:)
+
+    ! limiters/factors
+    real(wp), intent(out) :: diameter_belowcutoff(:), dryvol_smallest(:)
+
+    ! --- local variables
+
+    ! Destination mode
+    integer  :: dst_mode
+
+    ! Source mode
+    integer  :: src_mode
+
+    ! Iterator for looping over modes
+    integer  :: imode
+
+    ! Ln of stddev for source mode
     real(wp) :: alnsg_for_current_mode
 
-    !some parameters
+    ! --- Parameters
     real(wp), parameter :: sqrt_half = sqrt(0.5)
     real(wp), parameter :: frelax = 27.0_wp !(3^3)
     real(wp), parameter :: smallest_dryvol_value = 1.0e-25
 
-    !number of pairs allowed to do inter-mode particle transfer
+    ! number of pairs allowed to do inter-mode particle transfer
     ! (e.g. if we have a pair "mode_1<-->mode_2", mode_1 and mode_2 can participate in
     ! inter-mode aerosol particle transfer where like particles in mode_1 can be
     ! transferred to mode_2 and vice-versa)
-    num_pairs = 0 ! Let us assume there are none to start with
+    !
+    ! Let us assume there are none to start with
+    num_pairs = 0
 
-    !if there can be no possible pairs, just return
-    if (all(to_mode_of_mode(:)<=0)) then
-      rename_subarea_log 'Got all(to_mode_of_mode(:)<=0), returning early'
+    ! if there can be no possible pairs, just return
+    if (all(dst_mode_of_mode(:)<=0)) then
+      rename_subarea_log 'Got all(dst_mode_of_mode(:)<=0), returning early'
       return
     endif
 
     ! Find >=1 pair
     do imode = 1, nmodes
-       rename_subarea_log 'Searching for pairs with imode = ', imode
+      rename_subarea_log 'Searching for pairs with imode = ', imode
 
-       to_mode   = to_mode_of_mode(imode) ! transfer "to" mode for mode "imode"
+      ! Destination mode for mode _imode_
+      dst_mode = dst_mode_of_mode(imode)
 
-       ! if to_mode is <=0, transfer is not possible for this mode, cycle the
-       ! loop for the next mode
-       if(to_mode <= 0) then
-         rename_subarea_log 'Got to_mode <= 0, skipping this mode.'
-         cycle
-       end if
+      ! if dst_mode is <=0, transfer is not possible for this mode. cycle the
+      ! loop for the next mode
+      if(dst_mode <= 0) then
+        rename_subarea_log 'Got dst_mode <= 0, skipping this mode.'
+        cycle
+      end if
 
-       ! transfer "from" mode is the current mode (i.e. imode)
-       from_mode = imode
+      ! Source mode is the current mode (i.e. _imode_)
+      src_mode = imode
 
-       ! log of stddev for current mode
-       alnsg_for_current_mode = alnsg_aer(from_mode)
+      ! log of stddev for current mode
+      alnsg_for_current_mode = alnsg_aer(src_mode)
 
-       !^^At this point, we know that particles can be tranfered from the
-       ! "from_mode" to "to_mode". "from_mode" is the current mode (i.e. imode)
+      !^^At this point, we know that particles can be tranfered from the
+      ! _src_mode_ to _dst_mode_. _src_mode_ is the current mode (i.e. imode)
 
-       ! update number of pairs found so far
-       num_pairs = num_pairs + 1
+      ! update number of pairs found so far
+      num_pairs = num_pairs + 1
 
-       !-------------------------------------------------------
-       ! precompute common factors to be used later
-       !-------------------------------------------------------
+      !-------------------------------------------------------
+      ! precompute common factors to be used later
+      !-------------------------------------------------------
 
-       ! size factor for "from mode"
-       call compute_size_factor (from_mode, alnsg_for_current_mode, sz_factor)
+      ! size factor for _src_mode_
+      call compute_size_factor (src_mode, alnsg_for_current_mode, sz_factor)
 
-       ! size factor for "to mode"
-       call compute_size_factor (to_mode, alnsg_for_current_mode, sz_factor)
+      ! size factor for _dst_mode_
+      call compute_size_factor (dst_mode, alnsg_for_current_mode, sz_factor)
 
-       !------------------------------------------------------------------------
-       ! We compute few factors below for the "from_mode", which will be used
-       ! for inter-mode particle transfer
-       !------------------------------------------------------------------------
+      !------------------------------------------------------------------------
+      ! We compute few factors below for the _src_mode_, which will be used
+      ! for inter-mode particle transfer
+      !------------------------------------------------------------------------
 
-       ! factor for computing distribution tails of the "from mode"
-       fmode_dist_tail_fac(from_mode) = sqrt_half/alnsg_for_current_mode
+      ! factor for computing distribution tails of the _src_mode_
+      fmode_dist_tail_fac(src_mode) = sqrt_half/alnsg_for_current_mode
 
-       dryvol_smallest(from_mode) = smallest_dryvol_value
-       ! compute volume to number high and low limits with relaxation
-       ! coefficients (watch out for repeated calculations)
+      dryvol_smallest(src_mode) = smallest_dryvol_value
+      ! compute volume to number high and low limits with relaxation
+      ! coefficients (watch out for repeated calculations)
 
-       ! TODO: see calcsize pr for these values, how to extract from model
-       v2n_lo_rlx(from_mode) = &
-         compute_vol_to_num_ratio(from_mode, alnsg_for_current_mode, dgnumlo_aer) * frelax
+      ! TODO: see calcsize pr for these values, how to extract from model
+      v2n_lo_rlx(src_mode) = compute_vol_to_num_ratio(src_mode, &
+                               alnsg_for_current_mode, &
+                               dgnumlo_aer) &
+                               * frelax
 
-       v2n_hi_rlx(from_mode) = &
-         compute_vol_to_num_ratio(from_mode, alnsg_for_current_mode, dgnumhi_aer) / frelax
+      v2n_hi_rlx(src_mode) = compute_vol_to_num_ratio(src_mode, &
+                               alnsg_for_current_mode, &
+                               dgnumhi_aer) &
+                               / frelax
 
-       ! A factor for computing diameter at the tails of the distribution
-       ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_for_current_mode**2)
+      ! A factor for computing diameter at the tails of the distribution
+      ln_diameter_tail_fac(src_mode) = 3.0 * (alnsg_for_current_mode**2)
 
-       ! Cut-off (based on geometric mean) for making decision to do inter-mode transfers
+      ! Cut-off (based on geometric mean) for making decision to do inter-mode
+      ! transfers
 
-       ! TODO: use dummy values for _dgnum_aer_, or assign to dgnum_low for the
-       ! moment. Have to figure out how to compute this. We will extract from
-       ! model at some point.
-       diameter_cutoff(from_mode) = sqrt(   &
-          dgnum_aer(from_mode)*exp(1.5*(alnsg_for_current_mode**2)) *   &
-          dgnum_aer(to_mode)*exp(1.5*(alnsg_aer(to_mode)**2)) )
+      ! TODO: use dummy values for _dgnum_aer_, or assign to dgnum_low for the
+      ! moment. Have to figure out how to compute this. We will extract from
+      ! model at some point.
+      diameter_cutoff(src_mode) = sqrt(   &
+         dgnum_aer(src_mode)*exp(1.5*(alnsg_for_current_mode**2)) *   &
+         dgnum_aer(dst_mode)*exp(1.5*(alnsg_aer(dst_mode)**2)) )
 
-       ln_dia_cutoff(from_mode) = log(diameter_cutoff(from_mode)) !log of cutt-off
-       diameter_belowcutoff(from_mode) = 0.99*diameter_cutoff(from_mode) !99% of the cutoff
+      ln_dia_cutoff(src_mode) = log(diameter_cutoff(src_mode)) !log of cutt-off
+      diameter_belowcutoff(src_mode) = 0.99*diameter_cutoff(src_mode) !99% of the cutoff
 
     enddo
 
   end subroutine find_renaming_pairs
 
 
+  ! Compute size factor for a mode
   subroutine compute_size_factor(imode, alnsg, size_factor)
-    ! Compute size factor for a mode
+
     use haero_constants, only: pi_sixth
     implicit none
 
@@ -268,16 +304,19 @@ contains
 
   end subroutine compute_size_factor
 
-
+  ! compute volume to number ratio for a mode
   pure function compute_vol_to_num_ratio(imode, alnsg, diameter) result(v2n)
-    !compute volume to number ratio for a mode
+
     use haero_constants, only: pi_sixth
     implicit none
+
+    ! Parameters
     integer,  intent(in) :: imode
     real(wp), intent(in) :: alnsg
     real(wp), intent(in) :: diameter(:) ![m]
 
-    real(wp) :: v2n !return value
+    ! Return value
+    real(wp) :: v2n
 
     v2n = ( 1._wp / ( (pi_sixth)* &
          (diameter(imode)**3._wp)*exp(4.5_wp*alnsg**2._wp) ) )
