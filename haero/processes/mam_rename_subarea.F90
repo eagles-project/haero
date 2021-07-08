@@ -161,7 +161,8 @@ contains
     real(wp), intent(out) :: diameter_belowcutoff(:), dryvol_smallest(:) ! some limiters/factors
 
     !local variables
-    integer :: to_mode, from_mode, imode
+    integer  :: to_mode, from_mode, imode
+    real(wp) :: alnsg_for_current_mode
 
     !some parameters
     real(wp), parameter :: sqrt_half = sqrt(0.5)
@@ -196,6 +197,9 @@ contains
        ! transfer "from" mode is the current mode (i.e. imode)
        from_mode = imode
 
+       ! log of stddev for current mode
+       alnsg_for_current_mode = alnsg_aer(from_mode)
+
        !^^At this point, we know that particles can be tranfered from the
        ! "from_mode" to "to_mode". "from_mode" is the current mode (i.e. imode)
 
@@ -207,10 +211,10 @@ contains
        !-------------------------------------------------------
 
        ! size factor for "from mode"
-       call compute_size_factor (from_mode, alnsg_aer, sz_factor)
+       call compute_size_factor (from_mode, alnsg_for_current_mode, sz_factor)
 
        ! size factor for "to mode"
-       call compute_size_factor (to_mode, alnsg_aer, sz_factor)
+       call compute_size_factor (to_mode, alnsg_for_current_mode, sz_factor)
 
        !------------------------------------------------------------------------
        ! We compute few factors below for the "from_mode", which will be used
@@ -218,7 +222,7 @@ contains
        !------------------------------------------------------------------------
 
        ! factor for computing distribution tails of the "from mode"
-       fmode_dist_tail_fac(from_mode) = sqrt_half/alnsg_aer(from_mode)
+       fmode_dist_tail_fac(from_mode) = sqrt_half/alnsg_for_current_mode
 
        dryvol_smallest(from_mode) = smallest_dryvol_value
        ! compute volume to number high and low limits with relaxation
@@ -226,13 +230,13 @@ contains
 
        ! TODO: see calcsize pr for these values, how to extract from model
        v2n_lo_rlx(from_mode) = &
-         compute_vol_to_num_ratio(from_mode, alnsg_aer, dgnumlo_aer) * frelax
+         compute_vol_to_num_ratio(from_mode, alnsg_for_current_mode, dgnumlo_aer) * frelax
 
        v2n_hi_rlx(from_mode) = &
-         compute_vol_to_num_ratio(from_mode, alnsg_aer, dgnumhi_aer) / frelax
+         compute_vol_to_num_ratio(from_mode, alnsg_for_current_mode, dgnumhi_aer) / frelax
 
        ! A factor for computing diameter at the tails of the distribution
-       ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_aer(from_mode)**2)
+       ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_for_current_mode**2)
 
        ! Cut-off (based on geometric mean) for making decision to do inter-mode transfers
 
@@ -240,7 +244,7 @@ contains
        ! moment. Have to figure out how to compute this. We will extract from
        ! model at some point.
        diameter_cutoff(from_mode) = sqrt(   &
-          dgnum_aer(from_mode)*exp(1.5*(alnsg_aer(from_mode)**2)) *   &
+          dgnum_aer(from_mode)*exp(1.5*(alnsg_for_current_mode**2)) *   &
           dgnum_aer(to_mode)*exp(1.5*(alnsg_aer(to_mode)**2)) )
 
        ln_dia_cutoff(from_mode) = log(diameter_cutoff(from_mode)) !log of cutt-off
@@ -251,32 +255,32 @@ contains
   end subroutine find_renaming_pairs
 
 
-  subroutine compute_size_factor(imode, alnsg_aer, size_factor)
+  subroutine compute_size_factor(imode, alnsg, size_factor)
     ! Compute size factor for a mode
     use haero_constants, only: pi_sixth
     implicit none
 
     integer,  intent(in) :: imode     !mode number
-    real(wp), intent(in) :: alnsg_aer(:)
+    real(wp), intent(in) :: alnsg
     real(wp), intent(inout) :: size_factor(:) !size factor
 
-    size_factor(imode) = (pi_sixth)*exp(4.5*(alnsg_aer(imode)**2))
+    size_factor(imode) = (pi_sixth)*exp(4.5*(alnsg**2))
 
   end subroutine compute_size_factor
 
 
-  pure function compute_vol_to_num_ratio(imode, alnsg_aer, diameter) result(v2n)
+  pure function compute_vol_to_num_ratio(imode, alnsg, diameter) result(v2n)
     !compute volume to number ratio for a mode
     use haero_constants, only: pi_sixth
     implicit none
     integer,  intent(in) :: imode
-    real(wp), intent(in) :: alnsg_aer(:)
+    real(wp), intent(in) :: alnsg
     real(wp), intent(in) :: diameter(:) ![m]
 
     real(wp) :: v2n !return value
 
     v2n = ( 1._wp / ( (pi_sixth)* &
-         (diameter(imode)**3._wp)*exp(4.5_wp*alnsg_aer(imode)**2._wp) ) )
+         (diameter(imode)**3._wp)*exp(4.5_wp*alnsg**2._wp) ) )
 
   end function compute_vol_to_num_ratio
 
