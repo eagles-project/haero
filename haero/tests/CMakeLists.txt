@@ -85,7 +85,7 @@ if (HAERO_FORTRAN)
     EkatCreateUnitTest(mam_calcsize_fprocess_tests mam_calcsize_fprocess_tests.cpp
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
 
-    EkatCreateUnitTest(mam_rename_subarea_fprocess_tests mam_rename_subarea_fprocess_tests.cpp
+    EkatCreateUnitTest(mam_rename_fprocess_tests mam_rename_fprocess_tests.cpp
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
   endif()
 endif()

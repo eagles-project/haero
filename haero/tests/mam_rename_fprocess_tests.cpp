@@ -2,29 +2,29 @@
 #include <iostream>
 
 #include "catch2/catch.hpp"
-#include "mam_rename_subarea_test_bridge.hpp"
-#include "haero/processes/mam_rename_subarea_fprocess.hpp"
-#include "haero/processes/mam_rename_subarea_process.hpp"
+#include "mam_rename_test_bridge.hpp"
+#include "haero/processes/mam_rename_fprocess.hpp"
+#include "haero/processes/mam_rename_process.hpp"
 
 using namespace haero;
 
 Model* get_model_for_unit_tests(const ModalAerosolConfig& aero_config,
-    const int num_levels) {
+    const std::size_t num_levels) {
   static Model* model(Model::ForUnitTests(aero_config, num_levels));
   return model;
 }
 
-TEST_CASE("mam_rename_subarea_run", "") {
+TEST_CASE("mam_rename_run", "") {
   auto aero_config =
     create_mam4_modal_aerosol_config();  
-  static constexpr int num_levels{72};  // number of levels
+  static constexpr std::size_t num_levels{72};  // number of levels
   auto* model = get_model_for_unit_tests(
       aero_config, num_levels);
-  const int num_gases{aero_config.h_gas_species.size()};    // number of gases
-  const int num_modes{aero_config.h_aerosol_modes.size()};  // number of modes
+  const std::size_t num_gases{aero_config.h_gas_species.size()};    // number of gases
+  const std::size_t num_modes{aero_config.h_aerosol_modes.size()};  // number of modes
 
   // Set up some prognostics aerosol data views
-  const int num_aero_populations{
+  const std::size_t num_aero_populations{
         model->num_aerosol_populations()};
 
   Kokkos::View<PackType**> int_aerosols(
@@ -52,8 +52,8 @@ TEST_CASE("mam_rename_subarea_run", "") {
       std::make_unique<Atmosphere>(num_levels, temp, press, rel_hum, ht, pdel,
                                    pblh);  // create atmosphere object
 
-  SECTION("rename_subarea_run") {
-    auto process = std::make_unique<MAMRenameSubareaFProcess>();
+  SECTION("rename_run") {
+    auto process = std::make_unique<MAMRenameFProcess>();
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
@@ -73,16 +73,16 @@ TEST_CASE("mam_rename_subarea_run", "") {
 
     // Set initial conditions
     // aerosols mass mixing ratios
-    for (int p = 0; p < num_aero_populations; ++p) {
-      for (int k = 0; k < num_levels; ++k) {
+    for (std::size_t p = 0; p < num_aero_populations; ++p) {
+      for (std::size_t k = 0; k < num_levels; ++k) {
         int_aerosols(p, k) = random() * 10e-10;
         cld_aerosols(p, k) = random() * 10e-10;
       }
     }
 
     // aerosols number mixing ratios
-    for (int imode = 0; imode < num_modes; ++imode) {
-      for (int k = 0; k < num_levels; ++k) {
+    for (std::size_t imode = 0; imode < num_modes; ++imode) {
+      for (std::size_t k = 0; k < num_levels; ++k) {
         int_num_concs(imode, k) = 1e8 + random();
         cld_num_concs(imode, k) = 1e8 + random();
       }

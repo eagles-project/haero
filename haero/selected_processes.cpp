@@ -14,7 +14,7 @@ SelectedProcesses::SelectedProcesses()
       interstitial_wet_removal(NoInterstitialWetRemoval),
       nucleation(NoNucleation),
       calcsize(NoCalcsize),
-      rename_subarea(NoRenameSubarea),
+      rename(NoRename),
       resuspension(NoResuspension) {}
 
 AerosolProcess* select_aerosol_process(AerosolProcessType type,
@@ -71,14 +71,14 @@ AerosolProcess* select_aerosol_process(AerosolProcessType type,
     } else if (selections.calcsize == SelectedProcesses::NoCalcsize) {
       process = new NullAerosolProcess(type);
     }
-  } else if (type == RenameSubareaProcess) {
-    if (selections.rename_subarea == SelectedProcesses::MAMRenameSubarea) {
-      process = new MAMRenameSubareaProcess();
+  } else if (type == RenameProcess) {
+    if (selections.rename == SelectedProcesses::MAMRename) {
+      process = new MAMRenameProcess();
 #if HAERO_FORTRAN
-    } else if (selections.rename_subarea == SelectedProcesses::MAMFRenameSubarea) {
-      process = new MAMRenameSubareaFProcess();
+    } else if (selections.rename == SelectedProcesses::MAMFRename) {
+      process = new MAMRenameFProcess();
 #endif
-    } else if (selections.rename_subarea == SelectedProcesses::NoRenameSubarea) {
+    } else if (selections.rename == SelectedProcesses::NoRename) {
       process = new NullAerosolProcess(type);
     }
   } else if (type == ResuspensionProcess) {

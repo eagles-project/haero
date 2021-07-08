@@ -1,16 +1,16 @@
-#include "haero/processes/mam_rename_subarea_process.hpp"
+#include "haero/processes/mam_rename_process.hpp"
 #include <iostream>
 
 namespace haero {
 
-  MAMRenameSubareaProcess::MAMRenameSubareaProcess()
-    : AerosolProcess(RenameSubareaProcess, "MAMRenameSubareaProcess") {}
+  MAMRenameProcess::MAMRenameProcess()
+    : AerosolProcess(RenameProcess, "MAMRenameProcess") {}
 
-  void MAMRenameSubareaProcess::init(
+  void MAMRenameProcess::init(
                                   const ModalAerosolConfig& modal_aerosol_config) {}
 
   KOKKOS_FUNCTION
-  void MAMRenameSubareaProcess::run(const ModalAerosolConfig& modal_aerosol_config,
+  void MAMRenameProcess::run(const ModalAerosolConfig& modal_aerosol_config,
                                Real t, Real dt, const Prognostics& prognostics,
                                const Atmosphere& atmosphere,
                                const Diagnostics& diagnostics,

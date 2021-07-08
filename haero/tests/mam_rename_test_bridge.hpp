@@ -1,5 +1,5 @@
-#ifndef HAERO_mam_rename_subarea_TEST_BRIDGE_HPP
-#define HAERO_mam_rename_subarea_TEST_BRIDGE_HPP
+#ifndef HAERO_mam_rename_TEST_BRIDGE_HPP
+#define HAERO_mam_rename_TEST_BRIDGE_HPP
 
 #include "haero/haero.hpp"
 #include "haero/model.hpp"

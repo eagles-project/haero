@@ -5,13 +5,13 @@
 
 namespace haero {
 
-  /// \brief Bindings for the rename_subarea subroutine
-  class MAMRenameSubareaProcess : public AerosolProcess {
+  /// \brief Bindings for the rename subroutine
+  class MAMRenameProcess : public AerosolProcess {
   public:
-    MAMRenameSubareaProcess();
+    MAMRenameProcess();
 
     KOKKOS_INLINE_FUNCTION
-    virtual ~MAMRenameSubareaProcess() {}
+    virtual ~MAMRenameProcess() {}
 
     virtual void init(const ModalAerosolConfig &modal_aerosol_config) override;
 
