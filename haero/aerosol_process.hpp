@@ -144,7 +144,6 @@ class AerosolProcess {
            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
            const Tendencies& tendencies) const {
     // This method must be called on the device.
-
     run_(t, dt, prognostics, atmosphere, diagnostics, tendencies);
   }
 
