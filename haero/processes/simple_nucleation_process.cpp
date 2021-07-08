@@ -16,14 +16,35 @@ SimpleNucleationProcess::SimpleNucleationProcess()
 //                                Accessors
 //------------------------------------------------------------------------
 
-void SimpleNucleationProcess::init(
-    const ModalAerosolConfig &modal_aerosol_config) {
+void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
   // Set indices for modes, species, and gases.
-  imode = modal_aerosol_config.aerosol_mode_index(nucleation_mode, false);
-  iaer_so4 = modal_aerosol_config.aerosol_species_index(imode, "SO4", false);
-  iaer_nh4 = modal_aerosol_config.aerosol_species_index(imode, "NH4", false);
-  igas_h2so4 = modal_aerosol_config.gas_index("H2SO4", false);
-  igas_nh3 = modal_aerosol_config.gas_index("NH3", false);
+  imode = config.aerosol_mode_index(nucleation_mode, false);
+  iaer_so4 = config.aerosol_species_index(imode, "SO4", false);
+  igas_h2so4 = config.gas_index("H2SO4", false);
+  igas_nh3 = config.gas_index("NH3", false);
+
+  // Set mode diameters.
+  Kokkos::resize(d_mean_aer, config.num_modes());
+  Kokkos::resize(d_min_aer, config.num_modes());
+  Kokkos::resize(d_max_aer, config.num_modes());
+  {
+    auto d = Kokkos::create_mirror_view(d_mean_aer);
+    for (int m = 0; m < config.num_modes(); ++m)
+      d(m) = config.h_aerosol_modes(m).mean_std_dev;
+    Kokkos::deep_copy(d_mean_aer, d);
+  }
+  {
+    auto d = Kokkos::create_mirror_view(d_min_aer);
+    for (int m = 0; m < config.num_modes(); ++m)
+      d(m) = config.h_aerosol_modes(m).min_diameter;
+    Kokkos::deep_copy(d_min_aer, d);
+  }
+  {
+    auto d = Kokkos::create_mirror_view(d_max_aer);
+    for (int m = 0; m < config.num_modes(); ++m)
+      d(m) = config.h_aerosol_modes(m).max_diameter;
+    Kokkos::deep_copy(d_max_aer, d);
+  }
 }
 
 void SimpleNucleationProcess::set_param(const std::string &name, Real value) {

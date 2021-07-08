@@ -64,17 +64,14 @@ class SimpleNucleationProcess final : public AerosolProcess {
   // Index of SO4 aerosol within the nucleation mode
   int iaer_so4;
 
-  // Index of NH4 aerosol within the nucleation mode
-  int iaer_nh4;
-
   // The geometric mean particle diameters for all aerosol modes
-  view_1d_scalar_type dgnum_aer;
+  view_1d_scalar_type d_mean_aer;
 
   /// The minimum particle diameters for all aerosol modes
-  view_1d_scalar_type dgnumlo_aer;
+  view_1d_scalar_type d_min_aer;
 
   /// The maximum particle diameters for all aerosol modes
-  view_1d_scalar_type dgnumhi_aer;
+  view_1d_scalar_type d_max_aer;
 
  public:
   /// Constructor
@@ -96,15 +93,18 @@ class SimpleNucleationProcess final : public AerosolProcess {
         pbl_method(rhs.pbl_method),
         igas_h2so4(rhs.igas_h2so4),
         igas_nh3(rhs.igas_nh3),
-        iaer_so4(rhs.iaer_so4) {}
+        iaer_so4(rhs.iaer_so4),
+        d_mean_aer("mean particle diameters", 0),
+        d_min_aer("minimum particle diameters", 0),
+        d_max_aer("maximum particle diameters", 0) {}
 
   /// not assignable
   AerosolProcess &operator=(const SimpleNucleationProcess &) = delete;
 
-  void init(const ModalAerosolConfig &modal_aerosol_config) override;
+  void init(const ModalAerosolConfig &config) override;
 
   KOKKOS_FUNCTION
-  void run(const ModalAerosolConfig &modal_aerosol_config, Real t, Real dt,
+  void run(const ModalAerosolConfig &config, Real t, Real dt,
            const Prognostics &prognostics, const Atmosphere &atmosphere,
            const Diagnostics &diagnostics,
            Tendencies &tendencies) const override {}
