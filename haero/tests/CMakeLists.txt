@@ -63,6 +63,9 @@ EkatCreateUnitTest(vehkamaki2002_tests vehkamaki2002_tests.cpp
 EkatCreateUnitTest(merikanto2007_tests merikanto2007_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(wang2008_tests wang2008_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 #----------------------------------------------------
 # Unit tests for aerosol processes
 #----------------------------------------------------

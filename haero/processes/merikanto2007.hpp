@@ -1,9 +1,8 @@
-#ifndef HAERO_MERIKANTO_FUNCTIONS_HPP
-#define HAERO_MERIKANTO_FUNCTIONS_HPP
+#ifndef HAERO_MERIKANTO2007_HPP
+#define HAERO_MERIKANTO2007_HPP
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_math.hpp"
-#include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
 #include "haero/math.hpp"
 

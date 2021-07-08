@@ -1,9 +1,8 @@
-#ifndef HAERO_VEHKAMAKI_FUNCTIONS_HPP
-#define HAERO_VEHKAMAKI_FUNCTIONS_HPP
+#ifndef HAERO_VEHKAMAKI2002_HPP
+#define HAERO_VEHKAMAKI2002_HPP
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_math.hpp"
-#include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
 #include "haero/math.hpp"
 
