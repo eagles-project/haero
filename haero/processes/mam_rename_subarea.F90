@@ -1,16 +1,6 @@
 
-! TODO: _alnsg_aer_ means "a natural log of standard deviation". Find more
-! descriptive names. Are these already in haero? used in calcsize, refer to that
-! PR. Extract standard dev, pass to _find_renaming_pairs_, take log of it in
-! the routine.
-
-! TODO: _dgnum_ means "diameter of particles". Not available in Haero atm.
-
-! TODO: use dummy variables for parameters I do not know.
-
-! TODO: send _alnsg_ to _compute_vol_to_num_ratio_. Precompute, pass to each
-! routine.
-! alnsg(imode) = log(model%modes(imode)%mean_std_dev)
+! TODO Evaluate whether the _initialize_ methods are helpful or just extra
+! overhead.
 
 #define rename_subarea_log write (*,*) 'mam_rename_subarea.F90', __LINE__,
 
@@ -27,21 +17,6 @@ module mam_rename_subarea
             set_integer_param, &
             set_logical_param, &
             set_real_param
-
-  ! TODO: Dummy variables which will eventually be fields extracted from the model
-  ! TODO: Refer to TODOs at top of file
-  ! ---
-  real(wp) :: dgnumlo_aer(1), & ! TODO: get dim from model (model%modes)
-              dgnumhi_aer(1), & ! TODO: get dim from model (model%modes)
-              dgnum_aer(1), &
-              fac_m2v_aer(1)
-
-  integer :: max_mode, &
-             rename_method_optaa, &
-             ntot_amode, &
-             naer, &
-             max_aer
-  ! ---
 
 contains
 
@@ -73,7 +48,7 @@ contains
     integer  :: nmodes
 
     ! Contains information about the destination mode for a given mode
-    integer  :: dst_mode_of_mode(model%num_modes)
+    integer  :: dest_mode_of_mode(model%num_modes)
 
     ! total number of pairs to be found
     integer  :: num_pairs
@@ -95,25 +70,60 @@ contains
     real(wp) :: diameter_belowcutoff(model%num_modes), &
                 dryvol_smallest(model%num_modes)
 
-    !  alnsg(imode) = log(model%modes(imode)%mean_std_dev)
+    ! Upper and lower limits for diameters
+    real(wp) :: dgnumlo_aer(model%num_modes), &
+                dgnumhi_aer(model%num_modes), &
+                dgnum_aer(model%num_modes)
+
+    ! Natural log of the mean std dev for each mode
     real(wp) :: alnsg(model%num_modes)
 
     nmodes = model%num_modes
-    dst_mode_of_mode(:) = [0, 2, 0, 0]
+    dest_mode_of_mode(:) = [0, 2, 0, 0]
 
-    rename_subarea_log 'Calling find_renaming_pairs'
-    rename_subarea_log 'Got num_modes = ', nmodes
+    call initialize_diameters(dgnumlo_aer, dgnumhi_aer, dgnum_aer, model)
 
-    call populate_ln_of_std_dev(alnsg, model)
+    call initialize_ln_of_std_dev(alnsg, model)
 
     ! TODO: new parameters needed for _find_renaming_pairs_; extract data from
     ! _model_ and pass to _find_renaming_pairs_. DONT pass model to subroutines.
-    call find_renaming_pairs(nmodes, dst_mode_of_mode, alnsg, &         ! input
-       num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & ! output
-       v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff, &     ! output
-       ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    ! output
+    call find_renaming_pairs(nmodes, dest_mode_of_mode, alnsg, &    ! input
+        dgnumlo_aer, dgnumhi_aer, dgnum_aer,                   &    ! input
+        num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, &    ! output
+        v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     &    ! output
+        ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)       ! output
+
+    rename_subarea_log 'Final results:'
+    rename_subarea_log 'nmodes=', nmodes
+    rename_subarea_log 'dest_mode_of_mode=', dest_mode_of_mode
+    rename_subarea_log 'alnsg=', alnsg
+    rename_subarea_log 'dgnumlo_aer=', dgnumlo_aer
+    rename_subarea_log 'dgnumhi_aer=', dgnumhi_aer
+    rename_subarea_log 'dgnum_aer=', dgnum_aer
+    rename_subarea_log 'num_pairs=', num_pairs
+    rename_subarea_log 'sz_factor=', sz_factor
+    rename_subarea_log 'fmode_dist_tail_fac=', fmode_dist_tail_fac
+    rename_subarea_log 'v2n_lo_rlx=', v2n_lo_rlx
+    rename_subarea_log 'v2n_hi_rlx=', v2n_hi_rlx
 
   end subroutine run
+
+  subroutine initialize_diameters(dgnumlo_aer, dgnumhi_aer, dgnum_aer, model)
+    
+    type(model_t), intent(in)    :: model
+    real(wp),      intent(inout) :: dgnumlo_aer(:), &
+                                    dgnumhi_aer(:), &
+                                    dgnum_aer(:)
+
+    ! Initialize min and max diameters
+    dgnumlo_aer(:) = model%modes(:)%min_diameter
+    dgnumhi_aer(:) = model%modes(:)%max_diameter
+
+    ! Initialize this to the minimum diameter for now.
+    ! TODO: this will be updated with the correct calculation later.
+    dgnum_aer(:) = dgnumlo_aer(:)
+
+  end subroutine initialize_diameters
 
   ! alnsg is used throughout the original code. The model stores an array of
   ! the mean std deviations, which we can use to create a comperable array.
@@ -122,23 +132,17 @@ contains
   !
   ! TODO: identify a better way to perform the same calculations as the original
   ! code, or remove this comment if this subroutine suffices.
-  subroutine populate_ln_of_std_dev(alnsg, model)
+  subroutine initialize_ln_of_std_dev(alnsg, model)
 
     ! Parameters
     type(model_t), intent(in)     :: model
     real(wp),      intent(inout)  :: alnsg(:)
 
-    ! Local variables
-    integer :: imode
-
     rename_subarea_log 'Populating log of stddev array:'
 
-    do imode = 1, model%num_modes
-      alnsg(imode) = log(model%modes(imode)%mean_std_dev)
-      rename_subarea_log 'imode=', imode, 'alnsg=', alnsg(imode)
-    end do
+    alnsg(:) = log(model%modes(:)%mean_std_dev)
 
-  end subroutine populate_ln_of_std_dev
+  end subroutine initialize_ln_of_std_dev
 
   subroutine finalize(model)
     implicit none
@@ -147,21 +151,27 @@ contains
     type(model_t), intent(in) :: model
   end subroutine finalize
 
-  subroutine find_renaming_pairs (nmodes, dst_mode_of_mode, alnsg_aer, &    !input
-       num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & !output
-       v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff, &     !output
-       ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    !output
+  subroutine find_renaming_pairs (nmodes, dest_mode_of_mode,  & ! input
+       alnsg_aer, dgnumlo_aer, dgnumhi_aer, dgnum_aer,        & ! input
+       num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & ! output
+       v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     & ! output
+       ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    ! output
 
     ! --- arguments (intent-ins)
 
     ! Natural log of std deviation
     real(wp), intent(in) :: alnsg_aer(:)
 
+    ! Diameters
+    real(wp), intent(in) :: dgnumlo_aer(:)
+    real(wp), intent(in) :: dgnumhi_aer(:)
+    real(wp), intent(in) :: dgnum_aer(:)
+
     ! total number of modes
     integer,  intent(in) :: nmodes
 
     ! Array for information about the destination mode of a particular mode
-    integer,  intent(in) :: dst_mode_of_mode(:)
+    integer,  intent(in) :: dest_mode_of_mode(:)
 
     ! --- intent-outs
 
@@ -186,7 +196,7 @@ contains
     ! --- local variables
 
     ! Destination mode
-    integer  :: dst_mode
+    integer  :: dest_mode
 
     ! Source mode
     integer  :: src_mode
@@ -207,11 +217,11 @@ contains
     ! inter-mode aerosol particle transfer where like particles in mode_1 can be
     ! transferred to mode_2 and vice-versa)
     !
-    ! Let us assume there are none to start with
+    ! Let us assume there are none to start with.
     num_pairs = 0
 
     ! if there can be no possible pairs, just return
-    if (all(dst_mode_of_mode(:)<=0)) then
+    if (all(dest_mode_of_mode(:)<=0)) then
       rename_subarea_log 'Found no possible mode pairs, returning early'
       return
     endif
@@ -221,12 +231,12 @@ contains
       rename_subarea_log 'Searching for pairs with imode=', imode
 
       ! Destination mode for mode _imode_
-      dst_mode = dst_mode_of_mode(imode)
+      dest_mode = dest_mode_of_mode(imode)
 
-      ! if dst_mode is <=0, transfer is not possible for this mode. cycle the
+      ! if dest_mode is <=0, transfer is not possible for this mode. cycle the
       ! loop for the next mode
-      if(dst_mode <= 0) then
-        rename_subarea_log 'Got dst_mode <= 0, skipping this mode.'
+      if(dest_mode <= 0) then
+        rename_subarea_log 'Got dest_mode <= 0, skipping this mode.'
         cycle
       end if
 
@@ -237,7 +247,7 @@ contains
       alnsg_for_current_mode = alnsg_aer(src_mode)
 
       !^^At this point, we know that particles can be tranfered from the
-      ! _src_mode_ to _dst_mode_. _src_mode_ is the current mode (i.e. imode)
+      ! _src_mode_ to _dest_mode_. _src_mode_ is the current mode (i.e. imode)
 
       ! update number of pairs found so far
       num_pairs = num_pairs + 1
@@ -249,8 +259,8 @@ contains
       ! size factor for _src_mode_
       call compute_size_factor (src_mode, alnsg_for_current_mode, sz_factor)
 
-      ! size factor for _dst_mode_
-      call compute_size_factor (dst_mode, alnsg_for_current_mode, sz_factor)
+      ! size factor for _dest_mode_
+      call compute_size_factor (dest_mode, alnsg_for_current_mode, sz_factor)
 
       !------------------------------------------------------------------------
       ! We compute few factors below for the _src_mode_, which will be used
@@ -286,7 +296,7 @@ contains
       ! model at some point.
       diameter_cutoff(src_mode) = sqrt(   &
          dgnum_aer(src_mode)*exp(1.5*(alnsg_for_current_mode**2)) *   &
-         dgnum_aer(dst_mode)*exp(1.5*(alnsg_aer(dst_mode)**2)) )
+         dgnum_aer(dest_mode)*exp(1.5*(alnsg_aer(dest_mode)**2)) )
 
       ln_dia_cutoff(src_mode) = log(diameter_cutoff(src_mode)) !log of cutt-off
       diameter_belowcutoff(src_mode) = 0.99*diameter_cutoff(src_mode) !99% of the cutoff
