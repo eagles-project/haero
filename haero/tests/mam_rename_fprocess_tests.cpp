@@ -2,9 +2,9 @@
 #include <iostream>
 
 #include "catch2/catch.hpp"
+#include "haero/model.hpp"
 #include "haero/processes/mam_rename_fprocess.hpp"
 #include "haero/processes/mam_rename_process.hpp"
-#include "mam_rename_test_bridge.hpp"
 
 using namespace haero;
 
