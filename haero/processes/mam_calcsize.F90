@@ -5,6 +5,7 @@ module mam_calcsize
        prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
 
   implicit none
+  private
   ! Module functions
   public :: init, &
             run, &
@@ -347,74 +348,97 @@ contains
      dqqcwdt = update_num_tends(num_c, num_c0, deltatinv)
   else
      !The number adjustment is done in 3 steps:
-     !Step 1 assumes that num_a and num_c are non-negative (nothing to be done here)
+     !Step 1: assumes that num_a and num_c are non-negative (nothing to be done here)
+     !------
      num_a1 = num_a
      num_c1 = num_c
 
-     !Step 2: Apply relaxed bounds to bound num_a and num_c within "relaxed" bounds.
-     !        Ideally, num_* should be in bounds. If they are not, we assume that
-     !        they will reach their maximum (or minimum)for this mode within a day. We then compute
-     !        how much num_* will change in a time step by multiplying the difference
+     !Step 2 [Apply relaxed bounds] has 3 parts (a), (b) and (c)
+     !Step 2: (a)Apply relaxed bounds to bound num_a and num_c within "relaxed" bounds.
+     !------
+     numbnd = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a1) !bounded to relaxed min and max
+
+     !------:(b)Ideally, num_* should be in range. If they are not, we assume that
+     !        they will reach their maximum (or minimum)for this mode within a day (time scale).
+     !        We then compute how much num_* will change in a time step by multiplying the difference
      !        between num_* and its maximum(or minimum) with "fracadj".
-     !        We now also need to balance num_* incase only one among the interstitial or cloud-
+     delnum_a2 = (numbnd - num_a1)*fracadj
+     num_a2 = num_a1 + delnum_a2 !change in num_a in one time step
+
+     numbnd = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c1) !bounded to relaxed min and max
+     delnum_c2 = (numbnd - num_c1)*fracadj
+     num_c2 = num_c1 + delnum_c2 !change in num_a in one time step
+
+
+     !------:(c)We now also need to balance num_* incase only one among the interstitial or cloud-
      !        borne is changing. If interstitial stayed the same (i.e. it is within range)
      !        but cloud-borne is predicted to reach its maximum(or minimum), we modify
-     !        interstitial number (num_a), so as to accomodate change in the clud-borne aerosols
+     !        interstitial number (num_a), so as to accomodate change in the cloud-borne aerosols
      !        (and vice-versa). We try to balance these by moving the num_* in the opposite
      !        direction as much as possible to conserve num_a + num_c (such that num_a+num_c
      !        stays close to its original value)
 
-     
-     numbnd = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a1) !bounded to relaxed min and max
-
-     delnum_a2 = (numbnd - num_a1)*fracadj !how much num_a would change in a time step (if numbnd is different from num_a1)
-     num_a2 = num_a1 + delnum_a2 
-     numbnd = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c1)
-     delnum_c2 = (numbnd - num_c1)*fracadj
-     num_c2 = num_c1 + delnum_c2
      if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
-        num_a2 = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl,   &
-             num_a1-delnum_c2 ) )
+        num_a2 = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a1-delnum_c2)
      else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
-        num_c2 = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl,   &
-             num_c1-delnum_a2 ) )
+        num_c2 = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c1-delnum_a2)
      end if
-     !Step3:
-     
-     ! step3:  num_a,c2 --> num_a,c3 applies stricter bounds to the
-     !    combined/total number
-     drv_t = drv_a + drv_c
-     num_t2 = num_a2 + num_c2
+
+
+     !Step3[apply stricter bounds] has 3 parts (a), (b) and (c)
+     !Step 3:(a) compute combined total of num_a and num_c
+     total_drv = drv_a + drv_c
+     total_num = num_a2 + num_c2
+
+     !-----:(b) We now compute amount of num_* to change if total_num
+     !          is out of range. If totl_num is within range, we don't do anything (i.e.
+     !          delnuma3 and delnum_c3 remain zero)
      delnum_a3 = 0.0_r8
      delnum_c3 = 0.0_r8
-     if (num_t2 < drv_t*v2nmin) then
-        delnum_t3 = (drv_t*v2nmin - num_t2)*fracadj
-        ! if you are here then (num_a2 < drv_a*v2nmin) and/or
-        !                      (num_c2 < drv_c*v2nmin) must be true
+
+     min_number_bound =total_drv*v2nmin !"total_drv*v2nmin" represents minimum number for this mode
+     max_number_bound =total_drv*v2nmax !"total_drv*v2nmxn" represents maximum number for this mode
+
+     if (total_num < min_number_bound) then
+        delnum_t3 = (min_number_bound - total_num)*fracadj!change in total_num in one time step
+
+        !Now we need to decide how to distribute "delnum"(change in number) for num_a and num_c
         if ((num_a2 < drv_a*v2nmin) .and. (num_c2 < drv_c*v2nmin)) then
-           delnum_a3 = delnum_t3*(num_a2/num_t2)
-           delnum_c3 = delnum_t3*(num_c2/num_t2)
+           !if both num_a and num_c are less than the lower bound
+           !distribute "delnum" using weighted ratios
+           delnum_a3 = delnum_t3*(num_a2/total_num)
+           delnum_c3 = delnum_t3*(num_c2/total_num)
+
         else if (num_c2 < drv_c*v2nmin) then
+           !if only num_c is less than lower bound, assign total change to num_c
            delnum_c3 = delnum_t3
         else if (num_a2 < drv_a*v2nmin) then
+           !if only num_a is less than lower bound, assign total change to num_a
            delnum_a3 = delnum_t3
         end if
-     else if (num_t2 > drv_t*v2nmax) then
-        delnum_t3 = (drv_t*v2nmax - num_t2)*fracadj
-        ! if you are here then (num_a2 > drv_a*v2nmax) and/or
-        !                      (num_c2 > drv_c*v2nmax) must be true
+
+     else if (total_num > max_number_bound) then
+        delnum_t3 = (max_number_bound - total_num)*fracadj !change in total_num in one time step
+
+        !Now we need to decide how to distribute "delnum"(change in number) for num_a and num_c
         if ((num_a2 > drv_a*v2nmax) .and. (num_c2 > drv_c*v2nmax)) then
-           delnum_a3 = delnum_t3*(num_a2/num_t2)
-           delnum_c3 = delnum_t3*(num_c2/num_t2)
+           !if both num_a and num_c are more than the upper bound
+           !distribute "delnum" using weighted ratios
+           delnum_a3 = delnum_t3*(num_a2/total_num)
+           delnum_c3 = delnum_t3*(num_c2/total_num)
         else if (num_c2 > drv_c*v2nmax) then
+           !if only num_c is more than the upper bound, assign total change to num_c
            delnum_c3 = delnum_t3
         else if (num_a2 > drv_a*v2nmax) then
+           !if only num_a is more than the upper bound, assign total change to num_a
            delnum_a3 = delnum_t3
         end if
      end if
-     num_a = num_a2 + delnum_a3
 
+     !update num_a and num_c
+     num_a = num_a2 + delnum_a3
      num_c = num_c2 + delnum_c3
+
      if(update_mmr) then
         dqdt(icol,klev,num_mode_idx)           = (num_a - num_a0)*deltatinv
         dqqcwdt(icol,klev,num_cldbrn_mode_idx) = (num_c - num_c0)*deltatinv
