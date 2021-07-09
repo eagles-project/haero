@@ -4,6 +4,9 @@
 #include "haero/haero.hpp"
 #include "haero/physical_constants.hpp"
 
+/// This file contains functions for converting between various representations
+/// of physical quantities in aerosol parameterizations.
+
 namespace haero {
 
 namespace conversions {
