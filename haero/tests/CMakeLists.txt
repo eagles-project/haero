@@ -15,6 +15,9 @@ EkatCreateUnitTest(view_pack_helpers view_helper_tests.cpp
 EkatCreateUnitTest(floating_point_tests floating_point_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EKatCreateUnitTest(conversions_tests conversions_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 EkatCreateUnitTest(mode_tests mode_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
