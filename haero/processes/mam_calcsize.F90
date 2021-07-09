@@ -159,6 +159,31 @@ contains
           cmn_factor = exp(4.5_wp*log(model%modes(imode)%mean_std_dev)**2.0_wp)*pi_sixth
 
           !FIXME: size adjustment is done here based on volume to num ratios
+          if (do_adjust) then
+
+             !-----------------------------------------------------------------
+             ! Do number adjustment for interstitial and activated particles
+             !-----------------------------------------------------------------
+             !Adjustments that:
+             !(1) make numbers non-negative or
+             !(2) make numbers zero when volume is zero
+             !are applied over time-scale deltat
+             !Adjustments that bring numbers to within specified bounds are
+             !applied over time-scale tadj
+             !-----------------------------------------------------------------
+             !call adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &                   !input
+             !     drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
+             !     num_a, num_c, dqdt, dqqcwdt)                                                        !output
+
+             call adjust_num_sizes(klev, update_mmr, drv_a, num_a0, drv_c, num_c0, & !input
+                  deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
+                  num_a, num_c, dqdt, dqqcwdt) !output
+
+
+
+          endif !do_adjust
+
+
 
           !FIXME: in (or better done after) the following update_diameter_and_vol2num calls, we need to update mmr as well
           !but we are currently skipping that update. That update wil require additional arguments
@@ -285,6 +310,140 @@ contains
 
     return
   end subroutine update_diameter_and_vol2num
+
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
+  subroutine adjust_num_sizes (drv_a, drv_c
+    num_a, num_c
+    implicit none
+
+    real(wp) :: deltatinv
+
+    ! If both interstitial (drv_a) and cloud borne (drv_c) dry volumes are zero (or less)
+    ! adjust numbers(num_a and num_c respectively) for both of them to zero for this mode and level
+    if ((drv_a <= 0.0_wp) .and. (drv_c <= 0.0_wp)) then
+
+     num_a   = 0.0_wp
+     num_c   = 0.0_wp
+     dqdt    = update_num_tends(num_a, num_a0, deltatinv)
+     dqqcwdt = update_num_tends(num_c, num_c0, deltatinv)
+----------------------------
+     ! if cloud borne dry volume (drv_c) is zero(or less), the interstitial number/volume == total/combined
+     ! apply step 1 and 3, but skip the relaxed adjustment (step 2, see below)
+  else if (drv_c <= 0.0_wp) then
+     num_c = 0.0_wp
+     numbnd = min_max_bounded(drv_a, v2nmin, v2nmax, num_a)
+     num_a  = num_a + (numbnd - num_a)*fracadj
+
+     dqdt    = update_num_tends(num_a, num_a0, deltatinv)
+     dqqcwdt = update_num_tends(num_c, num_c0, deltatinv)
+
+  else if (drv_a <= 0.0_wp) then
+     ! interstitial volume is zero, treat similar to above
+     num_a = 0.0_wp
+     numbnd = min_max_bounded(drv_c, v2nmin, v2nmax, num_c) )
+     num_c  = num_c + (numbnd - num_c)*fracadj
+     dqdt    = update_num_tends(num_a, num_a0, deltatinv)
+     dqqcwdt = update_num_tends(num_c, num_c0, deltatinv)
+  else
+     !The number adjustment is done in 3 steps:
+     !Step 1 assumes that num_a and num_c are non-negative (nothing to be done here)
+     num_a1 = num_a
+     num_c1 = num_c
+
+     !Step 2: Apply relaxed bounds to bound num_a and num_c within "relaxed" bounds.
+     !        Ideally, num_* should be in bounds. If they are not, we assume that
+     !        they will reach their maximum (or minimum)for this mode within a day. We then compute
+     !        how much num_* will change in a time step by multiplying the difference
+     !        between num_* and its maximum(or minimum) with "fracadj".
+     !        We now also need to balance num_* incase only one among the interstitial or cloud-
+     !        borne is changing. If interstitial stayed the same (i.e. it is within range)
+     !        but cloud-borne is predicted to reach its maximum(or minimum), we modify
+     !        interstitial number (num_a), so as to accomodate change in the clud-borne aerosols
+     !        (and vice-versa). We try to balance these by moving the num_* in the opposite
+     !        direction as much as possible to conserve num_a + num_c (such that num_a+num_c
+     !        stays close to its original value)
+
+     
+     numbnd = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a1) !bounded to relaxed min and max
+
+     delnum_a2 = (numbnd - num_a1)*fracadj !how much num_a would change in a time step (if numbnd is different from num_a1)
+     num_a2 = num_a1 + delnum_a2 
+     numbnd = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c1)
+     delnum_c2 = (numbnd - num_c1)*fracadj
+     num_c2 = num_c1 + delnum_c2
+     if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
+        num_a2 = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl,   &
+             num_a1-delnum_c2 ) )
+     else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
+        num_c2 = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl,   &
+             num_c1-delnum_a2 ) )
+     end if
+     !Step3:
+     
+     ! step3:  num_a,c2 --> num_a,c3 applies stricter bounds to the
+     !    combined/total number
+     drv_t = drv_a + drv_c
+     num_t2 = num_a2 + num_c2
+     delnum_a3 = 0.0_r8
+     delnum_c3 = 0.0_r8
+     if (num_t2 < drv_t*v2nmin) then
+        delnum_t3 = (drv_t*v2nmin - num_t2)*fracadj
+        ! if you are here then (num_a2 < drv_a*v2nmin) and/or
+        !                      (num_c2 < drv_c*v2nmin) must be true
+        if ((num_a2 < drv_a*v2nmin) .and. (num_c2 < drv_c*v2nmin)) then
+           delnum_a3 = delnum_t3*(num_a2/num_t2)
+           delnum_c3 = delnum_t3*(num_c2/num_t2)
+        else if (num_c2 < drv_c*v2nmin) then
+           delnum_c3 = delnum_t3
+        else if (num_a2 < drv_a*v2nmin) then
+           delnum_a3 = delnum_t3
+        end if
+     else if (num_t2 > drv_t*v2nmax) then
+        delnum_t3 = (drv_t*v2nmax - num_t2)*fracadj
+        ! if you are here then (num_a2 > drv_a*v2nmax) and/or
+        !                      (num_c2 > drv_c*v2nmax) must be true
+        if ((num_a2 > drv_a*v2nmax) .and. (num_c2 > drv_c*v2nmax)) then
+           delnum_a3 = delnum_t3*(num_a2/num_t2)
+           delnum_c3 = delnum_t3*(num_c2/num_t2)
+        else if (num_c2 > drv_c*v2nmax) then
+           delnum_c3 = delnum_t3
+        else if (num_a2 > drv_a*v2nmax) then
+           delnum_a3 = delnum_t3
+        end if
+     end if
+     num_a = num_a2 + delnum_a3
+
+     num_c = num_c2 + delnum_c3
+     if(update_mmr) then
+        dqdt(icol,klev,num_mode_idx)           = (num_a - num_a0)*deltatinv
+        dqqcwdt(icol,klev,num_cldbrn_mode_idx) = (num_c - num_c0)*deltatinv
+     endif
+  end if
+
+
+  end subroutine adjust_num_sizes
+
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
+
+  pure function update_num_tends(num, num0, deltatinv)
+
+    real(wp) , intent(in) :: num, num0, deltainv
+
+    return (num - num0)*deltatinv
+
+  end subroutine update_num_tends
+
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
+
+  pure function min_max_bounded(drv, v2nmin, v2nmax, num)
+    real(wp), intent(in) :: drv, v2nmin, v2nmax, num
+
+    return max( drv*v2nmin, min( drv*v2nmax, num ) )
+
+  end function min_max_bounded
 
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------
