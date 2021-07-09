@@ -22,6 +22,7 @@ enum AerosolProcessType {
   InterstitialWetRemovalProcess,
   NucleationProcess,
   CalcsizeProcess,
+  RenameProcess,
   ResuspensionProcess,
   Terminator  // This isn't a real process type--it only terminates the enum!
 };
