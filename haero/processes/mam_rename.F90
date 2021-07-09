@@ -1,9 +1,4 @@
 
-! TODO Evaluate whether the _initialize_ methods are helpful or just extra
-! overhead.
-
-#define rename_log write (*,*) 'mam_rename.F90', __LINE__,
-
 module mam_rename
 
   use haero_precision, only: wp
@@ -93,18 +88,6 @@ contains
         v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     &    ! output
         ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)       ! output
 
-    rename_log 'Final results:'
-    rename_log 'nmodes=', nmodes
-    rename_log 'dest_mode_of_mode=', dest_mode_of_mode
-    rename_log 'alnsg=', alnsg
-    rename_log 'dgnumlo_aer=', dgnumlo_aer
-    rename_log 'dgnumhi_aer=', dgnumhi_aer
-    rename_log 'dgnum_aer=', dgnum_aer
-    rename_log 'num_pairs=', num_pairs
-    rename_log 'sz_factor=', sz_factor
-    rename_log 'fmode_dist_tail_fac=', fmode_dist_tail_fac
-    rename_log 'v2n_lo_rlx=', v2n_lo_rlx
-    rename_log 'v2n_hi_rlx=', v2n_hi_rlx
 
   end subroutine run
 
@@ -114,8 +97,6 @@ contains
     real(wp),      intent(inout) :: dgnumlo_aer(:), &
                                     dgnumhi_aer(:), &
                                     dgnum_aer(:)
-
-    rename_log 'Initializing diameters'
 
     ! Initialize min and max diameters
     dgnumlo_aer(:) = model%modes(:)%min_diameter
@@ -140,7 +121,6 @@ contains
     type(model_t), intent(in)     :: model
     real(wp),      intent(inout)  :: alnsg(:)
 
-    rename_log 'Populating log of stddev array:'
 
     alnsg(:) = log(model%modes(:)%mean_std_dev)
 
@@ -224,13 +204,11 @@ contains
 
     ! if there can be no possible pairs, just return
     if (all(dest_mode_of_mode(:)<=0)) then
-      rename_log 'Found no possible mode pairs, returning early'
       return
     endif
 
     ! Find >=1 pair
     do imode = 1, nmodes
-      rename_log 'Searching for pairs with imode=', imode
 
       ! Destination mode for mode _imode_
       dest_mode = dest_mode_of_mode(imode)
@@ -238,7 +216,6 @@ contains
       ! if dest_mode is <=0, transfer is not possible for this mode. cycle the
       ! loop for the next mode
       if(dest_mode <= 0) then
-        rename_log 'Got dest_mode <= 0, skipping this mode.'
         cycle
       end if
 
@@ -319,10 +296,6 @@ contains
     real(wp), intent(inout) :: size_factor(:) !size factor
 
     size_factor(imode) = (pi_sixth)*exp(4.5*(alnsg**2))
-
-    rename_log 'size_factor=', size_factor(imode), 'with:'
-    rename_log 'imode=', imode
-    rename_log 'alnsg=', alnsg
 
   end subroutine compute_size_factor
 
