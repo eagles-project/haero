@@ -197,7 +197,6 @@ class RegionOfValidity final {
                       int_rov.cld_n_bounds_);
     intersect_bounds_(r1.gas_indices_, r1.gas_bounds_, r2.gas_indices_,
                       r2.gas_bounds_, int_rov.gas_indices_,
-                      int_rov.gas_bounds_);
     return int_rov;
   }
 

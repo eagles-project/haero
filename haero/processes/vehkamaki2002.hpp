@@ -22,6 +22,24 @@ namespace haero {
 
 namespace vehkamaki2002 {
 
+/// Returns the temperature range [K] for which the Vehkamaki el al (2002)
+/// parameterizations are valid.
+Kokkos::pair<Real, Real> valid_temp_range() {
+  return Kokkos::pair<Real, Real>({230.15, 300.15});
+}
+
+/// Returns the relative humidity range [-] for which the Vehkamaki el al (2002)
+/// parameterizations are valid.
+Kokkos::pair<Real, Real> valid_rel_hum_range() {
+  return Kokkos::pair<Real, Real>({0.01, 1.});
+}
+
+/// Returns the H2SO4 number concentration range [cm-3] for which the Merikanto
+/// et al (2000) parameterizations are valid.
+Kokkos::pair<Real, Real> valid_c_h2so4_range() {
+  return Kokkos::pair<Real, Real>({1e4, 1e11});
+}
+
 /// Computes the mole fraction of sulfuric acid in a critical cluster as
 /// parameterized by Vehkmaki et al (2002), eq 11.
 /// @param [in] c_h2so4 The number concentration of H2SO4 gas [cm-3]
