@@ -6,6 +6,7 @@ module mam_rename
        prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
 
   implicit none
+  private
   public :: init, &
             run, &
             finalize, &
@@ -74,7 +75,10 @@ contains
     real(wp) :: alnsg(model%num_modes)
 
     nmodes = model%num_modes
-    dest_mode_of_mode(:) = [0, 2, 0, 0]
+
+    ! TODO: This should not be hardwired here but should be either part of the
+    ! metadata or otherwise populated.
+    dest_mode_of_mode(:) = [0, 1, 0, 0]
 
     call initialize_diameters(dgnumlo_aer, dgnumhi_aer, dgnum_aer, model)
 
@@ -190,9 +194,9 @@ contains
     real(wp) :: alnsg_for_current_mode
 
     ! --- Parameters
-    real(wp), parameter :: sqrt_half = sqrt(0.5)
+    real(wp), parameter :: sqrt_half = sqrt(0.5_wp)
     real(wp), parameter :: frelax = 27.0_wp !(3^3)
-    real(wp), parameter :: smallest_dryvol_value = 1.0e-25
+    real(wp), parameter :: smallest_dryvol_value = 1.0e-25_wp
 
     ! number of pairs allowed to do inter-mode particle transfer
     ! (e.g. if we have a pair "mode_1<-->mode_2", mode_1 and mode_2 can participate in
@@ -265,7 +269,7 @@ contains
                                / frelax
 
       ! A factor for computing diameter at the tails of the distribution
-      ln_diameter_tail_fac(src_mode) = 3.0 * (alnsg_for_current_mode**2)
+      ln_diameter_tail_fac(src_mode) = 3.0_wp * (alnsg_for_current_mode**2)
 
       ! Cut-off (based on geometric mean) for making decision to do inter-mode
       ! transfers
@@ -274,11 +278,11 @@ contains
       ! moment. Have to figure out how to compute this. We will extract from
       ! model at some point.
       diameter_cutoff(src_mode) = sqrt(   &
-         dgnum_aer(src_mode)*exp(1.5*(alnsg_for_current_mode**2)) *   &
-         dgnum_aer(dest_mode)*exp(1.5*(alnsg_aer(dest_mode)**2)) )
+         dgnum_aer(src_mode)*exp(1.5_wp*(alnsg_for_current_mode**2)) *   &
+         dgnum_aer(dest_mode)*exp(1.5_wp*(alnsg_aer(dest_mode)**2)) )
 
       ln_dia_cutoff(src_mode) = log(diameter_cutoff(src_mode)) !log of cutt-off
-      diameter_belowcutoff(src_mode) = 0.99*diameter_cutoff(src_mode) !99% of the cutoff
+      diameter_belowcutoff(src_mode) = 0.99_wp*diameter_cutoff(src_mode) !99% of the cutoff
 
     enddo
 
@@ -295,7 +299,7 @@ contains
     real(wp), intent(in) :: alnsg
     real(wp), intent(inout) :: size_factor(:) !size factor
 
-    size_factor(imode) = (pi_sixth)*exp(4.5*(alnsg**2))
+    size_factor(imode) = (pi_sixth)*exp(4.5_wp*(alnsg**2))
 
   end subroutine compute_size_factor
 
