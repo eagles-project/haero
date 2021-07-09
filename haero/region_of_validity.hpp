@@ -171,21 +171,52 @@ class RegionOfValidity final {
             mmrs_are_valid_(prognostics.gases, gas_indices_, gas_bounds_));
   }
 
+  /// Returns the intersection of two regions of validity r1 and r2.
+  static RegionOfValidity intersection(const RegionOfValidity& r1,
+                                       const RegionOfValidity& r2) {
+    RegionOfValidity int_rov;
+    int_rov.temp_bounds.first =
+        std::max(r1.temp_bounds.first, r2.temp_bounds.first);
+    int_rov.temp_bounds.second =
+        std::min(r1.temp_bounds.second, r2.temp_bounds.second);
+    int_rov.rel_hum_bounds.first =
+        std::max(r1.rel_hum_bounds.first, r2.rel_hum_bounds.first);
+    int_rov.rel_hum_bounds.second =
+        std::min(r1.rel_hum_bounds.second, r2.rel_hum_bounds.second);
+    intersect_bounds_(r1.int_aero_indices_, r1.int_aero_bounds_,
+                      r2.int_aero_indices_, r2.int_aero_bounds_,
+                      int_rov.int_aero_indices_, int_rov.int_aero_bounds_);
+    intersect_bounds_(r1.cld_aero_indices_, r1.cld_aero_bounds_,
+                      r2.cld_aero_indices_, r2.cld_aero_bounds_,
+                      int_rov.cld_aero_indices_, int_rov.cld_aero_bounds_);
+    intersect_bounds_(r1.int_n_indices_, r1.int_n_bounds_, r2.int_n_indices_,
+                      r2.int_n_bounds_, int_rov.int_n_indices_,
+                      int_rov.int_n_bounds_);
+    intersect_bounds_(r1.cld_n_indices_, r1.cld_n_bounds_, r2.cld_n_indices_,
+                      r2.cld_n_bounds_, int_rov.cld_n_indices_,
+                      int_rov.cld_n_bounds_);
+    intersect_bounds_(r1.gas_indices_, r1.gas_bounds_, r2.gas_indices_,
+                      r2.gas_bounds_, int_rov.gas_indices_,
+                      int_rov.gas_bounds_);
+    return int_rov;
+  }
+
  private:
   using IndexArray = kokkos_device_type::view_1d<int>;
   using BoundsArray = kokkos_device_type::view_1d<Bounds>;
 
   // This helper inserts a new entry into an IndexArray/BoundsArray pair at
   // the appropriate (sorted) position.
-  void insert_bounds_at_index_(int index, Real min, Real max,
-                               IndexArray& indices, BoundsArray& bounds) {
+  static void insert_bounds_at_index_(int index, Real min, Real max,
+                                      IndexArray& indices,
+                                      BoundsArray& bounds) {
     EKAT_ASSERT(index >= 0);
     EKAT_ASSERT(min < max);
 
     int* begin = indices.data();
     int* end = begin + indices.extent(0);
     int* iter = std::lower_bound(begin, end, index);
-    int pos = (iter == end) ? 0 : *iter;
+    int pos = (iter == end) ? indices.extent(0) : *iter;
     if ((iter == end) || (*iter != index)) {  // index must be inserted
       Kokkos::resize(indices, indices.extent(0) + 1);
       Kokkos::resize(bounds, bounds.extent(0) + 1);
@@ -265,6 +296,31 @@ class RegionOfValidity final {
       }
     }
     return (violations == 0);
+  }
+
+  // This helper generates the intersection of the bounds between two regions
+  // of validity.
+  static void intersect_bounds_(const IndexArray& i1, const BoundsArray& b1,
+                                const IndexArray& i2, const BoundsArray& b2,
+                                IndexArray& int_i, BoundsArray& int_b) {
+    int_i = i1;
+    int_b = b1;
+
+    for (int i = 0; i < i2.extent(0); ++i) {
+      auto index = i2(i);
+      const Bounds& bounds2 = b2(i);
+      auto* begin = int_i.data();
+      auto* end = begin + int_i.extent(0);
+      auto* iter = std::lower_bound(begin, end, index);
+      if ((iter == end) || (*iter != index)) {
+        insert_bounds_at_index_(index, bounds2.first, bounds2.second, int_i,
+                                int_b);
+      } else {  // overwrite bounds
+        Bounds& int_bounds = int_b(index);
+        int_bounds.first = std::max(bounds2.first, int_bounds.first);
+        int_bounds.second = std::min(bounds2.second, int_bounds.second);
+      }
+    }
   }
 
   /// Minimum and maximum bounds on specific gas species, indexed by (case-
