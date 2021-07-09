@@ -7,6 +7,13 @@ module mam_rename
 
   implicit none
   private
+
+  ! Upper and lower limits for diameters
+  real(wp), save, allocatable :: dgnumlo_aer(:), &
+                                 dgnumhi_aer(:), &
+                                 dgnum_aer(:),   &
+                                 alnsg(:)
+
   public :: init, &
             run, &
             finalize, &
@@ -22,6 +29,11 @@ contains
 
     ! Arguments
     type(model_t), intent(in) :: model
+
+    call initialize_diameters(model)
+
+    call initialize_ln_of_std_dev(model)
+
   end subroutine init
 
   ! TODO: Move all parts of this subroutine that are only called once into the
@@ -66,28 +78,15 @@ contains
     real(wp) :: diameter_belowcutoff(model%num_modes), &
                 dryvol_smallest(model%num_modes)
 
-    ! Upper and lower limits for diameters
-    real(wp) :: dgnumlo_aer(model%num_modes), &
-                dgnumhi_aer(model%num_modes), &
-                dgnum_aer(model%num_modes)
-
-    ! Natural log of the mean std dev for each mode
-    real(wp) :: alnsg(model%num_modes)
-
     nmodes = model%num_modes
 
     ! TODO: This should not be hardwired here but should be either part of the
     ! metadata or otherwise populated.
     dest_mode_of_mode(:) = [0, 1, 0, 0]
 
-    call initialize_diameters(dgnumlo_aer, dgnumhi_aer, dgnum_aer, model)
-
-    call initialize_ln_of_std_dev(alnsg, model)
-
     ! TODO: new parameters needed for _find_renaming_pairs_; extract data from
     ! _model_ and pass to _find_renaming_pairs_. DONT pass model to subroutines.
-    call find_renaming_pairs(nmodes, dest_mode_of_mode, alnsg, &    ! input
-        dgnumlo_aer, dgnumhi_aer, dgnum_aer,                   &    ! input
+    call find_renaming_pairs(nmodes, dest_mode_of_mode,        &    ! input
         num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, &    ! output
         v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     &    ! output
         ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)       ! output
@@ -95,12 +94,34 @@ contains
 
   end subroutine run
 
-  subroutine initialize_diameters(dgnumlo_aer, dgnumhi_aer, dgnum_aer, model)
+  subroutine initialize_diameters(model)
+
+    implicit none
     
     type(model_t), intent(in)    :: model
-    real(wp),      intent(inout) :: dgnumlo_aer(:), &
-                                    dgnumhi_aer(:), &
-                                    dgnum_aer(:)
+
+    ! Holds most recent error code
+    integer :: ierr
+
+    ierr = 0
+
+    allocate(dgnumlo_aer(model%num_modes), stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not allocate dgnumlo_aer with length ', model%num_modes
+      stop ierr
+    endif
+
+    allocate(dgnumhi_aer(model%num_modes), stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not allocate dgnumhi_aer with length ', model%num_modes
+      stop ierr
+    endif
+
+    allocate(dgnum_aer(model%num_modes), stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not allocate dgnum_aer with length ', model%num_modes
+      stop ierr
+    endif
 
     ! Initialize min and max diameters
     dgnumlo_aer(:) = model%modes(:)%min_diameter
@@ -112,46 +133,89 @@ contains
 
   end subroutine initialize_diameters
 
-  ! alnsg is used throughout the original code. The model stores an array of
-  ! the mean std deviations, which we can use to create a comperable array.
-  ! This is not performant, but is being used temporarily during the porting
-  ! process.
-  !
-  ! TODO: identify a better way to perform the same calculations as the original
-  ! code, or remove this comment if this subroutine suffices.
-  subroutine initialize_ln_of_std_dev(alnsg, model)
+  subroutine finalize_diameters()
+    implicit none
+
+    ! Holds most recent error code
+    integer :: ierr
+
+    ierr = 0
+
+    deallocate(dgnumlo_aer, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate dgnumlo_aer'
+      stop ierr
+    endif
+
+    deallocate(dgnumhi_aer, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate dgnumhi_aer'
+      stop ierr
+    endif
+
+    deallocate(dgnum_aer, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate dgnum_aer'
+      stop ierr
+    endif
+
+  end subroutine finalize_diameters
+
+  subroutine initialize_ln_of_std_dev(model)
+    implicit none
 
     ! Parameters
     type(model_t), intent(in)     :: model
-    real(wp),      intent(inout)  :: alnsg(:)
 
+    integer :: ierr
+
+    ierr = 0
+
+    allocate(alnsg(model%num_modes), stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not allocate alnsg with length ', model%num_modes
+      stop ierr
+    endif
 
     alnsg(:) = log(model%modes(:)%mean_std_dev)
 
   end subroutine initialize_ln_of_std_dev
+
+  subroutine finalize_ln_of_std_dev()
+
+    implicit none
+
+    ! Local variables
+    integer :: ierr
+
+    ierr = 0
+
+    deallocate(alnsg, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate alnsg'
+      stop ierr
+    endif
+
+  end subroutine finalize_ln_of_std_dev
 
   subroutine finalize(model)
     implicit none
 
     ! Arguments
     type(model_t), intent(in) :: model
+
+    call finalize_diameters()
+
+    call finalize_ln_of_std_dev()
+
   end subroutine finalize
 
   subroutine find_renaming_pairs (nmodes, dest_mode_of_mode,  & ! input
-       alnsg_aer, dgnumlo_aer, dgnumhi_aer, dgnum_aer,        & ! input
        num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & ! output
        v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     & ! output
        ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    ! output
 
     ! --- arguments (intent-ins)
-
-    ! Natural log of std deviation
-    real(wp), intent(in) :: alnsg_aer(:)
-
-    ! Diameters
-    real(wp), intent(in) :: dgnumlo_aer(:)
-    real(wp), intent(in) :: dgnumhi_aer(:)
-    real(wp), intent(in) :: dgnum_aer(:)
 
     ! total number of modes
     integer,  intent(in) :: nmodes
@@ -227,7 +291,7 @@ contains
       src_mode = imode
 
       ! log of stddev for current mode
-      alnsg_for_current_mode = alnsg_aer(src_mode)
+      alnsg_for_current_mode = alnsg(src_mode)
 
       !^^At this point, we know that particles can be tranfered from the
       ! _src_mode_ to _dest_mode_. _src_mode_ is the current mode (i.e. imode)
@@ -279,7 +343,7 @@ contains
       ! model at some point.
       diameter_cutoff(src_mode) = sqrt(   &
          dgnum_aer(src_mode)*exp(1.5_wp*(alnsg_for_current_mode**2)) *   &
-         dgnum_aer(dest_mode)*exp(1.5_wp*(alnsg_aer(dest_mode)**2)) )
+         dgnum_aer(dest_mode)*exp(1.5_wp*(alnsg(dest_mode)**2)) )
 
       ln_dia_cutoff(src_mode) = log(diameter_cutoff(src_mode)) !log of cutt-off
       diameter_belowcutoff(src_mode) = 0.99_wp*diameter_cutoff(src_mode) !99% of the cutoff
