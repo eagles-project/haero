@@ -197,6 +197,7 @@ class RegionOfValidity final {
                       int_rov.cld_n_bounds_);
     intersect_bounds_(r1.gas_indices_, r1.gas_bounds_, r2.gas_indices_,
                       r2.gas_bounds_, int_rov.gas_indices_,
+                      int_rov.gas_bounds_);
     return int_rov;
   }
 
@@ -311,7 +312,7 @@ class RegionOfValidity final {
       auto* begin = int_i.data();
       auto* end = begin + int_i.extent(0);
       auto* iter = std::lower_bound(begin, end, index);
-      if ((iter == end) || (*iter != index)) {
+      if ((iter == end) || (*iter != index)) {  // bounds not found--insert
         insert_bounds_at_index_(index, bounds2.first, bounds2.second, int_i,
                                 int_b);
       } else {  // overwrite bounds
