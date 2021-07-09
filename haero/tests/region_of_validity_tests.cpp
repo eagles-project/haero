@@ -118,4 +118,38 @@ TEST_CASE("region_of_validity", "") {
     REQUIRE(rov.contains(progs));
     REQUIRE(rov.contains(atm));
   }
+
+  SECTION("intersection") {
+    // Create two regions of validity and then intersect them.
+    RegionOfValidity rov1;
+    rov1.temp_bounds = {200, 300};
+    rov1.rel_hum_bounds = {0.1, 0.9};
+    rov1.set_interstitial_aerosol_mmr_bounds(0, 1e-8, 1e-1);
+    rov1.set_interstitial_aerosol_mmr_bounds(1, 1e-5, 1e-3);
+
+    RegionOfValidity rov2;
+    rov2.temp_bounds = {250, 350};
+    rov2.rel_hum_bounds = {0.2, 0.95};
+    rov2.set_interstitial_aerosol_mmr_bounds(1, 1e-4, 1e-2);
+    rov2.set_interstitial_aerosol_mmr_bounds(2, 1e-7, 1e-3);
+
+    auto rov3 = RegionOfValidity::intersection(rov1, rov2);
+    REQUIRE(FloatingPoint<Real>::equiv(rov3.temp_bounds.first, 250.0));
+    REQUIRE(FloatingPoint<Real>::equiv(rov3.temp_bounds.second, 300.0));
+    REQUIRE(FloatingPoint<Real>::equiv(rov3.rel_hum_bounds.first, 0.2));
+    REQUIRE(FloatingPoint<Real>::equiv(rov3.rel_hum_bounds.second, 0.9));
+
+    auto ralf_bounds0 = rov1.interstitial_aerosol_mmr_bounds(0);
+    auto aero_bounds0 = rov3.interstitial_aerosol_mmr_bounds(0);
+    REQUIRE(FloatingPoint<Real>::equiv(aero_bounds0.first, 1e-8));
+    REQUIRE(FloatingPoint<Real>::equiv(aero_bounds0.second, 1e-1));
+
+    auto aero_bounds1 = rov3.interstitial_aerosol_mmr_bounds(1);
+    REQUIRE(FloatingPoint<Real>::equiv(aero_bounds1.first, 1e-4));
+    REQUIRE(FloatingPoint<Real>::equiv(aero_bounds1.second, 1e-3));
+
+    auto aero_bounds2 = rov3.interstitial_aerosol_mmr_bounds(2);
+    REQUIRE(FloatingPoint<Real>::equiv(aero_bounds2.first, 1e-7));
+    REQUIRE(FloatingPoint<Real>::equiv(aero_bounds2.second, 1e-3));
+  }
 }
