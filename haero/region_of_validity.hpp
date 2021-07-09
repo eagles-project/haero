@@ -307,11 +307,11 @@ class RegionOfValidity final {
     int_b = b1;
 
     for (int i = 0; i < i2.extent(0); ++i) {
-      int index = i2(i);
+      auto index = i2(i);
       const Bounds& bounds2 = b2(i);
-      int* begin = int_i.data();
-      int* end = begin + int_i.extent(0);
-      int* iter = std::lower_bound(begin, end, index);
+      auto* begin = int_i.data();
+      auto* end = begin + int_i.extent(0);
+      auto* iter = std::lower_bound(begin, end, index);
       if ((iter == end) || (*iter != index)) {
         insert_bounds_at_index_(index, bounds2.first, bounds2.second, int_i,
                                 int_b);
