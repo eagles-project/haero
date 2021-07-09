@@ -2,30 +2,29 @@
 #include <iostream>
 
 #include "catch2/catch.hpp"
-#include "mam_rename_test_bridge.hpp"
 #include "haero/processes/mam_rename_fprocess.hpp"
 #include "haero/processes/mam_rename_process.hpp"
+#include "mam_rename_test_bridge.hpp"
 
 using namespace haero;
 
 Model* get_model_for_unit_tests(const ModalAerosolConfig& aero_config,
-    const std::size_t num_levels) {
+                                const std::size_t num_levels) {
   static Model* model(Model::ForUnitTests(aero_config, num_levels));
   return model;
 }
 
 TEST_CASE("mam_rename_run", "") {
-  auto aero_config =
-    create_mam4_modal_aerosol_config();  
+  auto aero_config = create_mam4_modal_aerosol_config();
   static constexpr std::size_t num_levels{72};  // number of levels
-  auto* model = get_model_for_unit_tests(
-      aero_config, num_levels);
-  const std::size_t num_gases{aero_config.h_gas_species.size()};    // number of gases
-  const std::size_t num_modes{aero_config.h_aerosol_modes.size()};  // number of modes
+  auto* model = get_model_for_unit_tests(aero_config, num_levels);
+  const std::size_t num_gases{
+      aero_config.h_gas_species.size()};  // number of gases
+  const std::size_t num_modes{
+      aero_config.h_aerosol_modes.size()};  // number of modes
 
   // Set up some prognostics aerosol data views
-  const std::size_t num_aero_populations{
-        model->num_aerosol_populations()};
+  const std::size_t num_aero_populations{model->num_aerosol_populations()};
 
   Kokkos::View<PackType**> int_aerosols(
       "interstitial aerosols", num_aero_populations,
@@ -91,6 +90,5 @@ TEST_CASE("mam_rename_run", "") {
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 30.0;
     process->run(aero_config, t, dt, *progs, *atm, *diags, *tends);
-
   }
 }

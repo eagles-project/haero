@@ -5,23 +5,23 @@
 
 namespace haero {
 
-  /// \brief Bindings for the rename subroutine
-  class MAMRenameProcess : public AerosolProcess {
-  public:
-    MAMRenameProcess();
+/// \brief Bindings for the rename subroutine
+class MAMRenameProcess : public AerosolProcess {
+ public:
+  MAMRenameProcess();
 
-    KOKKOS_INLINE_FUNCTION
-    virtual ~MAMRenameProcess() {}
+  KOKKOS_INLINE_FUNCTION
+  virtual ~MAMRenameProcess() {}
 
-    virtual void init(const ModalAerosolConfig &modal_aerosol_config) override;
+  virtual void init(const ModalAerosolConfig &modal_aerosol_config) override;
 
-    KOKKOS_FUNCTION
-    virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
-                     Real dt, const Prognostics &prognostics,
-                     const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-                     Tendencies &tendencies) const override;
-  };
+  KOKKOS_FUNCTION
+  virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
+                   Real dt, const Prognostics &prognostics,
+                   const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+                   Tendencies &tendencies) const override;
+};
 
-} // namespace haero
+}  // namespace haero
 
 #endif
