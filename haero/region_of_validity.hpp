@@ -171,6 +171,32 @@ class RegionOfValidity final {
             mmrs_are_valid_(prognostics.gases, gas_indices_, gas_bounds_));
   }
 
+  /// Returns the intersection of this region of validity with another.
+  /// @param [in] other_rov The region of validity to intersect with this one
+  RegionOfValidity intersection(const RegionOfValidity& other_rov) {
+    RegionOfValidity int_rov;
+    int_rov.temp_bounds.first = std::max(temp_bounds.first, other_rov.temp_bounds.first);
+    int_rov.temp_bounds.second = std::min(temp_bounds.second, other_rov.temp_bounds.second);
+    int_rov.rel_hum_bounds.first = std::max(rel_hum_bounds.first, other_rov.rel_hum_bounds.first);
+    int_rov.rel_hum_bounds.second = std::min(rel_hum_bounds.second, other_rov.rel_hum_bounds.second);
+    intersect_bounds_(int_aero_indices_, int_aero_bounds_,
+                      other_rov.int_aero_indices_, other_rov.int_aero_bounds_,
+                      int_rov.int_aero_indices_, int_rov.int_aero_bounds_);
+    intersect_bounds_(cld_aero_indices_, cld_aero_bounds_,
+                      other_rov.cld_aero_indices_, other_rov.cld_aero_bounds_,
+                      int_rov.cld_aero_indices_, int_rov.cld_aero_bounds_);
+    intersect_bounds_(int_n_indices_, int_n_bounds_,
+                      other_rov.int_n_indices_, other_rov.int_n_bounds_,
+                      int_rov.int_n_indices_, int_rov.int_n_bounds_);
+    intersect_bounds_(cld_n_indices_, cld_n_bounds_,
+                      other_rov.cld_n_indices_, other_rov.cld_n_bounds_,
+                      int_rov.cld_n_indices_, int_rov.cld_n_bounds_);
+    intersect_bounds_(gas_indices_, gas_bounds_,
+                      other_rov.gas_indices_, other_rov.gas_bounds_,
+                      int_rov.gas_indices_, int_rov.gas_bounds_);
+    return int_rov;
+  }
+
  private:
   using IndexArray = kokkos_device_type::view_1d<int>;
   using BoundsArray = kokkos_device_type::view_1d<Bounds>;
@@ -265,6 +291,40 @@ class RegionOfValidity final {
       }
     }
     return (violations == 0);
+  }
+
+  // This helper generates the intersection of the bounds between two regions
+  // of validity.
+  void intersect_bounds_(const IndexArray& i1, const BoundsArray& b1,
+                         const IndexArray& i2, const BoundsArray& b2,
+                         IndexArray& int_i, BoundsArray& int_b) {
+    for (int i = 0; i < i1.extent(0); ++i) {
+      int index = i1[i];
+      const Bounds& bounds = b1[i];
+      int* begin = i2.data();
+      int* end = begin + i2.extent(0);
+      int* iter = std::lower_bound(begin, end, index);
+      if ((iter == end) || (*iter != index)) {
+        insert_bounds_at_index_(index, bounds.first, bounds.second,
+                                int_i, int_b);
+      } else {
+        const Bounds& bounds2 = b2[i];
+        Real b_min = std::max(bounds.first, bounds2.first);
+        Real b_max = std::min(bounds.second, bounds2.second);
+        insert_bounds_at_index_(index, b_min, b_max, int_i, int_b);
+      }
+    }
+    for (int i = 0; i < i2.extent(0); ++i) {
+      int index = i2[i];
+      const Bounds& bounds = b2[i];
+      int* begin = i1.data();
+      int* end = begin + i1.extent(0);
+      int* iter = std::lower_bound(begin, end, index);
+      if ((iter == end) || (*iter != index)) {
+        insert_bounds_at_index_(index, bounds.first, bounds.second,
+                                int_i, int_b);
+      }
+    }
   }
 
   /// Minimum and maximum bounds on specific gas species, indexed by (case-
