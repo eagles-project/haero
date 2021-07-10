@@ -32,8 +32,8 @@ TEST_CASE("conversions:number_conc_from_mmr") {
 }
 
 TEST_CASE("conversions:mmr_from_vmr") {
-  Real mu = constants::molec_weight_so4; // molecular weight of sulfate
-  PackType vmr(0.2);  // mass mixing ratio
+  Real mu = constants::molec_weight_so4;  // molecular weight of sulfate
+  PackType vmr(0.2);                      // mass mixing ratio
   auto mmr = conversions::mmr_from_vmr(vmr, mu);
   REQUIRE(FloatingPoint<PackType>::equiv(
       mmr, vmr * mu / constants::molec_weight_dry_air));
@@ -42,8 +42,8 @@ TEST_CASE("conversions:mmr_from_vmr") {
 }
 
 TEST_CASE("conversions:vmr_from_mmr") {
-  Real mu = constants::molec_weight_so4; // molecular weight of sulfate
-  PackType mmr(0.2);  // mass mixing ratio
+  Real mu = constants::molec_weight_so4;  // molecular weight of sulfate
+  PackType mmr(0.2);                      // mass mixing ratio
   auto vmr = conversions::vmr_from_mmr(mmr, mu);
   REQUIRE(FloatingPoint<PackType>::equiv(
       vmr, mmr * constants::molec_weight_dry_air / mu));
