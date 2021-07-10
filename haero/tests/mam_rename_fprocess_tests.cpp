@@ -24,7 +24,7 @@ TEST_CASE("mam_rename_run", "") {
       aero_config.h_aerosol_modes.size()};  // number of modes
 
   // Set up some prognostics aerosol data views
-  const std::size_t num_aero_populations{model->num_aerosol_populations()};
+  const int num_aero_populations = model->num_aerosol_populations();
 
   Kokkos::View<PackType**> int_aerosols(
       "interstitial aerosols", num_aero_populations,
