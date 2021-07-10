@@ -52,7 +52,19 @@ EkatCreateUnitTest(kohler_tests kohler_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
 EkatCreateUnitTest(mode_wet_radius mode_wet_radius_tests.cpp
-                  LIBS ${HAERO_LIBRARIES})
+                   LIBS ${HAERO_LIBRARIES})
+
+#----------------------------------------------------
+# Unit tests for low-level aerosol parameterizations
+#----------------------------------------------------
+EkatCreateUnitTest(vehkamaki2002_tests vehkamaki2002_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
+EkatCreateUnitTest(merikanto2007_tests merikanto2007_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
+EkatCreateUnitTest(wang2008_tests wang2008_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
 
 #----------------------------------------------------
 # Unit tests for aerosol processes
