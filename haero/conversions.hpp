@@ -62,6 +62,24 @@ PackType vmr_from_mmr(const PackType& mmr, Real molecular_wt) {
   return mmr * constants::molec_weight_dry_air / molecular_wt;
 }
 
+/// Computes the virtual temperature [K] from the temperature [K] and a water
+/// vapor mass mixing ratio [kg vapor/kg dry air].
+/// @param [in] Tv virtual temperature [K]
+/// @param [in] qv water vapor mass mixing ratio [kg vapor/kg air]
+KOKKOS_INLINE_FUNCTION
+Real virtual_temperature_from_temperature(const Real T, const Real qv) {
+  return T * (1.0 + 0.6078 * qv);
+}
+
+/// Computes the temperature [K] from the virtual temperature [K] and a water
+/// vapor mass mixing ratio [kg vapor/kg dry air].
+/// @param [in] Tv virtual temperature [K]
+/// @param [in] qv water vapor mass mixing ratio [kg vapor/kg air]
+KOKKOS_INLINE_FUNCTION
+Real temperature_from_virtual_temperature(const Real Tv, const Real qv) {
+  return Tv / (1.0 + 0.6078 * qv);
+}
+
 }  // namespace conversions
 
 }  // namespace haero

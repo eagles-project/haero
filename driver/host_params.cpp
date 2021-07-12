@@ -12,7 +12,6 @@ std::string AtmosphericConditions::info_string(const int tab_level) const {
   std::ostringstream ss;
   ss << tabstr << "AtmosphericConditions info:\n";
   tabstr += "\t";
-  ss << tabstr << "alpha_v = " << AtmosphericConditions::alpha_v << '\n';
   ss << tabstr << "kappa = " << AtmosphericConditions::kappa << '\n';
   ss << tabstr << "Tv0 = " << Tv0 << " K\n";
   ss << tabstr << "Gammav = " << Gammav << " K/m\n";

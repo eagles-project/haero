@@ -7,6 +7,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include "haero/conversions.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/physical_constants.hpp"
 #include "haero/utils.hpp"
@@ -582,7 +583,7 @@ Atmosphere HostDynamics::create_atmospheric_state(ColumnView temp,
 
         const Real P = p_local(pack_idx)[vec_idx];
         const Real Tv = thetav_local(pack_idx)[vec_idx] * exner_function(P);
-        const Real T = temperature_from_virtual_temperature(
+        const Real T = conversions::temperature_from_virtual_temperature(
             Tv, qv_local(pack_idx)[vec_idx]);
 
         const Real qvsat = qvsat_tetens(T, P);
@@ -621,7 +622,7 @@ void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
 
         const Real P = p_local(pack_idx)[vec_idx];
         const Real Tv = thetav_local(pack_idx)[vec_idx] * exner_function(P);
-        const Real T = temperature_from_virtual_temperature(
+        const Real T = conversions::temperature_from_virtual_temperature(
             Tv, qv_local(pack_idx)[vec_idx]);
         const Real qvsat = qvsat_tetens(T, P);
 
