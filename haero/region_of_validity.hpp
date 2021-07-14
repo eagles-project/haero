@@ -150,7 +150,8 @@ class RegionOfValidity final {
                                            (T > temp_bounds.second));
           const auto& qv = atmosphere.vapor_mixing_ratio(k);
           const auto& p = atmosphere.pressure(k);
-          const auto RH = conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
+          const auto RH =
+              conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
           auto invalid_RH = haero::MaskType((RH < rel_hum_bounds.first) or
                                             (RH > rel_hum_bounds.second));
           violation += (invalid_T.any() or invalid_RH.any());

@@ -7,8 +7,8 @@ using haero::Real;
 extern "C" {
 
 Real relative_humidity_from_vapor_mixing_ratio_f(Real qv, Real p, Real T) {
-  return haero::conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
+  return haero::conversions::relative_humidity_from_vapor_mixing_ratio(qv, p,
+                                                                       T);
 }
 
 }  // extern "C"
-

@@ -20,9 +20,9 @@ namespace conversions {
 /// [kg/kmol]
 /// @param [in] air_density The mass density of dry air [kg/m3]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar mmr_from_number_conc(const Scalar& number_conc, Real molecular_wt,
-                            const Scalar& air_density) {
+KOKKOS_INLINE_FUNCTION Scalar mmr_from_number_conc(const Scalar& number_conc,
+                                                   Real molecular_wt,
+                                                   const Scalar& air_density) {
   return number_conc * molecular_wt / (air_density * constants::avogadro);
 }
 
@@ -34,9 +34,9 @@ Scalar mmr_from_number_conc(const Scalar& number_conc, Real molecular_wt,
 /// [kg/kmol]
 /// @param [in] air_density The mass density of dry air [kg/m3]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar number_conc_from_mmr(const Scalar& mmr, Real molecular_wt,
-                            const Scalar& air_density) {
+KOKKOS_INLINE_FUNCTION Scalar number_conc_from_mmr(const Scalar& mmr,
+                                                   Real molecular_wt,
+                                                   const Scalar& air_density) {
   return mmr * (air_density * constants::avogadro) / molecular_wt;
 }
 
@@ -46,8 +46,8 @@ Scalar number_conc_from_mmr(const Scalar& mmr, Real molecular_wt,
 /// @param [in] vmr The molar mixing ratio of the species/mixture [kmol/kmol
 /// air]
 /// @param [in] molecular_wt The molecular weight of the species/mixture
-template <typename Scalar>
 /// [kg/kmol]
+template <typename Scalar>
 KOKKOS_INLINE_FUNCTION
 Scalar mmr_from_vmr(const Scalar& vmr, Real molecular_wt) {
   return vmr * molecular_wt / constants::molec_weight_dry_air;
@@ -61,8 +61,8 @@ Scalar mmr_from_vmr(const Scalar& vmr, Real molecular_wt) {
 /// @param [in] molecular_wt The molecular weight of the species/mixture
 /// [kg/kmol]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar vmr_from_mmr(const Scalar& mmr, Real molecular_wt) {
+KOKKOS_INLINE_FUNCTION Scalar vmr_from_mmr(const Scalar& mmr,
+                                           Real molecular_wt) {
   return mmr * constants::molec_weight_dry_air / molecular_wt;
 }
 
@@ -71,8 +71,8 @@ Scalar vmr_from_mmr(const Scalar& mmr, Real molecular_wt) {
 /// @param [in] Tv virtual temperature [K]
 /// @param [in] q1 specific humidity [-]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar virtual_temperature_from_temperature(const Scalar& T, const Scalar& q1) {
+KOKKOS_INLINE_FUNCTION Scalar
+virtual_temperature_from_temperature(const Scalar& T, const Scalar& q1) {
   return T * (1.0 + 0.6078 * q1);
 }
 
@@ -81,9 +81,8 @@ Scalar virtual_temperature_from_temperature(const Scalar& T, const Scalar& q1) {
 /// @param [in] Tv virtual temperature [K]
 /// @param [in] q1 specific humidity [-]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar temperature_from_virtual_temperature(const Scalar& Tv,
-                                            const Scalar& q1) {
+KOKKOS_INLINE_FUNCTION Scalar
+temperature_from_virtual_temperature(const Scalar& Tv, const Scalar& q1) {
   return Tv / (1.0 + 0.6078 * q1);
 }
 
@@ -92,8 +91,8 @@ Scalar temperature_from_virtual_temperature(const Scalar& Tv,
 /// @param [in] rho total mass density [kg/m3]
 /// @param [in] q1 specific humidity [-]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar dry_from_total_mass_density(const Scalar& rho, const Scalar& q1) {
+KOKKOS_INLINE_FUNCTION Scalar dry_from_total_mass_density(const Scalar& rho,
+                                                          const Scalar& q1) {
   return rho * (1 - q1);
 }
 
@@ -102,8 +101,8 @@ Scalar dry_from_total_mass_density(const Scalar& rho, const Scalar& q1) {
 /// @param [in] rho total mass density [kg/m3]
 /// @param [in] q1 specific humidity [-]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar vapor_from_total_mass_density(const Scalar& rho, const Scalar& q1) {
+KOKKOS_INLINE_FUNCTION Scalar vapor_from_total_mass_density(const Scalar& rho,
+                                                            const Scalar& q1) {
   return rho * q1;
 }
 
@@ -111,8 +110,8 @@ Scalar vapor_from_total_mass_density(const Scalar& rho, const Scalar& q1) {
 /// calculation diverges at q1 = 1.
 /// @param [in] q1 specific humidity [-]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar vapor_mixing_ratio_from_specific_humidity(const Scalar& q1) {
+KOKKOS_INLINE_FUNCTION Scalar
+vapor_mixing_ratio_from_specific_humidity(const Scalar& q1) {
   return q1 / (1 - q1);
 }
 
@@ -120,8 +119,8 @@ Scalar vapor_mixing_ratio_from_specific_humidity(const Scalar& q1) {
 /// calculation diverges at q1 = 1.
 /// @param [in] qv water vapor mixing ratio [kg vapor / kg dry air]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar specific_humidity_from_vapor_mixing_ratio(const Scalar& qv) {
+KOKKOS_INLINE_FUNCTION Scalar
+specific_humidity_from_vapor_mixing_ratio(const Scalar& qv) {
   return qv / (qv + 1);
 }
 
@@ -130,8 +129,8 @@ Scalar specific_humidity_from_vapor_mixing_ratio(const Scalar& qv) {
 /// eqn. (2.11).
 /// @param [in] T temperature [K]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar vapor_saturation_pressure_tetens(const Scalar& T) {
+KOKKOS_INLINE_FUNCTION Scalar
+vapor_saturation_pressure_tetens(const Scalar& T) {
   static constexpr Real half15ln10 = 17.269388197455342630;
   static constexpr Real tetens_coeff = 380.042;
   return tetens_coeff * exp(Scalar(half15ln10) * (T - 273) / (T - 36));
@@ -147,8 +146,7 @@ Scalar vapor_saturation_pressure_tetens(const Scalar& T) {
 ///                 the temperature. If not supplied,
 ///                 @ref vapor_saturation_pressure_tetens is used.
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar relative_humidity_from_vapor_mixing_ratio(
+KOKKOS_INLINE_FUNCTION Scalar relative_humidity_from_vapor_mixing_ratio(
     const Scalar& qv, const Scalar& p, const Scalar& T,
     const std::function<Scalar(const Scalar&)>& vsp =
         vapor_saturation_pressure_tetens<Scalar>) {
@@ -166,8 +164,7 @@ Scalar relative_humidity_from_vapor_mixing_ratio(
 ///                 the temperature. If not supplied,
 ///                 @ref vapor_saturation_pressure_tetens is used.
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar vapor_mixing_ratio_from_relative_humidity(
+KOKKOS_INLINE_FUNCTION Scalar vapor_mixing_ratio_from_relative_humidity(
     const Scalar& rel_hum, const Scalar& p, const Scalar& T,
     const std::function<Scalar(const Scalar&)>& vsp =
         vapor_saturation_pressure_tetens<Scalar>) {

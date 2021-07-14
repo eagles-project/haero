@@ -489,8 +489,8 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
 
     // atmospheric state
     Real h0 = 3e3, dz = h0 / num_levels, T0 = 273.0, p0 = 1e5, rh0 = 0.95;
-    Real qv0 = conversions::vapor_mixing_ratio_from_relative_humidity(rh0,
-      p0, T0);
+    Real qv0 =
+        conversions::vapor_mixing_ratio_from_relative_humidity(rh0, p0, T0);
     for (int k = 0; k < num_levels; ++k) {
       temp(k) = 273.0;
       press(k) = 1e5;

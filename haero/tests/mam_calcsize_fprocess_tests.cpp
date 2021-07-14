@@ -60,9 +60,8 @@ TEST_CASE("mam_calcsize_run", "") {
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
   Real pblh{100.0};  // planetary BL height [m]
-  auto atm =
-      std::make_unique<Atmosphere>(num_levels, temp, press, qv, ht, pdel,
-                                   pblh);  // create atmosphere object
+  auto atm = std::make_unique<Atmosphere>(num_levels, temp, press, qv, ht, pdel,
+                                          pblh);  // create atmosphere object
 
   // This will drive the "run" method of calcsize
   SECTION("calcsize_run") {

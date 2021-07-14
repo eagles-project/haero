@@ -470,7 +470,8 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
       h_temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 273.0;
       h_press(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 1e5;
       h_qv(pack_info::pack_idx(k))[pack_info::vec_idx(k)] =
-        conversions::vapor_mixing_ratio_from_relative_humidity(rh0, 1e5, 273.0);
+          conversions::vapor_mixing_ratio_from_relative_humidity(rh0, 1e5,
+                                                                 273.0);
     }
     for (int k = 0; k < num_levels + 1; ++k) {
       h_ht(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = h0 - k * dz;

@@ -282,9 +282,10 @@ void NcWriter::define_atm_state_vars(const Atmosphere& atm) {
                           std::make_pair("short_name", "T")};
   define_level_var("temperature", ekat::units::K, atm.temperature, Tatts);
 
-  const var_atts rhatts = {std::make_pair("cf_long_name", "cloud_liquid_water_mixing_ratio"),
-                           std::make_pair("amip_short_name", "qv"), // FIXME: ???
-                           std::make_pair("haero_short_name", "vapor_mixing_ratio")};
+  const var_atts rhatts = {
+      std::make_pair("cf_long_name", "cloud_liquid_water_mixing_ratio"),
+      std::make_pair("amip_short_name", "qv"),  // FIXME: ???
+      std::make_pair("haero_short_name", "vapor_mixing_ratio")};
   define_level_var("vapor_mixing_ratio", ekat::units::Units::nondimensional(),
                    atm.vapor_mixing_ratio, rhatts);
 
