@@ -57,7 +57,6 @@ TEST_CASE("region_of_validity", "") {
   for (int k = 0; k < num_vert_packs; ++k) {
     atm.temperature(k) = 0;
     atm.pressure(k) = 0;
-    atm.relative_humidity(k) = 0;
     atm.vapor_mixing_ratio(k) = 0;
   }
 

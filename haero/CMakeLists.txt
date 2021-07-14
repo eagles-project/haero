@@ -35,7 +35,8 @@ if (HAERO_FORTRAN)
   set(HAERO_FORTRAN_SOURCES
       haero.F90
       haero_precision.F90
-      ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90)
+      ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
+      haero_conversions.F90)
 endif()
 
 
@@ -67,6 +68,7 @@ add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             ${HAERO_FORTRAN_SOURCES}
             atmosphere.cpp
+            conversions.cpp
             diagnostics.cpp
             modal_aerosol_config.cpp
             model.cpp
@@ -101,6 +103,7 @@ if (HAERO_FORTRAN)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/haero.mod
                 ${CMAKE_CURRENT_BINARY_DIR}/haero_precision.mod
                 ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.mod
+                ${CMAKE_CURRENT_BINARY_DIR}/haero_conversions.mod
           DESTINATION include/haero)
 endif()
 

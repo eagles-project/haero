@@ -7,6 +7,7 @@ module mam_nucleation
                    prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
                    var_not_found
   use haero_constants, only: pi, R_gas, Avogadro
+  use haero_conversions, only: relative_humidity_from_vapor_mixing_ratio
 
   implicit none
   private
@@ -232,7 +233,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 
   real(wp), pointer, dimension(:) :: temp     ! atmospheric temperature
   real(wp), pointer, dimension(:) :: press    ! atmospheric pressure
-  real(wp), pointer, dimension(:) :: rel_hum  ! atmospheric relative humidity
+  real(wp), pointer, dimension(:) :: qv       ! water vapor mixing ratio
   real(wp), pointer, dimension(:) :: height   ! atmospheric height
 
   real(wp), pointer, dimension(:,:) :: dqdt_i ! interstitial aerosol tends
@@ -247,6 +248,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
 
   real(wp) :: aircon    ! molar concentration of air [mol/m^3]
   real(wp) :: pblh      ! Planetary boundary layer height [m]
+  real(wp) :: rel_hum   ! Relative humidity [-]
 
   real(wp) :: h2so4_uptake_rate, h2so4_gasprod_change, h2so4_aeruptk_change
   real(wp) :: dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait
@@ -286,7 +288,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   ! Atmospheric state variables
   press => atmosphere%pressure()
   temp => atmosphere%temperature()
-  rel_hum => atmosphere%relative_humidity()
+  qv => atmosphere%vapor_mixing_ratio()
   height => atmosphere%height()
   pblh = atmosphere%planetary_boundary_height()
 
@@ -356,8 +358,11 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     end if
     qwtr_cur(:) = 0_wp !n(k, :) ! FIXME: Need to compute water content.
 
+    ! Compute the relative humidity from the water vapor mixing ratio.
+    rel_hum = relative_humidity_from_vapor_mixing_ratio(qv(k), press(k), temp(k))
+
     call compute_tendencies(dt, &
-      temp(k), press(k), aircon, height(k), pblh, rel_hum(k), &
+      temp(k), press(k), aircon, height(k), pblh, rel_hum, &
       h2so4_uptake_rate, h2so4_gasprod_change, h2so4_aeruptk_change, &
       qgas_cur, qgas_avg, qnum_cur, qaer_cur, qwtr_cur, &
       dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, &

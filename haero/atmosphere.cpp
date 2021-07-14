@@ -58,12 +58,6 @@ void* a_pressure_c(void* a) {
   return (void*)p.data();
 }
 
-void* a_relative_humidity_c(void* a) {
-  auto* atm = static_cast<Atmosphere*>(a);
-  auto& RH = atm->relative_humidity;
-  return (void*)RH.data();
-}
-
 void* a_vapor_mixing_ratio_c(void* a) {
   auto* atm = static_cast<Atmosphere*>(a);
   auto& qv = atm->vapor_mixing_ratio;

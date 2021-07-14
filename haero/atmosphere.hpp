@@ -37,7 +37,6 @@ class Atmosphere final {
   // Views.
   const ColumnView temperature;
   const ColumnView pressure;
-  const ColumnView relative_humidity;
   const ColumnView vapor_mixing_ratio;
   const ColumnView height;
   const ColumnView hydrostatic_dp;

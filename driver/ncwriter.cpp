@@ -282,11 +282,11 @@ void NcWriter::define_atm_state_vars(const Atmosphere& atm) {
                           std::make_pair("short_name", "T")};
   define_level_var("temperature", ekat::units::K, atm.temperature, Tatts);
 
-  const var_atts rhatts = {std::make_pair("cf_long_name", "relative_humidity"),
-                           std::make_pair("amip_short_name", "hur"),
-                           std::make_pair("haero_short_name", "rel_humidity")};
-  define_level_var("relative_humidity", ekat::units::Units::nondimensional(),
-                   atm.relative_humidity, rhatts);
+  const var_atts rhatts = {std::make_pair("cf_long_name", "cloud_liquid_water_mixing_ratio"),
+                           std::make_pair("amip_short_name", "qv"), // FIXME: ???
+                           std::make_pair("haero_short_name", "vapor_mixing_ratio")};
+  define_level_var("vapor_mixing_ratio", ekat::units::Units::nondimensional(),
+                   atm.vapor_mixing_ratio, rhatts);
 
   const var_atts hatts = {std::make_pair("cf_long_name", "geopotential_height"),
                           std::make_pair("haero_short_name", "z")};
@@ -299,8 +299,8 @@ void NcWriter::add_atm_state_data(const Atmosphere& atm,
   const int null_idx = -1;
   add_variable_data("temperature", time_idx, null_idx, null_idx,
                     atm.temperature);
-  add_variable_data("relative_humidity", time_idx, null_idx, null_idx,
-                    atm.relative_humidity);
+  add_variable_data("vapor_mixing_ratio", time_idx, null_idx, null_idx,
+                    atm.vapor_mixing_ratio);
   add_variable_data("geopotential_height", time_idx, null_idx, null_idx,
                     atm.height);
 }
