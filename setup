@@ -162,14 +162,14 @@ PACK_SIZE=1
 #
 # Remember to use quotes around these C++ types!
 
-# Modal column view type (maps vertical index k to a datum)
+# Column view type (maps vertical index k to a datum)
 HAERO_COLUMN_VIEW_TYPE="DeviceType::view_1d<PackType>"
 
 # Species column view type (maps species index s, vertical index k to a datum)
 HAERO_SPECIES_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
 
-# Modal column view type (maps mode index m, vertical index k to a datum)
-HAERO_MODAL_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
+# Mode column view type (maps mode index m, vertical index k to a datum)
+HAERO_MODE_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
 
 #-----------------------------------------------------------------------------
 #                                Build type
@@ -398,7 +398,7 @@ cmake \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \
  -DHAERO_COLUMN_VIEW_TYPE="\$HAERO_COLUMN_VIEW_TYPE" \
  -DHAERO_SPECIES_COLUMN_VIEW_TYPE="\$HAERO_SPECIES_COLUMN_VIEW_TYPE" \
- -DHAERO_MODAL_COLUMN_VIEW_TYPE="\$HAERO_MODAL_COLUMN_VIEW_TYPE" \
+ -DHAERO_MODE_COLUMN_VIEW_TYPE="\$HAERO_MODE_COLUMN_VIEW_TYPE" \
  -DHAERO_DOC_INCLUDE_COMMENTS=\$INCLUDE_DESIGN_DOC_COMMENTS \
  \$OPTIONS \
  -G "\$GENERATOR" \

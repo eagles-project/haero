@@ -77,8 +77,8 @@ class Prognostics final {
               const std::vector<int>& num_aerosol_species, int num_gases,
               int num_levels, SpeciesColumnView int_aerosols,
               SpeciesColumnView cld_aerosols, SpeciesColumnView gases,
-              ModalColumnView interstitial_num_concs,
-              ModalColumnView cloudborne_num_concs);
+              ModeColumnView interstitial_num_concs,
+              ModeColumnView cloudborne_num_concs);
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -127,12 +127,12 @@ class Prognostics final {
   /// Interstitial aerosols number concentrations.
   /// interstitial_num_concs_[m][k] -> interstitial aerosols number
   /// concentration of mode m within the kth pack of vertical levels.
-  ModalColumnView interstitial_num_concs;
+  ModeColumnView interstitial_num_concs;
 
   /// Cloud borne number concentrations.
   /// cloudborne_num_concs_[m][k] -> cloud borne number concentration of mode m
   /// within the kth pack of vertical levels.
-  ModalColumnView cloudborne_num_concs;
+  ModeColumnView cloud_num_concs;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations

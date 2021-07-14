@@ -538,7 +538,7 @@ spaces:
   \midrule
   \texttt{ColumnView} & 1 & Maps a vertical level index $k$ to a pack & \texttt{v(k)} & \texttt{v(k)} \\
   \texttt{SpeciesColumnView} & 2 & Maps a population index $p$ and a vertical level index $k$ to a pack & \texttt{v(p,k)}  & \texttt{v(k,p)} \\
-  \texttt{ModalColumnView} & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \texttt{v(m,k)}  & \texttt{v(k,m)} \\
+  \texttt{ModeColumnView} & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \texttt{v(m,k)}  & \texttt{v(k,m)} \\
   \bottomrule
 \end{tabular}
 \end{table}
@@ -581,7 +581,7 @@ class Prognostics final {
   const SpeciesColumnView& gases() const;
 
   // Returns the view storing modal number concentrations.
-  const ModalColumnView& modal_num_concs() const;
+  const ModeColumnView& modal_num_concs() const;
 
   // Scales the given set of tendencies and adds it into this state, summing
   // the values of the prognostic variables in place.
@@ -690,7 +690,7 @@ variables a bit in the near future.}
 %  // Returns the view storing the mode-specific diagnostic variable with a name
 %  // corresponding to the given token. If such a variable does not exist, this
 %  // throws an exception.
-%  ModalColumnView& modal_var(const Token token);
+%  ModeColumnView& modal_var(const Token token);
 %};
 %\end{lstlisting}
 %

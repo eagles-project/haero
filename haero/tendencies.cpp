@@ -35,12 +35,11 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
                      std::string(")]");
   int num_modes = prognostics.num_aerosol_modes();
   interstitial_num_concs =
-      ModalColumnView(n_view_name, num_modes, num_vert_packs);
+      ModeColumnView(n_view_name, num_modes, num_vert_packs);
   Kokkos::deep_copy(interstitial_num_concs, PackType(0));
 
-  cloudborne_num_concs =
-      ModalColumnView(n_view_name, num_modes, num_vert_packs);
-  Kokkos::deep_copy(cloudborne_num_concs, PackType(0));
+  cloud_num_concs = ModeColumnView(n_view_name, num_modes, num_vert_packs);
+  Kokkos::deep_copy(cloud_num_concs, PackType(0));
 }
 
 Tendencies::~Tendencies() {}
@@ -82,10 +81,10 @@ Tendencies& Tendencies::scale(Real factor) {
 
   // Scale cloud borne number densities.
   Kokkos::parallel_for(
-      "tendencies::scale (cloudborne num concs)", num_vert_packs,
+      "tendencies::scale (cloud num concs)", num_vert_packs,
       KOKKOS_LAMBDA(const int k) {
         for (int m = 0; m < num_modes; ++m) {
-          cloudborne_num_concs(m, k) *= factor;
+          cloud_num_concs(m, k) *= factor;
         }
       });
 
@@ -118,7 +117,7 @@ void Tendencies::accumulate(const Tendencies& tendencies) {
         }
       });
 
-  // Scale modal number densities.
+  // Scale mode number densities.
   Kokkos::parallel_for(
       "tendencies::scale (interstitial num concs)", num_vert_packs,
       KOKKOS_LAMBDA(const int k) {
@@ -128,12 +127,12 @@ void Tendencies::accumulate(const Tendencies& tendencies) {
         }
       });
 
-  // Scale modal number densities.
+  // Scale mode number densities.
   Kokkos::parallel_for(
-      "tendencies::scale (cloudborne num concs)", num_vert_packs,
+      "tendencies::scale (cloud num concs)", num_vert_packs,
       KOKKOS_LAMBDA(const int k) {
         for (int m = 0; m < num_modes; ++m) {
-          cloudborne_num_concs(m, k) += tendencies.cloudborne_num_concs(m, k);
+          cloud_num_concs(m, k) += tendencies.cloud_num_concs(m, k);
         }
       });
 }
@@ -166,9 +165,9 @@ void* t_interstitial_num_concs_c(void* t) {
   return (void*)num_concs.data();
 }
 
-void* t_cloudborne_num_concs_c(void* t) {
+void* t_cloud_num_concs_c(void* t) {
   Tendencies* tends = (Tendencies*)t;
-  auto num_concs = tends->cloudborne_num_concs;
+  auto num_concs = tends->cloud_num_concs;
   return (void*)num_concs.data();
 }
 

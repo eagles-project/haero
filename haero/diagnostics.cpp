@@ -148,7 +148,7 @@ Diagnostics::Token HostDiagnostics::create_modal_var(const std::string& name) {
   return return_val;
 }
 
-ModalColumnView Diagnostics::modal_var(const Token token) const {
+ModeColumnView Diagnostics::modal_var(const Token token) const {
   EKAT_KERNEL_REQUIRE_MSG(token < modal_vars_.extent(0),
                           "Modal diagnostic variable token not found!");
   const SpeciesColumnView vars =

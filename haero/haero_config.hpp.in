@@ -60,7 +60,7 @@ using SpeciesColumnView = @HAERO_SPECIES_COLUMN_VIEW_TYPE@;
 /// the corresponding data is accessible at
 /// `view(m, pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
 /// See Chapter 3 of the design document for an explanation of packs.
-using ModalColumnView = @HAERO_MODAL_COLUMN_VIEW_TYPE@;
+using ModeColumnView = @HAERO_MODE_COLUMN_VIEW_TYPE@;
 
 }
 #endif

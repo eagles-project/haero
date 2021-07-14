@@ -99,22 +99,23 @@ class AerosolProcess {
 
   /// Validates input aerosol and atmosphere data, returning true if all data
   /// falls within this process's region of validity, and false if not.
+  /// @param [in] config The aerosol configuration describing the aerosol
+  ///                    system to which this process belongs.
   /// @param [in] prognostics The prognostic variables used by and affected by
   ///                         this process.
   /// @param [in] atmosphere The atmosphere state variables used by this
   ///                        process.
-  bool validate(const Prognostics& prognostics,
+  bool validate(const ModalAerosolConfig& config,
+                const Prognostics& prognostics,
                 const Atmosphere& atmosphere) const {
-    return (validity_region_.contains(atmosphere) and
-            validity_region_.contains(prognostics));
+    return validity_region_.contains(config, atmosphere, prognostics);
   }
 
   /// Override this method if your aerosol process needs to be initialized
   /// with information about the model. The default implementation does nothing.
-  /// @param [in] modal_aerosol_config The aerosol configuration describing the
-  ///                                  aerosol system to which this process
-  ///                                  belongs.
-  virtual void init(const ModalAerosolConfig& modal_aerosol_config) {}
+  /// @param [in] config The aerosol configuration describing the aerosol
+  ///                    system to which this process belongs.
+  virtual void init(const ModalAerosolConfig& config) {}
 
   /// Override this method to implement the aerosol process using the specific
   /// parameterization for the subclass.

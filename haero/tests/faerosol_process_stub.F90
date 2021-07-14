@@ -82,9 +82,9 @@ subroutine process_stub_run(t, dt, progs, atm, diags, tends) bind(c)
 
   ! Iterate over modes and compute aerosol mix fraction tendencies.
   num_modes = size(model%modes)
-  q_c => prognostics%cloudborne_aerosols()
+  q_c => prognostics%cloud_aerosols()
   q_i => prognostics%interstitial_aerosols()
-  dqdt_c => tendencies%cloudborne_aerosols()
+  dqdt_c => tendencies%cloud_aerosols()
   dqdt_i => tendencies%interstitial_aerosols()
 
   ! Cloudborne aerosols decay exponentially into interstitial aerosols.
