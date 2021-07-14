@@ -3,11 +3,11 @@
 namespace haero {
 
 Atmosphere::Atmosphere(int num_levels, const ColumnView temp,
-                       const ColumnView press, const ColumnView rel_hum,
+                       const ColumnView press, const ColumnView qv,
                        const ColumnView ht, const ColumnView pdel, Real pbl)
     : temperature(temp),
       pressure(press),
-      relative_humidity(rel_hum),
+      vapor_mixing_ratio(qv),
       height(ht),
       hydrostatic_dp(pdel),
       planetary_boundary_height(pbl),
@@ -27,8 +27,8 @@ Atmosphere::Atmosphere(int num_levels, const ColumnView temp,
   EKAT_REQUIRE_MSG(press.extent(0) == num_vert_packs,
                    "Pressure view must have extent == " << num_vert_packs);
   EKAT_REQUIRE_MSG(
-      rel_hum.extent(0) == num_vert_packs,
-      "Relative humidity view must have extent == " << num_vert_packs);
+      qv.extent(0) == num_vert_packs,
+      "Vapor mixing ratio view must have extent == " << num_vert_packs);
   EKAT_REQUIRE_MSG(
       pdel.extent(0) == num_vert_packs,
       "Hydrostatic pressure thickness must have extent == " << num_vert_packs);
@@ -62,6 +62,12 @@ void* a_relative_humidity_c(void* a) {
   auto* atm = static_cast<Atmosphere*>(a);
   auto& RH = atm->relative_humidity;
   return (void*)RH.data();
+}
+
+void* a_vapor_mixing_ratio_c(void* a) {
+  auto* atm = static_cast<Atmosphere*>(a);
+  auto& qv = atm->vapor_mixing_ratio;
+  return (void*)qv.data();
 }
 
 void* a_height_c(void* a) {

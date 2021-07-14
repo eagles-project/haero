@@ -25,7 +25,7 @@ void set_input(const std::vector<InputData>& inputs,
 
   auto T = ekat::scalarize(atmosphere.temperature);
   auto p = ekat::scalarize(atmosphere.pressure);
-  auto relhum = ekat::scalarize(atmosphere.relative_humidity);
+  auto qv = ekat::scalarize(atmosphere.vapor_mixing_ratio);
   auto h = ekat::scalarize(atmosphere.height);
   auto dp = ekat::scalarize(atmosphere.hydrostatic_dp);
   auto int_aero = ekat::scalarize(prognostics.interstitial_aerosols);
@@ -37,7 +37,7 @@ void set_input(const std::vector<InputData>& inputs,
     // Atmospheric state
     T(l) = inputs[l].temperature;
     p(l) = inputs[l].pressure;
-    relhum(l) = inputs[l].relative_humidity;
+    qv(l) = inputs[l].vapor_mixing_ratio;
     h(l) = inputs[l].height;
     dp(l) = inputs[l].hydrostatic_dp;
 
@@ -150,11 +150,11 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // Set up an atmospheric state and initialize it with reference data.
   haero::ColumnView temp("temperature", num_levels);
   haero::ColumnView press("pressure", num_levels);
-  haero::ColumnView rel_hum("relative humidity", num_levels);
+  haero::ColumnView qv("vapor mixing ratio", num_levels);
   haero::ColumnView ht("height", num_levels + 1);
   haero::ColumnView dp("hydrostatic pressure thickness", num_levels);
   auto* atmosphere = new haero::Atmosphere(
-      num_levels, temp, press, rel_hum, ht, dp,
+      num_levels, temp, press, qv, ht, dp,
       param_walk.ref_input.planetary_boundary_layer_height);
 
   // Create tendencies for the given prognostics.

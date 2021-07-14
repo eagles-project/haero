@@ -32,7 +32,7 @@ struct InputData {
   Real dt, total_time;
 
   // atmospheric state parameters
-  Real temperature, pressure, relative_humidity, height, hydrostatic_dp,
+  Real temperature, pressure, vapor_mixing_ratio, height, hydrostatic_dp,
       planetary_boundary_layer_height;
 
   // aerosol initial data

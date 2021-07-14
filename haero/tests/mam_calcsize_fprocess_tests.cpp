@@ -56,12 +56,12 @@ TEST_CASE("mam_calcsize_run", "") {
   // Set up atmospheric data and populate it with some views.
   Kokkos::View<PackType*> temp("temperature", num_levels);  //[K]
   Kokkos::View<PackType*> press("pressure", num_levels);    //[Pa]
-  Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
+  Kokkos::View<PackType*> qv("vapor mixing ratio", num_levels);
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
   Real pblh{100.0};  // planetary BL height [m]
   auto atm =
-      std::make_unique<Atmosphere>(num_levels, temp, press, rel_hum, ht, pdel,
+      std::make_unique<Atmosphere>(num_levels, temp, press, qv, ht, pdel,
                                    pblh);  // create atmosphere object
 
   // This will drive the "run" method of calcsize

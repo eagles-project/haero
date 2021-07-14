@@ -10,9 +10,9 @@ using namespace haero;
 static constexpr Real g_to_kg = 0.001;
 
 TEST_CASE("conversions:mmr_from_number_conc") {
-  Real mu = 115.107;      // molecular weight of sulfate, say
-  PackType n(1e5);        // number density
-  Real rho_air = 1.1805;  // dry air mass density (20 C)
+  Real mu = 115.107;          // molecular weight of sulfate, say
+  PackType n(1e5);            // number density
+  PackType rho_air(1.1805);   // dry air mass density (20 C)
   auto mmr = conversions::mmr_from_number_conc(n, mu, rho_air);
   REQUIRE(FloatingPoint<PackType>::equiv(
       mmr, n * mu / (rho_air * constants::avogadro)));
@@ -21,9 +21,9 @@ TEST_CASE("conversions:mmr_from_number_conc") {
 }
 
 TEST_CASE("conversions:number_conc_from_mmr") {
-  Real mu = 115.107;      // molecular weight of sulfate, say
-  PackType mmr(0.2);      // mass mixing ratio
-  Real rho_air = 1.1805;  // dry air mass density (20 C)
+  Real mu = 115.107;          // molecular weight of sulfate, say
+  PackType mmr(0.2);          // mass mixing ratio
+  PackType rho_air(1.1805);   // dry air mass density (20 C)
   auto n = conversions::number_conc_from_mmr(mmr, mu, rho_air);
   REQUIRE(FloatingPoint<PackType>::equiv(
       n, mmr * (rho_air * constants::avogadro) / mu));

@@ -29,11 +29,11 @@ TEST_CASE("region_of_validity", "") {
 
   ColumnView temp("temperature", num_vert_packs),
       press("pressure", num_vert_packs),
-      rel_hum("relative humidity", num_vert_packs),
+      qv("vapor mixing ratio", num_vert_packs),
       ht("height", num_vert_packs + 1),
       pdel("pressure thickness", num_vert_packs);
   const Real pblh = 1000.0;
-  Atmosphere atm(num_levels, temp, press, rel_hum, ht, pdel, pblh);
+  Atmosphere atm(num_levels, temp, press, qv, ht, pdel, pblh);
 
   // Zero the state data.
   for (int p = 0; p < progs.num_aerosol_populations(); ++p) {
@@ -58,6 +58,7 @@ TEST_CASE("region_of_validity", "") {
     atm.temperature(k) = 0;
     atm.pressure(k) = 0;
     atm.relative_humidity(k) = 0;
+    atm.vapor_mixing_ratio(k) = 0;
   }
 
   SECTION("ctor") {

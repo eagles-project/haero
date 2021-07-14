@@ -42,11 +42,11 @@ TEST_CASE("faerosol_process_stub", "") {
   // important for this data to be valid, since it's unused by these stubs.
   Kokkos::View<PackType*> temp("temperature", num_levels);
   Kokkos::View<PackType*> press("pressure", num_levels);
-  Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
+  Kokkos::View<PackType*> qv("vapor mixing ratio", num_levels);
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);
   Kokkos::View<PackType*> ht("height", num_levels + 1);
   Real pblh = 100.0;
-  auto* atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel, pblh);
+  auto* atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
 
   // Rate of decay from cloudborne to interstitial aerosols.
   Real decay_rate = -0.05;

@@ -127,6 +127,7 @@ module haero
     procedure :: temperature => a_temperature
     procedure :: pressure => a_pressure
     procedure :: relative_humidity => a_relative_humidity
+    procedure :: vapor_mixing_ratio => a_vapor_mixing_ratio
     procedure :: height => a_height
     procedure :: planetary_boundary_height => a_pblh
     procedure :: hydrostatic_dp => a_hydrostatic_dp
@@ -206,6 +207,11 @@ module haero
     end function
 
     type(c_ptr) function a_relative_humidity_c(a) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: a
+    end function
+
+    type(c_ptr) function a_vapor_mixing_ratio_c(a) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: a
     end function
@@ -721,6 +727,18 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = a_relative_humidity_c(a%ptr)
+    call c_f_pointer(v_ptr, retval, shape=[model%num_levels])
+  end function
+
+  !> Provides access to atmosphere water vapor mixing ratio column data
+  !> [kg vapor/kg dry air].
+  !> @param [in] a A pointer to an atmosphere object.
+  function a_vapor_mixing_ratio(a) result(retval)
+    class(atmosphere_t), intent(in)  :: a
+    real(c_real), pointer, dimension(:) :: retval
+
+    type(c_ptr) :: v_ptr
+    v_ptr = a_vapor_mixing_ratio_c(a%ptr)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels])
   end function
 
