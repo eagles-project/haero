@@ -47,7 +47,6 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
   const int num_modes = aero_config.h_aerosol_modes.size();
   const int num_gases = aero_config.h_gas_species.size();
 
-
   std::vector<int> num_aero_species(num_modes);
   std::vector<Mode> modes = create_mam4_modes();
   std::map<std::string, std::vector<std::string>> mode_species =
@@ -56,7 +55,8 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
     num_aero_species[m] = mode_species[modes[m].name()].size();
   }
 
-  HostDiagnostics diagnostics(num_modes, num_aero_species, num_gases, num_levels);
+  HostDiagnostics diagnostics(num_modes, num_aero_species, num_gases,
+                              num_levels);
 
   get_model_for_unit_tests(aero_config);
   AerosolProcessType type = CloudBorneWetRemovalProcess;
@@ -72,7 +72,7 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
         96325 + 10000 * random());    // pressure in Pascal, sea level=101,325
     const PackType aircon(random());  // air molar concentration (kmol/m3)
     const PackType zmid(500 + 10000 * random());  // layer midpoint height (m)
-    const PackType pblh(1000 + 1000 * random());  // boundary layer height (m)
+    const Real pblh(1000 + 1000 * random());      // boundary layer height (m)
     const PackType relhum(0.05 + .9 * random());  // range .05-.95
     const PackType uptkrate_h2so4(
         100 * random());  // h2so4 uptake rate to aerosol (1/s)
@@ -119,7 +119,7 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
     Real nclusterdt_f = 0;
     compute_tendencies_bridge(
         adjust_factor_bin_tern_ratenucl, adjust_factor_pbl_ratenucl, deltat,
-        temp[0], pmid[0], aircon[0], zmid[0], pblh[0], relhum[0],
+        temp[0], pmid[0], aircon[0], zmid[0], pblh, relhum[0],
         uptkrate_h2so4[0], del_h2so4_gasprod[0], del_h2so4_aeruptk[0],
         &qgas_cur(0)[0], &qgas_avg(0)[0], &qnum_cur(0)[0], &qaer_cur(0, 0)[0],
         &qwtr_cur(0)[0], dndt_ait_f, dmdt_ait_f, dso4dt_ait_f, dnh4dt_ait_f,

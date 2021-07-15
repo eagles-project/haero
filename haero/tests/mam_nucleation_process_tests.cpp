@@ -462,11 +462,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     AerosolProcessType type = CloudBorneWetRemovalProcess;
     auto* process = new MAMNucleationProcess(
-      type, 
-      "Nucleation Test Without Existing Aerosols",
-      aero_config,
-      *diags
-    );
+        type, "Nucleation Test Without Existing Aerosols", aero_config, *diags);
     process->init(aero_config);
 
     // Set initial conditions.
@@ -556,7 +552,6 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
   // Test process tendencies.
   SECTION("nucleate_with_existing_aerosols") {
-
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     Prognostics* progs = model->create_prognostics(
@@ -570,11 +565,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     AerosolProcessType type = CloudBorneWetRemovalProcess;
     auto* process = new MAMNucleationProcess(
-      type, 
-      "Nucleation Test With Existing Aerosols",
-      aero_config,
-      *diags
-    );
+        type, "Nucleation Test With Existing Aerosols", aero_config, *diags);
     process->init(aero_config);
 
     // Set initial conditions.
