@@ -10,7 +10,7 @@ using namespace haero::chem_driver;
 
 TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
   /// create the SimulationInput object by parsing the yaml file
-  SimulationInput sim_input = read_chem_input("${CMAKE_CURRENT_SOURCE_DIR}/toy_problem_input.yml");
+  SimulationInput sim_input = read_chem_input("toy_problem_input.yml");
 
   // this function creates the toy-problem-specific (chemkin?) input file for
   // TChem
