@@ -68,13 +68,13 @@ class MAMNucleationProcess : public AerosolProcess {
   // The index of the Aitken mode
   int nait;
 
-  // Index of H2SO4 gas
-  const int igas_h2so4 = -1;
+  // Index of H2SO4 aerosol
+  const int iaer_h2so4 = -1;
 
-  // Index of NH3 gas
-  const int igas_nh3 = -1;
+  // Index of NH3 aerosol
+  const int iaer_nh3 = -1;
 
-  // Index of NH4 gas
+  // Index of NH4 aerosol
   const int iaer_nh4 = -1;
 
   // Index of SO4 aerosol within the Aitken mode
@@ -149,8 +149,8 @@ class MAMNucleationProcess : public AerosolProcess {
                        const ModalAerosolConfig &config,
                        const HostDiagnostics &diagnostics)
       : AerosolProcess(type, name),
-        igas_h2so4(config.gas_index("H2SO4")),
-        igas_nh3(config.gas_index("NH3")),
+        iaer_h2so4(config.gas_index("H2SO4")),
+        iaer_nh3(config.gas_index("NH3")),
         iaer_nh4(config.gas_index("nh4")),
         dgnum_aer("mean particle diameters", config.num_modes()),
         dgnumlo_aer("minimum particle diameters", config.num_modes()),
@@ -191,8 +191,8 @@ class MAMNucleationProcess : public AerosolProcess {
       : AerosolProcess(pp),
         adjust_factor_pbl_ratenucl(pp.adjust_factor_pbl_ratenucl),
         adjust_factor_bin_tern_ratenucl(pp.adjust_factor_bin_tern_ratenucl),
-        igas_h2so4(pp.igas_h2so4),
-        igas_nh3(pp.igas_nh3),
+        iaer_h2so4(pp.iaer_h2so4),
+        iaer_nh3(pp.iaer_nh3),
         iaer_nh4(pp.iaer_nh4),
         iaer_so4(pp.iaer_so4),
         qgas_averaged_token(pp.qgas_averaged_token),
@@ -216,19 +216,19 @@ class MAMNucleationProcess : public AerosolProcess {
                    Tendencies &tendencies) const override {
     // First of all, check to make sure our model has an aitken mode. If it
     // doesn't, we can return immediately.
-    if (nait == 0) {
+    if (nait == -1) {
       return;
     }
 
     // If there's no gas present with which to create new nuclei, there's
     // nothing to do, either.
-    if ((igas_h2so4 == 0) and (igas_nh3 == 0)) {
+    if ((iaer_h2so4 == -1) and (iaer_nh3 == -1)) {
       return;
     }
 
     // Finally, if there are no relevant aerosol species for nuclei, we can't
     // create them.
-    if (iaer_so4 == 0 and iaer_nh4 == 0) {
+    if (iaer_so4 == -1 and iaer_nh4 == -1) {
       return;
     }
 
@@ -320,7 +320,7 @@ class MAMNucleationProcess : public AerosolProcess {
       for (size_t i = 0; i < dqdt_i.extent(0); ++i) dqdt_i(i, k) = 0.0;
       dqdt_i(iaer_so4, k) = dso4dt_ait;
       for (size_t i = 0; i < dqdt_g.extent(0); ++i) dqdt_g(i, k) = 0.0;
-      dqdt_g(igas_h2so4, k) = -dso4dt_ait;
+      dqdt_g(iaer_h2so4, k) = -dso4dt_ait;
       for (size_t i = 0; i < dndt.extent(0); ++i) dndt(i, k) = 0.0;
       dndt(nait, k) = dndt_ait;
     }
@@ -391,7 +391,7 @@ class MAMNucleationProcess : public AerosolProcess {
     Pack qh2so4_avg(0.0);
     // qh2so4_cur = current qh2so4, after aeruptk
     // qh2so4_avg = average qh2so4 over time-step
-    const Pack qh2so4_cur = qgas_cur[igas_h2so4];
+    const Pack qh2so4_cur = qgas_cur[iaer_h2so4];
 
     Mask qh2so4_le_cutoff(false);
     if (gaexch_h2so4_uptake_optaa == 1 && newnuc_h2so4_conc_optaa == 1) {
@@ -434,13 +434,13 @@ class MAMNucleationProcess : public AerosolProcess {
     } else {
       // use qh2so4_avg and first-order loss rate calculated in
       // mam_gasaerexch_1subarea
-      qh2so4_avg = qgas_avg[igas_h2so4];
+      qh2so4_avg = qgas_avg[iaer_h2so4];
       tmp_uptkrate = uptkrate_h2so4;
     }
     qh2so4_le_cutoff = qh2so4_le_cutoff || Mask(qh2so4_avg <= qh2so4_cutoff);
 
     Pack qnh3_cur(0.0);
-    if (0 <= igas_nh3) qnh3_cur = max(0.0, qgas_cur[igas_nh3]);
+    if (0 <= iaer_nh3) qnh3_cur = max(0.0, qgas_cur[iaer_nh3]);
     // dry-diameter limits for "grown" new particles
     const Real dplom_mode =
         exp(0.67 * log(dgnumlo_aer[nait]) + 0.33 * log(dgnum_aer[nait]));
@@ -480,9 +480,9 @@ class MAMNucleationProcess : public AerosolProcess {
 
     // fraction of mass nuc going to so4
     tmpa = mw_so4a_host * qso4a_del;
-    const Pack tmpb = igas_nh3 > 0 ? tmpa + qnh4a_del * mw_nh4a_host : tmpa;
+    const Pack tmpb = iaer_nh3 >= 0 ? tmpa + qnh4a_del * mw_nh4a_host : tmpa;
     const Pack tmp_frso4 =
-        igas_nh3 > 0 ? max(tmpa, 1.0e-35) / max(tmpb, 1.0e-35) : 1.0;
+        iaer_nh3 >= 0 ? max(tmpa, 1.0e-35) / max(tmpb, 1.0e-35) : 1.0;
 
     // mass nuc rate (kg/kmol-air/s) from mass nuc amts
     dmdt_ait = max(0.0, (tmpb / deltat));
