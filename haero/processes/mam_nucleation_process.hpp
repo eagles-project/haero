@@ -288,9 +288,6 @@ class MAMNucleationProcess : public AerosolProcess {
       const view_2d_pack_type qaer_cur;
 
       // Extract diagnostic state data.
-      //const int num_modes = qgas_averaged.extent(0);
-      //ColumnView qgas_avg(qgas_averaged.label() + "_level", num_modes);
-      //if (Diagnostics::VAR_NOT_FOUND != qgas_averaged_token)
       const auto qgas_avg = Kokkos::subview(qgas_averaged, Kokkos::ALL(), k);
       const PackType zero(0.0);
       const PackType h2so4_uptake_rate =
