@@ -27,7 +27,7 @@ KOKKOS_INLINE_FUNCTION Scalar mmr_from_number_conc(const Scalar& number_conc,
 }
 
 /// Given a mass mixing ratio (mmr) for a species or mixture [kg species/kg
-/// air], computes and returns a number density [m-3] based on its molecular
+/// dry air], computes and returns a number density [m-3] based on its molecular
 /// weight and on the density of dry air in the vicinity.
 /// @param [in] mmr The number concentration of the species/mixture [m-3]
 /// @param [in] molecular_wt The molecular weight of the species/mixture
@@ -67,7 +67,8 @@ KOKKOS_INLINE_FUNCTION Scalar vmr_from_mmr(const Scalar& mmr,
 }
 
 /// Computes the virtual temperature [K] from the temperature [K] and a water
-/// vapor mass mixing ratio [kg vapor/kg dry air].
+/// vapor mass mixing ratio [kg vapor/kg dry air]. See Equation (3.1.15) from
+/// Gill, 1982, Atmosphere-Ocean Dynamics, Academic Press, San Diego CA.
 /// @param [in] Tv virtual temperature [K]
 /// @param [in] q1 specific humidity [-]
 template <typename Scalar>
