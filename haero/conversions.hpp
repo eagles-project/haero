@@ -12,7 +12,7 @@ namespace haero {
 namespace conversions {
 
 /// Given a number concentration for a species or mixture [m-3], computes and
-/// returns a mass mixing ratio [kg species/kg air] based on its molecular
+/// returns a mass mixing ratio [kg species/kg dry air] based on its molecular
 /// weight and on the density of dry air in the vicinity.
 /// @param [in] number_conc The number concentration of the species/mixture
 /// [m-3]
@@ -41,8 +41,8 @@ KOKKOS_INLINE_FUNCTION Scalar number_conc_from_mmr(const Scalar& mmr,
 }
 
 /// Given a molar mixing ratio (vmr) for a species or mixture
-/// [kmol species/kmol air], computes and returns a mass mixing ratio
-/// [kg species/kg air] based on its molecular weight.
+/// [kmol species/kmol dry air], computes and returns a mass mixing ratio
+/// [kg species/kg dry air] based on its molecular weight.
 /// @param [in] vmr The molar mixing ratio of the species/mixture [kmol/kmol
 /// air]
 /// @param [in] molecular_wt The molecular weight of the species/mixture
@@ -54,10 +54,10 @@ KOKKOS_INLINE_FUNCTION Scalar mmr_from_vmr(const Scalar& vmr,
 }
 
 /// Given a mass mixing ratio (mmr) for a species or mixture [kg species/kg
-/// air], computes and returns a molar mixing ratio [kmol species/k air] based
-/// on its molecular weight.
+/// dry air], computes and returns a molar mixing ratio [kmol species/k dry air]
+/// based on its molecular weight.
 /// @param [in] mmr The molar mixing ratio of the species/mixture [kmol/kmol
-/// air]
+/// dry air]
 /// @param [in] molecular_wt The molecular weight of the species/mixture
 /// [kg/kmol]
 template <typename Scalar>
