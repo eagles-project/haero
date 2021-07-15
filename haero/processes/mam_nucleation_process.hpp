@@ -272,23 +272,26 @@ class MAMNucleationProcess : public AerosolProcess {
 
     // Traverse the vertical levels and compute tendencies from nucleation.
     const int num_levels = diagnostics.num_levels();
-    for (int k = 0; k < num_levels; ++k) {
+    int num_vert_packs = num_levels / HAERO_PACK_SIZE;
+    if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
+      num_vert_packs++;
+    }
+    for (int k = 0; k < num_vert_packs; ++k) {
       static const Real R_gas = constants::r_gas;  // Gas constant (J/K/kmol)
       // Compute the molar concentration of air at the given pressure and
       // temperature.
       const PackType aircon = press(k) / (temp(k) * R_gas);
 
       // Extract prognostic state data.
-      const auto qgas_cur = Kokkos::subview(q_g, k, Kokkos::ALL());
-      const auto qnum_cur = Kokkos::subview(n, k, Kokkos::ALL());
+      const auto qgas_cur = Kokkos::subview(q_g, Kokkos::ALL(), k);
+      const auto qnum_cur = Kokkos::subview(n, Kokkos::ALL(), k);
       const view_2d_pack_type qaer_cur;
 
       // Extract diagnostic state data.
-      const int num_modes = qgas_averaged.extent(1);
-      ColumnView qgas_avg(qgas_averaged.label() + "_level", num_modes);
-      if (Diagnostics::VAR_NOT_FOUND != qgas_averaged_token)
-        qgas_avg = Kokkos::subview(qgas_averaged, k, Kokkos::ALL());
-
+      //const int num_modes = qgas_averaged.extent(0);
+      //ColumnView qgas_avg(qgas_averaged.label() + "_level", num_modes);
+      //if (Diagnostics::VAR_NOT_FOUND != qgas_averaged_token)
+      const auto qgas_avg = Kokkos::subview(qgas_averaged, Kokkos::ALL(), k);
       const PackType zero(0.0);
       const PackType h2so4_uptake_rate =
           Diagnostics::VAR_NOT_FOUND == uptkrate_h2so4_token
@@ -370,13 +373,13 @@ class MAMNucleationProcess : public AerosolProcess {
   ///   @param [out]   dnh4dt_ait       (kmol/kmol-air/s)
   ///   @param [in/out] nclusterdt      cluster nucleation rate (#/m3/s)
 
-  template <typename Pack>
+  template <typename Pack, typename VIEW_1D_PACK>
   KOKKOS_INLINE_FUNCTION void compute_tendencies(
       const Real deltat, const Pack &temp, const Pack &pmid, const Pack &aircon,
       const Pack &zmid, const Real pblh, const Pack &relhum,
       const Pack &uptkrate_h2so4, const Pack &del_h2so4_gasprod,
-      const Pack &del_h2so4_aeruptk, const view_1d_pack_type qgas_cur,
-      const view_1d_pack_type qgas_avg, const view_1d_pack_type qnum_cur,
+      const Pack &del_h2so4_aeruptk, const VIEW_1D_PACK qgas_cur,
+      const VIEW_1D_PACK qgas_avg, const VIEW_1D_PACK qnum_cur,
       const view_2d_pack_type qaer_cur, const view_1d_pack_type qwtr_cur,
       Pack &dndt_ait, Pack &dmdt_ait, Pack &dso4dt_ait, Pack &dnh4dt_ait,
       Pack &dnclusterdt) const {
