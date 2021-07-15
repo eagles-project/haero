@@ -41,11 +41,27 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
     return Real(seed) / p0;
   };
 
+  const auto aero_species = create_mam4_aerosol_species();
   auto aero_config = create_mam4_modal_aerosol_config();
+  const int num_levels = 72;
+  const int num_modes = aero_config.h_aerosol_modes.size();
+  const int num_gases = aero_config.h_gas_species.size();
+
+
+  std::vector<int> num_aero_species(num_modes);
+  std::vector<Mode> modes = create_mam4_modes();
+  std::map<std::string, std::vector<std::string>> mode_species =
+      create_mam4_mode_species();
+  for (int m = 0; m < num_modes; ++m) {
+    num_aero_species[m] = mode_species[modes[m].name()].size();
+  }
+
+  HostDiagnostics diagnostics(num_modes, num_aero_species, num_gases, num_levels);
+
   get_model_for_unit_tests(aero_config);
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   MAMNucleationProcess mam_nucleation_process(type, "Nucleation Test",
-                                              aero_config);
+                                              aero_config, diagnostics);
 
   init_bridge();
 

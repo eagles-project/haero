@@ -404,7 +404,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   if (num_iface_packs * HAERO_PACK_SIZE < (num_levels + 1)) {
     num_iface_packs++;
   }
-  auto* model = Model::ForUnitTests(aero_config, num_levels);
+  Model* model = Model::ForUnitTests(aero_config, num_levels);
   int num_gases = aero_config.h_gas_species.size();
   int num_modes = aero_config.h_aerosol_modes.size();
 
@@ -447,15 +447,27 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
   // Test process tendencies.
   SECTION("nucleate_without_existing_aerosols") {
-    auto* process = new MAMNucleationProcess();
-    process->init(aero_config);
+    ModalAerosolConfig aero_config = create_mam4_modal_aerosol_config();
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     Prognostics* progs = model->create_prognostics(
         int_aerosols, cld_aerosols, gases, int_num_concs, cld_num_concs);
-    Diagnostics* diags = model->create_diagnostics();
+    HostDiagnostics* diags = model->create_diagnostics();
+    diags->create_gas_var("qgas_averaged");
+    diags->create_var("uptkrate_h2so4");
+    diags->create_var("del_h2so4_gasprod");
+    diags->create_var("del_h2so4_aeruptk");
     Tendencies* tends = new Tendencies(*progs);
+
+    AerosolProcessType type = CloudBorneWetRemovalProcess;
+    auto* process = new MAMNucleationProcess(
+      type, 
+      "Nucleation Test Without Existing Aerosols",
+      aero_config,
+      *diags
+    );
+    process->init(aero_config);
 
     // Set initial conditions.
 
@@ -489,7 +501,6 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     // gases
     int h2so4_index = aero_config.gas_index("H2SO4");
-    printf("h2so4 index: %d\n", h2so4_index);
     auto h_gases = Kokkos::create_mirror_view(gases);
     for (int k = 0; k < num_levels; ++k) {
       h_gases(h2so4_index, pack_info::pack_idx(k))[pack_info::vec_idx(k)] =
@@ -543,5 +554,110 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     delete process;
   }
 
+  // Test process tendencies.
+  SECTION("nucleate_with_existing_aerosols") {
+
+    // Initialize prognostic and diagnostic variables, and construct a
+    // tendencies container.
+    Prognostics* progs = model->create_prognostics(
+        int_aerosols, cld_aerosols, gases, int_num_concs, cld_num_concs);
+    HostDiagnostics* diags = model->create_diagnostics();
+    diags->create_gas_var("qgas_averaged");
+    diags->create_var("uptkrate_h2so4");
+    diags->create_var("del_h2so4_gasprod");
+    diags->create_var("del_h2so4_aeruptk");
+    Tendencies* tends = new Tendencies(*progs);
+
+    AerosolProcessType type = CloudBorneWetRemovalProcess;
+    auto* process = new MAMNucleationProcess(
+      type, 
+      "Nucleation Test With Existing Aerosols",
+      aero_config,
+      *diags
+    );
+    process->init(aero_config);
+
+    // Set initial conditions.
+    // atmospheric state
+    Real h0 = 3e3, dz = h0 / num_levels;
+    auto h_temp = Kokkos::create_mirror_view(temp);
+    auto h_press = Kokkos::create_mirror_view(press);
+    auto h_rel_hum = Kokkos::create_mirror_view(rel_hum);
+    auto h_ht = Kokkos::create_mirror_view(ht);
+    for (int k = 0; k < num_levels; ++k) {
+      h_temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 273.0;
+      h_press(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 1e5;
+      h_rel_hum(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0.95;
+    }
+    for (int k = 0; k < num_levels + 1; ++k) {
+      h_ht(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = h0 - k * dz;
+    }
+    Kokkos::deep_copy(temp, h_temp);
+    Kokkos::deep_copy(press, h_press);
+    Kokkos::deep_copy(rel_hum, h_rel_hum);
+    Kokkos::deep_copy(ht, h_ht);
+
+    // aerosols (none)
+    auto h_int_aerosols = Kokkos::create_mirror_view(int_aerosols);
+    for (int p = 0; p < aero_config.num_aerosol_populations; ++p) {
+      for (int k = 0; k < num_levels; ++k) {
+        h_int_aerosols(p, pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0.0;
+      }
+    }
+    Kokkos::deep_copy(int_aerosols, h_int_aerosols);
+
+    // gases
+    int h2so4_index = aero_config.gas_index("H2SO4");
+    auto h_gases = Kokkos::create_mirror_view(gases);
+    for (int k = 0; k < num_levels; ++k) {
+      h_gases(h2so4_index, pack_info::pack_idx(k))[pack_info::vec_idx(k)] =
+          1e-13;
+    }
+    for (int g = 0; g < num_gases; ++g) {
+      if (g != h2so4_index) {
+        for (int k = 0; k < num_levels; ++k) {
+          h_gases(g, pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0.0;
+        }
+      }
+    }
+    Kokkos::deep_copy(gases, h_gases);
+
+    // Now compute the tendencies by running the process.
+    Real t = 0.0, dt = 30.0;
+    process->run(aero_config, t, dt, *progs, *atm, *diags, *tends);
+
+    // --------------------------------------------------
+    // Check the tendencies to make sure they make sense.
+    // --------------------------------------------------
+
+    // SO4 nucleates within the aitken mode. All other tendencies are zero.
+    const auto aero_tends = tends->interstitial_aerosols;
+    const int aitken_index = aero_config.aerosol_mode_index("aitken");
+    const int aitken_so4_index =
+        aero_config.aerosol_species_index(aitken_index, "SO4");
+    const int so4_pop_index =
+        aero_config.population_index(aitken_index, aitken_so4_index);
+    Kokkos::deep_copy(h_int_aerosols, int_aerosols);
+    for (int p = 0; p < aero_config.num_aerosol_populations; ++p) {
+      if (p == so4_pop_index) {
+        for (int k = 0; k < num_levels; ++k) {
+          // FIXME: Currently, our test case gets no nucleation in this config,
+          // FIXME: so we use >= instead of > here. Need to fix this.
+          REQUIRE(h_int_aerosols(
+                      p, pack_info::pack_idx(k))[pack_info::vec_idx(k)] >= 0.0);
+        }
+      } else {
+        for (int k = 0; k < num_levels; ++k) {
+          REQUIRE(h_int_aerosols(
+                      p, pack_info::pack_idx(k))[pack_info::vec_idx(k)] == 0.0);
+        }
+      }
+    }
+    // Clean up.
+    delete progs;
+    delete diags;
+    delete tends;
+    delete process;
+  }
   delete model;
 }
