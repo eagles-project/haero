@@ -33,11 +33,6 @@ Real hydrostatic_pressure_at_height(const Real z, const Real p0, const Real T0,
 struct AtmosphericConditions {
   static constexpr Real pref =
       100000;  /// Reference pressure at z=0, Tv=Tv0 [Pa]
-  /**  virtual temperature appx. factor [K]
-
-    (equations (2.1) and (2.3) from Klemp & Wilhelmson, 1978, J. Atm. Sci. 35)
-  */
-  static constexpr Real alpha_v = 0.61;
   /// dry air kappa [-]
   static constexpr Real kappa =
       haero::constants::r_gas_dry_air / haero::constants::cp_dry_air;
@@ -122,19 +117,6 @@ struct AtmosphericConditions {
   /// Write instance info to string
   std::string info_string(const int tab_level = 0) const;
 };
-
-/** @brief Computes temperature from virtual temperature and water vapor mixing
-ratio,
-@f$ T(T_v, q_v) @f$.
-
-  @param [in] Tv virtual temperature [K]
-  @param [in] qv water vapor mixing ratio [kg H<sub>2</sub>O / kg air]
-  @return temperature [K]
-*/
-KOKKOS_INLINE_FUNCTION
-Real temperature_from_virtual_temperature(const Real Tv, const Real qv) {
-  return Tv / (1 + AtmosphericConditions::alpha_v * qv);
-}
 
 /** @brief Virtual temperature profile, @f$T_v(z)@f$.
 

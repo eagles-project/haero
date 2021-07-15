@@ -90,8 +90,8 @@ Real InputData::operator[](const std::string& param_name) const {
       return temperature;
     } else if (param_name.find("pressure") != std::string::npos) {
       return pressure;
-    } else if (param_name.find("relative_humidity") != std::string::npos) {
-      return relative_humidity;
+    } else if (param_name.find("vapor_mixing_ratio") != std::string::npos) {
+      return vapor_mixing_ratio;
     } else if (param_name.find("height") != std::string::npos) {
       return height;
     } else if (param_name.find("hydrostatic_dp") != std::string::npos) {
@@ -150,8 +150,8 @@ Real& InputData::operator[](const std::string& param_name) {
       return temperature;
     } else if (param_name.find("pressure") != std::string::npos) {
       return pressure;
-    } else if (param_name.find("relative_humidity") != std::string::npos) {
-      return relative_humidity;
+    } else if (param_name.find("vapor_mixing_ratio") != std::string::npos) {
+      return vapor_mixing_ratio;
     } else if (param_name.find("height") != std::string::npos) {
       return height;
     } else if (param_name.find("hydrostatic_dp") != std::string::npos) {
@@ -483,13 +483,13 @@ void sw_input_get_timestepping(void* input, Real* dt, Real* total_time) {
 
 /// Fetches atmosphere data from the given ensemble input data pointer.
 void sw_input_get_atmosphere(void* input, Real* temperature, Real* pressure,
-                             Real* relative_humidity, Real* height,
+                             Real* vapor_mixing_ratio, Real* height,
                              Real* hydrostatic_dp,
                              Real* planetary_boundary_layer_height) {
   auto inp = reinterpret_cast<InputData*>(input);
   *temperature = inp->temperature;
   *pressure = inp->pressure;
-  *relative_humidity = inp->relative_humidity;
+  *vapor_mixing_ratio = inp->vapor_mixing_ratio;
   *height = inp->height;
   *hydrostatic_dp = inp->hydrostatic_dp;
   *planetary_boundary_layer_height = inp->planetary_boundary_layer_height;

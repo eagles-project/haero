@@ -177,7 +177,7 @@ void parse_atmosphere_section(const YAML::Node& atm, ParameterWalk& pw) {
     throw YamlException(
         "Did not find 'relative_humidity' in the atmosphere section!\n");
   }
-  pw.ref_input.relative_humidity = atm["relative_humidity"].as<Real>();
+  pw.ref_input.vapor_mixing_ratio = atm["vapor_mixing_ratio"].as<Real>();
 
   if (not atm["height"]) {
     throw YamlException("Did not find 'height' in the atmosphere section!\n");

@@ -2,9 +2,11 @@
 
 #include "catch2/catch.hpp"
 #include "driver/host_params.hpp"
+#include "haero/conversions.hpp"
 #include "haero/physical_constants.hpp"
 
 using namespace haero;
+using namespace haero::conversions;
 using namespace haero::driver;
 
 struct InitialThicknessTest {

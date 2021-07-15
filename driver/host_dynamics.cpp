@@ -7,6 +7,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include "haero/conversions.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/physical_constants.hpp"
 #include "haero/utils.hpp"
@@ -582,7 +583,7 @@ Atmosphere HostDynamics::create_atmospheric_state(ColumnView temp,
 
         const Real P = p_local(pack_idx)[vec_idx];
         const Real Tv = thetav_local(pack_idx)[vec_idx] * exner_function(P);
-        const Real T = temperature_from_virtual_temperature(
+        const Real T = conversions::temperature_from_virtual_temperature(
             Tv, qv_local(pack_idx)[vec_idx]);
 
         const Real qvsat = qvsat_tetens(T, P);
@@ -612,7 +613,7 @@ void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
   const auto qv_local = qv;
 
   auto temperature = atm.temperature;
-  auto rel_humidity = atm.relative_humidity;
+  auto vapor_mixing_ratio = atm.vapor_mixing_ratio;
   auto level_heights = atm.height;
   Kokkos::parallel_for(
       "HostDynamics:UpdateAtmosphereLevels", nlev_, KOKKOS_LAMBDA(const int k) {
@@ -621,14 +622,11 @@ void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
 
         const Real P = p_local(pack_idx)[vec_idx];
         const Real Tv = thetav_local(pack_idx)[vec_idx] * exner_function(P);
-        const Real T = temperature_from_virtual_temperature(
+        const Real T = conversions::temperature_from_virtual_temperature(
             Tv, qv_local(pack_idx)[vec_idx]);
-        const Real qvsat = qvsat_tetens(T, P);
 
         temperature(pack_idx)[vec_idx] = T;
-        rel_humidity(pack_idx)[vec_idx] =
-            qv_local(pack_idx)[vec_idx] *
-            FloatingPoint<>::safe_denominator(qvsat);
+        vapor_mixing_ratio(pack_idx)[vec_idx] = qv_local(pack_idx)[vec_idx];
       });
 
   Kokkos::parallel_for(

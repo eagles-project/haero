@@ -15,10 +15,10 @@ class Atmosphere final {
   ///                        the state
   /// @param [in] temp A view of temperature column data [K] managed by the host
   ///                  model
-  /// @param [in] press A view of pressure column data [Pa] managed by the host
-  ///                   model
-  /// @param [in] rel_hum A view of relative_humidity column data [-] managed
-  ///                     by the host model
+  /// @param [in] press A view of total (moist) pressure column data [Pa]
+  ///                   managed by the host model
+  /// @param [in] qv A view of water vapor mixing ratio column data
+  ///                [kg vapor/kg dry air] managed by the host model
   /// @param [in] ht A view of height column data [m] on level interfaces,
   ///                managed by the host model
   /// @param [in] pblh The column-specific planetary boundary height [m],
@@ -27,8 +27,8 @@ class Atmosphere final {
   ///                  difference in hydrostatic pressure levels at interfaces
   ///                  bounding each vertical level [Pa]
   Atmosphere(int num_levels, const ColumnView temp, const ColumnView press,
-             const ColumnView rel_hum, const ColumnView ht,
-             const ColumnView pdel, Real pblh);
+             const ColumnView qv, const ColumnView ht, const ColumnView pdel,
+             Real pblh);
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -37,7 +37,7 @@ class Atmosphere final {
   // Views.
   const ColumnView temperature;
   const ColumnView pressure;
-  const ColumnView relative_humidity;
+  const ColumnView vapor_mixing_ratio;
   const ColumnView height;
   const ColumnView hydrostatic_dp;
 
