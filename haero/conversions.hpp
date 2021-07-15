@@ -48,8 +48,8 @@ KOKKOS_INLINE_FUNCTION Scalar number_conc_from_mmr(const Scalar& mmr,
 /// @param [in] molecular_wt The molecular weight of the species/mixture
 /// [kg/kmol]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION
-Scalar mmr_from_vmr(const Scalar& vmr, Real molecular_wt) {
+KOKKOS_INLINE_FUNCTION Scalar mmr_from_vmr(const Scalar& vmr,
+                                           Real molecular_wt) {
   return vmr * molecular_wt / constants::molec_weight_dry_air;
 }
 
