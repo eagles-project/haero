@@ -70,8 +70,8 @@ TEST_CASE("mam_calcsize_run", "") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                            int_num_mix_ratios, cld_num_mix_ratios,
-                                            gases);
+                                            int_num_mix_ratios,
+                                            cld_num_mix_ratios, gases);
     auto* diags = model->create_diagnostics();
     auto tends = std::make_unique<Tendencies>(*progs);
 

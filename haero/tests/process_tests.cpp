@@ -141,19 +141,23 @@ TEST_CASE("process_tests", "aerosol_process") {
   }
 
   SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", 1, num_vert_packs);
-  ModeColumnView dev_int_num_mix_ratios("interstitial number mix ratios", num_modes,
-                                   num_vert_packs);
-  ModeColumnView dev_cld_num_mix_ratios("cloud borne number mix ratios", num_modes,
-                                   num_vert_packs);
+  ModeColumnView dev_int_num_mix_ratios("interstitial number mix ratios",
+                                        num_modes, num_vert_packs);
+  ModeColumnView dev_cld_num_mix_ratios("cloud borne number mix ratios",
+                                        num_modes, num_vert_packs);
 
   auto host_cld_aerosols = Kokkos::create_mirror_view(dev_cld_aerosols);
-  auto host_int_num_mix_ratios = Kokkos::create_mirror_view(dev_int_num_mix_ratios);
-  auto host_cld_num_mix_ratios = Kokkos::create_mirror_view(dev_cld_num_mix_ratios);
+  auto host_int_num_mix_ratios =
+      Kokkos::create_mirror_view(dev_int_num_mix_ratios);
+  auto host_cld_num_mix_ratios =
+      Kokkos::create_mirror_view(dev_cld_num_mix_ratios);
 
   for (int i = 0; i < num_levels; ++i) {
     host_cld_aerosols(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
-    host_int_num_mix_ratios(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
-    host_cld_num_mix_ratios(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] = i;
+    host_int_num_mix_ratios(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] =
+        i;
+    host_cld_num_mix_ratios(0, pack_info::pack_idx(i))[pack_info::vec_idx(i)] =
+        i;
   }
   Kokkos::deep_copy(dev_cld_aerosols, host_cld_aerosols);
   Kokkos::deep_copy(dev_int_num_mix_ratios, host_int_num_mix_ratios);

@@ -32,7 +32,8 @@ TEST_CASE("prognostics_ctor", "") {
         "cloudborne number mix ratios", num_modes, num_vert_packs);
 
     Prognostics progs(num_modes, {1}, num_gases, num_levels, int_aerosols,
-                      cld_aerosols, gases, int_num_mix_ratios, cld_num_mix_ratios);
+                      cld_aerosols, gases, int_num_mix_ratios,
+                      cld_num_mix_ratios);
     REQUIRE(progs.num_aerosol_modes() == num_modes);
     REQUIRE(progs.num_gases() == num_gases);
     REQUIRE(progs.num_levels() == num_levels);

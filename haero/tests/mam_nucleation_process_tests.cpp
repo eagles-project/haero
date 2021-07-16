@@ -417,9 +417,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
                                  num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
   ModeColumnView int_num_mix_ratios("interstitial number mix ratios", num_modes,
-                               num_vert_packs);
+                                    num_vert_packs);
   ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
-                               num_vert_packs);
+                                    num_vert_packs);
 
   // Set up atmospheric data and populate it with some views.
   ColumnView temp("temperature", num_vert_packs);
@@ -452,8 +452,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs = model->create_prognostics(
-        int_aerosols, cld_aerosols, int_num_mix_ratios, cld_num_mix_ratios, gases);
+    Prognostics* progs = model->create_prognostics(int_aerosols, cld_aerosols,
+                                                   int_num_mix_ratios,
+                                                   cld_num_mix_ratios, gases);
     HostDiagnostics* diags = model->create_diagnostics();
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");

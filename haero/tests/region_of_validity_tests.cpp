@@ -27,16 +27,16 @@ TEST_CASE("region_of_validity", "") {
   SpeciesColumnView cld_aerosols("cloudborne aerosols", num_pops,
                                  num_vert_packs);
   ModeColumnView int_num_mix_ratios("interstitial number mix ratios", num_modes,
-                               num_vert_packs);
+                                    num_vert_packs);
   ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
-                               num_vert_packs);
+                                    num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
   std::vector<int> num_species_per_mode(
       config.h_n_species_per_mode.data(),
       config.h_n_species_per_mode.data() + num_modes);
   Prognostics progs(num_modes, num_species_per_mode, num_gases, num_levels,
-                    int_aerosols, cld_aerosols, int_num_mix_ratios, cld_num_mix_ratios,
-                    gases);
+                    int_aerosols, cld_aerosols, int_num_mix_ratios,
+                    cld_num_mix_ratios, gases);
 
   ColumnView temp("temperature", num_vert_packs),
       press("pressure", num_vert_packs),
