@@ -88,11 +88,11 @@ contains
 
     !interstitial mass and number mixing ratios
     q_i => prognostics%interstitial_aerosols()
-    n_i => prognostics%interstitial_num_concs()
+    n_i => prognostics%interstitial_num_mix_ratios()
 
     !cloud-borne mass and number mixing ratios
     q_c => prognostics%cloud_aerosols()
-    n_c => prognostics%cloud_num_concs()
+    n_c => prognostics%cloud_num_mix_ratios()
 
     !allocate variable to store densities of all species in a mode
     !(use max_nspec to allocate, so as to avoid allocation in the nmodes loop below)

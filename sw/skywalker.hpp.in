@@ -37,8 +37,8 @@ struct InputData {
 
   // aerosol initial data
 
-  // Modal aerosol number concentrations [# aero molecules / kg air]
-  std::vector<Real> interstitial_number_concs, cloud_number_concs;
+  // Modal aerosol number mixing rations [# aero molecules / kg air]
+  std::vector<Real> interstitial_number_mix_ratios, cloud_number_mix_ratios;
   // Aerosol mass mixing ratios [kg aerosol / kg air]
   std::vector<Real> interstitial_aero_mmrs, cloud_aero_mmrs;
   // Gas mass mixing ratios [kg gas / kg air]
@@ -94,8 +94,8 @@ struct OutputData {
 
   const haero::ModalAerosolConfig& aero_config;
 
-  // Modal aerosol number concentrations [# aero molecules / kg air]
-  std::vector<Real> interstitial_number_concs, cloud_number_concs;
+  // Modal aerosol number mixing rations [# aero molecules / kg air]
+  std::vector<Real> interstitial_number_mix_ratios, cloud_number_mix_ratios;
   // Aerosol mass mixing ratios [kg aerosol / kg air]
   std::vector<Real> interstitial_aero_mmrs, cloud_aero_mmrs;
   // Gas mass mixing ratios [kg gas / kg air]
