@@ -33,9 +33,9 @@ TEST_CASE("faerosol_process_stub", "") {
   int num_gases = gas_species.size();
   Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
   int num_modes = modes.size();
-  Kokkos::View<PackType**> int_num_mix_ratios("interstitial number mix_ratios",
+  Kokkos::View<PackType**> int_num_mix_ratios("interstitial number mix ratios",
                                               num_modes, num_levels);
-  Kokkos::View<PackType**> cld_num_mix_ratios("cloud borne number mix_ratios",
+  Kokkos::View<PackType**> cld_num_mix_ratios("cloud borne number mix ratios",
                                               num_modes, num_levels);
 
   // Set up atmospheric data and populate it with some views. It's not
@@ -77,8 +77,9 @@ TEST_CASE("faerosol_process_stub", "") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs =
-        model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                  int_num_mix_ratios, cld_num_mix_ratios);
+        model->create_prognostics(int_aerosols, cld_aerosols,
+                                  int_num_mix_ratios, cld_num_mix_ratios,
+                                  gases);
     auto* diags = model->create_diagnostics();
     auto* tends = new Tendencies(*progs);
 

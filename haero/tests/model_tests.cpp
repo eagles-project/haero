@@ -68,5 +68,5 @@ TEST_CASE("model_ctor", "") {
   /** end host model jobs */
 
   auto progs = std::unique_ptr<Prognostics>(haero_model.create_prognostics(
-      aero_tracers, aero_tracers, gas_tracers, mode_tracers, mode_tracers));
+      aero_tracers, aero_tracers, mode_tracers, mode_tracers, gas_tracers));
 }
