@@ -2,6 +2,10 @@
 
 #include <cmath>
 
+#include "haero/conversions.hpp"
+#include "haero/processes/merikanto2007.hpp"
+#include "haero/processes/vehkamaki2002.hpp"
+
 namespace haero {
 
 SimpleNucleationProcess::SimpleNucleationProcess()
@@ -10,16 +14,24 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       pbl_factor(1),
       tendency_factor(1),
       nucleation_method(2),
-      pbl_method(0) {}
-
-//------------------------------------------------------------------------
-//                                Accessors
-//------------------------------------------------------------------------
+      pbl_method(0),
+      igas_h2so4(-1),
+      igas_nh3(-1),
+      iaer_so4(-1),
+      ipop_so4(-1),
+      iaer_nh4(-1),
+      ipop_nh4(-1),
+      d_mean_aer("mean particle diameters", 0),
+      d_min_aer("minimum particle diameters", 0),
+      d_max_aer("maximum particle diameters", 0) {}
 
 void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
   // Set indices for modes, species, and gases.
   imode = config.aerosol_mode_index(nucleation_mode, false);
   iaer_so4 = config.aerosol_species_index(imode, "SO4", false);
+  ipop_so4 = config.population_index(imode, iaer_so4);
+  iaer_nh4 = config.aerosol_species_index(imode, "NH4", false);
+  ipop_nh4 = config.population_index(imode, iaer_nh4);
   igas_h2so4 = config.gas_index("H2SO4", false);
   igas_nh3 = config.gas_index("NH3", false);
 
@@ -44,6 +56,51 @@ void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
     for (int m = 0; m < config.num_modes(); ++m)
       d(m) = config.h_aerosol_modes(m).max_diameter;
     Kokkos::deep_copy(d_max_aer, d);
+  }
+
+  // Jot down the molecular weights for our nucleating gases.
+  if (igas_h2so4 != -1) {
+    for (const auto &species : config.aerosol_species_for_mode(imode)) {
+      if (species.symbol() == "SO4") {
+        mu_h2so4 = species.molecular_weight;
+        break;
+      }
+    }
+  }
+  if (igas_nh3 != -1) {
+    for (const auto &species : config.aerosol_species_for_mode(imode)) {
+      if (species.symbol() == "NH3") {
+        mu_h2so4 = species.molecular_weight;
+        break;
+      }
+    }
+  }
+
+  // Set our region of validity based on our nucleation parameterization.
+  auto &rov = region_of_validity();
+  if (nucleation_method == 2) {
+    rov.temp_bounds = vehkamaki2002::valid_temp_range();
+    rov.rel_hum_bounds = vehkamaki2002::valid_rel_hum_range();
+    if (igas_h2so4 != -1) {
+      auto c_h2so4_range = vehkamaki2002::valid_c_h2so4_range();
+      rov.set_gas_bounds(igas_h2so4, c_h2so4_range.first, c_h2so4_range.second);
+    }
+  } else {
+    EKAT_ASSERT(nucleation_method == 3);
+    rov.temp_bounds = merikanto2007::valid_temp_range();
+    rov.rel_hum_bounds = merikanto2007::valid_rel_hum_range();
+    if (igas_h2so4 != -1) {
+      auto c_h2so4_range = merikanto2007::valid_c_h2so4_range();
+      rov.set_gas_bounds(igas_h2so4, c_h2so4_range.first, c_h2so4_range.second);
+    }
+    if (igas_nh3 != -1) {
+      auto xi_nh3_range = merikanto2007::valid_xi_nh3_range();  // [ppt]
+      Real c_nh3_min =
+          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.first, mu_nh3);
+      Real c_nh3_max =
+          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.second, mu_nh3);
+      rov.set_gas_bounds(igas_nh3, c_nh3_min, c_nh3_max);
+    }
   }
 }
 

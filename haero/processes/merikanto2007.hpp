@@ -26,24 +26,28 @@ namespace merikanto2007 {
 
 /// Returns the temperature range [K] for which the Merikanto el al (2007)
 /// parameterizations are valid.
+KOKKOS_INLINE_FUNCTION
 Kokkos::pair<Real, Real> valid_temp_range() {
   return Kokkos::pair<Real, Real>({235.0, 295.0});
 }
 
 /// Returns the relative humidity range [-] for which the Merikanto el al (2007)
 /// parameterizations are valid.
+KOKKOS_INLINE_FUNCTION
 Kokkos::pair<Real, Real> valid_rel_hum_range() {
   return Kokkos::pair<Real, Real>({0.05, 0.95});
 }
 
 /// Returns the H2SO4 number concentration range [cm-3] for which the Merikanto
 /// et al (2000) parameterizations are valid.
+KOKKOS_INLINE_FUNCTION
 Kokkos::pair<Real, Real> valid_c_h2so4_range() {
   return Kokkos::pair<Real, Real>({5e4, 1e9});
 }
 
 /// Returns the NH3 molar mixing ratio range [ppt] for which the Merikanto
 /// et al (2000) parameterizations are valid.
+KOKKOS_INLINE_FUNCTION
 Kokkos::pair<Real, Real> valid_xi_nh3_range() {
   return Kokkos::pair<Real, Real>({0.1, 1e3});
 }

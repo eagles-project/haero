@@ -4,7 +4,12 @@
 #include <iomanip>
 
 #include "haero/aerosol_process.hpp"
+#include "haero/conversions.hpp"
+#include "haero/ideal_gas.hpp"
 #include "haero/physical_constants.hpp"
+#include "haero/processes/merikanto2007.hpp"
+#include "haero/processes/vehkamaki2002.hpp"
+#include "haero/processes/wang2008.hpp"
 
 namespace haero {
 
@@ -61,8 +66,11 @@ class SimpleNucleationProcess final : public AerosolProcess {
   // Index of NH3 gas
   int igas_nh3;
 
-  // Index of SO4 aerosol within the nucleation mode
-  int iaer_so4;
+  // Species and population indices of SO4 aerosol within the nucleation mode
+  int iaer_so4, ipop_so4;
+
+  // Species and population indices of NH4 aerosol within the nucleation mode
+  int iaer_nh4, ipop_nh4;
 
   // The geometric mean particle diameters for all aerosol modes
   view_1d_scalar_type d_mean_aer;
@@ -73,15 +81,18 @@ class SimpleNucleationProcess final : public AerosolProcess {
   /// The maximum particle diameters for all aerosol modes
   view_1d_scalar_type d_max_aer;
 
+  // Molecular weight of H2SO4 and NH3 gases.
+  Real mu_h2so4, mu_nh3;
+
  public:
   /// Constructor
   SimpleNucleationProcess();
 
   /// Destructor
   KOKKOS_INLINE_FUNCTION
-  virtual ~SimpleNucleationProcess() {}
+  ~SimpleNucleationProcess() {}
 
-  /// Default copy constructor. For use in moving host instance to device.
+  /// Copy constructor (for transferring between host and device)
   KOKKOS_INLINE_FUNCTION
   SimpleNucleationProcess(const SimpleNucleationProcess &rhs)
       : AerosolProcess(rhs),
@@ -94,9 +105,10 @@ class SimpleNucleationProcess final : public AerosolProcess {
         igas_h2so4(rhs.igas_h2so4),
         igas_nh3(rhs.igas_nh3),
         iaer_so4(rhs.iaer_so4),
-        d_mean_aer("mean particle diameters", 0),
-        d_min_aer("minimum particle diameters", 0),
-        d_max_aer("maximum particle diameters", 0) {}
+        iaer_nh4(rhs.iaer_nh4),
+        d_mean_aer(rhs.d_mean_aer),
+        d_min_aer(rhs.d_min_aer),
+        d_max_aer(rhs.d_max_aer) {}
 
   /// not assignable
   AerosolProcess &operator=(const SimpleNucleationProcess &) = delete;
@@ -107,7 +119,65 @@ class SimpleNucleationProcess final : public AerosolProcess {
   void run(const ModalAerosolConfig &config, Real t, Real dt,
            const Prognostics &prognostics, const Atmosphere &atmosphere,
            const Diagnostics &diagnostics,
-           Tendencies &tendencies) const override {}
+           Tendencies &tendencies) const override {
+    // Do we have any gas from which to nucleate new aerosol particles?
+    if ((igas_h2so4 == -1) or ((nucleation_method == 3) and (igas_nh3 == -1))) {
+      return;
+    }
+
+    // Do we track the aerosols nucleated from our gases?
+    if ((iaer_so4 == -1) and (iaer_nh4 == -1)) {
+      return;
+    }
+
+    const int nk = atmosphere.temperature.extent(0);
+    Kokkos::parallel_for(
+        "nucleation_rate", nk, KOKKOS_LAMBDA(const int k) {
+          const auto temp = atmosphere.temperature(k);
+          const auto press = atmosphere.pressure(k);
+          const auto qv = atmosphere.vapor_mixing_ratio(k);
+          const auto h = atmosphere.height(k);
+          const auto rho_d = ideal_gas::mass_density(press, temp, qv);
+          auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
+              qv, press, temp);
+          const auto q_h2so4 = prognostics.gases(igas_h2so4, k);  // mmr
+          auto c_h2so4 =
+              conversions::number_conc_from_mmr(q_h2so4, mu_h2so4, rho_d);
+
+          // Compute the base rate of nucleation using our selected method.
+          PackType J;
+          if (nucleation_method == 2) {  // binary nucleation
+            auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(
+                c_h2so4, temp, rel_hum);
+            J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
+          } else {
+            EKAT_KERNEL_ASSERT(nucleation_method == 3);
+            const auto q_nh3 = prognostics.gases(igas_nh3, k);  // mmr
+            auto xi_nh3 = conversions::vmr_from_mmr(q_nh3, mu_nh3);
+            auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
+                                                            c_h2so4, xi_nh3);
+            J = exp(log_J);
+          }
+
+          // Apply a correction for the planetary boundary layer if requested.
+          PackType J_pbl;
+          const auto within_pbl = (h <= atmosphere.planetary_boundary_height);
+          if (pbl_method == 1) {
+            J_pbl.set(within_pbl,
+                      wang2008::first_order_pbl_nucleation_rate(c_h2so4));
+          } else if (pbl_method == 2) {
+            J_pbl.set(within_pbl,
+                      wang2008::second_order_pbl_nucleation_rate(c_h2so4));
+          }
+          // If the modified nucleation rate is less than the original, J = 0.
+          const auto J_pbl_lt_J = (J_pbl <= J);
+          J.set(J_pbl_lt_J, 0);
+          J.set(not J_pbl_lt_J, J_pbl);
+
+          // Grow particles so they can fit into the Aitken mode.
+          // TODO
+        });
+  }
 
   void set_param(const std::string &name, Real value) override;
   void set_param(const std::string &name, int value) override;
