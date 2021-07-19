@@ -81,8 +81,8 @@ TEST_CASE("wet_radius_diagnostic", "") {
   Kokkos::deep_copy(q_aero, h_q_aero);
 
   // define mode number mixing ratios for input data
-  ModalColumnView num_ratios("aerosol_mode_number_mixing_ratios",
-                             config.num_modes(), npacks);
+  ModeColumnView num_ratios("aerosol_mode_number_mixing_ratios",
+                            config.num_modes(), npacks);
   auto h_num_ratios = Kokkos::create_mirror_view(num_ratios);
   for (int m = 0; m < nmodes; ++m) {
     for (int k = 0; k < nlev; ++k) {
@@ -103,12 +103,12 @@ TEST_CASE("wet_radius_diagnostic", "") {
       });
 
   // modal averages
-  ModalColumnView mode_wet_radius("mode_wet_radius", nmodes, npacks);
-  ModalColumnView mode_mean_particle_dry_volume("mode_mean_particle_dry_volume",
-                                                nmodes, npacks);
-  ModalColumnView mode_hygroscopicity("mode_hygroscopicity", nmodes, npacks);
-  ModalColumnView mode_dry_particle_radius("mode_dry_particle_radius", nmodes,
-                                           npacks);
+  ModeColumnView mode_wet_radius("mode_wet_radius", nmodes, npacks);
+  ModeColumnView mode_mean_particle_dry_volume("mode_mean_particle_dry_volume",
+                                               nmodes, npacks);
+  ModeColumnView mode_hygroscopicity("mode_hygroscopicity", nmodes, npacks);
+  ModeColumnView mode_dry_particle_radius("mode_dry_particle_radius", nmodes,
+                                          npacks);
 
   std::cout << "starting kernels\n";
   // on host, loop over each mode

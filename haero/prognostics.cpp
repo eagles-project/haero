@@ -4,19 +4,16 @@
 
 namespace haero {
 
-Prognostics::Prognostics(int num_aerosol_modes,
-                         const std::vector<int>& num_aerosol_species,
-                         int num_gases, int num_levels,
-                         SpeciesColumnView int_aerosols,
-                         SpeciesColumnView cld_aerosols,
-                         SpeciesColumnView gases_,
-                         ModalColumnView interstitial_num_concs_,
-                         ModalColumnView cloudborne_num_concs_)
+Prognostics::Prognostics(
+    int num_aerosol_modes, const std::vector<int>& num_aerosol_species,
+    int num_gases, int num_levels, SpeciesColumnView int_aerosols,
+    SpeciesColumnView cld_aerosols, SpeciesColumnView gases_,
+    ModeColumnView interstitial_num_concs_, ModeColumnView cloud_num_concs_)
     : interstitial_aerosols(int_aerosols),
       cloud_aerosols(cld_aerosols),
       gases(gases_),
       interstitial_num_concs(interstitial_num_concs_),
-      cloudborne_num_concs(cloudborne_num_concs_),
+      cloud_num_concs(cloud_num_concs_),
       num_aero_species_(vector_to_basic_1dview(
           num_aerosol_species, "Prognostics::num_aerosol_species")),
       num_aero_populations_(0),
@@ -38,8 +35,8 @@ Prognostics::Prognostics(int num_aerosol_modes,
   const int gases_extent_1 = gases.extent(1);
   const int interstitial_num_concs_extent_0 = interstitial_num_concs.extent(0);
   const int interstitial_num_concs_extent_1 = interstitial_num_concs.extent(1);
-  const int cloudborne_num_concs_extent_0 = cloudborne_num_concs.extent(0);
-  const int cloudborne_num_concs_extent_1 = cloudborne_num_concs.extent(1);
+  const int cloud_num_concs_extent_0 = cloud_num_concs.extent(0);
+  const int cloud_num_concs_extent_1 = cloud_num_concs.extent(1);
   EKAT_REQUIRE_MSG(
       int_aerosols_extent_0 == num_aero_populations_,
       "int_aerosols must have extent(0) == " << num_aero_populations_);
@@ -61,11 +58,10 @@ Prognostics::Prognostics(int num_aerosol_modes,
       interstitial_num_concs_extent_1 == num_vert_packs,
       "interstitial_num_concs must have extent(1) == " << num_vert_packs);
   EKAT_REQUIRE_MSG(
-      cloudborne_num_concs_extent_0 == num_aerosol_modes,
-      "cloudborne_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_REQUIRE_MSG(
-      cloudborne_num_concs_extent_1 == num_vert_packs,
-      "cloudborne_num_concs must have extent(1) == " << num_vert_packs);
+      cloud_num_concs_extent_0 == num_aerosol_modes,
+      "cloud_num_concs must have extent(0) == " << num_aerosol_modes);
+  EKAT_REQUIRE_MSG(cloud_num_concs_extent_1 == num_vert_packs,
+                   "cloud_num_concs must have extent(1) == " << num_vert_packs);
 }
 
 Prognostics::~Prognostics() {}
@@ -115,8 +111,8 @@ void Prognostics::scale_and_add(Real scale_factor,
         for (int m = 0; m < num_modes; ++m) {
           interstitial_num_concs(m, k) +=
               scale_factor * tendencies.interstitial_num_concs(m, k);
-          cloudborne_num_concs(m, k) +=
-              scale_factor * tendencies.cloudborne_num_concs(m, k);
+          cloud_num_concs(m, k) +=
+              scale_factor * tendencies.cloud_num_concs(m, k);
         }
       });
 }
@@ -149,9 +145,9 @@ void* p_interstitial_num_concs_c(void* p) {
   return (void*)num_concs.data();
 }
 
-void* p_cloudborne_num_concs_c(void* p) {
+void* p_cloud_num_concs_c(void* p) {
   auto* progs = static_cast<Prognostics*>(p);
-  auto num_concs = progs->cloudborne_num_concs;
+  auto num_concs = progs->cloud_num_concs;
   return (void*)num_concs.data();
 }
 

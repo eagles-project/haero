@@ -18,7 +18,7 @@ namespace haero {
 struct ModeDryParticleVolume {
   ColumnView modal_mean_volume;                                // output
   SpeciesColumnView mass_mixing_ratios;                        // input
-  ModalColumnView number_mixing_ratios;                        // input
+  ModeColumnView number_mixing_ratios;                         // input
   DeviceType::view_1d<const AerosolSpecies> aerosols_in_mode;  // input
   DeviceType::view_1d<const int> population_indices;           // input
   int n_aerosols_in_mode;                                      // input
@@ -26,7 +26,7 @@ struct ModeDryParticleVolume {
 
   KOKKOS_INLINE_FUNCTION
   ModeDryParticleVolume(ColumnView vol, const SpeciesColumnView mass_mrs,
-                        const ModalColumnView number_mrs,
+                        const ModeColumnView number_mrs,
                         DeviceType::view_1d<AerosolSpecies> aeros,
                         DeviceType::view_1d<int> pops, const int n, const int m)
       : modal_mean_volume(vol),

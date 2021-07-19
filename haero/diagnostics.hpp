@@ -114,13 +114,13 @@ class Diagnostics {
   /// this throws an exception.
   /// @param [in] token A unique token identifying a diagnostic variable.
   KOKKOS_FUNCTION
-  ModalColumnView modal_var(const Token token) const;
+  ModeColumnView modal_var(const Token token) const;
 
  protected:
   // Views that store arrays of views
   using ColumnViewArray = kokkos_device_type::view_2d<PackType>;
   using SpeciesColumnViewArray = kokkos_device_type::view_3d<PackType>;
-  using ModalColumnViewArray = kokkos_device_type::view_3d<PackType>;
+  using ModeColumnViewArray = kokkos_device_type::view_3d<PackType>;
 
   // Number of aerosol species in each mode.
   const view_1d_int_type num_aero_species_;
@@ -139,7 +139,7 @@ class Diagnostics {
   ColumnViewArray vars_;
   SpeciesColumnViewArray aero_vars_;
   SpeciesColumnViewArray gas_vars_;
-  ModalColumnViewArray modal_vars_;
+  ModeColumnViewArray modal_vars_;
 };
 
 /// @class HostDiagnostics
@@ -217,11 +217,6 @@ class HostDiagnostics final : public Diagnostics {
   Token create_modal_var(const std::string &name);
 
  private:
-  // Views that store arrays of views
-  using ColumnViewArray = kokkos_device_type::view_2d<PackType>;
-  using SpeciesColumnViewArray = kokkos_device_type::view_3d<PackType>;
-  using ModalColumnViewArray = kokkos_device_type::view_3d<PackType>;
-
   // Set named string into map and return corresponding token.
   static Token set_string_to_token(
       std::map<std::string, Token> &registered_strings, const std::string &name,

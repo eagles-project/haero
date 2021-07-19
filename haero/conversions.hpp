@@ -18,12 +18,12 @@ namespace conversions {
 /// [m-3]
 /// @param [in] molecular_wt The molecular weight of the species/mixture
 /// [kg/kmol]
-/// @param [in] air_density The mass density of dry air [kg/m3]
+/// @param [in] dry_air_density The mass density of dry air [kg/m3]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION Scalar mmr_from_number_conc(const Scalar& number_conc,
-                                                   Real molecular_wt,
-                                                   const Scalar& air_density) {
-  return number_conc * molecular_wt / (air_density * constants::avogadro);
+KOKKOS_INLINE_FUNCTION Scalar
+mmr_from_number_conc(const Scalar& number_conc, Real molecular_wt,
+                     const Scalar& dry_air_density) {
+  return number_conc * molecular_wt / (dry_air_density * constants::avogadro);
 }
 
 /// Given a mass mixing ratio (mmr) for a species or mixture [kg species/kg
@@ -32,12 +32,11 @@ KOKKOS_INLINE_FUNCTION Scalar mmr_from_number_conc(const Scalar& number_conc,
 /// @param [in] mmr The number concentration of the species/mixture [m-3]
 /// @param [in] molecular_wt The molecular weight of the species/mixture
 /// [kg/kmol]
-/// @param [in] air_density The mass density of dry air [kg/m3]
+/// @param [in] dry_air_density The mass density of dry air [kg/m3]
 template <typename Scalar>
-KOKKOS_INLINE_FUNCTION Scalar number_conc_from_mmr(const Scalar& mmr,
-                                                   Real molecular_wt,
-                                                   const Scalar& air_density) {
-  return mmr * (air_density * constants::avogadro) / molecular_wt;
+KOKKOS_INLINE_FUNCTION Scalar number_conc_from_mmr(
+    const Scalar& mmr, Real molecular_wt, const Scalar& dry_air_density) {
+  return mmr * (dry_air_density * constants::avogadro) / molecular_wt;
 }
 
 /// Given a molar mixing ratio (vmr) for a species or mixture

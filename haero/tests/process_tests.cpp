@@ -115,9 +115,6 @@ TEST_CASE("process_tests", "aerosol_process") {
   if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
     num_vert_packs++;
   }
-  using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
-  using SpeciesColumnView = kokkos_device_type::view_2d<PackType>;
-  using ModalColumnView = kokkos_device_type::view_2d<PackType>;
 
   SpeciesColumnView dev_gases;
   {
@@ -144,10 +141,10 @@ TEST_CASE("process_tests", "aerosol_process") {
   }
 
   SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", 1, num_vert_packs);
-  ModalColumnView dev_int_num_concs("interstitial number concs", num_modes,
-                                    num_vert_packs);
-  ModalColumnView dev_cld_num_concs("cloud borne number concs", num_modes,
-                                    num_vert_packs);
+  ModeColumnView dev_int_num_concs("interstitial number concs", num_modes,
+                                   num_vert_packs);
+  ModeColumnView dev_cld_num_concs("cloud borne number concs", num_modes,
+                                   num_vert_packs);
 
   auto host_cld_aerosols = Kokkos::create_mirror_view(dev_cld_aerosols);
   auto host_int_num_concs = Kokkos::create_mirror_view(dev_int_num_concs);

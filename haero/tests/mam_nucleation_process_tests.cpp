@@ -416,10 +416,10 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   SpeciesColumnView cld_aerosols("cloudborne aerosols", num_aero_populations,
                                  num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
-  ModalColumnView int_num_concs("interstitial number concs", num_modes,
-                                num_vert_packs);
-  ModalColumnView cld_num_concs("cloudborne number concs", num_modes,
-                                num_vert_packs);
+  ModeColumnView int_num_concs("interstitial number concs", num_modes,
+                               num_vert_packs);
+  ModeColumnView cld_num_concs("cloudborne number concs", num_modes,
+                               num_vert_packs);
 
   // Set up atmospheric data and populate it with some views.
   ColumnView temp("temperature", num_vert_packs);

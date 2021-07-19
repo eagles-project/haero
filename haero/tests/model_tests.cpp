@@ -61,8 +61,8 @@ TEST_CASE("model_ctor", "") {
   // create views of tracer data (species/mode mass mixing ratios)
   auto aero_tracers = SpeciesColumnView(
       "aerosol_tracers", haero_model.num_aerosol_populations(), num_vert_packs);
-  auto mode_tracers = ModalColumnView("aerosol_mode_tracers",
-                                      haero_model.num_modes(), num_vert_packs);
+  auto mode_tracers = ModeColumnView("aerosol_mode_tracers",
+                                     haero_model.num_modes(), num_vert_packs);
   auto gas_tracers =
       SpeciesColumnView("gas_tracers", haero_model.num_gases(), num_vert_packs);
   /** end host model jobs */
