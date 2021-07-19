@@ -34,7 +34,10 @@ namespace haero {
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
 class MAMNucleationProcess : public AerosolProcess {
+  // applied to boundary layer nucleation rate can be set by a call to set_param
   Real adjust_factor_pbl_ratenucl = 0;
+
+  // applied to binary/ternary nucleation rate can be set by a call to set_param
   Real adjust_factor_bin_tern_ratenucl = 0;
 
   // dry densities (kg/m3) molecular weights of aerosol
@@ -65,11 +68,14 @@ class MAMNucleationProcess : public AerosolProcess {
   // The index of the Aitken mode
   int nait;
 
-  // Index of H2SO4 gas
-  int igas_h2so4;
+  // Index of H2SO4 aerosol
+  const int iaer_h2so4 = -1;
 
-  // Index of NH3 gas
-  int igas_nh3;
+  // Index of NH3 aerosol
+  const int iaer_nh3 = -1;
+
+  // Index of NH4 aerosol
+  const int iaer_nh4 = -1;
 
   // Index of SO4 aerosol within the Aitken mode
   int iaer_so4;
@@ -90,7 +96,6 @@ class MAMNucleationProcess : public AerosolProcess {
   // 11=merikanto ternary + first-order boundary layer
   // 12=merikanto ternary + second-order boundary layer
   const int newnuc_method_flagaa = 11;
-  // integer, parameter :: newnuc_method_flagaa = 12
 
   /// arguments (out) computed in call to function mer07_veh02_nuc_mosaic_1box
   ///    these are used to duplicate the outputs of yang zhang's original test
@@ -110,10 +115,10 @@ class MAMNucleationProcess : public AerosolProcess {
   // The geometric mean particle diameters for all aerosol modes
   view_1d_scalar_type dgnum_aer;
 
-  /// The minimum particle diameters for all aerosol modes
+  // The minimum particle diameters for all aerosol modes
   view_1d_scalar_type dgnumlo_aer;
 
-  /// The maximum particle diameters for all aerosol modes
+  // The maximum particle diameters for all aerosol modes
   view_1d_scalar_type dgnumhi_aer;
 
   // The mass density of SO4 aerosol as assumed by the host atm model
@@ -125,15 +130,35 @@ class MAMNucleationProcess : public AerosolProcess {
   // The molecular weight of SO4 aerosol as assumed by the host atm model
   const Real mw_so4a_host = constants::molec_weight_so4;
 
+  // Gas mixing ratios token to access this diagnostics gas variable
+  const Diagnostics::Token qgas_averaged_token = Diagnostics::VAR_NOT_FOUND;
+
+  // h2so4 uptake rate token to access this diagnostics variable
+  const Diagnostics::Token uptkrate_h2so4_token = Diagnostics::VAR_NOT_FOUND;
+
+  // Change in h2so4 gas token to access this diagnostics variable
+  const Diagnostics::Token del_h2so4_gasprod_token = Diagnostics::VAR_NOT_FOUND;
+
+  // Change in h2so4 uptake rate token to access this diagnostics variable
+  const Diagnostics::Token del_h2so4_aeruptk_token = Diagnostics::VAR_NOT_FOUND;
+
  public:
   MAMNucleationProcess();
 
   MAMNucleationProcess(const AerosolProcessType type, const std::string &name,
-                       const ModalAerosolConfig &config)
+                       const ModalAerosolConfig &config,
+                       const HostDiagnostics &diagnostics)
       : AerosolProcess(type, name),
+        iaer_h2so4(config.gas_index("H2SO4")),
+        iaer_nh3(config.gas_index("NH3")),
+        iaer_nh4(config.gas_index("nh4")),
         dgnum_aer("mean particle diameters", config.num_modes()),
         dgnumlo_aer("minimum particle diameters", config.num_modes()),
-        dgnumhi_aer("maximum particle diameters", config.num_modes()) {
+        dgnumhi_aer("maximum particle diameters", config.num_modes()),
+        qgas_averaged_token(diagnostics.find_gas_var("qgas_averaged")),
+        uptkrate_h2so4_token(diagnostics.find_var("uptkrate_h2so4")),
+        del_h2so4_gasprod_token(diagnostics.find_var("del_h2so4_gasprod")),
+        del_h2so4_aeruptk_token(diagnostics.find_var("del_h2so4_aeruptk")) {
     {
       auto dgum = Kokkos::create_mirror_view(dgnum_aer);
       for (int m = 0; m < config.num_modes(); ++m)
@@ -154,8 +179,6 @@ class MAMNucleationProcess : public AerosolProcess {
     }
     nait = config.aerosol_mode_index("aitken");
     iaer_so4 = config.aerosol_species_index(nait, "SO4");
-    igas_nh3 = config.gas_index("NH3");
-    igas_h2so4 = config.gas_index("H2SO4");
   }
 
   /// Destructor.
@@ -168,9 +191,14 @@ class MAMNucleationProcess : public AerosolProcess {
       : AerosolProcess(pp),
         adjust_factor_pbl_ratenucl(pp.adjust_factor_pbl_ratenucl),
         adjust_factor_bin_tern_ratenucl(pp.adjust_factor_bin_tern_ratenucl),
-        igas_h2so4(pp.igas_h2so4),
-        igas_nh3(pp.igas_nh3),
-        iaer_so4(pp.iaer_so4) {}
+        iaer_h2so4(pp.iaer_h2so4),
+        iaer_nh3(pp.iaer_nh3),
+        iaer_nh4(pp.iaer_nh4),
+        iaer_so4(pp.iaer_so4),
+        qgas_averaged_token(pp.qgas_averaged_token),
+        uptkrate_h2so4_token(pp.uptkrate_h2so4_token),
+        del_h2so4_gasprod_token(pp.del_h2so4_gasprod_token),
+        del_h2so4_aeruptk_token(pp.del_h2so4_aeruptk_token) {}
 
   /// MAMNucleationProcess objects are not assignable.
   AerosolProcess &operator=(const MAMNucleationProcess &) = delete;
@@ -185,7 +213,121 @@ class MAMNucleationProcess : public AerosolProcess {
   virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
                    Real dt, const Prognostics &prognostics,
                    const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-                   Tendencies &tendencies) const override{};
+                   Tendencies &tendencies) const override {
+    // First of all, check to make sure our model has an aitken mode. If it
+    // doesn't, we can return immediately.
+    if (nait == -1) {
+      return;
+    }
+
+    // If there's no gas present with which to create new nuclei, there's
+    // nothing to do, either.
+    if ((iaer_h2so4 == -1) and (iaer_nh3 == -1)) {
+      return;
+    }
+
+    // Finally, if there are no relevant aerosol species for nuclei, we can't
+    // create them.
+    if (iaer_so4 == -1 and iaer_nh4 == -1) {
+      return;
+    }
+
+    // Gas mole fraction tendencies
+    const SpeciesColumnView q_g = prognostics.gases;
+    SpeciesColumnView dqdt_g = tendencies.gases;
+
+    // Mix fractions and tendencies for SO4 aerosol in the Aitken mode
+    // All new nuclei are deposited into interstitial aerosols.
+    const SpeciesColumnView q_i = prognostics.interstitial_aerosols;
+    SpeciesColumnView dqdt_i = tendencies.interstitial_aerosols;
+
+    // Modal number density and tendencies
+    const ModalColumnView n = prognostics.interstitial_num_concs;
+    ModalColumnView dndt = tendencies.interstitial_num_concs;
+
+    // Atmospheric state variables
+    const ColumnView press = atmosphere.pressure;
+    const ColumnView temp = atmosphere.temperature;
+    const ColumnView qv = atmosphere.vapor_mixing_ratio;
+    const ColumnView height = atmosphere.height;
+    const Real pblh = atmosphere.planetary_boundary_height;
+
+    // Diagnostics
+    SpeciesColumnView qgas_averaged;
+    ColumnView uptkrate_h2so4;
+    ColumnView del_h2so4_gasprod;
+    ColumnView del_h2so4_aeruptk;
+
+    if (Diagnostics::VAR_NOT_FOUND != qgas_averaged_token)
+      qgas_averaged = diagnostics.gas_var(qgas_averaged_token);
+
+    if (Diagnostics::VAR_NOT_FOUND != uptkrate_h2so4_token)
+      uptkrate_h2so4 = diagnostics.var(uptkrate_h2so4_token);
+
+    if (Diagnostics::VAR_NOT_FOUND != del_h2so4_gasprod_token)
+      del_h2so4_gasprod = diagnostics.var(del_h2so4_gasprod_token);
+
+    if (Diagnostics::VAR_NOT_FOUND != del_h2so4_aeruptk_token)
+      del_h2so4_aeruptk = diagnostics.var(del_h2so4_aeruptk_token);
+
+    // Traverse the vertical levels and compute tendencies from nucleation.
+    const int num_levels = diagnostics.num_levels();
+    int num_vert_packs = num_levels / HAERO_PACK_SIZE;
+    if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
+      num_vert_packs++;
+    }
+    for (int k = 0; k < num_vert_packs; ++k) {
+      static const Real R_gas = constants::r_gas;  // Gas constant (J/K/kmol)
+      // Compute the molar concentration of air at the given pressure and
+      // temperature.
+      const PackType aircon = press(k) / (temp(k) * R_gas);
+
+      // Extract prognostic state data.
+      const auto qgas_cur = Kokkos::subview(q_g, Kokkos::ALL(), k);
+      const auto qnum_cur = Kokkos::subview(n, Kokkos::ALL(), k);
+      const view_2d_pack_type qaer_cur;
+
+      // Extract diagnostic state data.
+      const auto qgas_avg = Kokkos::subview(qgas_averaged, Kokkos::ALL(), k);
+      const PackType zero(0.0);
+      const PackType h2so4_uptake_rate =
+          Diagnostics::VAR_NOT_FOUND == uptkrate_h2so4_token
+              ? zero
+              : uptkrate_h2so4(k);
+
+      const PackType h2so4_gasprod_change =
+          Diagnostics::VAR_NOT_FOUND == del_h2so4_gasprod_token
+              ? zero
+              : del_h2so4_gasprod(k);
+
+      const PackType h2so4_aeruptk_change =
+          Diagnostics::VAR_NOT_FOUND == del_h2so4_aeruptk_token
+              ? zero
+              : del_h2so4_aeruptk(k);
+
+      ColumnView qwtr_cur("qwtr_cur", qnum_cur.extent(1));
+      PackType dndt_ait;
+      PackType dmdt_ait;
+      PackType dso4dt_ait;
+      PackType dnh4dt_ait;
+      PackType dnclusterdt;
+      const PackType rel_hum =
+          conversions::relative_humidity_from_vapor_mixing_ratio(
+              qv(k), press(k), temp(k));
+      compute_tendencies(dt, temp(k), press(k), aircon, height(k), pblh,
+                         rel_hum, h2so4_uptake_rate, h2so4_gasprod_change,
+                         h2so4_aeruptk_change, qgas_cur, qgas_avg, qnum_cur,
+                         qaer_cur, qwtr_cur, dndt_ait, dmdt_ait, dso4dt_ait,
+                         dnh4dt_ait, dnclusterdt);
+
+      for (size_t i = 0; i < dqdt_i.extent(0); ++i) dqdt_i(i, k) = 0.0;
+      dqdt_i(iaer_so4, k) = dso4dt_ait;
+      for (size_t i = 0; i < dqdt_g.extent(0); ++i) dqdt_g(i, k) = 0.0;
+      dqdt_g(iaer_h2so4, k) = -dso4dt_ait;
+      for (size_t i = 0; i < dndt.extent(0); ++i) dndt(i, k) = 0.0;
+      dndt(nait, k) = dndt_ait;
+    }
+  };
 
   /// Set the named parameter to the given value.
   /// It is a fatal error to pass an unknown name.
@@ -231,13 +373,13 @@ class MAMNucleationProcess : public AerosolProcess {
   ///   @param [out]   dnh4dt_ait       (kmol/kmol-air/s)
   ///   @param [in/out] nclusterdt      cluster nucleation rate (#/m3/s)
 
-  template <typename Pack>
+  template <typename Pack, typename VIEW_1D_PACK>
   KOKKOS_INLINE_FUNCTION void compute_tendencies(
-      const Real deltat, const Pack temp, const Pack pmid, const Pack aircon,
-      const Pack zmid, const Pack pblh, const Pack relhum,
-      const Pack uptkrate_h2so4, const Pack del_h2so4_gasprod,
-      const Pack del_h2so4_aeruptk, const view_1d_pack_type qgas_cur,
-      const view_1d_pack_type qgas_avg, const view_1d_pack_type qnum_cur,
+      const Real deltat, const Pack &temp, const Pack &pmid, const Pack &aircon,
+      const Pack &zmid, const Real pblh, const Pack &relhum,
+      const Pack &uptkrate_h2so4, const Pack &del_h2so4_gasprod,
+      const Pack &del_h2so4_aeruptk, const VIEW_1D_PACK qgas_cur,
+      const VIEW_1D_PACK qgas_avg, const VIEW_1D_PACK qnum_cur,
       const view_2d_pack_type qaer_cur, const view_1d_pack_type qwtr_cur,
       Pack &dndt_ait, Pack &dmdt_ait, Pack &dso4dt_ait, Pack &dnh4dt_ait,
       Pack &dnclusterdt) const {
@@ -252,7 +394,7 @@ class MAMNucleationProcess : public AerosolProcess {
     Pack qh2so4_avg(0.0);
     // qh2so4_cur = current qh2so4, after aeruptk
     // qh2so4_avg = average qh2so4 over time-step
-    const Pack qh2so4_cur = qgas_cur[igas_h2so4];
+    const Pack qh2so4_cur = qgas_cur[iaer_h2so4];
 
     Mask qh2so4_le_cutoff(false);
     if (gaexch_h2so4_uptake_optaa == 1 && newnuc_h2so4_conc_optaa == 1) {
@@ -295,13 +437,13 @@ class MAMNucleationProcess : public AerosolProcess {
     } else {
       // use qh2so4_avg and first-order loss rate calculated in
       // mam_gasaerexch_1subarea
-      qh2so4_avg = qgas_avg[igas_h2so4];
+      qh2so4_avg = qgas_avg[iaer_h2so4];
       tmp_uptkrate = uptkrate_h2so4;
     }
     qh2so4_le_cutoff = qh2so4_le_cutoff || Mask(qh2so4_avg <= qh2so4_cutoff);
 
     Pack qnh3_cur(0.0);
-    if (0 <= igas_nh3) qnh3_cur = max(0.0, qgas_cur[igas_nh3]);
+    if (0 <= iaer_nh3) qnh3_cur = max(0.0, qgas_cur[iaer_nh3]);
     // dry-diameter limits for "grown" new particles
     const Real dplom_mode =
         exp(0.67 * log(dgnumlo_aer[nait]) + 0.33 * log(dgnum_aer[nait]));
@@ -341,9 +483,9 @@ class MAMNucleationProcess : public AerosolProcess {
 
     // fraction of mass nuc going to so4
     tmpa = mw_so4a_host * qso4a_del;
-    const Pack tmpb = igas_nh3 > 0 ? tmpa + qnh4a_del * mw_nh4a_host : tmpa;
+    const Pack tmpb = iaer_nh3 >= 0 ? tmpa + qnh4a_del * mw_nh4a_host : tmpa;
     const Pack tmp_frso4 =
-        igas_nh3 > 0 ? max(tmpa, 1.0e-35) / max(tmpb, 1.0e-35) : 1.0;
+        iaer_nh3 >= 0 ? max(tmpa, 1.0e-35) / max(tmpb, 1.0e-35) : 1.0;
 
     // mass nuc rate (kg/kmol-air/s) from mass nuc amts
     dmdt_ait = max(0.0, (tmpb / deltat));
