@@ -311,7 +311,9 @@ class MAMNucleationProcess : public AerosolProcess {
       PackType dso4dt_ait;
       PackType dnh4dt_ait;
       PackType dnclusterdt;
-      const PackType rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(qv(k), press(k), temp(k));
+      const PackType rel_hum =
+          conversions::relative_humidity_from_vapor_mixing_ratio(
+              qv(k), press(k), temp(k));
       compute_tendencies(dt, temp(k), press(k), aircon, height(k), pblh,
                          rel_hum, h2so4_uptake_rate, h2so4_gasprod_change,
                          h2so4_aeruptk_change, qgas_cur, qgas_avg, qnum_cur,
