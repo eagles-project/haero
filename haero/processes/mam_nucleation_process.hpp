@@ -242,8 +242,8 @@ class MAMNucleationProcess : public AerosolProcess {
     SpeciesColumnView dqdt_i = tendencies.interstitial_aerosols;
 
     // Modal number density and tendencies
-    const ModeColumnView n = prognostics.interstitial_num_concs;
-    ModeColumnView dndt = tendencies.interstitial_num_concs;
+    const ModeColumnView n = prognostics.interstitial_num_mix_ratios;
+    ModeColumnView dndt = tendencies.interstitial_num_mix_ratios;
 
     // Atmospheric state variables
     const ColumnView press = atmosphere.pressure;

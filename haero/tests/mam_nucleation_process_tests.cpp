@@ -557,8 +557,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   SECTION("nucleate_with_existing_aerosols") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs = model->create_prognostics(
-        int_aerosols, cld_aerosols, gases, int_num_concs, cld_num_concs);
+    Prognostics* progs = model->create_prognostics(int_aerosols, cld_aerosols,
+                                                   int_num_mix_ratios,
+                                                   cld_num_mix_ratios, gases);
     HostDiagnostics* diags = model->create_diagnostics();
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");
