@@ -100,9 +100,9 @@ subroutine process_stub_run(t, dt, progs, atm, diags, tends) bind(c)
   dqdt_g => tendencies%gases()
   dqdt_g(:,:) = 0.0_wp
 
-  ! Modal number concentration tendencies are zero.
-  n => prognostics%interstitial_num_concs()
-  dndt => tendencies%interstitial_num_concs()
+  ! Modal number mix ratio tendencies are zero.
+  n => prognostics%interstitial_num_mix_ratios()
+  dndt => tendencies%interstitial_num_mix_ratios()
   dndt(:,:) = 0.0_wp
 
 end subroutine

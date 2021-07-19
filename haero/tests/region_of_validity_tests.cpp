@@ -26,17 +26,17 @@ TEST_CASE("region_of_validity", "") {
                                  num_vert_packs);
   SpeciesColumnView cld_aerosols("cloudborne aerosols", num_pops,
                                  num_vert_packs);
-  ModeColumnView int_num_concs("interstitial number concs", num_modes,
-                               num_vert_packs);
-  ModeColumnView cld_num_concs("cloudborne number concs", num_modes,
-                               num_vert_packs);
+  ModeColumnView int_num_mix_ratios("interstitial number mix ratios", num_modes,
+                                    num_vert_packs);
+  ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
+                                    num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
   std::vector<int> num_species_per_mode(
       config.h_n_species_per_mode.data(),
       config.h_n_species_per_mode.data() + num_modes);
   Prognostics progs(num_modes, num_species_per_mode, num_gases, num_levels,
-                    int_aerosols, cld_aerosols, gases, int_num_concs,
-                    cld_num_concs);
+                    int_aerosols, cld_aerosols, int_num_mix_ratios,
+                    cld_num_mix_ratios, gases);
 
   ColumnView temp("temperature", num_vert_packs),
       press("pressure", num_vert_packs),
@@ -55,8 +55,8 @@ TEST_CASE("region_of_validity", "") {
   }
   for (int m = 0; m < num_modes; ++m) {
     for (int k = 0; k < num_vert_packs; ++k) {
-      int_num_concs(m, k) = 0;
-      cld_num_concs(m, k) = 0;
+      int_num_mix_ratios(m, k) = 0;
+      cld_num_mix_ratios(m, k) = 0;
     }
   }
   for (int g = 0; g < num_gases; ++g) {

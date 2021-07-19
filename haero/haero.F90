@@ -115,8 +115,8 @@ module haero
     procedure :: interstitial_aerosols => p_int_aero_mix_frac
     procedure :: cloud_aerosols => p_cld_aero_mix_frac
     procedure :: gases => p_gases
-    procedure :: interstitial_num_concs => p_interstitial_num_concs
-    procedure :: cloud_num_concs => p_cloud_num_concs
+    procedure :: interstitial_num_mix_ratios => p_interstitial_num_mix_ratios
+    procedure :: cloud_num_mix_ratios => p_cloud_num_mix_ratios
   end type prognostics_t
 
   !> This type represents the set of atmospheric state variables for an
@@ -159,8 +159,8 @@ module haero
     procedure :: interstitial_aerosols => t_int_aero_mix_frac
     procedure :: cloud_aerosols => t_cld_aero_mix_frac
     procedure :: gases => t_gases
-    procedure :: interstitial_num_concs => t_interstitial_num_concs
-    procedure :: cloud_num_concs => t_cloud_num_concs
+    procedure :: interstitial_num_mix_ratios => t_interstitial_num_mix_ratios
+    procedure :: cloud_num_mix_ratios => t_cloud_num_mix_ratios
   end type tendencies_t
 
   interface
@@ -180,12 +180,12 @@ module haero
       type(c_ptr), value, intent(in) :: p
     end function
 
-    type(c_ptr) function p_interstitial_num_concs_c(p) bind(c)
+    type(c_ptr) function p_interstitial_num_mix_ratios_c(p) bind(c)
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: p
     end function
 
-    type(c_ptr) function p_cloud_num_concs_c(p) bind(c)
+    type(c_ptr) function p_cloud_num_mix_ratios_c(p) bind(c)
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: p
     end function
@@ -283,12 +283,12 @@ module haero
       type(c_ptr), value, intent(in) :: t
     end function
 
-    type(c_ptr) function t_interstitial_num_concs_c(t) bind(c)
+    type(c_ptr) function t_interstitial_num_mix_ratios_c(t) bind(c)
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: t
     end function
 
-    type(c_ptr) function t_cloud_num_concs_c(t) bind(c)
+    type(c_ptr) function t_cloud_num_mix_ratios_c(t) bind(c)
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: t
     end function
@@ -617,7 +617,7 @@ contains
 
   end function m_max_vol_to_num_ratio
 
-  !> Provides access to the interstitial aerosol mixing fractions array
+  !> Provides access to the interstitial aerosol mixing ratios array
   !> for the given mode in the given prognostics object.
   !> @param [in] p A pointer to a prognostics object.
   !> @param [in] mode An index identifying the desired mode.
@@ -630,7 +630,7 @@ contains
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_populations])
   end function
 
-  !> Provides access to the cloud-borne aerosol mixing fractions array
+  !> Provides access to the cloud-borne aerosol mixing ratios array
   !> for the given mode in the given prognostics object.
   !> @param [in] p A pointer to a prognostics object.
   !> @param [in] mode An index identifying the desired mode.
@@ -643,7 +643,7 @@ contains
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_populations])
   end function
 
-  !> Provides access to the gas mole fractions array for the given
+  !> Provides access to the gas mass mixing ratios array for the given
   !> prognostics object.
   !> @param [in] p A Prognostics object.
   function p_gases(p) result(retval)
@@ -656,29 +656,29 @@ contains
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, size(model%gas_species)])
   end function
 
-  !> Provides access to the interstitial aerosols number fractions array for the given
+  !> Provides access to the interstitial aerosols number ratios array for the given
   !> prognostics object.
   !> @param [in] p A Prognostics object.
-  function p_interstitial_num_concs(p) result(retval)
+  function p_interstitial_num_mix_ratios(p) result(retval)
     use iso_c_binding, only: c_ptr, c_int
     class(prognostics_t), intent(in) :: p
     real(c_real), pointer, dimension(:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_interstitial_num_concs_c(p%ptr)
+    v_ptr = p_interstitial_num_mix_ratios_c(p%ptr)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, size(model%modes)])
   end function
 
-  !> Provides access to the cloudborne aerosols number fractions array for the given
-  !> prognostics object.
+  !> Provides access to the cloudborne aerosols number mixing ratios array for
+  !> the given prognostics object.
   !> @param [in] p A Prognostics object.
-  function p_cloud_num_concs(p) result(retval)
+  function p_cloud_num_mix_ratios(p) result(retval)
     use iso_c_binding, only: c_ptr, c_int
     class(prognostics_t), intent(in) :: p
     real(c_real), pointer, dimension(:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = p_cloud_num_concs_c(p%ptr)
+    v_ptr = p_cloud_num_mix_ratios_c(p%ptr)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, size(model%modes)])
   end function
 
@@ -907,7 +907,7 @@ contains
     retval%ptr = ptr
   end function
 
-  !> Provides access to the interstitial aerosol mixing fractions array
+  !> Provides access to the interstitial aerosol mass mixing ratios array
   !> for the given mode in the given tendencies object.
   !> @param [in] p A pointer to a prognostics object.
   !> @param [in] mode An index identifying the desired mode.
@@ -920,7 +920,7 @@ contains
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_populations])
   end function
 
-  !> Provides access to the cloud-borne aerosol mixing fractions array
+  !> Provides access to the cloud-borne aerosol mass mixing ratios array
   !> for the given mode in the given tendencies object.
   !> @param [in] t A pointer to a tendencies object.
   !> @param [in] mode An index identifying the desired mode.
@@ -933,7 +933,7 @@ contains
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_populations])
   end function
 
-  !> Provides access to the gas mole fractions array for the given
+  !> Provides access to the gas mass mixing ratios array for the given
   !> tendencies object.
   !> @param [in] p A pointer to a tendencies object.
   function t_gases(t) result(retval)
@@ -946,29 +946,29 @@ contains
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, size(model%gas_species)])
   end function
 
-  !> Provides access to the interstitial aerosols number fractions array for the given
-  !> tendencies object.
+  !> Provides access to the interstitial aerosols number mixing ratios array for
+  !> the given tendencies object.
   !> @param [in] t A pointer to a tendencies object.
-  function t_interstitial_num_concs(t) result(retval)
+  function t_interstitial_num_mix_ratios(t) result(retval)
     use iso_c_binding, only: c_ptr, c_int
     class(tendencies_t), intent(in) :: t
     real(c_real), pointer, dimension(:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = t_interstitial_num_concs_c(t%ptr)
+    v_ptr = t_interstitial_num_mix_ratios_c(t%ptr)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_modes])
   end function
 
-  !> Provides access to the cloudborne aerosols number fractions array for the given
-  !> tendencies object.
+  !> Provides access to the cloudborne aerosols number mixing ratios array for
+  !> the given tendencies object.
   !> @param [in] t A pointer to a tendencies object.
-  function t_cloud_num_concs(t) result(retval)
+  function t_cloud_num_mix_ratios(t) result(retval)
     use iso_c_binding, only: c_ptr, c_int
     class(tendencies_t), intent(in) :: t
     real(c_real), pointer, dimension(:,:) :: retval
 
     type(c_ptr) :: v_ptr
-    v_ptr = t_cloud_num_concs_c(t%ptr)
+    v_ptr = t_cloud_num_mix_ratios_c(t%ptr)
     call c_f_pointer(v_ptr, retval, shape=[model%num_levels, model%num_modes])
   end function
 

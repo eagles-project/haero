@@ -33,11 +33,11 @@ TEST_CASE("mam_rename_run", "") {
       "cloudborne aerosols", num_aero_populations,
       num_levels);  // cloud borne aerosols mmr [kg/kg(of air)]
   Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
-  Kokkos::View<PackType**> int_num_concs(
-      "interstitial number concs", num_modes,
+  Kokkos::View<PackType**> int_num_mix_ratios(
+      "interstitial number mix ratios", num_modes,
       num_levels);  // interstitial aerosols number mixing ratios [#/kg(of air)]
-  Kokkos::View<PackType**> cld_num_concs(
-      "cloud borne number concs", num_modes,
+  Kokkos::View<PackType**> cld_num_mix_ratios(
+      "cloud borne number mix ratios", num_modes,
       num_levels);  // cloud borne aerosols number mixing ratios [#/kg(of air)]
 
   // Set up atmospheric data and populate it with some views.
@@ -55,8 +55,9 @@ TEST_CASE("mam_rename_run", "") {
     auto process = std::make_unique<MAMRenameFProcess>();
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                            int_num_concs, cld_num_concs);
+    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols,
+                                            int_num_mix_ratios,
+                                            cld_num_mix_ratios, gases);
     auto* diags = model->create_diagnostics();
     auto tends = std::make_unique<Tendencies>(*progs);
 
@@ -82,8 +83,8 @@ TEST_CASE("mam_rename_run", "") {
     // aerosols number mixing ratios
     for (std::size_t imode = 0; imode < num_modes; ++imode) {
       for (std::size_t k = 0; k < num_levels; ++k) {
-        int_num_concs(imode, k) = 1e8 + random();
-        cld_num_concs(imode, k) = 1e8 + random();
+        int_num_mix_ratios(imode, k) = 1e8 + random();
+        cld_num_mix_ratios(imode, k) = 1e8 + random();
       }
     }
 

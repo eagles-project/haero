@@ -7,13 +7,13 @@ namespace haero {
 Prognostics::Prognostics(
     int num_aerosol_modes, const std::vector<int>& num_aerosol_species,
     int num_gases, int num_levels, SpeciesColumnView int_aerosols,
-    SpeciesColumnView cld_aerosols, SpeciesColumnView gases_,
-    ModeColumnView interstitial_num_concs_, ModeColumnView cloud_num_concs_)
+    SpeciesColumnView cld_aerosols, ModeColumnView int_mode_num_mix_ratios_,
+    ModeColumnView cld_mode_num_mix_ratios_, SpeciesColumnView gases_)
     : interstitial_aerosols(int_aerosols),
       cloud_aerosols(cld_aerosols),
+      interstitial_num_mix_ratios(int_mode_num_mix_ratios_),
+      cloud_num_mix_ratios(cld_mode_num_mix_ratios_),
       gases(gases_),
-      interstitial_num_concs(interstitial_num_concs_),
-      cloud_num_concs(cloud_num_concs_),
       num_aero_species_(vector_to_basic_1dview(
           num_aerosol_species, "Prognostics::num_aerosol_species")),
       num_aero_populations_(0),
@@ -33,10 +33,12 @@ Prognostics::Prognostics(
   const int cld_aerosols_extent_1 = cld_aerosols.extent(1);
   const int gases_extent_0 = gases.extent(0);
   const int gases_extent_1 = gases.extent(1);
-  const int interstitial_num_concs_extent_0 = interstitial_num_concs.extent(0);
-  const int interstitial_num_concs_extent_1 = interstitial_num_concs.extent(1);
-  const int cloud_num_concs_extent_0 = cloud_num_concs.extent(0);
-  const int cloud_num_concs_extent_1 = cloud_num_concs.extent(1);
+  const int interstitial_num_mix_ratios_extent_0 =
+      interstitial_num_mix_ratios.extent(0);
+  const int interstitial_num_mix_ratios_extent_1 =
+      interstitial_num_mix_ratios.extent(1);
+  const int cloud_num_mix_ratios_extent_0 = cloud_num_mix_ratios.extent(0);
+  const int cloud_num_mix_ratios_extent_1 = cloud_num_mix_ratios.extent(1);
   EKAT_REQUIRE_MSG(
       int_aerosols_extent_0 == num_aero_populations_,
       "int_aerosols must have extent(0) == " << num_aero_populations_);
@@ -51,17 +53,18 @@ Prognostics::Prognostics(
                    "gases must have extent(0) == " << num_gases_);
   EKAT_REQUIRE_MSG(gases_extent_1 == num_vert_packs,
                    "gases must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(interstitial_num_mix_ratios_extent_0 == num_aerosol_modes,
+                   "interstitial_num_mix_ratios must have extent(0) == "
+                       << num_aerosol_modes);
   EKAT_REQUIRE_MSG(
-      interstitial_num_concs_extent_0 == num_aerosol_modes,
-      "interstitial_num_concs must have extent(0) == " << num_aerosol_modes);
+      interstitial_num_mix_ratios_extent_1 == num_vert_packs,
+      "interstitial_num_mix_ratios must have extent(1) == " << num_vert_packs);
   EKAT_REQUIRE_MSG(
-      interstitial_num_concs_extent_1 == num_vert_packs,
-      "interstitial_num_concs must have extent(1) == " << num_vert_packs);
+      cloud_num_mix_ratios_extent_0 == num_aerosol_modes,
+      "cloud_num_mix_ratios must have extent(0) == " << num_aerosol_modes);
   EKAT_REQUIRE_MSG(
-      cloud_num_concs_extent_0 == num_aerosol_modes,
-      "cloud_num_concs must have extent(0) == " << num_aerosol_modes);
-  EKAT_REQUIRE_MSG(cloud_num_concs_extent_1 == num_vert_packs,
-                   "cloud_num_concs must have extent(1) == " << num_vert_packs);
+      cloud_num_mix_ratios_extent_1 == num_vert_packs,
+      "cloud_num_mix_ratios must have extent(1) == " << num_vert_packs);
 }
 
 Prognostics::~Prognostics() {}
@@ -104,15 +107,15 @@ void Prognostics::scale_and_add(Real scale_factor,
         }
       });
 
-  int num_modes = interstitial_num_concs.extent(0);
+  int num_modes = interstitial_num_mix_ratios.extent(0);
   Kokkos::parallel_for(
-      "Prognostics::scale_and_add (modal num concs)", num_vert_packs,
+      "Prognostics::scale_and_add (modal num mix_ratios)", num_vert_packs,
       KOKKOS_LAMBDA(const int k) {
         for (int m = 0; m < num_modes; ++m) {
-          interstitial_num_concs(m, k) +=
-              scale_factor * tendencies.interstitial_num_concs(m, k);
-          cloud_num_concs(m, k) +=
-              scale_factor * tendencies.cloud_num_concs(m, k);
+          interstitial_num_mix_ratios(m, k) +=
+              scale_factor * tendencies.interstitial_num_mix_ratios(m, k);
+          cloud_num_mix_ratios(m, k) +=
+              scale_factor * tendencies.cloud_num_mix_ratios(m, k);
         }
       });
 }
@@ -139,16 +142,16 @@ void* p_gases_c(void* p) {
   return (void*)mix_fracs.data();
 }
 
-void* p_interstitial_num_concs_c(void* p) {
+void* p_interstitial_num_mix_ratios_c(void* p) {
   auto* progs = static_cast<Prognostics*>(p);
-  auto num_concs = progs->interstitial_num_concs;
-  return (void*)num_concs.data();
+  auto num_mix_ratios = progs->interstitial_num_mix_ratios;
+  return (void*)num_mix_ratios.data();
 }
 
-void* p_cloud_num_concs_c(void* p) {
+void* p_cloud_num_mix_ratios_c(void* p) {
   auto* progs = static_cast<Prognostics*>(p);
-  auto num_concs = progs->cloud_num_concs;
-  return (void*)num_concs.data();
+  auto num_mix_ratios = progs->cloud_num_mix_ratios;
+  return (void*)num_mix_ratios.data();
 }
 
 }  // extern "C"

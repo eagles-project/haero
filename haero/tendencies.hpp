@@ -35,11 +35,11 @@ class Tendencies final {
   /// Gas mole fraction tendencies.
   SpeciesColumnView gases;
 
-  /// Interstitial number concentration tendencies per mode.
-  ModeColumnView interstitial_num_concs;
+  /// Interstitial number mixing ratio tendencies per mode.
+  ModeColumnView interstitial_num_mix_ratios;
 
-  /// Cloudborne number concentration tendencies per mode.
-  ModeColumnView cloud_num_concs;
+  /// Cloudborne number mixing ratio tendencies per mode.
+  ModeColumnView cloud_num_mix_ratios;
 
   // --------------------------------------------------------------------------
   //                         Mathematical Operations

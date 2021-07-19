@@ -205,8 +205,8 @@ void parse_aerosols_section(const YAML::Node& aerosols,
   int num_modes = aerosol_config.num_modes();
 
   // Initialize reference input data.
-  pw.ref_input.interstitial_number_concs.resize(num_modes);
-  pw.ref_input.cloud_number_concs.resize(num_modes);
+  pw.ref_input.interstitial_number_mix_ratios.resize(num_modes);
+  pw.ref_input.cloud_number_mix_ratios.resize(num_modes);
   pw.ref_input.interstitial_aero_mmrs.resize(
       aerosol_config.num_aerosol_populations);
   pw.ref_input.cloud_aero_mmrs.resize(aerosol_config.num_aerosol_populations,
@@ -246,12 +246,12 @@ void parse_aerosols_section(const YAML::Node& aerosols,
       for (auto aiter : group) {
         auto aero_name = aiter.first.as<std::string>();
         auto aero_species = aiter.second;
-        if (aero_name == "number_conc") {  // number conc, not species name!
+        if (aero_name == "number_mix_ratio") {  // number mix ratio, not species
           if (group_name == "interstitial") {
-            pw.ref_input.interstitial_number_concs[mode_index] =
+            pw.ref_input.interstitial_number_mix_ratios[mode_index] =
                 aero_species.as<Real>();
           } else {
-            pw.ref_input.cloud_number_concs[mode_index] =
+            pw.ref_input.cloud_number_mix_ratios[mode_index] =
                 aero_species.as<Real>();
           }
           found_number_conc = true;
