@@ -4,13 +4,16 @@
 #include "chem_driver/chem_driver.hpp"
 #include "chem_driver/read_chem_input.hpp"
 #include "haero/floating_point.hpp"
+#include "haero/haero.hpp"
 
 using namespace haero;
 using namespace haero::chem_driver;
 
 TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
   /// create the SimulationInput object by parsing the yaml file
-  SimulationInput sim_input = read_chem_input("toy_problem_input.yml");
+  std::string input_file = HAERO_TEST_DATA_DIR;
+  input_file += "/toy_problem_input.yml";
+  SimulationInput sim_input = read_chem_input(input_file);
 
   // this function creates the toy-problem-specific (chemkin?) input file for
   // TChem

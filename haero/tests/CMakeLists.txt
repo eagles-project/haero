@@ -15,6 +15,9 @@ EkatCreateUnitTest(view_pack_helpers view_helper_tests.cpp
 EkatCreateUnitTest(floating_point_tests floating_point_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EKatCreateUnitTest(conversions_tests conversions_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 EkatCreateUnitTest(mode_tests mode_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
@@ -100,15 +103,4 @@ if (HAERO_FORTRAN)
     EkatCreateUnitTest(mam_rename_fprocess_tests mam_rename_fprocess_tests.cpp
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
   endif()
-endif()
-
-#----------------------------------------------------
-# Chemistry unit tests
-#----------------------------------------------------
-
-if (HAERO_DOUBLE_PRECISION)
-  add_library(chemUtil chemUtil.cpp)
-  add_dependencies(chemUtil tchem)
-  EkatCreateUnitTest(tchem_batch_reactor_tests tchem_batch_reactor_tests.cpp
-                     LIBS chemUtil;${HAERO_LIBRARIES})
 endif()

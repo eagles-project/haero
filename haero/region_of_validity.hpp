@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "haero/atmosphere.hpp"
+#include "haero/conversions.hpp"
 #include "haero/haero.hpp"
 #include "haero/prognostics.hpp"
 
@@ -147,7 +148,10 @@ class RegionOfValidity final {
           const auto& T = atmosphere.temperature(k);
           auto invalid_T = haero::MaskType((T < temp_bounds.first) or
                                            (T > temp_bounds.second));
-          const auto& RH = atmosphere.relative_humidity(k);
+          const auto& qv = atmosphere.vapor_mixing_ratio(k);
+          const auto& p = atmosphere.pressure(k);
+          const auto RH =
+              conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
           auto invalid_RH = haero::MaskType((RH < rel_hum_bounds.first) or
                                             (RH > rel_hum_bounds.second));
           violation += (invalid_T.any() or invalid_RH.any());
