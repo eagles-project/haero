@@ -248,7 +248,7 @@ class MAMNucleationProcess : public AerosolProcess {
     // Atmospheric state variables
     const ColumnView press = atmosphere.pressure;
     const ColumnView temp = atmosphere.temperature;
-    const ColumnView rel_hum = atmosphere.relative_humidity;
+    const ColumnView qv = atmosphere.vapor_mixing_ratio;
     const ColumnView height = atmosphere.height;
     const Real pblh = atmosphere.planetary_boundary_height;
 
@@ -311,8 +311,9 @@ class MAMNucleationProcess : public AerosolProcess {
       PackType dso4dt_ait;
       PackType dnh4dt_ait;
       PackType dnclusterdt;
+      const PackType rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(qv(k), press(k), temp(k));
       compute_tendencies(dt, temp(k), press(k), aircon, height(k), pblh,
-                         rel_hum(k), h2so4_uptake_rate, h2so4_gasprod_change,
+                         rel_hum, h2so4_uptake_rate, h2so4_gasprod_change,
                          h2so4_aeruptk_change, qgas_cur, qgas_avg, qnum_cur,
                          qaer_cur, qwtr_cur, dndt_ait, dmdt_ait, dso4dt_ait,
                          dnh4dt_ait, dnclusterdt);

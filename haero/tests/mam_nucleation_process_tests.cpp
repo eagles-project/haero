@@ -575,19 +575,20 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     Real h0 = 3e3, dz = h0 / num_levels;
     auto h_temp = Kokkos::create_mirror_view(temp);
     auto h_press = Kokkos::create_mirror_view(press);
-    auto h_rel_hum = Kokkos::create_mirror_view(rel_hum);
+    auto h_qv = Kokkos::create_mirror_view(qv);
     auto h_ht = Kokkos::create_mirror_view(ht);
     for (int k = 0; k < num_levels; ++k) {
       h_temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 273.0;
       h_press(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 1e5;
-      h_rel_hum(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0.95;
+      const auto q = conversions::vapor_mixing_ratio_from_relative_humidity(0.95, 1e5, 273.0);
+      h_qv(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = q;
     }
     for (int k = 0; k < num_levels + 1; ++k) {
       h_ht(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = h0 - k * dz;
     }
     Kokkos::deep_copy(temp, h_temp);
     Kokkos::deep_copy(press, h_press);
-    Kokkos::deep_copy(rel_hum, h_rel_hum);
+    Kokkos::deep_copy(qv, h_qv);
     Kokkos::deep_copy(ht, h_ht);
 
     // aerosols (none)
