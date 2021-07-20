@@ -130,6 +130,7 @@ class SimpleNucleationProcess final : public AerosolProcess {
       return;
     }
 
+    // Calculate tendencies for aerosols/gases at each vertical level k.
     const int nk = atmosphere.temperature.extent(0);
     Kokkos::parallel_for(
         "nucleation_rate", nk, KOKKOS_LAMBDA(const int k) {
@@ -145,11 +146,16 @@ class SimpleNucleationProcess final : public AerosolProcess {
               conversions::number_conc_from_mmr(q_h2so4, mu_h2so4, rho_d);
 
           // Compute the base rate of nucleation using our selected method.
-          PackType J;
+          PackType J;       // nucleation rate [#/cc]
+          PackType r_crit;  // radius of critical cluster [nm]
+          PackType n_crit;  // number of molecules in a critical cluster [#]
           if (nucleation_method == 2) {  // binary nucleation
             auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(
                 c_h2so4, temp, rel_hum);
             J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
+            n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp,
+                                                           rel_hum, x_crit);
+            r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
           } else {
             EKAT_KERNEL_ASSERT(nucleation_method == 3);
             const auto q_nh3 = prognostics.gases(igas_nh3, k);  // mmr
@@ -157,24 +163,39 @@ class SimpleNucleationProcess final : public AerosolProcess {
             auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
                                                             c_h2so4, xi_nh3);
             J = exp(log_J);
+            n_crit = merikanto2007::num_critical_molecules(log_J, temp, c_h2so4,
+                                                           xi_nh3);
+            r_crit =
+                merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
           }
 
           // Apply a correction for the planetary boundary layer if requested.
-          PackType J_pbl;
-          const auto within_pbl = (h <= atmosphere.planetary_boundary_height);
-          if (pbl_method == 1) {
-            J_pbl.set(within_pbl,
-                      wang2008::first_order_pbl_nucleation_rate(c_h2so4));
-          } else if (pbl_method == 2) {
-            J_pbl.set(within_pbl,
-                      wang2008::second_order_pbl_nucleation_rate(c_h2so4));
+          if (pbl_method > 0) {
+            PackType J_pbl(0);
+            const auto within_pbl = (h <= atmosphere.planetary_boundary_height);
+            if (pbl_method == 1) {
+              J_pbl.set(within_pbl,
+                        wang2008::first_order_pbl_nucleation_rate(c_h2so4));
+            } else if (pbl_method == 2) {
+              J_pbl.set(within_pbl,
+                        wang2008::second_order_pbl_nucleation_rate(c_h2so4));
+            }
+            // If the modified nucleation rate is less than the original, J = 0.
+            const auto J_pbl_lt_J = (J_pbl <= J);
+            J.set(within_pbl and J_pbl_lt_J, 0);
+            J.set(within_pbl and not J_pbl_lt_J, J_pbl);
+            // All fresh nuclei within the planetary boundary layer are 1 nm in
+            // diameter.
+            r_crit.set(within_pbl and not J_pbl_lt_J, 0.5);
+            // Estimate the number of particles in the critical cluѕter from its
+            // mass and radius.
+            // TODO
           }
-          // If the modified nucleation rate is less than the original, J = 0.
-          const auto J_pbl_lt_J = (J_pbl <= J);
-          J.set(J_pbl_lt_J, 0);
-          J.set(not J_pbl_lt_J, J_pbl);
 
-          // Grow particles so they can fit into the Aitken mode.
+          // Apply the correction of Kerminen and Kulmala (2002) to the
+          // nucleation rate.
+
+          // Grow nucleated particles so they can fit into the desired mode.
           // TODO
         });
   }
