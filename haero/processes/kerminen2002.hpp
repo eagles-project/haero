@@ -16,6 +16,22 @@ namespace haero {
 
 namespace kerminen2002 {
 
+/// Computes the diameter growth rate of nuclei [m/s] in the vicinity of a
+/// single condensing gas using Kerminen et al 2002, eq 21. Growth rates for
+/// ѕeveral gases can be added to compute a total nucleation growth rate.
+/// @param [in] nuc_mass_density The mass density of nuclei [kg/m3]
+/// @param [in] gas_num_conc The number concentration of the gas [#/cc]
+/// @param [in] gas_molecular_speed The molecular speed of the gas [m/s]
+/// @param [in] gas_molecular_wt The molecular weight of the gas [kg/kmol]
+KOKKOS_INLINE_FUNCTION
+PackType nucleation_growth_rate(const PackType& nuc_mass_density,
+                                const PackType& gas_num_conc,
+                                const PackType& gas_molecular_speed,
+                                Real gas_molecular_wt) {
+  return PackType(-3e-9 * gas_molecular_speed * gas_molecular_wt *
+                  gas_num_conc / nuc_mass_density);
+}
+
 /// Computes a factor that, when multiplied by a "real" nucleation rate, yields
 /// the "apparent" rate of nucleation for the given molecule size. This
 /// formulation assumes a single nucleating/condensing gas species.
@@ -30,10 +46,13 @@ namespace kerminen2002 {
 /// @param [in] initial_nuc_diam The initial diameter of a fresh nucleus [nm]
 /// @param [in] final_nuc_diam The final size of a condensed nucleus [nm]
 KOKKOS_INLINE_FUNCTION
-PackType apparent_nucleation_factor(
-    const PackType& aero_num_conc, Real mean_aero_diam, Real gas_accom_coeff,
-    const PackType& gas_temperature, const PackType& nuc_growth_rate,
-    Real nuc_mass_density, Real initial_nuc_diam, Real final_nuc_diam) {
+PackType apparent_nucleation_factor(const PackType& aero_num_conc,
+                                    Real mean_aero_diam, Real gas_accom_coeff,
+                                    const PackType& gas_temperature,
+                                    const PackType& nuc_growth_rate,
+                                    const PackType& nuc_mass_density,
+                                    Real initial_nuc_diam,
+                                    Real final_nuc_diam) {
   EKAT_KERNEL_REQUIRE(initial_nuc_diam < final_nuc_diam);
 
   // Compute beta_m, the transitional correction for the condensational mass

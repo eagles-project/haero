@@ -206,8 +206,12 @@ class SimpleNucleationProcess final : public AerosolProcess {
 
           // Apply the correction of Kerminen and Kulmala (2002) to the
           // nucleation rate.
-          Real rho_nuc; // TODO
-          PackType nuc_growth_rate; // TODO
+          PackType rho_nuc;              // TODO
+          Real gamma_h2so4 = 5.0 / 3.0;  // TODO: can we do better?
+          PackType speed_h2so4 =
+              gas_kinetics::molecular_speed(temp, mu_h2so4, gamma_h2so4);
+          PackType nuc_growth_rate = kerminen2002::nucleation_growth_rate(
+              rho_nuc, c_h2so4, speed_h2so4, mu_h2so4);
           const auto q_so4 = prognostics.interstitial_aerosols(ipop_so4, k);
           auto c_so4 =
               1e6 * conversions::number_conc_from_mmr(q_so4, mu_so4, rho_d);
