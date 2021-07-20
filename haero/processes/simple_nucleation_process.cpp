@@ -15,6 +15,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       tendency_factor(1),
       nucleation_method(2),
       pbl_method(0),
+      imode(-1),
       igas_h2so4(-1),
       igas_nh3(-1),
       iaer_so4(-1),
@@ -58,19 +59,39 @@ void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
     Kokkos::deep_copy(d_max_aer, d);
   }
 
-  // Jot down the molecular weights for our nucleating gases.
+  // Jot down the molecular weights for our gases.
   if (igas_h2so4 != -1) {
-    for (const auto &species : config.aerosol_species_for_mode(imode)) {
-      if (species.symbol() == "SO4") {
+    for (int g = 0; g < config.h_gas_species.extent(0); ++g) {
+      const auto &species = config.h_gas_species[g];
+      if (species.symbol() == "H2SO4") {
         mu_h2so4 = species.molecular_weight;
         break;
       }
     }
   }
   if (igas_nh3 != -1) {
-    for (const auto &species : config.aerosol_species_for_mode(imode)) {
+    for (int g = 0; g < config.h_gas_species.extent(0); ++g) {
+      const auto &species = config.h_gas_species[g];
       if (species.symbol() == "NH3") {
-        mu_h2so4 = species.molecular_weight;
+        mu_nh3 = species.molecular_weight;
+        break;
+      }
+    }
+  }
+
+  // Do the same for our nucleating aerosols.
+  if (iaer_so4 != -1) {
+    for (const auto &species : config.aerosol_species_for_mode(imode)) {
+      if (species.symbol() == "SO4") {
+        mu_so4 = species.molecular_weight;
+        break;
+      }
+    }
+  }
+  if (igas_nh3 != -1) {
+    for (const auto &species : config.aerosol_species_for_mode(imode)) {
+      if (species.symbol() == "NH4") {
+        mu_nh4 = species.molecular_weight;
         break;
       }
     }

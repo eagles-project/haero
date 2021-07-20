@@ -5,8 +5,8 @@
 
 #include "haero/aerosol_process.hpp"
 #include "haero/conversions.hpp"
-#include "haero/ideal_gas.hpp"
 #include "haero/physical_constants.hpp"
+#include "haero/processes/kerminen2002.hpp"
 #include "haero/processes/merikanto2007.hpp"
 #include "haero/processes/vehkamaki2002.hpp"
 #include "haero/processes/wang2008.hpp"
@@ -81,8 +81,11 @@ class SimpleNucleationProcess final : public AerosolProcess {
   /// The maximum particle diameters for all aerosol modes
   view_1d_scalar_type d_max_aer;
 
-  // Molecular weight of H2SO4 and NH3 gases.
+  // Molecular weights of H2SO4 and NH3 gases.
   Real mu_h2so4, mu_nh3;
+
+  // Molecular weights of SO4 and NH4 aerosols.
+  Real mu_so4, mu_nh4;
 
  public:
   /// Constructor
@@ -102,6 +105,7 @@ class SimpleNucleationProcess final : public AerosolProcess {
         nucleation_method(rhs.nucleation_method),
         nucleation_mode("aitken"),
         pbl_method(rhs.pbl_method),
+        imode(rhs.imode),
         igas_h2so4(rhs.igas_h2so4),
         igas_nh3(rhs.igas_nh3),
         iaer_so4(rhs.iaer_so4),
@@ -138,12 +142,12 @@ class SimpleNucleationProcess final : public AerosolProcess {
           const auto press = atmosphere.pressure(k);
           const auto qv = atmosphere.vapor_mixing_ratio(k);
           const auto h = atmosphere.height(k);
-          const auto rho_d = ideal_gas::mass_density(press, temp, qv);
+          const auto rho_d = gas_kinetics::air_mass_density(press, temp, qv);
           auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
               qv, press, temp);
           const auto q_h2so4 = prognostics.gases(igas_h2so4, k);  // mmr
-          auto c_h2so4 =
-              conversions::number_conc_from_mmr(q_h2so4, mu_h2so4, rho_d);
+          auto c_h2so4 =  // number concentration of H2SO4 [#/cc]
+              1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4, rho_d);
 
           // Compute the base rate of nucleation using our selected method.
           PackType J;       // nucleation rate [#/cc]
@@ -158,8 +162,10 @@ class SimpleNucleationProcess final : public AerosolProcess {
             r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
           } else {
             EKAT_KERNEL_ASSERT(nucleation_method == 3);
+            // Compute the molar/volume mixing ratio of NH3 gas [ppt].
             const auto q_nh3 = prognostics.gases(igas_nh3, k);  // mmr
-            auto xi_nh3 = conversions::vmr_from_mmr(q_nh3, mu_nh3);
+            auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3);
+
             auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
                                                             c_h2so4, xi_nh3);
             J = exp(log_J);
@@ -192,8 +198,24 @@ class SimpleNucleationProcess final : public AerosolProcess {
             // TODO
           }
 
+          Real initial_nuc_diam = 1;  // initial nucleus diameter [nm]
+          Real final_nuc_diam = 3;    // final, grown nucleus diameter [nm]
+          // TODO
+
+          Real mean_modal_diam = d_mean_aer(imode);
+
           // Apply the correction of Kerminen and Kulmala (2002) to the
           // nucleation rate.
+          Real rho_nuc; // TODO
+          PackType nuc_growth_rate; // TODO
+          const auto q_so4 = prognostics.interstitial_aerosols(ipop_so4, k);
+          auto c_so4 =
+              1e6 * conversions::number_conc_from_mmr(q_so4, mu_so4, rho_d);
+          static constexpr Real h2so4_accom_coeff = 0.65;
+          auto apparent_J_factor = kerminen2002::apparent_nucleation_factor(
+              c_so4, mean_modal_diam, h2so4_accom_coeff, temp, nuc_growth_rate,
+              rho_nuc, initial_nuc_diam, final_nuc_diam);
+          J *= apparent_J_factor;
 
           // Grow nucleated particles so they can fit into the desired mode.
           // TODO

@@ -5,8 +5,8 @@
 
 #include "haero/atmosphere.hpp"
 #include "haero/conversions.hpp"
+#include "haero/gas_kinetics.hpp"
 #include "haero/haero.hpp"
-#include "haero/ideal_gas.hpp"
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/prognostics.hpp"
 

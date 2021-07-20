@@ -4,7 +4,6 @@
 #include "catch2/catch.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
-#include "haero/ideal_gas.hpp"
 #include "haero/region_of_validity.hpp"
 
 using namespace haero;
