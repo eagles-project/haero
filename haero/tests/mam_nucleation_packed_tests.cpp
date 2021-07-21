@@ -165,7 +165,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_packed") {
   for (int i = 0; i < 1000; i += PackType::n) {
     PackType so4vol_p;
     const int flagaa = 11 + 2 * random();  // range 11-12
-    const double adjust_factor_pbl_ratenucl = random();
+    const Real adjust_factor_pbl_ratenucl = random();
     for (int p = 0; p < PackType::n; ++p)
       so4vol_p[p] = 5.e4 + 1.e8 * random();  // range 5x10^4 - 10^9
     mam_nucleation_process.set_param("adjust_factor_pbl_ratenucl",
