@@ -22,7 +22,7 @@ typedef Kokkos::CudaSpace MemSpace;
 typedef Kokkos::HostSpace MemSpace;
 #endif
 
-class MyAerosolProcess : public AerosolProcess {
+class MyAerosolProcess final : public AerosolProcess {
  public:
   MyAerosolProcess(AerosolProcessType type, const std::string &name,
                    const int num_lev, const Diagnostics::Token aer_0,
@@ -45,11 +45,27 @@ class MyAerosolProcess : public AerosolProcess {
         aersol_1(pp.aersol_1),
         generic_0(pp.generic_0) {}
 
+  MyAerosolProcess *copy_to_device() {
+    const std::string debuggingName(name());
+    MyAerosolProcess *pp =
+        static_cast<MyAerosolProcess *>(Kokkos::kokkos_malloc<MemSpace>(
+            debuggingName + "_malloc", sizeof(MyAerosolProcess)));
+    const MyAerosolProcess &this_pp = *this;  // Suck into lambda capture space.
+    Kokkos::parallel_for(
+        debuggingName + "_format", 1,
+        KOKKOS_LAMBDA(const int) { new (pp) MyAerosolProcess(this_pp); });
+    return pp;
+  }
+
+ protected:
+  //------------------------------------------------------------------------
+  //                                Overrides
+  //------------------------------------------------------------------------
+
   KOKKOS_FUNCTION
-  virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
-                   Real dt, const Prognostics &prognostics,
-                   const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-                   Tendencies &tendencies) const {
+  void run_(Real t, Real dt, const Prognostics &prognostics,
+            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+            Tendencies &tendencies) const {
     const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
     const ColumnView temp = atmosphere.temperature;
     const SpeciesColumnView first_aersol = diagnostics.aerosol_var(aersol_0);
@@ -85,18 +101,6 @@ class MyAerosolProcess : public AerosolProcess {
       }
     }
   };
-
-  MyAerosolProcess *copy_to_device() {
-    const std::string debuggingName(name());
-    MyAerosolProcess *pp =
-        static_cast<MyAerosolProcess *>(Kokkos::kokkos_malloc<MemSpace>(
-            debuggingName + "_malloc", sizeof(MyAerosolProcess)));
-    const MyAerosolProcess &this_pp = *this;  // Suck into lambda capture space.
-    Kokkos::parallel_for(
-        debuggingName + "_format", 1,
-        KOKKOS_LAMBDA(const int) { new (pp) MyAerosolProcess(this_pp); });
-    return pp;
-  }
 
  private:
   const int num_levels;
@@ -223,13 +227,13 @@ TEST_CASE("process_tests", "aerosol_process") {
   std::vector<GasSpecies> gas_species = create_mam4_gas_species();
   ModalAerosolConfig aero_config(modes, aero_species, mode_species,
                                  gas_species);
-  Model *model = Model::ForUnitTests(aero_config, num_levels);
 
   const Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
   const auto &teamPolicy =
       Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
+  device_pp->init(aero_config);
   Kokkos::parallel_for(
       teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
         Kokkos::parallel_for(
@@ -237,8 +241,7 @@ TEST_CASE("process_tests", "aerosol_process") {
               // Const cast because everything in lambda is const. Need to
               // google how to fix.
               Tendencies *tendency = const_cast<Tendencies *>(&tends);
-              device_pp->run(model->modal_aerosol_config(), t, dt, progs, atmos,
-                             diagnostics, *tendency);
+              device_pp->run(t, dt, progs, atmos, diagnostics, *tendency);
             });
       });
 

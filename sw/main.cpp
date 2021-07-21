@@ -196,8 +196,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       // Run the thing.
       haero::Real t = 0.0, t_end = param_walk.ref_input.total_time;
       while (t < t_end) {
-        process->run(aero_config, t, dt, *prognostics, *atmosphere,
-                     *diagnostics, *tendencies);
+        process->run(t, dt, *prognostics, *atmosphere, *diagnostics,
+                     *tendencies);
 
         // Advance the time and prognostic state.
         t += dt;

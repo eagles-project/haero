@@ -12,7 +12,7 @@ MAMNucleationProcess::MAMNucleationProcess()
 //                                Accessors
 //------------------------------------------------------------------------
 
-void MAMNucleationProcess::init(
+void MAMNucleationProcess::init_(
     const ModalAerosolConfig& modal_aerosol_config) {}
 
 }  // namespace haero

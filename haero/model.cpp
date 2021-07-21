@@ -164,8 +164,7 @@ void Model::run_process(AerosolProcessType type, Real t, Real dt,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->run(modal_aerosol_config_, t, dt, prognostics, atmosphere,
-                    diagnostics, tendencies);
+  iter->second->run(t, dt, prognostics, atmosphere, diagnostics, tendencies);
 }
 
 const SelectedProcesses& Model::selected_processes() const {

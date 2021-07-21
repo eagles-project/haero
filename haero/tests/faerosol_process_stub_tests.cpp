@@ -110,8 +110,7 @@ TEST_CASE("faerosol_process_stub", "") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 0.01;
-    stub->run(model->modal_aerosol_config(), t, dt, *progs, *atm, *diags,
-              *tends);
+    stub->run(t, dt, *progs, *atm, *diags, *tends);
 
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.

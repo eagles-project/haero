@@ -33,7 +33,7 @@ namespace haero {
 /// The AerosolProcess class provides an interface for all
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
-class MAMNucleationProcess : public AerosolProcess {
+class MAMNucleationProcess final : public AerosolProcess {
   // applied to boundary layer nucleation rate can be set by a call to set_param
   Real adjust_factor_pbl_ratenucl = 0;
 
@@ -203,17 +203,17 @@ class MAMNucleationProcess : public AerosolProcess {
   /// MAMNucleationProcess objects are not assignable.
   AerosolProcess &operator=(const MAMNucleationProcess &) = delete;
 
+ protected:
   //------------------------------------------------------------------------
-  //                                Accessors
+  //                                Overrides
   //------------------------------------------------------------------------
 
-  virtual void init(const ModalAerosolConfig &modal_aerosol_config) override;
+  void init_(const ModalAerosolConfig &modal_aerosol_config) override;
 
   KOKKOS_FUNCTION
-  virtual void run(const ModalAerosolConfig &modal_aerosol_config, Real t,
-                   Real dt, const Prognostics &prognostics,
-                   const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-                   Tendencies &tendencies) const override {
+  void run_(Real t, Real dt, const Prognostics &prognostics,
+            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+            Tendencies &tendencies) const override {
     // First of all, check to make sure our model has an aitken mode. If it
     // doesn't, we can return immediately.
     if (nait == -1) {
@@ -331,7 +331,7 @@ class MAMNucleationProcess : public AerosolProcess {
 
   /// Set the named parameter to the given value.
   /// It is a fatal error to pass an unknown name.
-  virtual void set_param(const std::string &name, Real value) final {
+  void set_param_(const std::string &name, Real value) override {
     if ("adjust_factor_pbl_ratenucl" == name) {
       adjust_factor_pbl_ratenucl = value;
     } else if ("adjust_factor_bin_tern_ratenucl" == name) {
@@ -343,6 +343,8 @@ class MAMNucleationProcess : public AerosolProcess {
           false, "Parameter name does not match any in known parameter list.");
     }
   }
+
+ public:
   /// Computes tendencies due to aerosol nucleation (new particle formation).
   /// Treats both nucleation and subsequent growth of new particles to aitken
   /// mode size. Uses the following parameterizations:
