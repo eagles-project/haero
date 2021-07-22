@@ -537,7 +537,7 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 30.0;
-    process->run(aero_config, t, dt, *progs, *atm, *diags, *tends);
+    process->run(t, dt, *progs, *atm, *diags, *tends);
 
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.

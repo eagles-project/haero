@@ -819,7 +819,7 @@ The \texttt{AerosolProcess} provides the following interface (see
 \lstset{language=[11]{c++}}
 \begin{lstlisting}
 class AerosolProcess {
-  public:
+ public:
 
   // Constructor, called by all AerosolProcess subclasses.
   AerosolProcess(AerosolProcessType type, const std::string& name):
@@ -828,32 +828,46 @@ class AerosolProcess {
   // Destructor.
   virtual ~AerosolProcess() {}
 
+  // Initializes the process with the aerosol configuration.
+  void init(const ModalAerosolConfig& modal_aerosol_config);
+
+  // Runs the process at the given time with the given aerosol data.
+  void run(Real t, Real dt, const Prognostics& prognostics,
+           const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+           Tendencies& tendencies) const;
+
+  // Set named integer, boolean, and real-valued parameters.
+  void set_param(const std::string& name, int value);
+  void set_param(const std::string& name, bool value);
+  void set_param(const std::string& name, Real value);
+
+ protected:
+
   // Override this method if your aerosol process needs to be initialized
   // with information about the model. The default implementation does nothing.
-  virtual void init(const ModalAerosolConfig& modal_aerosol_config) {}
+  virtual void init_(const ModalAerosolConfig& modal_aerosol_config) {}
 
   // Override this method to implement the aerosol process using the specific
   // parameterization for the subclass.
-  virtual void run(const ModalAerosolConfig& modal_aerosol_config,
-                   Real t, Real dt,
-                   const Prognostics& prognostics,
-                   const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics,
-                   Tendencies& tendencies) const = 0;
+  virtual void run_(Real t, Real dt,
+                    const Prognostics& prognostics,
+                    const Atmosphere& atmosphere,
+                    const Diagnostics& diagnostics,
+                    Tendencies& tendencies) const = 0;
 
   // Override these methods to set a parameter to a given value based on its
   // name.
-  virtual void set_param(const std::string& name, int value) {}
-  virtual void set_param(const std::string& name, bool value) {}
-  virtual void set_param(const std::string& name, Real value) {}
+  virtual void set_param_(const std::string& name, int value) {}
+  virtual void set_param_(const std::string& name, bool value) {}
+  virtual void set_param_(const std::string& name, Real value) {}
 };
 \end{lstlisting}
 
 In addition to the ``constructor'' function used to create an instance of a
-\texttt{AerosolProcess}, this interface declares three functions (\texttt{init},
-\texttt{run}, and the destructor function \texttt{\~AerosolProcess})
+\texttt{AerosolProcess}, this interface declares three functions (\texttt{init\_},
+\texttt{run\_}, and the destructor function \texttt{\~AerosolProcess})
 that correspond to the three behaviors described above and must be overridden.
-Additionally, one or more of the \texttt{set\_param} methods can be overridden
+Additionally, one or more of the \texttt{set\_param\_} methods can be overridden
 to support process-specific parameters. These parameters should be documented
 with the process.
 

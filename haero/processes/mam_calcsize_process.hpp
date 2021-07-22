@@ -8,7 +8,7 @@
 namespace haero {
 
 /// @class MAMCalcsizeProcess
-class MAMCalcsizeProcess : public AerosolProcess {
+class MAMCalcsizeProcess final : public AerosolProcess {
  public:
   MAMCalcsizeProcess();
 
@@ -18,7 +18,7 @@ class MAMCalcsizeProcess : public AerosolProcess {
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
-  virtual ~MAMCalcsizeProcess() {}
+  ~MAMCalcsizeProcess() {}
 
   /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
@@ -27,15 +27,15 @@ class MAMCalcsizeProcess : public AerosolProcess {
   /// MAMCalcsizeProcess objects are not assignable.
   AerosolProcess &operator=(const MAMCalcsizeProcess &) = delete;
 
+ protected:
   //------------------------------------------------------------------------
-  //                                Accessors
+  //                                Overrides
   //------------------------------------------------------------------------
 
   KOKKOS_FUNCTION
-  void run(const ModalAerosolConfig &modal_aerosol_config, Real t, Real dt,
-           const Prognostics &prognostics, const Atmosphere &atmosphere,
-           const Diagnostics &diagnostics,
-           Tendencies &tendencies) const override{};
+  void run_(Real t, Real dt, const Prognostics &prognostics,
+            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+            Tendencies &tendencies) const override{};
 };
 
 }  // namespace haero

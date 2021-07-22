@@ -111,17 +111,15 @@ class AerosolProcess {
     return validity_region_.contains(config, atmosphere, prognostics);
   }
 
-  /// Override this method if your aerosol process needs to be initialized
-  /// with information about the model. The default implementation does nothing.
+  /// On host: performs any system-specific process initialization.
   /// @param [in] config The aerosol configuration describing the aerosol
   ///                    system to which this process belongs.
-  virtual void init(const ModalAerosolConfig& config) {}
+  void init(const ModalAerosolConfig& config) {
+    // This method must be called on the host.
+    init_(config);
+  }
 
-  /// Override this method to implement the aerosol process using the specific
-  /// parameterization for the subclass.
-  /// @param [in] modal_aerosol_config The aerosol configuration describing the
-  ///                                  aerosol system to which this process
-  ///                                  belongs.
+  /// On device: runs the aerosol process at a given time with the given data.
   /// @param [in] t The simulation time at which this process is being invoked
   ///               (in seconds).
   /// @param [in] dt The simulation time interval ("timestep size") over which
@@ -135,25 +133,73 @@ class AerosolProcess {
   /// @param [out] tendencies A container that stores time derivatives for
   ///                         prognostic variables evolved by this process.
   KOKKOS_FUNCTION
-  virtual void run(const ModalAerosolConfig& modal_aerosol_config, Real t,
-                   Real dt, const Prognostics& prognostics,
-                   const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-                   Tendencies& tendencies) const = 0;
+  void run(Real t, Real dt, const Prognostics& prognostics,
+           const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+           Tendencies& tendencies) const {
+    // This method must be called on the device.
 
-  /// Override these methods to allow a host model to set named parameters
-  /// for this aerosol process.
-  virtual void set_param(const std::string& name, int value) {}
-  virtual void set_param(const std::string& name, bool value) {}
-  virtual void set_param(const std::string& name, Real value) {}
+    run_(t, dt, prognostics, atmosphere, diagnostics, tendencies);
+  }
+
+  /// On host: Sets a named integer value for this aerosol process.
+  /// @param [in] name The name of the parameter to set
+  /// @param [in] value The parameter's value
+  void set_param(const std::string& name, int value) {
+    // This method must be called on the host.
+    set_param_(name, value);
+  }
+
+  /// On host: Sets a named boolean value for this aerosol process.
+  /// @param [in] name The name of the parameter to set
+  /// @param [in] value The parameter's value
+  void set_param(const std::string& name, bool value) {
+    // This method must be called on the host.
+    set_param_(name, value);
+  }
+
+  /// On host: Sets a named real value for this aerosol process.
+  /// @param [in] name The name of the parameter to set
+  /// @param [in] value The parameter's value
+  void set_param(const std::string& name, Real value) {
+    // This method must be called on the host.
+    set_param_(name, value);
+  }
+
+  /// On host: returns a vector of strings containing the names of diagnostic
+  /// variables required by this aerosol process in order to compute its
+  /// tendencies. The Model that runs this aerosol process checks that these
+  /// diagnostics variables are present before executing the process.
+  std::vector<std::string> required_diagnostics() const {
+    // This method must be called on the host.
+    return required_diagnostics_();
+  }
+
+ protected:
+  /// On host: override this method to perform system-specific initialization
+  /// for the aerosol process. By default, this does nothing.
+  virtual void init_(const ModalAerosolConfig& config) {}
+
+  /// On device: override this method to run the aerosol process using its
+  /// specific parameterizations for a subclass.
+  KOKKOS_FUNCTION
+  virtual void run_(Real t, Real dt, const Prognostics& prognostics,
+                    const Atmosphere& atmosphere,
+                    const Diagnostics& diagnostics,
+                    Tendencies& tendencies) const = 0;
 
   /// Override this method to return a vector of strings containing the names
   /// of diagnostic variables required by this aerosol process in order to
-  /// compute its tendencies. The Model that runs this aerosol process checks
-  /// that these diagnostics variables are present before executing the process.
-  /// By default, an aerosol process does not require any diagnostic variables.
-  virtual std::vector<std::string> required_diagnostics() const {
+  /// compute its tendencies. By default, an aerosol process does not require
+  /// any diagnostic variables.
+  virtual std::vector<std::string> required_diagnostics_() const {
     return std::vector<std::string>();
   }
+
+  /// Override these methods to allow a host model to set named parameters
+  /// for this aerosol process.
+  virtual void set_param_(const std::string& name, int value) {}
+  virtual void set_param_(const std::string& name, bool value) {}
+  virtual void set_param_(const std::string& name, Real value) {}
 
  private:
   const AerosolProcessType type_;
@@ -176,10 +222,9 @@ class NullAerosolProcess : public AerosolProcess {
 
   // Overrides
   KOKKOS_FUNCTION
-  void run(const ModalAerosolConfig& modal_aerosol_config, Real t, Real dt,
-           const Prognostics& prognostics, const Atmosphere& atmosphere,
-           const Diagnostics& diagnostics,
-           Tendencies& tendencies) const override {}
+  void run_(Real t, Real dt, const Prognostics& prognostics,
+            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+            Tendencies& tendencies) const override {}
 };
 
 #if HAERO_FORTRAN
@@ -265,18 +310,18 @@ class FAerosolProcess : public AerosolProcess {
     }
   }
 
+ protected:
   // Overrides.
-  void init(const ModalAerosolConfig& modal_aerosol_config) override {
+  void init_(const ModalAerosolConfig& modal_aerosol_config) override {
     if (not initialized_) {
       init_process_();
       initialized_ = true;
     }
   }
 
-  void run(const ModalAerosolConfig& modal_aerosol_config, Real t, Real dt,
-           const Prognostics& prognostics, const Atmosphere& atmosphere,
-           const Diagnostics& diagnostics,
-           Tendencies& tendencies) const override {
+  void run_(Real t, Real dt, const Prognostics& prognostics,
+            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+            Tendencies& tendencies) const override {
     // Set tendencies to zero.
     tendencies.scale(0.0);
 
@@ -285,15 +330,15 @@ class FAerosolProcess : public AerosolProcess {
                  (void*)&diagnostics, (void*)&tendencies);
   }
 
-  void set_param(const std::string& name, int value) override {
+  void set_param_(const std::string& name, int value) override {
     set_integer_param_(name.c_str(), value);
   }
 
-  void set_param(const std::string& name, bool value) override {
+  void set_param_(const std::string& name, bool value) override {
     set_logical_param_(name.c_str(), value);
   }
 
-  void set_param(const std::string& name, Real value) override {
+  void set_param_(const std::string& name, Real value) override {
     set_real_param_(name.c_str(), value);
   }
 
