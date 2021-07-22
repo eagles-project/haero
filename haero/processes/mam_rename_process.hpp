@@ -6,7 +6,7 @@
 namespace haero {
 
 /// \brief Bindings for the rename subroutine
-class MAMRenameProcess final : public AerosolProcess {
+class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
  public:
   MAMRenameProcess();
 

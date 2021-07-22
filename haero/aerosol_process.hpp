@@ -97,26 +97,24 @@ class AerosolProcess {
   //                            Public Interface
   //------------------------------------------------------------------------
 
-  /// Validates input aerosol and atmosphere data, returning true if all data
-  /// falls within this process's region of validity, and false if not.
-  /// @param [in] config The aerosol configuration describing the aerosol
-  ///                    system to which this process belongs.
-  /// @param [in] prognostics The prognostic variables used by and affected by
-  ///                         this process.
-  /// @param [in] atmosphere The atmosphere state variables used by this
-  ///                        process.
-  bool validate(const ModalAerosolConfig& config,
-                const Prognostics& prognostics,
-                const Atmosphere& atmosphere) const {
-    return validity_region_.contains(config, atmosphere, prognostics);
-  }
-
   /// On host: performs any system-specific process initialization.
   /// @param [in] config The aerosol configuration describing the aerosol
   ///                    system to which this process belongs.
   void init(const ModalAerosolConfig& config) {
     // This method must be called on the host.
     init_(config);
+  }
+
+  /// On device: Validates input aerosol and atmosphere data, returning true if
+  /// all data falls within this process's region of validity, and false if not.
+  /// @param [in] prognostics The prognostic variables used by and affected by
+  ///                         this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this
+  ///                        process.
+  KOKKOS_INLINE_FUNCTION
+  bool validate(const Prognostics& prognostics,
+                const Atmosphere& atmosphere) const {
+    return validity_region_.contains(atmosphere, prognostics);
   }
 
   /// On device: runs the aerosol process at a given time with the given data.
@@ -174,6 +172,12 @@ class AerosolProcess {
     return required_diagnostics_();
   }
 
+  /// On host: copies this aerosol process to the device, returning a pointer to
+  /// the copy.
+  AerosolProcess* copy_to_device() const {
+    return copy_to_device_();
+  }
+
  protected:
   /// On host: override this method to perform system-specific initialization
   /// for the aerosol process. By default, this does nothing.
@@ -201,6 +205,9 @@ class AerosolProcess {
   virtual void set_param_(const std::string& name, bool value) {}
   virtual void set_param_(const std::string& name, Real value) {}
 
+  /// This gets overridden by the AerosolProcessOnDevice middleware class.
+  virtual AerosolProcess* copy_to_device_() const = 0;
+
  private:
   const AerosolProcessType type_;
   // Use View as a struct to store a string and allows copy to device.
@@ -209,16 +216,52 @@ class AerosolProcess {
   RegionOfValidity validity_region_;
 };
 
+/// @class DeviceAerosolProcess
+/// This "middleware" class provides all its subclasses with the ability to copy
+/// itself from the host to the device. All actual aerosol processes derive from
+/// this type with their own type as the template parameter, in accordance with
+/// the C++ "curiously recurring template pattern" (see
+/// https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern).
+template <typename Subclass>
+class DeviceAerosolProcess : public AerosolProcess {
+ public:
+  /// Constructor, called by all DeviceAerosolProcess subclasses.
+  /// @param [in] type The type of aerosol process modeled by the subclass.
+  /// @param [in] name A descriptive name that captures the aerosol process,
+  ///                  its underlying parametrization, and its implementation.
+  DeviceAerosolProcess(AerosolProcessType type, const std::string& name)
+      : AerosolProcess(type, name) {}
+
+ protected:
+
+  AerosolProcess* copy_to_device_() const override {
+    const std::string debug_name = name();
+    Subclass *process =
+        static_cast<Subclass *>(Kokkos::kokkos_malloc<MemorySpace>(
+            debug_name + "_malloc", sizeof(Subclass)));
+
+    // Copy this object (including our virtual table) into the storage using
+    // a lambda capture.
+    const auto &this_process = dynamic_cast<const Subclass&>(*this);
+    Kokkos::parallel_for(
+      debug_name + "_copy", 1, KOKKOS_LAMBDA(const int) {
+        new (process) Subclass(this_process);
+      });
+    return process;
+  }
+};
+
 /// @class NullAerosolProcess
 /// This AerosolProcess represents a null process in which no tendencies
 /// are computed. It can be used for all prognostic processes that have been
 /// disabled.
-class NullAerosolProcess : public AerosolProcess {
+class NullAerosolProcess : public DeviceAerosolProcess<NullAerosolProcess> {
  public:
   /// Constructor: constructs a null aerosol process of the given type.
   /// @param [in] type The type of aerosol process.
   explicit NullAerosolProcess(AerosolProcessType type)
-      : AerosolProcess(type, "Null prognostic aerosol process") {}
+      : DeviceAerosolProcess<NullAerosolProcess>(type,
+          "Null prognostic aerosol process") {}
 
   // Overrides
   KOKKOS_FUNCTION
@@ -234,7 +277,7 @@ class NullAerosolProcess : public AerosolProcess {
 /// Fortran by wrapping the run method in a Fortran call that creates the
 /// proper Fortran proxies for the model, prognostics, diagnostics, and
 /// tendencies.
-class FAerosolProcess : public AerosolProcess {
+class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
  public:
   /// A pointer to a Fortran subroutine that initializes a process.
   /// Since the model is already available to the Fortran process via Haero's
@@ -282,7 +325,7 @@ class FAerosolProcess : public AerosolProcess {
                   SetIntegerParamSubroutine set_integer_param,
                   SetLogicalParamSubroutine set_logical_param,
                   SetRealParamSubroutine set_real_param)
-      : AerosolProcess(type, name),
+      : DeviceAerosolProcess<FAerosolProcess>(type, name),
         init_process_(init_process),
         run_process_(run_process),
         finalize_process_(finalize_process),
@@ -293,7 +336,7 @@ class FAerosolProcess : public AerosolProcess {
 
   /// Copy constructor.
   FAerosolProcess(const FAerosolProcess& pp)
-      : AerosolProcess(pp),
+      : DeviceAerosolProcess<FAerosolProcess>(pp),
         init_process_(pp.init_process_),
         run_process_(pp.run_process_),
         finalize_process_(pp.finalize_process_),

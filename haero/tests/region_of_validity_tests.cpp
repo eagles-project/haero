@@ -31,9 +31,11 @@ TEST_CASE("region_of_validity", "") {
   ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
                                     num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
-  std::vector<int> num_species_per_mode(
-      config.h_n_species_per_mode.data(),
-      config.h_n_species_per_mode.data() + num_modes);
+  std::vector<int> num_species_per_mode(num_modes);
+  for (int m = 0; m < num_modes; ++m) {
+    auto species_for_mode = config.aerosol_species_for_mode(m);
+    num_species_per_mode[m] = species_for_mode.size();
+  }
   Prognostics progs(num_modes, num_species_per_mode, num_gases, num_levels,
                     int_aerosols, cld_aerosols, int_num_mix_ratios,
                     cld_num_mix_ratios, gases);
@@ -104,12 +106,13 @@ TEST_CASE("region_of_validity", "") {
     // By default, a region of validity accepts zero data, so the above
     // prognostics and atmosphere should pass muster.
     RegionOfValidity rov;
-    REQUIRE(rov.contains(config, atm, progs));
+    rov.init(config);
+    REQUIRE(rov.contains(atm, progs));
 
     // Suppose now that we require data to be positive!
     rov.set_interstitial_aerosol_bounds(0, 1e4, 1e11);
     rov.temp_bounds.first = 273.0;
-    REQUIRE(not rov.contains(config, atm, progs));
+    REQUIRE(not rov.contains(atm, progs));
 
     // Fix the data and make sure it passes the next time.
     for (int k = 0; k < num_vert_packs; ++k) {
@@ -117,7 +120,7 @@ TEST_CASE("region_of_validity", "") {
       atm.temperature(k) = 325.0;
       atm.pressure(k) = 1e4;
     }
-    REQUIRE(rov.contains(config, atm, progs));
+    REQUIRE(rov.contains(atm, progs));
   }
 
   SECTION("intersection") {

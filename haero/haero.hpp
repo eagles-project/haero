@@ -5,6 +5,13 @@
 
 namespace haero {
 
+/// MemorySpace refers to the memory space on the device.
+#ifdef KOKKOS_ENABLE_CUDA
+typedef Kokkos::CudaSpace MemorySpace;
+#else
+typedef Kokkos::HostSpace MemorySpace;
+#endif
+
 /// Helpers for pack/array indexing
 using PackInfo = ekat::PackInfo<HAERO_PACK_SIZE>;
 

@@ -33,7 +33,7 @@ namespace haero {
 /// The AerosolProcess class provides an interface for all
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
-class MAMNucleationProcess final : public AerosolProcess {
+class MAMNucleationProcess final : public DeviceAerosolProcess<MAMNucleationProcess> {
   // applied to boundary layer nucleation rate can be set by a call to set_param
   Real adjust_factor_pbl_ratenucl = 0;
 
@@ -148,7 +148,7 @@ class MAMNucleationProcess final : public AerosolProcess {
   MAMNucleationProcess(const AerosolProcessType type, const std::string &name,
                        const ModalAerosolConfig &config,
                        const HostDiagnostics &diagnostics)
-      : AerosolProcess(type, name),
+      : DeviceAerosolProcess<MAMNucleationProcess>(type, name),
         iaer_h2so4(config.gas_index("H2SO4")),
         iaer_nh3(config.gas_index("NH3")),
         iaer_nh4(config.gas_index("nh4")),
@@ -162,19 +162,19 @@ class MAMNucleationProcess final : public AerosolProcess {
     {
       auto dgum = Kokkos::create_mirror_view(dgnum_aer);
       for (int m = 0; m < config.num_modes(); ++m)
-        dgum(m) = config.h_aerosol_modes(m).mean_std_dev;
+        dgum(m) = config.aerosol_modes[m].mean_std_dev;
       Kokkos::deep_copy(dgnum_aer, dgum);
     }
     {
       auto dgumlo = Kokkos::create_mirror_view(dgnumlo_aer);
       for (int m = 0; m < config.num_modes(); ++m)
-        dgumlo(m) = config.h_aerosol_modes(m).min_diameter;
+        dgumlo(m) = config.aerosol_modes[m].min_diameter;
       Kokkos::deep_copy(dgnumlo_aer, dgumlo);
     }
     {
       auto dgumhi = Kokkos::create_mirror_view(dgnumhi_aer);
       for (int m = 0; m < config.num_modes(); ++m)
-        dgumhi(m) = config.h_aerosol_modes(m).max_diameter;
+        dgumhi(m) = config.aerosol_modes[m].max_diameter;
       Kokkos::deep_copy(dgnumhi_aer, dgumhi);
     }
     nait = config.aerosol_mode_index("aitken");
@@ -186,9 +186,9 @@ class MAMNucleationProcess final : public AerosolProcess {
   virtual ~MAMNucleationProcess() {}
 
   /// Default copy constructor. For use in moving host instance to device.
-  KOKKOS_INLINE_FUNCTION
+//  KOKKOS_INLINE_FUNCTION
   MAMNucleationProcess(const MAMNucleationProcess &pp)
-      : AerosolProcess(pp),
+      : DeviceAerosolProcess<MAMNucleationProcess>(pp),
         adjust_factor_pbl_ratenucl(pp.adjust_factor_pbl_ratenucl),
         adjust_factor_bin_tern_ratenucl(pp.adjust_factor_bin_tern_ratenucl),
         iaer_h2so4(pp.iaer_h2so4),

@@ -43,7 +43,7 @@ std::set<std::string>* fortran_strings_ = nullptr;
 
 Model::Model(const ModalAerosolConfig& modal_aerosol_config,
              const SelectedProcesses& selected_processes, int num_levels)
-    : modal_aerosol_config_(modal_aerosol_config),
+    : config_(modal_aerosol_config),
       selected_processes_(selected_processes),
       num_levels_(num_levels),
       aero_processes_(),
@@ -64,14 +64,14 @@ Model::Model(const ModalAerosolConfig& modal_aerosol_config,
 
   // Now we can initialize the processes.
   for (auto p : aero_processes_) {
-    p.second->init(modal_aerosol_config_);
+    p.second->init(config_);
   }
 }
 
 Model::Model() {}
 
 Model::Model(const Model& model)
-    : modal_aerosol_config_(model.modal_aerosol_config_),
+    : config_(model.config_),
       selected_processes_(model.selected_processes_),
       num_levels_(model.num_levels_),
       aero_processes_(model.aero_processes_),
@@ -80,7 +80,7 @@ Model::Model(const Model& model)
 Model* Model::ForUnitTests(const ModalAerosolConfig& modal_aerosol_config,
                            int num_levels) {
   Model* model = new Model();
-  model->modal_aerosol_config_ = modal_aerosol_config;
+  model->config_ = modal_aerosol_config;
   model->num_levels_ = num_levels;
   model->uses_fortran_ = false;
 
@@ -118,13 +118,13 @@ Prognostics* Model::create_prognostics(
     SpeciesColumnView gases, ModeColumnView interstitial_num_mix_ratios,
     ModeColumnView cloudborne_num_mix_ratios) const {
   std::vector<int> num_aero_species(
-      modal_aerosol_config_.h_aerosol_modes.size());
-  for (size_t m = 0; m < modal_aerosol_config_.h_aerosol_modes.size(); ++m) {
-    const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
+      config_.aerosol_modes.size());
+  for (size_t m = 0; m < config_.aerosol_modes.size(); ++m) {
+    const auto mode_species = config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
   return new Prognostics(num_aero_species.size(), num_aero_species,
-                         modal_aerosol_config_.h_gas_species.size(),
+                         config_.gas_species.size(),
                          num_levels_, int_aerosols, cld_aerosols, gases,
                          interstitial_num_mix_ratios,
                          cloudborne_num_mix_ratios);
@@ -132,15 +132,13 @@ Prognostics* Model::create_prognostics(
 
 HostDiagnostics* Model::create_diagnostics() const {
   // Create an empty Diagnostics object.
-  std::vector<int> num_aero_species(
-      modal_aerosol_config_.h_aerosol_modes.size());
+  std::vector<int> num_aero_species(config_.num_modes());
   for (size_t m = 0; m < num_aero_species.size(); ++m) {
-    const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
+    const auto mode_species = config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
   auto diags = new HostDiagnostics(num_aero_species.size(), num_aero_species,
-                                   modal_aerosol_config_.h_gas_species.size(),
-                                   num_levels_);
+                                   config_.num_gases(), num_levels_);
 
   //  // Make sure that all diagnostic variables needed by the model's processes
   //  // are present.
@@ -152,11 +150,7 @@ HostDiagnostics* Model::create_diagnostics() const {
   return diags;
 }
 
-void Model::run_process(AerosolProcessType type, Real t, Real dt,
-                        const Prognostics& prognostics,
-                        const Atmosphere& atmosphere,
-                        const Diagnostics& diagnostics,
-                        Tendencies& tendencies) {
+AerosolProcess* Model::process_on_device(AerosolProcessType type) const {
   auto iter = aero_processes_.find(type);
   EKAT_REQUIRE_MSG(iter != aero_processes_.end(),
                    "No process of the selected type is available!");
@@ -164,7 +158,7 @@ void Model::run_process(AerosolProcessType type, Real t, Real dt,
                    "Null process pointer encountered!");
   EKAT_REQUIRE_MSG(iter->second->type() == type,
                    "Invalid process type encountered!");
-  iter->second->run(t, dt, prognostics, atmosphere, diagnostics, tendencies);
+  return iter->second->copy_to_device();
 }
 
 const SelectedProcesses& Model::selected_processes() const {
@@ -183,19 +177,19 @@ void Model::init_fortran() {
 
   // This series of calls sets things up in Haero's Fortran module.
   haerotran_begin_init();
-  int num_modes = modal_aerosol_config_.h_aerosol_modes.size();
+  int num_modes = config_.aerosol_modes.size();
   haerotran_set_num_modes(num_modes);
   size_t max_species = 0;
   for (int m = 0; m < num_modes; ++m) {
-    const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
+    const auto mode_species = config_.aerosol_species_for_mode(m);
     max_species = std::max(max_species, mode_species.size());
   }
   haerotran_set_max_mode_species(max_species);
   for (int m = 0; m < num_modes; ++m) {
-    const auto mode_species = modal_aerosol_config_.aerosol_species_for_mode(m);
+    const auto mode_species = config_.aerosol_species_for_mode(m);
 
     // Set the properties of mode i+1 (as indexed in Fortran).
-    const auto& mode = modal_aerosol_config_.h_aerosol_modes[m];
+    const auto& mode = config_.aerosol_modes[m];
     haerotran_set_mode(m + 1, mode.name().c_str(), mode.min_diameter,
                        mode.max_diameter, mode.mean_std_dev,
                        mode.deliquescence_pt, mode.crystallization_pt);
@@ -203,7 +197,7 @@ void Model::init_fortran() {
     // Set up aerosol species for this mode.
     int num_species = mode_species.size();
     for (int s = 0; s < num_species; ++s) {
-      const auto species = modal_aerosol_config_.h_aerosol_species[s];
+      const auto species = config_.aerosol_species[s];
       haerotran_set_aero_species(
           m + 1, s + 1, species.name().c_str(), species.symbol().c_str(),
           species.molecular_weight, species.density, species.hygroscopicity);
@@ -211,10 +205,10 @@ void Model::init_fortran() {
   }
 
   // Set up gas species.
-  int num_gas_species = modal_aerosol_config_.h_gas_species.size();
+  int num_gas_species = config_.gas_species.size();
   haerotran_set_num_gas_species(num_gas_species);
   for (int i = 0; i < num_gas_species; ++i) {
-    const auto species = modal_aerosol_config_.h_gas_species[i];
+    const auto species = config_.gas_species[i];
     haerotran_set_gas_species(i + 1, species.name().c_str(),
                               species.symbol().c_str(),
                               species.molecular_weight);
@@ -253,11 +247,11 @@ bool Model::gather_processes() {
 }
 
 void Model::validate() {
-  EKAT_REQUIRE_MSG(modal_aerosol_config_.h_aerosol_modes.size(),
+  EKAT_REQUIRE_MSG(config_.aerosol_modes.size(),
                    "Model: No modes were defined!");
-  EKAT_REQUIRE_MSG(modal_aerosol_config_.h_aerosol_species.size(),
+  EKAT_REQUIRE_MSG(config_.aerosol_species.size(),
                    "Model: No aerosol species were given!");
-  EKAT_REQUIRE_MSG(modal_aerosol_config_.h_gas_species.size(),
+  EKAT_REQUIRE_MSG(config_.gas_species.size(),
                    "Model: No gas species were given!");
   EKAT_REQUIRE_MSG((num_levels_ > 0),
                    "Model: No vertical levels were specified!");

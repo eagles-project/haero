@@ -14,21 +14,13 @@
 
 using namespace haero;
 
-// Useful little function to allocate class on device. Probably move to header
-// later.
-#ifdef KOKKOS_ENABLE_CUDA
-typedef Kokkos::CudaSpace MemSpace;
-#else
-typedef Kokkos::HostSpace MemSpace;
-#endif
-
-class MyAerosolProcess final : public AerosolProcess {
+class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
  public:
   MyAerosolProcess(AerosolProcessType type, const std::string &name,
                    const int num_lev, const Diagnostics::Token aer_0,
                    const Diagnostics::Token aer_1,
                    const Diagnostics::Token gen_0)
-      : AerosolProcess(type, name),
+      : DeviceAerosolProcess<MyAerosolProcess>(type, name),
         num_levels(num_lev),
         aersol_0(aer_0),
         aersol_1(aer_1),
@@ -39,23 +31,11 @@ class MyAerosolProcess final : public AerosolProcess {
 
   KOKKOS_INLINE_FUNCTION
   MyAerosolProcess(const MyAerosolProcess &pp)
-      : AerosolProcess(pp),
+      : DeviceAerosolProcess<MyAerosolProcess>(pp),
         num_levels(pp.num_levels),
         aersol_0(pp.aersol_0),
         aersol_1(pp.aersol_1),
         generic_0(pp.generic_0) {}
-
-  MyAerosolProcess *copy_to_device() {
-    const std::string debuggingName(name());
-    MyAerosolProcess *pp =
-        static_cast<MyAerosolProcess *>(Kokkos::kokkos_malloc<MemSpace>(
-            debuggingName + "_malloc", sizeof(MyAerosolProcess)));
-    const MyAerosolProcess &this_pp = *this;  // Suck into lambda capture space.
-    Kokkos::parallel_for(
-        debuggingName + "_format", 1,
-        KOKKOS_LAMBDA(const int) { new (pp) MyAerosolProcess(this_pp); });
-    return pp;
-  }
 
  protected:
   //------------------------------------------------------------------------
@@ -221,7 +201,7 @@ TEST_CASE("process_tests", "aerosol_process") {
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudProcess";
   MyAerosolProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
-  MyAerosolProcess *device_pp = pp.copy_to_device();
+  AerosolProcess *device_pp = pp.copy_to_device();
 
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
   std::vector<GasSpecies> gas_species = create_mam4_gas_species();
@@ -245,7 +225,7 @@ TEST_CASE("process_tests", "aerosol_process") {
             });
       });
 
-  Kokkos::kokkos_free<MemSpace>(device_pp);
+  Kokkos::kokkos_free<MemorySpace>(device_pp);
 
   {
     using fp_helper = FloatingPoint<float>;

@@ -14,7 +14,9 @@ namespace haero {
 
 /// @class RegionOfValidity
 /// This type expresses the "region of validity" for a given aerosol process
-/// in terms of bounds on atmospheric and aerosol prognostic states.
+/// in terms of bounds on atmospheric and aerosol prognostic states. A region
+/// of validity is initialized on the host and subsequently accessed from the
+/// device via an aerosol process.
 class RegionOfValidity final {
  public:
   using Bounds = Kokkos::pair<Real, Real>;
@@ -23,6 +25,10 @@ class RegionOfValidity final {
   RegionOfValidity()
       : temp_bounds({0, 500}),
         rel_hum_bounds({0, 1}),
+        num_modes_(0),
+        num_aero_species_in_mode_("Number of aerosol species per mode", 0),
+        aero_species_("Aerosol species data", 0),
+        gas_species_("Gas species data", 0),
         int_aero_indices_("Interstitial aerosol indices", 0),
         cld_aero_indices_("Cloudborne aerosol indices", 0),
         int_aero_bounds_("Interstitial aerosol bounds", 0),
@@ -31,7 +37,6 @@ class RegionOfValidity final {
         gas_bounds_("Gas bounds", 0) {}
 
   /// Destructor.
-  KOKKOS_FUNCTION
   ~RegionOfValidity() {}
 
   /// Minimum and maximum bounds on atmospheric temperature [K]
@@ -39,8 +44,40 @@ class RegionOfValidity final {
   /// Minimum and maximum bounds on relative humidity [-]
   Bounds rel_hum_bounds;
 
-  /// Adds a set of bounds for the number concentration of the interstitial
-  /// aerosol species with the given population index. Callable from host only.
+  /// On host: initializes a RegionOfValidity with aerosol configuration
+  /// metadata.
+  void init(const ModalAerosolConfig& config) {
+    // Gather information from the config.
+    num_modes_ = config.num_modes();
+    int num_pops = config.num_aerosol_populations;
+    DeviceType::view_1d<int> host_num_aero_species_in_mode("", num_modes_);
+    DeviceType::view_1d<AerosolSpecies> host_aero_species("", num_pops);
+    for (int m = 0; m < num_modes_; ++m) {
+      auto aero_species = config.aerosol_species_for_mode(m);
+      host_num_aero_species_in_mode(m) = aero_species.size();
+      for (int s = 0; s < aero_species.size(); ++s) {
+        int pop_index = config.population_index(m, s);
+        host_aero_species(pop_index) = aero_species[s];
+      }
+    }
+
+    int num_gases = config.num_gases();
+    DeviceType::view_1d<GasSpecies> host_gas_species("", num_gases);
+    for (int g = 0; g < num_gases; ++g) {
+      host_gas_species(g) = config.gas_species[g];
+    }
+
+    // Copy the information over to the device.
+    Kokkos::resize(num_aero_species_in_mode_, host_num_aero_species_in_mode.extent(0));
+    Kokkos::deep_copy(num_aero_species_in_mode_, host_num_aero_species_in_mode);
+    Kokkos::resize(aero_species_, host_aero_species.extent(0));
+    Kokkos::deep_copy(aero_species_, host_aero_species);
+    Kokkos::resize(gas_species_, host_gas_species.extent(0));
+    Kokkos::deep_copy(gas_species_, host_gas_species);
+  }
+
+  /// On host: adds a set of bounds for the number concentration of the
+  /// interstitial aerosol species with the given population index.
   /// @param [in] pop_index The index of the aerosol species within a mode as
   ///                       indexed by a population index in a prognostics
   ///                       container
@@ -51,8 +88,8 @@ class RegionOfValidity final {
                             int_aero_bounds_);
   }
 
-  /// Adds a set of bounds for the number concentration of the cloudborne
-  /// aerosol species with the given population index. Callable from host only.
+  /// On host: Adds a set of bounds for the number concentration of the
+  /// cloudborne aerosol species with the given population index.
   /// @param [in] pop_index The index of the aerosol species within a mode as
   ///                       indexed by a population index in a prognostics
   ///                       container
@@ -63,8 +100,8 @@ class RegionOfValidity final {
                             int_aero_bounds_);
   }
 
-  /// Adds a set of bounds for the number concentration of the gas species with
-  /// the given index. Callable from host only.
+  /// On host: adds a set of bounds for the number concentration of the gas
+  /// species with the given index.
   /// @param [in] gas_index The index of the gas as it appears in the set of
   ///                       gases in a prognostics container
   /// @param [in] min_n The minimum valid number concentration [m-3]
@@ -73,9 +110,8 @@ class RegionOfValidity final {
     insert_bounds_at_index_(gas_index, min_n, max_n, gas_indices_, gas_bounds_);
   }
 
-  /// Minimum and maximum bounds on the number concentration for the
+  /// On host: Minimum and maximum bounds on the number concentration for the
   /// interstitial aerosol corresponding to the given population index.
-  /// Callable from host only.
   /// @param [in] pop_index The index of the aerosol species within a mode as
   ///                       indexed by a population index in a prognostics
   ///                       container
@@ -84,9 +120,8 @@ class RegionOfValidity final {
                        1.0);
   }
 
-  /// Minimum and maximum bounds on the number concentration for the cloudborne
-  /// aerosol corresponding to the given population index. Callable from host
-  /// only.
+  /// On host: Minimum and maximum bounds on the number concentration for the
+  /// cloudborne aerosol corresponding to the given population index.
   /// @param [in] pop_index The index of the aerosol species within a mode as
   ///                       indexed by a population index in a prognostics
   ///                       container
@@ -103,13 +138,12 @@ class RegionOfValidity final {
     return get_bounds_(gas_indices_, gas_bounds_, gas_index, 0.0, 1.0);
   }
 
-  /// Returns true if all state data in the given atmospheric and prognostic
-  /// state fall within this region of validity, false otherwise.
-  /// @param [in] config The modal aerosol configuration under consideration
+  /// On device: returns true if all state data in the given atmospheric and
+  /// prognostic state fall within this region of validity, false otherwise.
   /// @param [in] atmosphere The atmospheric state under consideration
   /// @param [in] prognostics The prognostic aerosol state under consideration
   KOKKOS_INLINE_FUNCTION
-  bool contains(const ModalAerosolConfig& config, const Atmosphere& atmosphere,
+  bool contains(const Atmosphere& atmosphere,
                 const Prognostics& prognostics) const {
     using namespace haero::conversions;
     // Check atmospheric thresholds.
@@ -132,23 +166,22 @@ class RegionOfValidity final {
         violations);
     if (violations == 0) {
       // Check the prognostic state.
-      return (aero_n_valid_(config, prognostics.interstitial_aerosols,
+      return (aero_n_valid_(prognostics.interstitial_aerosols,
                             atmosphere.vapor_mixing_ratio, atmosphere.pressure,
                             atmosphere.temperature, int_aero_indices_,
                             int_aero_bounds_) and
-              aero_n_valid_(config, prognostics.cloud_aerosols,
+              aero_n_valid_(prognostics.cloud_aerosols,
                             atmosphere.vapor_mixing_ratio, atmosphere.pressure,
                             atmosphere.temperature, cld_aero_indices_,
                             cld_aero_bounds_) and
-              gas_n_valid_(config, prognostics.gases,
+              gas_n_valid_(prognostics.gases,
                            atmosphere.vapor_mixing_ratio, atmosphere.pressure,
                            atmosphere.temperature, gas_indices_, gas_bounds_));
     }
     return (violations == 0);
   }
 
-  /// Returns the intersection of two regions of validity r1 and r2.
-  /// Callable from host only.
+  /// On host: returns the intersection of two regions of validity r1 and r2.
   static RegionOfValidity intersection(const RegionOfValidity& r1,
                                        const RegionOfValidity& r2) {
     RegionOfValidity int_rov;
@@ -220,14 +253,12 @@ class RegionOfValidity final {
   // array correspond to number concentrations that fall within the bounds in
   // the given indices/bounds arrays.
   KOKKOS_INLINE_FUNCTION
-  bool aero_n_valid_(const ModalAerosolConfig& config,
-                     const SpeciesColumnView& mmrs, const ColumnView& qv,
+  bool aero_n_valid_(const SpeciesColumnView& mmrs, const ColumnView& qv,
                      const ColumnView& p, const ColumnView& T,
                      const IndexArray& indices,
                      const BoundsArray& bounds) const {
     using namespace haero::conversions;
     int violations = 0;
-    int num_modes = config.num_modes();
     for (int i = 0; i < indices.extent(0); ++i) {
       int pop_index = indices(i);
       Real n_min = bounds(pop_index).first;
@@ -235,17 +266,7 @@ class RegionOfValidity final {
       int num_pop = mmrs.extent(0);
       int num_levels = mmrs.extent(1);
       if (pop_index < num_pop) {
-        // Get the mode/species indices for this population index.
-        int mode_index = 0, mode_offset = 0;
-        while (mode_offset + config.d_n_species_per_mode(mode_index) <
-               pop_index) {
-          mode_offset += config.d_n_species_per_mode(mode_index);
-          ++mode_index;
-        }
-        int species_index = pop_index - mode_offset;
-        DeviceType::view_1d<AerosolSpecies> species_for_mode("", num_modes);
-        config.aerosol_species_for_mode(mode_index, species_for_mode);
-        const Real mu = species_for_mode(species_index).molecular_weight;
+        const Real mu = aero_species_(pop_index).molecular_weight;
         Kokkos::parallel_reduce(
             "RegionOfValidity::aero_n_valid_", num_levels,
             KOKKOS_LAMBDA(const int k, int& violation) {
@@ -267,8 +288,7 @@ class RegionOfValidity final {
   // array correspond to number concentrations that fall within the bounds in
   // the given indices/bounds arrays.
   KOKKOS_INLINE_FUNCTION
-  bool gas_n_valid_(const ModalAerosolConfig& config,
-                    const SpeciesColumnView& mmrs, const ColumnView& qv,
+  bool gas_n_valid_(const SpeciesColumnView& mmrs, const ColumnView& qv,
                     const ColumnView& p, const ColumnView& T,
                     const IndexArray& indices,
                     const BoundsArray& bounds) const {
@@ -281,7 +301,7 @@ class RegionOfValidity final {
       int num_gases = mmrs.extent(0);
       int num_levels = mmrs.extent(1);
       if (index < num_gases) {
-        const auto& species = config.d_gas_species(index);
+        const auto& species = gas_species_(index);
         const Real mu = species.molecular_weight;
         Kokkos::parallel_reduce(
             "RegionOfValidity::gas_n_valid_", num_levels,
@@ -324,6 +344,12 @@ class RegionOfValidity final {
       }
     }
   }
+
+  // Aerosol and gas species in the aerosol configuration.
+  int num_modes_;
+  DeviceType::view_1d<int> num_aero_species_in_mode_;
+  DeviceType::view_1d<AerosolSpecies> aero_species_;
+  DeviceType::view_1d<GasSpecies> gas_species_;
 
   /// Minimum and maximum bounds on specific aerosol and gas species, indexed
   /// by (case-insensitive) symbols. Elements in arrays are sorted in ascending
