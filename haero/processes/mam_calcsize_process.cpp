@@ -5,5 +5,6 @@
 namespace haero {
 
 MAMCalcsizeProcess::MAMCalcsizeProcess()
-    : DeviceAerosolProcess<MAMCalcsizeProcess>(CalcsizeProcess, "MAMCalcsizeProcess") {}
+    : DeviceAerosolProcess<MAMCalcsizeProcess>(CalcsizeProcess,
+                                               "MAMCalcsizeProcess") {}
 }  // namespace haero

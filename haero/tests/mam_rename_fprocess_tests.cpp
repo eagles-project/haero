@@ -18,10 +18,8 @@ TEST_CASE("mam_rename_run", "") {
   auto aero_config = create_mam4_modal_aerosol_config();
   static constexpr std::size_t num_levels{72};  // number of levels
   auto* model = get_model_for_unit_tests(aero_config, num_levels);
-  const std::size_t num_gases{
-      aero_config.h_gas_species.size()};  // number of gases
-  const std::size_t num_modes{
-      aero_config.h_aerosol_modes.size()};  // number of modes
+  auto num_gases = aero_config.gas_species.size();    // number of gases
+  auto num_modes = aero_config.aerosol_modes.size();  // number of modes
 
   // Set up some prognostics aerosol data views
   const int num_aero_populations = model->num_aerosol_populations();

@@ -8,7 +8,8 @@
 namespace haero {
 
 /// @class MAMCalcsizeProcess
-class MAMCalcsizeProcess final : public DeviceAerosolProcess<MAMCalcsizeProcess> {
+class MAMCalcsizeProcess final
+    : public DeviceAerosolProcess<MAMCalcsizeProcess> {
  public:
   MAMCalcsizeProcess();
 

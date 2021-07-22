@@ -406,8 +406,8 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     num_iface_packs++;
   }
   Model* model = Model::ForUnitTests(aero_config, num_levels);
-  int num_gases = aero_config.h_gas_species.size();
-  int num_modes = aero_config.h_aerosol_modes.size();
+  int num_gases = aero_config.gas_species.size();
+  int num_modes = aero_config.aerosol_modes.size();
 
   // Set up some prognosics aerosol data views‥
   int num_aero_populations = model->num_aerosol_populations();

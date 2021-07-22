@@ -12,7 +12,7 @@ namespace haero {
 void ModalAerosolConfig::index_mode_species(
     const std::map<std::string, std::vector<std::string>>& mode_species) {
   species_for_mode_.clear();
-  for (auto kv_pair: mode_species) {
+  for (auto kv_pair : mode_species) {
     const std::string& mode_name = kv_pair.first;
     const std::vector<std::string>& aero_species = kv_pair.second;
 
@@ -24,7 +24,7 @@ void ModalAerosolConfig::index_mode_species(
 
     if (mode_index == aerosol_modes.size()) continue;
 
-    for (const auto& species_name: aero_species) {
+    for (const auto& species_name : aero_species) {
       int species_index = 0;
       while (species_index < aero_species.size()) {
         if (aerosol_species[species_index].symbol() == species_name) break;

@@ -68,7 +68,8 @@ class RegionOfValidity final {
     }
 
     // Copy the information over to the device.
-    Kokkos::resize(num_aero_species_in_mode_, host_num_aero_species_in_mode.extent(0));
+    Kokkos::resize(num_aero_species_in_mode_,
+                   host_num_aero_species_in_mode.extent(0));
     Kokkos::deep_copy(num_aero_species_in_mode_, host_num_aero_species_in_mode);
     Kokkos::resize(aero_species_, host_aero_species.extent(0));
     Kokkos::deep_copy(aero_species_, host_aero_species);
@@ -174,9 +175,9 @@ class RegionOfValidity final {
                             atmosphere.vapor_mixing_ratio, atmosphere.pressure,
                             atmosphere.temperature, cld_aero_indices_,
                             cld_aero_bounds_) and
-              gas_n_valid_(prognostics.gases,
-                           atmosphere.vapor_mixing_ratio, atmosphere.pressure,
-                           atmosphere.temperature, gas_indices_, gas_bounds_));
+              gas_n_valid_(prognostics.gases, atmosphere.vapor_mixing_ratio,
+                           atmosphere.pressure, atmosphere.temperature,
+                           gas_indices_, gas_bounds_));
     }
     return (violations == 0);
   }

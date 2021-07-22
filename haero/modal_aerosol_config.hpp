@@ -41,7 +41,7 @@ class ModalAerosolConfig final {
   ModalAerosolConfig(
       const std::vector<Mode>& aerosol_modes,
       const std::vector<AerosolSpecies>& aerosol_species,
-      const std::map<std::string, std::vector<std::string> >& mode_species,
+      const std::map<std::string, std::vector<std::string>>& mode_species,
       const std::vector<GasSpecies>& gas_species)
       : aerosol_modes(aerosol_modes),
         aerosol_species(aerosol_species),
@@ -50,7 +50,7 @@ class ModalAerosolConfig final {
         // Is the use of std::accumulate here too obscure?
         num_aerosol_populations(std::accumulate(
             mode_species.begin(), mode_species.end(), 0,
-            [](int i, std::pair<std::string, std::vector<std::string> > m) {
+            [](int i, std::pair<std::string, std::vector<std::string>> m) {
               return i + m.second.size();
             })) {
     EKAT_REQUIRE_MSG(aerosol_modes.size(),
@@ -99,7 +99,6 @@ class ModalAerosolConfig final {
     return result;
   }
 
-
   /// Returns the list of aerosol species associated with the model with the
   /// given mode index.
   /// @param [in] mode_index An integer index identifying the mode in question.
@@ -127,8 +126,8 @@ class ModalAerosolConfig final {
     for (int m = 0; m < aerosol_modes.size(); ++m) {
       const auto& mode = aerosol_modes[m];
       if ((mode.name() == mode_name) or
-          (not case_sensitive and (strcasecmp(mode.name().c_str(),
-                                              mode_name.c_str()) == 0))) {
+          (not case_sensitive and
+           (strcasecmp(mode.name().c_str(), mode_name.c_str()) == 0))) {
         return m;
       }
     }
@@ -152,10 +151,9 @@ class ModalAerosolConfig final {
     for (int s = 0; s < species_for_mode_[mode_index].size(); ++s) {
       const auto& species = aerosol_species[species_for_mode_[mode_index][s]];
       if ((species.symbol() == aerosol_symbol) or
-          (not case_sensitive and
-           (strcasecmp(species.symbol().c_str(),
-                       aerosol_symbol.c_str()) == 0))) {
-          return s;
+          (not case_sensitive and (strcasecmp(species.symbol().c_str(),
+                                              aerosol_symbol.c_str()) == 0))) {
+        return s;
       }
     }
     return -1;
@@ -209,7 +207,7 @@ class ModalAerosolConfig final {
   // This sets mode->species indexing. Throws an exception if the mode_species
   // mapping produces an inconsistent configuration.
   void index_mode_species(
-      const std::map<std::string, std::vector<std::string> >& mode_species);
+      const std::map<std::string, std::vector<std::string>>& mode_species);
 };
 
 inline ModalAerosolConfig create_mam4_modal_aerosol_config() {

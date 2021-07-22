@@ -174,9 +174,7 @@ class AerosolProcess {
 
   /// On host: copies this aerosol process to the device, returning a pointer to
   /// the copy.
-  AerosolProcess* copy_to_device() const {
-    return copy_to_device_();
-  }
+  AerosolProcess* copy_to_device() const { return copy_to_device_(); }
 
  protected:
   /// On host: override this method to perform system-specific initialization
@@ -233,20 +231,18 @@ class DeviceAerosolProcess : public AerosolProcess {
       : AerosolProcess(type, name) {}
 
  protected:
-
   AerosolProcess* copy_to_device_() const override {
     const std::string debug_name = name();
-    Subclass *process =
-        static_cast<Subclass *>(Kokkos::kokkos_malloc<MemorySpace>(
+    Subclass* process =
+        static_cast<Subclass*>(Kokkos::kokkos_malloc<MemorySpace>(
             debug_name + "_malloc", sizeof(Subclass)));
 
     // Copy this object (including our virtual table) into the storage using
     // a lambda capture.
-    const auto &this_process = dynamic_cast<const Subclass&>(*this);
+    const auto& this_process = dynamic_cast<const Subclass&>(*this);
     Kokkos::parallel_for(
-      debug_name + "_copy", 1, KOKKOS_LAMBDA(const int) {
-        new (process) Subclass(this_process);
-      });
+        debug_name + "_copy", 1,
+        KOKKOS_LAMBDA(const int) { new (process) Subclass(this_process); });
     return process;
   }
 };
@@ -260,8 +256,8 @@ class NullAerosolProcess : public DeviceAerosolProcess<NullAerosolProcess> {
   /// Constructor: constructs a null aerosol process of the given type.
   /// @param [in] type The type of aerosol process.
   explicit NullAerosolProcess(AerosolProcessType type)
-      : DeviceAerosolProcess<NullAerosolProcess>(type,
-          "Null prognostic aerosol process") {}
+      : DeviceAerosolProcess<NullAerosolProcess>(
+            type, "Null prognostic aerosol process") {}
 
   // Overrides
   KOKKOS_FUNCTION

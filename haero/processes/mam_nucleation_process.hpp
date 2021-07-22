@@ -33,7 +33,8 @@ namespace haero {
 /// The AerosolProcess class provides an interface for all
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
-class MAMNucleationProcess final : public DeviceAerosolProcess<MAMNucleationProcess> {
+class MAMNucleationProcess final
+    : public DeviceAerosolProcess<MAMNucleationProcess> {
   // applied to boundary layer nucleation rate can be set by a call to set_param
   Real adjust_factor_pbl_ratenucl = 0;
 
@@ -186,7 +187,7 @@ class MAMNucleationProcess final : public DeviceAerosolProcess<MAMNucleationProc
   virtual ~MAMNucleationProcess() {}
 
   /// Default copy constructor. For use in moving host instance to device.
-//  KOKKOS_INLINE_FUNCTION
+  //  KOKKOS_INLINE_FUNCTION
   MAMNucleationProcess(const MAMNucleationProcess &pp)
       : DeviceAerosolProcess<MAMNucleationProcess>(pp),
         adjust_factor_pbl_ratenucl(pp.adjust_factor_pbl_ratenucl),

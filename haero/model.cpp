@@ -117,16 +117,14 @@ Prognostics* Model::create_prognostics(
     SpeciesColumnView int_aerosols, SpeciesColumnView cld_aerosols,
     SpeciesColumnView gases, ModeColumnView interstitial_num_mix_ratios,
     ModeColumnView cloudborne_num_mix_ratios) const {
-  std::vector<int> num_aero_species(
-      config_.aerosol_modes.size());
+  std::vector<int> num_aero_species(config_.aerosol_modes.size());
   for (size_t m = 0; m < config_.aerosol_modes.size(); ++m) {
     const auto mode_species = config_.aerosol_species_for_mode(m);
     num_aero_species[m] = static_cast<int>(mode_species.size());
   }
   return new Prognostics(num_aero_species.size(), num_aero_species,
-                         config_.gas_species.size(),
-                         num_levels_, int_aerosols, cld_aerosols, gases,
-                         interstitial_num_mix_ratios,
+                         config_.gas_species.size(), num_levels_, int_aerosols,
+                         cld_aerosols, gases, interstitial_num_mix_ratios,
                          cloudborne_num_mix_ratios);
 }
 

@@ -300,7 +300,7 @@ void parse_aerosols_section(const YAML::Node& aerosols,
 
   // Did we find all the modes we need?
   for (size_t m = 0; m < found_mode.size(); ++m) {
-    auto mode_name = aerosol_config.h_aerosol_modes(m).name();
+    auto mode_name = aerosol_config.aerosol_modes[m].name();
     if (found_mode[m] == 0) {
       throw YamlException(std::string("Didn't find mode '") + mode_name +
                           std::string("' in aerosols section."));
@@ -330,7 +330,7 @@ void parse_gases_section(const YAML::Node& gases,
   for (size_t g = 0; g < found_gas.size(); ++g) {
     if (found_gas[g] == 0) {
       throw YamlException(std::string("Didn't find gas '") +
-                          aerosol_config.h_gas_species(g).symbol() +
+                          aerosol_config.gas_species[g].symbol() +
                           std::string("' in gases section."));
     }
   }

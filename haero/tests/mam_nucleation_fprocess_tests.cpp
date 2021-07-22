@@ -45,8 +45,8 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
   const auto aero_species = create_mam4_aerosol_species();
   auto aero_config = create_mam4_modal_aerosol_config();
   const int num_levels = 72;
-  const int num_modes = aero_config.h_aerosol_modes.size();
-  const int num_gases = aero_config.h_gas_species.size();
+  const int num_modes = aero_config.aerosol_modes.size();
+  const int num_gases = aero_config.gas_species.size();
 
   std::vector<int> num_aero_species(num_modes);
   std::vector<Mode> modes = create_mam4_modes();
@@ -449,8 +449,8 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   auto aero_config = create_mam4_modal_aerosol_config();
   Model* model = get_model_for_unit_tests(aero_config);
   int num_levels = 72;
-  int num_gases = aero_config.h_gas_species.size();
-  int num_modes = aero_config.h_aerosol_modes.size();
+  int num_gases = aero_config.gas_species.size();
+  int num_modes = aero_config.aerosol_modes.size();
 
   // Set up some prognosics aerosol data views‥
   int num_aero_populations = model->num_aerosol_populations();

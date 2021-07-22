@@ -68,9 +68,7 @@ class Model final {
 
   /// Returns the modal aerosol configuration associated with this aerosol
   /// modeļ.
-  const ModalAerosolConfig& modal_aerosol_config() const {
-    return config_;
-  }
+  const ModalAerosolConfig& modal_aerosol_config() const { return config_; }
 
   /// Returns the selected set of processes associated with this aerosol model.
   const SelectedProcesses& selected_processes() const;
