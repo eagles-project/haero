@@ -213,13 +213,12 @@ void MAMRenameProcess::find_renaming_pairs_(
     // Cut-off (based on geometric mean) for making decision to do inter-mode
     // transfers
     //
-    // TODO: use dummy values for _dgnum_aer_, or assign to dgnum_low for the
+    // TODO: use dummy values for _dgnum_, or assign to dgnum_low for the
     // moment. Have to figure out how to compute this. We will extract from
     // model at some point.
     {
       // Store in a temporary rather than access element of _diameter_cutoff_
-      // multiple times. FWIW IIFE's like these are often elided:
-      // https://godbolt.org/z/aqh6oq83d
+      // multiple times.
       auto diameter_cutoff_for_src_mode = [&] () -> Real {
         const auto sqrt_param_a =
             dgnum[src_mode]
