@@ -35,10 +35,26 @@ if (HAERO_FORTRAN)
   set(HAERO_FORTRAN_SOURCES
       haero.F90
       haero_precision.F90
+      radconstants.F90
+      chem_mods.F90
+      shr_kind_mod.F90
+      modal_aero_config.F90
+      modal_aero_logging.F90
+      modal_aero_microp_modes.F90
+      modal_aero_microp_species.F90
+      modal_aero_microp_control.F90
+      modal_aero_soaexch.F90
+      modal_aero_data.F90
+      abortutils.F90
       ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
       haero_conversions.F90)
 endif()
 
+# Build-time macros get dumped to this file.
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/modal_aero_config.inc.in
+  ${CMAKE_CURRENT_BINARY_DIR}/modal_aero_config.inc
+)
 
 # Gather Haero process implementations (placed in HAERO_PROCESSES).
 add_subdirectory(processes)
