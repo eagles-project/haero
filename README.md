@@ -28,7 +28,7 @@ tested:
 
 To build Haero, you need:
 
-* [CMake v3.10+](https://cmake.org/)
+* [CMake v3.12+](https://cmake.org/)
 * GNU Make
 * reliable C and C++ compilers
 * a good Fortran compiler, such as GNU `gfortran` or Intel's `ifort` compiler
