@@ -167,8 +167,8 @@ class ModalAerosolConfig final {
     bool found = false;
     int p = 0;
     for (int m = 0; m < species_for_mode_.size(); ++m) {
-      for (int s = 0; s < species_for_mode_.size(); ++s, ++p) {
-        if ((m == mode_index) && (s == species_index)) {
+      for (int s = 0; s < species_for_mode_[m].size(); ++s, ++p) {
+        if ((m == mode_index) and (s == species_index)) {
           found = true;
           break;
         }
@@ -201,7 +201,7 @@ class ModalAerosolConfig final {
 
  private:
   // The association of aerosol species with modes.
-  // species_for_modes_[mode_index] = vector of species indices
+  // species_for_mode_[mode_index] = vector of species indices
   std::vector<std::vector<int>> species_for_mode_;
 
   // This sets mode->species indexing. Throws an exception if the mode_species

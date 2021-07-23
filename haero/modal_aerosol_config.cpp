@@ -16,16 +16,17 @@ void ModalAerosolConfig::index_mode_species(
     const std::string& mode_name = kv_pair.first;
     const std::vector<std::string>& aero_species = kv_pair.second;
 
+    // Make sure an array of species exists for the given mode.
     int mode_index = 0;
     while (mode_index < aerosol_modes.size()) {
       if (aerosol_modes[mode_index].name() == mode_name) break;
       mode_index++;
     }
-
     if (mode_index == aerosol_modes.size()) continue;
     species_for_mode_.resize(
         std::max(species_for_mode_.size(), size_t(mode_index + 1)));
 
+    // Place the appropriate species into the mode array.
     for (const auto& species_name : aero_species) {
       int species_index = 0;
       while (species_index < aero_species.size()) {

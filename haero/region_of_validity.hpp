@@ -53,6 +53,7 @@ class RegionOfValidity final {
     auto h_num_aero_species_in_mode =
         Kokkos::create_mirror_view(num_aero_species_in_mode_);
 
+    // Copy aerosol (mode/species) information to the device.
     int num_pops = config.num_aerosol_populations;
     Kokkos::resize(aero_species_, num_pops);
     auto h_aero_species = Kokkos::create_mirror_view(aero_species_);
@@ -67,6 +68,7 @@ class RegionOfValidity final {
     Kokkos::deep_copy(num_aero_species_in_mode_, h_num_aero_species_in_mode);
     Kokkos::deep_copy(aero_species_, h_aero_species);
 
+    // Copy gas species information to the device.
     int num_gases = config.num_gases();
     Kokkos::resize(gas_species_, num_gases);
     auto h_gas_species = Kokkos::create_mirror_view(gas_species_);
