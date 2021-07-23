@@ -90,6 +90,21 @@ struct SelectedProcesses final {
   /// The selected nucleation model
   Nucleation nucleation;
 
+  /// Available process models for gas aerosol exchange, in which interstitial aerosol
+  /// mass is formed by gathering condensed vapor from surrounding gas.
+  enum GasAerosolExchange {
+    /// MAM legacy C++ gas aerosol exchange process
+    MAMGasAerosolExchange,
+#if HAERO_FORTRAN
+    /// MAM legacy Fortran gas aerosol exchange process
+    MAMFGasAerosolExchange,
+#endif
+    /// No gas aerosol exchange process
+    NoGasAerosolExchange
+  };
+  /// The selected gas aerosol exchange model
+  GasAerosolExchange gasaerosolexchange;
+
   /// Available process models for calcsize, in which we compute dry diameter of
   /// the the particles and do the inter-mode mass and number transfer based on
   /// the new size (for both interstitial and cloud borne aerosol)

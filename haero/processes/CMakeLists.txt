@@ -4,6 +4,7 @@
 # files that implement aerosol prognostic and diagnostic processes.
 set(CXX_PROCESS_SOURCES
     mam_nucleation_process.cpp
+    mam_gasaerexch_process.cpp
     mam_calcsize_process.cpp
     mam_rename_process.cpp
 )
@@ -29,6 +30,7 @@ if (HAERO_FORTRAN)
   #   file named after the module, with an .F90 suffix. E.g.: mam_nucleation
   #   refers to a Fortran module named mam_nucleation whose source lives in
   #   mam_nucleation.F90, within this directory.
+  faerosol_process(MAMGasAerosolExchangeFProcess GasAerosolExchangeProcess mam_gasaerexch)
   faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
   faerosol_process(MAMCalcsizeFProcess CalcsizeProcess mam_calcsize)
   faerosol_process(MAMRenameFProcess RenameProcess mam_rename)
