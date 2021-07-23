@@ -49,32 +49,31 @@ class RegionOfValidity final {
   void init(const ModalAerosolConfig& config) {
     // Gather information from the config.
     num_modes_ = config.num_modes();
+    Kokkos::resize(num_aero_species_in_mode_, num_modes_);
+    auto h_num_aero_species_in_mode =
+        Kokkos::create_mirror_view(num_aero_species_in_mode_);
+
     int num_pops = config.num_aerosol_populations;
-    DeviceType::view_1d<int> host_num_aero_species_in_mode("", num_modes_);
-    DeviceType::view_1d<AerosolSpecies> host_aero_species("", num_pops);
+    Kokkos::resize(aero_species_, num_pops);
+    auto h_aero_species = Kokkos::create_mirror_view(aero_species_);
     for (int m = 0; m < num_modes_; ++m) {
       auto aero_species = config.aerosol_species_for_mode(m);
-      host_num_aero_species_in_mode(m) = aero_species.size();
+      h_num_aero_species_in_mode(m) = aero_species.size();
       for (int s = 0; s < aero_species.size(); ++s) {
         int pop_index = config.population_index(m, s);
-        host_aero_species(pop_index) = aero_species[s];
+        h_aero_species(pop_index) = aero_species[s];
       }
     }
+    Kokkos::deep_copy(num_aero_species_in_mode_, h_num_aero_species_in_mode);
+    Kokkos::deep_copy(aero_species_, h_aero_species);
 
     int num_gases = config.num_gases();
-    DeviceType::view_1d<GasSpecies> host_gas_species("", num_gases);
+    Kokkos::resize(gas_species_, num_gases);
+    auto h_gas_species = Kokkos::create_mirror_view(gas_species_);
     for (int g = 0; g < num_gases; ++g) {
-      host_gas_species(g) = config.gas_species[g];
+      h_gas_species(g) = config.gas_species[g];
     }
-
-    // Copy the information over to the device.
-    Kokkos::resize(num_aero_species_in_mode_,
-                   host_num_aero_species_in_mode.extent(0));
-    Kokkos::deep_copy(num_aero_species_in_mode_, host_num_aero_species_in_mode);
-    Kokkos::resize(aero_species_, host_aero_species.extent(0));
-    Kokkos::deep_copy(aero_species_, host_aero_species);
-    Kokkos::resize(gas_species_, host_gas_species.extent(0));
-    Kokkos::deep_copy(gas_species_, host_gas_species);
+    Kokkos::deep_copy(gas_species_, h_gas_species);
   }
 
   /// On host: adds a set of bounds for the number concentration of the

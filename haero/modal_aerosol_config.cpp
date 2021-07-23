@@ -23,6 +23,8 @@ void ModalAerosolConfig::index_mode_species(
     }
 
     if (mode_index == aerosol_modes.size()) continue;
+    species_for_mode_.resize(
+        std::max(species_for_mode_.size(), size_t(mode_index + 1)));
 
     for (const auto& species_name : aero_species) {
       int species_index = 0;

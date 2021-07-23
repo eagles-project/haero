@@ -108,7 +108,7 @@ class ModalAerosolConfig final {
     EKAT_ASSERT(mode_index >= 0);
     EKAT_ASSERT(mode_index < species_for_mode_.size());
     std::vector<AerosolSpecies> species;
-    for (int s = 0; s < species_for_mode_.size(); ++s) {
+    for (int s = 0; s < species_for_mode_[mode_index].size(); ++s) {
       species.push_back(aerosol_species[species_for_mode_[mode_index][s]]);
     }
     return species;
