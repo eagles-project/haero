@@ -40,7 +40,7 @@ KOKKOS_INLINE_FUNCTION Scalar molecular_speed(const Scalar& T,
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar mean_free_path(const Scalar& diameter,
                                              const Scalar& num_conc) {
-  static constexpr double sqrt2 = std::sqrt(2);
+  static const double sqrt2 = std::sqrt(2);
   return 1.0 / (sqrt2 * constants::pi * square(diameter) * num_conc);
 }
 

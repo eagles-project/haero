@@ -18,7 +18,7 @@ namespace haero {
 /// involving sulfuric acid and methane gases. It is based on classical
 /// nucleation theory as parameterized by Vehkamaki et al (2002) and
 /// Merikanto et al (2007).
-class SimpleNucleationProcess final : public AerosolProcess {
+class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleationProcess> {
   //----------------------------------------------------------
   //                  Adjustable parameters
   //----------------------------------------------------------
@@ -98,7 +98,7 @@ class SimpleNucleationProcess final : public AerosolProcess {
   /// Copy constructor (for transferring between host and device)
   KOKKOS_INLINE_FUNCTION
   SimpleNucleationProcess(const SimpleNucleationProcess &rhs)
-      : AerosolProcess(rhs),
+      : DeviceAerosolProcess<SimpleNucleationProcess>(rhs),
         nucleation_rate_factor(rhs.nucleation_rate_factor),
         pbl_factor(rhs.pbl_factor),
         tendency_factor(rhs.tendency_factor),
@@ -117,13 +117,14 @@ class SimpleNucleationProcess final : public AerosolProcess {
   /// not assignable
   AerosolProcess &operator=(const SimpleNucleationProcess &) = delete;
 
-  void init(const ModalAerosolConfig &config) override;
+ protected:
+
+  void init_(const ModalAerosolConfig &config) override;
 
   KOKKOS_FUNCTION
-  void run(const ModalAerosolConfig &config, Real t, Real dt,
-           const Prognostics &prognostics, const Atmosphere &atmosphere,
-           const Diagnostics &diagnostics,
-           Tendencies &tendencies) const override {
+  void run_(Real t, Real dt, const Prognostics &prognostics,
+            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+            Tendencies &tendencies) const override {
     // Do we have any gas from which to nucleate new aerosol particles?
     if ((igas_h2so4 == -1) or ((nucleation_method == 3) and (igas_nh3 == -1))) {
       return;
@@ -226,9 +227,9 @@ class SimpleNucleationProcess final : public AerosolProcess {
         });
   }
 
-  void set_param(const std::string &name, Real value) override;
-  void set_param(const std::string &name, int value) override;
-  void set_param(const std::string &name, const std::string &value) override;
+  void set_param_(const std::string &name, Real value) override;
+  void set_param_(const std::string &name, int value) override;
+  void set_param_(const std::string &name, const std::string &value) override;
 };
 
 }  // namespace haero

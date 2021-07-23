@@ -9,7 +9,7 @@
 namespace haero {
 
 SimpleNucleationProcess::SimpleNucleationProcess()
-    : AerosolProcess(NucleationProcess, "SimpleNucleationProcess"),
+    : DeviceAerosolProcess<SimpleNucleationProcess>(NucleationProcess, "SimpleNucleationProcess"),
       nucleation_rate_factor(1),
       pbl_factor(1),
       tendency_factor(1),
@@ -26,7 +26,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       d_min_aer("minimum particle diameters", 0),
       d_max_aer("maximum particle diameters", 0) {}
 
-void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
+void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   // Set indices for modes, species, and gases.
   imode = config.aerosol_mode_index(nucleation_mode, false);
   iaer_so4 = config.aerosol_species_index(imode, "SO4", false);
@@ -43,26 +43,26 @@ void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
   {
     auto d = Kokkos::create_mirror_view(d_mean_aer);
     for (int m = 0; m < config.num_modes(); ++m)
-      d(m) = config.h_aerosol_modes(m).mean_std_dev;
+      d(m) = config.aerosol_modes[m].mean_std_dev;
     Kokkos::deep_copy(d_mean_aer, d);
   }
   {
     auto d = Kokkos::create_mirror_view(d_min_aer);
     for (int m = 0; m < config.num_modes(); ++m)
-      d(m) = config.h_aerosol_modes(m).min_diameter;
+      d(m) = config.aerosol_modes[m].min_diameter;
     Kokkos::deep_copy(d_min_aer, d);
   }
   {
     auto d = Kokkos::create_mirror_view(d_max_aer);
     for (int m = 0; m < config.num_modes(); ++m)
-      d(m) = config.h_aerosol_modes(m).max_diameter;
+      d(m) = config.aerosol_modes[m].max_diameter;
     Kokkos::deep_copy(d_max_aer, d);
   }
 
   // Jot down the molecular weights for our gases.
   if (igas_h2so4 != -1) {
-    for (int g = 0; g < config.h_gas_species.extent(0); ++g) {
-      const auto &species = config.h_gas_species[g];
+    for (int g = 0; g < config.num_gases(); ++g) {
+      const auto &species = config.gas_species[g];
       if (species.symbol() == "H2SO4") {
         mu_h2so4 = species.molecular_weight;
         break;
@@ -70,8 +70,8 @@ void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
     }
   }
   if (igas_nh3 != -1) {
-    for (int g = 0; g < config.h_gas_species.extent(0); ++g) {
-      const auto &species = config.h_gas_species[g];
+    for (int g = 0; g < config.num_gases(); ++g) {
+      const auto &species = config.gas_species[g];
       if (species.symbol() == "NH3") {
         mu_nh3 = species.molecular_weight;
         break;
@@ -125,7 +125,7 @@ void SimpleNucleationProcess::init(const ModalAerosolConfig &config) {
   }
 }
 
-void SimpleNucleationProcess::set_param(const std::string &name, Real value) {
+void SimpleNucleationProcess::set_param_(const std::string &name, Real value) {
   if ("pbl_factor" == name) {
     if (value > 0) {
       pbl_factor = value;
@@ -149,7 +149,7 @@ void SimpleNucleationProcess::set_param(const std::string &name, Real value) {
   }
 }
 
-void SimpleNucleationProcess::set_param(const std::string &name, int value) {
+void SimpleNucleationProcess::set_param_(const std::string &name, int value) {
   if ("nucleation_method" == name) {
     if ((value == 2) or (value == 3)) {
       nucleation_method = value;
@@ -167,8 +167,8 @@ void SimpleNucleationProcess::set_param(const std::string &name, int value) {
   }
 }
 
-void SimpleNucleationProcess::set_param(const std::string &name,
-                                        const std::string &value) {
+void SimpleNucleationProcess::set_param_(const std::string &name,
+                                         const std::string &value) {
   if ("nucleation_mode" == name) {
     if (value == "") {
       EKAT_REQUIRE_MSG(false, "Invalid mode name: '" << value << "'");

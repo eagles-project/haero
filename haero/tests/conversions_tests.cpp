@@ -7,8 +7,6 @@
 
 using namespace haero;
 
-// static constexpr Real g_to_kg = 0.001;
-
 TEST_CASE("conversions:mmr_from_number_conc") {
   Real mu = Constants::molec_weight_so4;  // molecular weight of sulfate
   PackType n(1e5);                        // number density
