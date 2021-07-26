@@ -344,7 +344,7 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
         set_integer_param_(pp.set_integer_param_),
         set_logical_param_(pp.set_logical_param_),
         set_real_param_(pp.set_real_param_),
-        initialized_(false) {}
+        initialized_(pp.initialized_) {}
 
   /// Destructor.
   ~FAerosolProcess() {
