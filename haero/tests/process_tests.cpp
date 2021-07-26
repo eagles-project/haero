@@ -201,7 +201,7 @@ TEST_CASE("process_tests", "aerosol_process") {
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudProcess";
   MyAerosolProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
-  AerosolProcess *device_pp = pp.copy_to_device();
+  auto device_pp = pp.copy_to_device();
 
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
   std::vector<GasSpecies> gas_species = create_mam4_gas_species();
@@ -224,8 +224,6 @@ TEST_CASE("process_tests", "aerosol_process") {
               device_pp->run(t, dt, progs, atmos, diagnostics, *tendency);
             });
       });
-
-  Kokkos::kokkos_free<MemorySpace>(device_pp);
 
   {
     using fp_helper = FloatingPoint<float>;
