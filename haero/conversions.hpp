@@ -148,8 +148,7 @@ vapor_saturation_pressure_tetens(const Scalar& T) {
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar relative_humidity_from_vapor_mixing_ratio(
     const Scalar& qv, const Scalar& p, const Scalar& T,
-    const std::function<Scalar(const Scalar&)>& vsp =
-        vapor_saturation_pressure_tetens<Scalar>) {
+    Scalar (*vsp)(const Scalar&) = vapor_saturation_pressure_tetens<Scalar>) {
   auto es = vsp(T);
   return qv / (es / p);
 }
