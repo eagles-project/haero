@@ -17,7 +17,9 @@ namespace haero {
 /// This aerosol process implements homogeneous binary/ternary nucleation
 /// involving sulfuric acid and methane gases. It is based on classical
 /// nucleation theory as parameterized by Vehkamaki et al (2002) and
-/// Merikanto et al (2007).
+/// Merikanto et al (2007). Nucleated particles are placed into the appropriate
+/// mode(s) based on their computed size, or they are grown to fit the mode
+/// with the minimum size.
 class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleationProcess> {
   //----------------------------------------------------------
   //                  Adjustable parameters
@@ -39,10 +41,6 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
   /// 2 = Vehkamaki et al (2002) binary nucleation
   /// 3 = Merikanto el al (2007) ternary nucleation
   int nucleation_method;
-
-  /// The name of the aerosol mode into which nucleated aerosols are placed
-  /// (default: "aitken")
-  std::string nucleation_mode;
 
   /// Planetary boundary layer (PBL) method selection (default: 0)
   /// 0 = no PBL adjustment
@@ -103,7 +101,6 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
         pbl_factor(rhs.pbl_factor),
         tendency_factor(rhs.tendency_factor),
         nucleation_method(rhs.nucleation_method),
-        nucleation_mode("aitken"),
         pbl_method(rhs.pbl_method),
         imode(rhs.imode),
         igas_h2so4(rhs.igas_h2so4),
@@ -113,9 +110,6 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
         d_mean_aer(rhs.d_mean_aer),
         d_min_aer(rhs.d_min_aer),
         d_max_aer(rhs.d_max_aer) {}
-
-  /// not assignable
-  AerosolProcess &operator=(const SimpleNucleationProcess &) = delete;
 
  protected:
 
@@ -153,13 +147,17 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
           // Compute the base rate of nucleation using our selected method.
           PackType J;       // nucleation rate [#/cc]
           PackType r_crit;  // radius of critical cluster [nm]
-          PackType n_crit;  // number of molecules in a critical cluster [#]
+          PackType n_crit;  // total # of molecules in a critical cluster [#]
+          PackType n_crit_h2so4, n_crit_nh3; // numbers of gas molecules in
+                                             // the critical cluser [#]
           if (nucleation_method == 2) {  // binary nucleation
             auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(
                 c_h2so4, temp, rel_hum);
             J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
             n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp,
                                                            rel_hum, x_crit);
+            n_crit_h2so4 = n_crit;
+            n_crit_nh3 = 0;
             r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
           } else {
             EKAT_KERNEL_ASSERT(nucleation_method == 3);
@@ -170,8 +168,11 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
             auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
                                                             c_h2so4, xi_nh3);
             J = exp(log_J);
-            n_crit = merikanto2007::num_critical_molecules(log_J, temp, c_h2so4,
-                                                           xi_nh3);
+            n_crit_h2so4 = merikanto2007::num_h2so4_molecules(log_J, temp,
+                                                              c_h2so4, xi_nh3);
+            n_crit_nh3 = merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4,
+                                                          xi_nh3);
+            n_crit = n_crit_h2so4 + n_crit_nh3;
             r_crit =
                 merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
           }
@@ -195,9 +196,22 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
             // diameter.
             r_crit.set(within_pbl and not J_pbl_lt_J, 0.5);
             // Estimate the number of particles in the critical cluѕter from its
-            // mass and radius.
-            // TODO
+            // mass and radius, assuming H2SO4 only.
+            static const Real rho_h2so4 = 1.8; // density of pure H2SO4 [g/cc]
+            auto d_crit = r_crit * 2e-7; // diameter of critical cluster [cm]
+            auto V_crit = cube(d_crit) * constants::pi_sixth; // volume [cc]
+            auto m_crit = rho_h2so4 * V_crit; // mass [g]
+            n_crit_h2so4 = m_crit / constants::molec_weight_h2so4 *
+                           constants::avogadro;
+            n_crit_nh3 = 0;
+            n_crit = n_crit_h2so4;
           }
+
+          // Now determine the mode into which we place the nucleated particles.
+          // Each particle large enough to fit into a mode directly is placed
+          // into this mode--others are grown until they fit into the mode with
+          // the smallest minimum diameter.
+          // TODO
 
           Real initial_nuc_diam = 1;  // initial nucleus diameter [nm]
           Real final_nuc_diam = 3;    // final, grown nucleus diameter [nm]
@@ -206,7 +220,7 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
           Real mean_modal_diam = d_mean_aer(imode);
 
           // Apply the correction of Kerminen and Kulmala (2002) to the
-          // nucleation rate.
+          // nucleation rate based on their growth.
           PackType rho_nuc;              // TODO
           Real gamma_h2so4 = 5.0 / 3.0;  // TODO: can we do better?
           PackType speed_h2so4 =
@@ -229,7 +243,6 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
 
   void set_param_(const std::string &name, Real value) override;
   void set_param_(const std::string &name, int value) override;
-  void set_param_(const std::string &name, const std::string &value) override;
 };
 
 }  // namespace haero

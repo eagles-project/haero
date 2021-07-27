@@ -27,8 +27,8 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       d_max_aer("maximum particle diameters", 0) {}
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
-  // Set indices for modes, species, and gases.
-  imode = config.aerosol_mode_index(nucleation_mode, false);
+  // Set indices for species and gases.
+  // TODO: How to do we do this without assuming a specific nucleation mode?
   iaer_so4 = config.aerosol_species_index(imode, "SO4", false);
   ipop_so4 = config.population_index(imode, iaer_so4);
   iaer_nh4 = config.aerosol_species_index(imode, "NH4", false);
@@ -161,19 +161,6 @@ void SimpleNucleationProcess::set_param_(const std::string &name, int value) {
       pbl_method = value;
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
-    }
-  } else {
-    EKAT_REQUIRE_MSG(false, "Invalid parameter: " << name);
-  }
-}
-
-void SimpleNucleationProcess::set_param_(const std::string &name,
-                                         const std::string &value) {
-  if ("nucleation_mode" == name) {
-    if (value == "") {
-      EKAT_REQUIRE_MSG(false, "Invalid mode name: '" << value << "'");
-    } else {
-      nucleation_mode = value;
     }
   } else {
     EKAT_REQUIRE_MSG(false, "Invalid parameter: " << name);
