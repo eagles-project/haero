@@ -73,7 +73,7 @@ class AerosolProcess {
   /// Default constructor is disabled.
   AerosolProcess() = delete;
 
-  /// Default copy constructor. For use in moving host instance to device.
+  /// Copy constructor, for use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   AerosolProcess(const AerosolProcess& pp) : type_(pp.type_), name_(pp.name_) {}
 

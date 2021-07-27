@@ -1,14 +1,15 @@
 #ifndef HAERO_DIAGNOSTICS_HPP
 #define HAERO_DIAGNOSTICS_HPP
 
-#include <map>
-#include <vector>
+#include "haero/haero.hpp"
+#include "haero/view_pack_helpers.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include "haero/haero.hpp"
-#include "haero/view_pack_helpers.hpp"
 #include "kokkos/Kokkos_Core.hpp"
+
+#include <map>
+#include <vector>
 
 namespace haero {
 

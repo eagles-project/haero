@@ -1,7 +1,18 @@
 #ifndef HAERO_HPP
 #define HAERO_HPP
 
+// Avoid buggy experimental Kokkos CUDA stuff.
+#define KOKKOS_CUDA_HALF_HPP_
+
 #include "haero/haero_config.hpp"
+
+// Cuda "C++" can't handle lambdas consisting of private/protected methods
+// This seems awful, but other solutions seem to involve dancing carefully
+// around various areas in code, or sacrificing encapsulation in CPU builds.
+#ifdef __CUDA_ARCH__
+#define protected public
+#define private public
+#endif
 
 namespace haero {
 
