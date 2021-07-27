@@ -248,7 +248,7 @@ class DeviceAerosolProcess : public AerosolProcess {
     Kokkos::parallel_for(
         debug_name + "_copy", 1,
         KOKKOS_LAMBDA(const int) { new (process) Subclass(this_process); });
-    return Pointer(process, Kokkos::kokkos_free);
+    return Pointer(process, Kokkos::kokkos_free<MemorySpace>);
   }
 };
 
