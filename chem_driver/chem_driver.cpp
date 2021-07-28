@@ -3,7 +3,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-#include "haero/physical_constants.hpp"
+#include "haero/constants.hpp"
 
 namespace haero {
 namespace chem_driver {
@@ -264,7 +264,7 @@ void ChemSolver::set_reaction_rates() {
         Real B = reactions[i].rate_coefficients["B"];
         Real D = reactions[i].rate_coefficients["D"];
         Real E = reactions[i].rate_coefficients["E"];
-        Real kb = constants::boltzmann;
+        Real kb = Constants::boltzmann;
         rxn_rate[i] = A * exp(-Ea / (kb * temperature)) *
                       pow((temperature / D), B) * (1.0 + E * pressure);
         break;

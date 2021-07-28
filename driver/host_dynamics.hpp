@@ -193,12 +193,11 @@ class HostDynamics final {
 KOKKOS_INLINE_FUNCTION
 Real geopotential(const Real t, const Real phi0,
                   const AtmosphericConditions& ac) {
-  using namespace constants;
-  const Real tanarg = pi * phi0 / (2 * gravity * ac.ztop);
+  const Real tanarg = Constants::pi * phi0 / (2 * Constants::gravity * ac.ztop);
   const Real exparg =
-      ac.w0 * ac.tperiod * square(std::sin(pi * t / ac.tperiod)) / (ac.ztop);
-  return 2 * gravity * ac.ztop *
-         std::atan(std::tan(tanarg) * std::exp(exparg)) / pi;
+      ac.w0 * ac.tperiod * square(std::sin(Constants::pi * t / ac.tperiod)) / (ac.ztop);
+  return 2 * Constants::gravity * ac.ztop *
+         std::atan(std::tan(tanarg) * std::exp(exparg)) / Constants::pi;
 }
 
 /** @brief Defines velocity for a Lagrangian geopotential surface.
@@ -211,9 +210,8 @@ Real geopotential(const Real t, const Real phi0,
 */
 KOKKOS_INLINE_FUNCTION
 Real velocity(const Real t, const Real phi, const AtmosphericConditions& ac) {
-  using namespace constants;
-  return ac.w0 * std::sin(phi / (gravity * ac.ztop)) *
-         std::sin(2 * pi * t / ac.tperiod);
+  return ac.w0 * std::sin(phi / (Constants::gravity * ac.ztop)) *
+         std::sin(2 * Constants::pi * t / ac.tperiod);
 }
 
 /** @brief Defines the density of a Lagrangian parcel for the 1d toy model.
@@ -231,10 +229,9 @@ Real velocity(const Real t, const Real phi, const AtmosphericConditions& ac) {
 KOKKOS_INLINE_FUNCTION
 Real density(const Real t, const Real phi, const Real phi0, const Real rho0,
              const AtmosphericConditions& ac) {
-  using namespace constants;
-  const Real cosarg1 = pi * phi / (gravity * ac.ztop);
-  const Real cosarg2 = 2 * pi * t / ac.tperiod;
-  const Real cosarg3 = pi * phi0 / (gravity * ac.ztop);
+  const Real cosarg1 = Constants::pi * phi / (Constants::gravity * ac.ztop);
+  const Real cosarg2 = 2 * Constants::pi * t / ac.tperiod;
+  const Real cosarg3 = Constants::pi * phi0 / (Constants::gravity * ac.ztop);
   const Real exparg = std::cos(cosarg1) * std::cos(cosarg2) - std::cos(cosarg3);
   return rho0 * std::exp(ac.w0 * ac.tperiod * exparg / (2 * ac.ztop));
 }
@@ -247,10 +244,9 @@ Real density(const Real t, const Real phi, const Real phi0, const Real rho0,
 */
 KOKKOS_INLINE_FUNCTION
 Real pressure(const Real rho, const Real thetav) {
-  using namespace constants;
   const Real coeff =
       std::pow(AtmosphericConditions::pref, -AtmosphericConditions::kappa) *
-      r_gas_dry_air;
+      Constants::r_gas_dry_air;
   return std::pow(coeff * rho * thetav, 1 / (1 - AtmosphericConditions::kappa));
 }
 
@@ -287,14 +283,13 @@ struct DynamicsInterfaceUpdate {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const int k) const {
-    using namespace constants;
     const int pack_idx = PackInfo::pack_idx(k);
     const int vec_idx = PackInfo::vec_idx(k);
     Real geop;
     if (k > 0 && k < nlev) {
       geop = geopotential(t, phi0(pack_idx)[vec_idx], conds);
     } else {
-      geop = (k == 0 ? gravity * conds.ztop : 0);
+      geop = (k == 0 ? Constants::gravity * conds.ztop : 0);
     }
     phi(pack_idx)[vec_idx] = geop;
     w(pack_idx)[vec_idx] = velocity(t, geop, conds);
@@ -312,11 +307,10 @@ struct HydrostaticPressureUpdate {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const int k) const {
-    using namespace constants;
     const int pack_idx = PackInfo::pack_idx(k);
     const int vec_idx = PackInfo::vec_idx(k);
     phydro_int(pack_idx)[vec_idx] =
-        hydrostatic_pressure_at_height(phi(pack_idx)[vec_idx] / gravity, conds);
+        hydrostatic_pressure_at_height(phi(pack_idx)[vec_idx] / Constants::gravity, conds);
   }
 };
 

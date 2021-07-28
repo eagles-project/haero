@@ -4,7 +4,7 @@
 #include <iomanip>
 
 #include "haero/aerosol_process.hpp"
-#include "haero/physical_constants.hpp"
+#include "haero/constants.hpp"
 
 namespace haero {
 
@@ -129,7 +129,7 @@ class MAMNucleationProcess final
   Real mw_nh4a_host;
 
   // The molecular weight of SO4 aerosol as assumed by the host atm model
-  const Real mw_so4a_host = constants::molec_weight_so4;
+  const Real mw_so4a_host = Constants::molec_weight_so4;
 
   // Gas mixing ratios token to access this diagnostics gas variable
   const Diagnostics::Token qgas_averaged_token = Diagnostics::VAR_NOT_FOUND;
@@ -278,7 +278,7 @@ class MAMNucleationProcess final
       num_vert_packs++;
     }
     for (int k = 0; k < num_vert_packs; ++k) {
-      static const Real R_gas = constants::r_gas;  // Gas constant (J/K/kmol)
+      static const Real R_gas = Constants::r_gas;  // Gas constant (J/K/kmol)
       // Compute the molar concentration of air at the given pressure and
       // temperature.
       const PackType aircon = press(k) / (temp(k) * R_gas);
@@ -387,7 +387,7 @@ class MAMNucleationProcess final
       Pack &dndt_ait, Pack &dmdt_ait, Pack &dso4dt_ait, Pack &dnh4dt_ait,
       Pack &dnclusterdt) const {
     using Mask = ekat::Mask<Pack::n>;
-    static const Real pi = constants::pi;
+    static const Real pi = Constants::pi;
     dndt_ait = 0.0;
     dmdt_ait = 0.0;
     dnh4dt_ait = 0.0;
@@ -625,14 +625,14 @@ class MAMNucleationProcess final
       const int ldiagaa, Pack *dnclusterdt = nullptr) const {
     using namespace std;
     using Mask = ekat::Mask<Pack::n>;
-    static const Real pi = constants::pi;
-    static const Real rgas = constants::r_gas;  // Gas constant (J/K/kmol)
+    static const Real pi = Constants::pi;
+    static const Real rgas = Constants::r_gas;  // Gas constant (J/K/kmol)
     static const Real avogad =
-        constants::avogadro;  // Avogadro's number (1/kmol)
+        Constants::avogadro;  // Avogadro's number (1/kmol)
     static const Real mw_so4a =
-        constants::molec_weight_so4;  // Molecular weight of sulfate
+        Constants::molec_weight_so4;  // Molecular weight of sulfate
     static const Real mw_nh4a =
-        constants::molec_weight_nh4;  // Molecular weight of ammonium
+        Constants::molec_weight_nh4;  // Molecular weight of ammonium
 
     Pack cair;         // dry-air molar density (mol/m3)
     Pack cs_prime_kk;  // kk2002 "cs_prime" parameter (1/m2)
@@ -1124,7 +1124,7 @@ class MAMNucleationProcess final
                           radius_cluster * 2.0e-7);  // diameter in cm
       const Pack tmp_volu(
           rateloge_lt_tmp_rateloge,
-          cube(tmp_diam) * (constants::pi / 6.0));  // volume in cm^3
+          cube(tmp_diam) * (Constants::pi / 6.0));  // volume in cm^3
       const Pack tmp_mass(rateloge_lt_tmp_rateloge,
                           tmp_volu * 1.8);  // mass in g
       cnum_h2so4.set(rateloge_lt_tmp_rateloge,

@@ -9,7 +9,7 @@
 #include "ekat/util/ekat_units.hpp"
 #include "haero/conversions.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/physical_constants.hpp"
+#include "haero/constants.hpp"
 #include "haero/utils.hpp"
 #include "ncwriter_impl.hpp"
 
@@ -18,8 +18,6 @@ namespace driver {
 
 void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
                                                AtmosphericConditions& ac) {
-  using namespace constants;
-
   EKAT_REQUIRE_MSG(z0.size() == nlev_ + 1,
                    "number of initial heights must match number of levels + 1");
   EKAT_REQUIRE_MSG(vector_is_monotone(z0),
@@ -44,7 +42,7 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
     // Taylor et al. 2020 fig. 1 interface idx = k+1/2
     const auto pack_idx = PackInfo::pack_idx(k);
     const auto vec_idx = PackInfo::vec_idx(k);
-    hphi0(pack_idx)[vec_idx] = gravity * z0[k];
+    hphi0(pack_idx)[vec_idx] = Constants::gravity * z0[k];
     hw(pack_idx)[vec_idx] = 0;
     hpint(pack_idx)[vec_idx] = hydrostatic_pressure_at_height(z0[k], ac);
   }
@@ -65,16 +63,16 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
 
     const Real phimid = 0.5 * (hphi0(kmhalf_pack_idx)[kmhalf_vec_idx] +
                                hphi0(kphalf_pack_idx)[kphalf_vec_idx]);
-    const Real zmid = phimid / gravity;
+    const Real zmid = phimid / Constants::gravity;
     const Real pres = hydrostatic_pressure_at_height(zmid, ac);
     const Real Tv = ac.Tv0 - ac.Gammav * zmid;
     hp(pack_idx)[vec_idx] = pres;
-    hrho0(pack_idx)[vec_idx] = pres / (r_gas_dry_air * Tv);
+    hrho0(pack_idx)[vec_idx] = pres / (Constants::r_gas_dry_air * Tv);
     hthetav(pack_idx)[vec_idx] = Tv / exner_function(pres);
     hqv(pack_idx)[vec_idx] = water_vapor_mixing_ratio(zmid, ac);
   }
 
-  rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
+  rho0surf = AtmosphericConditions::pref / (Constants::r_gas_dry_air * ac.Tv0);
   ps = hydrostatic_pressure_at_height(0, ac);
   EKAT_ASSERT_MSG(
       FloatingPoint<Real>::rel(ps, AtmosphericConditions::pref),
@@ -95,8 +93,6 @@ void HostDynamics::init_from_interface_heights(std::vector<Real> z0,
 }
 
 void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
-  using namespace constants;
-
   const Real dz = ac.ztop / nlev_;
 
   /// set interface geopotential and velocity
@@ -109,7 +105,7 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
     const int vec_idx = PackInfo::vec_idx(k);
     // Taylor et al. 2020 fig. 1 interface idx = k+1/2
     const Real z = ac.ztop - k * dz;
-    hphi0(pack_idx)[vec_idx] = gravity * z;
+    hphi0(pack_idx)[vec_idx] = Constants::gravity * z;
     hw(pack_idx)[vec_idx] = 0;
     hpint(pack_idx)[vec_idx] = hydrostatic_pressure_at_height(z, ac);
   }
@@ -139,16 +135,16 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
 
     const Real phimid = 0.5 * (hphi0(kmhalf_pack_idx)[kmhalf_vec_idx] +
                                hphi0(kphalf_pack_idx)[kphalf_vec_idx]);
-    const Real zmid = phimid / gravity;
+    const Real zmid = phimid / Constants::gravity;
     const Real pres = hydrostatic_pressure_at_height(zmid, ac);
     const Real Tv = ac.Tv0 - ac.Gammav * zmid;
     hp(pack_idx)[vec_idx] = pres;
-    hrho0(pack_idx)[vec_idx] = pres / (r_gas_dry_air * Tv);
+    hrho0(pack_idx)[vec_idx] = pres / (Constants::r_gas_dry_air * Tv);
     hthetav(pack_idx)[vec_idx] = Tv / exner_function(pres);
     hqv(pack_idx)[vec_idx] = water_vapor_mixing_ratio(zmid, ac);
   }
 
-  rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
+  rho0surf = AtmosphericConditions::pref / (Constants::r_gas_dry_air * ac.Tv0);
   ps = hydrostatic_pressure_at_height(0, ac);
   EKAT_ASSERT_MSG(
       FloatingPoint<Real>::rel(ps, AtmosphericConditions::pref),
@@ -165,8 +161,6 @@ void HostDynamics::init_from_uniform_heights(const AtmosphericConditions& ac) {
 
 void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,
                                                  AtmosphericConditions& ac) {
-  using namespace constants;
-
   EKAT_REQUIRE_MSG(
       p0.size() == nlev_ + 1,
       "number of initial pressures must match number of levels + 1");
@@ -197,7 +191,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,
 
     hw(pack_idx)[vec_idx] = 0;
     const Real z = height_at_pressure(p0[k], ac);
-    hphi0(pack_idx)[vec_idx] = gravity * z;
+    hphi0(pack_idx)[vec_idx] = Constants::gravity * z;
     const Real phydro = hydrostatic_pressure_at_height(z, ac);
     hpint(pack_idx)[vec_idx] = phydro;
 
@@ -228,11 +222,11 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,
 
     const Real phimid = 0.5 * (hphi0(kmhalf_pack_idx)[kmhalf_vec_idx] +
                                hphi0(kphalf_pack_idx)[kphalf_vec_idx]);
-    const Real zmid = phimid / gravity;
+    const Real zmid = phimid / Constants::gravity;
     const Real pres = hydrostatic_pressure_at_height(zmid, ac);
     const Real Tv = ac.Tv0 - ac.Gammav * zmid;
     hp(pack_idx)[vec_idx] = pres;
-    hrho0(pack_idx)[vec_idx] = pres / (r_gas_dry_air * Tv);
+    hrho0(pack_idx)[vec_idx] = pres / (Constants::r_gas_dry_air * Tv);
     hthetav(pack_idx)[vec_idx] = Tv / exner_function(pres);
     hqv(pack_idx)[vec_idx] = water_vapor_mixing_ratio(zmid, ac);
   }
@@ -241,7 +235,7 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,
   EKAT_ASSERT(FloatingPoint<Real>::rel(
       ps, hpint(PackInfo::last_pack_idx(
               nlev_ + 1))[PackInfo::last_vec_end(nlev_ + 1) - 1]));
-  rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
+  rho0surf = AtmosphericConditions::pref / (Constants::r_gas_dry_air * ac.Tv0);
 
   Kokkos::deep_copy(w, hw);
   Kokkos::deep_copy(phi0, hphi0);
@@ -251,15 +245,13 @@ void HostDynamics::init_from_interface_pressures(std::vector<Real> p0,
   Kokkos::deep_copy(thetav, hthetav);
   Kokkos::deep_copy(qv, hqv);
   Kokkos::deep_copy(p, hp);
-  rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
+  rho0surf = AtmosphericConditions::pref / (Constants::r_gas_dry_air * ac.Tv0);
 
   update_thickness(ac);
 }
 
 void HostDynamics::init_from_uniform_pressures(
     const AtmosphericConditions& ac) {
-  using namespace constants;
-
   const Real delp = (AtmosphericConditions::pref - ac.ptop) / nlev_;
   std::cout << "unif. pressure dp = " << delp << "\n";
 
@@ -288,7 +280,7 @@ void HostDynamics::init_from_uniform_pressures(
     //     Taylor et al. 2020 fig. 1 interface idx = k+1/2
     const Real punif = ac.ptop + k * delp;
     const Real z = height_at_pressure(punif, ac);
-    shphi0(k) = gravity * z;
+    shphi0(k) = Constants::gravity * z;
     shw(k) = 0;
     shpint(k) = punif;
   }
@@ -302,15 +294,15 @@ void HostDynamics::init_from_uniform_pressures(
     const int kphalf_idx = k + 1;  // array idx of interface k + 1/2
 
     const Real phimid = 0.5 * (shphi0(kmhalf_idx) + shphi0(kphalf_idx));
-    const Real zmid = phimid / gravity;
+    const Real zmid = phimid / Constants::gravity;
     const Real pres = hydrostatic_pressure_at_height(zmid, ac);
     const Real Tv = ac.Tv0 - ac.Gammav * zmid;
 
     shp(k) = pres;
-    shrho0(k) = pres / (r_gas_dry_air * Tv);
+    shrho0(k) = pres / (Constants::r_gas_dry_air * Tv);
     shthetav(k) = Tv / exner_function(pres);
     shqv(k) = water_vapor_mixing_ratio(zmid, ac);
-    shdz(k) = (shphi0(kmhalf_idx) - shphi0(kphalf_idx)) / gravity;
+    shdz(k) = (shphi0(kmhalf_idx) - shphi0(kphalf_idx)) / Constants::gravity;
   }
 
   Kokkos::deep_copy(w, hw);
@@ -325,14 +317,12 @@ void HostDynamics::init_from_uniform_pressures(
   Kokkos::deep_copy(phydro_int, hpint);
 
   ps = AtmosphericConditions::pref;
-  rho0surf = AtmosphericConditions::pref / (r_gas_dry_air * ac.Tv0);
+  rho0surf = AtmosphericConditions::pref / (Constants::r_gas_dry_air * ac.Tv0);
 
   update_thickness(ac);
 }
 
 void HostDynamics::update_thickness(const AtmosphericConditions& conds) {
-  using namespace constants;
-
   Kokkos::parallel_for("HostDynamics::hydrostatic_pint", nlev_ + 1,
                        HydrostaticPressureUpdate(phi, phydro_int, conds));
 
@@ -352,7 +342,7 @@ void HostDynamics::update_thickness(const AtmosphericConditions& conds) {
         // negative sign because levels & interfaces are indexed from model top
         // to surface, but z increases from surface to top
         dz_local(k) =
-            -(phi_local(kphalf_idx) - phi_local(kmhalf_idx)) / gravity;
+            -(phi_local(kphalf_idx) - phi_local(kmhalf_idx)) / Constants::gravity;
         dph(k) = -(pint_local(kphalf_idx) - pint_local(kmhalf_idx));
       });
 
@@ -372,7 +362,6 @@ std::string HostDynamics::info_string(int tab_level) const {
 }
 
 void HostDynamics::update(const Real newt, const AtmosphericConditions& ac) {
-  using namespace constants;
   // interface update
   Kokkos::parallel_for("HostDynamics::InterfaceUpdate", nlev_ + 1,
                        DynamicsInterfaceUpdate(newt, phi, phi0, w, ac, nlev_));
@@ -571,7 +560,6 @@ void HostDynamics::nc_write_data(NcWriter& writer,
 Atmosphere HostDynamics::create_atmospheric_state(ColumnView temp,
                                                   ColumnView relh,
                                                   ColumnView z) const {
-  using namespace constants;
   const auto p_local = p;
   const auto phi_local = phi;
   const auto thetav_local = thetav;
@@ -598,7 +586,7 @@ Atmosphere HostDynamics::create_atmospheric_state(ColumnView temp,
         const int pack_idx = PackInfo::pack_idx(k);
         const int vec_idx = PackInfo::vec_idx(k);
 
-        z(pack_idx)[vec_idx] = phi_local(pack_idx)[vec_idx] / gravity;
+        z(pack_idx)[vec_idx] = phi_local(pack_idx)[vec_idx] / Constants::gravity;
       });
   Real pblh = 100.0;
 
@@ -606,7 +594,6 @@ Atmosphere HostDynamics::create_atmospheric_state(ColumnView temp,
 }
 
 void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
-  using namespace constants;
   const auto p_local = p;
   const auto phi_local = phi;
   const auto thetav_local = thetav;
@@ -636,7 +623,7 @@ void HostDynamics::update_atmospheric_state(Atmosphere& atm) const {
         const int vec_idx = PackInfo::vec_idx(k);
 
         level_heights(pack_idx)[vec_idx] =
-            phi_local(pack_idx)[vec_idx] / gravity;
+            phi_local(pack_idx)[vec_idx] / Constants::gravity;
       });
 }
 

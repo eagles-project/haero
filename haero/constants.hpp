@@ -5,11 +5,14 @@
 // All physical constants in Haero are in SI units unless it's explicitly
 // stated otherwise. Units given in brackets are SI units and are included
 // here only for clarity.
+//
+// Implementation note: we store constants in a struct so their static
+// declarations work in a CUDA environment.
 #include "haero/haero_config.hpp"
 
 namespace haero {
 
-namespace constants {
+struct Constants {
 
 /** @defgroup Physical_constants_double_precision_required Physical constants (double_precision)
 
@@ -92,7 +95,10 @@ static constexpr Real dry_adiabatic_lapse_rate = 0.0098;
 
 /// @}
 
-} // namespace constants
+}; // struct Constants
+
+constexpr double Constants::avogadro;
+constexpr Real Constants::r_gas_dry_air;
 
 } // namespace haero
 // clang-format on

@@ -6,9 +6,9 @@
 #include "check.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
-#include "floating_point.hpp"
-#include "haero.hpp"
-#include "physical_constants.hpp"
+#include "haero/floating_point.hpp"
+#include "haero/haero.hpp"
+#include "haero/constants.hpp"
 
 namespace haero {
 

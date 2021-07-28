@@ -5,7 +5,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "haero/mode.hpp"
-#include "haero/physical_constants.hpp"
+#include "haero/constants.hpp"
 
 using namespace haero;
 
@@ -32,7 +32,7 @@ TEST_CASE("mode_ctor", "") {
   // Verify `mean_particle_volume_from_diameter` calculation
   REQUIRE(FloatingPoint<Real>::rel(
       aitken.mean_particle_volume_from_diameter<Real>(max_diameter),
-      (constants::pi_sixth * cube(max_diameter) *
+      (Constants::pi_sixth * cube(max_diameter) *
        exp(4.5 * square(log(mean_std_dev)))),
       5 * std::numeric_limits<Real>::epsilon()));
 
