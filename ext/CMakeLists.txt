@@ -271,26 +271,24 @@ if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
   if (NOT EXISTS ${OPENBLAS_LIBRARY})
     update_submodules()
-    set(OPENBLAS_OPTS libs CC=${CMAKE_C_COMPILER}
-                      FC=${CMAKE_Fortran_COMPILER}
-                      NO_SHARED=1 PREFIX=${PROJECT_BINARY_DIR})
-    if (NOT APPLE)
-      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} -j)
-    endif()
+    set(OPENBLAS_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                            -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+                            -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                            -DBUILD_SHARED_LIBS=OFF)
     if (HAERO_DOUBLE_PRECISION)
-      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_DOUBLE=1)
+      set(OPENBLAS_CMAKE_OPTS ${OPENBLAS_CMAKE_OPTS} -DBUILD_DOUBLE=1)
     else()
-      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_SINGLE=1)
+      set(OPENBLAS_CMAKE_OPTS ${OPENBLAS_CMAKE_OPTS} -DBUILD_SINGLE=1)
     endif()
     ExternalProject_Add(openblas_proj
                         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS
                         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         INSTALL_DIR ${PROJECT_BINARY_DIR}
-                        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
-                        BUILD_COMMAND ${MAKE} ${OPENBLAS_OPTS}
+                        CMAKE_ARGS ${OPENBLAS_CMAKE_OPTS}
+                        BUILD_COMMAND ${MAKE} -j ${OPENBLAS_OPTS}
                         LOG_BUILD TRUE
-                        INSTALL_COMMAND ${MAKE} ${OPENBLAS_OPTS} install
+                        INSTALL_COMMAND ${MAKE} install
                         LOG_INSTALL TRUE)
 
     # Because the OpenBLAS people feel that life isn't complicated enough, they
