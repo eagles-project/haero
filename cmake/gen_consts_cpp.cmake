@@ -53,7 +53,7 @@ function(gen_consts_cpp cxx_header cpp_file)
               string(SUBSTRING ${name} ${begin} -1 name)
               string(STRIP ${name} name)
 
-              list(APPEND cxx_lines "constexpr ${type} Constants::${name};")
+              list(APPEND cxx_lines "constexpr ${type} Constants::${name}_SEMICOLON_")
             endif()
           endif()
         endif()
@@ -67,8 +67,8 @@ function(gen_consts_cpp cxx_header cpp_file)
   list(APPEND cxx_lines "} // end namespace haero")
 
   # Write out the .cpp file.
-  string(REPLACE ";" "\;\n" cxx_source "${cxx_lines}")
-  string(REPLACE "\"\;" "\"" cxx_source "${cxx_source}")
+  string(REPLACE ";" "\n" cxx_source "${cxx_lines}")
+  string(REPLACE "_SEMICOLON_" "\;" cxx_source "${cxx_source}")
   file(WRITE ${cpp_file} ${cxx_source})
 endfunction()
 
