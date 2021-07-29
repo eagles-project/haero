@@ -105,7 +105,7 @@ install(FILES haero.hpp
               mode.hpp
               model.hpp
               selected_processes.hpp
-              physical_constants.hpp
+              constants.hpp
               prognostics.hpp
               aerosol_species.hpp
               utils.hpp
