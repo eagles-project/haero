@@ -3,7 +3,6 @@
 
 #include "catch2/catch.hpp"
 #include "haero/model.hpp"
-#include "haero/processes/mam_rename_fprocess.hpp"
 #include "haero/processes/mam_rename_process.hpp"
 
 using namespace haero;
