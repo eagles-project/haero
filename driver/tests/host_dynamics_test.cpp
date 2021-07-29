@@ -474,8 +474,8 @@ void HypsometricLevelsTest::run_test(const HostDynamics& dyn,
           const Real Tv = thetav(k) * exner_function(p(k));
           const Real p1 = pint(k);
           const Real p2 = pint(k + 1);
-          const Real dzhypso =
-              -Constants::r_gas_dry_air * Tv * std::log(p1 / p2) / Constants::gravity;
+          const Real dzhypso = -Constants::r_gas_dry_air * Tv *
+                               std::log(p1 / p2) / Constants::gravity;
           if (!FloatingPoint<Real>::zero((dzhypso - dz(k)) / dz(k), tol)) {
             printf("at level %d: dz = %f, dzhypso = %f; reldiff = %f\n", k,
                    dz(k), dzhypso, std::abs(dz(k) - dzhypso) / dz(k));
@@ -496,7 +496,6 @@ void HypsometricLevelsTest::run_test(const HostDynamics& dyn,
 void VerticalConvergenceTests::run_hypsometric_test(
     const int test_idx, const HostDynamics& dyn,
     const AtmosphericConditions& ac) {
-
   const auto dz = ekat::scalarize(dyn.dz);
   const auto thetav = ekat::scalarize(dyn.thetav);
   const auto p = ekat::scalarize(dyn.p);
@@ -509,7 +508,8 @@ void VerticalConvergenceTests::run_hypsometric_test(
         const Real Tv = thetav(k) * exner_function(p(k));
         const Real p1 = pint(k);
         const Real p2 = pint(k + 1);
-        const Real dzhypso = -Constants::r_gas_dry_air * Tv * std::log(p1 / p2) / Constants::gravity;
+        const Real dzhypso = -Constants::r_gas_dry_air * Tv *
+                             std::log(p1 / p2) / Constants::gravity;
         if (std::abs(dzhypso - dz(k)) > res) res = std::abs(dzhypso - dz(k));
       },
       Kokkos::Max<Real>(maxres));
@@ -522,7 +522,8 @@ void VerticalConvergenceTests::run_hypsometric_test(
         const Real Tv = thetav(k) * exner_function(p(k));
         const Real p1 = pint(k);
         const Real p2 = pint(k + 1);
-        const Real dzhypso = -Constants::r_gas_dry_air * Tv * std::log(p1 / p2) / Constants::gravity;
+        const Real dzhypso = -Constants::r_gas_dry_air * Tv *
+                             std::log(p1 / p2) / Constants::gravity;
         ressum += std::abs(dzhypso - dz(k));
       },
       rsum);
@@ -532,7 +533,6 @@ void VerticalConvergenceTests::run_hypsometric_test(
 void VerticalConvergenceTests::run_hydrostatic_test(
     const int test_idx, const HostDynamics& dyn,
     const AtmosphericConditions& ac) {
-
   const auto dp = ekat::scalarize(dyn.hydrostatic_dp);
   const auto dz = ekat::scalarize(dyn.dz);
   const auto rho = ekat::scalarize(dyn.rho);

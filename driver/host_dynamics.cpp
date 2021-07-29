@@ -7,9 +7,9 @@
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include "haero/constants.hpp"
 #include "haero/conversions.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/constants.hpp"
 #include "haero/utils.hpp"
 #include "ncwriter_impl.hpp"
 
@@ -341,8 +341,8 @@ void HostDynamics::update_thickness(const AtmosphericConditions& conds) {
         const int kphalf_idx = k + 1;
         // negative sign because levels & interfaces are indexed from model top
         // to surface, but z increases from surface to top
-        dz_local(k) =
-            -(phi_local(kphalf_idx) - phi_local(kmhalf_idx)) / Constants::gravity;
+        dz_local(k) = -(phi_local(kphalf_idx) - phi_local(kmhalf_idx)) /
+                      Constants::gravity;
         dph(k) = -(pint_local(kphalf_idx) - pint_local(kmhalf_idx));
       });
 
@@ -586,7 +586,8 @@ Atmosphere HostDynamics::create_atmospheric_state(ColumnView temp,
         const int pack_idx = PackInfo::pack_idx(k);
         const int vec_idx = PackInfo::vec_idx(k);
 
-        z(pack_idx)[vec_idx] = phi_local(pack_idx)[vec_idx] / Constants::gravity;
+        z(pack_idx)[vec_idx] =
+            phi_local(pack_idx)[vec_idx] / Constants::gravity;
       });
   Real pblh = 100.0;
 

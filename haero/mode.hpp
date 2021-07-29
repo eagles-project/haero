@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "ekat/ekat_pack.hpp"
+#include "haero/constants.hpp"
 #include "haero/haero.hpp"
 #include "haero/math.hpp"
-#include "haero/constants.hpp"
 
 namespace haero {
 

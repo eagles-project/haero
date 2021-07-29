@@ -4,8 +4,8 @@
 #include "catch2/catch.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
-#include "haero/mode.hpp"
 #include "haero/constants.hpp"
+#include "haero/mode.hpp"
 
 using namespace haero;
 

@@ -1,8 +1,8 @@
 #ifndef HAERO_CONVERSIONS_HPP
 #define HAERO_CONVERSIONS_HPP
 
-#include "haero/haero.hpp"
 #include "haero/constants.hpp"
+#include "haero/haero.hpp"
 
 /// This file contains functions for converting between various representations
 /// of physical quantities in aerosol parameterizations.

@@ -1,9 +1,9 @@
 #ifndef HAERO_IDEAL_GAS_HPP
 #define HAERO_IDEAL_GAS_HPP
 
+#include "haero/constants.hpp"
 #include "haero/conversions.hpp"
 #include "haero/haero.hpp"
-#include "haero/constants.hpp"
 
 /// This file contains functions that relate various quantities using the ideal
 /// gas law.

@@ -2,8 +2,8 @@
 
 #include "catch2/catch.hpp"
 #include "driver/host_params.hpp"
-#include "haero/conversions.hpp"
 #include "haero/constants.hpp"
+#include "haero/conversions.hpp"
 
 using namespace haero;
 using namespace haero::conversions;
@@ -80,7 +80,8 @@ void InitialThicknessTest::run_test(const AtmosphericConditions& ac,
         const Real tv2 = virtual_temperature(zvals(k), ac);
         const Real tv1 = virtual_temperature(zvals(k + 1), ac);
         const Real rhs =
-            std::pow(tv2 / tv1, -Constants::gravity / (Constants::r_gas_dry_air * ac.Gammav));
+            std::pow(tv2 / tv1, -Constants::gravity /
+                                    (Constants::r_gas_dry_air * ac.Gammav));
         if (!FloatingPoint<Real>::equiv(pratio, rhs, tol)) {
           ++errct;
           printf("ztest: at index k = %d: pratio = %f rhs = %f; |diff| = %f\n",
@@ -109,7 +110,8 @@ void InitialThicknessTest::run_test(const AtmosphericConditions& ac,
         const Real tv2 = virtual_temperature(zvals(k), ac);
         const Real tv1 = virtual_temperature(zvals(k + 1), ac);
         const Real rhs =
-            std::pow(tv2 / tv1, -Constants::gravity / (Constants::r_gas_dry_air * ac.Gammav));
+            std::pow(tv2 / tv1, -Constants::gravity /
+                                    (Constants::r_gas_dry_air * ac.Gammav));
         if (!FloatingPoint<Real>::equiv(pratio, rhs, tol)) {
           ++errct;
           printf("ptest: at index k = %d: pratio = %f rhs = %f; |diff| = %f\n",

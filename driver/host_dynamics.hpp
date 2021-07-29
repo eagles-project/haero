@@ -194,8 +194,9 @@ KOKKOS_INLINE_FUNCTION
 Real geopotential(const Real t, const Real phi0,
                   const AtmosphericConditions& ac) {
   const Real tanarg = Constants::pi * phi0 / (2 * Constants::gravity * ac.ztop);
-  const Real exparg =
-      ac.w0 * ac.tperiod * square(std::sin(Constants::pi * t / ac.tperiod)) / (ac.ztop);
+  const Real exparg = ac.w0 * ac.tperiod *
+                      square(std::sin(Constants::pi * t / ac.tperiod)) /
+                      (ac.ztop);
   return 2 * Constants::gravity * ac.ztop *
          std::atan(std::tan(tanarg) * std::exp(exparg)) / Constants::pi;
 }
@@ -309,8 +310,8 @@ struct HydrostaticPressureUpdate {
   void operator()(const int k) const {
     const int pack_idx = PackInfo::pack_idx(k);
     const int vec_idx = PackInfo::vec_idx(k);
-    phydro_int(pack_idx)[vec_idx] =
-        hydrostatic_pressure_at_height(phi(pack_idx)[vec_idx] / Constants::gravity, conds);
+    phydro_int(pack_idx)[vec_idx] = hydrostatic_pressure_at_height(
+        phi(pack_idx)[vec_idx] / Constants::gravity, conds);
   }
 };
 
