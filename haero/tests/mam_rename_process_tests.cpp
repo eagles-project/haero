@@ -54,8 +54,8 @@ TEST_CASE("mam_rename_run", "") {
     auto process = std::make_unique<MAMRenameProcess>();
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                            int_num_concs, cld_num_concs);
+    auto* progs = model->create_prognostics(
+        int_aerosols, cld_aerosols, int_num_concs, cld_num_concs, gases);
     auto* diags = model->create_diagnostics();
     auto tends = std::make_unique<Tendencies>(*progs);
 
