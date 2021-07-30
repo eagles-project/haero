@@ -153,15 +153,16 @@ class RegionOfValidity final {
     int num_levels = atmosphere.temperature.extent(0);
     for (int k = 0; k < num_levels; ++k) {
       const auto& T = atmosphere.temperature(k);
-      auto invalid_T = haero::MaskType((T < temp_bounds.first) or
-                                       (T > temp_bounds.second));
+      auto invalid_T =
+          haero::MaskType((T < temp_bounds.first) or (T > temp_bounds.second));
+      violations += invalid_T.any();
       const auto& qv = atmosphere.vapor_mixing_ratio(k);
       const auto& p = atmosphere.pressure(k);
       const auto RH =
-        conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
+          conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
       auto invalid_RH = haero::MaskType((RH < rel_hum_bounds.first) or
                                         (RH > rel_hum_bounds.second));
-      violations += 0;
+      violations += invalid_RH.any();
     }
     if (violations == 0) {
       // Check the prognostic state.

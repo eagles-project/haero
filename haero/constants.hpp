@@ -8,7 +8,7 @@
 //
 // IMPLEMENTATION NOTE: we store constants in a struct so their static
 // declarations work in a CUDA environment.
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 
 namespace haero {
 

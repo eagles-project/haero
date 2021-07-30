@@ -1,11 +1,8 @@
 #ifndef HAERO_KOHLER_SOLVE_HPP
 #define HAERO_KOHLER_SOLVE_HPP
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_math.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/haero.hpp"
 #include "haero/math.hpp"
 
 namespace haero {

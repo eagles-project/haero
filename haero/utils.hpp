@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "haero/haero_config.hpp"
+#include "haero/haero.hpp"
 
 namespace haero {
 

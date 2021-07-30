@@ -23,7 +23,8 @@ template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar
 mmr_from_number_conc(const Scalar& number_conc, Real molecular_wt,
                      const Scalar& dry_air_density) {
-  return number_conc * molecular_wt / (dry_air_density * Constants::avogadro);
+  const auto Na = Constants::avogadro;
+  return number_conc * molecular_wt / (dry_air_density * Na);
 }
 
 /// Given a mass mixing ratio (mmr) for a species or mixture [kg species/kg
@@ -36,7 +37,8 @@ mmr_from_number_conc(const Scalar& number_conc, Real molecular_wt,
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar number_conc_from_mmr(
     const Scalar& mmr, Real molecular_wt, const Scalar& dry_air_density) {
-  return mmr * (dry_air_density * Constants::avogadro) / molecular_wt;
+  const auto Na = Constants::avogadro;
+  return mmr * (dry_air_density * Na) / molecular_wt;
 }
 
 /// Given a molar mixing ratio (vmr) for a species or mixture
@@ -49,7 +51,8 @@ KOKKOS_INLINE_FUNCTION Scalar number_conc_from_mmr(
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar mmr_from_vmr(const Scalar& vmr,
                                            Real molecular_wt) {
-  return vmr * molecular_wt / Constants::molec_weight_dry_air;
+  const auto mw_dry_air = Constants::molec_weight_dry_air;
+  return vmr * molecular_wt / mw_dry_air;
 }
 
 /// Given a mass mixing ratio (mmr) for a species or mixture [kg species/kg
@@ -62,7 +65,8 @@ KOKKOS_INLINE_FUNCTION Scalar mmr_from_vmr(const Scalar& vmr,
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar vmr_from_mmr(const Scalar& mmr,
                                            Real molecular_wt) {
-  return mmr * Constants::molec_weight_dry_air / molecular_wt;
+  const auto mw_dry_air = Constants::molec_weight_dry_air;
+  return mmr * mw_dry_air / molecular_wt;
 }
 
 /// Computes the virtual temperature [K] from the temperature [K] and a water
