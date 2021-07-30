@@ -151,21 +151,18 @@ class RegionOfValidity final {
     // Check atmospheric thresholds.
     int violations = 0;
     int num_levels = atmosphere.temperature.extent(0);
-    Kokkos::parallel_reduce(
-        "RegionOfValidity::contains(atm)", num_levels,
-        KOKKOS_LAMBDA(const int k, int& violation) {
-          const auto& T = atmosphere.temperature(k);
-          auto invalid_T = haero::MaskType((T < temp_bounds.first) or
-                                           (T > temp_bounds.second));
-          const auto& qv = atmosphere.vapor_mixing_ratio(k);
-          const auto& p = atmosphere.pressure(k);
-          const auto RH =
-              conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
-          auto invalid_RH = haero::MaskType((RH < rel_hum_bounds.first) or
-                                            (RH > rel_hum_bounds.second));
-          violation += (invalid_T.any() or invalid_RH.any());
-        },
-        violations);
+    for (int k = 0; k < num_levels; ++k) {
+      const auto& T = atmosphere.temperature(k);
+      auto invalid_T = haero::MaskType((T < temp_bounds.first) or
+                                       (T > temp_bounds.second));
+      const auto& qv = atmosphere.vapor_mixing_ratio(k);
+      const auto& p = atmosphere.pressure(k);
+      const auto RH =
+        conversions::relative_humidity_from_vapor_mixing_ratio(qv, p, T);
+      auto invalid_RH = haero::MaskType((RH < rel_hum_bounds.first) or
+                                        (RH > rel_hum_bounds.second));
+      violations += 0;
+    }
     if (violations == 0) {
       // Check the prognostic state.
       return (aero_n_valid_(prognostics.interstitial_aerosols,
@@ -269,18 +266,15 @@ class RegionOfValidity final {
       int num_levels = mmrs.extent(1);
       if (pop_index < num_pop) {
         const Real mu = aero_species_(pop_index).molecular_weight;
-        Kokkos::parallel_reduce(
-            "RegionOfValidity::aero_n_valid_", num_levels,
-            KOKKOS_LAMBDA(const int k, int& violation) {
-              const auto& q = mmrs(pop_index, k);
-              auto SH = specific_humidity_from_vapor_mixing_ratio(qv(k));
-              auto rho = ideal_gas::mass_density(p(k), T(k), qv(k));
-              auto rho_d = (1 - SH) * rho;
-              auto n = number_conc_from_mmr(q, mu, rho_d);
-              auto invalid_n = haero::MaskType((n < n_min) or (n > n_max));
-              violation += invalid_n.any();
-            },
-            violations);
+        for (int k = 0; k < num_levels; ++k) {
+          const auto& q = mmrs(pop_index, k);
+          auto SH = specific_humidity_from_vapor_mixing_ratio(qv(k));
+          auto rho = ideal_gas::mass_density(p(k), T(k), qv(k));
+          auto rho_d = (1 - SH) * rho;
+          auto n = number_conc_from_mmr(q, mu, rho_d);
+          auto invalid_n = haero::MaskType((n < n_min) or (n > n_max));
+          violations += invalid_n.any();
+        }
       }
     }
     return (violations == 0);
@@ -305,18 +299,15 @@ class RegionOfValidity final {
       if (index < num_gases) {
         const auto& species = gas_species_(index);
         const Real mu = species.molecular_weight;
-        Kokkos::parallel_reduce(
-            "RegionOfValidity::gas_n_valid_", num_levels,
-            KOKKOS_LAMBDA(const int k, int& violation) {
-              const auto& q = mmrs(index, k);
-              auto SH = specific_humidity_from_vapor_mixing_ratio(qv(k));
-              auto rho = ideal_gas::mass_density(p(k), T(k), qv(k));
-              auto rho_d = (1 - SH) * rho;
-              auto n = number_conc_from_mmr(q, mu, rho_d);
-              auto invalid_n = haero::MaskType((n < n_min) or (n > n_max));
-              violation += invalid_n.any();
-            },
-            violations);
+        for (int k = 0; k < num_levels; ++k) {
+          const auto& q = mmrs(index, k);
+          auto SH = specific_humidity_from_vapor_mixing_ratio(qv(k));
+          auto rho = ideal_gas::mass_density(p(k), T(k), qv(k));
+          auto rho_d = (1 - SH) * rho;
+          auto n = number_conc_from_mmr(q, mu, rho_d);
+          auto invalid_n = haero::MaskType((n < n_min) or (n > n_max));
+          violations += invalid_n.any();
+        }
       }
     }
     return (violations == 0);
