@@ -113,9 +113,15 @@ struct LegendreQuartic {
 
 */
 namespace {
-template<typename T> KOKKOS_INLINE_FUNCTION Real scalarize(const T pack){return pack[0];}
-template<> KOKKOS_INLINE_FUNCTION Real scalarize(const Real r){return r;}
+template <typename T>
+KOKKOS_INLINE_FUNCTION Real scalarize(const T pack) {
+  return pack[0];
 }
+template <>
+KOKKOS_INLINE_FUNCTION Real scalarize(const Real r) {
+  return r;
+}
+}  // namespace
 template <typename ScalarFunction>
 struct ScalarNewtonSolver {
   using value_type = typename ScalarFunction::value_type;

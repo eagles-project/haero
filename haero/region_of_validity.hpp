@@ -41,7 +41,7 @@ class RegionOfValidity final {
   ~RegionOfValidity() {}
 
   KOKKOS_INLINE_FUNCTION
-  RegionOfValidity(const RegionOfValidity &RoV) 
+  RegionOfValidity(const RegionOfValidity& RoV)
       : temp_bounds(RoV.temp_bounds),
         rel_hum_bounds(RoV.rel_hum_bounds),
         num_modes_(RoV.num_modes_),

@@ -177,15 +177,16 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
     SolutionView solution("pbl_nuc_wang2008", 6);
     FlagaaView flags("newnuc_method_flagaa", 1);
 
-    auto device_ptr = static_cast<MAMNucleationProcess*>(mam_nucleation_process.copy_to_device().get());
+    auto device_ptr = static_cast<MAMNucleationProcess*>(
+        mam_nucleation_process.copy_to_device().get());
     Kokkos::parallel_for(
         "pbl_nuc_wang2008.mam_nucleation_process", 1, KOKKOS_LAMBDA(const int) {
           ekat::Pack<int, 1> flagaa2(0);
           Pack ratenucl(0), rateloge(0), cnum_tot(0), cnum_h2so4(0),
               cnum_nh3(0), radius_cluster(0);
-          device_ptr->pbl_nuc_wang2008(
-              so4vol, flagaa, flagaa2, ratenucl, rateloge, cnum_tot, cnum_h2so4,
-              cnum_nh3, radius_cluster);
+          device_ptr->pbl_nuc_wang2008(so4vol, flagaa, flagaa2, ratenucl,
+                                       rateloge, cnum_tot, cnum_h2so4, cnum_nh3,
+                                       radius_cluster);
           solution(0) = ratenucl[0];
           solution(1) = rateloge[0];
           solution(2) = cnum_tot[0];
@@ -315,7 +316,8 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     Kokkos::deep_copy(dplom_sect_view, h_dplom_sect_view);
     Kokkos::deep_copy(dphim_sect_view, h_dphim_sect_view);
 
-    auto device_ptr = static_cast<MAMNucleationProcess*>(mam_nucleation_process.copy_to_device().get());
+    auto device_ptr = static_cast<MAMNucleationProcess*>(
+        mam_nucleation_process.copy_to_device().get());
     Kokkos::parallel_for(
         "mer07_veh02_nuc_mosaic_1box.mam_nucleation_process", 1,
         KOKKOS_LAMBDA(const int) {

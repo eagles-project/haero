@@ -75,8 +75,10 @@ class AerosolProcess {
 
   /// Copy constructor, for use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
-  AerosolProcess(const AerosolProcess& pp) 
-     : type_(pp.type_), name_(pp.name_), validity_region_(pp.validity_region_) {}
+  AerosolProcess(const AerosolProcess& pp)
+      : type_(pp.type_),
+        name_(pp.name_),
+        validity_region_(pp.validity_region_) {}
 
   /// AerosolProcess objects are not assignable.
   AerosolProcess& operator=(const AerosolProcess&) = delete;
