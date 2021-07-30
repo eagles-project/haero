@@ -258,6 +258,7 @@ class MAMNucleationProcess final
     ColumnView uptkrate_h2so4;
     ColumnView del_h2so4_gasprod;
     ColumnView del_h2so4_aeruptk;
+    ColumnView qwtr_cur;
 
     if (Diagnostics::VAR_NOT_FOUND != qgas_averaged_token)
       qgas_averaged = diagnostics.gas_var(qgas_averaged_token);
@@ -306,7 +307,6 @@ class MAMNucleationProcess final
               ? zero
               : del_h2so4_aeruptk(k);
 
-      ColumnView qwtr_cur("qwtr_cur", qnum_cur.extent(1));
       PackType dndt_ait;
       PackType dmdt_ait;
       PackType dso4dt_ait;
@@ -332,6 +332,8 @@ class MAMNucleationProcess final
 
   /// Set the named parameter to the given value.
   /// It is a fatal error to pass an unknown name.
+  void set_param_(const std::string &name, int value) override {}
+  void set_param_(const std::string &name, bool value) override {}
   void set_param_(const std::string &name, Real value) override {
     if ("adjust_factor_pbl_ratenucl" == name) {
       adjust_factor_pbl_ratenucl = value;

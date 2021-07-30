@@ -67,7 +67,7 @@ class Diagnostics {
 
   /// Returns the number of vertical levels per column in the system.
   KOKKOS_FUNCTION
-  int num_levels() const;
+  int num_levels() const { return num_levels_; }
 
   // --------------------------------------------------------------------------
   //                                  Data
@@ -104,8 +104,14 @@ class Diagnostics {
   /// corresponding to the given token. If such a variable does not exist, this
   /// throws an exception.
   /// @param [in] token A unique token identifying a diagnostic variable.
-  KOKKOS_FUNCTION
-  SpeciesColumnView gas_var(const Token token) const;
+  KOKKOS_INLINE_FUNCTION
+  SpeciesColumnView gas_var(const Token token) const {
+    EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
+                            "Gas diagnostic variable token not found!");
+    const SpeciesColumnView vars =
+        Kokkos::subview(gas_vars_, token, Kokkos::ALL, Kokkos::ALL);
+    return vars;
+  }
 
   /// Returns a const view storing the mode-specific diagnostic variable with a
   /// name corresponding to the given token. If such a variable does not exist,

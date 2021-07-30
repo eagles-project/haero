@@ -214,6 +214,7 @@ TEST_CASE("process_tests", "aerosol_process") {
   const auto &teamPolicy =
       Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
   device_pp->init(aero_config);
+  auto device_ptr = device_pp.get();
   Kokkos::parallel_for(
       teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
         Kokkos::parallel_for(
@@ -221,7 +222,7 @@ TEST_CASE("process_tests", "aerosol_process") {
               // Const cast because everything in lambda is const. Need to
               // google how to fix.
               Tendencies *tendency = const_cast<Tendencies *>(&tends);
-              device_pp->run(t, dt, progs, atmos, diagnostics, *tendency);
+              device_ptr->run(t, dt, progs, atmos, diagnostics, *tendency);
             });
       });
 

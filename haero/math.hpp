@@ -112,6 +112,10 @@ struct LegendreQuartic {
   For an application example, see KohlerPolynomial.
 
 */
+namespace {
+template<typename T> KOKKOS_INLINE_FUNCTION Real scalarize(const T pack){return pack[0];}
+template<> KOKKOS_INLINE_FUNCTION Real scalarize(const Real r){return r;}
+}
 template <typename ScalarFunction>
 struct ScalarNewtonSolver {
   using value_type = typename ScalarFunction::value_type;
@@ -165,7 +169,7 @@ struct ScalarNewtonSolver {
         printf(
             "newton solve warning: max iterations reached xroot = %g xnp1 = %g "
             "|diff| = %g\n",
-            xroot, xnp1, iter_diff);
+            scalarize(xroot), scalarize(xnp1), scalarize(iter_diff));
 #endif
         keep_going = false;
       }

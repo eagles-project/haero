@@ -402,7 +402,7 @@ void NcWriter::define_scalar_var(const std::string& name,
                                  const std::vector<text_att_type>& var_atts,
                                  const Real val) {
   EKAT_ASSERT(ncid != NC_EBADID);
-  int* not_used;
+  int* not_used=nullptr;
   int varid = NC_EBADID;
   int retval =
       nc_def_var(ncid, name.c_str(), NC_REAL_KIND, 0, not_used, &varid);

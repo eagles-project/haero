@@ -37,8 +37,23 @@ class RegionOfValidity final {
         gas_bounds_("Gas bounds", 0) {}
 
   /// Destructor.
+  KOKKOS_INLINE_FUNCTION
   ~RegionOfValidity() {}
 
+  KOKKOS_INLINE_FUNCTION
+  RegionOfValidity(const RegionOfValidity &RoV) 
+      : temp_bounds(RoV.temp_bounds),
+        rel_hum_bounds(RoV.rel_hum_bounds),
+        num_modes_(RoV.num_modes_),
+        num_aero_species_in_mode_(RoV.num_aero_species_in_mode_),
+        aero_species_(RoV.aero_species_),
+        gas_species_(RoV.gas_species_),
+        int_aero_indices_(RoV.int_aero_indices_),
+        cld_aero_indices_(RoV.cld_aero_indices_),
+        int_aero_bounds_(RoV.int_aero_bounds_),
+        cld_aero_bounds_(RoV.cld_aero_bounds_),
+        gas_indices_(RoV.gas_indices_),
+        gas_bounds_(RoV.gas_bounds_) {}
   /// Minimum and maximum bounds on atmospheric temperature [K]
   Bounds temp_bounds;
   /// Minimum and maximum bounds on relative humidity [-]
