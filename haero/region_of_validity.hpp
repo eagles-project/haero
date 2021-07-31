@@ -232,21 +232,29 @@ class RegionOfValidity final {
     EKAT_ASSERT(index >= 0);
     EKAT_ASSERT(min < max);
 
-    int* begin = indices.data();
-    int* end = begin + indices.extent(0);
+    auto h_indices = Kokkos::create_mirror_view(indices);
+    Kokkos::deep_copy(h_indices, indices);
+    int* begin = h_indices.data();
+    int* end = begin + h_indices.extent(0);
     int* iter = std::lower_bound(begin, end, index);
     int pos = (iter == end) ? indices.extent(0) : *iter;
+    auto h_bounds = Kokkos::create_mirror_view(bounds);
+    Kokkos::deep_copy(h_bounds, bounds);
     if ((iter == end) || (*iter != index)) {  // index must be inserted
       Kokkos::resize(indices, indices.extent(0) + 1);
+      Kokkos::resize(h_indices, indices.extent(0));
       Kokkos::resize(bounds, bounds.extent(0) + 1);
+      Kokkos::resize(h_bounds, indices.extent(0));
       for (int p = indices.extent(0) - 1; p > pos; --p) {
-        indices(p) = indices(p - 1);
-        bounds(p) = bounds(p - 1);
+        h_indices(p) = h_indices(p - 1);
+        h_bounds(p) = h_bounds(p - 1);
       }
-      indices(pos) = index;
+      h_indices(pos) = index;
     }
-    bounds(pos).first = min;
-    bounds(pos).second = max;
+    h_bounds(pos).first = min;
+    h_bounds(pos).second = max;
+    Kokkos::deep_copy(indices, h_indices);
+    Kokkos::deep_copy(bounds, h_bounds);
   }
 
   // This helper returns the bounds found in the given array at the given
@@ -254,13 +262,17 @@ class RegionOfValidity final {
   Bounds get_bounds_(const IndexArray& indices, const BoundsArray& bounds,
                      int index, Real default_min, Real default_max) const {
     EKAT_ASSERT(index >= 0);
-    int* begin = indices.data();
-    int* end = begin + indices.extent(0);
+    auto h_indices = Kokkos::create_mirror_view(indices);
+    Kokkos::deep_copy(h_indices, indices);
+    int* begin = h_indices.data();
+    int* end = begin + h_indices.extent(0);
     int* iter = std::lower_bound(begin, end, index);
     if ((iter == end) || (*iter != index)) {
       return Bounds({default_min, default_max});
     } else {
-      return bounds(*iter);
+      auto h_bounds = Kokkos::create_mirror_view(bounds);
+      Kokkos::deep_copy(h_bounds, bounds);
+      return h_bounds(*iter);
     }
   }
 
@@ -337,19 +349,32 @@ class RegionOfValidity final {
     int_i = i1;
     int_b = b1;
 
-    for (int i = 0; i < i2.extent(0); ++i) {
-      auto index = i2(i);
-      const Bounds& bounds2 = b2(i);
-      auto* begin = int_i.data();
-      auto* end = begin + int_i.extent(0);
+    auto h_i1 = Kokkos::create_mirror_view(i1);
+    Kokkos::deep_copy(h_i1, i1);
+    auto h_b1 = Kokkos::create_mirror_view(b1);
+    Kokkos::deep_copy(h_b1, b1);
+    auto h_i2 = Kokkos::create_mirror_view(i2);
+    Kokkos::deep_copy(h_i2, i2);
+    auto h_b2 = Kokkos::create_mirror_view(b2);
+    Kokkos::deep_copy(h_b2, b2);
+    auto h_int_i = Kokkos::create_mirror_view(int_i);
+    Kokkos::deep_copy(h_int_i, int_i);
+    for (int i = 0; i < h_i2.extent(0); ++i) {
+      auto index = h_i2(i);
+      const Bounds& bounds2 = h_b2(i);
+      auto* begin = h_int_i.data();
+      auto* end = begin + h_int_i.extent(0);
       auto* iter = std::lower_bound(begin, end, index);
       if ((iter == end) || (*iter != index)) {  // bounds not found--insert
         insert_bounds_at_index_(index, bounds2.first, bounds2.second, int_i,
                                 int_b);
       } else {  // overwrite bounds
-        Bounds& int_bounds = int_b(index);
+        auto h_int_b = Kokkos::create_mirror_view(int_b);
+        Kokkos::deep_copy(h_int_b, int_b);
+        Bounds& int_bounds = h_int_b(index);
         int_bounds.first = std::max(bounds2.first, int_bounds.first);
         int_bounds.second = std::min(bounds2.second, int_bounds.second);
+        Kokkos::deep_copy(int_b, h_int_b);
       }
     }
   }
