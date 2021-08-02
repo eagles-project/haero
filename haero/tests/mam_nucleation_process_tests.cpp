@@ -177,7 +177,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
     SolutionView solution("pbl_nuc_wang2008", 6);
     FlagaaView flags("newnuc_method_flagaa", 1);
 
-    auto device_pp  = mam_nucleation_process.copy_to_device();
+    auto device_pp = mam_nucleation_process.copy_to_device();
     auto device_ptr = static_cast<MAMNucleationProcess*>(device_pp.get());
     Kokkos::parallel_for(
         "pbl_nuc_wang2008.mam_nucleation_process", 1, KOKKOS_LAMBDA(const int) {
@@ -316,7 +316,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     Kokkos::deep_copy(dplom_sect_view, h_dplom_sect_view);
     Kokkos::deep_copy(dphim_sect_view, h_dphim_sect_view);
 
-    auto device_pp  = mam_nucleation_process.copy_to_device();
+    auto device_pp = mam_nucleation_process.copy_to_device();
     auto device_ptr = static_cast<MAMNucleationProcess*>(device_pp.get());
     Kokkos::parallel_for(
         "mer07_veh02_nuc_mosaic_1box.mam_nucleation_process", 1,
@@ -521,17 +521,17 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     // Now compute the tendencies by running the process.
     {
       Real t = 0.0, dt = 30.0;
-      auto device_pp  = process->copy_to_device();
-      AerosolProcess *device_ptr = device_pp.get();
-      Prognostics  device_progs = *progs;
-      Atmosphere   device_atm   = *atm;
-      Diagnostics  device_diags = *diags; 
-      Tendencies   device_tends = *tends;
+      auto device_pp = process->copy_to_device();
+      AerosolProcess* device_ptr = device_pp.get();
+      Prognostics device_progs = *progs;
+      Atmosphere device_atm = *atm;
+      Diagnostics device_diags = *diags;
+      Tendencies device_tends = *tends;
       Kokkos::parallel_for(
-          "run.run", 1,
-          KOKKOS_LAMBDA(const int) {
-          device_ptr->run(t, dt, device_progs, device_atm, device_diags, device_tends);
-        });
+          "run.run", 1, KOKKOS_LAMBDA(const int) {
+            device_ptr->run(t, dt, device_progs, device_atm, device_diags,
+                            device_tends);
+          });
     }
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
@@ -637,17 +637,17 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     // Now compute the tendencies by running the process.
     {
       Real t = 0.0, dt = 30.0;
-      auto device_pp  = process->copy_to_device();
-      AerosolProcess *device_ptr = device_pp.get();
-      Prognostics  device_progs = *progs;
-      Atmosphere   device_atm   = *atm;
-      Diagnostics  device_diags = *diags; 
-      Tendencies   device_tends = *tends;
+      auto device_pp = process->copy_to_device();
+      AerosolProcess* device_ptr = device_pp.get();
+      Prognostics device_progs = *progs;
+      Atmosphere device_atm = *atm;
+      Diagnostics device_diags = *diags;
+      Tendencies device_tends = *tends;
       Kokkos::parallel_for(
-          "run.run", 1,
-          KOKKOS_LAMBDA(const int) {
-          device_ptr->run(t, dt, device_progs, device_atm, device_diags, device_tends);
-        });
+          "run.run", 1, KOKKOS_LAMBDA(const int) {
+            device_ptr->run(t, dt, device_progs, device_atm, device_diags,
+                            device_tends);
+          });
     }
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.

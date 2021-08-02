@@ -1,6 +1,7 @@
 #ifndef HAERO_AEROSOL_PROCESS_HPP
 #define HAERO_AEROSOL_PROCESS_HPP
 #include <memory>
+
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/modal_aerosol_config.hpp"
@@ -239,14 +240,12 @@ class DeviceAerosolProcess : public AerosolProcess {
       : AerosolProcess(type, name) {}
 
  protected:
-  struct custom_deleter
-  {
-    void operator ()( AerosolProcess * process)
-    { 
-      AerosolProcess * dev_ptr = process;
-      Kokkos::parallel_for( "delete", 1,
-        KOKKOS_LAMBDA(const int) { 
-          dev_ptr->~AerosolProcess(); });
+  struct custom_deleter {
+    void operator()(AerosolProcess* process) {
+      AerosolProcess* dev_ptr = process;
+      Kokkos::parallel_for(
+          "delete", 1,
+          KOKKOS_LAMBDA(const int) { dev_ptr->~AerosolProcess(); });
       Kokkos::kokkos_free<MemorySpace>((void*)process);
     }
   };
