@@ -193,6 +193,7 @@ class MAMNucleationProcess final
       : DeviceAerosolProcess<MAMNucleationProcess>(pp),
         adjust_factor_pbl_ratenucl(pp.adjust_factor_pbl_ratenucl),
         adjust_factor_bin_tern_ratenucl(pp.adjust_factor_bin_tern_ratenucl),
+        nait(pp.nait),
         iaer_h2so4(pp.iaer_h2so4),
         iaer_nh3(pp.iaer_nh3),
         iaer_nh4(pp.iaer_nh4),
@@ -203,8 +204,7 @@ class MAMNucleationProcess final
         qgas_averaged_token(pp.qgas_averaged_token),
         uptkrate_h2so4_token(pp.uptkrate_h2so4_token),
         del_h2so4_gasprod_token(pp.del_h2so4_gasprod_token),
-        del_h2so4_aeruptk_token(pp.del_h2so4_aeruptk_token),
-        nait(pp.nait) {}
+        del_h2so4_aeruptk_token(pp.del_h2so4_aeruptk_token) {}
 
   /// MAMNucleationProcess objects are not assignable.
   AerosolProcess &operator=(const MAMNucleationProcess &) = delete;
