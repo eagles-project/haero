@@ -58,8 +58,7 @@ TEST_CASE("mam_rename_run", "") {
   View1D ht("height", num_iface_packs);
   Real pblh{100.0};  // planetary BL height [m]
   auto atm =
-      std::make_unique<Atmosphere>(num_levels, temp, press, qv, ht, pdel,
-                                   pblh);
+      std::make_unique<Atmosphere>(num_levels, temp, press, qv, ht, pdel, pblh);
 
   SECTION("rename_run") {
     auto process = std::make_unique<MAMRenameProcess>();
