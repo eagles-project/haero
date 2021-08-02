@@ -101,14 +101,6 @@ TEST_CASE("wet_radius_diagnostic", "") {
   }
   Kokkos::deep_copy(num_ratios, h_num_ratios);
 
-  // Allocate a view to hold Modes.
-  DeviceType::view_1d<Mode> d_aerosol_modes("aerosol_modes", nmodes);
-  auto h_aerosol_modes = Kokkos::create_mirror_view(d_aerosol_modes);
-  for (int m = 0; m < nmodes; ++m) {
-    h_aerosol_modes(m) = config.aerosol_modes[m];
-  }
-  Kokkos::deep_copy(d_aerosol_modes, h_aerosol_modes);
-
   // Allocate a view to hold AerosolSpecies for each mode, individually
   DeviceType::view_2d<AerosolSpecies> d_aerosols_in_mode(
       "aerosols_in_mode", nmodes, config.max_species_per_mode());
@@ -132,6 +124,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
   std::cout << "starting kernels\n";
   // on host, loop over each mode
   for (int m = 0; m < nmodes; ++m) {
+    auto mode = config.aerosol_modes[m];
     auto aero_species = config.aerosol_species_for_mode(m);
     int num_aero_species = aero_species.size();
     // compute the modal mean particle volume
@@ -157,18 +150,19 @@ TEST_CASE("wet_radius_diagnostic", "") {
     Kokkos::parallel_for(
         npacks, KOKKOS_LAMBDA(const int pack_idx) {
           mode_dry_particle_radius(m, pack_idx) =
-              0.5 * d_aerosol_modes[m].mean_particle_diameter_from_volume(
+              0.5 * mode.mean_particle_diameter_from_volume(
                         mode_mean_particle_dry_volume(m, pack_idx));
         });
     std::cout << "\tdry particle radius ready\n";
 
-    // compute the modal avg wet radius
+    // compute the modal avg wet radius. (Note that the ModeWetRadius functor
+    // is constructed on host!)
     Kokkos::parallel_for(
         npacks,
         ModeWetRadius(Kokkos::subview(mode_wet_radius, m, Kokkos::ALL),
                       Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL),
                       Kokkos::subview(mode_dry_particle_radius, m, Kokkos::ALL),
-                      relative_humidity, d_aerosol_modes[m]));
+                      relative_humidity, config.aerosol_modes[m]));
     std::cout << "\twet radius ready\n";
   }
 
