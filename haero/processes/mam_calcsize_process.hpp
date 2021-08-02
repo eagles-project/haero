@@ -37,7 +37,7 @@ class MAMCalcsizeProcess final
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            Tendencies &tendencies) const override{};
+            const Tendencies &tendencies) const override{};
 };
 
 }  // namespace haero

@@ -1,6 +1,6 @@
 #ifndef HAERO_AEROSOL_PROCESS_HPP
 #define HAERO_AEROSOL_PROCESS_HPP
-
+#include <memory>
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/modal_aerosol_config.hpp"
@@ -141,7 +141,7 @@ class AerosolProcess {
   KOKKOS_FUNCTION
   void run(Real t, Real dt, const Prognostics& prognostics,
            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-           Tendencies& tendencies) const {
+           const Tendencies& tendencies) const {
     // This method must be called on the device.
 
     run_(t, dt, prognostics, atmosphere, diagnostics, tendencies);
@@ -195,7 +195,7 @@ class AerosolProcess {
   virtual void run_(Real t, Real dt, const Prognostics& prognostics,
                     const Atmosphere& atmosphere,
                     const Diagnostics& diagnostics,
-                    Tendencies& tendencies) const = 0;
+                    const Tendencies& tendencies) const = 0;
 
   /// Override this method to return a vector of strings containing the names
   /// of diagnostic variables required by this aerosol process in order to
@@ -239,6 +239,18 @@ class DeviceAerosolProcess : public AerosolProcess {
       : AerosolProcess(type, name) {}
 
  protected:
+  struct custom_deleter
+  {
+    void operator ()( AerosolProcess * process)
+    { 
+      AerosolProcess * dev_ptr = process;
+      Kokkos::parallel_for( "delete", 1,
+        KOKKOS_LAMBDA(const int) { 
+          dev_ptr->~AerosolProcess(); });
+      Kokkos::kokkos_free<MemorySpace>((void*)process);
+    }
+  };
+
   Pointer copy_to_device_() const override {
     const std::string debug_name = name();
     Subclass* process =
@@ -251,7 +263,7 @@ class DeviceAerosolProcess : public AerosolProcess {
     Kokkos::parallel_for(
         debug_name + "_copy", 1,
         KOKKOS_LAMBDA(const int) { new (process) Subclass(this_process); });
-    return Pointer(process, Kokkos::kokkos_free<MemorySpace>);
+    return Pointer(process, custom_deleter());
   }
 };
 
@@ -271,7 +283,7 @@ class NullAerosolProcess : public DeviceAerosolProcess<NullAerosolProcess> {
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics& prognostics,
             const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-            Tendencies& tendencies) const override {}
+            const Tendencies& tendencies) const override {}
 };
 
 #if HAERO_FORTRAN
@@ -368,7 +380,7 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
 
   void run_(Real t, Real dt, const Prognostics& prognostics,
             const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-            Tendencies& tendencies) const override {
+            const Tendencies& tendencies) const override {
     // Set tendencies to zero.
     tendencies.scale(0.0);
 
