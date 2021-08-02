@@ -188,6 +188,7 @@ class MAMNucleationProcess final
 
   /// Default copy constructor. For use in moving host instance to device.
   //  KOKKOS_INLINE_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   MAMNucleationProcess(const MAMNucleationProcess &pp)
       : DeviceAerosolProcess<MAMNucleationProcess>(pp),
         adjust_factor_pbl_ratenucl(pp.adjust_factor_pbl_ratenucl),
@@ -196,10 +197,14 @@ class MAMNucleationProcess final
         iaer_nh3(pp.iaer_nh3),
         iaer_nh4(pp.iaer_nh4),
         iaer_so4(pp.iaer_so4),
+        dgnum_aer(pp.dgnum_aer),
+        dgnumlo_aer(pp.dgnumlo_aer),
+        dgnumhi_aer(pp.dgnumhi_aer),
         qgas_averaged_token(pp.qgas_averaged_token),
         uptkrate_h2so4_token(pp.uptkrate_h2so4_token),
         del_h2so4_gasprod_token(pp.del_h2so4_gasprod_token),
-        del_h2so4_aeruptk_token(pp.del_h2so4_aeruptk_token) {}
+        del_h2so4_aeruptk_token(pp.del_h2so4_aeruptk_token),
+        nait(pp.nait) {}
 
   /// MAMNucleationProcess objects are not assignable.
   AerosolProcess &operator=(const MAMNucleationProcess &) = delete;
@@ -214,7 +219,7 @@ class MAMNucleationProcess final
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            Tendencies &tendencies) const override {
+            const Tendencies &tendencies) const override {
     // First of all, check to make sure our model has an aitken mode. If it
     // doesn't, we can return immediately.
     if (nait == -1) {
@@ -450,6 +455,7 @@ class MAMNucleationProcess final
     Pack qnh3_cur(0.0);
     if (0 <= iaer_nh3) qnh3_cur = max(0.0, qgas_cur[iaer_nh3]);
     // dry-diameter limits for "grown" new particles
+
     const Real dplom_mode =
         exp(0.67 * log(dgnumlo_aer[nait]) + 0.33 * log(dgnum_aer[nait]));
     const Real dphim_mode = dgnumhi_aer[nait];

@@ -45,7 +45,7 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            Tendencies &tendencies) const {
+            const Tendencies &tendencies) const {
     const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
     const ColumnView temp = atmosphere.temperature;
     const SpeciesColumnView first_aersol = diagnostics.aerosol_var(aersol_0);
