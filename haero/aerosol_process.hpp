@@ -381,7 +381,8 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
             const Atmosphere& atmosphere, const Diagnostics& diagnostics,
             const Tendencies& tendencies) const override {
     // Set tendencies to zero.
-    tendencies.scale(0.0);
+    auto nc_tendencies = const_cast<Tendencies&>(tendencies);
+    nc_tendencies.scale(0.0);
 
     // Call the Fortran subroutine for the process.
     run_process_(t, dt, (void*)&prognostics, (void*)&atmosphere,
