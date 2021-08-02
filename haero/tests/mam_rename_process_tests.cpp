@@ -14,8 +14,20 @@ Model* get_model_for_unit_tests(const ModalAerosolConfig& aero_config,
 }
 
 TEST_CASE("mam_rename_run", "") {
+  using View1D = Kokkos::View<PackType*>;
+  using View2D = Kokkos::View<PackType**>;
+
   auto aero_config = create_mam4_modal_aerosol_config();
   static constexpr std::size_t num_levels{72};  // number of levels
+  std::size_t num_vert_packs = num_levels / HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
+    num_vert_packs++;
+  }
+  std::size_t num_iface_packs = (num_levels + 1) / HAERO_PACK_SIZE;
+  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels + 1)) {
+    num_iface_packs++;
+  }
+
   auto* model = get_model_for_unit_tests(aero_config, num_levels);
   const std::size_t num_gases{
       aero_config.h_gas_species.size()};  // number of gases
@@ -25,30 +37,29 @@ TEST_CASE("mam_rename_run", "") {
   // Set up some prognostics aerosol data views
   const int num_aero_populations = model->num_aerosol_populations();
 
-  Kokkos::View<PackType**> int_aerosols(
-      "interstitial aerosols", num_aero_populations,
-      num_levels);  // interstitial aerosols mmr [kg/kg(of air)]
-  Kokkos::View<PackType**> cld_aerosols(
-      "cloudborne aerosols", num_aero_populations,
-      num_levels);  // cloud borne aerosols mmr [kg/kg(of air)]
-  Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
-  Kokkos::View<PackType**> int_num_concs(
+  View2D int_aerosols("interstitial aerosols", num_aero_populations,
+                      num_levels);  // interstitial aerosols mmr [kg/kg(of air)]
+  View2D cld_aerosols("cloudborne aerosols", num_aero_populations,
+                      num_levels);  // cloud borne aerosols mmr [kg/kg(of air)]
+  View2D gases("gases", num_gases, num_levels);
+  View2D int_num_concs(
       "interstitial number concs", num_modes,
       num_levels);  // interstitial aerosols number mixing ratios [#/kg(of air)]
-  Kokkos::View<PackType**> cld_num_concs(
+  View2D cld_num_concs(
       "cloud borne number concs", num_modes,
       num_levels);  // cloud borne aerosols number mixing ratios [#/kg(of air)]
 
   // Set up atmospheric data and populate it with some views.
-  Kokkos::View<PackType*> temp("temperature", num_levels);  //[K]
-  Kokkos::View<PackType*> press("pressure", num_levels);    //[Pa]
-  Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
-  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
-  Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
+  View1D temp("temperature", num_vert_packs);  //[K]
+  View1D press("pressure", num_vert_packs);    //[Pa]
+  View1D rel_hum("relative humidity", num_vert_packs);
+  View1D qv("vapor mixing ratio", num_vert_packs);
+  View1D pdel("hydrostatic_dp", num_vert_packs);  //[Pa]
+  View1D ht("height", num_iface_packs);
   Real pblh{100.0};  // planetary BL height [m]
   auto atm =
-      std::make_unique<Atmosphere>(num_levels, temp, press, rel_hum, ht, pdel,
-                                   pblh);  // create atmosphere object
+      std::make_unique<Atmosphere>(num_levels, temp, press, qv, ht, pdel,
+                                   pblh);
 
   SECTION("rename_run") {
     auto process = std::make_unique<MAMRenameProcess>();
