@@ -250,7 +250,7 @@ TEST_CASE("driver dynamics", "") {
     pdyn.init_from_uniform_pressures(conds);
     std::cout << pdyn.info_string();
 
-    hbtest.run_test(pdyn, conds, 2.7 * FloatingPoint<Real>::zero_tol);
+    hbtest.run_test(pdyn, conds, 3 * FloatingPoint<Real>::zero_tol);
     hypsotest.run_test(pdyn, conds, 0.07);
 
     REQUIRE(hbtest.nerr == 0);
