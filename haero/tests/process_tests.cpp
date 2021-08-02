@@ -198,22 +198,23 @@ TEST_CASE("process_tests", "aerosol_process") {
     Kokkos::deep_copy(aero_tend, host_aero_tend);
   }
 
+  // Create and initialize our process.
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudProcess";
   MyAerosolProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
-  auto device_pp = pp.copy_to_device();
-
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
   std::vector<GasSpecies> gas_species = create_mam4_gas_species();
   ModalAerosolConfig aero_config(modes, aero_species, mode_species,
                                  gas_species);
+  pp.init(aero_config);
 
+  // Move the process to the device and run it.
+  auto device_pp = pp.copy_to_device();
   const Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
   const auto &teamPolicy =
       Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
-  device_pp->init(aero_config);
   auto device_ptr = device_pp.get();
   Kokkos::parallel_for(
       teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
