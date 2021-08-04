@@ -1,11 +1,10 @@
 #include "haero/processes/mam_rename_process.hpp"
 
+#include <Kokkos_Pair.hpp>
 #include <cassert>
 #include <cmath>
 #include <functional>
 #include <iostream>
-
-#include <Kokkos_Pair.hpp>
 
 #include "haero/constants.hpp"
 #include "haero/mode.hpp"
@@ -27,7 +26,7 @@ static const Real sqrt_half = std::sqrt((Real)0.5);
 static constexpr Real smallest_dryvol_value = 1.0e-25;
 
 // Utility function to enumerate a container
-template <typename T, typename PairType=Kokkos::pair<Size, T>>
+template <typename T, typename PairType = Kokkos::pair<Size, T>>
 Container<PairType> enumerate(Container<T> enumeratee) {
   Container<PairType> enumerated;
   for (int i = 0; i < enumeratee.size(); i++)
@@ -65,7 +64,8 @@ Container<T> reserved_container(Size size) {
 // TODO: Where can I find a formula to reference for this calculation?
 static inline Real compute_relaxed_volume_to_num_ratio(
     const Mode& mode, const Real& diameter_for_current_mode) {
-  const auto vol = mode.mean_particle_volume_from_diameter(diameter_for_current_mode);
+  const auto vol =
+      mode.mean_particle_volume_from_diameter(diameter_for_current_mode);
   return 1. / vol;
 }
 
@@ -75,8 +75,7 @@ MAMRenameProcess::MAMRenameProcess()
     : DeviceAerosolProcess<MAMRenameProcess>(RenameProcess,
                                              "MAMRenameProcess") {}
 
-void MAMRenameProcess::init_(const ModalAerosolConfig& config)
-{
+void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   const auto& num_modes = config.num_modes();
 
   // Reserve memory for private fields
@@ -95,8 +94,7 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config)
 
   auto dest_mode_of_mode_mapping = reserved_num_modes_int_vector();
 
-  initialize_dest_mode_of_mode_mapping(dest_mode_of_mode_mapping,
-                                       config);
+  initialize_dest_mode_of_mode_mapping(dest_mode_of_mode_mapping, config);
 
   auto size_factor = reserved_num_modes_real_vector();
   auto fmode_dist_tail_fac = reserved_num_modes_real_vector();
@@ -109,7 +107,7 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config)
   auto dryvol_smallest = reserved_num_modes_real_vector();
 
   Size num_pairs = 0;
-  
+
   find_renaming_pairs_(config, dest_mode_of_mode_mapping, num_pairs,
                        size_factor, fmode_dist_tail_fac, volume2num_lo_relaxed,
                        volume2num_hi_relaxed, ln_diameter_tail_fac,
@@ -117,12 +115,10 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config)
                        dryvol_smallest);
 }
 
-
 void MAMRenameProcess::find_renaming_pairs_(
     const ModalAerosolConfig& config,
-    const Container<Integral>& dest_mode_of_mode_mapping,
-    Size& num_pairs, Container<Real>& size_factor,
-    Container<Real>& fmode_dist_tail_fac,
+    const Container<Integral>& dest_mode_of_mode_mapping, Size& num_pairs,
+    Container<Real>& size_factor, Container<Real>& fmode_dist_tail_fac,
     Container<Real>& volume2num_lo_relaxed,
     Container<Real>& volume2num_hi_relaxed,
     Container<Real>& ln_diameter_tail_fac, Container<Real>& diameter_cutoff,
@@ -175,8 +171,8 @@ void MAMRenameProcess::find_renaming_pairs_(
     {
       // TODO: Grab modes as param?
       const Mode& mode = config.aerosol_modes[src_mode];
-      volume2num_lo_relaxed[src_mode] = compute_relaxed_volume_to_num_ratio(
-          mode, dgnumhi[src_mode]);
+      volume2num_lo_relaxed[src_mode] =
+          compute_relaxed_volume_to_num_ratio(mode, dgnumhi[src_mode]);
       volume2num_lo_relaxed[dest_mode_of_current_mode] =
           compute_relaxed_volume_to_num_ratio(
               mode, dgnumhi[dest_mode_of_current_mode]);
