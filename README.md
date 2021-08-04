@@ -150,6 +150,12 @@ Haero's documentation includes
   to regenerate your `config.sh` script. Once you've regenerated this script,
   you can reconfigure and build as usual.
 
+## Programming for CPUs and GPUs with Kokkos
+
+"Performance-portable" programming is a rich topic, fraught with complexity,
+and deserves its [own special FAQ](https://github.com/jeff-cohere/haero/wiki/Cxx---Kokkos-Programming-FAQ)
+on our [Wiki](https://github.com/jeff-cohere/haero/wiki).
+
 ## Testing
 
 + **Where are testing results stored when I type `make test`?** All testing
