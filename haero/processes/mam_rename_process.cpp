@@ -5,7 +5,10 @@
 #include <functional>
 #include <iostream>
 
+#include <Kokkos_Pair.hpp>
+
 #include "haero/physical_constants.hpp"
+#include "haero/mode.hpp"
 
 namespace haero {
 
@@ -20,16 +23,15 @@ using Size = MAMRenameProcess::Size;
 // TODO: Should _smallest_dryvol_value_ be in haero::constants as well?
 using haero::constants::pi_sixth;
 static constexpr Real frelax = 27.0;
-static constexpr Real sqrt_half = std::sqrt((Real)0.5);
+static const Real sqrt_half = std::sqrt((Real)0.5);
 static constexpr Real smallest_dryvol_value = 1.0e-25;
 
 // Utility function to enumerate a container
-template <typename T>
-Container<std::pair<Size, T>> enumerate(Container<T> enumeratee) {
-  using Pair = std::pair<Size, T>;
-  Container<Pair> enumerated;
+template <typename T, typename PairType=Kokkos::pair<Size, T>>
+Container<PairType> enumerate(Container<T> enumeratee) {
+  Container<PairType> enumerated;
   for (int i = 0; i < enumeratee.size(); i++)
-    enumerated.push_back(Pair(i, enumeratee[i]));
+    enumerated.push_back(PairType(i, enumeratee[i]));
   return enumerated;
 }
 
@@ -43,6 +45,10 @@ Container<std::pair<Size, T>> enumerate(Container<T> enumeratee) {
 void initialize_dest_mode_of_mode_mapping(
     Container<Integral> dest_mode_of_mode_mapping,
     const ModalAerosolConfig& model) {
+  (void)model;
+  // Just run in a single executor to set the only element that needs to be set.
+  // dest_mode_of_mode_mapping is being set to {0, 1, 0, 0} until the correct
+  // assignment routine is ready.
   dest_mode_of_mode_mapping.assign({0, 1, 0, 0});
 }
 
@@ -58,12 +64,9 @@ Container<T> reserved_container(Size size) {
 // TODO: What is a more descriptive name for _diameter_?
 // TODO: Where can I find a formula to reference for this calculation?
 static inline Real compute_relaxed_volume_to_num_ratio(
-    const Real& alnsg_for_current_mode, const Real& diameter_for_current_mode) {
-  static const auto unrelaxed_limit =
-      1. / pi_sixth * std::pow(diameter_for_current_mode, 3) *
-      std::exp(std::pow(4.5 * alnsg_for_current_mode, 2));
-
-  return unrelaxed_limit / frelax;
+    const Mode& mode, const Real& diameter_for_current_mode) {
+  const auto vol = mode.mean_particle_volume_from_diameter(diameter_for_current_mode);
+  return 1. / vol;
 }
 
 }  // namespace
@@ -108,8 +111,10 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config)
   auto dryvol_smallest = reserved_num_modes_real_vector();
 
   Size num_pairs = 0;
+  
+  // TODO: extract modes from the config, pass into this routine?
 
-  find_renaming_pairs_(num_modes, dest_mode_of_mode_mapping, num_pairs,
+  find_renaming_pairs_(modal_aerosol_config, dest_mode_of_mode_mapping, num_pairs,
                        size_factor, fmode_dist_tail_fac, volume2num_lo_relaxed,
                        volume2num_hi_relaxed, ln_diameter_tail_fac,
                        diameter_cutoff, ln_dia_cutoff, diameter_belowcutoff,
@@ -123,6 +128,7 @@ void MAMRenameProcess::run_(Real t, Real dt, const Prognostics& prognostics,
                             const Tendencies& tendencies) const {}
 
 void MAMRenameProcess::find_renaming_pairs_(
+    const ModalAerosolConfig& modal_aerosol_config,
     const Size nmodes, const Container<Integral>& dest_mode_of_mode_mapping,
     Size& num_pairs, Container<Real>& size_factor,
     Container<Real>& fmode_dist_tail_fac,
@@ -152,8 +158,8 @@ void MAMRenameProcess::find_renaming_pairs_(
 
   // If we ever bump to c++17, this should use tuple decomposition
   for (const auto& tup : enumerate(filtered_mode_mappings)) {
-    const auto src_mode = std::get<0>(tup);
-    const auto dest_mode_of_current_mode = std::get<1>(tup);
+    const auto src_mode = tup.first;
+    const auto dest_mode_of_current_mode = tup.second;
 
     const auto& alnsg_for_current_mode = alnsg[src_mode];
     const auto& alnsg_for_dest_mode = alnsg[dest_mode_of_current_mode];
@@ -176,11 +182,13 @@ void MAMRenameProcess::find_renaming_pairs_(
 
     // Set relaxed limits of ratios for current source/dest mode pair
     {
+      // TODO: Grab modes as param?
+      const Mode& mode = /* */;
       volume2num_lo_relaxed[src_mode] = compute_relaxed_volume_to_num_ratio(
-          alnsg_for_current_mode, dgnumhi[src_mode]);
+          mode, dgnumhi[src_mode]);
       volume2num_lo_relaxed[dest_mode_of_current_mode] =
           compute_relaxed_volume_to_num_ratio(
-              alnsg_for_current_mode, dgnumhi[dest_mode_of_current_mode]);
+              mode, dgnumhi[dest_mode_of_current_mode]);
     }
 
     // A factor for computing diameter at the tails of the distribution

@@ -2,6 +2,8 @@
 #define HAERO_MAM_RENAME_SUBAREA_PROCESS_HPP
 
 #include "haero/aerosol_process.hpp"
+#include "kokkos/Kokkos_Core.hpp"
+#include "kokkos/Kokkos_Vector.hpp"
 
 namespace haero {
 
@@ -43,10 +45,10 @@ public:
       Container<Real>& dryvol_smallest) const;
 
  private:
-  std::vector<Real> dgnumlo;
-  std::vector<Real> dgnumhi;
-  std::vector<Real> dgnum;
-  std::vector<Real> alnsg;
+  Container<Real> dgnumlo;
+  Container<Real> dgnumhi;
+  Container<Real> dgnum;
+  Container<Real> alnsg;
 };
 
 }  // namespace haero
