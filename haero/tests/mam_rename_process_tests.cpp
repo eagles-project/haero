@@ -37,17 +37,19 @@ TEST_CASE("mam_rename_run", "") {
   // Set up some prognostics aerosol data views
   const int num_aero_populations = model->num_aerosol_populations();
 
-  View2D int_aerosols("interstitial aerosols", num_aero_populations,
-                      num_vert_packs);  // interstitial aerosols mmr [kg/kg(of air)]
-  View2D cld_aerosols("cloudborne aerosols", num_aero_populations,
-                      num_vert_packs);  // cloud borne aerosols mmr [kg/kg(of air)]
+  View2D int_aerosols(
+      "interstitial aerosols", num_aero_populations,
+      num_vert_packs);  // interstitial aerosols mmr [kg/kg(of air)]
+  View2D cld_aerosols(
+      "cloudborne aerosols", num_aero_populations,
+      num_vert_packs);  // cloud borne aerosols mmr [kg/kg(of air)]
   View2D gases("gases", num_gases, num_vert_packs);
-  View2D int_num_concs(
-      "interstitial number concs", num_modes,
-      num_vert_packs);  // interstitial aerosols number mixing ratios [#/kg(of air)]
-  View2D cld_num_concs(
-      "cloud borne number concs", num_modes,
-      num_vert_packs);  // cloud borne aerosols number mixing ratios [#/kg(of air)]
+  View2D int_num_concs("interstitial number concs", num_modes,
+                       num_vert_packs);  // interstitial aerosols number mixing
+                                         // ratios [#/kg(of air)]
+  View2D cld_num_concs("cloud borne number concs", num_modes,
+                       num_vert_packs);  // cloud borne aerosols number mixing
+                                         // ratios [#/kg(of air)]
 
   // Set up atmospheric data and populate it with some views.
   View1D temp("temperature", num_vert_packs);  //[K]
