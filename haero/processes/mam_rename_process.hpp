@@ -29,14 +29,16 @@ public:
 
   virtual void init_(const ModalAerosolConfig& modal_aerosol_config) override;
 
-  KOKKOS_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   virtual void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            const Tendencies &tendencies) const override;
+            const Tendencies &tendencies) const override
+  {
+  }
 
  private:
   void find_renaming_pairs_(
-      Size nmodes, const Container<Integral>& dest_mode_of_mode_mapping,
+      const ModalAerosolConfig& config, const Container<Integral>& dest_mode_of_mode_mapping,
       Size& num_pairs, Container<Real>& sz_factor,
       Container<Real>& fmode_dist_tail_fac, Container<Real>& v2n_lo_rlx,
       Container<Real>& v2n_hi_rlx, Container<Real>& ln_diameter_tail_fac,

@@ -7,7 +7,7 @@
 
 #include <Kokkos_Pair.hpp>
 
-#include "haero/physical_constants.hpp"
+#include "haero/constants.hpp"
 #include "haero/mode.hpp"
 
 namespace haero {
@@ -21,7 +21,7 @@ using Size = MAMRenameProcess::Size;
 
 // Use constants from haero::constants, calculate a few of our own.
 // TODO: Should _smallest_dryvol_value_ be in haero::constants as well?
-using haero::constants::pi_sixth;
+static constexpr auto& pi_sixth = haero::Constants::pi_sixth;
 static constexpr Real frelax = 27.0;
 static const Real sqrt_half = std::sqrt((Real)0.5);
 static constexpr Real smallest_dryvol_value = 1.0e-25;
@@ -85,8 +85,6 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config)
   dgnum.reserve(num_modes);
   alnsg.reserve(num_modes);
 
-  const auto& num_modes = config.num_modes();
-
   // Create a vector with `num_modes` elements reserved
   auto reserved_num_modes_real_vector = [&] {
     return reserved_container<Real>(num_modes);
@@ -112,24 +110,17 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config)
 
   Size num_pairs = 0;
   
-  // TODO: extract modes from the config, pass into this routine?
-
-  find_renaming_pairs_(modal_aerosol_config, dest_mode_of_mode_mapping, num_pairs,
+  find_renaming_pairs_(config, dest_mode_of_mode_mapping, num_pairs,
                        size_factor, fmode_dist_tail_fac, volume2num_lo_relaxed,
                        volume2num_hi_relaxed, ln_diameter_tail_fac,
                        diameter_cutoff, ln_dia_cutoff, diameter_belowcutoff,
                        dryvol_smallest);
 }
 
-KOKKOS_FUNCTION
-void MAMRenameProcess::run_(Real t, Real dt, const Prognostics& prognostics,
-                            const Atmosphere& atmosphere,
-                            const Diagnostics& diagnostics,
-                            const Tendencies& tendencies) const {}
 
 void MAMRenameProcess::find_renaming_pairs_(
-    const ModalAerosolConfig& modal_aerosol_config,
-    const Size nmodes, const Container<Integral>& dest_mode_of_mode_mapping,
+    const ModalAerosolConfig& config,
+    const Container<Integral>& dest_mode_of_mode_mapping,
     Size& num_pairs, Container<Real>& size_factor,
     Container<Real>& fmode_dist_tail_fac,
     Container<Real>& volume2num_lo_relaxed,
@@ -183,7 +174,7 @@ void MAMRenameProcess::find_renaming_pairs_(
     // Set relaxed limits of ratios for current source/dest mode pair
     {
       // TODO: Grab modes as param?
-      const Mode& mode = /* */;
+      const Mode& mode = config.aerosol_modes[src_mode];
       volume2num_lo_relaxed[src_mode] = compute_relaxed_volume_to_num_ratio(
           mode, dgnumhi[src_mode]);
       volume2num_lo_relaxed[dest_mode_of_current_mode] =
