@@ -58,7 +58,7 @@ class AerosolProcess {
   /// Managed pointer type for on-device aerosol processes. We can't use a
   /// unique_ptr here, since Kokkos's lambda capture requires pointers to be
   /// copied.
-  using Pointer = std::shared_ptr<AerosolProcess>;
+  using ManagedPointer = std::shared_ptr<AerosolProcess>;
 
   /// Constructor, called by all AerosolProcess subclasses.
   /// @param [in] type The type of aerosol process modeled by the subclass.
@@ -183,7 +183,7 @@ class AerosolProcess {
 
   /// On host: copies this aerosol process to the device, returning a managed
   /// pointer to the copy.
-  Pointer copy_to_device() const { return copy_to_device_(); }
+  ManagedPointer copy_to_device() const { return copy_to_device_(); }
 
  protected:
   /// On host: override this method to perform system-specific initialization
@@ -213,7 +213,7 @@ class AerosolProcess {
   virtual void set_param_(const std::string& name, Real value) {}
 
   /// This gets overridden by the AerosolProcessOnDevice middleware class.
-  virtual Pointer copy_to_device_() const = 0;
+  virtual ManagedPointer copy_to_device_() const = 0;
 
  private:
   const AerosolProcessType type_;
@@ -250,7 +250,7 @@ class DeviceAerosolProcess : public AerosolProcess {
     }
   };
 
-  Pointer copy_to_device_() const override {
+  ManagedPointer copy_to_device_() const override {
     const std::string debug_name = name();
     Subclass* process =
         static_cast<Subclass*>(Kokkos::kokkos_malloc<MemorySpace>(
@@ -262,7 +262,7 @@ class DeviceAerosolProcess : public AerosolProcess {
     Kokkos::parallel_for(
         debug_name + "_copy", 1,
         KOKKOS_LAMBDA(const int) { new (process) Subclass(this_process); });
-    return Pointer(process, custom_deleter());
+    return ManagedPointer(process, custom_deleter());
   }
 };
 
