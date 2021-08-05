@@ -3,9 +3,9 @@
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_math.hpp"
+#include "haero/constants.hpp"
 #include "haero/haero.hpp"
 #include "haero/math.hpp"
-#include "haero/physical_constants.hpp"
 
 namespace haero {
 

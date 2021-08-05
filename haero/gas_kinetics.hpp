@@ -3,7 +3,7 @@
 
 #include "haero/conversions.hpp"
 #include "haero/haero.hpp"
-#include "haero/physical_constants.hpp"
+#include "haero/constants.hpp"
 
 /// This file contains functions that relate various quantities related to the
 /// kinetic theory of gases.
@@ -21,7 +21,8 @@ KOKKOS_INLINE_FUNCTION Scalar air_mass_density(const Scalar& p, const Scalar& T,
                                                const Scalar& qv) {
   auto q1 = conversions::specific_humidity_from_vapor_mixing_ratio(qv);
   auto Tv = conversions::virtual_temperature_from_temperature(T, q1);
-  return p / (constants::r_gas_dry_air * Tv);
+  const auto r_gas_dry_air = Constants::r_gas_dry_air;
+  return p / (r_gas_dry_air * Tv);
 }
 
 /// Computes the molecular speed of an ideal gas at the given temperature with
@@ -30,7 +31,8 @@ KOKKOS_INLINE_FUNCTION Scalar air_mass_density(const Scalar& p, const Scalar& T,
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar molecular_speed(const Scalar& T,
                                               Real molecular_wt, Real gamma) {
-  return sqrt(gamma * constants::r_gas * T / molecular_wt);
+  const auto r_gas = Constants::r_gas;
+  return sqrt(gamma * r_gas * T / molecular_wt);
 }
 
 /// Computes the mean free path [m] of a gas given the diameter of its molecules
@@ -40,8 +42,8 @@ KOKKOS_INLINE_FUNCTION Scalar molecular_speed(const Scalar& T,
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar mean_free_path(const Scalar& diameter,
                                              const Scalar& num_conc) {
-  static const double sqrt2 = std::sqrt(2);
-  return 1.0 / (sqrt2 * constants::pi * square(diameter) * num_conc);
+  const auto pi = Constants::pi;
+  return 1.0 / (sqrt(2) * pi * square(diameter) * num_conc);
 }
 
 /// Computes the Knudsen number associated with a gas flow with the given mean

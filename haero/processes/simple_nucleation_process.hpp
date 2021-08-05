@@ -4,8 +4,8 @@
 #include <iomanip>
 
 #include "haero/aerosol_process.hpp"
+#include "haero/constants.hpp"
 #include "haero/conversions.hpp"
-#include "haero/physical_constants.hpp"
 #include "haero/processes/kerminen2002.hpp"
 #include "haero/processes/merikanto2007.hpp"
 #include "haero/processes/vehkamaki2002.hpp"
@@ -115,10 +115,10 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
 
   void init_(const ModalAerosolConfig &config) override;
 
-  KOKKOS_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            Tendencies &tendencies) const override {
+            const Tendencies &tendencies) const override {
     // Do we have any gas from which to nucleate new aerosol particles?
     if ((igas_h2so4 == -1) or ((nucleation_method == 3) and (igas_nh3 == -1))) {
       return;
@@ -197,12 +197,14 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
             r_crit.set(within_pbl and not J_pbl_lt_J, 0.5);
             // Estimate the number of particles in the critical cluѕter from its
             // mass and radius, assuming H2SO4 only.
+            const auto pi_sixth = Constants::pi_sixth;
+            const auto Na = Constants::avogadro;
+            const auto mw_h2so4 = Constants::molec_weight_h2so4;
             static const Real rho_h2so4 = 1.8; // density of pure H2SO4 [g/cc]
             auto d_crit = r_crit * 2e-7; // diameter of critical cluster [cm]
-            auto V_crit = cube(d_crit) * constants::pi_sixth; // volume [cc]
+            auto V_crit = cube(d_crit) * pi_sixth; // volume [cc]
             auto m_crit = rho_h2so4 * V_crit; // mass [g]
-            n_crit_h2so4 = m_crit / constants::molec_weight_h2so4 *
-                           constants::avogadro;
+            n_crit_h2so4 = m_crit / mw_h2so4 * Na;
             n_crit_nh3 = 0;
             n_crit = n_crit_h2so4;
           }

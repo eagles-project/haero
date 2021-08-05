@@ -297,7 +297,7 @@ class RegionOfValidity final {
         for (int k = 0; k < num_levels; ++k) {
           const auto& q = mmrs(pop_index, k);
           auto SH = specific_humidity_from_vapor_mixing_ratio(qv(k));
-          auto rho = ideal_gas::mass_density(p(k), T(k), qv(k));
+          auto rho = gas_kinetics::air_mass_density(p(k), T(k), qv(k));
           auto rho_d = (1 - SH) * rho;
           auto n = number_conc_from_mmr(q, mu, rho_d);
           auto invalid_n = haero::MaskType((n < n_min) or (n > n_max));
@@ -330,7 +330,7 @@ class RegionOfValidity final {
         for (int k = 0; k < num_levels; ++k) {
           const auto& q = mmrs(index, k);
           auto SH = specific_humidity_from_vapor_mixing_ratio(qv(k));
-          auto rho = ideal_gas::mass_density(p(k), T(k), qv(k));
+          auto rho = gas_kinetics::air_mass_density(p(k), T(k), qv(k));
           auto rho_d = (1 - SH) * rho;
           auto n = number_conc_from_mmr(q, mu, rho_d);
           auto invalid_n = haero::MaskType((n < n_min) or (n > n_max));
