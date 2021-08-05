@@ -61,7 +61,8 @@ class Model final {
   /// on the device, initialized and ready to run. This pointer is managed, so
   /// there's no need to delete it after using it.
   /// @param [in] type The type of the aerosol process for this model.
-  AerosolProcess::ManagedPointer process_on_device(AerosolProcessType type) const;
+  AerosolProcess::ManagedPointer process_on_device(
+      AerosolProcessType type) const;
 
   // Accessors
 
