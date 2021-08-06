@@ -91,8 +91,60 @@ contains
         v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     &    ! output
         ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)       ! output
 
+    ! Compute initial (before growth) aerosol dry volume and also the growth in
+    ! dryvolume for both interstitial and cloud-borne (if iscldy_subaera is
+    ! true) aerosols of the "src" mode
+    call compute_dryvol_change_in_src_mode(ntot_amode, naer, mtoo_renamexf, &              !input
+        iscldy_subarea, qaer_cur, qaer_del_grow4rnam, qaercw_cur, qaercw_del_grow4rnam, & !input
+        dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)                                     !output
 
   end subroutine run
+
+subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
+    iscldy, qi_vmr, qi_del_growth, qcld_vmr, qcld_del_growth, &
+    dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)
+
+  integer,  intent(in):: nmode ! total number of modes
+  integer,  intent(in):: nspec !total number of species in a mode
+  integer,  intent(in):: dest_mode_of_mode(:) ! destination mode for a mode
+
+  logical,  intent(in) :: iscldy ! true if it is a cloudy cell
+
+  real(r8), intent(in) :: qi_vmr(:,:)           ! mass mixing ratios (mmr) [kmol/kmol]
+  real(r8), intent(in) :: qi_del_growth(:,:) !growth in mmr [kmol/kmol]
+
+  real(r8), intent(in), optional :: qcld_vmr(:,:)
+  real(r8), intent(in), optional :: qcld_del_growth(:,:)
+
+  !intent-outs
+  real(r8), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
+  real(r8), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
+
+  integer :: imode
+  integer :: dest_mode
+
+  !For each mode, compute the initial (before growth) dryvolume and the growth in dryvolume
+  do imode = 1, nmode
+    !compute dry volume only for modes participating in inter-modal transfer
+    dest_mode = dest_mode_of_mode(imode)
+    if (dest_mode <= 0) cycle
+
+    !compute dry volumes (before growth) and its change for interstitial aerosols
+    call dryvolume_change(imode, nspec, qi_vmr, qi_del_growth, & !input
+      dryvol_a(imode), deldryvol_a(imode)) !output
+
+    if ( iscldy ) then ! if this grid cell has cloud
+      !if a grid cell is cloudy, clloud borne quantities has to be present
+      if(.not. present(qcld_vmr) .or. .not. present(qcld_del_growth)) then
+          call endrun('If a grid cell is cloudy, dryvol_c and deldryvol_c should be present: '//errmsg(__FILE__,__LINE__))
+      endif
+      !compute dry volume (before growth) and its change for cloudborne aerosols
+      call dryvolume_change(imode, nspec, qcld_vmr, qcld_del_growth, &!input
+            dryvol_c(imode), deldryvol_c(imode)) !output
+    end if !iscldy then
+  end do
+
+  end subroutine compute_dryvol_change_in_src_mode
 
   subroutine initialize_diameters(model)
 
