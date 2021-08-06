@@ -16,26 +16,23 @@ void ModalAerosolConfig::index_mode_species(
     const std::string& mode_name = kv_pair.first;
     const std::vector<std::string>& aero_species = kv_pair.second;
 
-    // Make sure an array of species exists for the given mode.
-    int mode_index = 0;
-    while (mode_index < aerosol_modes.size()) {
-      if (aerosol_modes[mode_index].name() == mode_name) break;
-      mode_index++;
-    }
-    if (mode_index == aerosol_modes.size()) continue;
+    // Make sure an array of species exists for the mode with the given name.
+    auto m_iter =
+        std::find_if(aerosol_modes.begin(), aerosol_modes.end(),
+                     [&](auto mode) { return mode.name() == mode_name; });
+    if (m_iter == aerosol_modes.end()) continue;
+    auto mode_index = std::distance(aerosol_modes.begin(), m_iter);
     species_for_mode_.resize(
         std::max(species_for_mode_.size(), size_t(mode_index + 1)));
 
     // Place the appropriate species into the mode array.
     for (const auto& species_name : aero_species) {
-      int species_index = 0;
-      while (species_index < aero_species.size()) {
-        if (aerosol_species[species_index].symbol() == species_name) break;
-        species_index++;
-      }
-      if (species_index < aerosol_species.size()) {
-        species_for_mode_[mode_index].push_back(species_index);
-      }
+      auto s_iter = std::find_if(
+          aerosol_species.begin(), aerosol_species.end(),
+          [&](auto species) { return species.symbol() == species_name; });
+      if (s_iter == aerosol_species.end()) continue;
+      auto species_index = std::distance(aerosol_species.begin(), s_iter);
+      species_for_mode_[mode_index].push_back(species_index);
     }
   }
 
