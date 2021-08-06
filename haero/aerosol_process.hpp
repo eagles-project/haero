@@ -1,5 +1,6 @@
 #ifndef HAERO_AEROSOL_PROCESS_HPP
 #define HAERO_AEROSOL_PROCESS_HPP
+#include <memory>
 
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
@@ -55,6 +56,11 @@ enum AerosolProcessType {
 /// compute tendencies for aerosol systems.
 class AerosolProcess {
  public:
+  /// Managed pointer type for on-device aerosol processes. We can't use a
+  /// unique_ptr here, since Kokkos's lambda capture requires pointers to be
+  /// copied.
+  using ManagedPointer = std::shared_ptr<AerosolProcess>;
+
   /// Constructor, called by all AerosolProcess subclasses.
   /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
@@ -69,9 +75,12 @@ class AerosolProcess {
   /// Default constructor is disabled.
   AerosolProcess() = delete;
 
-  /// Default copy constructor. For use in moving host instance to device.
+  /// Copy constructor, for use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
-  AerosolProcess(const AerosolProcess& pp) : type_(pp.type_), name_(pp.name_) {}
+  AerosolProcess(const AerosolProcess& pp)
+      : type_(pp.type_),
+        name_(pp.name_),
+        validity_region_(pp.validity_region_) {}
 
   /// AerosolProcess objects are not assignable.
   AerosolProcess& operator=(const AerosolProcess&) = delete;
@@ -98,26 +107,24 @@ class AerosolProcess {
   //                            Public Interface
   //------------------------------------------------------------------------
 
-  /// Validates input aerosol and atmosphere data, returning true if all data
-  /// falls within this process's region of validity, and false if not.
-  /// @param [in] config The aerosol configuration describing the aerosol
-  ///                    system to which this process belongs.
-  /// @param [in] prognostics The prognostic variables used by and affected by
-  ///                         this process.
-  /// @param [in] atmosphere The atmosphere state variables used by this
-  ///                        process.
-  bool validate(const ModalAerosolConfig& config,
-                const Prognostics& prognostics,
-                const Atmosphere& atmosphere) const {
-    return validity_region_.contains(config, atmosphere, prognostics);
-  }
-
   /// On host: performs any system-specific process initialization.
   /// @param [in] config The aerosol configuration describing the aerosol
   ///                    system to which this process belongs.
   void init(const ModalAerosolConfig& config) {
     // This method must be called on the host.
     init_(config);
+  }
+
+  /// On device: Validates input aerosol and atmosphere data, returning true if
+  /// all data falls within this process's region of validity, and false if not.
+  /// @param [in] prognostics The prognostic variables used by and affected by
+  ///                         this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this
+  ///                        process.
+  KOKKOS_INLINE_FUNCTION
+  bool validate(const Prognostics& prognostics,
+                const Atmosphere& atmosphere) const {
+    return validity_region_.contains(atmosphere, prognostics);
   }
 
   /// On device: runs the aerosol process at a given time with the given data.
@@ -136,7 +143,7 @@ class AerosolProcess {
   KOKKOS_FUNCTION
   void run(Real t, Real dt, const Prognostics& prognostics,
            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-           Tendencies& tendencies) const {
+           const Tendencies& tendencies) const {
     // This method must be called on the device.
 
     run_(t, dt, prognostics, atmosphere, diagnostics, tendencies);
@@ -175,6 +182,10 @@ class AerosolProcess {
     return required_diagnostics_();
   }
 
+  /// On host: copies this aerosol process to the device, returning a managed
+  /// pointer to the copy.
+  ManagedPointer copy_to_device() const { return copy_to_device_(); }
+
  protected:
   /// On host: override this method to perform system-specific initialization
   /// for the aerosol process. By default, this does nothing.
@@ -186,7 +197,7 @@ class AerosolProcess {
   virtual void run_(Real t, Real dt, const Prognostics& prognostics,
                     const Atmosphere& atmosphere,
                     const Diagnostics& diagnostics,
-                    Tendencies& tendencies) const = 0;
+                    const Tendencies& tendencies) const = 0;
 
   /// Override this method to return a vector of strings containing the names
   /// of diagnostic variables required by this aerosol process in order to
@@ -202,6 +213,9 @@ class AerosolProcess {
   virtual void set_param_(const std::string& name, bool value) {}
   virtual void set_param_(const std::string& name, Real value) {}
 
+  /// This gets overridden by the AerosolProcessOnDevice middleware class.
+  virtual ManagedPointer copy_to_device_() const = 0;
+
  private:
   const AerosolProcessType type_;
   // Use View as a struct to store a string and allows copy to device.
@@ -210,22 +224,66 @@ class AerosolProcess {
   RegionOfValidity validity_region_;
 };
 
+/// @class DeviceAerosolProcess
+/// This "middleware" class provides all its subclasses with the ability to copy
+/// itself from the host to the device. All actual aerosol processes derive from
+/// this type with their own type as the template parameter, in accordance with
+/// the C++ "curiously recurring template pattern" (see
+/// https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern).
+template <typename Subclass>
+class DeviceAerosolProcess : public AerosolProcess {
+ public:
+  /// Constructor, called by all DeviceAerosolProcess subclasses.
+  /// @param [in] type The type of aerosol process modeled by the subclass.
+  /// @param [in] name A descriptive name that captures the aerosol process,
+  ///                  its underlying parametrization, and its implementation.
+  DeviceAerosolProcess(AerosolProcessType type, const std::string& name)
+      : AerosolProcess(type, name) {}
+
+ protected:
+  struct custom_deleter {
+    void operator()(AerosolProcess* process) {
+      AerosolProcess* dev_ptr = process;
+      Kokkos::parallel_for(
+          "delete", 1,
+          KOKKOS_LAMBDA(const int) { dev_ptr->~AerosolProcess(); });
+      Kokkos::kokkos_free<MemorySpace>((void*)process);
+    }
+  };
+
+  ManagedPointer copy_to_device_() const override {
+    const std::string debug_name = name();
+    Subclass* process =
+        static_cast<Subclass*>(Kokkos::kokkos_malloc<MemorySpace>(
+            debug_name + "_malloc", sizeof(Subclass)));
+
+    // Copy this object (including our virtual table) into the storage using
+    // a lambda capture.
+    const auto& this_process = dynamic_cast<const Subclass&>(*this);
+    Kokkos::parallel_for(
+        debug_name + "_copy", 1,
+        KOKKOS_LAMBDA(const int) { new (process) Subclass(this_process); });
+    return ManagedPointer(process, custom_deleter());
+  }
+};
+
 /// @class NullAerosolProcess
 /// This AerosolProcess represents a null process in which no tendencies
 /// are computed. It can be used for all prognostic processes that have been
 /// disabled.
-class NullAerosolProcess : public AerosolProcess {
+class NullAerosolProcess : public DeviceAerosolProcess<NullAerosolProcess> {
  public:
   /// Constructor: constructs a null aerosol process of the given type.
   /// @param [in] type The type of aerosol process.
   explicit NullAerosolProcess(AerosolProcessType type)
-      : AerosolProcess(type, "Null prognostic aerosol process") {}
+      : DeviceAerosolProcess<NullAerosolProcess>(
+            type, "Null prognostic aerosol process") {}
 
   // Overrides
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics& prognostics,
             const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-            Tendencies& tendencies) const override {}
+            const Tendencies& tendencies) const override {}
 };
 
 #if HAERO_FORTRAN
@@ -235,7 +293,7 @@ class NullAerosolProcess : public AerosolProcess {
 /// Fortran by wrapping the run method in a Fortran call that creates the
 /// proper Fortran proxies for the model, prognostics, diagnostics, and
 /// tendencies.
-class FAerosolProcess : public AerosolProcess {
+class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
  public:
   /// A pointer to a Fortran subroutine that initializes a process.
   /// Since the model is already available to the Fortran process via Haero's
@@ -283,7 +341,7 @@ class FAerosolProcess : public AerosolProcess {
                   SetIntegerParamSubroutine set_integer_param,
                   SetLogicalParamSubroutine set_logical_param,
                   SetRealParamSubroutine set_real_param)
-      : AerosolProcess(type, name),
+      : DeviceAerosolProcess<FAerosolProcess>(type, name),
         init_process_(init_process),
         run_process_(run_process),
         finalize_process_(finalize_process),
@@ -294,14 +352,14 @@ class FAerosolProcess : public AerosolProcess {
 
   /// Copy constructor.
   FAerosolProcess(const FAerosolProcess& pp)
-      : AerosolProcess(pp),
+      : DeviceAerosolProcess<FAerosolProcess>(pp),
         init_process_(pp.init_process_),
         run_process_(pp.run_process_),
         finalize_process_(pp.finalize_process_),
         set_integer_param_(pp.set_integer_param_),
         set_logical_param_(pp.set_logical_param_),
         set_real_param_(pp.set_real_param_),
-        initialized_(false) {}
+        initialized_(pp.initialized_) {}
 
   /// Destructor.
   ~FAerosolProcess() {
@@ -322,9 +380,10 @@ class FAerosolProcess : public AerosolProcess {
 
   void run_(Real t, Real dt, const Prognostics& prognostics,
             const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-            Tendencies& tendencies) const override {
+            const Tendencies& tendencies) const override {
     // Set tendencies to zero.
-    tendencies.scale(0.0);
+    auto nc_tendencies = const_cast<Tendencies&>(tendencies);
+    nc_tendencies.scale(0.0);
 
     // Call the Fortran subroutine for the process.
     run_process_(t, dt, (void*)&prognostics, (void*)&atmosphere,

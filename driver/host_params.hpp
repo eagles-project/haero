@@ -5,9 +5,9 @@
 #include <string>
 
 #include "ekat/ekat_assert.hpp"
+#include "haero/constants.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
-#include "haero/physical_constants.hpp"
 #include "haero/utils.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 
@@ -35,7 +35,7 @@ struct AtmosphericConditions {
       100000;  /// Reference pressure at z=0, Tv=Tv0 [Pa]
   /// dry air kappa [-]
   static constexpr Real kappa =
-      haero::constants::r_gas_dry_air / haero::constants::cp_dry_air;
+      haero::Constants::r_gas_dry_air / haero::Constants::cp_dry_air;
   /// reference virtual potential temperature [K]
   Real Tv0;
   /// initial virtual temperature lapse rate [K/m]
@@ -181,11 +181,11 @@ KOKKOS_INLINE_FUNCTION
 Real hydrostatic_pressure_at_height(const Real z, const Real p0, const Real T0,
                                     const Real Gamma) {
   Real result = 0;
-  using namespace constants;
   if (FloatingPoint<Real>::zero(Gamma)) {
-    result = p0 * std::exp(-gravity * z / (r_gas_dry_air * T0));
+    result = p0 * std::exp(-Constants::gravity * z /
+                           (Constants::r_gas_dry_air * T0));
   } else {
-    const Real pwr = gravity / (r_gas_dry_air * Gamma);
+    const Real pwr = Constants::gravity / (Constants::r_gas_dry_air * Gamma);
     result = p0 * std::pow(T0, -pwr) * std::pow(T0 - Gamma * z, pwr);
   }
   return result;
@@ -218,12 +218,12 @@ Real hydrostatic_pressure_at_height(const Real z,
 KOKKOS_INLINE_FUNCTION
 Real height_at_pressure(const Real p, const Real p0, const Real T0,
                         const Real Gamma) {
-  using namespace constants;
   Real result = 0;
   if (FloatingPoint<Real>::zero(Gamma)) {
-    result = -r_gas_dry_air * T0 * std::log(p / p0) / gravity;
+    result =
+        -Constants::r_gas_dry_air * T0 * std::log(p / p0) / Constants::gravity;
   } else {
-    const Real pwr = r_gas_dry_air * Gamma / gravity;
+    const Real pwr = Constants::r_gas_dry_air * Gamma / Constants::gravity;
     result = (T0 / Gamma) * (1 - std::pow(p / p0, pwr));
   }
   return result;

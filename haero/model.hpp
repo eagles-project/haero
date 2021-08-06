@@ -15,6 +15,7 @@ namespace haero {
 /// @class Model
 /// This type represents an aerosol system to be simulated, including all
 /// information about modes, species, chemistry, and selected processes.
+/// Model instances live only on a host (not a device).
 class Model final {
  public:
   /// Creates an aerosol model that supports the selected processes.
@@ -56,30 +57,18 @@ class Model final {
   /// it.
   HostDiagnostics* create_diagnostics() const;
 
-  // Processes
-
-  /// Runs the (prognostic) aerosol process of the given type, computing any
-  /// relevant tendencies.
-  /// @param [in] type The type of aerosol state to be updated.
-  /// @param [in] t The time at which the process runs.
-  /// @param [in] dt The time interval over which the process runs.
-  /// @param [in] prognostics The prognostic variables used by this process.
-  /// @param [in] atmosphere The atmospheric state variables used by this
-  /// process.
-  /// @param [in] diagnostics The diagnostic variables used by this process.
-  /// @param [out] tendencies The aerosol tendencies computed.
-  void run_process(AerosolProcessType type, Real t, Real dt,
-                   const Prognostics& prognostics, const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics, Tendencies& tendencies);
+  /// Returns a pointer to an instance of an aerosol process of the given type
+  /// on the device, initialized and ready to run. This pointer is managed, so
+  /// there's no need to delete it after using it.
+  /// @param [in] type The type of the aerosol process for this model.
+  AerosolProcess::ManagedPointer process_on_device(
+      AerosolProcessType type) const;
 
   // Accessors
 
   /// Returns the modal aerosol configuration associated with this aerosol
   /// modeļ.
-  KOKKOS_INLINE_FUNCTION
-  const ModalAerosolConfig& modal_aerosol_config() const {
-    return modal_aerosol_config_;
-  }
+  const ModalAerosolConfig& modal_aerosol_config() const { return config_; }
 
   /// Returns the selected set of processes associated with this aerosol model.
   const SelectedProcesses& selected_processes() const;
@@ -87,17 +76,16 @@ class Model final {
   /// Returns the number of vertical levels in the model.
   int num_levels() const { return num_levels_; }
 
-  /// Returns the number of modes in the model
-  KOKKOS_INLINE_FUNCTION
-  int num_modes() const { return modal_aerosol_config_.num_modes(); }
+  /// Returns the number of modes in the model.
+  int num_modes() const { return config_.num_modes(); }
 
-  KOKKOS_INLINE_FUNCTION
-  int num_gases() const { return modal_aerosol_config_.num_gases(); }
+  /// Returns the number of gas species in the model.
+  int num_gases() const { return config_.num_gases(); }
 
   /// Returns the total number of distinct aerosol species populations
   /// (mode-species pairs).
   int num_aerosol_populations() const {
-    return modal_aerosol_config_.num_aerosol_populations;
+    return config_.num_aerosol_populations;
   }
 
  private:
@@ -116,7 +104,7 @@ class Model final {
   void init_fortran();
 
   // The modal aerosol configuration.
-  ModalAerosolConfig modal_aerosol_config_;
+  ModalAerosolConfig config_;
 
   // Process selections.
   SelectedProcesses selected_processes_;

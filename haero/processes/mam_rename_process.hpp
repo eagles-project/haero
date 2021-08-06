@@ -6,7 +6,7 @@
 namespace haero {
 
 /// \brief Bindings for the rename subroutine
-class MAMRenameProcess final : public AerosolProcess {
+class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
  public:
   MAMRenameProcess();
 
@@ -23,7 +23,7 @@ class MAMRenameProcess final : public AerosolProcess {
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            Tendencies &tendencies) const override {}
+            const Tendencies &tendencies) const override {}
 };
 
 }  // namespace haero

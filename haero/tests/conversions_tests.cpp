@@ -7,46 +7,46 @@
 
 using namespace haero;
 
-static constexpr Real g_to_kg = 0.001;
+// static constexpr Real g_to_kg = 0.001;
 
 TEST_CASE("conversions:mmr_from_number_conc") {
-  Real mu = constants::molec_weight_so4;  // molecular weight of sulfate
+  Real mu = Constants::molec_weight_so4;  // molecular weight of sulfate
   PackType n(1e5);                        // number density
   PackType rho_air(1.1805);               // dry air mass density (20 C)
   auto mmr = conversions::mmr_from_number_conc(n, mu, rho_air);
   REQUIRE(FloatingPoint<PackType>::equiv(
-      mmr, n * mu / (rho_air * constants::avogadro)));
+      mmr, n * mu / (rho_air * Constants::avogadro)));
   REQUIRE(FloatingPoint<PackType>::equiv(
       n, conversions::number_conc_from_mmr(mmr, mu, rho_air)));
 }
 
 TEST_CASE("conversions:number_conc_from_mmr") {
-  Real mu = constants::molec_weight_so4;  // molecular weight of sulfate
+  Real mu = Constants::molec_weight_so4;  // molecular weight of sulfate
   PackType mmr(0.2);                      // mass mixing ratio
   PackType rho_air(1.1805);               // dry air mass density (20 C)
   auto n = conversions::number_conc_from_mmr(mmr, mu, rho_air);
   REQUIRE(FloatingPoint<PackType>::equiv(
-      n, mmr * (rho_air * constants::avogadro) / mu));
+      n, mmr * (rho_air * Constants::avogadro) / mu));
   REQUIRE(FloatingPoint<PackType>::equiv(
       mmr, conversions::mmr_from_number_conc(n, mu, rho_air)));
 }
 
 TEST_CASE("conversions:mmr_from_vmr") {
-  Real mu = constants::molec_weight_so4;  // molecular weight of sulfate
+  Real mu = Constants::molec_weight_so4;  // molecular weight of sulfate
   PackType vmr(0.2);                      // molar mixing ratio
   auto mmr = conversions::mmr_from_vmr(vmr, mu);
   REQUIRE(FloatingPoint<PackType>::equiv(
-      mmr, vmr * mu / constants::molec_weight_dry_air));
+      mmr, vmr * mu / Constants::molec_weight_dry_air));
   REQUIRE(
       FloatingPoint<PackType>::equiv(vmr, conversions::vmr_from_mmr(mmr, mu)));
 }
 
 TEST_CASE("conversions:vmr_from_mmr") {
-  Real mu = constants::molec_weight_so4;  // molecular weight of sulfate
+  Real mu = Constants::molec_weight_so4;  // molecular weight of sulfate
   PackType mmr(0.2);                      // mass mixing ratio
   auto vmr = conversions::vmr_from_mmr(mmr, mu);
   REQUIRE(FloatingPoint<PackType>::equiv(
-      vmr, mmr * constants::molec_weight_dry_air / mu));
+      vmr, mmr * Constants::molec_weight_dry_air / mu));
   REQUIRE(
       FloatingPoint<PackType>::equiv(mmr, conversions::mmr_from_vmr(vmr, mu)));
 }

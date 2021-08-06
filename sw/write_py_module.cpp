@@ -54,7 +54,7 @@ void write_py_module(const std::vector<InputData>& inputs,
   fprintf(file, "input.aerosols.interstitial = Object()\n");
   fprintf(file, "input.aerosols.cloudy = Object()\n");
   for (int m = 0; m < aero_config.num_modes(); ++m) {
-    auto mode = aero_config.h_aerosol_modes[m];
+    auto mode = aero_config.aerosol_modes[m];
     fprintf(file, "input.aerosols.interstitial.%s = Object()\n",
             mode.name().c_str());
     fprintf(file, "input.aerosols.cloudy.%s = Object()\n", mode.name().c_str());
@@ -71,7 +71,7 @@ void write_py_module(const std::vector<InputData>& inputs,
 
   // Now we write out aerosol prognostics.
   for (int m = 0; m < aero_config.num_modes(); ++m) {
-    auto mode = aero_config.h_aerosol_modes[m];
+    auto mode = aero_config.aerosol_modes[m];
     for (int cloudy = 0; cloudy < 2; ++cloudy) {
       std::string prefix;
       if (cloudy) {
@@ -94,9 +94,10 @@ void write_py_module(const std::vector<InputData>& inputs,
 
   // Write out gases.
   for (int g = 0; g < aero_config.num_gases(); ++g) {
-    auto gas = aero_config.h_gas_species[g];
+    auto gas = aero_config.gas_species[g];
     auto gas_name = std::string("gases.") + gas.symbol();
-    transform(gas_name.begin(), gas_name.end(), gas_name.begin(), ::tolower);
+    std::transform(gas_name.begin(), gas_name.end(), gas_name.begin(),
+                   ::tolower);
     write_input_var(file, inputs, gas_name.c_str());
   }
 
@@ -108,7 +109,7 @@ void write_py_module(const std::vector<InputData>& inputs,
   fprintf(file, "output.aerosols.interstitial = Object()\n");
   fprintf(file, "output.aerosols.cloudy = Object()\n");
   for (int m = 0; m < aero_config.num_modes(); ++m) {
-    auto mode = aero_config.h_aerosol_modes[m];
+    auto mode = aero_config.aerosol_modes[m];
     fprintf(file, "output.aerosols.interstitial.%s = Object()\n",
             mode.name().c_str());
     fprintf(file, "output.aerosols.cloudy.%s = Object()\n",
@@ -118,7 +119,7 @@ void write_py_module(const std::vector<InputData>& inputs,
 
   // Aerosol prognostics.
   for (int m = 0; m < aero_config.num_modes(); ++m) {
-    auto mode = aero_config.h_aerosol_modes[m];
+    auto mode = aero_config.aerosol_modes[m];
     for (int cloudy = 0; cloudy < 2; ++cloudy) {
       std::string prefix;
       if (cloudy) {
@@ -132,7 +133,7 @@ void write_py_module(const std::vector<InputData>& inputs,
       auto species_for_mode = aero_config.aerosol_species_for_mode(m);
       for (auto species : species_for_mode) {
         auto sym = species.symbol();
-        transform(sym.begin(), sym.end(), sym.begin(), ::tolower);
+        std::transform(sym.begin(), sym.end(), sym.begin(), ::tolower);
         auto species_name = prefix + mode.name() + std::string(".") + sym;
         write_output_var(file, outputs, species_name.c_str());
       }
@@ -141,9 +142,10 @@ void write_py_module(const std::vector<InputData>& inputs,
 
   // Gases.
   for (int g = 0; g < aero_config.num_gases(); ++g) {
-    auto gas = aero_config.h_gas_species[g];
+    auto gas = aero_config.gas_species[g];
     auto gas_name = std::string("gases.") + gas.symbol();
-    transform(gas_name.begin(), gas_name.end(), gas_name.begin(), ::tolower);
+    std::transform(gas_name.begin(), gas_name.end(), gas_name.begin(),
+                   ::tolower);
     write_output_var(file, outputs, gas_name.c_str());
   }
 

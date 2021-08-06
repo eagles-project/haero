@@ -51,8 +51,6 @@ int Diagnostics::num_aerosol_populations() const {
 
 int Diagnostics::num_gases() const { return num_gases_; }
 
-int Diagnostics::num_levels() const { return num_levels_; }
-
 Diagnostics::Token HostDiagnostics::find_var(const std::string& name) const {
   return get_string_to_token_vars(name);
 }
@@ -118,14 +116,6 @@ Diagnostics::Token HostDiagnostics::create_gas_var(const std::string& name) {
   set_string_to_token_gas(name, return_val);
   Kokkos::resize(gas_vars_, return_val + 1, num_gases_, num_vert_packs);
   return return_val;
-}
-
-SpeciesColumnView Diagnostics::gas_var(const Token token) const {
-  EKAT_KERNEL_REQUIRE_MSG(token < gas_vars_.extent(0),
-                          "Gas diagnostic variable token not found!");
-  const SpeciesColumnView vars =
-      Kokkos::subview(gas_vars_, token, Kokkos::ALL, Kokkos::ALL);
-  return vars;
 }
 
 Diagnostics::Token HostDiagnostics::find_modal_var(

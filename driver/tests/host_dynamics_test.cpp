@@ -250,7 +250,7 @@ TEST_CASE("driver dynamics", "") {
     pdyn.init_from_uniform_pressures(conds);
     std::cout << pdyn.info_string();
 
-    hbtest.run_test(pdyn, conds, 2.7 * FloatingPoint<Real>::zero_tol);
+    hbtest.run_test(pdyn, conds, 3 * FloatingPoint<Real>::zero_tol);
     hypsotest.run_test(pdyn, conds, 0.07);
 
     REQUIRE(hbtest.nerr == 0);
@@ -399,7 +399,6 @@ TEST_CASE("vertical_convergence_dynamics_init", "[convergence]") {
 void HydrostaticBalanceTest::run_test(const HostDynamics& dyn,
                                       const AtmosphericConditions& ac,
                                       const Real tol) {
-  using namespace constants;
   nerr = 0;
 
   const auto phi = ekat::scalarize(dyn.phi);
@@ -414,7 +413,7 @@ void HydrostaticBalanceTest::run_test(const HostDynamics& dyn,
         const int kmhalf_idx = k;      // array idx of interface k - 1/2
 
         const Real phimid = 0.5 * (phi(kmhalf_idx) + phi(kphalf_idx));
-        const Real zmid = phimid / gravity;
+        const Real zmid = phimid / Constants::gravity;
         const Real pres = hydrostatic_pressure_at_height(zmid, ac);
 
         if (!FloatingPoint<Real>::zero((pres - p(k)) / p(k), tol)) {
@@ -462,7 +461,6 @@ void UniformThicknessHeightTest::run_test(const HostDynamics& dyn,
 void HypsometricLevelsTest::run_test(const HostDynamics& dyn,
                                      const AtmosphericConditions& ac,
                                      const Real tol) {
-  using namespace constants;
   nerr = 0;
   const int nlev = dyn.nlev();
   const auto dz = ekat::scalarize(dyn.dz);
@@ -476,8 +474,8 @@ void HypsometricLevelsTest::run_test(const HostDynamics& dyn,
           const Real Tv = thetav(k) * exner_function(p(k));
           const Real p1 = pint(k);
           const Real p2 = pint(k + 1);
-          const Real dzhypso =
-              -r_gas_dry_air * Tv * std::log(p1 / p2) / gravity;
+          const Real dzhypso = -Constants::r_gas_dry_air * Tv *
+                               std::log(p1 / p2) / Constants::gravity;
           if (!FloatingPoint<Real>::zero((dzhypso - dz(k)) / dz(k), tol)) {
             printf("at level %d: dz = %f, dzhypso = %f; reldiff = %f\n", k,
                    dz(k), dzhypso, std::abs(dz(k) - dzhypso) / dz(k));
@@ -498,8 +496,6 @@ void HypsometricLevelsTest::run_test(const HostDynamics& dyn,
 void VerticalConvergenceTests::run_hypsometric_test(
     const int test_idx, const HostDynamics& dyn,
     const AtmosphericConditions& ac) {
-  using namespace constants;
-
   const auto dz = ekat::scalarize(dyn.dz);
   const auto thetav = ekat::scalarize(dyn.thetav);
   const auto p = ekat::scalarize(dyn.p);
@@ -512,7 +508,8 @@ void VerticalConvergenceTests::run_hypsometric_test(
         const Real Tv = thetav(k) * exner_function(p(k));
         const Real p1 = pint(k);
         const Real p2 = pint(k + 1);
-        const Real dzhypso = -r_gas_dry_air * Tv * std::log(p1 / p2) / gravity;
+        const Real dzhypso = -Constants::r_gas_dry_air * Tv *
+                             std::log(p1 / p2) / Constants::gravity;
         if (std::abs(dzhypso - dz(k)) > res) res = std::abs(dzhypso - dz(k));
       },
       Kokkos::Max<Real>(maxres));
@@ -525,7 +522,8 @@ void VerticalConvergenceTests::run_hypsometric_test(
         const Real Tv = thetav(k) * exner_function(p(k));
         const Real p1 = pint(k);
         const Real p2 = pint(k + 1);
-        const Real dzhypso = -r_gas_dry_air * Tv * std::log(p1 / p2) / gravity;
+        const Real dzhypso = -Constants::r_gas_dry_air * Tv *
+                             std::log(p1 / p2) / Constants::gravity;
         ressum += std::abs(dzhypso - dz(k));
       },
       rsum);
@@ -535,8 +533,6 @@ void VerticalConvergenceTests::run_hypsometric_test(
 void VerticalConvergenceTests::run_hydrostatic_test(
     const int test_idx, const HostDynamics& dyn,
     const AtmosphericConditions& ac) {
-  using namespace constants;
-
   const auto dp = ekat::scalarize(dyn.hydrostatic_dp);
   const auto dz = ekat::scalarize(dyn.dz);
   const auto rho = ekat::scalarize(dyn.rho);
@@ -546,7 +542,7 @@ void VerticalConvergenceTests::run_hydrostatic_test(
       "VerticalConvergenceTests::run_hydrostatic_test", dyn.nlev(),
       KOKKOS_LAMBDA(const int k, Real& res) {
         const Real dpdz = dp(k) / dz(k);
-        const Real rhog = rho(k) * gravity;
+        const Real rhog = rho(k) * Constants::gravity;
         if (std::abs(dpdz + rhog) > res) res = std::abs(dpdz + rhog);
       },
       Kokkos::Max<Real>(maxres));
@@ -557,7 +553,7 @@ void VerticalConvergenceTests::run_hydrostatic_test(
       "VerticalConvergenceTests::run_hydrostatic_test_avg", dyn.nlev(),
       KOKKOS_LAMBDA(const int k, Real& ressum) {
         const Real dpdz = dp(k) / dz(k);
-        const Real rhog = rho(k) * gravity;
+        const Real rhog = rho(k) * Constants::gravity;
         ressum += std::abs(dpdz + rhog);
       },
       rsum);

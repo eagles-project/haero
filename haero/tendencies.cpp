@@ -44,7 +44,7 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
 
 Tendencies::~Tendencies() {}
 
-Tendencies& Tendencies::scale(Real factor) {
+const Tendencies& Tendencies::scale(Real factor) const {
   int num_populations = interstitial_aerosols.extent(0);
   int num_levels = interstitial_aerosols.extent(1);
   int num_vert_packs = PackInfo::num_packs(num_levels);

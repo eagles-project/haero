@@ -46,7 +46,15 @@ TEST_CASE("wet_radius_diagnostic", "") {
     }
   }
   /// Create a device view of population indices
-  const auto pop_inds = config.create_population_indices_view();
+  DeviceType::view_2d<int> pop_inds("population_indices", nmodes,
+                                    config.max_species_per_mode());
+  auto h_pop_inds = Kokkos::create_mirror_view(pop_inds);
+  for (int m = 0; m < nmodes; ++m) {
+    for (int s = 0; s < config.max_species_per_mode(); ++s) {
+      h_pop_inds(m, s) = config.population_index(m, s);
+    }
+  }
+  Kokkos::deep_copy(pop_inds, h_pop_inds);
 
   // setup host model stuff
   const int nlev = 40;
@@ -94,13 +102,16 @@ TEST_CASE("wet_radius_diagnostic", "") {
   Kokkos::deep_copy(num_ratios, h_num_ratios);
 
   // Allocate a view to hold AerosolSpecies for each mode, individually
-  DeviceType::view_2d<AerosolSpecies> aerosols_in_mode(
+  DeviceType::view_2d<AerosolSpecies> d_aerosols_in_mode(
       "aerosols_in_mode", nmodes, config.max_species_per_mode());
-  Kokkos::parallel_for(
-      nmodes, KOKKOS_LAMBDA(const int m) {
-        config.aerosol_species_for_mode(
-            m, Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL));
-      });
+  auto h_aerosols_in_mode = Kokkos::create_mirror_view(d_aerosols_in_mode);
+  for (int m = 0; m < nmodes; ++m) {
+    auto aero_species = config.aerosol_species_for_mode(m);
+    for (int s = 0; s < aero_species.size(); ++s) {
+      h_aerosols_in_mode(m, s) = aero_species[s];
+    }
+  }
+  Kokkos::deep_copy(d_aerosols_in_mode, h_aerosols_in_mode);
 
   // modal averages
   ModeColumnView mode_wet_radius("mode_wet_radius", nmodes, npacks);
@@ -113,43 +124,45 @@ TEST_CASE("wet_radius_diagnostic", "") {
   std::cout << "starting kernels\n";
   // on host, loop over each mode
   for (int m = 0; m < nmodes; ++m) {
+    auto mode = config.aerosol_modes[m];
+    auto aero_species = config.aerosol_species_for_mode(m);
+    int num_aero_species = aero_species.size();
     // compute the modal mean particle volume
     Kokkos::parallel_for(
         npacks,
         ModeDryParticleVolume(
             Kokkos::subview(mode_mean_particle_dry_volume, m, Kokkos::ALL),
             q_aero, num_ratios,
-            Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL),
-            Kokkos::subview(pop_inds, m, Kokkos::ALL),
-            config.h_n_species_per_mode(m), m));
+            Kokkos::subview(d_aerosols_in_mode, m, Kokkos::ALL),
+            Kokkos::subview(pop_inds, m, Kokkos::ALL), num_aero_species, m));
     std::cout << "\tdry particle volume ready\n";
 
     // compute the modal mean hygroscopicity
     Kokkos::parallel_for(
-        npacks, ModeHygroscopicity(
-                    Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL),
-                    q_aero, Kokkos::subview(aerosols_in_mode, m, Kokkos::ALL),
-                    Kokkos::subview(pop_inds, m, Kokkos::ALL),
-                    config.h_n_species_per_mode(m)));
+        npacks,
+        ModeHygroscopicity(
+            Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL), q_aero,
+            Kokkos::subview(d_aerosols_in_mode, m, Kokkos::ALL),
+            Kokkos::subview(pop_inds, m, Kokkos::ALL), num_aero_species));
     std::cout << "\thygroscopicity ready\n";
 
     // compute the modal mean dry particle *radius* (not diameter)
     Kokkos::parallel_for(
         npacks, KOKKOS_LAMBDA(const int pack_idx) {
           mode_dry_particle_radius(m, pack_idx) =
-              0.5 *
-              config.d_aerosol_modes[m].mean_particle_diameter_from_volume(
-                  mode_mean_particle_dry_volume(m, pack_idx));
+              0.5 * mode.mean_particle_diameter_from_volume(
+                        mode_mean_particle_dry_volume(m, pack_idx));
         });
     std::cout << "\tdry particle radius ready\n";
 
-    // compute the modal avg wet radius
+    // compute the modal avg wet radius. (Note that the ModeWetRadius functor
+    // is constructed on host!)
     Kokkos::parallel_for(
         npacks,
         ModeWetRadius(Kokkos::subview(mode_wet_radius, m, Kokkos::ALL),
                       Kokkos::subview(mode_hygroscopicity, m, Kokkos::ALL),
                       Kokkos::subview(mode_dry_particle_radius, m, Kokkos::ALL),
-                      relative_humidity, config.h_aerosol_modes[m]));
+                      relative_humidity, config.aerosol_modes[m]));
     std::cout << "\twet radius ready\n";
   }
 

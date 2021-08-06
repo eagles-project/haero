@@ -132,9 +132,9 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   haero::Model* model = haero::Model::ForUnitTests(aero_config, num_levels);
 
   // Create column views containing reference data.
-  int num_modes = aero_config.h_aerosol_modes.size();
+  int num_modes = aero_config.aerosol_modes.size();
   int num_aero_populations = model->num_aerosol_populations();
-  int num_gases = aero_config.h_gas_species.size();
+  int num_gases = aero_config.gas_species.size();
   haero::SpeciesColumnView int_aerosols("interstitial aerosols",
                                         num_aero_populations, num_levels);
   haero::SpeciesColumnView cld_aerosols("cloud aerosols", num_aero_populations,

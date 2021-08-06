@@ -1,5 +1,7 @@
 #include "haero/conversions.hpp"
 
+#if HAERO_FORTRAN
+
 using haero::Real;
 
 // Interoperable C functions for converting data in Fortran.
@@ -12,3 +14,5 @@ Real relative_humidity_from_vapor_mixing_ratio_f(Real qv, Real p, Real T) {
 }
 
 }  // extern "C"
+
+#endif
