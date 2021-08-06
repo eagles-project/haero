@@ -20,14 +20,25 @@ add_custom_target(update_version_info ALL
   COMMENT "Updating haero version information..."
 )
 
+# Generate a C++ file with physical constants defined, from our C++ header.
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
+  COMMAND ${CMAKE_COMMAND}
+    -DCPP_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
+    -DCPP_SOURCE=${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
+    -P ${PROJECT_SOURCE_DIR}/cmake/gen_consts_cpp.cmake
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
+          ${PROJECT_SOURCE_DIR}/cmake/gen_consts_cpp.cmake
+  COMMENT "Generating constants.cpp..."
+)
+
 if (HAERO_FORTRAN)
   # Generate a Fortran module with physical constants, from our C++ header.
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
     COMMAND ${CMAKE_COMMAND}
-      -DCPP_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/physical_constants.hpp
+      -DCPP_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
       -DF90_MODULE=${CMAKE_CURRENT_BINARY_DIR}/haero_constants.F90
       -P ${PROJECT_SOURCE_DIR}/cmake/gen_consts_module.cmake
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/physical_constants.hpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
             ${PROJECT_SOURCE_DIR}/cmake/gen_consts_module.cmake
     COMMENT "Generating haero_constants.F90..."
   )
@@ -68,6 +79,7 @@ add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             ${HAERO_FORTRAN_SOURCES}
             atmosphere.cpp
+            ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
             conversions.cpp
             diagnostics.cpp
             modal_aerosol_config.cpp
@@ -93,7 +105,7 @@ install(FILES haero.hpp
               mode.hpp
               model.hpp
               selected_processes.hpp
-              physical_constants.hpp
+              constants.hpp
               prognostics.hpp
               aerosol_species.hpp
               utils.hpp

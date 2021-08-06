@@ -31,9 +31,11 @@ TEST_CASE("region_of_validity", "") {
   ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
                                     num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
-  std::vector<int> num_species_per_mode(
-      config.h_n_species_per_mode.data(),
-      config.h_n_species_per_mode.data() + num_modes);
+  std::vector<int> num_species_per_mode(num_modes);
+  for (int m = 0; m < num_modes; ++m) {
+    auto species_for_mode = config.aerosol_species_for_mode(m);
+    num_species_per_mode[m] = species_for_mode.size();
+  }
   Prognostics progs(num_modes, num_species_per_mode, num_gases, num_levels,
                     int_aerosols, cld_aerosols, int_num_mix_ratios,
                     cld_num_mix_ratios, gases);
@@ -48,28 +50,31 @@ TEST_CASE("region_of_validity", "") {
 
   // Zero the state data.
   for (int p = 0; p < progs.num_aerosol_populations(); ++p) {
-    for (int k = 0; k < num_vert_packs; ++k) {
-      int_aerosols(p, k) = 0;
-      cld_aerosols(p, k) = 0;
-    }
+    Kokkos::parallel_for(
+        "zero aerosol data", num_vert_packs, KOKKOS_LAMBDA(const int k) {
+          int_aerosols(p, k) = 0;
+          cld_aerosols(p, k) = 0;
+        });
   }
   for (int m = 0; m < num_modes; ++m) {
-    for (int k = 0; k < num_vert_packs; ++k) {
-      int_num_mix_ratios(m, k) = 0;
-      cld_num_mix_ratios(m, k) = 0;
-    }
+    Kokkos::parallel_for(
+        "zero aerosol mode data", num_vert_packs, KOKKOS_LAMBDA(const int k) {
+          int_num_mix_ratios(m, k) = 0;
+          cld_num_mix_ratios(m, k) = 0;
+        });
   }
   for (int g = 0; g < num_gases; ++g) {
-    for (int k = 0; k < num_vert_packs; ++k) {
-      gases(g, k) = 0;
-    }
+    Kokkos::parallel_for(
+        "zero gas data", num_vert_packs,
+        KOKKOS_LAMBDA(const int k) { gases(g, k) = 0; });
   }
 
-  for (int k = 0; k < num_vert_packs; ++k) {
-    atm.temperature(k) = 0;
-    atm.pressure(k) = 0;
-    atm.vapor_mixing_ratio(k) = 0;
-  }
+  Kokkos::parallel_for(
+      "zero atmosphere data", num_vert_packs, KOKKOS_LAMBDA(const int k) {
+        atm.temperature(k) = 0;
+        atm.pressure(k) = 0;
+        atm.vapor_mixing_ratio(k) = 0;
+      });
 
   SECTION("ctor") {
     RegionOfValidity rov;
@@ -104,20 +109,35 @@ TEST_CASE("region_of_validity", "") {
     // By default, a region of validity accepts zero data, so the above
     // prognostics and atmosphere should pass muster.
     RegionOfValidity rov;
-    REQUIRE(rov.contains(config, atm, progs));
+    rov.init(config);
+    int valid = 0;
+    Kokkos::parallel_reduce(
+        "rov.contains 1", 1,
+        KOKKOS_LAMBDA(const int, int& v) { v = rov.contains(atm, progs); },
+        valid);
+    REQUIRE(valid);
 
     // Suppose now that we require data to be positive!
     rov.set_interstitial_aerosol_bounds(0, 1e4, 1e11);
     rov.temp_bounds.first = 273.0;
-    REQUIRE(not rov.contains(config, atm, progs));
+    Kokkos::parallel_reduce(
+        "rov.contains 2", 1,
+        KOKKOS_LAMBDA(const int, int& v) { v = rov.contains(atm, progs); },
+        valid);
+    REQUIRE(not valid);
 
     // Fix the data and make sure it passes the next time.
-    for (int k = 0; k < num_vert_packs; ++k) {
-      progs.interstitial_aerosols(0, k) = 1e-14;
-      atm.temperature(k) = 325.0;
-      atm.pressure(k) = 1e4;
-    }
-    REQUIRE(rov.contains(config, atm, progs));
+    Kokkos::parallel_for(
+        "rov.contains 3", num_vert_packs, KOKKOS_LAMBDA(const int k) {
+          progs.interstitial_aerosols(0, k) = 1e-14;
+          atm.temperature(k) = 325.0;
+          atm.pressure(k) = 1e4;
+        });
+    Kokkos::parallel_reduce(
+        "rov.contains 4", 1,
+        KOKKOS_LAMBDA(const int, int& v) { v = rov.contains(atm, progs); },
+        valid);
+    REQUIRE(valid);
   }
 
   SECTION("intersection") {

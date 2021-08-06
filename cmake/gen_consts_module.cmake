@@ -7,7 +7,7 @@
 # 3. All constants are floating point numbers (of type Real or double).
 function(gen_consts_module cxx_header fortran_module)
   set(in_haero_ns FALSE)
-  set(in_constants_ns FALSE)
+  set(in_constants_struct FALSE)
 
   # Generate Fortran boilerplate.
   list(APPEND fortran_lines "! This file was generated from ${cxx_header}")
@@ -22,8 +22,12 @@ function(gen_consts_module cxx_header fortran_module)
   # removed).
   file(STRINGS ${cxx_header} lines)
   foreach(line ${lines})
-    if(in_haero_ns)
-      if(in_constants_ns)
+    if (in_haero_ns)
+      if (in_constants_struct)
+        if (line MATCHES "};")
+          break()
+        endif()
+
         # Look for a Doxygen comment delimiter at the beginning of the line.
         string(FIND ${line} "///" pos)
         if (pos GREATER_EQUAL 0)
@@ -55,7 +59,7 @@ function(gen_consts_module cxx_header fortran_module)
               string(SUBSTRING ${line} ${begin} -1 value)
               string(REPLACE ";" "" value ${value})
               string(STRIP ${value} value)
-              # This is a numeric constant that needs to have _wp appended 
+              # This is a numeric constant that needs to have _wp appended
               if (value MATCHES "^([0-9]*)(\\.[0-9]*)?([eE][+\\-]?[0-9]+)?$")
                 string(APPEND value "_wp")
               endif()
@@ -68,8 +72,8 @@ function(gen_consts_module cxx_header fortran_module)
             endif()
           endif()
         endif()
-      elseif(${line} MATCHES "namespace constants")
-      set(in_constants_ns TRUE)
+      elseif(${line} MATCHES "struct Constants")
+      set(in_constants_struct TRUE)
       endif()
     elseif(${line} MATCHES "namespace haero")
       set(in_haero_ns TRUE)

@@ -48,9 +48,9 @@ class Tendencies final {
   /// Scales all tendencies by the given constant factor, in place.
   /// @param [in] factor The factor by which the tendencies are scaled.
   /// @returns a reference to the tendencies, which have been scaled.
-  Tendencies& scale(Real factor);
+  const Tendencies& scale(Real factor) const;
 
-  inline Tendencies& set_zero() { return scale(0); }
+  inline const Tendencies& set_zero() { return scale(0); }
 
   /// Acculumates the given set of tendencies into this set, summing the values
   /// of the prognostic variables in place.

@@ -6,7 +6,8 @@
 namespace haero {
 
 MAMNucleationProcess::MAMNucleationProcess()
-    : AerosolProcess(NucleationProcess, "MAMNucleationProcess") {}
+    : DeviceAerosolProcess<MAMNucleationProcess>(NucleationProcess,
+                                                 "MAMNucleationProcess") {}
 
 //------------------------------------------------------------------------
 //                                Accessors

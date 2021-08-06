@@ -14,21 +14,13 @@
 
 using namespace haero;
 
-// Useful little function to allocate class on device. Probably move to header
-// later.
-#ifdef KOKKOS_ENABLE_CUDA
-typedef Kokkos::CudaSpace MemSpace;
-#else
-typedef Kokkos::HostSpace MemSpace;
-#endif
-
-class MyAerosolProcess final : public AerosolProcess {
+class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
  public:
   MyAerosolProcess(AerosolProcessType type, const std::string &name,
                    const int num_lev, const Diagnostics::Token aer_0,
                    const Diagnostics::Token aer_1,
                    const Diagnostics::Token gen_0)
-      : AerosolProcess(type, name),
+      : DeviceAerosolProcess<MyAerosolProcess>(type, name),
         num_levels(num_lev),
         aersol_0(aer_0),
         aersol_1(aer_1),
@@ -39,23 +31,11 @@ class MyAerosolProcess final : public AerosolProcess {
 
   KOKKOS_INLINE_FUNCTION
   MyAerosolProcess(const MyAerosolProcess &pp)
-      : AerosolProcess(pp),
+      : DeviceAerosolProcess<MyAerosolProcess>(pp),
         num_levels(pp.num_levels),
         aersol_0(pp.aersol_0),
         aersol_1(pp.aersol_1),
         generic_0(pp.generic_0) {}
-
-  MyAerosolProcess *copy_to_device() {
-    const std::string debuggingName(name());
-    MyAerosolProcess *pp =
-        static_cast<MyAerosolProcess *>(Kokkos::kokkos_malloc<MemSpace>(
-            debuggingName + "_malloc", sizeof(MyAerosolProcess)));
-    const MyAerosolProcess &this_pp = *this;  // Suck into lambda capture space.
-    Kokkos::parallel_for(
-        debuggingName + "_format", 1,
-        KOKKOS_LAMBDA(const int) { new (pp) MyAerosolProcess(this_pp); });
-    return pp;
-  }
 
  protected:
   //------------------------------------------------------------------------
@@ -65,7 +45,7 @@ class MyAerosolProcess final : public AerosolProcess {
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            Tendencies &tendencies) const {
+            const Tendencies &tendencies) const {
     const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
     const ColumnView temp = atmosphere.temperature;
     const SpeciesColumnView first_aersol = diagnostics.aerosol_var(aersol_0);
@@ -218,22 +198,24 @@ TEST_CASE("process_tests", "aerosol_process") {
     Kokkos::deep_copy(aero_tend, host_aero_tend);
   }
 
+  // Create and initialize our process.
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudProcess";
   MyAerosolProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
-  MyAerosolProcess *device_pp = pp.copy_to_device();
-
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
   std::vector<GasSpecies> gas_species = create_mam4_gas_species();
   ModalAerosolConfig aero_config(modes, aero_species, mode_species,
                                  gas_species);
+  pp.init(aero_config);
 
+  // Move the process to the device and run it.
+  auto device_pp = pp.copy_to_device();
   const Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
   typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
       TeamHandleType;
   const auto &teamPolicy =
       Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
-  device_pp->init(aero_config);
+  auto device_ptr = device_pp.get();
   Kokkos::parallel_for(
       teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
         Kokkos::parallel_for(
@@ -241,11 +223,9 @@ TEST_CASE("process_tests", "aerosol_process") {
               // Const cast because everything in lambda is const. Need to
               // google how to fix.
               Tendencies *tendency = const_cast<Tendencies *>(&tends);
-              device_pp->run(t, dt, progs, atmos, diagnostics, *tendency);
+              device_ptr->run(t, dt, progs, atmos, diagnostics, *tendency);
             });
       });
-
-  Kokkos::kokkos_free<MemSpace>(device_pp);
 
   {
     using fp_helper = FloatingPoint<float>;

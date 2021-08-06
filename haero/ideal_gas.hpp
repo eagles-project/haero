@@ -1,9 +1,9 @@
 #ifndef HAERO_IDEAL_GAS_HPP
 #define HAERO_IDEAL_GAS_HPP
 
+#include "haero/constants.hpp"
 #include "haero/conversions.hpp"
 #include "haero/haero.hpp"
-#include "haero/physical_constants.hpp"
 
 /// This file contains functions that relate various quantities using the ideal
 /// gas law.
@@ -22,7 +22,8 @@ PackType mass_density(const PackType& p, const PackType& T,
                       const PackType& qv) {
   auto q1 = conversions::specific_humidity_from_vapor_mixing_ratio(qv);
   auto Tv = conversions::virtual_temperature_from_temperature(T, q1);
-  return p / (constants::r_gas_dry_air * Tv);
+  auto r_gas = Constants::r_gas_dry_air;
+  return p / (r_gas * Tv);
 }
 
 }  // namespace ideal_gas

@@ -4,7 +4,7 @@
 #include <iomanip>
 
 #include "haero/aerosol_process.hpp"
-#include "haero/physical_constants.hpp"
+#include "haero/constants.hpp"
 
 namespace haero {
 
@@ -33,7 +33,8 @@ namespace haero {
 /// The AerosolProcess class provides an interface for all
 /// implementations of all parametrizations for all physical processes that
 /// compute tendencies for aerosol systems.
-class MAMNucleationProcess final : public AerosolProcess {
+class MAMNucleationProcess final
+    : public DeviceAerosolProcess<MAMNucleationProcess> {
   // applied to boundary layer nucleation rate can be set by a call to set_param
   Real adjust_factor_pbl_ratenucl = 0;
 
@@ -128,7 +129,7 @@ class MAMNucleationProcess final : public AerosolProcess {
   Real mw_nh4a_host;
 
   // The molecular weight of SO4 aerosol as assumed by the host atm model
-  const Real mw_so4a_host = constants::molec_weight_so4;
+  const Real mw_so4a_host = Constants::molec_weight_so4;
 
   // Gas mixing ratios token to access this diagnostics gas variable
   const Diagnostics::Token qgas_averaged_token = Diagnostics::VAR_NOT_FOUND;
@@ -148,7 +149,7 @@ class MAMNucleationProcess final : public AerosolProcess {
   MAMNucleationProcess(const AerosolProcessType type, const std::string &name,
                        const ModalAerosolConfig &config,
                        const HostDiagnostics &diagnostics)
-      : AerosolProcess(type, name),
+      : DeviceAerosolProcess<MAMNucleationProcess>(type, name),
         iaer_h2so4(config.gas_index("H2SO4")),
         iaer_nh3(config.gas_index("NH3")),
         iaer_nh4(config.gas_index("nh4")),
@@ -162,19 +163,19 @@ class MAMNucleationProcess final : public AerosolProcess {
     {
       auto dgum = Kokkos::create_mirror_view(dgnum_aer);
       for (int m = 0; m < config.num_modes(); ++m)
-        dgum(m) = config.h_aerosol_modes(m).mean_std_dev;
+        dgum(m) = config.aerosol_modes[m].mean_std_dev;
       Kokkos::deep_copy(dgnum_aer, dgum);
     }
     {
       auto dgumlo = Kokkos::create_mirror_view(dgnumlo_aer);
       for (int m = 0; m < config.num_modes(); ++m)
-        dgumlo(m) = config.h_aerosol_modes(m).min_diameter;
+        dgumlo(m) = config.aerosol_modes[m].min_diameter;
       Kokkos::deep_copy(dgnumlo_aer, dgumlo);
     }
     {
       auto dgumhi = Kokkos::create_mirror_view(dgnumhi_aer);
       for (int m = 0; m < config.num_modes(); ++m)
-        dgumhi(m) = config.h_aerosol_modes(m).max_diameter;
+        dgumhi(m) = config.aerosol_modes[m].max_diameter;
       Kokkos::deep_copy(dgnumhi_aer, dgumhi);
     }
     nait = config.aerosol_mode_index("aitken");
@@ -186,15 +187,20 @@ class MAMNucleationProcess final : public AerosolProcess {
   virtual ~MAMNucleationProcess() {}
 
   /// Default copy constructor. For use in moving host instance to device.
+  //  KOKKOS_INLINE_FUNCTION
   KOKKOS_INLINE_FUNCTION
   MAMNucleationProcess(const MAMNucleationProcess &pp)
-      : AerosolProcess(pp),
+      : DeviceAerosolProcess<MAMNucleationProcess>(pp),
         adjust_factor_pbl_ratenucl(pp.adjust_factor_pbl_ratenucl),
         adjust_factor_bin_tern_ratenucl(pp.adjust_factor_bin_tern_ratenucl),
+        nait(pp.nait),
         iaer_h2so4(pp.iaer_h2so4),
         iaer_nh3(pp.iaer_nh3),
         iaer_nh4(pp.iaer_nh4),
         iaer_so4(pp.iaer_so4),
+        dgnum_aer(pp.dgnum_aer),
+        dgnumlo_aer(pp.dgnumlo_aer),
+        dgnumhi_aer(pp.dgnumhi_aer),
         qgas_averaged_token(pp.qgas_averaged_token),
         uptkrate_h2so4_token(pp.uptkrate_h2so4_token),
         del_h2so4_gasprod_token(pp.del_h2so4_gasprod_token),
@@ -213,7 +219,7 @@ class MAMNucleationProcess final : public AerosolProcess {
   KOKKOS_FUNCTION
   void run_(Real t, Real dt, const Prognostics &prognostics,
             const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-            Tendencies &tendencies) const override {
+            const Tendencies &tendencies) const override {
     // First of all, check to make sure our model has an aitken mode. If it
     // doesn't, we can return immediately.
     if (nait == -1) {
@@ -257,6 +263,7 @@ class MAMNucleationProcess final : public AerosolProcess {
     ColumnView uptkrate_h2so4;
     ColumnView del_h2so4_gasprod;
     ColumnView del_h2so4_aeruptk;
+    ColumnView qwtr_cur;
 
     if (Diagnostics::VAR_NOT_FOUND != qgas_averaged_token)
       qgas_averaged = diagnostics.gas_var(qgas_averaged_token);
@@ -277,7 +284,7 @@ class MAMNucleationProcess final : public AerosolProcess {
       num_vert_packs++;
     }
     for (int k = 0; k < num_vert_packs; ++k) {
-      static const Real R_gas = constants::r_gas;  // Gas constant (J/K/kmol)
+      static const Real R_gas = Constants::r_gas;  // Gas constant (J/K/kmol)
       // Compute the molar concentration of air at the given pressure and
       // temperature.
       const PackType aircon = press(k) / (temp(k) * R_gas);
@@ -305,7 +312,6 @@ class MAMNucleationProcess final : public AerosolProcess {
               ? zero
               : del_h2so4_aeruptk(k);
 
-      ColumnView qwtr_cur("qwtr_cur", qnum_cur.extent(1));
       PackType dndt_ait;
       PackType dmdt_ait;
       PackType dso4dt_ait;
@@ -331,6 +337,8 @@ class MAMNucleationProcess final : public AerosolProcess {
 
   /// Set the named parameter to the given value.
   /// It is a fatal error to pass an unknown name.
+  void set_param_(const std::string &name, int value) override {}
+  void set_param_(const std::string &name, bool value) override {}
   void set_param_(const std::string &name, Real value) override {
     if ("adjust_factor_pbl_ratenucl" == name) {
       adjust_factor_pbl_ratenucl = value;
@@ -386,7 +394,7 @@ class MAMNucleationProcess final : public AerosolProcess {
       Pack &dndt_ait, Pack &dmdt_ait, Pack &dso4dt_ait, Pack &dnh4dt_ait,
       Pack &dnclusterdt) const {
     using Mask = ekat::Mask<Pack::n>;
-    static const Real pi = constants::pi;
+    static const Real pi = Constants::pi;
     dndt_ait = 0.0;
     dmdt_ait = 0.0;
     dnh4dt_ait = 0.0;
@@ -447,6 +455,7 @@ class MAMNucleationProcess final : public AerosolProcess {
     Pack qnh3_cur(0.0);
     if (0 <= iaer_nh3) qnh3_cur = max(0.0, qgas_cur[iaer_nh3]);
     // dry-diameter limits for "grown" new particles
+
     const Real dplom_mode =
         exp(0.67 * log(dgnumlo_aer[nait]) + 0.33 * log(dgnum_aer[nait]));
     const Real dphim_mode = dgnumhi_aer[nait];
@@ -624,14 +633,14 @@ class MAMNucleationProcess final : public AerosolProcess {
       const int ldiagaa, Pack *dnclusterdt = nullptr) const {
     using namespace std;
     using Mask = ekat::Mask<Pack::n>;
-    static const Real pi = constants::pi;
-    static const Real rgas = constants::r_gas;  // Gas constant (J/K/kmol)
+    static const Real pi = Constants::pi;
+    static const Real rgas = Constants::r_gas;  // Gas constant (J/K/kmol)
     static const Real avogad =
-        constants::avogadro;  // Avogadro's number (1/kmol)
+        Constants::avogadro;  // Avogadro's number (1/kmol)
     static const Real mw_so4a =
-        constants::molec_weight_so4;  // Molecular weight of sulfate
+        Constants::molec_weight_so4;  // Molecular weight of sulfate
     static const Real mw_nh4a =
-        constants::molec_weight_nh4;  // Molecular weight of ammonium
+        Constants::molec_weight_nh4;  // Molecular weight of ammonium
 
     Pack cair;         // dry-air molar density (mol/m3)
     Pack cs_prime_kk;  // kk2002 "cs_prime" parameter (1/m2)
@@ -1123,7 +1132,7 @@ class MAMNucleationProcess final : public AerosolProcess {
                           radius_cluster * 2.0e-7);  // diameter in cm
       const Pack tmp_volu(
           rateloge_lt_tmp_rateloge,
-          cube(tmp_diam) * (constants::pi / 6.0));  // volume in cm^3
+          cube(tmp_diam) * (Constants::pi / 6.0));  // volume in cm^3
       const Pack tmp_mass(rateloge_lt_tmp_rateloge,
                           tmp_volu * 1.8);  // mass in g
       cnum_h2so4.set(rateloge_lt_tmp_rateloge,

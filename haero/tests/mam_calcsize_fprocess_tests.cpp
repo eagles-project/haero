@@ -32,9 +32,8 @@ TEST_CASE("mam_calcsize_run", "") {
   auto* model = get_model_for_unit_tests(
       aero_config, num_levels);  // get an instance of "model"
 
-  const size_t num_gases = aero_config.h_gas_species.size();  // number of gases
-  const size_t num_modes =
-      aero_config.h_aerosol_modes.size();  // number of modes
+  const size_t num_gases = aero_config.gas_species.size();    // number of gases
+  const size_t num_modes = aero_config.aerosol_modes.size();  // number of modes
 
   // Set up some prognostics aerosol data views
   const int num_aero_populations{

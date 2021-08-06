@@ -5,10 +5,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include "haero/haero.hpp"
 #include "haero/haero_config.hpp"
 #include "kokkos/Kokkos_Core.hpp"

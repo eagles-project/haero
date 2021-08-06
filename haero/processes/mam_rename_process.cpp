@@ -5,8 +5,9 @@
 namespace haero {
 
 MAMRenameProcess::MAMRenameProcess()
-    : AerosolProcess(RenameProcess, "MAMRenameProcess") {}
+    : DeviceAerosolProcess<MAMRenameProcess>(RenameProcess,
+                                             "MAMRenameProcess") {}
 
-void MAMRenameProcess::init_(const ModalAerosolConfig& modal_aerosol_config) {}
+void MAMRenameProcess::init_(const ModalAerosolConfig& config) {}
 
 }  // namespace haero
