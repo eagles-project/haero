@@ -4,11 +4,10 @@
 #include <iomanip>
 
 #include "haero/aerosol_process.hpp"
-#include "haero/physical_constants.hpp"
 
 namespace haero {
 
-class MAMGasAerosolExchangeProcess : public AerosolProcess {
+class MAMGasAerosolExchangeProcess : public DeviceAerosolProcess<MAMGasAerosolExchangeProcess> {
 
  public:
   MAMGasAerosolExchangeProcess();
@@ -16,7 +15,7 @@ class MAMGasAerosolExchangeProcess : public AerosolProcess {
   MAMGasAerosolExchangeProcess(const AerosolProcessType type, const std::string &name,
                        const ModalAerosolConfig &config,
                        const HostDiagnostics &diagnostics)
-      : AerosolProcess(type, name) { }
+      : DeviceAerosolProcess(type, name) { }
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
@@ -25,7 +24,7 @@ class MAMGasAerosolExchangeProcess : public AerosolProcess {
   /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   MAMGasAerosolExchangeProcess(const MAMGasAerosolExchangeProcess &pp)
-      : AerosolProcess(pp) {}
+      : DeviceAerosolProcess(pp) {}
 
   /// MAMNucleationProcess objects are not assignable.
   MAMGasAerosolExchangeProcess &operator=(const MAMGasAerosolExchangeProcess &) = delete;
@@ -57,10 +56,11 @@ protected :
 
   KOKKOS_FUNCTION
   virtual void run_(Real t,
-                    Real dt, const Prognostics &prognostics,
+                    Real dt, 
+                    const Prognostics &prognostics,
                     const Atmosphere &atmosphere, 
                     const Diagnostics &diagnostics,
-                    Tendencies &tendencies) const override {}
+                    const Tendencies &tendencies) const override {}
 
 };
 

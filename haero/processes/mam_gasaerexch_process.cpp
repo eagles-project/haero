@@ -6,7 +6,7 @@
 namespace haero {
 
 MAMGasAerosolExchangeProcess::MAMGasAerosolExchangeProcess()
-    : AerosolProcess(NucleationProcess, "MAMGasAerosolExchangeProcess") {}
+    : DeviceAerosolProcess(NucleationProcess, "MAMGasAerosolExchangeProcess") {}
 
 //------------------------------------------------------------------------
 //                                Accessors
