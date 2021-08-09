@@ -18,8 +18,6 @@ using Container = MAMRenameProcess::Container<T>;
 using Integral = MAMRenameProcess::Integral;
 using Size = MAMRenameProcess::Size;
 
-// Use constants from haero::constants, calculate a few of our own.
-// TODO: Should _smallest_dryvol_value_ be in haero::constants as well?
 static constexpr auto& pi_sixth = haero::Constants::pi_sixth;
 static constexpr Real frelax = 27.0;
 static const Real sqrt_half = std::sqrt((Real)0.5);
@@ -60,8 +58,6 @@ Container<T> reserved_container(Size size) {
   return c;
 }
 
-// TODO: What is a more descriptive name for _diameter_?
-// TODO: Where can I find a formula to reference for this calculation?
 static inline Real compute_relaxed_volume_to_num_ratio(
     const Mode& mode, const Real& diameter_for_current_mode) {
   const auto vol =
