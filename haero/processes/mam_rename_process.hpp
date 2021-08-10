@@ -1,5 +1,5 @@
-#ifndef HAERO_MAM_RENAME_SUBAREA_PROCESS_HPP
-#define HAERO_MAM_RENAME_SUBAREA_PROCESS_HPP
+#ifndef HAERO_MAM_RENAME_PROCESS_HPP
+#define HAERO_MAM_RENAME_PROCESS_HPP
 
 #include "haero/aerosol_process.hpp"
 #include "kokkos/Kokkos_Core.hpp"
@@ -26,10 +26,10 @@ class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
   //                                Overrides
   //------------------------------------------------------------------------
 
-  virtual void init_(const ModalAerosolConfig& modal_aerosol_config) override;
+  void init_(const ModalAerosolConfig& modal_aerosol_config) override;
 
   KOKKOS_INLINE_FUNCTION
-  virtual void run_(Real t, Real dt, const Prognostics& prognostics,
+  void run_(Real t, Real dt, const Prognostics& prognostics,
                     const Atmosphere& atmosphere,
                     const Diagnostics& diagnostics,
                     const Tendencies& tendencies) const override {}

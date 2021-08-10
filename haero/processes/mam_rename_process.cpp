@@ -165,7 +165,6 @@ void MAMRenameProcess::find_renaming_pairs_(
 
     // Set relaxed limits of ratios for current source/dest mode pair
     {
-      // TODO: Grab modes as param?
       const Mode& mode = config.aerosol_modes[src_mode];
       volume2num_lo_relaxed[src_mode] =
           compute_relaxed_volume_to_num_ratio(mode, dgnumhi[src_mode]);
