@@ -44,6 +44,8 @@ class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
       Container<Real>& dryvol_smallest) const;
 
  private:
+  // TODO: These variable names are ambiguous and ought to be updated in another
+  // PR. The Calcsize references many of these variables.
   Container<Real> dgnumlo;
   Container<Real> dgnumhi;
   Container<Real> dgnum;
