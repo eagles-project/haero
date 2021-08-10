@@ -30,9 +30,8 @@ class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
 
   KOKKOS_INLINE_FUNCTION
   void run_(Real t, Real dt, const Prognostics& prognostics,
-                    const Atmosphere& atmosphere,
-                    const Diagnostics& diagnostics,
-                    const Tendencies& tendencies) const override {}
+            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+            const Tendencies& tendencies) const override {}
 
  private:
   void find_renaming_pairs_(
