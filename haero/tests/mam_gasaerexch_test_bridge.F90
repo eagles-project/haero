@@ -4,9 +4,10 @@ module mam_gasaerexch_test_bridge
   private
 
   ! Module functions
+  public :: init_bridge
+  public :: mam_soaexch_1subarea_bridge
   public :: mam_gasaerexch_1subarea_1gas_nonvolatile_bridge
   !public :: gas_aer_uptkrates_1box1gas_bridge
-  !public :: mam_soaexch_1subarea_bridge
 
 contains
 
@@ -15,6 +16,68 @@ subroutine init_bridge()  bind(c)
   use mam_gasaerexch, only: init
   implicit none
   call init(model)
+  print *,__FILE__,__LINE__,"subroutine init"
+end subroutine
+
+subroutine mam_soaexch_1subarea_bridge( &
+  lund, &
+  dt, &
+  temp, & 
+  pmid, &
+  aircon, &
+  n_mode, &
+  ntot_amode, &
+  max_mode, &
+  qgas_cur, &
+  qgas_avg, &
+  qaer_cur, &
+  qnum_cur, &
+  uptkaer, &
+  mode_aging_optaa, &
+  lptr2_soa_a_amode) bind(c)
+
+  use iso_c_binding, only: c_int
+  use haero, only: model
+  use haero_precision, only: wp
+  use mam_gasaerexch, only: mam_soaexch_1subarea
+  implicit none
+
+
+! arguments
+  integer(c_int), value, intent(in) :: lund                  ! logical unit for diagnostic output
+  integer(c_int), value, intent(in) :: n_mode                ! current number of modes (including temporary)
+  integer(c_int), value, intent(in) :: ntot_amode
+  integer(c_int), value, intent(in) :: max_mode
+
+  real(wp), value, intent(in) :: dt        ! current integration timestep (s)
+  real(wp), value, intent(in) :: temp             ! temperature (K)
+  real(wp), value, intent(in) :: pmid             ! pressure at model levels (Pa)
+  real(wp), value, intent(in) :: aircon           ! air molar concentration (kmol/m3)
+
+  real(wp), intent(inout), dimension( model%num_gases ) :: qgas_cur, qgas_avg
+  real(wp), intent(inout), dimension( maxval(model%num_mode_species), model%num_modes ) :: qaer_cur
+  real(wp), intent(inout), dimension( model%num_modes ) :: qnum_cur
+  real(wp), intent(in   ), dimension( model%num_gases, model%num_modes ) :: uptkaer
+  integer(c_int),  intent(in   ), dimension( model%num_modes) ::  mode_aging_optaa
+  integer(c_int),  intent(in   ), dimension( model%num_modes, *) ::  lptr2_soa_a_amode
+
+  ! Call the actual subroutine.
+  call  mam_soaexch_1subarea( &
+  lund, &
+  dt, &
+  temp, & 
+  pmid, &
+  aircon, &
+  n_mode, &
+  ntot_amode, &
+  max_mode, &
+  qgas_cur, &
+  qgas_avg, &
+  qaer_cur, &
+  qnum_cur, &
+  uptkaer, &
+  mode_aging_optaa, &
+  lptr2_soa_a_amode)
 end subroutine
 
 subroutine mam_gasaerexch_1subarea_1gas_nonvolatile_bridge( &
@@ -68,4 +131,3 @@ subroutine mam_gasaerexch_1subarea_1gas_nonvolatile_bridge( &
 end subroutine
 
 end module
-

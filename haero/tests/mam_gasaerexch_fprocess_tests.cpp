@@ -22,7 +22,7 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
           "mam_gasaerexch_fprocess") {
   using fp_helper = FloatingPoint<Real>;
 #ifdef NDEBUG
-  const Real tolerance = 1.0e-07;
+  const Real tolerance = 1.0e-08;
 #else
   const Real tolerance = 1.0e-10;
 #endif
@@ -35,15 +35,15 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
 
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
-  const unsigned p0 = 987659;
-  const unsigned p1 = 12373;
-  long unsigned seed = 54319;
-  auto random = [&]() {
-    seed = (seed * p1) % p0;
-    return Real(seed) / p0;
-  };
+//const unsigned p0 = 987659;
+//const unsigned p1 = 12373;
+//long unsigned seed = 54319;
+//auto random = [&]() {
+//  seed = (seed * p1) % p0;
+//  return Real(seed) / p0;
+//};
 
-#if 0
+
   const auto aero_species = create_mam4_aerosol_species();
   auto aero_config = create_mam4_modal_aerosol_config();
   const int num_levels = 72;
@@ -63,11 +63,53 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
 
   get_model_for_unit_tests(aero_config);
   AerosolProcessType type = CloudBorneWetRemovalProcess;
-  MAMNucleationProcess mam_nucleation_process(type, "Nucleation Test",
+  MAMGasAerosolExchangeProcess mam_gasaerexch_process(type, "gasaerexch Test",
                                               aero_config, diagnostics);
-
   init_bridge();
 
+  const int lund = 93;
+  const Real dt = 1.0000000000000000;
+  const Real temp = 273.00000000000000;
+  const Real pmid = 100000.00000000000;
+  const Real aircon = 4.4055781358372036E-002;
+  const int n_mode = 4;
+  const int ntot_amode = 4;
+  const int max_mode = 5;
+  Real qgas_cur[] = {9.6553333333333350E-011, 2.9533516044307414E-014};
+  Real qgas_avg[] = {0.0000000000000000, 0.0000000000000000};
+  Real qaer_cur[] = {2253176148.8415728, 22531761488.415726, 2253176.1488415725, 
+                     4506352297.6831455, 0.0000000000000000};
+  Real qnum_cur[] = {2253176148.8415728, 22531761488.415726, 2253176.1488415725, 
+                     4506352297.6831455, 0.0000000000000000};
+  Real uptkaer[] =  {6.6080559925483628E-004, 8.1580938179609411E-004, 3.6489706456131803E-004, 
+                     4.5049020316212097E-004, 2.5940960604944770E-005, 3.2025877290055270E-005, 
+                     7.1043539209444609E-005, 8.7708073098079762E-005, 0.0000000000000000, 0.0000000000000000};
+  int mode_aging_optaa[] = {     0,          0,          0,          1,          0};
+  int lptr2_soa_a_amode[]  = {  13,         20,         29, -999888777};
+  
+  mam_soaexch_1subarea_bridge(
+    lund, 
+    dt, 
+    temp, 
+    pmid, 
+    aircon, 
+    n_mode, 
+    ntot_amode, 
+    max_mode, 
+    qgas_cur, 
+    qgas_avg, 
+    qaer_cur, 
+    qnum_cur, 
+    uptkaer, 
+    mode_aging_optaa, 
+    lptr2_soa_a_amode);
+
+    REQUIRE(fp_helper::equiv(qgas_cur[0], 9.6445411630348715E-011, tolerance));
+    REQUIRE(fp_helper::equiv(qgas_cur[1], 2.9533516044307414E-014, tolerance));
+    REQUIRE(fp_helper::equiv(qgas_avg[0], 9.6499372481841032E-011, tolerance));
+    REQUIRE(fp_helper::equiv(qgas_avg[1], 0.0000000000000000     , tolerance));
+
+#if 0
   for (int i = 0; i < 100; ++i) {
     const Real deltat(random());
     const PackType temp(235 + 60 * random());  // range 235-295
@@ -99,18 +141,18 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
 
     const Real adjust_factor_bin_tern_ratenucl = random();
     const Real adjust_factor_pbl_ratenucl = random();
-    mam_nucleation_process.set_param("adjust_factor_bin_tern_ratenucl",
+    mam_gasaerexch_process.set_param("adjust_factor_bin_tern_ratenucl",
                                      adjust_factor_bin_tern_ratenucl);
-    mam_nucleation_process.set_param("adjust_factor_pbl_ratenucl",
+    mam_gasaerexch_process.set_param("adjust_factor_pbl_ratenucl",
                                      adjust_factor_pbl_ratenucl);
-    mam_nucleation_process.set_param("newnuc_adjust_factor_dnaitdt", 1.0);
+    mam_gasaerexch_process.set_param("newnuc_adjust_factor_dnaitdt", 1.0);
 
     PackType dndt_ait(0);
     PackType dmdt_ait(0);
     PackType dso4dt_ait(0);
     PackType dnh4dt_ait(0);
     PackType nclusterdt(0);
-    mam_nucleation_process.compute_tendencies(
+    mam_gasaerexch_process.compute_tendencies(
         deltat, temp, pmid, aircon, zmid, pblh, relhum, uptkrate_h2so4,
         del_h2so4_gasprod, del_h2so4_aeruptk, qgas_cur, qgas_avg, qnum_cur,
         qaer_cur, qwtr_cur, dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait,
