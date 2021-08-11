@@ -90,8 +90,8 @@ struct SelectedProcesses final {
   /// The selected nucleation model
   Nucleation nucleation;
 
-  /// Available process models for gas aerosol exchange, in which interstitial aerosol
-  /// mass is formed by gathering condensed vapor from surrounding gas.
+  /// Available process models for gas aerosol exchange, in which interstitial
+  /// aerosol mass is formed by gathering condensed vapor from surrounding gas.
   enum GasAerosolExchange {
     /// MAM legacy C++ gas aerosol exchange process
     MAMGasAerosolExchange,

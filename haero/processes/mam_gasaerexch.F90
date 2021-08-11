@@ -42,6 +42,9 @@ module mam_gasaerexch
    public :: run   ! main subroutine for condensation
    public :: finalize !in subroutine for condensation
 
+   public :: mam_soaexch_1subarea                      ! for unit testing only, 
+   public :: gas_aer_uptkrates_1box1gas                ! not ment to be called directly
+   public :: mam_gasaerexch_1subarea_1gas_nonvolatile  
    !-------------------------
    ! Module global variables
    !-------------------------
@@ -569,20 +572,20 @@ contains
 !---------------------------------------------------------------------------------
       implicit none
 
-      logical,  intent(in) :: l_condense_to_mode(n_mode)
+      logical,  intent(in) :: l_condense_to_mode(n_mode) ! flags indicating whether gas can condense to aerosol
       real(wp), intent(in) :: temp             ! air temperature (K)
       real(wp), intent(in) :: pmid             ! air pressure at model levels (Pa)
       real(wp), intent(in) :: pstd             ! 101325 Pa 
       real(wp), intent(in) :: mw_gas           ! molecular weight of gas
       real(wp), intent(in) :: mw_air           ! molecular weight of air
-      real(wp), intent(in) :: vol_molar_gas    !
-      real(wp), intent(in) :: vol_molar_air    !
+      real(wp), intent(in) :: vol_molar_gas    ! The molecular weight of aerosol as assumed by the host atm model
+      real(wp), intent(in) :: vol_molar_air    ! The molecular weight of air as assumed by the host atm model
 
-      real(wp), intent(in)  :: accom                ! accomodation coefficient (--)
+      real(wp), intent(in)  :: accom           ! accomodation coefficient (--)
 
       real(wp), intent(in)  :: r_universal     ! universal gas constant
       real(wp), intent(in)  :: pi              ! pi
-      real(wp), intent(in)  :: beta_inp             ! quadrature parameter (--)
+      real(wp), intent(in)  :: beta_inp        ! quadrature parameter (--)
 
       integer,  intent(in)  :: n_mode              ! number of modes
       real(wp), intent(in)  :: dgncur_awet(n_mode) ! mode-median wet diameter of number distribution (m)
@@ -820,7 +823,7 @@ contains
 
 
 !----------------------------------------------------------------------
-      subroutine mam_soaexch_1subarea(                              &
+  subroutine mam_soaexch_1subarea(                              &
          lund,                 &
          dt,                                                 &
          temp,              pmid,             aircon,               &

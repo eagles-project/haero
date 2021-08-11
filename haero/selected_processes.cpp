@@ -82,13 +82,16 @@ AerosolProcess* select_aerosol_process(AerosolProcessType type,
       process = new NullAerosolProcess(type);
     }
   } else if (type == GasAerosolExchangeProcess) {
-    if (selections.gasaerosolexchange == SelectedProcesses::MAMGasAerosolExchange) {
+    if (selections.gasaerosolexchange ==
+        SelectedProcesses::MAMGasAerosolExchange) {
       process = new MAMGasAerosolExchangeProcess();
 #if HAERO_FORTRAN
-    } else if (selections.gasaerosolexchange == SelectedProcesses::MAMFGasAerosolExchange) {
+    } else if (selections.gasaerosolexchange ==
+               SelectedProcesses::MAMFGasAerosolExchange) {
       process = new MAMGasAerosolExchangeFProcess();
 #endif
-    } else if (selections.gasaerosolexchange == SelectedProcesses::NoGasAerosolExchange) {
+    } else if (selections.gasaerosolexchange ==
+               SelectedProcesses::NoGasAerosolExchange) {
       process = new NullAerosolProcess(type);
     }
   } else if (type == ResuspensionProcess) {
