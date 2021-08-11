@@ -4,14 +4,14 @@ module mam_gasaerexch_test_bridge
   private
 
   ! Module functions
-  public :: init_bridge
+  public :: gasaerexch_init_bridge
   public :: mam_soaexch_1subarea_bridge
   public :: mam_gasaerexch_1subarea_1gas_nonvolatile_bridge
   !public :: gas_aer_uptkrates_1box1gas_bridge
 
 contains
 
-subroutine init_bridge()  bind(c)
+subroutine gasaerexch_init_bridge()  bind(c)
   use haero, only: model
   use mam_gasaerexch, only: init
   implicit none

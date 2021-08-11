@@ -4,13 +4,14 @@ module mam_nucleation_test_bridge
   private
 
   ! Module functions
+  public :: nucleation_init_bridge
   public :: compute_tendencies_bridge
   public :: ternary_nuc_merik2007_bridge
   public :: binary_nuc_vehk2002_bridge
 
 contains
 
-subroutine init_bridge()  bind(c)
+subroutine nucleation_init_bridge()  bind(c)
   use haero, only: model
   use mam_nucleation, only: init
   implicit none

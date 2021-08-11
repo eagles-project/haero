@@ -64,7 +64,7 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   MAMGasAerosolExchangeProcess mam_gasaerexch_process(type, "gasaerexch Test",
                                                       aero_config, diagnostics);
-  init_bridge();
+  gasaerexch_init_bridge();
 
   const int lund = 93;
   const Real dt = 1.0000000000000000;
