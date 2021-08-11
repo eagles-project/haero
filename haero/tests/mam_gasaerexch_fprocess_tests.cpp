@@ -35,14 +35,13 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
 
   // Define a pseudo-random generator [0-1) that is consistent across platforms.
   // Manually checked the first 100,000 values to be unique.
-//const unsigned p0 = 987659;
-//const unsigned p1 = 12373;
-//long unsigned seed = 54319;
-//auto random = [&]() {
-//  seed = (seed * p1) % p0;
-//  return Real(seed) / p0;
-//};
-
+  // const unsigned p0 = 987659;
+  // const unsigned p1 = 12373;
+  // long unsigned seed = 54319;
+  // auto random = [&]() {
+  //  seed = (seed * p1) % p0;
+  //  return Real(seed) / p0;
+  //};
 
   const auto aero_species = create_mam4_aerosol_species();
   auto aero_config = create_mam4_modal_aerosol_config();
@@ -64,7 +63,7 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
   get_model_for_unit_tests(aero_config);
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   MAMGasAerosolExchangeProcess mam_gasaerexch_process(type, "gasaerexch Test",
-                                              aero_config, diagnostics);
+                                                      aero_config, diagnostics);
   init_bridge();
 
   const int lund = 93;
@@ -77,37 +76,26 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
   const int max_mode = 5;
   Real qgas_cur[] = {9.6553333333333350E-011, 2.9533516044307414E-014};
   Real qgas_avg[] = {0.0000000000000000, 0.0000000000000000};
-  Real qaer_cur[] = {2253176148.8415728, 22531761488.415726, 2253176.1488415725, 
+  Real qaer_cur[] = {2253176148.8415728, 22531761488.415726, 2253176.1488415725,
                      4506352297.6831455, 0.0000000000000000};
-  Real qnum_cur[] = {2253176148.8415728, 22531761488.415726, 2253176.1488415725, 
+  Real qnum_cur[] = {2253176148.8415728, 22531761488.415726, 2253176.1488415725,
                      4506352297.6831455, 0.0000000000000000};
-  Real uptkaer[] =  {6.6080559925483628E-004, 8.1580938179609411E-004, 3.6489706456131803E-004, 
-                     4.5049020316212097E-004, 2.5940960604944770E-005, 3.2025877290055270E-005, 
-                     7.1043539209444609E-005, 8.7708073098079762E-005, 0.0000000000000000, 0.0000000000000000};
-  int mode_aging_optaa[] = {     0,          0,          0,          1,          0};
-  int lptr2_soa_a_amode[]  = {  13,         20,         29, -999888777};
-  
-  mam_soaexch_1subarea_bridge(
-    lund, 
-    dt, 
-    temp, 
-    pmid, 
-    aircon, 
-    n_mode, 
-    ntot_amode, 
-    max_mode, 
-    qgas_cur, 
-    qgas_avg, 
-    qaer_cur, 
-    qnum_cur, 
-    uptkaer, 
-    mode_aging_optaa, 
-    lptr2_soa_a_amode);
+  Real uptkaer[] = {6.6080559925483628E-004, 8.1580938179609411E-004,
+                    3.6489706456131803E-004, 4.5049020316212097E-004,
+                    2.5940960604944770E-005, 3.2025877290055270E-005,
+                    7.1043539209444609E-005, 8.7708073098079762E-005,
+                    0.0000000000000000,      0.0000000000000000};
+  int mode_aging_optaa[] = {0, 0, 0, 1, 0};
+  int lptr2_soa_a_amode[] = {13, 20, 29, -999888777};
 
-    REQUIRE(fp_helper::equiv(qgas_cur[0], 9.6445411630348715E-011, tolerance));
-    REQUIRE(fp_helper::equiv(qgas_cur[1], 2.9533516044307414E-014, tolerance));
-    REQUIRE(fp_helper::equiv(qgas_avg[0], 9.6499372481841032E-011, tolerance));
-    REQUIRE(fp_helper::equiv(qgas_avg[1], 0.0000000000000000     , tolerance));
+  mam_soaexch_1subarea_bridge(lund, dt, temp, pmid, aircon, n_mode, ntot_amode,
+                              max_mode, qgas_cur, qgas_avg, qaer_cur, qnum_cur,
+                              uptkaer, mode_aging_optaa, lptr2_soa_a_amode);
+
+  REQUIRE(fp_helper::equiv(qgas_cur[0], 9.6445411630348715E-011, tolerance));
+  REQUIRE(fp_helper::equiv(qgas_cur[1], 2.9533516044307414E-014, tolerance));
+  REQUIRE(fp_helper::equiv(qgas_avg[0], 9.6499372481841032E-011, tolerance));
+  REQUIRE(fp_helper::equiv(qgas_avg[1], 0.0000000000000000, tolerance));
 
 #if 0
   for (int i = 0; i < 100; ++i) {
