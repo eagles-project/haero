@@ -76,6 +76,9 @@ EkatCreateUnitTest(wang2008_tests wang2008_tests.cpp
 EkatCreateUnitTest(mam_nucleation_process_tests mam_nucleation_process_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
+EkatCreateUnitTest(mam_rename_process_tests mam_rename_process_tests.cpp
+                   LIBS ${HAERO_LIBRARIES})
+
 EkatCreateUnitTest(mam_nucleation_packed_tests mam_nucleation_packed_tests.cpp
                    LIBS ${HAERO_LIBRARIES})
 
