@@ -2,6 +2,7 @@
 #define HAERO_MAM_RENAME_PROCESS_HPP
 
 #include "haero/aerosol_process.hpp"
+#include "haero_config.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 #include "kokkos/Kokkos_Vector.hpp"
 
@@ -11,7 +12,7 @@ namespace haero {
 class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
  public:
   template <typename T>
-  using Container = std::vector<T>;
+  using Container = Kokkos::vector<T>;
 
   using Integral = int;
   using Size = std::size_t;
