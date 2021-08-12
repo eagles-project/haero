@@ -14,8 +14,7 @@ Model* get_model_for_unit_tests(const ModalAerosolConfig& aero_config,
 }
 
 TEST_CASE("mam_rename_run", "") {
-  using View1D = Kokkos::View<PackType*>;
-  using View2D = Kokkos::View<PackType**>;
+  using View1D = Kokkos::View<PackType* >;
 
   auto aero_config = create_mam4_modal_aerosol_config();
   static constexpr std::size_t num_levels{72};  // number of levels
@@ -37,17 +36,17 @@ TEST_CASE("mam_rename_run", "") {
   // Set up some prognostics aerosol data views
   const int num_aero_populations = model->num_aerosol_populations();
 
-  View2D int_aerosols(
+  SpeciesColumnView int_aerosols(
       "interstitial aerosols", num_aero_populations,
       num_vert_packs);  // interstitial aerosols mmr [kg/kg(of air)]
-  View2D cld_aerosols(
+  SpeciesColumnView cld_aerosols(
       "cloudborne aerosols", num_aero_populations,
       num_vert_packs);  // cloud borne aerosols mmr [kg/kg(of air)]
-  View2D gases("gases", num_gases, num_vert_packs);
-  View2D int_num_concs("interstitial number concs", num_modes,
+  SpeciesColumnView gases("gases", num_gases, num_vert_packs);
+  ModeColumnView int_num_concs("interstitial number concs", num_modes,
                        num_vert_packs);  // interstitial aerosols number mixing
                                          // ratios [#/kg(of air)]
-  View2D cld_num_concs("cloud borne number concs", num_modes,
+  ModeColumnView cld_num_concs("cloud borne number concs", num_modes,
                        num_vert_packs);  // cloud borne aerosols number mixing
                                          // ratios [#/kg(of air)]
 
@@ -83,20 +82,28 @@ TEST_CASE("mam_rename_run", "") {
 
     // Set initial conditions
     // aerosols mass mixing ratios
+    auto h_int_aerosols = Kokkos::create_mirror_view(int_aerosols); 
+    auto h_cld_aerosols = Kokkos::create_mirror_view(cld_aerosols); 
     for (std::size_t p = 0; p < num_aero_populations; ++p) {
       for (std::size_t k = 0; k < num_vert_packs; ++k) {
-        int_aerosols(p, k) = random() * 10e-10;
-        cld_aerosols(p, k) = random() * 10e-10;
+        h_int_aerosols(p, k) = random() * 10e-10;
+        h_cld_aerosols(p, k) = random() * 10e-10;
       }
     }
+    Kokkos::deep_copy(int_aerosols, h_int_aerosols);
+    Kokkos::deep_copy(cld_aerosols, h_cld_aerosols);
 
     // aerosols number mixing ratios
+    auto h_int_num_concs = Kokkos::create_mirror_view(int_num_concs); 
+    auto h_cld_num_concs = Kokkos::create_mirror_view(cld_num_concs); 
     for (std::size_t imode = 0; imode < num_modes; ++imode) {
       for (std::size_t k = 0; k < num_vert_packs; ++k) {
-        int_num_concs(imode, k) = 1e8 + random();
-        cld_num_concs(imode, k) = 1e8 + random();
+        h_int_num_concs(imode, k) = 1e8 + random();
+        h_cld_num_concs(imode, k) = 1e8 + random();
       }
     }
+    Kokkos::deep_copy(int_num_concs, h_int_num_concs);
+    Kokkos::deep_copy(cld_num_concs, h_cld_num_concs);
 
     // Initialize the process
     process->init(aero_config);
