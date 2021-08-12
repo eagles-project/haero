@@ -13,6 +13,7 @@ SelectedProcesses::SelectedProcesses()
       emissions(NoEmissions),
       interstitial_wet_removal(NoInterstitialWetRemoval),
       nucleation(NoNucleation),
+      gasaerosolexchange(NoGasAerosolExchange),
       calcsize(NoCalcsize),
       rename(NoRename),
       resuspension(NoResuspension) {}
