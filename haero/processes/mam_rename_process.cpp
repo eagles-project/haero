@@ -46,7 +46,7 @@ void initialize_dest_mode_of_mode_mapping(
   // Just run in a single executor to set the only element that needs to be set.
   // dest_mode_of_mode_mapping is being set to {0, 1, 0, 0} until the correct
   // assignment routine is ready.
-  for (int i=0; i<4; ++i) {
+  for (int i = 0; i < 4; ++i) {
     if (i == 1)
       dest_mode_of_mode_mapping[i] = 1;
     else
