@@ -46,13 +46,13 @@ void initialize_dest_mode_of_mode_mapping(
   // Just run in a single executor to set the only element that needs to be set.
   // dest_mode_of_mode_mapping is being set to {0, 1, 0, 0} until the correct
   // assignment routine is ready.
-  Kokkos::parallel_for(
-      4, KOKKOS_LAMBDA(const int& i) {
-        if (i == 1)
-          dest_mode_of_mode_mapping[i] = 1;
-        else
-          dest_mode_of_mode_mapping[i] = 0;
-      });
+  for (int i=0; i<4; ++i) {
+    if (i == 1)
+      dest_mode_of_mode_mapping[i] = 1;
+    else
+      dest_mode_of_mode_mapping[i] = 0;
+  };
+  dest_mode_of_mode_mapping.host_to_device();
 }
 
 // Create a container and reserve memory for it.
