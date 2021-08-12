@@ -337,7 +337,7 @@ contains
 
       logical   :: l_calc_gas_uptake_coeff 
       integer   :: lund        ! logical unit for diagnostic output
-      integer   :: ngas        ! number of potentially condensable gases 
+      !integer   :: ngas        ! number of potentially condensable gases 
       integer   :: n_mode      ! current number of modes (including temporary) !Q: what are temporary modes?
       integer   :: ntot_amode  ! total of modes (not including temporary?) 
 
@@ -369,6 +369,8 @@ contains
       logical :: l_condense_to_mode(model%num_modes)
 
       real(wp) :: uptkaer_ref(1:model%num_modes) 
+
+      real(wp) :: r_pi = pi
 
       n_mode = model%num_modes
       ntot_amode = model%num_modes
@@ -407,7 +409,7 @@ contains
         call gas_aer_uptkrates_1box1gas( l_condense_to_mode,                              &! in
                                          temp, pmid, pstd, mw_h2so4, 1000*mw_air,     &! in
                                          vol_molar_h2so4, vol_molar_air,              &! in
-                                         accom_coef_h2so4, r_universal, pi, beta_inp, &! in
+                                         accom_coef_h2so4, r_universal, r_pi, beta_inp, &! in
                                          ntot_amode,                                      &! in
                                          dgn_awet(1:ntot_amode), alnsg_aer(1:ntot_amode), &! in
                                          qnum_cur(1:ntot_amode), aircon,                  &! in
