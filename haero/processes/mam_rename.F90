@@ -78,7 +78,71 @@ contains
     real(wp) :: diameter_belowcutoff(model%num_modes), &
                 dryvol_smallest(model%num_modes)
 
+    ! Start new variables from original fortran routine
+    ! TODO: Find better names for these variables ported from the fortran routine
+    real(wp) :: dryvol_t_del, dryvol_t_new
+    real(wp) :: dryvol_t_old, dryvol_t_oldaa, dryvol_t_oldbnd
+    logical  :: iscldy_subarea        ! true if sub-area is cloudy
+    real(wp) :: qnum_cur(model%num_modes)
+    integer  :: mtoo_renamexf(model%num_modes)
+    integer  :: naer, max_aer, max_mode, ntot_amode
+
+    ! TODO: how is max_aer defined? In the original fortran routine, it's often
+    ! defined like: 
+    ! integer, parameter :: max_aer = nsoa + npoa + nbc + 8
+
+    ! For the following variables, the original declaration is in the comment
+    ! preceding the declaration.
+
+    ! real(wp) :: qaercw_del_grow4rnam(1:max_aer, 1:max_mode)
+    real(wp) :: qaercw_del_grow4rnam(1:model%num_modes, 1:model%num_modes)
+
+    ! real(wp), intent(in   ), dimension( 1:max_aer, 1:max_mode ) :: qaer_del_grow4rnam
+    real(wp) :: qaer_del_grow4rnam(1:model%num_modes, 1:model%num_modes)
+
+    ! real(wp), intent(inout), dimension( 1:max_aer, 1:max_mode ) :: qaer_cur
+    real(wp) :: qaer_cur(1:model%num_modes, 1:model%num_modes)
+
+    ! real(wp), intent(inout), optional, dimension( 1:max_aer, 1:max_mode ) :: qaercw_cur
+    real(wp) :: qaercw_cur(1:model%num_modes, 1:model%num_modes)
+
+    ! These lengths were originally ntot_amode
+    real(wp) :: dryvol_a(model%num_modes)
+    real(wp) :: dryvol_c(model%num_modes)
+    real(wp) :: deldryvol_a(model%num_modes)
+    real(wp) :: deldryvol_c(model%num_modes)
+    ! End newly ported variables
+
+    ! TODO: How should ntot_amode be initialized? It seems to come from the global
+    ! aero config in the original code
+    ntot_amode = model%num_modes
+    ! ---
+
     nmodes = model%num_modes
+
+    iscldy_subarea = .false.
+
+    ! TODO: Initialize newly ported arrays to 0. How should all these really be
+    ! initialized?
+    dryvol_t_del    = 0._wp
+    dryvol_t_new    = 0._wp
+    dryvol_t_old    = 0._wp
+    dryvol_t_oldaa  = 0._wp
+    dryvol_t_oldbnd = 0._wp
+
+    qnum_cur(:)      = 0
+    mtoo_renamexf(:) = 0
+
+    qaercw_del_grow4rnam(:, :) = 0
+    qaer_del_grow4rnam(:, :)   = 0
+    qaer_cur(:, :)             = 0
+    qaercw_cur(:, :)           = 0
+
+    dryvol_c(:)    = 0
+    dryvol_a(:)    = 0
+    deldryvol_a(:) = 0
+    deldryvol_c(:) = 0
+    ! ---
 
     ! TODO: This should not be hardwired here but should be either part of the
     ! metadata or otherwise populated.
@@ -110,15 +174,15 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
 
   logical,  intent(in) :: iscldy ! true if it is a cloudy cell
 
-  real(r8), intent(in) :: qi_vmr(:,:)           ! mass mixing ratios (mmr) [kmol/kmol]
-  real(r8), intent(in) :: qi_del_growth(:,:) !growth in mmr [kmol/kmol]
+  real(wp), intent(in) :: qi_vmr(:,:)           ! mass mixing ratios (mmr) [kmol/kmol]
+  real(wp), intent(in) :: qi_del_growth(:,:) !growth in mmr [kmol/kmol]
 
-  real(r8), intent(in), optional :: qcld_vmr(:,:)
-  real(r8), intent(in), optional :: qcld_del_growth(:,:)
+  real(wp), intent(in), optional :: qcld_vmr(:,:)
+  real(wp), intent(in), optional :: qcld_del_growth(:,:)
 
   !intent-outs
-  real(r8), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
-  real(r8), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
+  real(wp), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
+  real(wp), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
 
   integer :: imode
   integer :: dest_mode
@@ -136,7 +200,8 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
     if ( iscldy ) then ! if this grid cell has cloud
       !if a grid cell is cloudy, clloud borne quantities has to be present
       if(.not. present(qcld_vmr) .or. .not. present(qcld_del_growth)) then
-          call endrun('If a grid cell is cloudy, dryvol_c and deldryvol_c should be present: '//errmsg(__FILE__,__LINE__))
+        print *, 'If a grid cell is cloudy, dryvol_c and deldryvol_c should be present'
+        stop 1
       endif
       !compute dry volume (before growth) and its change for cloudborne aerosols
       call dryvolume_change(imode, nspec, qcld_vmr, qcld_del_growth, &!input
@@ -145,6 +210,56 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
   end do
 
   end subroutine compute_dryvol_change_in_src_mode
+
+  subroutine dryvolume_change (imode, nspec, q_vmr, q_del_growth, &!input
+       dryvol, deldryvol) !output
+
+    !intent-ins
+    integer,  intent(in) :: imode           !current mode number
+    integer,  intent(in) :: nspec           !number of species in the current mode
+    real(wp), intent(in) :: q_vmr(:,:)        !volume mixing ratio [kmol/kmol] FIXME: units needs to be reverified
+    real(wp), intent(in) :: q_del_growth(:,:) !change (delta) in volume mixing ratio [kmol/kmol]
+
+    !intent-outs
+    real(wp), intent(out) :: dryvol, deldryvol !dry volume (before growth) and its grwoth [m3/kmol]
+
+    !local variables
+    integer  :: ispec, s_spec_ind, e_spec_ind
+    real(wp) :: mass_2_vol(nspec) ! converts specie mass to dry volume !DO NOT PORT, we will construct it during "init"
+    real(wp) :: tmp_dryvol, tmp_del_dryvol
+
+    ! Original comment: "Temporary variable name change- do not port"
+    ! I've therefore commented out this line. It seems this is copying to/from
+    ! a module-level variable that we shouldn't touch in hearo?
+    !
+    ! mass_2_vol(:) = fac_m2v_aer(:)
+
+    !For each mode, we compute a dry volume by combining (accumulating) mass/density for each specie in that mode.
+    !conversion from mass to volume is accomplished by multiplying with precomputed "mass_2_vol" factor
+
+    s_spec_ind = 1     !start specie index for this mode [These will be subroutine args]
+    e_spec_ind = nspec !end specie index for this mode
+
+    !initialize tmp accumulators
+    tmp_dryvol     = 0.0_wp !dry volume accumulator
+    tmp_del_dryvol = 0.0_wp !dry volume growth(change) accumulator
+
+    !Notes on mass_2_vol factor:Units:[m3/kmol-s]; where kmol-s is the amount of a specie "s"
+    ! This factor is obtained by  (molecular_weight/density) of a specie. That is,
+    ! [ (kg/kmol-s) / (kg/m3) ]; where molecular_weight has units [kg/kmol-s] and density units are [kg/m3]
+    ! which results in the units of m3/kmol-s
+
+    do ispec = s_spec_ind, e_spec_ind
+      !Multiply by mass_2_vol[m3/kmol-s] to convert q_vmr[kmol-s/kmol-air]) to volume units[m3/kmol-air]
+      tmp_dryvol     = tmp_dryvol     + q_vmr(ispec,imode)*mass_2_vol(ispec)        !compute current dryvolume
+      !accumulate the "grwoth" in volume units as well
+      tmp_del_dryvol = tmp_del_dryvol + q_del_growth(ispec,imode)*mass_2_vol(ispec) !compute dryvolume growth
+    end do
+
+    dryvol    = tmp_dryvol-tmp_del_dryvol ! This is dry volume before the growth
+    deldryvol = tmp_del_dryvol          ! change in dry volume due to growth
+
+  end subroutine dryvolume_change
 
   subroutine initialize_diameters(model)
 
