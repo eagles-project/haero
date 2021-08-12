@@ -11,6 +11,8 @@
 #include "haero/processes/vehkamaki2002.hpp"
 #include "haero/processes/wang2008.hpp"
 
+#include "kokkos/Kokkos_Vector.hpp"
+
 namespace haero {
 
 /// @class SimpleNucleationProcess
@@ -21,6 +23,8 @@ namespace haero {
 /// mode(s) based on their computed size, or they are grown to fit the mode
 /// with the minimum size.
 class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleationProcess> {
+  using RealVector = Kokkos::vector<Real>; // device-compatible vector
+
   //----------------------------------------------------------
   //                  Adjustable parameters
   //----------------------------------------------------------
@@ -71,13 +75,13 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
   int iaer_nh4, ipop_nh4;
 
   // The geometric mean particle diameters for all aerosol modes
-  view_1d_scalar_type d_mean_aer;
+  RealVector d_mean_aer;
 
   /// The minimum particle diameters for all aerosol modes
-  view_1d_scalar_type d_min_aer;
+  RealVector d_min_aer;
 
   /// The maximum particle diameters for all aerosol modes
-  view_1d_scalar_type d_max_aer;
+  RealVector d_max_aer;
 
   // Molecular weights of H2SO4 and NH3 gases.
   Real mu_h2so4, mu_nh3;

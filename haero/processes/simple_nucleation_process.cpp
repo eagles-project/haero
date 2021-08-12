@@ -22,9 +22,9 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       ipop_so4(-1),
       iaer_nh4(-1),
       ipop_nh4(-1),
-      d_mean_aer("mean particle diameters", 0),
-      d_min_aer("minimum particle diameters", 0),
-      d_max_aer("maximum particle diameters", 0) {}
+      d_mean_aer(0),
+      d_min_aer(0),
+      d_max_aer(0) {}
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   // Set indices for species and gases.
@@ -37,27 +37,14 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   igas_nh3 = config.gas_index("NH3", false);
 
   // Set mode diameters.
-  Kokkos::resize(d_mean_aer, config.num_modes());
-  Kokkos::resize(d_min_aer, config.num_modes());
-  Kokkos::resize(d_max_aer, config.num_modes());
-  {
-    auto d = Kokkos::create_mirror_view(d_mean_aer);
-    for (int m = 0; m < config.num_modes(); ++m)
-      d(m) = config.aerosol_modes[m].mean_std_dev;
-    Kokkos::deep_copy(d_mean_aer, d);
-  }
-  {
-    auto d = Kokkos::create_mirror_view(d_min_aer);
-    for (int m = 0; m < config.num_modes(); ++m)
-      d(m) = config.aerosol_modes[m].min_diameter;
-    Kokkos::deep_copy(d_min_aer, d);
-  }
-  {
-    auto d = Kokkos::create_mirror_view(d_max_aer);
-    for (int m = 0; m < config.num_modes(); ++m)
-      d(m) = config.aerosol_modes[m].max_diameter;
-    Kokkos::deep_copy(d_max_aer, d);
-  }
+  d_mean_aer.resize(config.num_modes());
+  d_min_aer.resize(config.num_modes());
+  d_max_aer.resize(config.num_modes());
+  Kokkos::parallel_for(config.num_modes(), KOKKOS_LAMBDA(int m) {
+    d_mean_aer.assign(m, config.aerosol_modes[m].mean_std_dev);
+    d_min_aer.assign(m, config.aerosol_modes[m].min_diameter);
+    d_max_aer.assign(m, config.aerosol_modes[m].max_diameter);
+  });
 
   // Jot down the molecular weights for our gases.
   if (igas_h2so4 != -1) {
