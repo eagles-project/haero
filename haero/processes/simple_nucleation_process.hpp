@@ -24,6 +24,7 @@ namespace haero {
 /// with the minimum size.
 class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleationProcess> {
   using RealVector = Kokkos::vector<Real>; // device-compatible vector
+  using IntVector = Kokkos::vector<int>;   // device-compatible vector
 
   //----------------------------------------------------------
   //                  Adjustable parameters
@@ -59,20 +60,20 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
   // modal aerosol configuration without having to look stuff
   // up all the time.
 
-  // Index of the nucleation mode
-  int imode;
-
   // Index of H2SO4 gas
   int igas_h2so4;
 
   // Index of NH3 gas
   int igas_nh3;
 
-  // Species and population indices of SO4 aerosol within the nucleation mode
-  int iaer_so4, ipop_so4;
+  /// Number of aerosol modes.
+  int num_modes;
 
-  // Species and population indices of NH4 aerosol within the nucleation mode
-  int iaer_nh4, ipop_nh4;
+  // Species and population indices of SO4 aerosol within aerosol modes
+  IntVector iaer_so4, ipop_so4;
+
+  // Species and population indices of NH4 aerosol within aerosol modes
+  IntVector iaer_nh4, ipop_nh4;
 
   // The geometric mean particle diameters for all aerosol modes
   RealVector d_mean_aer;
@@ -106,9 +107,9 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
         tendency_factor(rhs.tendency_factor),
         nucleation_method(rhs.nucleation_method),
         pbl_method(rhs.pbl_method),
-        imode(rhs.imode),
         igas_h2so4(rhs.igas_h2so4),
         igas_nh3(rhs.igas_nh3),
+        num_modes(rhs.num_modes),
         iaer_so4(rhs.iaer_so4),
         iaer_nh4(rhs.iaer_nh4),
         d_mean_aer(rhs.d_mean_aer),
@@ -129,9 +130,14 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
     }
 
     // Do we track the aerosols nucleated from our gases?
-    if ((iaer_so4 == -1) and (iaer_nh4 == -1)) {
-      return;
+    bool have_nucleated_aerosols = false;
+    for (int m = 0; m < num_modes; ++m) {
+      if ((iaer_so4[m] != -1) or (iaer_nh4[m] != -1)) {
+        have_nucleated_aerosols = true;
+        break;
+      }
     }
+    if (not have_nucleated_aerosols) return;
 
     // Calculate tendencies for aerosols/gases at each vertical level k.
     const int nk = atmosphere.temperature.extent(0);
@@ -223,7 +229,8 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
           Real final_nuc_diam = 3;    // final, grown nucleus diameter [nm]
           // TODO
 
-          Real mean_modal_diam = d_mean_aer(imode);
+          int nuc_mode = 0; // TODO: Need to decide which mode to use for this
+          Real mean_modal_diam = d_mean_aer(nuc_mode);
 
           // Apply the correction of Kerminen and Kulmala (2002) to the
           // nucleation rate based on their growth.
@@ -233,7 +240,7 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
               gas_kinetics::molecular_speed(temp, mu_h2so4, gamma_h2so4);
           PackType nuc_growth_rate = kerminen2002::nucleation_growth_rate(
               rho_nuc, c_h2so4, speed_h2so4, mu_h2so4);
-          const auto q_so4 = prognostics.interstitial_aerosols(ipop_so4, k);
+          const auto q_so4 = prognostics.interstitial_aerosols(ipop_so4[nuc_mode], k);
           auto c_so4 =
               1e6 * conversions::number_conc_from_mmr(q_so4, mu_so4, rho_d);
           static constexpr Real h2so4_accom_coeff = 0.65;

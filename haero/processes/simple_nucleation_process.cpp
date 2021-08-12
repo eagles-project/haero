@@ -15,35 +15,42 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       tendency_factor(1),
       nucleation_method(2),
       pbl_method(0),
-      imode(-1),
       igas_h2so4(-1),
       igas_nh3(-1),
-      iaer_so4(-1),
-      ipop_so4(-1),
-      iaer_nh4(-1),
-      ipop_nh4(-1),
-      d_mean_aer(0),
-      d_min_aer(0),
-      d_max_aer(0) {}
+      num_modes(),
+      iaer_so4(),
+      ipop_so4(),
+      iaer_nh4(),
+      ipop_nh4(),
+      d_mean_aer(),
+      d_min_aer(),
+      d_max_aer() {}
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
+  num_modes = config.num_modes();
+
   // Set indices for species and gases.
-  // TODO: How to do we do this without assuming a specific nucleation mode?
-  iaer_so4 = config.aerosol_species_index(imode, "SO4", false);
-  ipop_so4 = config.population_index(imode, iaer_so4);
-  iaer_nh4 = config.aerosol_species_index(imode, "NH4", false);
-  ipop_nh4 = config.population_index(imode, iaer_nh4);
+  iaer_so4.resize(num_modes);
+  ipop_so4.resize(num_modes);
+  iaer_nh4.resize(num_modes);
+  ipop_nh4.resize(num_modes);
+  Kokkos::parallel_for(num_modes, KOKKOS_LAMBDA(int m) {
+    iaer_so4[m] = config.aerosol_species_index(m, "SO4", false);
+    ipop_so4[m] = config.population_index(m, iaer_so4[m]);
+    iaer_nh4[m] = config.aerosol_species_index(m, "NH4", false);
+    ipop_nh4[m] = config.population_index(m, iaer_nh4[m]);
+  });
   igas_h2so4 = config.gas_index("H2SO4", false);
   igas_nh3 = config.gas_index("NH3", false);
 
   // Set mode diameters.
-  d_mean_aer.resize(config.num_modes());
-  d_min_aer.resize(config.num_modes());
-  d_max_aer.resize(config.num_modes());
-  Kokkos::parallel_for(config.num_modes(), KOKKOS_LAMBDA(int m) {
-    d_mean_aer.assign(m, config.aerosol_modes[m].mean_std_dev);
-    d_min_aer.assign(m, config.aerosol_modes[m].min_diameter);
-    d_max_aer.assign(m, config.aerosol_modes[m].max_diameter);
+  d_mean_aer.resize(num_modes);
+  d_min_aer.resize(num_modes);
+  d_max_aer.resize(num_modes);
+  Kokkos::parallel_for(num_modes, KOKKOS_LAMBDA(int m) {
+    d_mean_aer[m] = config.aerosol_modes[m].mean_std_dev;
+    d_min_aer[m] = config.aerosol_modes[m].min_diameter;
+    d_max_aer[m] = config.aerosol_modes[m].max_diameter;
   });
 
   // Jot down the molecular weights for our gases.
@@ -67,21 +74,19 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   }
 
   // Do the same for our nucleating aerosols.
-  if (iaer_so4 != -1) {
-    for (const auto &species : config.aerosol_species_for_mode(imode)) {
-      if (species.symbol() == "SO4") {
-        mu_so4 = species.molecular_weight;
-        break;
-      }
-    }
+  auto iter = std::find_if(config.aerosol_species.begin(),
+                           config.aerosol_species.end(),
+                           [&](auto species) { return species.symbol() == "SO4"; });
+  if (iter != config.aerosol_species.end()) {
+    const AerosolSpecies& species = *iter;
+    mu_so4 = species.molecular_weight;
   }
-  if (igas_nh3 != -1) {
-    for (const auto &species : config.aerosol_species_for_mode(imode)) {
-      if (species.symbol() == "NH4") {
-        mu_nh4 = species.molecular_weight;
-        break;
-      }
-    }
+  iter = std::find_if(config.aerosol_species.begin(),
+                      config.aerosol_species.end(),
+                      [&](auto species) { return species.symbol() == "NH4"; });
+  if (iter != config.aerosol_species.end()) {
+    const AerosolSpecies& species = *iter;
+    mu_nh4 = species.molecular_weight;
   }
 
   // Set our region of validity based on our nucleation parameterization.
