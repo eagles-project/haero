@@ -16,7 +16,6 @@ subroutine gasaerexch_init_bridge()  bind(c)
   use mam_gasaerexch, only: init
   implicit none
   call init(model)
-  print *,__FILE__,__LINE__,"subroutine init"
 end subroutine
 
 subroutine mam_soaexch_1subarea_bridge( &

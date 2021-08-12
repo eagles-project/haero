@@ -153,8 +153,8 @@ module mam_gasaerexch
    integer :: ntot_amode                       ! total # of aerosol modes handled by the parameterization 
    integer :: igas_h2so4
    integer :: igas_nh3
-   integer :: igas_soag_bgn
-   integer :: igas_soag_end
+   ! integer :: igas_soag_bgn  Not sure what SOAG is and how these were set in MAMRefactor
+   ! integer :: igas_soag_end  but I think for Haero these should be ignored
 
    integer, dimension(:), allocatable :: idx_gas_to_aer                ! dimension: (gas species)
 
@@ -201,11 +201,14 @@ contains
    ! Set default to 0, meaning no uptake
    uptk_rate_factor(:) = 0._wp
 
+   igas_h2so4 = model%gas_index("H2SO4")
    ! H2SO4 is the ref species, so the ratio is 1
    uptk_rate_factor(igas_h2so4) = 1._wp
 
    ! For SOAG. (igas_soag_bgn and igas_soag_end are the start- and end-indices)
-   uptk_rate_factor(igas_soag_bgn:igas_soag_end) = soag_h2so4_uptake_coeff_ratio
+   ! Remove use of igas_soag_bgn but keep comments in case need to be added back
+   ! uptk_rate_factor(igas_soag_bgn:igas_soag_end) = soag_h2so4_uptake_coeff_ratio
+   uptk_rate_factor(:) = soag_h2so4_uptake_coeff_ratio
 
    ! For NH3 (if implemented)
    if (igas_nh3 > 0) then
@@ -236,7 +239,8 @@ contains
    !-------------------------------------------------------------------
    eqn_and_numerics_category(:)                           = NA
    eqn_and_numerics_category(igas_h2so4)                  = ANAL
-   eqn_and_numerics_category(igas_soag_bgn:igas_soag_end) = IMPL
+   ! Not sure what to do about igas_soag_bgn.  Seems not needed in HAERO
+   !eqn_and_numerics_category(igas_soag_bgn:igas_soag_end) = IMPL
 
    if (igas_nh3 > 0 ) eqn_and_numerics_category(igas_nh3) = ANAL
       
