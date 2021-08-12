@@ -9,7 +9,7 @@ extern "C" {
 
 // Fortran subroutines that implement this process.
 
-extern void init_bridge();
+extern void nucleation_init_bridge();
 
 extern void compute_tendencies_bridge(
     const Real &factor_bin_tern_ratenucl,

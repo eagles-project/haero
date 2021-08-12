@@ -13,6 +13,7 @@ SelectedProcesses::SelectedProcesses()
       emissions(NoEmissions),
       interstitial_wet_removal(NoInterstitialWetRemoval),
       nucleation(NoNucleation),
+      gasaerosolexchange(NoGasAerosolExchange),
       calcsize(NoCalcsize),
       rename(NoRename),
       resuspension(NoResuspension) {}
@@ -79,6 +80,19 @@ AerosolProcess* select_aerosol_process(AerosolProcessType type,
       process = new MAMRenameFProcess();
 #endif
     } else if (selections.rename == SelectedProcesses::NoRename) {
+      process = new NullAerosolProcess(type);
+    }
+  } else if (type == GasAerosolExchangeProcess) {
+    if (selections.gasaerosolexchange ==
+        SelectedProcesses::MAMGasAerosolExchange) {
+      process = new MAMGasAerosolExchangeProcess();
+#if HAERO_FORTRAN
+    } else if (selections.gasaerosolexchange ==
+               SelectedProcesses::MAMFGasAerosolExchange) {
+      process = new MAMGasAerosolExchangeFProcess();
+#endif
+    } else if (selections.gasaerosolexchange ==
+               SelectedProcesses::NoGasAerosolExchange) {
       process = new NullAerosolProcess(type);
     }
   } else if (type == ResuspensionProcess) {
