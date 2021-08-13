@@ -10,7 +10,6 @@
 #include "haero/processes/merikanto2007.hpp"
 #include "haero/processes/vehkamaki2002.hpp"
 #include "haero/processes/wang2008.hpp"
-
 #include "kokkos/Kokkos_Vector.hpp"
 
 namespace haero {
@@ -22,9 +21,10 @@ namespace haero {
 /// Merikanto et al (2007). Nucleated particles are placed into the appropriate
 /// mode(s) based on their computed size, or they are grown to fit the mode
 /// with the minimum size.
-class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleationProcess> {
-  using RealVector = Kokkos::vector<Real>; // device-compatible vector
-  using IntVector = Kokkos::vector<int>;   // device-compatible vector
+class SimpleNucleationProcess final
+    : public DeviceAerosolProcess<SimpleNucleationProcess> {
+  using RealVector = Kokkos::vector<Real>;  // device-compatible vector
+  using IntVector = Kokkos::vector<int>;    // device-compatible vector
 
   //----------------------------------------------------------
   //                  Adjustable parameters
@@ -117,7 +117,6 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
         d_max_aer(rhs.d_max_aer) {}
 
  protected:
-
   void init_(const ModalAerosolConfig &config) override;
 
   KOKKOS_INLINE_FUNCTION
@@ -158,9 +157,9 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
           PackType J;       // nucleation rate [#/cc]
           PackType r_crit;  // radius of critical cluster [nm]
           PackType n_crit;  // total # of molecules in a critical cluster [#]
-          PackType n_crit_h2so4, n_crit_nh3; // numbers of gas molecules in
-                                             // the critical cluser [#]
-          if (nucleation_method == 2) {  // binary nucleation
+          PackType n_crit_h2so4, n_crit_nh3;  // numbers of gas molecules in
+                                              // the critical cluser [#]
+          if (nucleation_method == 2) {       // binary nucleation
             auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(
                 c_h2so4, temp, rel_hum);
             J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
@@ -180,8 +179,8 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
             J = exp(log_J);
             n_crit_h2so4 = merikanto2007::num_h2so4_molecules(log_J, temp,
                                                               c_h2so4, xi_nh3);
-            n_crit_nh3 = merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4,
-                                                          xi_nh3);
+            n_crit_nh3 =
+                merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
             n_crit = n_crit_h2so4 + n_crit_nh3;
             r_crit =
                 merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
@@ -210,10 +209,10 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
             const auto pi_sixth = Constants::pi_sixth;
             const auto Na = Constants::avogadro;
             const auto mw_h2so4 = Constants::molec_weight_h2so4;
-            static const Real rho_h2so4 = 1.8; // density of pure H2SO4 [g/cc]
-            auto d_crit = r_crit * 2e-7; // diameter of critical cluster [cm]
-            auto V_crit = cube(d_crit) * pi_sixth; // volume [cc]
-            auto m_crit = rho_h2so4 * V_crit; // mass [g]
+            static const Real rho_h2so4 = 1.8;  // density of pure H2SO4 [g/cc]
+            auto d_crit = r_crit * 2e-7;  // diameter of critical cluster [cm]
+            auto V_crit = cube(d_crit) * pi_sixth;  // volume [cc]
+            auto m_crit = rho_h2so4 * V_crit;       // mass [g]
             n_crit_h2so4 = m_crit / mw_h2so4 * Na;
             n_crit_nh3 = 0;
             n_crit = n_crit_h2so4;
@@ -229,7 +228,7 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
           Real final_nuc_diam = 3;    // final, grown nucleus diameter [nm]
           // TODO
 
-          int nuc_mode = 0; // TODO: Need to decide which mode to use for this
+          int nuc_mode = 0;  // TODO: Need to decide which mode to use for this
           Real mean_modal_diam = d_mean_aer(nuc_mode);
 
           // Apply the correction of Kerminen and Kulmala (2002) to the
@@ -240,7 +239,8 @@ class SimpleNucleationProcess final : public DeviceAerosolProcess<SimpleNucleati
               gas_kinetics::molecular_speed(temp, mu_h2so4, gamma_h2so4);
           PackType nuc_growth_rate = kerminen2002::nucleation_growth_rate(
               rho_nuc, c_h2so4, speed_h2so4, mu_h2so4);
-          const auto q_so4 = prognostics.interstitial_aerosols(ipop_so4[nuc_mode], k);
+          const auto q_so4 =
+              prognostics.interstitial_aerosols(ipop_so4[nuc_mode], k);
           auto c_so4 =
               1e6 * conversions::number_conc_from_mmr(q_so4, mu_so4, rho_d);
           static constexpr Real h2so4_accom_coeff = 0.65;

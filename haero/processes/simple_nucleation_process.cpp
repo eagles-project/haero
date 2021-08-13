@@ -9,7 +9,8 @@
 namespace haero {
 
 SimpleNucleationProcess::SimpleNucleationProcess()
-    : DeviceAerosolProcess<SimpleNucleationProcess>(NucleationProcess, "SimpleNucleationProcess"),
+    : DeviceAerosolProcess<SimpleNucleationProcess>(NucleationProcess,
+                                                    "SimpleNucleationProcess"),
       nucleation_rate_factor(1),
       pbl_factor(1),
       tendency_factor(1),
@@ -82,18 +83,18 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   }
 
   // Do the same for our nucleating aerosols.
-  auto iter = std::find_if(config.aerosol_species.begin(),
-                           config.aerosol_species.end(),
-                           [&](auto species) { return species.symbol() == "SO4"; });
+  auto iter =
+      std::find_if(config.aerosol_species.begin(), config.aerosol_species.end(),
+                   [&](auto species) { return species.symbol() == "SO4"; });
   if (iter != config.aerosol_species.end()) {
-    const AerosolSpecies& species = *iter;
+    const AerosolSpecies &species = *iter;
     mu_so4 = species.molecular_weight;
   }
-  iter = std::find_if(config.aerosol_species.begin(),
-                      config.aerosol_species.end(),
-                      [&](auto species) { return species.symbol() == "NH4"; });
+  iter =
+      std::find_if(config.aerosol_species.begin(), config.aerosol_species.end(),
+                   [&](auto species) { return species.symbol() == "NH4"; });
   if (iter != config.aerosol_species.end()) {
-    const AerosolSpecies& species = *iter;
+    const AerosolSpecies &species = *iter;
     mu_nh4 = species.molecular_weight;
   }
 

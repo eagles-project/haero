@@ -1,9 +1,9 @@
 #ifndef HAERO_GAS_KINETICS_HPP
 #define HAERO_GAS_KINETICS_HPP
 
+#include "haero/constants.hpp"
 #include "haero/conversions.hpp"
 #include "haero/haero.hpp"
-#include "haero/constants.hpp"
 
 /// This file contains functions that relate various quantities related to the
 /// kinetic theory of gases.
