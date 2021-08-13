@@ -92,7 +92,7 @@ void parse_aero_ensemble_params(
         }
         auto mmr_name = std::string("aerosols.") + group_name +
                         std::string(".") + mode_name + std::string(".") +
-                        aero_name;  // also works for number_conc
+                        aero_name;  // also works for num_mix_ratio
         auto aero_species = giter.second;
         params[mmr_name] = parse_value_array(mmr_name, aero_species);
       }
@@ -241,7 +241,7 @@ void parse_aerosols_section(const YAML::Node& aerosols,
 
       // Get the initial data for the aerosol species in this mode.
       auto mode_species = aerosol_config.aerosol_species_for_mode(mode_index);
-      bool found_number_conc = false;
+      bool found_num_mix_ratio = false;
       std::vector<int> found_aerosol(mode_species.size());
       for (auto aiter : group) {
         auto aero_name = aiter.first.as<std::string>();
@@ -254,7 +254,7 @@ void parse_aerosols_section(const YAML::Node& aerosols,
             pw.ref_input.cloud_number_mix_ratios[mode_index] =
                 aero_species.as<Real>();
           }
-          found_number_conc = true;
+          found_num_mix_ratio = true;
         } else {
           // Find the aerosol index within this species.
           int aero_index = aerosol_config.aerosol_species_index(
@@ -274,9 +274,9 @@ void parse_aerosols_section(const YAML::Node& aerosols,
           } else {
             pw.ref_input.cloud_aero_mmrs[pop_index] = aero_species.as<Real>();
           }
-          // Did we find a number_conc value for this aerosol?
-          if (not found_number_conc) {
-            throw YamlException(std::string("Did not find 'number_conc' in ") +
+          // Did we find a num_mix_ratio value for this mode?
+          if (not found_num_mix_ratio) {
+            throw YamlException(std::string("Did not find 'num_mix_ratio' in ") +
                                 group_name + std::string("'") + mode_name +
                                 std::string("' mode!"));
           }

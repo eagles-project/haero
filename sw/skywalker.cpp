@@ -13,8 +13,8 @@ bool is_aerosol(const std::string& param_name) {
   return (param_name.find("aerosols.") != std::string::npos);
 }
 
-bool is_number_conc(const std::string& param_name) {
-  return (param_name.find("number_conc") != std::string::npos);
+bool is_number_mix_ratio(const std::string& param_name) {
+  return (param_name.find("number_mix_ratio") != std::string::npos);
 }
 
 bool is_gas(const std::string& param_name) {
@@ -40,9 +40,9 @@ void parse_aerosol(const haero::ModalAerosolConfig& aero_config,
   pop_index = aero_config.population_index(mode_index, aero_index);
 }
 
-void parse_number_conc(const haero::ModalAerosolConfig& aero_config,
-                       const std::string& param_name, bool& cloudy,
-                       int& mode_index) {
+void parse_number_mix_ratio(const haero::ModalAerosolConfig& aero_config,
+                            const std::string& param_name, bool& cloudy,
+                            int& mode_index) {
   size_t last_dot = param_name.rfind('.');
   size_t penultimate_dot = param_name.rfind('.', last_dot - 1);
   auto mode_name =
@@ -63,10 +63,10 @@ void parse_gas(const haero::ModalAerosolConfig& aero_config,
 namespace skywalker {
 
 Real InputData::operator[](const std::string& param_name) const {
-  if (is_number_conc(param_name)) {
+  if (is_number_mix_ratio(param_name)) {
     bool cloud;
     int mode_index;
-    parse_number_conc(aero_config, param_name, cloud, mode_index);
+    parse_number_mix_ratio(aero_config, param_name, cloud, mode_index);
     if (cloud) {
       return cloud_number_mix_ratios[mode_index];
     } else {
@@ -92,6 +92,10 @@ Real InputData::operator[](const std::string& param_name) const {
       return pressure;
     } else if (param_name.find("vapor_mixing_ratio") != std::string::npos) {
       return vapor_mixing_ratio;
+    // Guest star: relative humidity (for low-level parameterizations!)
+    // Don't use this with vapor_mixing_ratio, as they are related!
+    } else if (param_name.find("relative_humidity") != std::string::npos) {
+      return relative_humidity;
     } else if (param_name.find("height") != std::string::npos) {
       return height;
     } else if (param_name.find("hydrostatic_dp") != std::string::npos) {
@@ -108,10 +112,10 @@ Real InputData::operator[](const std::string& param_name) const {
 }
 
 Real& InputData::operator[](const std::string& param_name) {
-  if (is_number_conc(param_name)) {
+  if (is_number_mix_ratio(param_name)) {
     bool cloud;
     int mode_index;
-    parse_number_conc(aero_config, param_name, cloud, mode_index);
+    parse_number_mix_ratio(aero_config, param_name, cloud, mode_index);
     if (cloud) {
       if (cloud_number_mix_ratios.size() <= mode_index) {
         cloud_number_mix_ratios.resize(mode_index + 1);
@@ -152,6 +156,10 @@ Real& InputData::operator[](const std::string& param_name) {
       return pressure;
     } else if (param_name.find("vapor_mixing_ratio") != std::string::npos) {
       return vapor_mixing_ratio;
+    // Guest star: relative humidity (for low-level parameterizations!)
+    // Don't use this with vapor_mixing_ratio, as they are related!
+    } else if (param_name.find("relative_humidity") != std::string::npos) {
+      return relative_humidity;
     } else if (param_name.find("height") != std::string::npos) {
       return height;
     } else if (param_name.find("hydrostatic_dp") != std::string::npos) {
@@ -170,10 +178,10 @@ Real& InputData::operator[](const std::string& param_name) {
 }
 
 Real OutputData::operator[](const std::string& param_name) const {
-  if (is_number_conc(param_name)) {
+  if (is_number_mix_ratio(param_name)) {
     bool cloud;
     int mode_index;
-    parse_number_conc(aero_config, param_name, cloud, mode_index);
+    parse_number_mix_ratio(aero_config, param_name, cloud, mode_index);
     if (cloud) {
       return cloud_number_mix_ratios[mode_index];
     } else {

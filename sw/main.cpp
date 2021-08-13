@@ -146,8 +146,9 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
                                            num_levels);
 
   auto* prognostics =
-      model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                int_num_mix_ratios, cld_num_mix_ratios);
+      model->create_prognostics(int_aerosols, cld_aerosols,
+                                int_num_mix_ratios, cld_num_mix_ratios,
+                                gases);
   auto* diagnostics = model->create_diagnostics();
 
   // Set up an atmospheric state and initialize it with reference data.

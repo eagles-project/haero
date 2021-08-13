@@ -35,6 +35,9 @@ struct InputData {
   Real temperature, pressure, vapor_mixing_ratio, height, hydrostatic_dp,
       planetary_boundary_layer_height;
 
+  // For lower-level parameterizations (maybe only temporarily?)
+  Real relative_humidity;
+
   // aerosol initial data
 
   // Modal aerosol number mixing rations [# aero molecules / kg air]

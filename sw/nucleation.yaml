@@ -23,6 +23,7 @@ ensemble:
 atmosphere:
   temperature: 273
   pressure: 100000
+  vapor_mixing_ratio: 0.4
   relative_humidity: 0.95
   height: 3000
   hydrostatic_dp: 200
@@ -30,8 +31,8 @@ atmosphere:
 
 aerosols:
   accumulation:
-    interstitial: # number_conc is [1/kg air], aerosols are [kg aerosol/kg air]
-      number_conc: 0.7836255100E+08
+    interstitial: # number_mix_ratio is [#/kg air], aerosols are [kg aerosol/kg air]
+      number_mix_ratio: 0.7836255100E+08
       so4: 0.1140491823e-9
       pom: 0
       soa: 0.1140491823e-9
@@ -40,7 +41,7 @@ aerosols:
       nacl: 0.1520655763e-9
       mom: 0
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       so4: 0
       pom: 0
       soa: 0
@@ -50,20 +51,20 @@ aerosols:
       mom: 0
   aitken:
     interstitial:
-      number_conc: 0.7836255100e+09
+      number_mix_ratio: 0.7836255100e+09
       so4: 0.8596967327e-11
       soa: 0.8596967327e-11
       nacl: 0.1146262310e-10
       mom: 0
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       so4: 0
       soa: 0
       nacl: 0
       mom: 0
   coarse:
     interstitial:
-      number_conc: 0.7836255100e+05
+      number_mix_ratio: 0.7836255100e+05
       so4: 0.6854947093e-09
       pom: 0
       mom: 0
@@ -72,7 +73,7 @@ aerosols:
       dst: 0
       nacl: 0.9139929457e-09
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       so4: 0
       pom: 0
       mom: 0
@@ -82,12 +83,12 @@ aerosols:
       nacl: 0
   primary_carbon:
     interstitial:
-      number_conc: 0.1567251020e+09
+      number_mix_ratio: 0.1567251020e+09
       pom: 0
       bc: 0.4712086072e-10
       mom: 0
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       pom: 0
       bc: 0
       mom: 0
@@ -96,6 +97,7 @@ gases: # [kg gas / kg air]
   so2: 1.e-4
   h2so4: 1.e-13
   soag: 5.e-10
+  nh3: 0
   o3: 0
   o2: 0
   co2: 0
