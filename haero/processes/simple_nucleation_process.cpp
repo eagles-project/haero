@@ -34,12 +34,17 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   ipop_so4.resize(num_modes);
   iaer_nh4.resize(num_modes);
   ipop_nh4.resize(num_modes);
-  Kokkos::parallel_for(num_modes, KOKKOS_LAMBDA(int m) {
+  for (int m = 0; m < num_modes; ++m) {
     iaer_so4[m] = config.aerosol_species_index(m, "SO4", false);
     ipop_so4[m] = config.population_index(m, iaer_so4[m]);
     iaer_nh4[m] = config.aerosol_species_index(m, "NH4", false);
     ipop_nh4[m] = config.population_index(m, iaer_nh4[m]);
-  });
+  }
+  iaer_so4.host_to_device();
+  ipop_so4.host_to_device();
+  iaer_nh4.host_to_device();
+  ipop_nh4.host_to_device();
+
   igas_h2so4 = config.gas_index("H2SO4", false);
   igas_nh3 = config.gas_index("NH3", false);
 
@@ -47,11 +52,14 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   d_mean_aer.resize(num_modes);
   d_min_aer.resize(num_modes);
   d_max_aer.resize(num_modes);
-  Kokkos::parallel_for(num_modes, KOKKOS_LAMBDA(int m) {
+  for (int m = 0; m < num_modes; ++m) {
     d_mean_aer[m] = config.aerosol_modes[m].mean_std_dev;
     d_min_aer[m] = config.aerosol_modes[m].min_diameter;
     d_max_aer[m] = config.aerosol_modes[m].max_diameter;
-  });
+  }
+  d_mean_aer.host_to_device();
+  d_min_aer.host_to_device();
+  d_max_aer.host_to_device();
 
   // Jot down the molecular weights for our gases.
   if (igas_h2so4 != -1) {
