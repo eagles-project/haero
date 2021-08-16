@@ -31,36 +31,43 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   num_modes = config.num_modes();
 
   // Set indices for species and gases.
-  iaer_so4.resize(num_modes);
-  ipop_so4.resize(num_modes);
-  iaer_nh4.resize(num_modes);
-  ipop_nh4.resize(num_modes);
+  Kokkos::resize(iaer_so4, num_modes);
+  Kokkos::resize(ipop_so4, num_modes);
+  Kokkos::resize(iaer_nh4, num_modes);
+  Kokkos::resize(ipop_nh4, num_modes);
+  auto h_iaer_so4 = Kokkos::create_mirror_view(iaer_so4);
+  auto h_ipop_so4 = Kokkos::create_mirror_view(ipop_so4);
+  auto h_iaer_nh4 = Kokkos::create_mirror_view(iaer_nh4);
+  auto h_ipop_nh4 = Kokkos::create_mirror_view(ipop_nh4);
   for (int m = 0; m < num_modes; ++m) {
-    iaer_so4[m] = config.aerosol_species_index(m, "SO4", false);
-    ipop_so4[m] = config.population_index(m, iaer_so4[m]);
-    iaer_nh4[m] = config.aerosol_species_index(m, "NH4", false);
-    ipop_nh4[m] = config.population_index(m, iaer_nh4[m]);
+    h_iaer_so4[m] = config.aerosol_species_index(m, "SO4", false);
+    h_ipop_so4[m] = config.population_index(m, iaer_so4[m]);
+    h_iaer_nh4[m] = config.aerosol_species_index(m, "NH4", false);
+    h_ipop_nh4[m] = config.population_index(m, iaer_nh4[m]);
   }
-  iaer_so4.host_to_device();
-  ipop_so4.host_to_device();
-  iaer_nh4.host_to_device();
-  ipop_nh4.host_to_device();
+  Kokkos::deep_copy(iaer_so4, h_iaer_so4);
+  Kokkos::deep_copy(ipop_so4, h_ipop_so4);
+  Kokkos::deep_copy(iaer_nh4, h_iaer_nh4);
+  Kokkos::deep_copy(ipop_nh4, h_ipop_nh4);
 
   igas_h2so4 = config.gas_index("H2SO4", false);
   igas_nh3 = config.gas_index("NH3", false);
 
   // Set mode diameters.
-  d_mean_aer.resize(num_modes);
-  d_min_aer.resize(num_modes);
-  d_max_aer.resize(num_modes);
+  Kokkos::resize(d_mean_aer, num_modes);
+  Kokkos::resize(d_min_aer, num_modes);
+  Kokkos::resize(d_max_aer, num_modes);
+  auto h_mean_aer = Kokkos::create_mirror_view(d_mean_aer);
+  auto h_min_aer = Kokkos::create_mirror_view(d_min_aer);
+  auto h_max_aer = Kokkos::create_mirror_view(d_max_aer);
   for (int m = 0; m < num_modes; ++m) {
-    d_mean_aer[m] = config.aerosol_modes[m].mean_std_dev;
-    d_min_aer[m] = config.aerosol_modes[m].min_diameter;
-    d_max_aer[m] = config.aerosol_modes[m].max_diameter;
+    h_mean_aer[m] = config.aerosol_modes[m].mean_std_dev;
+    h_min_aer[m] = config.aerosol_modes[m].min_diameter;
+    h_max_aer[m] = config.aerosol_modes[m].max_diameter;
   }
-  d_mean_aer.host_to_device();
-  d_min_aer.host_to_device();
-  d_max_aer.host_to_device();
+  Kokkos::deep_copy(d_mean_aer, h_mean_aer);
+  Kokkos::deep_copy(d_min_aer, h_min_aer);
+  Kokkos::deep_copy(d_max_aer, h_max_aer);
 
   // Jot down the molecular weights for our gases.
   if (igas_h2so4 != -1) {

@@ -10,7 +10,6 @@
 #include "haero/processes/merikanto2007.hpp"
 #include "haero/processes/vehkamaki2002.hpp"
 #include "haero/processes/wang2008.hpp"
-#include "kokkos/Kokkos_Vector.hpp"
 
 namespace haero {
 
@@ -23,8 +22,8 @@ namespace haero {
 /// with the minimum size.
 class SimpleNucleationProcess final
     : public DeviceAerosolProcess<SimpleNucleationProcess> {
-  using RealVector = Kokkos::vector<Real>;  // device-compatible vector
-  using IntVector = Kokkos::vector<int>;    // device-compatible vector
+  using RealVector = kokkos_device_type::view_1d<Real>;
+  using IntVector = kokkos_device_type::view_1d<int>;
 
   //----------------------------------------------------------
   //                  Adjustable parameters
@@ -131,7 +130,7 @@ class SimpleNucleationProcess final
     // Do we track the aerosols nucleated from our gases?
     bool have_nucleated_aerosols = false;
     for (int m = 0; m < num_modes; ++m) {
-      if ((iaer_so4[m] != -1) or (iaer_nh4[m] != -1)) {
+      if ((iaer_so4(m) != -1) or (iaer_nh4(m) != -1)) {
         have_nucleated_aerosols = true;
         break;
       }
@@ -240,7 +239,7 @@ class SimpleNucleationProcess final
           PackType nuc_growth_rate = kerminen2002::nucleation_growth_rate(
               rho_nuc, c_h2so4, speed_h2so4, mu_h2so4);
           const auto q_so4 =
-              prognostics.interstitial_aerosols(ipop_so4[nuc_mode], k);
+              prognostics.interstitial_aerosols(ipop_so4(nuc_mode), k);
           auto c_so4 =
               1e6 * conversions::number_conc_from_mmr(q_so4, mu_so4, rho_d);
           static constexpr Real h2so4_accom_coeff = 0.65;
