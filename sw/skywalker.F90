@@ -21,9 +21,9 @@ module skywalker
     real(c_real) :: temperature, pressure, relative_humidity, height, &
                     hydrostatic_dp, planetary_boundary_layer_height
 
-    ! Modal aerosol number concentrations [# aero molecules / kg air]
-    real(c_real), dimension(:), pointer :: interstitial_number_concs, &
-                                           cloud_number_concs
+    ! Modal aerosol number mixing ratios [# aero molecules / kg air]
+    real(c_real), dimension(:), pointer :: interstitial_aero_nmrs, &
+                                           cloud_aero_nmrs
     ! Aerosol mass mixing ratios [kg aerosol / kg air], indexed by mode and species
     real(c_real), dimension(:, :), pointer :: interstitial_aero_mmrs, &
                                               cloud_aero_mmrs
@@ -35,8 +35,8 @@ module skywalker
     ! C pointer
     type(c_ptr) :: ptr
     ! Modal aerosol number concentrations [# aero molecules / kg air]
-    real(c_real), dimension(:), pointer :: interstitial_number_concs, &
-                                           cloud_number_concs
+    real(c_real), dimension(:), pointer :: interstitial_aero_nmrs, &
+                                           cloud_aero_nmrs
     ! Aerosol mass mixing ratios [kg aerosol / kg air], indexed by mode and species
     real(c_real), dimension(:, :), pointer :: interstitial_aero_mmrs, &
                                               cloud_aero_mmrs
@@ -115,11 +115,11 @@ module skywalker
       real(c_real), intent(out) :: temperature, pressure, rh, height, dp, pblh
     end subroutine
 
-    subroutine sw_input_get_aerosols(input, int_num_concs, cld_num_concs, &
+    subroutine sw_input_get_aerosols(input, int_aero_nmrs, cld_aero_nmrs, &
                                      int_aero_mmrs, cld_aero_mmrs) bind(c)
       use iso_c_binding, only: c_ptr, c_real
       type(c_ptr), value, intent(in) :: input
-      type(c_ptr), value, intent(in) :: int_num_concs, cld_num_concs,&
+      type(c_ptr), value, intent(in) :: int_aero_nmrs, cld_aero_nmrs,&
                                         int_aero_mmrs, cld_aero_mmrs
     end subroutine
 
@@ -135,11 +135,11 @@ module skywalker
       integer(c_int), intent(in) :: i
     end function
 
-    subroutine sw_output_set_aerosols(output, int_num_concs, cld_num_concs, &
+    subroutine sw_output_set_aerosols(output, int_aero_nmrs, cld_aero_nmrs, &
                                       int_aero_mmrs, cld_aero_mmrs) bind(c)
       use iso_c_binding, only: c_ptr, c_real
       type(c_ptr), value, intent(in) :: output
-      type(c_ptr), value, intent(in) :: int_num_concs, cld_num_concs,&
+      type(c_ptr), value, intent(in) :: int_aero_nmrs, cld_aero_nmrs,&
                                         int_aero_mmrs, cld_aero_mmrs
     end subroutine
 
@@ -212,21 +212,21 @@ contains
     ! Allocate input and output aerosol and gas arrays for the ensemble,
     ! and extract input data
     do i = 1, ensemble%size
-      allocate(ensemble%inputs(i)%interstitial_number_concs(ensemble%num_modes))
-      allocate(ensemble%inputs(i)%cloud_number_concs(ensemble%num_modes))
+      allocate(ensemble%inputs(i)%interstitial_aero_nmrs(ensemble%num_modes))
+      allocate(ensemble%inputs(i)%cloud_aero_nmrs(ensemble%num_modes))
       allocate(ensemble%inputs(i)%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%inputs(i)%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%inputs(i)%gas_mmrs(ensemble%num_gases))
-      allocate(ensemble%outputs(i)%interstitial_number_concs(ensemble%num_modes))
-      allocate(ensemble%outputs(i)%cloud_number_concs(ensemble%num_modes))
+      allocate(ensemble%outputs(i)%interstitial_aero_nmrs(ensemble%num_modes))
+      allocate(ensemble%outputs(i)%cloud_aero_nmrs(ensemble%num_modes))
       allocate(ensemble%outputs(i)%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%outputs(i)%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%outputs(i)%gas_mmrs(ensemble%num_gases))
 
       ! Aerosol data
       call sw_input_get_aerosols(ensemble%inputs(i)%ptr, &
-        c_loc(ensemble%inputs(i)%interstitial_number_concs), &
-        c_loc(ensemble%inputs(i)%cloud_number_concs), &
+        c_loc(ensemble%inputs(i)%interstitial_aero_nmrs), &
+        c_loc(ensemble%inputs(i)%cloud_aero_nmrs), &
         c_loc(int_aero_data), c_loc(cld_aero_data))
       p = 1 ! population index
       do m = 1, ensemble%num_modes
@@ -278,8 +278,8 @@ contains
         end do
       end do
       call sw_output_set_aerosols(ensemble%outputs(i)%ptr, &
-        c_loc(ensemble%outputs(i)%interstitial_number_concs), &
-        c_loc(ensemble%outputs(i)%cloud_number_concs), &
+        c_loc(ensemble%outputs(i)%interstitial_aero_nmrs), &
+        c_loc(ensemble%outputs(i)%cloud_aero_nmrs), &
         c_loc(int_aero_data), c_loc(cld_aero_data))
 
       ! Gas data
@@ -303,13 +303,13 @@ contains
     integer :: i
 
     do i = 1, ensemble%size
-      deallocate(ensemble%inputs(i)%interstitial_number_concs)
-      deallocate(ensemble%inputs(i)%cloud_number_concs)
+      deallocate(ensemble%inputs(i)%interstitial_aero_nmrs)
+      deallocate(ensemble%inputs(i)%cloud_aero_nmrs)
       deallocate(ensemble%inputs(i)%interstitial_aero_mmrs)
       deallocate(ensemble%inputs(i)%cloud_aero_mmrs)
       deallocate(ensemble%inputs(i)%gas_mmrs)
-      deallocate(ensemble%outputs(i)%interstitial_number_concs)
-      deallocate(ensemble%outputs(i)%cloud_number_concs)
+      deallocate(ensemble%outputs(i)%interstitial_aero_nmrs)
+      deallocate(ensemble%outputs(i)%cloud_aero_nmrs)
       deallocate(ensemble%outputs(i)%interstitial_aero_mmrs)
       deallocate(ensemble%outputs(i)%cloud_aero_mmrs)
       deallocate(ensemble%outputs(i)%gas_mmrs)

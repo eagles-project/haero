@@ -19,7 +19,7 @@ class Tendencies;
 /// aerosol system. Specifically,It stores
 /// * mass mixing ratios of for each mode-specific interstitial and cloud-borne
 ///   aerosol species
-/// * interstitial and cloud-borne number concentrations for each aerosol mode
+/// * interstitial and cloud-borne number mixing ratios for each aerosol mode
 /// * mass mixing ratios for gas species
 class Prognostics final {
  public:
