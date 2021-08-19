@@ -6,6 +6,7 @@ set(CXX_PROCESS_SOURCES
     mam_nucleation_process.cpp
     mam_calcsize_process.cpp
     mam_rename_process.cpp
+    simple_nucleation_process.cpp
 )
 
 # Prepend processes/ to each source file and transmit HAERO_PROCESSES upward.

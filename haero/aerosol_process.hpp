@@ -144,7 +144,6 @@ class AerosolProcess {
            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
            const Tendencies& tendencies) const {
     // This method must be called on the device.
-
     run_(t, dt, prognostics, atmosphere, diagnostics, tendencies);
   }
 
@@ -168,6 +167,14 @@ class AerosolProcess {
   /// @param [in] name The name of the parameter to set
   /// @param [in] value The parameter's value
   void set_param(const std::string& name, Real value) {
+    // This method must be called on the host.
+    set_param_(name, value);
+  }
+
+  /// On host: Sets a named string value for this aerosol process.
+  /// @param [in] name The name of the parameter to set
+  /// @param [in] value The parameter's value
+  void set_param(const std::string& name, const std::string& value) {
     // This method must be called on the host.
     set_param_(name, value);
   }
@@ -211,6 +218,7 @@ class AerosolProcess {
   virtual void set_param_(const std::string& name, int value) {}
   virtual void set_param_(const std::string& name, bool value) {}
   virtual void set_param_(const std::string& name, Real value) {}
+  virtual void set_param_(const std::string& name, const std::string& value) {}
 
   /// This gets overridden by the AerosolProcessOnDevice middleware class.
   virtual ManagedPointer copy_to_device_() const = 0;

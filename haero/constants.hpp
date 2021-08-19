@@ -42,16 +42,19 @@ static constexpr Real r_gas = avogadro*boltzmann;
 /// acceleration of gravity [m/s^2]
 static constexpr Real gravity = 9.80616;
 
-/// Molecular weight of water [kg/mol]
+/// Molecular weight of water [kg/kmol]
 static constexpr Real molec_weight_h2o = 0.18016;
 
-/// Molecular weight of dry air [kg/mol]
+/// Molecular weight of dry air [kg/kmol]
 static constexpr Real molec_weight_dry_air = 0.028966;
 
-/// Molecular weight of sulfate ion @f$\text{SO}_4^{2-}@f$ [kg/mol]
+/// Molecular weight of sulfuric acid @f$\text{H}_2\text{SO}_4@f$ [kg/kmol]
+static constexpr Real molec_weight_h2so4 = 0.09606;
+
+/// Molecular weight of sulfate ion @f$\text{SO}_4^{2-}@f$ [kg/kmol]
 static constexpr Real molec_weight_so4 = 0.09606;
 
-/// Molecular weight of ammonium ion @f$\text{NH}_4^+@f$ [kg/mol]
+/// Molecular weight of ammonium ion @f$\text{NH}_4^+@f$ [kg/kmol]
 static constexpr Real molec_weight_nh4 = 0.018039;
 
 /// Mass density of water [kg/m^3]
