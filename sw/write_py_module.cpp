@@ -79,9 +79,9 @@ void write_py_module(const std::vector<InputData>& inputs,
       } else {
         prefix = "aerosols.interstitial.";
       }
-      auto number_conc_name =
-          prefix + mode.name() + std::string(".number_conc");
-      write_input_var(file, inputs, number_conc_name.c_str());
+      auto num_mix_ratio_name =
+          prefix + mode.name() + std::string(".number_mix_ratio");
+      write_input_var(file, inputs, num_mix_ratio_name.c_str());
       auto species_for_mode = aero_config.aerosol_species_for_mode(m);
       for (auto species : species_for_mode) {
         auto sym = species.symbol();
@@ -127,9 +127,9 @@ void write_py_module(const std::vector<InputData>& inputs,
       } else {
         prefix = "aerosols.interstitial.";
       }
-      auto number_conc_name =
-          prefix + mode.name() + std::string(".number_conc");
-      write_output_var(file, outputs, number_conc_name.c_str());
+      auto num_mix_ratio_name =
+          prefix + mode.name() + std::string(".number_mix_ratio");
+      write_output_var(file, outputs, num_mix_ratio_name.c_str());
       auto species_for_mode = aero_config.aerosol_species_for_mode(m);
       for (auto species : species_for_mode) {
         auto sym = species.symbol();

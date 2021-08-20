@@ -44,7 +44,7 @@ void set_input(const std::vector<InputData>& inputs,
     dp(l) = inputs[l].hydrostatic_dp;
 
     // Are we given relative humiditіes? If so, we compute qv from them.
-    if (inputs[l].relative_humidity > 0.0) {
+    if (inputs[l].relative_humidity >= 0.0) {
       qv(l) = haero::conversions::vapor_mixing_ratio_from_relative_humidity(
         inputs[l].relative_humidity, p(l), T(l));
     }

@@ -15,7 +15,7 @@ timestepping: # [s]
 ensemble:
   atmosphere:
     temperature: [230.15, 300.15, 5]
-    relative_humidity: [0, 1, 0.05]
+    relative_humidity: [0.05, 1, 0.05]
 
 #  gases:
 #    h2so4: [0, 1.e-2, 1.e-4]
@@ -100,7 +100,7 @@ aerosols:
 
 gases: # [kg gas / kg air]
   so2: 1.e-4
-  h2so4: 1.e-13
+  h2so4: 5.3796e-23 # corresponds to a number conc of 5e8 / m3
   soag: 5.e-10
   nh3: 0
   o3: 0

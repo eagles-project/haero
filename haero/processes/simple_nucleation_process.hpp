@@ -279,9 +279,6 @@ class SimpleNucleationProcess final
           const auto press = atmosphere.pressure(k);
           const auto qv = atmosphere.vapor_mixing_ratio(k);
           const auto rho_d = gas_kinetics::air_mass_density(press, temp, qv);
-          const auto mw_air = Constants::molec_weight_dry_air;
-          const auto mw_so4 = Constants::molec_weight_so4;
-          auto c_air = rho_d / mw_air;
 
           auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
               qv, press, temp);
@@ -290,13 +287,14 @@ class SimpleNucleationProcess final
           auto c_h2so4 =  // number concentration of H2SO4 [#/cc]
               1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
 
-          // Compute the base rate of nucleation using our selected method.
+          // Compute the nucleation rate using our selected method.
           PackType J;       // nucleation rate [#/cc]
           PackType r_crit;  // radius of critical cluster [nm]
           PackType n_crit;  // total # of molecules in a critical cluster [#]
           PackType n_crit_h2so4, n_crit_nh3;  // numbers of gas molecules in
                                               // the critical cluser [#]
-          EKAT_KERNEL_ASSERT(nucleation_method_ == 2); // binary nucleation
+          // TODO: x_crit blows up for relative humidity = 0. Do we need to
+          // TODO: handle this case gracefully?
           auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(
               c_h2so4, temp, rel_hum);
           J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
@@ -306,14 +304,29 @@ class SimpleNucleationProcess final
           n_crit_nh3 = 0;
           r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
 
-          // Place the nucleated particles into the Aitken mode.
-          int nuc_mode = 0;
-          PackType& dqndt = tendencies.interstitial_num_mix_ratios(nuc_mode, k);
+          // Place the nucleation rate into the H2SO4 species of the Aitken mode.
+          int nuc_mode = 1;
+          /*
+          if (k == 0) {
+            printf("qv = %g\n", qv[0]);
+            printf("c_h2so4 = %g\n", c_h2so4[0]);
+            printf("T = %g\n", temp[0]);
+            printf("RH = %g\n", rel_hum[0]);
+            printf("x_crit = %g\n", x_crit[0]);
+            printf("dqdt = %g\n", J[0]);
+          }
+          */
           PackType& dqdt = tendencies.interstitial_aerosols(ipop_so4_(nuc_mode), k);
-          PackType& dqgdt = tendencies.gases(igas_h2so4_, k);
-          dqndt = 1e6 * J / c_air; // convert to [#/m3]
-          dqdt = dqndt * mw_so4 / mw_air;
-          dqgdt = -dqdt;
+          dqdt = J;
+//          const auto mw_air = Constants::molec_weight_dry_air;
+//          const auto mw_so4 = Constants::molec_weight_so4;
+//          auto c_air = rho_d / mw_air;
+//          PackType& dqndt = tendencies.interstitial_num_mix_ratios(nuc_mode, k);
+//          PackType& dqdt = tendencies.interstitial_aerosols(ipop_so4_(nuc_mode), k);
+//          PackType& dqgdt = tendencies.gases(igas_h2so4_, k);
+//          dqndt = 1e6 * J / c_air; // convert to [#/m3]
+//          dqdt = dqndt * mw_so4 / mw_air;
+//          dqgdt = -dqdt;
         });
   }
 };
