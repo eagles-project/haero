@@ -26,7 +26,7 @@ std::vector<Real> parse_value_array(const std::string& name,
                           std::string("': second must be greater than first."));
     }
     if (not(value1 < value2)) {  // [start, stop, step]
-      len = static_cast<size_t>((value1 - value0) / value2) + 1;
+      len = static_cast<size_t>(std::ceil((value1 - value0) / value2) + 1);
       std::vector<Real> values(len);
       for (int j = 0; j < len; ++j) {
         values[j] = value0 + j * value2;

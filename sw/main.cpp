@@ -1,6 +1,7 @@
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_session.hpp"
 #include "haero/available_processes.hpp"
+#include "haero/conversions.hpp"
 #include "haero/model.hpp"
 #include "skywalker.hpp"
 
@@ -41,6 +42,12 @@ void set_input(const std::vector<InputData>& inputs,
     qv(l) = inputs[l].vapor_mixing_ratio;
     h(l) = inputs[l].height;
     dp(l) = inputs[l].hydrostatic_dp;
+
+    // Are we given relative humiditіes? If so, we compute qv from them.
+    if (inputs[l].relative_humidity > 0.0) {
+      qv(l) = haero::conversions::vapor_mixing_ratio_from_relative_humidity(
+        inputs[l].relative_humidity, p(l), T(l));
+    }
 
     // Aerosol prognostics.
     for (int m = 0; m < num_modes; ++m) {
@@ -101,6 +108,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // boundary layer parameter). We can run all simulations simultaneously
   // by setting data for each simulation at a specific vertical level.
   std::vector<haero::Real> pblhs, dts;
+  std::vector<haero::Real> RHs; // relative humidities, if given.
   int num_levels = 1;
   for (auto iter = param_walk.ensemble.begin();
        iter != param_walk.ensemble.end(); ++iter) {
@@ -108,6 +116,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       pblhs = iter->second;
     } else if (iter->first == "dt") {
       dts = iter->second;
+    } else if (iter->first == "relative_humidity") {
+      RHs = iter->second;
     } else {
       num_levels *= static_cast<int>(iter->second.size());
     }

@@ -91,7 +91,6 @@ class SimpleNucleationProcess final
 
   // Skywalker cross-validation parameters.
   int skywalker_mode_;
-  Real relative_humidity_;
 
  public:
   /// Constructor
@@ -118,8 +117,7 @@ class SimpleNucleationProcess final
         d_mean_aer_(rhs.d_mean_aer_),
         d_min_aer_(rhs.d_min_aer_),
         d_max_aer_(rhs.d_max_aer_),
-        skywalker_mode_(rhs.skywalker_mode_),
-        relative_humidity_(rhs.relative_humidity_) {}
+        skywalker_mode_(rhs.skywalker_mode_) {}
 
  protected:
   void init_(const ModalAerosolConfig &config) override;
@@ -285,8 +283,8 @@ class SimpleNucleationProcess final
           const auto mw_so4 = Constants::molec_weight_so4;
           auto c_air = rho_d / mw_air;
 
-          // We use skywalker's value for the relative humidity.
-          auto rel_hum = relative_humidity_;
+          auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
+              qv, press, temp);
 
           const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);  // mmr
           auto c_h2so4 =  // number concentration of H2SO4 [#/cc]

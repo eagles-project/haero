@@ -26,8 +26,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       d_mean_aer_(),
       d_min_aer_(),
       d_max_aer_(),
-      skywalker_mode_(0),
-      relative_humidity_(0.0) {}
+      skywalker_mode_(0) {}
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   num_modes_ = config.num_modes();
@@ -154,8 +153,6 @@ void SimpleNucleationProcess::set_param_(const std::string &name, Real value) {
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
     }
-  } else if ("relative_humidity" == name) {
-    relative_humidity_ = value;
   } else {
     EKAT_REQUIRE_MSG(false, "Invalid parameter: " << name);
   }

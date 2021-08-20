@@ -22,7 +22,7 @@ using ModalAerosolConfig = haero::ModalAerosolConfig;
 // Reference input data for simulations.
 struct InputData {
   explicit InputData(const haero::ModalAerosolConfig& aero_config)
-      : aero_config(aero_config) {}
+      : aero_config(aero_config), relative_humidity(-1) {}
   InputData() = delete;
   InputData(const InputData& rhs) = default;
 
@@ -35,7 +35,8 @@ struct InputData {
   Real temperature, pressure, vapor_mixing_ratio, height, hydrostatic_dp,
       planetary_boundary_layer_height;
 
-  // For lower-level parameterizations (maybe only temporarily?)
+  // Relative humidity, if given. A negative value indicates that it isn't
+  // given.
   Real relative_humidity;
 
   // aerosol initial data
