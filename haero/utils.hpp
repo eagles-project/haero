@@ -23,7 +23,6 @@ std::string& tolower(std::string& s);
 /// Returns true if the string s can be interpreted as a boolean variable, false
 /// if not. Valid (case-insensitive) boolean values are:
 /// * true/false
-/// * 1/0
 /// * yes/no
 /// * on/off
 bool is_boolean(const std::string& s);

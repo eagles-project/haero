@@ -78,6 +78,7 @@ add_subdirectory(diagnostics)
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
             ${HAERO_FORTRAN_SOURCES}
+            aerosol_process.cpp
             atmosphere.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
             conversions.cpp

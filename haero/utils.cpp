@@ -25,8 +25,6 @@ std::string& tolower(std::string& s) {
 bool is_boolean(const std::string& s) {
   return ((strcasecmp("true", s.c_str()) == 0) ||
           (strcasecmp("false", s.c_str()) == 0) ||
-          (strcasecmp("1", s.c_str()) == 0) ||
-          (strcasecmp("0", s.c_str()) == 0) ||
           (strcasecmp("yes", s.c_str()) == 0) ||
           (strcasecmp("no", s.c_str()) == 0) ||
           (strcasecmp("on", s.c_str()) == 0) ||
@@ -35,7 +33,6 @@ bool is_boolean(const std::string& s) {
 
 bool as_boolean(const std::string& s) {
   return ((strcasecmp("true", s.c_str()) == 0) ||
-          (strcasecmp("1", s.c_str()) == 0) ||
           (strcasecmp("yes", s.c_str()) == 0) ||
           (strcasecmp("on", s.c_str()) == 0));
 }

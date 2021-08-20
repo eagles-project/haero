@@ -8,7 +8,6 @@
 #include "haero/prognostics.hpp"
 #include "haero/region_of_validity.hpp"
 #include "haero/tendencies.hpp"
-#include "haero/utils.hpp"
 
 namespace haero {
 
@@ -186,10 +185,10 @@ class AerosolProcess {
     set_param_(name, value);
   }
 
-  /// On host: Attempts to interpret the given named parameter value as a real
-  /// number, an integer, or a boolean value before falling back to a string.
-  /// Sets the named parameter to the interpreted value. Set parameters before
-  /// calling init() to ensure they have the desired effect.
+  /// On host: Attempts to interpret the given named parameter value as an
+  /// integer, a real number, or a boolean value before falling back to a
+  /// string. Sets the named parameter to the interpreted value. Set parameters
+  /// before calling init() to ensure they have the desired effect.
   /// @param [in] name The name of the parameter to set
   /// @param [in] value The parameter's value
   void interpret_and_set_param(const std::string& name, const std::string& value);
@@ -439,46 +438,6 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
 };
 
 #endif  // HAERO_FORTRAN
-
-inline void AerosolProcess::interpret_and_set_param(const std::string& name,
-                                                    const std::string& value) {
-  // Is this a real number?
-  try {
-#if HAERO_DOUBLE_PRECISION
-    Real real_value = std::stod(value);
-#else
-    Real real_value = std::stof(value);
-#endif
-    set_param(name, real_value);
-  }
-  catch (const std::invalid_argument&) {
-    // Okay, it's not a real number. Is it an integer?
-    try {
-      int int_value = std::stoi(value);
-      set_param(name, int_value);
-    }
-    catch (const std::invalid_argument&) {
-      // Boolean?
-      if (is_boolean(value)) {
-        set_param(name, as_boolean(value));
-      } else {
-        // Okay, we can only interpret this value as a string. String parameters
-        // aren't supported for Fortran processes, so make sure we're not one of
-        // those.
-#if HAERO_FORTRAN
-        if (dynamic_cast<haero::FAerosolProcess*>(this) != nullptr) {
-          fprintf(stderr, "Parameter '%s' with string value '%s' given for\n"
-                  "Fortran aerosol process %s. Fortran aerosol processes cannot\n"
-                  "accept string parameter values.", name.c_str(), value.c_str(),
-                  name_.label().c_str());
-          return;
-        }
-#endif
-        set_param(name, value);
-      }
-    }
-  }
-}
 
 }  // namespace haero
 
