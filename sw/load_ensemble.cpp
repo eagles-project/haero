@@ -127,13 +127,23 @@ void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
     throw YamlException(std::string("'") + pw.model_impl +
                         std::string("' entry not found in process section!"));
   }
-  pw.process = process[pw.model_impl].as<std::string>();
+  const auto& model_impl = process[pw.model_impl];
+  if (not model_impl.IsMap()) {
+    throw YamlException(std::string("'") + pw.model_impl +
+                        "' in process section must be a map!");
+  }
+  if (not model_impl["name"]) {
+    throw YamlException(std::string("'") + pw.model_impl +
+                        "' in process section must have a 'name' entry!");
+  }
+  pw.process = model_impl["name"].as<std::string>();
 
   // Parse process-specific parameters.
-  if (process["params"]) {
-    const auto& params = process["params"];
+  if (model_impl["params"]) {
+    const auto& params = model_impl["params"];
     if (not params.IsMap()) {
-      throw YamlException("'params' in process section must be a map!");
+      throw YamlException(std::string("'params' in process:") +
+                          pw.model_impl + std::string(" section must be a map!"));
     }
     for (const auto& param: params) {
       const auto& name = param.first.as<std::string>();

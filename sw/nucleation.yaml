@@ -1,10 +1,12 @@
 # This input walks 3 parameters to which the nucleation process is sensitive.
 
 process:
-  mam: newnuc
-  haero: SimpleNucleationProcess
-  params:
-    skywalker_mode: 1
+  mam:
+    name: newnuc
+  haero:
+    name: SimpleNucleationProcess
+    params:
+      skywalker_mode: 1
 
 timestepping: # [s]
   dt: 3600

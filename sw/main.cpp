@@ -124,9 +124,6 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   auto inputs =
       param_walk.gather_inputs({"dt", "planetary_boundary_layer_height"});
 
-  printf("skywalker: running %ld simulations and writing output to '%s'...\n",
-         inputs.size(), py_module_name);
-
   // Create a model initialized for a number of vertical levels equal to the
   // number of (0D) simulations we need for our parameter walk.
   haero::Model* model = haero::Model::ForUnitTests(aero_config, num_levels);
@@ -180,21 +177,29 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
             param_walk.process.c_str());
     return;
   }
+  printf("skywalker: selected %s process.\n", param_walk.process.c_str());
 
   // Set process parameters.
+  if (not param_walk.process_params.empty()) {
+    printf("skywalker: setting process parameters:\n");
+  }
   for (const auto& param: param_walk.process_params) {
     const std::string& name = param.first;
     const std::string& value = param.second;
+    printf("  %s = %s\n", name.c_str(), value.c_str());
     process->interpret_and_set_param(name, value);
   }
 
   // Initialize it for the given aerosol configuration.
+  printf("skywalker: initializing process...\n");
   process->init(aero_config);
 
   // Run a set of simulations, each of which computes tendencies for aerosols
   // and gases over different vertical levels, to maximize parallelism. We do
   // include two loops here to accommodate different values of the planetary
   // boundary layer height and the use of different time steps.
+  printf("skywalker: running %ld simulations and writing output to '%s'...\n",
+         inputs.size(), py_module_name);
   std::vector<InputData> input_data;
   std::vector<OutputData> output_data;
   for (auto pblh : pblhs) {
