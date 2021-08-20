@@ -75,6 +75,9 @@ struct ParameterWalk {
   // process name
   std::string process;
 
+  // process parameters
+  std::map<std::string, std::string> process_params;
+
   // reference input data
   InputData ref_input;
 

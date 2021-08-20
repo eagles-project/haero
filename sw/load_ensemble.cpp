@@ -122,21 +122,35 @@ void parse_gas_ensemble_params(
 }
 
 void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
+  // Parse the process based on the model implementation (e.g. "mam" or "haero")
   if (not process[pw.model_impl]) {
     throw YamlException(std::string("'") + pw.model_impl +
                         std::string("' entry not found in process section!"));
   }
   pw.process = process[pw.model_impl].as<std::string>();
+
+  // Parse process-specific parameters.
+  if (process["params"]) {
+    const auto& params = process["params"];
+    if (not params.IsMap()) {
+      throw YamlException("'params' in process section must be a map!");
+    }
+    for (const auto& param: params) {
+      const auto& name = param.first.as<std::string>();
+      const auto& value = param.second.as<std::string>();
+      pw.process_params[name] = value;
+    }
+  }
 }
 
 void parse_timestepping_section(const YAML::Node& ts, ParameterWalk& pw) {
   if (not ts["dt"]) {
-    throw YamlException("'dt' not found in timestepping section!\n");
+    throw YamlException("'dt' not found in timestepping section!");
   }
   pw.ref_input.dt = ts["dt"].as<Real>();
 
   if (not ts["total_time"]) {
-    throw YamlException("'total_time' not found in timestepping section!\n");
+    throw YamlException("'total_time' not found in timestepping section!");
   }
   pw.ref_input.total_time = ts["total_time"].as<Real>();
 }

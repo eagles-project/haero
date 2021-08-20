@@ -173,10 +173,19 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
              "MAMNucleationFProcess") {  // fortran nucleation
     process = new haero::MAMNucleationFProcess();
 #endif
+  } else if (param_walk.process == "SimpleNucleationProcess") {
+    process = new haero::SimpleNucleationProcess();
   } else {  // unknown
     fprintf(stderr, "Unknown aerosol process: %s\n",
             param_walk.process.c_str());
     return;
+  }
+
+  // Set process parameters.
+  for (const auto& param: param_walk.process_params) {
+    const std::string& name = param.first;
+    const std::string& value = param.second;
+    process->interpret_and_set_param(name, value);
   }
 
   // Initialize it for the given aerosol configuration.

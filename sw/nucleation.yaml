@@ -2,7 +2,9 @@
 
 process:
   mam: newnuc
-  haero: MAMNucleationFProcess
+  haero: SimpleNucleationProcess
+  params:
+    skywalker_mode: 1
 
 timestepping: # [s]
   dt: 3600
