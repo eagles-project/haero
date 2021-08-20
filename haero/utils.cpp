@@ -1,6 +1,7 @@
 #include "utils.hpp"
 
 #include <sstream>
+#include <cstring>
 
 namespace haero {
 
@@ -19,6 +20,24 @@ std::string& tolower(std::string& s) {
     c = std::tolower(c);
   }
   return s;
+}
+
+bool is_boolean(const std::string& s) {
+  return ((strcasecmp("true", s.c_str()) == 0) ||
+          (strcasecmp("false", s.c_str()) == 0) ||
+          (strcasecmp("1", s.c_str()) == 0) ||
+          (strcasecmp("0", s.c_str()) == 0) ||
+          (strcasecmp("yes", s.c_str()) == 0) ||
+          (strcasecmp("no", s.c_str()) == 0) ||
+          (strcasecmp("on", s.c_str()) == 0) ||
+          (strcasecmp("off", s.c_str()) == 0));
+}
+
+bool as_boolean(const std::string& s) {
+  return ((strcasecmp("true", s.c_str()) == 0) ||
+          (strcasecmp("1", s.c_str()) == 0) ||
+          (strcasecmp("yes", s.c_str()) == 0) ||
+          (strcasecmp("on", s.c_str()) == 0));
 }
 
 std::string get_filename_ext(const std::string& fname) {
