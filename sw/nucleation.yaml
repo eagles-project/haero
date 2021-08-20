@@ -9,8 +9,8 @@ process:
       skywalker_mode: 1
 
 timestepping: # [s]
-  dt: 3600
-  total_time: 3600
+  dt: 1
+  total_time: 1
 
 ensemble:
   atmosphere:
