@@ -1,9 +1,10 @@
 # This script generates plots for cross-validating the particle nucleation
 # process. To generate the data needed by the script, run skywalker in the
-# current directory, using nucleation.yaml as input.
+# current directory, using nucleation.yaml as input. This writes a file called
+# haero_skywalker.py to the directory, which is then imported as a module.
 
 import matplotlib.pyplot as plt
-from matplotlib import ticker
+from matplotlib import colors
 import matplotlib.tri as tri
 import numpy as np
 import haero_skywalker as haero_data
@@ -17,6 +18,9 @@ and relative humidity."""
                haero_data.input.atmosphere.temperature, \
                haero_data.output.aerosols.interstitial.aitken.so4
 
+    # Convert relative humidity to percent.
+    RH = [100*rh for rh in RH]
+
     # Interpolate the data onto a triangulated grid.
     nx, ny = 100, 100
     RHi = np.linspace(min(RH), max(RH), nx)
@@ -27,24 +31,21 @@ and relative humidity."""
     Xi, Yi = np.meshgrid(RHi, Ti)
     Ji = interpolator(Xi, Yi)
 
-    # Plot contours.
-    plt.contour(RHi, Ti, Ji,
-                locator=ticker.LogLocator(),
-                colors='k')
-    plt.contourf(RHi, Ti, Ji,
-                 locator=ticker.LogLocator(),
-                 cmap='jet')
+    # Plot contours. We get a little fancy in order to explicitly set log levels
+    # because the ticker.LogLocator doesn't "get it."
+    fig, ax = plt.subplots()
+    lev_exp = np.arange(-3, 11)
+    levels = np.power(10., lev_exp)
+    contours = ax.contour(RHi, Ti, Ji, levels, colors='k')
+    fills = ax.contourf(RHi, Ti, Ji, levels, cmap='jet',
+                        norm=colors.LogNorm(), extend='min')
 
-    plt.xlabel('Relative humidity [-]')
-    plt.ylabel('Temperature [K]')
-    plt.title('Nucleation rate [#/cc]')
-    plt.colorbar()
+    ax.set_xlabel('Relative humidity [%]')
+    ax.set_ylabel('Temperature [K]')
+    ax.set_title('Nucleation rate [#/cc]')
+    fig.colorbar(fills)
 #    plt.show()
     plt.savefig(filename)
-
-    # Side-by-side plots go here.
-    #fig, axs = plt.subplots(ncols=2)
-    #for ax in axs:
 
 if __name__ == '__main__':
     plot_nucleation_rate_contours('nucleation_rate.png')
