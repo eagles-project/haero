@@ -284,8 +284,9 @@ class SimpleNucleationProcess final
               qv, press, temp);
 
           const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);  // mmr
-          auto c_h2so4 =  // number concentration of H2SO4 [#/cc]
+          PackType c_h2so4 = // number concentration of H2SO4 [#/cc]
               1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
+          c_h2so4 = 5e8; // hard-wired for now
 
           // Compute the nucleation rate using our selected method.
           PackType J;       // nucleation rate [#/cc]
@@ -297,26 +298,38 @@ class SimpleNucleationProcess final
           // TODO: handle this case gracefully?
           auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(
               c_h2so4, temp, rel_hum);
-          J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
-          n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp,
-                                                         rel_hum, x_crit);
-          n_crit_h2so4 = n_crit;
-          n_crit_nh3 = 0;
-          r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
+          if (nucleation_method_ == 2) { // binary nucleation
+            J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
+            n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp,
+                                                           rel_hum, x_crit);
+            n_crit_h2so4 = n_crit;
+            n_crit_nh3 = 0;
+            r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
+          } else { // ternary nucleation
+            const auto q_nh3 = prognostics.gases(igas_nh3_, k);  // mmr
+            auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3_);
+            auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
+                                                            c_h2so4, xi_nh3);
+            J = exp(log_J);
+            n_crit_h2so4 = merikanto2007::num_h2so4_molecules(log_J, temp,
+                                                              c_h2so4, xi_nh3);
+            n_crit_nh3 =
+                merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
+            n_crit = n_crit_h2so4 + n_crit_nh3;
+            r_crit =
+                merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
+          }
 
           // Place the nucleation rate into the H2SO4 species of the Aitken mode.
           int nuc_mode = 1;
-          /*
-          if (k == 0) {
-            printf("qv = %g\n", qv[0]);
-            printf("c_h2so4 = %g\n", c_h2so4[0]);
-            printf("T = %g\n", temp[0]);
-            printf("RH = %g\n", rel_hum[0]);
-            printf("x_crit = %g\n", x_crit[0]);
-            printf("dqdt = %g\n", J[0]);
-          }
-          */
+
+//          if (k == 0) {
+//            printf("c_h2so4\tT\tRH\tx*\tJ\n");
+//          }
+//          printf("%g\t%g\t%g\t%g\t%g\n", c_h2so4[0], temp[0], rel_hum[0], x_crit[0], J[0]);
+
           PackType& dqdt = tendencies.interstitial_aerosols(ipop_so4_(nuc_mode), k);
+          J.set(J < 0, 0);
           dqdt = J;
 //          const auto mw_air = Constants::molec_weight_dry_air;
 //          const auto mw_so4 = Constants::molec_weight_so4;
