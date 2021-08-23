@@ -32,13 +32,13 @@ class MAMGasAerosolExchangeProcess
       const MAMGasAerosolExchangeProcess &) = delete;
 
  protected:
-  virtual void init_(const ModalAerosolConfig &config) override;
+  virtual void init_(const ModalAerosolConfig &config) final;
 
   KOKKOS_FUNCTION
   virtual void run_(Real t, Real dt, const Prognostics &prognostics,
                     const Atmosphere &atmosphere,
                     const Diagnostics &diagnostics,
-                    const Tendencies &tendencies) const override {}
+                    const Tendencies &tendencies) const final {}
 
   /// Set the named parameter to the given value.
   /// It is a fatal error to pass an unknown name.

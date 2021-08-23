@@ -351,16 +351,16 @@ contains
 
 
      ! qgas/aer values are updated during the dt integration
-      real(wp) :: qaer_cur(max_aer,model%num_modes)     ! current aerosol mass mix ratios (mol/mol)
-      real(wp) :: qnum_cur(model%num_modes)             ! current aerosol number mix ratios (#/kmol)
+      real(wp) :: qaer_cur(max_aer,max_mode)     ! current aerosol mass mix ratios (mol/mol)
+      real(wp) :: qnum_cur(max_mode)             ! current aerosol number mix ratios (#/kmol)
 
-      real(wp) :: dgn_awet(model%num_modes)            ! wet geo. mean dia. (m) of number distrib.
+      real(wp) :: dgn_awet(max_mode)             ! wet geo. mean dia. (m) of number distrib.
 
       real(wp) :: uptkrate_h2so4
                       ! h2so4(g) to aerosol mass transfer rate, summed over all modes (1/s)
                       ! this is needed by the nucleation routine (mam_newnuc_1subarea)
 
-      integer  ::  lptr2_soa_a_amode(model%num_modes, nsoa)
+      integer  ::  lptr2_soa_a_amode(max_mode, nsoa)
       ! local variables
 
       integer :: iaer, igas
@@ -370,14 +370,14 @@ contains
                                !molar basis after condensation of nh3. This 
                                !amount is then reduced to 0 by effectively evaporating nh4 back to nh3
 
-      logical :: l_condense_to_mode(model%num_modes)
+      logical :: l_condense_to_mode(max_mode)
 
-      real(wp) :: uptkaer_ref(1:model%num_modes) 
+      real(wp) :: uptkaer_ref(1:max_mode) 
 
       real(wp) :: r_pi = pi
 
-      n_mode = model%num_modes
-      ntot_amode = model%num_modes
+      n_mode = max_mode
+      ntot_amode = max_mode
       !=========================================================================
       ! Hui Wan's note from March 2021: 
       ! I have not fully understood the mixed use of n_mode and ntot_amode 
