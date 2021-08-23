@@ -31,23 +31,6 @@ class MAMGasAerosolExchangeProcess
   MAMGasAerosolExchangeProcess &operator=(
       const MAMGasAerosolExchangeProcess &) = delete;
 
-  //------------------------------------------------------------------------
-  //                                Accessors
-  //------------------------------------------------------------------------
-
-  void init(const ModalAerosolConfig &config) { init_(config); }
-
-  KOKKOS_FUNCTION
-  void run(Real t, Real dt, const Prognostics &prognostics,
-           const Atmosphere &atmosphere, const Diagnostics &diagnostics,
-           Tendencies &tendencies) const {
-    run_(t, dt, prognostics, atmosphere, diagnostics, tendencies);
-  }
-
-  /// Set the named parameter to the given value.
-  /// It is a fatal error to pass an unknown name.
-  virtual void set_param(const std::string &name, Real value) final {}
-
  protected:
   virtual void init_(const ModalAerosolConfig &config) override;
 
@@ -56,6 +39,10 @@ class MAMGasAerosolExchangeProcess
                     const Atmosphere &atmosphere,
                     const Diagnostics &diagnostics,
                     const Tendencies &tendencies) const override {}
+
+  /// Set the named parameter to the given value.
+  /// It is a fatal error to pass an unknown name.
+  virtual void set_param_(const std::string &name, Real value) final {}
 };
 
 }  // namespace haero
