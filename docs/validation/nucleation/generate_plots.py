@@ -33,6 +33,7 @@ and relative humidity."""
 
     # Plot contours. We get a little fancy in order to explicitly set log levels
     # because the ticker.LogLocator doesn't "get it."
+#    plt.suptitle('Nucleation rate [#/cc/sec]')
     fig, ax = plt.subplots()
     lev_exp = np.arange(-3, 11)
     levels = np.power(10., lev_exp)
@@ -42,7 +43,8 @@ and relative humidity."""
 
     ax.set_xlabel('Relative humidity [%]')
     ax.set_ylabel('Temperature [K]')
-    ax.set_title('Nucleation rate [#/cc]')
+    ax.set_title('Nucleation rate [#/cc/sec]')
+#    ax.set_title('(H2SO4 conc = 5e8/cc)')
     fig.colorbar(fills)
 #    plt.show()
     plt.savefig(filename)
