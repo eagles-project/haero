@@ -7,6 +7,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 
 set(ENABLE_FORTRAN ON)
 
+# This option is only used in CI, where we have to use special sauce to get the
+# submodules working with SSH. No mortal user should be concerned with this.
+option(HAERO_DISABLE_SUBMODULE_CHECKS "Skip checks for git submodules" OFF)
+mark_as_advanced(FORCE HAERO_DISABLE_SUBMODULE_CHECKS)
+
 # Check our device parameters
 if (NOT HAERO_DEVICE)
   message(FATAL_ERROR "HAERO_DEVICE is not specified! (Must be CPU or CUDA).")
