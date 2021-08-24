@@ -153,6 +153,8 @@ void SimpleNucleationProcess::set_param_(const std::string &name, Real value) {
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
     }
+  } else if ("c_h2so4" == name) {
+    skywalker_.c_h2so4 = value;
   } else {
     EKAT_REQUIRE_MSG(false, "Invalid parameter: " << name);
   }

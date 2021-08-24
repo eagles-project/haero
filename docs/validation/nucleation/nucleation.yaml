@@ -7,6 +7,7 @@ process:
     name: SimpleNucleationProcess
     params:
       skywalker_mode: 1
+      c_h2so4: 5e8
 
 timestepping: # [s]
   dt: 1

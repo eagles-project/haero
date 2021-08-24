@@ -25,6 +25,16 @@ class SimpleNucleationProcess final
   using RealVector = kokkos_device_type::view_1d<Real>;
   using IntVector = kokkos_device_type::view_1d<int>;
 
+  // This struct contains cross validation parameters for use with skywalker.
+  struct SkywalkerParams {
+    // Specified number concentration of H2SO4.
+    Real c_h2so4;
+
+    // Constructor
+    SkywalkerParams():
+      c_h2so4(-1.0) {}
+  };
+
   //----------------------------------------------------------
   //                  Adjustable parameters
   //----------------------------------------------------------
@@ -91,6 +101,7 @@ class SimpleNucleationProcess final
 
   // Skywalker cross-validation parameters.
   int skywalker_mode_;
+  SkywalkerParams skywalker_;
 
  public:
   /// Constructor
@@ -117,7 +128,8 @@ class SimpleNucleationProcess final
         d_mean_aer_(rhs.d_mean_aer_),
         d_min_aer_(rhs.d_min_aer_),
         d_max_aer_(rhs.d_max_aer_),
-        skywalker_mode_(rhs.skywalker_mode_) {}
+        skywalker_mode_(rhs.skywalker_mode_),
+        skywalker_(rhs.skywalker_) {}
 
  protected:
   void init_(const ModalAerosolConfig &config) override;
@@ -283,10 +295,14 @@ class SimpleNucleationProcess final
           auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
               qv, press, temp);
 
-          const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);  // mmr
-          PackType c_h2so4 = // number concentration of H2SO4 [#/cc]
-              1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
-          c_h2so4 = 5e8; // hard-wired for now
+          // Determine the number concentration of H2SO4 gas [#/cc].
+          PackType c_h2so4;
+          if (skywalker_.c_h2so4 > 0.0) {
+            c_h2so4 = skywalker_.c_h2so4;
+          } else {
+            const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);  // mmr
+            c_h2so4 = 1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
+          }
 
           // Compute the nucleation rate using our selected method.
           PackType J;       // nucleation rate [#/cc]
