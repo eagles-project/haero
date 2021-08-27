@@ -64,7 +64,7 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
   MAMNucleationProcess mam_nucleation_process(type, "Nucleation Test",
                                               aero_config, diagnostics);
 
-  init_bridge();
+  nucleation_init_bridge();
 
   for (int i = 0; i < 100; ++i) {
     const Real deltat(random());

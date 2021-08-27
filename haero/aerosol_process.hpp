@@ -22,6 +22,7 @@ enum AerosolProcessType {
   EmissionsProcess,
   InterstitialWetRemovalProcess,
   NucleationProcess,
+  GasAerosolExchangeProcess,
   CalcsizeProcess,
   RenameProcess,
   ResuspensionProcess,
