@@ -14,7 +14,7 @@ endforeach()
 # Keep track of whether we've updated our submodules.
 set(SUBMODULES_UPDATED FALSE)
 macro(update_submodules)
-  if (NOT SUBMODULES_UPDATED)
+  if (NOT SUBMODULES_UPDATED OR HAERO_DISABLE_SUBMODULE_CHECKS)
     message(STATUS "Updating git submodules recursively...")
     execute_process(COMMAND ${GIT} submodule update --init --recursive
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
