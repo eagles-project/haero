@@ -1,0 +1,39 @@
+! This program tests Skywalker's Fortran 90 interface.
+
+! This macro halts the program if the predicate x isn't true.
+#define assert(x) if (.not. (x)) \
+print *, "Assertion failed at line ", __LINE__ ; stop
+
+program skywalker_f90_test
+
+  use skywalker
+
+  implicit none
+
+  character(len=255) :: input_file = "@CMAKE_CURRENT_SOURCE_DIR@/f90_test.yaml"
+  type(ensemble_t) :: ensemble
+
+  ! Load the ensemble. Any error encountered is fatal.
+  print *, "skywalker_f90_test: Loading ensemble from", trim(input_file)
+  ensemble = load_ensemble("mam4", trim(input_file), "mam")
+
+  ! Make sure everything is as it should be.
+
+  ! process section
+  assert(trim(ensemble%process_name) == "newnuc")
+  assert(ensemble%num_process_params == 3)
+  assert(trim(ensemble%process_param_names(1)) == "param1")
+  assert(trim(ensemble%process_param_values(1)) == "hello")
+  assert(trim(ensemble%process_param_names(2)) == "param2")
+  assert(trim(ensemble%process_param_values(2)) == "81")
+  assert(trim(ensemble%process_param_names(3)) == "param3")
+  assert(trim(ensemble%process_param_values(3)) == "3.14159265357")
+
+  ! aerosol configuration
+  print *, ensemble%size
+  assert(ensemble%size == 200)
+
+  ! If we got here, everything is all right!
+  print *, "PASS"
+
+end program
