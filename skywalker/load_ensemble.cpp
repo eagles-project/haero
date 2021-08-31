@@ -142,10 +142,10 @@ void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
   if (model_impl["params"]) {
     const auto& params = model_impl["params"];
     if (not params.IsMap()) {
-      throw YamlException(std::string("'params' in process:") +
-                          pw.model_impl + std::string(" section must be a map!"));
+      throw YamlException(std::string("'params' in process:") + pw.model_impl +
+                          std::string(" section must be a map!"));
     }
-    for (const auto& param: params) {
+    for (const auto& param : params) {
       const auto& name = param.first.as<std::string>();
       const auto& value = param.second.as<std::string>();
       pw.process_params[name] = value;
@@ -300,9 +300,9 @@ void parse_aerosols_section(const YAML::Node& aerosols,
           }
           // Did we find a num_mix_ratio value for this mode?
           if (not found_num_mix_ratio) {
-            throw YamlException(std::string("Did not find 'num_mix_ratio' in ") +
-                                group_name + std::string("'") + mode_name +
-                                std::string("' mode!"));
+            throw YamlException(
+                std::string("Did not find 'num_mix_ratio' in ") + group_name +
+                std::string("'") + mode_name + std::string("' mode!"));
           }
         }
       }

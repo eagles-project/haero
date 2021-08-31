@@ -1,18 +1,11 @@
 #ifndef HAERO_SKYWALKER_HPP
 #define HAERO_SKYWALKER_HPP
 
-#include <map>
 #include <set>
 #include <string>
 #include <vector>
 
-// Forward declarations (for library portability). Nothing here is needed
-// directly by clients of the skywalker library.
-namespace haero {
-
-class ModalAerosolConfig;
-
-}
+#include "haero/modal_aerosol_config.hpp"
 
 namespace skywalker {
 
@@ -21,12 +14,14 @@ using ModalAerosolConfig = haero::ModalAerosolConfig;
 
 // Reference input data for simulations.
 struct InputData {
-  explicit InputData(const haero::ModalAerosolConfig& aero_config)
-      : aero_config(aero_config), relative_humidity(-1) {}
   InputData() = delete;
+  InputData(const ModalAerosolConfig& config)
+    : aero_config(config), relative_humidity(-1) {}
   InputData(const InputData& rhs) = default;
+  InputData& operator=(const InputData& rhs) = default;
 
-  const haero::ModalAerosolConfig& aero_config;
+  // reference to aerosol configuration
+  ModalAerosolConfig aero_config;
 
   // timestepping parameters
   Real dt, total_time;
@@ -68,7 +63,7 @@ struct ParameterWalk {
   ParameterWalk() = delete;
 
   // aerosol configuration
-  const haero::ModalAerosolConfig& aero_config;
+  haero::ModalAerosolConfig aero_config;
 
   // model implementation name
   const std::string model_impl;
@@ -76,7 +71,7 @@ struct ParameterWalk {
   // process name
   std::string process;
 
-  // process parameters
+  // process-specific parameters
   std::map<std::string, std::string> process_params;
 
   // reference input data
@@ -137,8 +132,8 @@ class YamlException : public std::exception {
 /// \returns A set of data and metadata used by skywalker to run a parameter
 ///          study
 ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
-                            const std::string& filename,
-                            const std::string& model_impl = "haero");
+    const std::string& filename,
+    const std::string& model_impl = "haero");
 
 // Writes simulation input/output data to a Python module.
 void write_py_module(const std::vector<InputData>& inputs,

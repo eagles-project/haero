@@ -48,3 +48,5 @@ add_test(skywalker_smoke_test ${CMAKE_CURRENT_BINARY_DIR}/skywalker ${CMAKE_CURR
 set_tests_properties(skywalker_smoke_test PROPERTIES
   FAIL_REGULAR_EXPRESSION "error:"
 )
+
+add_subdirectory(tests)

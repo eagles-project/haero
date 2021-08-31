@@ -34,7 +34,7 @@ namespace skywalker {
 void write_py_module(const std::vector<InputData>& inputs,
                      const std::vector<OutputData>& outputs,
                      const char* py_module_name) {
-  auto aero_config = inputs[0].aero_config;
+  const auto& aero_config = inputs[0].aero_config;
 
   FILE* file = fopen(py_module_name, "w");
   fprintf(file,

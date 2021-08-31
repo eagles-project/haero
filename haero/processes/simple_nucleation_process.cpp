@@ -113,7 +113,8 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     rov.rel_hum_bounds = vehkamaki2002::valid_rel_hum_range();
     if (igas_h2so4_ != -1) {
       auto c_h2so4_range = vehkamaki2002::valid_c_h2so4_range();
-      rov.set_gas_bounds(igas_h2so4_, c_h2so4_range.first, c_h2so4_range.second);
+      rov.set_gas_bounds(igas_h2so4_, c_h2so4_range.first,
+                         c_h2so4_range.second);
     }
   } else {
     EKAT_ASSERT(nucleation_method_ == 3);
@@ -121,7 +122,8 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     rov.rel_hum_bounds = merikanto2007::valid_rel_hum_range();
     if (igas_h2so4_ != -1) {
       auto c_h2so4_range = merikanto2007::valid_c_h2so4_range();
-      rov.set_gas_bounds(igas_h2so4_, c_h2so4_range.first, c_h2so4_range.second);
+      rov.set_gas_bounds(igas_h2so4_, c_h2so4_range.first,
+                         c_h2so4_range.second);
     }
     if (igas_nh3_ != -1) {
       auto xi_nh3_range = merikanto2007::valid_xi_nh3_range();  // [ppt]

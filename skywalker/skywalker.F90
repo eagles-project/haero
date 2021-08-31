@@ -50,7 +50,13 @@ module skywalker
      ! C pointer
      type(c_ptr) :: ptr
      ! Name of the aerosol process being studied by this ensemble
-     character(len=255) :: process
+     character(len=255) :: process_name
+     ! Number of parameters passed to the process
+     integer :: num_process_params
+     ! List of names of parameters passed to the process
+     character(len=255), dimension(:), allocatable :: process_param_names
+     ! List of values of parameters passed to the process
+     character(len=255), dimension(:), allocatable :: process_param_values
      ! The number of members in the ensemble
      integer :: size
      ! Number of aerosol modes and populations, and number of gases
@@ -69,16 +75,37 @@ module skywalker
 
   interface
 
+    ! Loads and returns an ensemble from the given file, interpreting its data
+    ! according to the given aerosol configuration.
     type(c_ptr) function sw_load_ensemble(aerosol_config, filename, model_impl) bind(c)
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: aerosol_config, filename, model_impl
     end function
 
-    type(c_ptr) function sw_ensemble_process(ensemble) bind(c)
+    ! Returns the name of the selected process for the given ensemble.
+    type(c_ptr) function sw_ensemble_process_name(ensemble) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
     end function
 
+    ! Returns the number of parameters passed to the selected process for the
+    ! given ensemble.
+    integer(c_int) function sw_ensemble_num_process_params(ensemble) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: ensemble
+    end function
+
+    ! Sets the given pointers to strings that contain the name and value for
+    ! the parameter with the given index passed to an ensemble.
+    subroutine sw_ensemble_get_process_param(ensemble, index, param_name, param_value) bind(c)
+      use iso_c_binding, only: c_ptr, c_int
+      type(c_ptr), value, intent(in) :: ensemble
+      integer(c_int), value, intent(in) :: index
+      type(c_ptr), intent(out) :: param_name
+      type(c_ptr), intent(out) :: param_value
+    end subroutine
+
+    ! Returns the number of members in an ensemble
     integer(c_int) function sw_ensemble_size(ensemble) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
@@ -87,7 +114,7 @@ module skywalker
     subroutine sw_ensemble_get_array_sizes(ensemble, num_modes, num_pops, num_gases) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
-      integer(c_int), intent(out) :: num_modes, num_pops, num_gases
+      integer(c_int), intent(inout) :: num_modes, num_pops, num_gases
     end subroutine
 
     subroutine sw_ensemble_get_modal_aerosol_sizes(ensemble, aerosols_per_mode) bind(c)
@@ -99,7 +126,7 @@ module skywalker
     type(c_ptr) function sw_ensemble_input(ensemble, i) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
-      integer(c_int), intent(in) :: i
+      integer(c_int), value, intent(in) :: i
     end function
 
     subroutine sw_input_get_timestepping(input, dt, total_time) bind(c)
@@ -132,7 +159,7 @@ module skywalker
     type(c_ptr) function sw_ensemble_output(ensemble, i) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
-      integer(c_int), intent(in) :: i
+      integer(c_int), value, intent(in) :: i
     end function
 
     subroutine sw_output_set_aerosols(output, int_aero_nmrs, cld_aero_nmrs, &
@@ -180,21 +207,30 @@ contains
 
     integer(c_int), dimension(:), pointer :: mode_array_sizes
     integer :: i, m, s, p, max_mode_size
-    real(c_real), dimension(:), pointer :: int_aero_data, cld_aero_data
+    real(c_real), dimension(:), allocatable, target :: int_aero_data, cld_aero_data
+    type(c_ptr) :: p_name, p_value
 
+    ! Fetch the ensemble pointer from C.
     ensemble%ptr = sw_load_ensemble(f_to_c_string(aerosol_config), &
                                     f_to_c_string(filename), &
                                     f_to_c_string(model_impl))
-    ensemble%process = c_to_f_string(sw_ensemble_process(ensemble%ptr))
     if (.not. c_associated(ensemble%ptr)) then
       print *, "Could not load a ", aerosol_config, " from ", filename
       stop
     end if
 
-    ! Size up the ensemble.
-    ensemble%size = sw_ensemble_size(ensemble%ptr)
-    allocate(ensemble%inputs(ensemble%size))
-    allocate(ensemble%outputs(ensemble%size))
+    ! Fetch the name of the process and its associated parameters
+    ensemble%process_name = c_to_f_string(sw_ensemble_process_name(ensemble%ptr))
+    ensemble%num_process_params = sw_ensemble_num_process_params(ensemble%ptr)
+    if (ensemble%num_process_params > 0) then
+      allocate(ensemble%process_param_names(ensemble%num_process_params))
+      allocate(ensemble%process_param_values(ensemble%num_process_params))
+      do p = 1, ensemble%num_process_params
+        call sw_ensemble_get_process_param(ensemble%ptr, p, p_name, p_value)
+        ensemble%process_param_names(p) = c_to_f_string(p_name)
+        ensemble%process_param_values(p) = c_to_f_string(p_value)
+      end do
+    end if
 
     ! Extract metadata.
     call sw_ensemble_get_array_sizes(ensemble%ptr, ensemble%num_modes, &
@@ -206,8 +242,13 @@ contains
     do m = 1, ensemble%num_modes
       max_mode_size = max(max_mode_size, mode_array_sizes(m))
     end do
-    allocate(int_aero_data(max_mode_size))
-    allocate(cld_aero_data(max_mode_size))
+    allocate(int_aero_data(ensemble%num_populations))
+    allocate(cld_aero_data(ensemble%num_populations))
+
+    ! Size up the ensemble.
+    ensemble%size = sw_ensemble_size(ensemble%ptr)
+    allocate(ensemble%inputs(ensemble%size))
+    allocate(ensemble%outputs(ensemble%size))
 
     ! Allocate input and output aerosol and gas arrays for the ensemble,
     ! and extract input data
@@ -222,6 +263,9 @@ contains
       allocate(ensemble%outputs(i)%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%outputs(i)%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
       allocate(ensemble%outputs(i)%gas_mmrs(ensemble%num_gases))
+
+      ensemble%inputs(i)%ptr = sw_ensemble_input(ensemble%ptr, i)
+      ensemble%outputs(i)%ptr = sw_ensemble_output(ensemble%ptr, i)
 
       ! Aerosol data
       call sw_input_get_aerosols(ensemble%inputs(i)%ptr, &
@@ -316,6 +360,10 @@ contains
     end do
     deallocate(ensemble%inputs)
     deallocate(ensemble%outputs)
+    if (ensemble%num_process_params > 0) then
+      deallocate(ensemble%process_param_names)
+      deallocate(ensemble%process_param_values)
+    end if
   end subroutine
 
 end module

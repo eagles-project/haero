@@ -1,7 +1,7 @@
 #include "utils.hpp"
 
-#include <sstream>
 #include <cstring>
+#include <sstream>
 
 namespace haero {
 

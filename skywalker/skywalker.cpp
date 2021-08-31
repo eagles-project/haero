@@ -1,4 +1,4 @@
-#include "skywalker.hpp"
+#include "skywalker/skywalker.hpp"
 
 #include <strings.h>
 
@@ -92,8 +92,8 @@ Real InputData::operator[](const std::string& param_name) const {
       return pressure;
     } else if (param_name.find("vapor_mixing_ratio") != std::string::npos) {
       return vapor_mixing_ratio;
-    // Guest star: relative humidity (for low-level parameterizations!)
-    // Don't use this with vapor_mixing_ratio, as they are related!
+      // Guest star: relative humidity (for low-level parameterizations!)
+      // Don't use this with vapor_mixing_ratio, as they are related!
     } else if (param_name.find("relative_humidity") != std::string::npos) {
       return relative_humidity;
     } else if (param_name.find("height") != std::string::npos) {
@@ -156,8 +156,8 @@ Real& InputData::operator[](const std::string& param_name) {
       return pressure;
     } else if (param_name.find("vapor_mixing_ratio") != std::string::npos) {
       return vapor_mixing_ratio;
-    // Guest star: relative humidity (for low-level parameterizations!)
-    // Don't use this with vapor_mixing_ratio, as they are related!
+      // Guest star: relative humidity (for low-level parameterizations!)
+      // Don't use this with vapor_mixing_ratio, as they are related!
     } else if (param_name.find("relative_humidity") != std::string::npos) {
       return relative_humidity;
     } else if (param_name.find("height") != std::string::npos) {
@@ -343,18 +343,10 @@ using OutputData = skywalker::OutputData;
 
 struct EnsembleData {
   std::string process;
+  std::map<std::string, std::string> process_params;
   std::vector<InputData> inputs;
   std::vector<OutputData> outputs;
 };
-
-// This container holds "live" instances of named aerosol config metadata.
-static std::map<std::string, ModalAerosolConfig>* fortran_aero_configs_ =
-    nullptr;
-
-static void destroy_aero_configs() {
-  delete fortran_aero_configs_;
-  fortran_aero_configs_ = nullptr;
-}
 
 // This container holds "live" instances of Skywalker Fortran ensemble data,
 // which is managed by this Fortran bridge.
@@ -377,60 +369,83 @@ static void destroy_ensembles() {
 ///                        "haero" or "mam").
 void* sw_load_ensemble(const char* aerosol_config, const char* filename,
                        const char* model_impl) {
-  // Construct an aerosol config from the given string.
-  if (fortran_aero_configs_ == nullptr) {
-    fortran_aero_configs_ = new std::map<std::string, ModalAerosolConfig>();
-    atexit(destroy_aero_configs);
-  }
-  auto config_iter = fortran_aero_configs_->find(aerosol_config);
   ModalAerosolConfig config;
-  if (config_iter != fortran_aero_configs_->end()) {
-    config = config_iter->second;
+  if (strcasecmp(aerosol_config, "mam4") == 0) {
+    config = haero::create_mam4_modal_aerosol_config();
   } else {
-    if (strcasecmp(aerosol_config, "mam4") == 0) {
-      config = haero::create_mam4_modal_aerosol_config();
-      fortran_aero_configs_->emplace("mam4", config);
-    } else {
-      return nullptr;  // no dice!
-    }
+    fprintf(stderr, "Error loading ensemble from %s: Invalid config: %s\n",
+            filename, aerosol_config);
+    return nullptr;  // no dice!
   }
 
   // Create a ParameterWalk object from the given config and file.
-  auto param_walk = skywalker::load_ensemble(config, filename, model_impl);
+  try {
+    auto param_walk = skywalker::load_ensemble(config, filename, model_impl);
 
-  // Create an ensemble, allocating storage for output data equal in length
-  // to the given input data.
-  auto ensemble = new EnsembleData;
-  ensemble->process = param_walk.process;
-  ensemble->inputs = param_walk.gather_inputs();
-  ensemble->outputs =
-      std::vector<OutputData>(ensemble->inputs.size(), OutputData(config));
-  // Size up the output data arrays to make our life easier down the line.
-  for (size_t i = 0; i < ensemble->inputs.size(); ++i) {
-    const auto& input = ensemble->inputs[i];
-    auto output = ensemble->outputs[i];
-    output.interstitial_number_mix_ratios.resize(
-        input.interstitial_number_mix_ratios.size());
-    output.cloud_number_mix_ratios.resize(input.cloud_number_mix_ratios.size());
-    output.interstitial_aero_mmrs.resize(input.interstitial_aero_mmrs.size());
-    output.cloud_aero_mmrs.resize(input.cloud_aero_mmrs.size());
-    output.gas_mmrs.resize(input.gas_mmrs.size());
-  }
+    // Create an ensemble, allocating storage for output data equal in length
+    // to the given input data.
+    auto ensemble = new EnsembleData;
+    ensemble->process = param_walk.process;
+    ensemble->process_params = param_walk.process_params;
+    ensemble->inputs = param_walk.gather_inputs();
+    OutputData ref_output(param_walk.aero_config);
+    ensemble->outputs =
+        std::vector<OutputData>(ensemble->inputs.size(), ref_output);
+    // Size up the output data arrays to make our life easier down the line.
+    for (size_t i = 0; i < ensemble->inputs.size(); ++i) {
+      const auto& input = ensemble->inputs[i];
+      auto output = ensemble->outputs[i];
+      output.interstitial_number_mix_ratios.resize(
+          input.interstitial_number_mix_ratios.size());
+      output.cloud_number_mix_ratios.resize(
+          input.cloud_number_mix_ratios.size());
+      output.interstitial_aero_mmrs.resize(input.interstitial_aero_mmrs.size());
+      output.cloud_aero_mmrs.resize(input.cloud_aero_mmrs.size());
+      output.gas_mmrs.resize(input.gas_mmrs.size());
+    }
 
-  // Track this ensemble, storing its pointer for future reference.
-  if (fortran_ensembles_ == nullptr) {
-    fortran_ensembles_ = new std::set<EnsembleData*>();
-    atexit(destroy_ensembles);
+    // Track this ensemble, storing its pointer for future reference.
+    if (fortran_ensembles_ == nullptr) {
+      fortran_ensembles_ = new std::set<EnsembleData*>();
+      atexit(destroy_ensembles);
+    }
+    fortran_ensembles_->emplace(ensemble);
+    auto ensemble_ptr = reinterpret_cast<void*>(ensemble);
+    return ensemble_ptr;
+  } catch (std::exception& e) {
+    fprintf(stderr, "Error loading ensemble from %s: %s\n", filename, e.what());
+    return nullptr;
   }
-  fortran_ensembles_->emplace(ensemble);
-  auto ensemble_ptr = reinterpret_cast<void*>(ensemble);
-  return ensemble_ptr;
 }
 
 /// Returns the name of the process being studied by the ensemble.
-const char* sw_ensemble_process(void* ensemble) {
+const char* sw_ensemble_process_name(void* ensemble) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   return data->process.c_str();
+}
+
+/// Returns the number of parameters passed to the process being studied by the
+/// ensemble.
+int sw_ensemble_num_process_params(void* ensemble) {
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  return static_cast<int>(data->process_params.size());
+}
+
+/// Sets the given pointers to the name and value of the parameter with the
+/// given index, passed to the process for the ensemble.
+void sw_ensemble_get_process_param(void* ensemble, int index, const char** name,
+                                   const char** value) {
+  auto data = reinterpret_cast<EnsembleData*>(ensemble);
+  int i = 0;
+  for (const auto& param_kv : data->process_params) {
+    if (i == index) {  // if the index matches, fill in the blanks.
+      *name = param_kv.first.c_str();
+      *value = param_kv.second.c_str();
+      break;
+    } else {  // otherwise, keep going.
+      ++i;
+    }
+  }
 }
 
 /// Returns the number of inputs (members) for the given ensemble data.
@@ -445,7 +460,7 @@ void sw_ensemble_get_array_sizes(void* ensemble, int* num_modes,
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   EKAT_REQUIRE(not data->inputs.empty());
 
-  // Get the aerosol configuration from the first ensemble member.
+  // Get the aerosol configuration from the first input.
   const auto& config = data->inputs[0].aero_config;
 
   // Read off the data.
@@ -476,9 +491,9 @@ void sw_ensemble_get_modal_aerosol_sizes(void* ensemble,
 /// ensemble.
 void* sw_ensemble_input(void* ensemble, int i) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  EKAT_REQUIRE(i >= 0);
-  EKAT_REQUIRE(i < data->inputs.size());
-  InputData* input = &(data->inputs[i]);
+  EKAT_REQUIRE(i > 0);
+  EKAT_REQUIRE(i <= data->inputs.size());
+  InputData* input = &(data->inputs[i - 1]);
   return reinterpret_cast<void*>(input);
 }
 
@@ -532,8 +547,8 @@ void sw_input_get_gases(void* input, Real* gas_mmrs) {
 /// ensemble.
 void* sw_ensemble_output(void* ensemble, int i) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  EKAT_REQUIRE(i >= 0);
-  EKAT_REQUIRE(i < data->inputs.size());
+  EKAT_REQUIRE(i > 0);
+  EKAT_REQUIRE(i <= data->outputs.size());
   OutputData* output = &(data->outputs[i]);
   return reinterpret_cast<void*>(output);
 }

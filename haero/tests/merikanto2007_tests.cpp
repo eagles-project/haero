@@ -14,7 +14,8 @@ using namespace haero;
 
 namespace {
 
-// Create a vector of values between two endpoints v1 and v2 with a step size dv.
+// Create a vector of values between two endpoints v1 and v2 with a step size
+// dv.
 std::vector<PackType> create_inputs(Real v1, Real v2, Real dv) {
   size_t len = 1 + static_cast<size_t>(std::ceil((v2 - v1) / dv));
   std::vector<PackType> v(len);
@@ -26,9 +27,8 @@ std::vector<PackType> create_inputs(Real v1, Real v2, Real dv) {
 
 // Create a vector of output generated from traversing an input array and
 // applying the given function to it.
-std::vector<PackType> generate_output(
-    const std::vector<PackType>& x,
-    std::function<PackType(PackType)> f) {
+std::vector<PackType> generate_output(const std::vector<PackType>& x,
+                                      std::function<PackType(PackType)> f) {
   std::vector<PackType> y(x.size());
   for (int i = 0; i < x.size(); ++i) {
     y[i] = f(x[i]);
@@ -37,16 +37,12 @@ std::vector<PackType> generate_output(
 }
 
 // Writes a Python script that generates a plot of a curve y(x).
-void generate_curve_plot(const std::string& filename,
-                         const std::string& title,
-                         const std::string& x_label,
-                         const std::string& x_scale,
-                         const std::string& y_label,
-                         const std::string& y_scale,
+void generate_curve_plot(const std::string& filename, const std::string& title,
+                         const std::string& x_label, const std::string& x_scale,
+                         const std::string& y_label, const std::string& y_scale,
                          const std::vector<PackType>& x,
-                         const std::vector<PackType>& y,
-                         Real xmin = 1.0, Real xmax = -1.0,
-                         Real ymin = 1.0, Real ymax = -1.0) {
+                         const std::vector<PackType>& y, Real xmin = 1.0,
+                         Real xmax = -1.0, Real ymin = 1.0, Real ymax = -1.0) {
   FILE* fp = fopen(filename.c_str(), "w");
   fprintf(fp, "import matplotlib.pyplot as plt\n\n");
 
@@ -64,12 +60,15 @@ void generate_curve_plot(const std::string& filename,
 
   fprintf(fp, "fig, ax = plt.subplots()\n");
   fprintf(fp, "ax.plot(x, y)\n\n");
-  fprintf(fp, "ax.set(xlabel='%s', xscale='%s', ylabel='%s', yscale='%s', title='%s')\n",
-          x_label.c_str(), x_scale.c_str(), y_label.c_str(), y_scale.c_str(), title.c_str());
-  if (xmin < xmax) { // if x limits are specified
+  fprintf(fp,
+          "ax.set(xlabel='%s', xscale='%s', ylabel='%s', yscale='%s', "
+          "title='%s')\n",
+          x_label.c_str(), x_scale.c_str(), y_label.c_str(), y_scale.c_str(),
+          title.c_str());
+  if (xmin < xmax) {  // if x limits are specified
     fprintf(fp, "ax.set_xlim(%g, %g)\n", xmin, xmax);
   }
-  if (ymin < ymax) { // if y limits are specified
+  if (ymin < ymax) {  // if y limits are specified
     fprintf(fp, "ax.set_ylim(%g, %g)\n", ymin, ymax);
   }
   fprintf(fp, "ax.grid()\n\n");
@@ -84,8 +83,7 @@ void generate_curve_plot(const std::string& filename,
 // Create a vector of output generated from traversing two input arrays and
 // applying the given function to it.
 std::vector<std::vector<PackType>> generate_output(
-    const std::vector<PackType>& x,
-    const std::vector<PackType>& y,
+    const std::vector<PackType>& x, const std::vector<PackType>& y,
     std::function<PackType(PackType, PackType)> f) {
   std::vector<std::vector<PackType>> z(x.size());
   for (int i = 0; i < x.size(); ++i) {
@@ -99,16 +97,12 @@ std::vector<std::vector<PackType>> generate_output(
 
 // Writes a Python script that generates a plot of a family of curves y(x)
 // parameterized by the values in p.
-void generate_multicurve_plot(const std::string& filename,
-                              const std::string& title,
-                              const std::string& x_label,
-                              const std::string& y_label,
-                              const std::string& p_label,
-                              const std::vector<PackType>& x,
-                              const std::vector<std::vector<PackType>>& y,
-                              const std::vector<PackType>& p,
-                              Real xmin = 1.0, Real xmax = -1.0,
-                              Real ymin = 1.0, Real ymax = -1.0) {
+void generate_multicurve_plot(
+    const std::string& filename, const std::string& title,
+    const std::string& x_label, const std::string& y_label,
+    const std::string& p_label, const std::vector<PackType>& x,
+    const std::vector<std::vector<PackType>>& y, const std::vector<PackType>& p,
+    Real xmin = 1.0, Real xmax = -1.0, Real ymin = 1.0, Real ymax = -1.0) {
   FILE* fp = fopen(filename.c_str(), "w");
   fprintf(fp, "import matplotlib.pyplot as plt\n\n");
 
@@ -119,7 +113,7 @@ void generate_multicurve_plot(const std::string& filename,
   }
   fprintf(fp, "]\n");
   for (int i = 0; i < y.size(); ++i) {
-    fprintf(fp, "y%d = [", i+1);
+    fprintf(fp, "y%d = [", i + 1);
     for (int j = 0; j < y[i].size(); ++j) {
       fprintf(fp, "%g, ", y[i][j][0]);
     }
@@ -132,16 +126,17 @@ void generate_multicurve_plot(const std::string& filename,
   fprintf(fp, "]\n\n");
 
   for (int i = 0; i < y.size(); ++i) {
-    fprintf(fp, "plt.plot(x, y%d, label='%s = %g')\n", i+1, p_label.c_str(), p[i][0]);
+    fprintf(fp, "plt.plot(x, y%d, label='%s = %g')\n", i + 1, p_label.c_str(),
+            p[i][0]);
   }
   fprintf(fp, "plt.legend()\n");
   fprintf(fp, "plt.title('%s')\n", title.c_str());
   fprintf(fp, "plt.xlabel('%s')\n", x_label.c_str());
   fprintf(fp, "plt.ylabel('%s')\n\n", y_label.c_str());
-  if (xmin < xmax) { // if x limits are specified
+  if (xmin < xmax) {  // if x limits are specified
     fprintf(fp, "plt.xlim(%g, %g)\n", xmin, xmax);
   }
-  if (ymin < ymax) { // if y limits are specified
+  if (ymin < ymax) {  // if y limits are specified
     fprintf(fp, "plt.ylim(%g, %g)\n", ymin, ymax);
   }
 
@@ -152,7 +147,7 @@ void generate_multicurve_plot(const std::string& filename,
   fclose(fp);
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // Compare the output of this test with Merikanto et al (2007), figure 2.
 // Because NH3 affects H2SO4 nucleation, the figure has a few different sets of
@@ -186,8 +181,8 @@ TEST_CASE("merikanto2007_figure_2") {
         // NOTE: there may be a glitch in the onset temperature calculation.
         // NOTE: when we use it here, the first data point for the T = 273.15 K
         // NOTE: nucleation rates is zero for both xi = 10 and xi = 1000.
-        auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
-                                                        c, xi_nh3);
+        auto log_J =
+            merikanto2007::log_nucleation_rate(temp, rel_hum, c, xi_nh3);
         return exp(log_J);
       });
     }
@@ -270,21 +265,19 @@ TEST_CASE("merikanto2007_figure_3") {
 // Compare the output of this test with Merikanto et al (2007), figure 4.
 TEST_CASE("merikanto2007_figure_4") {
   PackType temps[2] = {235.15, 273.15};
-  PackType c_h2so4s[2][2] = {{1e7, 1e9},
-                             {1e8, 1e9}};
+  PackType c_h2so4s[2][2] = {{1e7, 1e9}, {1e8, 1e9}};
   std::vector<PackType> xi_nh3s[2][2] = {
-    // temperature and c_h2so4 dependent
-    {
-      // T = 235.15
-      {0.1, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000}, // c_h2so4 = 1e7
-      {0.1, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000}, // c_h2so4 = 1e9
-    },
-    {
-      // T = 273.15
-      {5, 10, 20, 50, 100, 200, 500, 1000}, // c_h2so4 = 1e8
-      {1, 2, 5, 10, 20, 50, 100, 200, 500, 1000}, // c_h2so4 = 1e9
-    }
-  };
+      // temperature and c_h2so4 dependent
+      {
+          // T = 235.15
+          {0.1, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000},  // c_h2so4 = 1e7
+          {0.1, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000},  // c_h2so4 = 1e9
+      },
+      {
+          // T = 273.15
+          {5, 10, 20, 50, 100, 200, 500, 1000},        // c_h2so4 = 1e8
+          {1, 2, 5, 10, 20, 50, 100, 200, 500, 1000},  // c_h2so4 = 1e9
+      }};
   std::vector<PackType> Js[2][2];
   PackType rel_hum(0.5);
   for (int i = 0; i < 2; ++i) {
@@ -295,8 +288,8 @@ TEST_CASE("merikanto2007_figure_4") {
         // NOTE: there may be a glitch in the onset temperature calculation.
         // NOTE: when we use it here, the first data point for the T = 273.15 K
         // NOTE: nucleation rates is zero for both xi = 10 and xi = 1000.
-        auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
-                                                        c_h2so4, xi);
+        auto log_J =
+            merikanto2007::log_nucleation_rate(temp, rel_hum, c_h2so4, xi);
         return exp(log_J);
       });
     }

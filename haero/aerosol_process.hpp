@@ -191,7 +191,8 @@ class AerosolProcess {
   /// before calling init() to ensure they have the desired effect.
   /// @param [in] name The name of the parameter to set
   /// @param [in] value The parameter's value
-  void interpret_and_set_param(const std::string& name, const std::string& value);
+  void interpret_and_set_param(const std::string& name,
+                               const std::string& value);
 
   /// On host: returns a vector of strings containing the names of diagnostic
   /// variables required by this aerosol process in order to compute its

@@ -46,7 +46,7 @@ void set_input(const std::vector<InputData>& inputs,
     // Are we given relative humiditіes? If so, we compute qv from them.
     if (inputs[l].relative_humidity >= 0.0) {
       qv(l) = haero::conversions::vapor_mixing_ratio_from_relative_humidity(
-        inputs[l].relative_humidity, p(l), T(l));
+          inputs[l].relative_humidity, p(l), T(l));
     }
 
     // Aerosol prognostics.
@@ -108,7 +108,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // boundary layer parameter). We can run all simulations simultaneously
   // by setting data for each simulation at a specific vertical level.
   std::vector<haero::Real> pblhs, dts;
-  std::vector<haero::Real> RHs; // relative humidities, if given.
+  std::vector<haero::Real> RHs;  // relative humidities, if given.
   int num_levels = 1;
   for (auto iter = param_walk.ensemble.begin();
        iter != param_walk.ensemble.end(); ++iter) {
@@ -153,9 +153,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
                                            num_levels);
 
   auto* prognostics =
-      model->create_prognostics(int_aerosols, cld_aerosols,
-                                int_num_mix_ratios, cld_num_mix_ratios,
-                                gases);
+      model->create_prognostics(int_aerosols, cld_aerosols, int_num_mix_ratios,
+                                cld_num_mix_ratios, gases);
   auto* diagnostics = model->create_diagnostics();
 
   // Set up an atmospheric state and initialize it with reference data.
@@ -193,7 +192,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   if (not param_walk.process_params.empty()) {
     printf("skywalker: setting process parameters:\n");
   }
-  for (const auto& param: param_walk.process_params) {
+  for (const auto& param : param_walk.process_params) {
     const std::string& name = param.first;
     const std::string& value = param.second;
     printf("  %s = %s\n", name.c_str(), value.c_str());
