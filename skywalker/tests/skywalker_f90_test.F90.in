@@ -1,17 +1,44 @@
 ! This program tests Skywalker's Fortran 90 interface.
 
+module f90_test
+  implicit none
+contains
+  subroutine fatal_error(message, line)
+    character(len=*), intent(in) :: message
+    integer :: line
+
+    print *, message, line
+    stop
+  end subroutine
+
+  function approx_equal(x, y) result(equal)
+    use iso_c_binding, only: c_float, c_double
+    real(c_real), intent(in) :: x, y
+    logical :: equal
+
+    if (abs(x - y) < 1e-14) then
+      equal = .true.
+    else
+      equal = .false.
+    end if
+  end function
+end module f90_test
+
 ! This macro halts the program if the predicate x isn't true.
-#define assert(x) if (.not. (x)) \
-print *, "Assertion failed at line ", __LINE__ ; stop
+#define assert(x) if (.not. (x)) call fatal_error("Assertion failed at line", __LINE__)
 
 program skywalker_f90_test
 
+  use f90_test
   use skywalker
+  use haero_precision, only: wp
 
   implicit none
 
   character(len=255) :: input_file = "@CMAKE_CURRENT_SOURCE_DIR@/f90_test.yaml"
   type(ensemble_t) :: ensemble
+  type(input_data_t) :: input
+  integer :: i
 
   ! Load the ensemble. Any error encountered is fatal.
   print *, "skywalker_f90_test: Loading ensemble from", trim(input_file)
@@ -30,8 +57,22 @@ program skywalker_f90_test
   assert(trim(ensemble%process_param_values(3)) == "3.14159265357")
 
   ! aerosol configuration
-  print *, ensemble%size
-  assert(ensemble%size == 200)
+  assert(ensemble%num_modes == 4)
+  assert(ensemble%num_populations == 21) ! all species in all modes
+  assert(ensemble%num_gases == 13)
+
+  ! ensemble information
+  assert(ensemble%size == 600)
+  do i = 1,600
+    input = ensemble%inputs(i)
+    assert(input%dt == 1._wp)
+    assert(input%total_time == 1._wp)
+    assert(approx_equal(input%pressure, 100000._wp))
+    assert(approx_equal(input%vapor_mixing_ratio, 0.4_wp))
+    assert(approx_equal(input%height, 3000._wp))
+    assert(approx_equal(input%hydrostatic_dp, 200._wp))
+    assert(approx_equal(input%planetary_boundary_layer_height, 1100._wp))
+  end do
 
   ! If we got here, everything is all right!
   print *, "PASS"

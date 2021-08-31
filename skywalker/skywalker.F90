@@ -18,7 +18,7 @@ module skywalker
     ! Timestepping data
     real(c_real) :: dt, total_time
     ! atmospheric state parameters
-    real(c_real) :: temperature, pressure, relative_humidity, height, &
+    real(c_real) :: temperature, pressure, vapor_mixing_ratio, height, &
                     hydrostatic_dp, planetary_boundary_layer_height
 
     ! Modal aerosol number mixing ratios [# aero molecules / kg air]
@@ -135,11 +135,11 @@ module skywalker
       real(c_real), intent(out) :: dt, total_time
     end subroutine
 
-    subroutine sw_input_get_atmosphere(input, temperature, pressure, rh, height,&
+    subroutine sw_input_get_atmosphere(input, temperature, pressure, qv, height,&
                                        dp, pblh) bind(c)
       use iso_c_binding, only: c_ptr, c_real
       type(c_ptr), value, intent(in) :: input
-      real(c_real), intent(out) :: temperature, pressure, rh, height, dp, pblh
+      real(c_real), intent(out) :: temperature, pressure, qv, height, dp, pblh
     end subroutine
 
     subroutine sw_input_get_aerosols(input, int_aero_nmrs, cld_aero_nmrs, &
@@ -203,8 +203,10 @@ contains
     character(len=*), intent(in) :: aerosol_config
     character(len=*), intent(in) :: filename
     character(len=*), intent(in) :: model_impl
-    type(ensemble_t) :: ensemble
 
+    type(ensemble_t) :: ensemble
+    type(input_data_t) :: input
+    type(output_data_t) :: output
     integer(c_int), dimension(:), pointer :: mode_array_sizes
     integer :: i, m, s, p, max_mode_size
     real(c_real), dimension(:), allocatable, target :: int_aero_data, cld_aero_data
@@ -253,37 +255,49 @@ contains
     ! Allocate input and output aerosol and gas arrays for the ensemble,
     ! and extract input data
     do i = 1, ensemble%size
-      allocate(ensemble%inputs(i)%interstitial_aero_nmrs(ensemble%num_modes))
-      allocate(ensemble%inputs(i)%cloud_aero_nmrs(ensemble%num_modes))
-      allocate(ensemble%inputs(i)%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
-      allocate(ensemble%inputs(i)%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
-      allocate(ensemble%inputs(i)%gas_mmrs(ensemble%num_gases))
-      allocate(ensemble%outputs(i)%interstitial_aero_nmrs(ensemble%num_modes))
-      allocate(ensemble%outputs(i)%cloud_aero_nmrs(ensemble%num_modes))
-      allocate(ensemble%outputs(i)%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
-      allocate(ensemble%outputs(i)%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
-      allocate(ensemble%outputs(i)%gas_mmrs(ensemble%num_gases))
+      input = ensemble%inputs(i)
+      input%ptr = sw_ensemble_input(ensemble%ptr, i)
+      allocate(input%interstitial_aero_nmrs(ensemble%num_modes))
+      allocate(input%cloud_aero_nmrs(ensemble%num_modes))
+      allocate(input%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
+      allocate(input%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
+      allocate(input%gas_mmrs(ensemble%num_gases))
 
-      ensemble%inputs(i)%ptr = sw_ensemble_input(ensemble%ptr, i)
-      ensemble%outputs(i)%ptr = sw_ensemble_output(ensemble%ptr, i)
+      output = ensemble%outputs(i)
+      output%ptr = sw_ensemble_output(ensemble%ptr, i)
+      allocate(output%interstitial_aero_nmrs(ensemble%num_modes))
+      allocate(output%cloud_aero_nmrs(ensemble%num_modes))
+      allocate(output%interstitial_aero_mmrs(ensemble%num_modes, max_mode_size))
+      allocate(output%cloud_aero_mmrs(ensemble%num_modes, max_mode_size))
+      allocate(output%gas_mmrs(ensemble%num_gases))
+
+      ! Timestepping data
+      call sw_input_get_timestepping(input%ptr, input%dt, input%total_time)
+
+      ! Atmosphere data
+      call sw_input_get_atmosphere(input%ptr, input%temperature, input%pressure, &
+        input%vapor_mixing_ratio, input%height, input%hydrostatic_dp, &
+        input%planetary_boundary_layer_height)
 
       ! Aerosol data
-      call sw_input_get_aerosols(ensemble%inputs(i)%ptr, &
-        c_loc(ensemble%inputs(i)%interstitial_aero_nmrs), &
-        c_loc(ensemble%inputs(i)%cloud_aero_nmrs), &
+      call sw_input_get_aerosols(input%ptr, &
+        c_loc(input%interstitial_aero_nmrs), &
+        c_loc(input%cloud_aero_nmrs), &
         c_loc(int_aero_data), c_loc(cld_aero_data))
       p = 1 ! population index
       do m = 1, ensemble%num_modes
         do s = 1, mode_array_sizes(m)
-          ensemble%inputs(i)%interstitial_aero_mmrs(m, s) = int_aero_data(p)
-          ensemble%inputs(i)%cloud_aero_mmrs(m, s) = cld_aero_data(p)
+          input%interstitial_aero_mmrs(m, s) = int_aero_data(p)
+          input%cloud_aero_mmrs(m, s) = cld_aero_data(p)
           p = p + 1
         end do
       end do
 
       ! Gas data
-      call sw_input_get_gases(ensemble%inputs(i)%ptr, &
-        c_loc(ensemble%inputs(i)%gas_mmrs))
+      call sw_input_get_gases(input%ptr, c_loc(input%gas_mmrs))
+
+      ensemble%inputs(i) = input
+      ensemble%outputs(i) = output
     end do
 
     ! Clean up.

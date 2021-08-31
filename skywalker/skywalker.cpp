@@ -438,7 +438,8 @@ void sw_ensemble_get_process_param(void* ensemble, int index, const char** name,
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   int i = 0;
   for (const auto& param_kv : data->process_params) {
-    if (i == index) {  // if the index matches, fill in the blanks.
+    if (i ==
+        index - 1) {  // if the (1-based) index matches, fill in the blanks.
       *name = param_kv.first.c_str();
       *value = param_kv.second.c_str();
       break;
