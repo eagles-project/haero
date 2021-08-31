@@ -107,10 +107,13 @@ contains
     real(wp) :: qaercw_cur(1:model%num_modes, 1:model%num_modes)
 
     ! These lengths were originally ntot_amode
-    real(wp) :: dryvol_a(model%num_modes)
-    real(wp) :: dryvol_c(model%num_modes)
-    real(wp) :: deldryvol_a(model%num_modes)
-    real(wp) :: deldryvol_c(model%num_modes)
+    ! _a: interstatial
+    real(wp) :: dryvol_interstatial(model%num_modes)
+    real(wp) :: delta_dryvol_interstatial(model%num_modes)
+
+    ! _c: cloudborne
+    real(wp) :: dryvol_cloudborn(model%num_modes)
+    real(wp) :: delta_dryvol_cloudborn(model%num_modes)
     ! End newly ported variables
 
     ! TODO: How should ntot_amode be initialized? It seems to come from the global
@@ -138,10 +141,10 @@ contains
     qaer_cur(:, :)             = 0
     qaercw_cur(:, :)           = 0
 
-    dryvol_c(:)    = 0
-    dryvol_a(:)    = 0
-    deldryvol_a(:) = 0
-    deldryvol_c(:) = 0
+    dryvol_cloudborn(:)          = 0
+    dryvol_interstatial(:)       = 0
+    delta_dryvol_interstatial(:) = 0
+    delta_dryvol_cloudborn(:)       = 0
     ! ---
 
     ! TODO: This should not be hardwired here but should be either part of the
@@ -160,13 +163,13 @@ contains
     ! true) aerosols of the "src" mode
     call compute_dryvol_change_in_src_mode(ntot_amode, naer, mtoo_renamexf, &              !input
         iscldy_subarea, qaer_cur, qaer_del_grow4rnam, qaercw_cur, qaercw_del_grow4rnam, & !input
-        dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)                                     !output
+        dryvol_interstatial, delta_dryvol_interstatial, dryvol_cloudborn, delta_dryvol_cloudborn)                                     !output
 
   end subroutine run
 
 subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
     iscldy, qi_vmr, qi_del_growth, qcld_vmr, qcld_del_growth, &
-    dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)
+    dryvol_interstatial, delta_dryvol_interstatial, dryvol_cloudborn, delta_dryvol_cloudborn)
 
   integer,  intent(in):: nmode ! total number of modes
   integer,  intent(in):: nspec !total number of species in a mode
@@ -181,8 +184,8 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
   real(wp), intent(in), optional :: qcld_del_growth(:,:)
 
   !intent-outs
-  real(wp), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
-  real(wp), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
+  real(wp), intent(out) :: dryvol_interstatial(:), dryvol_cloudborn(:)       !dry volumes (before growth) [m3/kmol-air]
+  real(wp), intent(out) :: delta_dryvol_interstatial(:), delta_dryvol_cloudborn(:) !change in dry volumes [m3/kmol-air]
 
   integer :: imode
   integer :: dest_mode
@@ -195,24 +198,24 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
 
     !compute dry volumes (before growth) and its change for interstitial aerosols
     call dryvolume_change(imode, nspec, qi_vmr, qi_del_growth, & !input
-      dryvol_a(imode), deldryvol_a(imode)) !output
+      dryvol_interstatial(imode), delta_dryvol_interstatial(imode)) !output
 
     if ( iscldy ) then ! if this grid cell has cloud
       !if a grid cell is cloudy, clloud borne quantities has to be present
       if(.not. present(qcld_vmr) .or. .not. present(qcld_del_growth)) then
-        print *, 'If a grid cell is cloudy, dryvol_c and deldryvol_c should be present'
+        print *, 'If a grid cell is cloudy, dryvol_cloudborn and delta_dryvol_cloudborn should be present'
         stop 1
       endif
       !compute dry volume (before growth) and its change for cloudborne aerosols
       call dryvolume_change(imode, nspec, qcld_vmr, qcld_del_growth, &!input
-            dryvol_c(imode), deldryvol_c(imode)) !output
+            dryvol_cloudborn(imode), delta_dryvol_cloudborn(imode)) !output
     end if !iscldy then
   end do
 
   end subroutine compute_dryvol_change_in_src_mode
 
   subroutine dryvolume_change (imode, nspec, q_vmr, q_del_growth, &!input
-       dryvol, deldryvol) !output
+       dryvol, delta_dryvol) !output
 
     !intent-ins
     integer,  intent(in) :: imode           !current mode number
@@ -221,7 +224,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
     real(wp), intent(in) :: q_del_growth(:,:) !change (delta) in volume mixing ratio [kmol/kmol]
 
     !intent-outs
-    real(wp), intent(out) :: dryvol, deldryvol !dry volume (before growth) and its grwoth [m3/kmol]
+    real(wp), intent(out) :: dryvol, delta_dryvol !dry volume (before growth) and its grwoth [m3/kmol]
 
     !local variables
     integer  :: ispec, s_spec_ind, e_spec_ind
@@ -257,7 +260,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
     end do
 
     dryvol    = tmp_dryvol-tmp_del_dryvol ! This is dry volume before the growth
-    deldryvol = tmp_del_dryvol          ! change in dry volume due to growth
+    delta_dryvol = tmp_del_dryvol          ! change in dry volume due to growth
 
   end subroutine dryvolume_change
 
