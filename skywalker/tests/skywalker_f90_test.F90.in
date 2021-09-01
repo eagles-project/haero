@@ -43,7 +43,7 @@ program skywalker_f90_test
 
   ! Load the ensemble. Any error encountered is fatal.
   print *, "skywalker_f90_test: Loading ensemble from", trim(input_file)
-  ensemble = load_ensemble("mam4", trim(input_file), "mam")
+  ensemble = load_ensemble("mam4", trim(input_file), "mam_box_model")
 
   ! Make sure everything is as it should be.
 

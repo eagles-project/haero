@@ -1,7 +1,7 @@
 # This input file tests Skywalker's Fortran 90 module.
 
 process:
-  mam:
+  mam_box_model:
     name: newnuc
     params:
       param1: hello
