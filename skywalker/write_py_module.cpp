@@ -27,6 +27,23 @@ void write_output_var(FILE* file,
   fprintf(file, "]\n");
 }
 
+// Writes output metrics to our Python module.
+void write_output_metrics(FILE* file,
+                          const std::vector<skywalker::OutputData>& outputs) {
+  if (!outputs.empty()) {
+    for (const auto& metrics_kv : outputs[0].metrics) {
+      const std::string& metric = metrics_kv.first;
+      fprintf(file, "output.metrics.%s = [", metric.c_str());
+      for (const auto& output : outputs) {
+        const auto iter = output.metrics.find(metric);
+        EKAT_ASSERT(iter != output.metrics.end());
+        fprintf(file, "%g, ", iter->second);
+      }
+    }
+    fprintf(file, "]\n");
+  }
+}
+
 }  // namespace
 
 namespace skywalker {
@@ -148,6 +165,9 @@ void write_py_module(const std::vector<InputData>& inputs,
                    ::tolower);
     write_output_var(file, outputs, gas_name.c_str());
   }
+
+  // Metrics.
+  write_output_metrics(file, outputs);
 
   fclose(file);
 }

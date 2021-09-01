@@ -29,9 +29,9 @@ module skywalker
                                               cloud_aero_mmrs
     ! Gas mass mixing ratios [kg gas / kg air]
     real(c_real), dimension(:), pointer :: gas_mmrs
-   end type input_data_t
+  end type input_data_t
 
-   type :: output_data_t
+  type :: output_data_t
     ! C pointer
     type(c_ptr) :: ptr
     ! Modal aerosol number concentrations [# aero molecules / kg air]
@@ -42,36 +42,39 @@ module skywalker
                                               cloud_aero_mmrs
     ! Gas mass mixing ratios [kg gas / kg air]
     real(c_real), dimension(:), pointer :: gas_mmrs
-   end type output_data_t
+  contains
+    ! Adds a named metric to the output data.
+    procedure :: add_metric => o_add_metric
+  end type output_data_t
 
-   ! This type represents an ensemble and its corresponding input and output
-   ! data for each member.
-   type :: ensemble_t
-     ! C pointer
-     type(c_ptr) :: ptr
-     ! Name of the aerosol process being studied by this ensemble
-     character(len=255) :: process_name
-     ! Number of parameters passed to the process
-     integer :: num_process_params
-     ! List of names of parameters passed to the process
-     character(len=255), dimension(:), allocatable :: process_param_names
-     ! List of values of parameters passed to the process
-     character(len=255), dimension(:), allocatable :: process_param_values
-     ! The number of members in the ensemble
-     integer :: size
-     ! Number of aerosol modes and populations, and number of gases
-     integer(c_int) :: num_modes, num_populations, num_gases
-     ! An array of input data for every member of the ensemble
-     type(input_data_t), dimension(:), allocatable :: inputs
-     ! An array of output data for every member of the ensemble
-     type(output_data_t), dimension(:), allocatable :: outputs
+  ! This type represents an ensemble and its corresponding input and output
+  ! data for each member.
+  type :: ensemble_t
+    ! C pointer
+    type(c_ptr) :: ptr
+    ! Name of the aerosol process being studied by this ensemble
+    character(len=255) :: process_name
+    ! Number of parameters passed to the process
+    integer :: num_process_params
+    ! List of names of parameters passed to the process
+    character(len=255), dimension(:), allocatable :: process_param_names
+    ! List of values of parameters passed to the process
+    character(len=255), dimension(:), allocatable :: process_param_values
+    ! The number of members in the ensemble
+    integer :: size
+    ! Number of aerosol modes and populations, and number of gases
+    integer(c_int) :: num_modes, num_populations, num_gases
+    ! An array of input data for every member of the ensemble
+    type(input_data_t), dimension(:), allocatable :: inputs
+    ! An array of output data for every member of the ensemble
+    type(output_data_t), dimension(:), allocatable :: outputs
 
-     contains
-       ! Writes a Python module containing input/output data to a file
-       procedure :: write_py_module => e_write_py_module
-       ! Frees resources allocated to the ensemble
-       procedure :: free => e_free
-   end type ensemble_t
+  contains
+    ! Writes a Python module containing input/output data to a file
+    procedure :: write_py_module => e_write_py_module
+    ! Frees resources allocated to the ensemble
+    procedure :: free => e_free
+  end type ensemble_t
 
   interface
 
@@ -174,6 +177,13 @@ module skywalker
       use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: output
       type(c_ptr), value, intent(in) :: gas_mmrs
+    end subroutine
+
+    subroutine sw_output_set_metric(output, name, value) bind(c)
+      use iso_c_binding, only: c_ptr, c_double, c_float
+      type(c_ptr), value, intent(in) :: output
+      type(c_ptr), value, intent(in) :: name
+      real(c_real), value, intent(in) :: value
     end subroutine
 
     subroutine sw_ensemble_write_py_module(ensemble, filename) bind(c)
@@ -303,6 +313,19 @@ contains
     ! Clean up.
     deallocate(int_aero_data, cld_aero_data, mode_array_sizes)
   end function
+
+  ! Adds a value for a named metric to output data.
+  subroutine o_add_metric(output, name, val)
+    use iso_c_binding, only: c_ptr, c_double, c_float
+    use haero, only: f_to_c_string
+    implicit none
+
+    class(output_data_t), intent(in) :: output
+    character(len=*), intent(in) :: name
+    real(c_real), intent(in) :: val
+
+    call sw_output_set_metric(output%ptr, f_to_c_string(name), val)
+  end subroutine
 
   ! Writes a Python module containing all input and output for the given
   ! ensemble to a file with the given name.

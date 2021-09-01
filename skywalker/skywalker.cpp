@@ -580,6 +580,12 @@ void sw_output_set_gases(void* output, Real* gas_mmrs) {
   std::copy(gas_mmrs, gas_mmrs + num_gases, outp->gas_mmrs.begin());
 }
 
+/// Sets the value of a named metric for the given ensemble output.
+void sw_output_set_metric(void* output, const char* name, Real value) {
+  auto outp = reinterpret_cast<OutputData*>(output);
+  outp->metrics[name] = value;
+}
+
 // Writes out a Python module containing input and output data for the
 // ǥiven ensemble to the given filename.
 void sw_ensemble_write_py_module(void* ensemble, const char* filename) {

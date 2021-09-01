@@ -84,6 +84,9 @@ program skywalker_f90_test
     output%cloud_aero_nmrs = input%cloud_aero_nmrs
     output%interstitial_aero_mmrs = input%interstitial_aero_mmrs
     output%cloud_aero_mmrs = input%cloud_aero_mmrs
+
+    ! Add a "qoi" metric set to 4.
+    call output%add_metric("qoi", 4.0_wp)
   end do
 
   ! Now we write out a Python module containing the output data.

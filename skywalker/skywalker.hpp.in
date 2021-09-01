@@ -103,6 +103,9 @@ struct OutputData {
   // Gas mass mixing ratios [kg gas / kg air]
   std::vector<Real> gas_mmrs;
 
+  // Miscellaneous named metrics.
+  std::map<std::string, Real> metrics;
+
   // Fetches the parameter with the given name. If no parameter is found, this
   // operator returns a zero value.
   Real operator[](const std::string& param_name) const;
