@@ -144,14 +144,14 @@ module skywalker
 
     subroutine sw_input_get_aerosols(input, int_aero_nmrs, cld_aero_nmrs, &
                                      int_aero_mmrs, cld_aero_mmrs) bind(c)
-      use iso_c_binding, only: c_ptr, c_real
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: input
       type(c_ptr), value, intent(in) :: int_aero_nmrs, cld_aero_nmrs,&
                                         int_aero_mmrs, cld_aero_mmrs
     end subroutine
 
     subroutine sw_input_get_gases(input, gas_mmrs) bind(c)
-      use iso_c_binding, only: c_ptr, c_real
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: input
       type(c_ptr), value, intent(in) :: gas_mmrs
     end subroutine
@@ -164,14 +164,14 @@ module skywalker
 
     subroutine sw_output_set_aerosols(output, int_aero_nmrs, cld_aero_nmrs, &
                                       int_aero_mmrs, cld_aero_mmrs) bind(c)
-      use iso_c_binding, only: c_ptr, c_real
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: output
       type(c_ptr), value, intent(in) :: int_aero_nmrs, cld_aero_nmrs,&
                                         int_aero_mmrs, cld_aero_mmrs
     end subroutine
 
     subroutine sw_output_set_gases(output, gas_mmrs) bind(c)
-      use iso_c_binding, only: c_ptr, c_real
+      use iso_c_binding, only: c_ptr
       type(c_ptr), value, intent(in) :: output
       type(c_ptr), value, intent(in) :: gas_mmrs
     end subroutine
@@ -314,14 +314,13 @@ contains
     class(ensemble_t), intent(in) :: ensemble
     character(len=*), intent(in) :: filename
 
-    integer i, m, s, p, max_mode_size
+    integer i, m, s, p
     integer(c_int), dimension(:), pointer :: mode_array_sizes
     real(c_real), dimension(:), pointer :: int_aero_data, cld_aero_data
 
     ! Copy output data into place.
-    max_mode_size = size(ensemble%outputs(1)%interstitial_aero_mmrs, 2)
-    allocate(int_aero_data(max_mode_size))
-    allocate(cld_aero_data(max_mode_size))
+    allocate(int_aero_data(ensemble%num_populations))
+    allocate(cld_aero_data(ensemble%num_populations))
 
     ! Aerosol data
     allocate(mode_array_sizes(ensemble%num_modes))
@@ -341,8 +340,8 @@ contains
         c_loc(int_aero_data), c_loc(cld_aero_data))
 
       ! Gas data
-      call sw_output_set_gases(ensemble%inputs(i)%ptr, &
-        c_loc(ensemble%inputs(i)%gas_mmrs))
+      call sw_output_set_gases(ensemble%outputs(i)%ptr, &
+        c_loc(ensemble%outputs(i)%gas_mmrs))
     end do
 
     ! Generate the Python module.

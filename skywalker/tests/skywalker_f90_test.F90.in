@@ -35,10 +35,11 @@ program skywalker_f90_test
 
   implicit none
 
-  character(len=255) :: input_file = "@CMAKE_CURRENT_SOURCE_DIR@/f90_test.yaml"
-  type(ensemble_t) :: ensemble
-  type(input_data_t) :: input
-  integer :: i
+  character(len=255)  :: input_file = "@CMAKE_CURRENT_SOURCE_DIR@/f90_test.yaml"
+  type(ensemble_t)    :: ensemble
+  type(input_data_t)  :: input
+  type(output_data_t) :: output
+  integer             :: i
 
   ! Load the ensemble. Any error encountered is fatal.
   print *, "skywalker_f90_test: Loading ensemble from", trim(input_file)
@@ -63,7 +64,7 @@ program skywalker_f90_test
 
   ! ensemble information
   assert(ensemble%size == 600)
-  do i = 1,600
+  do i = 1, 600
     input = ensemble%inputs(i)
     assert(input%dt == 1._wp)
     assert(input%total_time == 1._wp)
@@ -73,6 +74,23 @@ program skywalker_f90_test
     assert(approx_equal(input%hydrostatic_dp, 200._wp))
     assert(approx_equal(input%planetary_boundary_layer_height, 1100._wp))
   end do
+
+  ! Process input to get output! To keep things simple, we just copy our input
+  ! data to output data.
+  do i = 1, 600
+    input = ensemble%inputs(i)
+    output = ensemble%outputs(i)
+    output%interstitial_aero_nmrs = input%interstitial_aero_nmrs
+    output%cloud_aero_nmrs = input%cloud_aero_nmrs
+    output%interstitial_aero_mmrs = input%interstitial_aero_mmrs
+    output%cloud_aero_mmrs = input%cloud_aero_mmrs
+  end do
+
+  ! Now we write out a Python module containing the output data.
+  call ensemble%write_py_module("f90_test.py")
+
+  ! Clean up.
+  call ensemble%free()
 
   ! If we got here, everything is all right!
   print *, "PASS"

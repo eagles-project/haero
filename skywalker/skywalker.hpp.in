@@ -94,7 +94,7 @@ struct OutputData {
       : aero_config(aero_config) {}
   OutputData() = delete;
 
-  const haero::ModalAerosolConfig& aero_config;
+  ModalAerosolConfig aero_config;
 
   // Modal aerosol number mixing rations [# aero molecules / kg air]
   std::vector<Real> interstitial_number_mix_ratios, cloud_number_mix_ratios;

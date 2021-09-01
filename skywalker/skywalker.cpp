@@ -394,7 +394,7 @@ void* sw_load_ensemble(const char* aerosol_config, const char* filename,
     // Size up the output data arrays to make our life easier down the line.
     for (size_t i = 0; i < ensemble->inputs.size(); ++i) {
       const auto& input = ensemble->inputs[i];
-      auto output = ensemble->outputs[i];
+      auto& output = ensemble->outputs[i];
       output.interstitial_number_mix_ratios.resize(
           input.interstitial_number_mix_ratios.size());
       output.cloud_number_mix_ratios.resize(
@@ -550,7 +550,7 @@ void* sw_ensemble_output(void* ensemble, int i) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   EKAT_REQUIRE(i > 0);
   EKAT_REQUIRE(i <= data->outputs.size());
-  OutputData* output = &(data->outputs[i]);
+  OutputData* output = &(data->outputs[i - 1]);
   return reinterpret_cast<void*>(output);
 }
 
