@@ -4,10 +4,20 @@
 include(EkatCreateUnitTest)
 
 function(CreateUnitTest test_name test_srcs)
-  # Some machines always need mpiexec (or srun, perhaps), even for nproc = 1.
-  # TODO: Use srun where needed (for this we must detect SLURM).
-  EkatCreateUnitTest(${test_name} ${test_srcs}
-                     MPI_EXEC_NAME mpiexec
-                     MPI_NP_FLAG -n
-                     LIBS ${HAERO_LIBRARIES})
+  if (HAERO_MPI_EXEC)
+    if (HAERO_MPI_EXTRA_ARGS)
+      EkatCreateUnitTest(${test_name} ${test_srcs}
+        MPI_EXEC_NAME ${HAERO_MPI_EXEC}
+        MPI_NP_FLAG ${HAERO_MPI_NP_FLAG}
+        MPI_EXTRA_ARGS ${HAERO_MPI_EXTRA_ARGS}
+        LIBS ${HAERO_LIBRARIES})
+    else()
+      EkatCreateUnitTest(${test_name} ${test_srcs}
+        MPI_EXEC_NAME ${HAERO_MPI_EXEC}
+        MPI_NP_FLAG ${HAERO_MPI_NP_FLAG}
+        LIBS ${HAERO_LIBRARIES})
+    endif()
+  else()
+    EkatCreateUnitTest(${test_name} ${test_srcs} LIBS ${HAERO_LIBRARIES})
+  endif()
 endfunction()

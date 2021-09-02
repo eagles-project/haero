@@ -208,10 +208,20 @@ if (HAVE_MPI)
   # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone.
   set(NO_MPI_CXX_FLAGS "-DMPICH_SKIP_MPICXX -UHAVE_MPI_CPP -DLAM_WANT_MPI2CPP=0 -DLAM_BUILDING=1 -DOMPI_WANT_CXX_BINDINGS=0 -DOMPI_BUILDING=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NO_MPI_CXX_FLAGS}")
+  if (HAERO_MPI_EXEC)
+    message(STATUS "MPI exec: ${HAERO_MPI_EXEC}")
+    if (NOT HAERO_MPI_NP_FLAG)
+      message(FATAL_ERROR "HAERO_MPI_EXEC was given, but HAERO_MPI_NP_FLAG was not!")
+    endif()
+    message(STATUS "MPI np flag: ${HAERO_MPI_NP_FLAG}")
+    if (HAERO_MPI_EXTRA_FLAGS)
+      message(STATUS "MPI extra flags: ${HAERO_MPI_EXTRA_FLAGS}")
+    endif()
+  endif()
 else()
   message(STATUS "MPI is disabled")
   set(HAVE_MPI 0) # Normalize.
-endif ()
+endif()
 
 # OpenMP support?
 if (USE_OPENMP)
