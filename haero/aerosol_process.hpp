@@ -271,6 +271,12 @@ class DeviceAerosolProcess : public AerosolProcess {
   DeviceAerosolProcess(AerosolProcessType type, const std::string& name)
       : AerosolProcess(type, name), on_device_(false) {}
 
+  /// Copy constructor, called by subclasses.
+  KOKKOS_INLINE_FUNCTION
+  DeviceAerosolProcess(const DeviceAerosolProcess& other):
+    AerosolProcess(other), on_device_(false) {
+  }
+
  protected:
   AerosolProcess* copy_to_device_() const override {
     const std::string debug_name = name();
@@ -280,15 +286,15 @@ class DeviceAerosolProcess : public AerosolProcess {
 
     // Copy this object (including our virtual table) into the storage using
     // a lambda capture.
-    const auto* host_process = dynamic_cast<const Subclass*>(this);
+    const auto& host_process = dynamic_cast<const Subclass&>(*this);
     Kokkos::parallel_for(
         debug_name + "_copy", 1,
         KOKKOS_LAMBDA(const int) {
-      new (device_process) Subclass(*host_process);
+      new (device_process) Subclass(host_process);
       device_process->on_device_ = true;
     });
 
-    return process;
+    return device_process;
   }
 
   // This flag is set to true iff this process was copied to the device from

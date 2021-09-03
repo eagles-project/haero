@@ -148,9 +148,9 @@ TEST_CASE("process_tests", "aerosol_process") {
   Kokkos::deep_copy(dev_int_num_mix_ratios, host_int_num_mix_ratios);
   Kokkos::deep_copy(dev_cld_num_mix_ratios, host_cld_num_mix_ratios);
 
-  auto progs = new Prognostics(num_modes, {1}, num_gases, num_levels, dev_int_aerosols,
-                               dev_cld_aerosols, dev_int_num_mix_ratios,
-                               dev_cld_num_mix_ratios, dev_gases);
+  Prognostics progs(num_modes, {1}, num_gases, num_levels, dev_int_aerosols,
+                    dev_cld_aerosols, dev_int_num_mix_ratios,
+                    dev_cld_num_mix_ratios, dev_gases);
 
   Kokkos::View<PackType *> temp("temperature", num_vert_packs);
   Kokkos::View<PackType *> press("pressure", num_vert_packs);
@@ -169,7 +169,7 @@ TEST_CASE("process_tests", "aerosol_process") {
     Kokkos::deep_copy(temp, host_temp);
   }
   Real pblh = 100.0;
-  auto atmos = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
+  Atmosphere atmos(num_levels, temp, press, qv, ht, pdel, pblh);
 
   std::vector<int> num_aero_species(num_modes);
   std::vector<Mode> modes = create_mam4_modes();
@@ -179,16 +179,16 @@ TEST_CASE("process_tests", "aerosol_process") {
     num_aero_species[m] = mode_species[modes[m].name()].size();
   }
 
-  auto host_diags = new HostDiagnostics(num_modes, num_aero_species, num_gases,
-                                        num_levels);
-  auto aersol_0 = host_diags->create_aerosol_var("First Aerosol");
-  auto aersol_1 = host_diags->create_aerosol_var("Second Aerosol");
-  auto generic_0 = host_diags->create_var("Generic Aerosol");
+  HostDiagnostics host_diags(num_modes, num_aero_species, num_gases,
+                             num_levels);
+  auto aersol_0 = host_diags.create_aerosol_var("First Aerosol");
+  auto aersol_1 = host_diags.create_aerosol_var("Second Aerosol");
+  auto generic_0 = host_diags.create_var("Generic Aerosol");
 
-  auto tends = new Tendencies(*progs);
+  Tendencies tends(progs);
   {
-    const int num_populations = progs->num_aerosol_populations();
-    SpeciesColumnView aero_tend = tends->interstitial_aerosols;
+    const int num_populations = progs.num_aerosol_populations();
+    SpeciesColumnView aero_tend = tends.interstitial_aerosols;
     auto host_aero_tend = Kokkos::create_mirror_view(aero_tend);
     for (int i = 0; i < num_levels; ++i) {
       for (int j = 0; j < num_populations; ++j) {
@@ -211,22 +211,22 @@ TEST_CASE("process_tests", "aerosol_process") {
 
   // Move the process to the device and run it.
   auto device_pp = pp->copy_to_device();
-  const Diagnostics &diags = host_diags->GetDiagnostics();
+  const Diagnostics &diags = host_diags.GetDiagnostics();
   const auto &team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const TeamType &team) {
-        device_pp->run(team, t, dt, *progs, *atmos, diags, *tends);
+        device_pp->run(team, t, dt, progs, atmos, diags, tends);
       });
   AerosolProcess::delete_on_device(device_pp);
 
   {
     using fp_helper = FloatingPoint<float>;
-    const SpeciesColumnView int_aerosols = progs->interstitial_aerosols;
-    const ColumnView temp = atmos->temperature;
+    const SpeciesColumnView int_aerosols = progs.interstitial_aerosols;
+    const ColumnView temp = atmos.temperature;
     const SpeciesColumnView first_aersol = diags.aerosol_var(aersol_0);
     const SpeciesColumnView second_aersol = diags.aerosol_var(aersol_1);
     const ColumnView generic_var = diags.var(generic_0);
-    SpeciesColumnView aero_tend = tends->interstitial_aerosols;
+    SpeciesColumnView aero_tend = tends.interstitial_aerosols;
 
     auto host_first_aersol = Kokkos::create_mirror_view(first_aersol);
     auto host_second_aersol = Kokkos::create_mirror_view(second_aersol);
@@ -270,9 +270,5 @@ TEST_CASE("process_tests", "aerosol_process") {
     }
   }
 
-  delete tends;
-  delete atmos;
-  delete host_diags;
-  delete progs;
   delete pp;
 }
