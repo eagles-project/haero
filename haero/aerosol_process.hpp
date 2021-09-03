@@ -406,8 +406,9 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
 
     const auto* this_process = dynamic_cast<const FAerosolProcess*>(this);
     Kokkos::parallel_for(
-        debug_name + "_copy", 1,
-        KOKKOS_LAMBDA(const int) { new (process) FAerosolProcess(*this_process); });
+        debug_name + "_copy", 1, KOKKOS_LAMBDA(const int) {
+          new (process) FAerosolProcess(*this_process);
+        });
     process->on_device_ = true;
     return process;
   }
