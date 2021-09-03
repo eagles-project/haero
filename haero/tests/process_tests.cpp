@@ -42,7 +42,7 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
   //                                Overrides
   //------------------------------------------------------------------------
 
-  KOKKOS_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   void run_(const TeamType &team, Real t, Real dt,
             const Prognostics &prognostics, const Atmosphere &atmosphere,
             const Diagnostics &diagnostics,

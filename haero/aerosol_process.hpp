@@ -194,7 +194,6 @@ class AerosolProcess {
   /// that has been created on a device.
   /// @param [inout] device_process A pointer to a process created with
   ///                copy_to_device().
-  KOKKOS_FUNCTION
   static void delete_on_device(AerosolProcess* device_process) {
     Kokkos::parallel_for(
         "delete", 1,
