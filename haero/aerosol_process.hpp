@@ -244,7 +244,7 @@ class AerosolProcess {
   virtual void set_param_(const std::string& name, Real value) {}
   virtual void set_param_(const std::string& name, const std::string& value) {}
 
-  /// This gets overridden by the AerosolProcessOnDevice middleware class.
+  /// This gets overridden by the DeviceAerosolProcess middleware class.
   virtual AerosolProcess* copy_to_device_() const = 0;
 
  private:
@@ -269,7 +269,7 @@ class DeviceAerosolProcess : public AerosolProcess {
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
   DeviceAerosolProcess(AerosolProcessType type, const std::string& name)
-      : AerosolProcess(type, name) {}
+      : AerosolProcess(type, name), on_device_(false) {}
 
  protected:
   AerosolProcess* copy_to_device_() const override {
@@ -283,9 +283,17 @@ class DeviceAerosolProcess : public AerosolProcess {
     const auto* this_process = dynamic_cast<const Subclass*>(this);
     Kokkos::parallel_for(
         debug_name + "_copy", 1,
-        KOKKOS_LAMBDA(const int) { new (process) Subclass(*this_process); });
+        KOKKOS_LAMBDA(const int) {
+      new (process) Subclass(*this_process);
+      process->on_device_ = true;
+    });
+
     return process;
   }
+
+  // This flag is set to true iff this process was copied to the device from
+  // the host.
+  bool on_device_;
 };
 
 /// @class NullAerosolProcess
@@ -370,8 +378,7 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
         set_integer_param_(set_integer_param),
         set_logical_param_(set_logical_param),
         set_real_param_(set_real_param),
-        initialized_(false),
-        on_device_(false) {}
+        initialized_(false) {}
 
   /// Copy constructor.
   FAerosolProcess(const FAerosolProcess& pp)
@@ -382,8 +389,7 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
         set_integer_param_(pp.set_integer_param_),
         set_logical_param_(pp.set_logical_param_),
         set_real_param_(pp.set_real_param_),
-        initialized_(pp.initialized_),
-        on_device_(pp.on_device_) {}
+        initialized_(pp.initialized_) {}
 
   /// Destructor.
   ~FAerosolProcess() {
@@ -394,23 +400,6 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
   }
 
  protected:
-  // Overrides.
-  AerosolProcess* copy_to_device_() const override {
-    // Here we do the same stuff as DeviceAerosolProcess::copy_to_device_,
-    // except that we set the on_device_ flag to true.
-    const std::string debug_name = name();
-    FAerosolProcess* process =
-        static_cast<FAerosolProcess*>(Kokkos::kokkos_malloc<MemorySpace>(
-            debug_name + "_malloc", sizeof(FAerosolProcess)));
-
-    const auto* this_process = dynamic_cast<const FAerosolProcess*>(this);
-    Kokkos::parallel_for(
-        debug_name + "_copy", 1, KOKKOS_LAMBDA(const int) {
-          new (process) FAerosolProcess(*this_process);
-        });
-    process->on_device_ = true;
-    return process;
-  }
 
   void init_(const ModalAerosolConfig& modal_aerosol_config) override {
     if (not initialized_) {
@@ -456,9 +445,6 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
 
   // Has the process been initialized?
   bool initialized_;
-
-  // Is the process on the device? If so, it doesn't get finalized.
-  bool on_device_;
 };
 
 #endif  // HAERO_FORTRAN
