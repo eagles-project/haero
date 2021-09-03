@@ -201,10 +201,10 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       haero::Real t = 0.0, t_end = param_walk.ref_input.total_time;
       while (t < t_end) {
         Kokkos::parallel_for(
-          team_policy, KOKKOS_LAMBDA(const haero::TeamType &team) {
-            d_process->run(team, t, dt, *prognostics, *atmosphere,
+            team_policy, KOKKOS_LAMBDA(const haero::TeamType& team) {
+              d_process->run(team, t, dt, *prognostics, *atmosphere,
                              *diagnostics, *tendencies);
-        });
+            });
 
         // Advance the time and prognostic state.
         t += dt;

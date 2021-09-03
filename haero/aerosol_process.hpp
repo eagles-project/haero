@@ -196,8 +196,9 @@ class AerosolProcess {
   ///                copy_to_device().
   KOKKOS_INLINE_FUNCTION
   static void delete_on_device(AerosolProcess* device_process) {
-    Kokkos::parallel_for("delete", 1,
-      KOKKOS_LAMBDA(const int) { device_process->~AerosolProcess(); });
+    Kokkos::parallel_for(
+        "delete", 1,
+        KOKKOS_LAMBDA(const int) { device_process->~AerosolProcess(); });
     Kokkos::kokkos_free<MemorySpace>((void*)device_process);
   }
 

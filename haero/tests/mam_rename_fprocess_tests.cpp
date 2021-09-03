@@ -45,8 +45,7 @@ TEST_CASE("mam_rename_run", "") {
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
   Real pblh{100.0};  // planetary BL height [m]
-  auto atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel,
-                            pblh);
+  auto atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel, pblh);
 
   SECTION("rename_run") {
     auto* process = new MAMRenameFProcess();
@@ -93,9 +92,9 @@ TEST_CASE("mam_rename_run", "") {
     auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
     auto d_process = process->copy_to_device();
     Kokkos::parallel_for(
-        team_policy, KOKKOS_LAMBDA(const TeamType &team) {
-      d_process->run(team, t, dt, *progs, *atm, *diags, *tends);
-      });
+        team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+          d_process->run(team, t, dt, *progs, *atm, *diags, *tends);
+        });
     AerosolProcess::delete_on_device(d_process);
 
     delete tends;

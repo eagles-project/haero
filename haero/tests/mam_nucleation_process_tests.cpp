@@ -525,9 +525,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
       auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
       auto d_process = process->copy_to_device();
       Kokkos::parallel_for(
-        team_policy, KOKKOS_LAMBDA(const TeamType &team) {
-          d_process->run(team, t, dt, *progs, *atm, *diags, *tends);
-        });
+          team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+            d_process->run(team, t, dt, *progs, *atm, *diags, *tends);
+          });
       AerosolProcess::delete_on_device(d_process);
     }
     // --------------------------------------------------
@@ -637,9 +637,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
       auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
       auto d_process = process->copy_to_device();
       Kokkos::parallel_for(
-        team_policy, KOKKOS_LAMBDA(const TeamType &team) {
-          d_process->run(team, t, dt, *progs, *atm, *diags, *tends);
-        });
+          team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+            d_process->run(team, t, dt, *progs, *atm, *diags, *tends);
+          });
       AerosolProcess::delete_on_device(d_process);
     }
     // --------------------------------------------------
