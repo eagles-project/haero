@@ -274,18 +274,18 @@ class DeviceAerosolProcess : public AerosolProcess {
  protected:
   AerosolProcess* copy_to_device_() const override {
     const std::string debug_name = name();
-    Subclass* process =
+    Subclass* device_process =
         static_cast<Subclass*>(Kokkos::kokkos_malloc<MemorySpace>(
             debug_name + "_malloc", sizeof(Subclass)));
 
     // Copy this object (including our virtual table) into the storage using
     // a lambda capture.
-    const auto* this_process = dynamic_cast<const Subclass*>(this);
+    const auto* host_process = dynamic_cast<const Subclass*>(this);
     Kokkos::parallel_for(
         debug_name + "_copy", 1,
         KOKKOS_LAMBDA(const int) {
-      new (process) Subclass(*this_process);
-      process->on_device_ = true;
+      new (device_process) Subclass(*host_process);
+      device_process->on_device_ = true;
     });
 
     return process;
