@@ -141,28 +141,22 @@ contains
 
     ierr = 0
 
-    if (allocated(dgnumlo_aer)) then
-      deallocate(dgnumlo_aer, stat=ierr)
-      if (ierr .ne. 0) then
-        print *, 'Could not deallocate dgnumlo_aer'
-        stop ierr
-      endif
+    deallocate(dgnumlo_aer, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate dgnumlo_aer'
+      stop ierr
     endif
 
-    if (allocated(dgnumhi_aer)) then
-      deallocate(dgnumhi_aer, stat=ierr)
-      if (ierr .ne. 0) then
-        print *, 'Could not deallocate dgnumhi_aer'
-        stop ierr
-      endif
+    deallocate(dgnumhi_aer, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate dgnumhi_aer'
+      stop ierr
     endif
 
-    if (allocated(dgnum_aer)) then
-      deallocate(dgnum_aer, stat=ierr)
-      if (ierr .ne. 0) then
-        print *, 'Could not deallocate dgnum_aer'
-        stop ierr
-      endif
+    deallocate(dgnum_aer, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate dgnum_aer'
+      stop ierr
     endif
 
   end subroutine finalize_diameters
@@ -196,12 +190,10 @@ contains
 
     ierr = 0
 
-    if (allocated(alnsg)) then
-      deallocate(alnsg, stat=ierr)
-      if (ierr .ne. 0) then
-        print *, 'Could not deallocate alnsg'
-        stop ierr
-      endif
+    deallocate(alnsg, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate alnsg'
+      stop ierr
     endif
 
   end subroutine finalize_ln_of_std_dev

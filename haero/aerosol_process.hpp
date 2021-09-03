@@ -371,7 +371,8 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
         set_integer_param_(set_integer_param),
         set_logical_param_(set_logical_param),
         set_real_param_(set_real_param),
-        initialized_(false) {}
+        initialized_(false),
+        on_device_(false) {}
 
   /// Copy constructor.
   FAerosolProcess(const FAerosolProcess& pp)
@@ -382,11 +383,12 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
         set_integer_param_(pp.set_integer_param_),
         set_logical_param_(pp.set_logical_param_),
         set_real_param_(pp.set_real_param_),
-        initialized_(pp.initialized_) {}
+        initialized_(pp.initialized_),
+        on_device_(pp.on_device_) {}
 
   /// Destructor.
   ~FAerosolProcess() {
-    if (initialized_) {
+    if (initialized_ and not on_device_) {
       finalize_process_();
       initialized_ = false;
     }
@@ -394,6 +396,22 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
 
  protected:
   // Overrides.
+  AerosolProcess* copy_to_device_() const override {
+    // Here we do the same stuff as DeviceAerosolProcess::copy_to_device_,
+    // except that we set the on_device_ flag to true.
+    const std::string debug_name = name();
+    FAerosolProcess* process =
+        static_cast<FAerosolProcess*>(Kokkos::kokkos_malloc<MemorySpace>(
+            debug_name + "_malloc", sizeof(FAerosolProcess)));
+
+    const auto* this_process = dynamic_cast<const FAerosolProcess*>(this);
+    Kokkos::parallel_for(
+        debug_name + "_copy", 1,
+        KOKKOS_LAMBDA(const int) { new (process) FAerosolProcess(*this_process); });
+    process->on_device_ = true;
+    return process;
+  }
+
   void init_(const ModalAerosolConfig& modal_aerosol_config) override {
     if (not initialized_) {
       init_process_();
@@ -438,6 +456,9 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
 
   // Has the process been initialized?
   bool initialized_;
+
+  // Is the process on the device? If so, it doesn't get finalized.
+  bool on_device_;
 };
 
 #endif  // HAERO_FORTRAN

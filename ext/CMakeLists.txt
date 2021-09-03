@@ -220,6 +220,9 @@ if (NOT EXISTS ${EKAT_LIBRARY})
     if (HAVE_OPENMP)
       set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
                           -DKokkos_ENABLE_OPENMP=ON)
+    else()
+      set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                          -DKokkos_ENABLE_OPENMP=OFF)
     endif()
   elseif (HAERO_DEVICE STREQUAL CUDA)
     set(KOKKOS_ARCH_FLAG "Kokkos_ARCH_${HAERO_DEVICE_ARCH}")
