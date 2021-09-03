@@ -78,6 +78,18 @@ PREFIX=$PWD/$1
 # a requirement down the line if necessary.
 MPI=ON
 
+# The name of the program used to execute MPI programs. Some machines require
+# thіs invocation even for single-process runs.
+MPI_EXEC=
+#MPI_EXEC=mpiexec
+
+# The flag used by MPI_EXEC to indicate the number of processes to use.
+MPI_NP_FLAG=
+#MPI_NP_FLAG=-n
+
+# Any extra arguments that need to be passed to MPI_EXEC.
+MPI_EXTRA_ARGS=
+
 #-----------------------------------------------------------------------------
 #                             On-Node Parallelism (Kokkos)
 #-----------------------------------------------------------------------------
@@ -264,6 +276,16 @@ GENERATOR="Unix Makefiles"
 OPTIONS=""
 if [ "\$MPI" = "ON" ]; then
   OPTIONS="-DHAVE_MPI=ON"
+  if [ ! "\$MPI_EXEC" = "" ]; then
+    if [ "\$MPI_NP_FLAG" = "" ]; then
+      echo "Error: MPI_NP_FLAG must be set if MPI_EXEC is set."
+      exit 1
+    fi
+    OPTIONS="\$OPTIONS -DHAERO_MPI_EXEC=\$MPI_EXEC -DHAERO_MPI_NP_FLAG=\$MPI_NP_FLAG"
+    if [ ! "\$MPI_EXTRA_ARGS" = "" ]; then
+      OPTIONS="\$OPTIONS -DHAERO_MPI_EXTRA_ARGS=\$MPI_EXTRA_ARGS"
+    fi
+  fi
 fi
 if [ "\$VERBOSE" = "ON" ]; then
   OPTIONS="\$OPTIONS -DCMAKE_VERBOSE_MAKEFILE=ON"
