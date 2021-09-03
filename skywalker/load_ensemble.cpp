@@ -121,8 +121,8 @@ void parse_gas_ensemble_params(
   }
 }
 
-void parse_user_ensemble_params(const YAML::Node& user,
-    std::map<std::string, std::vector<Real>>& params) {
+void parse_user_ensemble_params(
+    const YAML::Node& user, std::map<std::string, std::vector<Real>>& params) {
   for (auto iter : user) {
     auto param = iter.second;
     if (not param.IsSequence()) {
@@ -185,7 +185,7 @@ void parse_ensemble_section(const YAML::Node& ensemble,
   for (auto eiter : ensemble) {
     auto group_name = eiter.first.as<std::string>();
     if ((group_name != "atmosphere") and (group_name != "gases") and
-        (group_name != "aerosols")) {
+        (group_name != "aerosols") and (group_name != "user")) {
       continue;
     }
     auto group = eiter.second;
@@ -378,8 +378,7 @@ void parse_gases_section(const YAML::Node& gases,
   }
 }
 
-void parse_user_section(const YAML::Node& user,
-                        ParameterWalk& pw) {
+void parse_user_section(const YAML::Node& user, ParameterWalk& pw) {
   for (auto iter : user) {
     auto name = iter.first.as<std::string>();
     Real value = iter.second.as<Real>();

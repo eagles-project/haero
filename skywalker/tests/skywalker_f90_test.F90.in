@@ -42,7 +42,7 @@ program skywalker_f90_test
   integer             :: i
 
   ! Load the ensemble. Any error encountered is fatal.
-  print *, "skywalker_f90_test: Loading ensemble from", trim(input_file)
+  print *, "skywalker_f90_test: Loading ensemble from ", trim(input_file)
   ensemble = load_ensemble("mam4", trim(input_file), "mam_box_model")
 
   ! Make sure everything is as it should be.
@@ -63,21 +63,32 @@ program skywalker_f90_test
   assert(ensemble%num_gases == 13)
 
   ! ensemble information
-  assert(ensemble%size == 600)
-  do i = 1, 600
+  assert(ensemble%size == 6600)
+  do i = 1, ensemble%size
     input = ensemble%inputs(i)
+
+    ! Time stepping parameters
     assert(input%dt == 1._wp)
     assert(input%total_time == 1._wp)
+
+    ! Atmospheric parameters
     assert(approx_equal(input%pressure, 100000._wp))
     assert(approx_equal(input%vapor_mixing_ratio, 0.4_wp))
     assert(approx_equal(input%height, 3000._wp))
     assert(approx_equal(input%hydrostatic_dp, 200._wp))
     assert(approx_equal(input%planetary_boundary_layer_height, 1100._wp))
+
+    ! User parameters
+    assert(approx_equal(input%user_param("p1"), 1.0_wp))
+    assert(approx_equal(input%user_param("p2"), 2.0_wp))
+    assert(approx_equal(input%user_param("p3"), 3.0_wp))
+    assert(input%user_param("tick") >= 0.0_wp)
+    assert(input%user_param("tick") <= 10.0_wp)
   end do
 
   ! Process input to get output! To keep things simple, we just copy our input
   ! data to output data.
-  do i = 1, 600
+  do i = 1, ensemble%size
     input = ensemble%inputs(i)
     output = ensemble%outputs(i)
     output%interstitial_aero_nmrs = input%interstitial_aero_nmrs

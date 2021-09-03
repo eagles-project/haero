@@ -26,6 +26,9 @@ ensemble:
       interstitial:
         so4: [0, 0.001]
 
+  user:
+    tick: [0, 10, 1]
+
 atmosphere:
   temperature: 273
   pressure: 100000
@@ -114,3 +117,7 @@ gases: # [kg gas / kg air]
   h2o2: 0
   dms: 0
 
+user:
+  p1: 1
+  p2: 2
+  p3: 3

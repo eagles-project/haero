@@ -112,7 +112,7 @@ Real InputData::operator[](const std::string& param_name) const {
     }
   } else if (is_user_param(param_name)) {
     // Strip "user." off the front and get it from user_params.
-    auto name = param_name.substr(5, param_name.length()-5);
+    auto name = param_name.substr(5, param_name.length() - 5);
     auto iter = user_params.find(name);
     if (iter != user_params.end()) {
       return iter->second;
@@ -186,7 +186,7 @@ Real& InputData::operator[](const std::string& param_name) {
     }
   } else if (is_user_param(param_name)) {
     // Strip "user." off the front and stuff it into user_params.
-    auto name = param_name.substr(5, param_name.length()-5);
+    auto name = param_name.substr(5, param_name.length() - 5);
     return user_params[name];
   } else {
     zero_value = 0.0;
@@ -559,6 +559,12 @@ void sw_input_get_aerosols(void* input, Real* interstitial_number_mix_ratios,
 void sw_input_get_gases(void* input, Real* gas_mmrs) {
   auto inp = reinterpret_cast<InputData*>(input);
   std::copy(inp->gas_mmrs.begin(), inp->gas_mmrs.end(), gas_mmrs);
+}
+
+/// Fetches the value of a named user parameter for the given ensemble input.
+void sw_input_get_user_param(void* input, const char* name, Real* value) {
+  auto inp = reinterpret_cast<InputData*>(input);
+  *value = inp->user_params[name];
 }
 
 /// Fetches an opaque pointer to the ith set of output data from the given

@@ -162,6 +162,13 @@ module skywalker
       type(c_ptr), value, intent(in) :: gas_mmrs
     end subroutine
 
+    subroutine sw_input_get_user_param(output, name, value) bind(c)
+      use iso_c_binding, only: c_ptr, c_double, c_float
+      type(c_ptr), value, intent(in) :: output
+      type(c_ptr), value, intent(in) :: name
+      real(c_real), intent(out) :: value
+    end subroutine
+
     type(c_ptr) function sw_ensemble_output(ensemble, i) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
@@ -327,6 +334,7 @@ contains
     character(len=*), intent(in) :: name
     real(c_real) :: val
 
+    call sw_input_get_user_param(input%ptr, f_to_c_string(name), val)
   end function
 
   ! Adds a value for a named metric to output data.

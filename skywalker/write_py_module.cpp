@@ -118,6 +118,12 @@ void write_py_module(const std::vector<InputData>& inputs,
     write_input_var(file, inputs, gas_name.c_str());
   }
 
+  // Write out user-defined parameters.
+  for (const auto& user_param : inputs[0].user_params) {
+    const auto& name = std::string("user.") + user_param.first;
+    write_input_var(file, inputs, name);
+  }
+
   // Write output data.
   fprintf(file, "\n# Output data is stored here.\n");
   fprintf(file, "output = Object()\n");
