@@ -112,9 +112,13 @@ TEST_CASE("faerosol_process_stub", "") {
     Real t = 0.0, dt = 0.01;
     auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
     auto d_stub = stub->copy_to_device();
+    const auto& p = *progs;
+    const auto& a = *atm;
+    const auto& d = *diags;
+    auto& te = *tends;
     Kokkos::parallel_for(
         team_policy, KOKKOS_LAMBDA(const TeamType& team) {
-          d_stub->run(team, t, dt, *progs, *atm, *diags, *tends);
+          d_stub->run(team, t, dt, p, a, d, te);
         });
     AerosolProcess::delete_on_device(d_stub);
 

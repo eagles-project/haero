@@ -539,9 +539,13 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
     Real t = 0.0, dt = 30.0;
     auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
     auto d_process = process->copy_to_device();
+    const auto& p = *progs;
+    const auto& a = *atm;
+    const auto& d = *diags;
+    auto& te = *tends;
     Kokkos::parallel_for(
         team_policy, KOKKOS_LAMBDA(const TeamType& team) {
-          d_process->run(team, t, dt, *progs, *atm, *diags, *tends);
+          d_process->run(team, t, dt, p, a, d, te);
         });
     AerosolProcess::delete_on_device(d_process);
 
@@ -589,4 +593,6 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
     delete tends;
     delete process;
   }
+
+  delete atm;
 }
