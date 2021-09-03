@@ -32,7 +32,7 @@ class Atmosphere final {
 
   /// Destructor.
   KOKKOS_FUNCTION
-  ~Atmosphere();
+  ~Atmosphere() {}
 
   // Views.
   const ColumnView temperature;

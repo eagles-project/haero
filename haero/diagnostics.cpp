@@ -24,8 +24,6 @@ HostDiagnostics::HostDiagnostics(int num_aerosol_modes,
 
 HostDiagnostics::~HostDiagnostics() {}
 
-Diagnostics::~Diagnostics() {}
-
 const Diagnostics& HostDiagnostics::GetDiagnostics() { return *this; }
 
 int Diagnostics::num_aerosol_modes() const { return num_aero_species_.size(); }

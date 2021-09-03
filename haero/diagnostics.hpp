@@ -40,8 +40,8 @@ class Diagnostics {
               int num_levels);
 
   /// Destructor.
-  KOKKOS_FUNCTION
-  ~Diagnostics();
+  KOKKOS_INLINE_FUNCTION
+  ~Diagnostics() {}
 
   // --------------------------------------------------------------------------
   //                                Metadata
