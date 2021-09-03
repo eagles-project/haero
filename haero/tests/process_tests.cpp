@@ -202,7 +202,8 @@ TEST_CASE("process_tests", "aerosol_process") {
   // Create and initialize our process.
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudProcess";
-  auto pp = new MyAerosolProcess(type, name, num_levels, aersol_0, aersol_1, generic_0);
+  auto pp = new MyAerosolProcess(type, name, num_levels, aersol_0, aersol_1,
+                                 generic_0);
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
   std::vector<GasSpecies> gas_species = create_mam4_gas_species();
   ModalAerosolConfig aero_config(modes, aero_species, mode_species,

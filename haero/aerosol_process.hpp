@@ -273,9 +273,8 @@ class DeviceAerosolProcess : public AerosolProcess {
 
   /// Copy constructor, called by subclasses.
   KOKKOS_INLINE_FUNCTION
-  DeviceAerosolProcess(const DeviceAerosolProcess& other):
-    AerosolProcess(other), on_device_(false) {
-  }
+  DeviceAerosolProcess(const DeviceAerosolProcess& other)
+      : AerosolProcess(other), on_device_(false) {}
 
  protected:
   AerosolProcess* copy_to_device_() const override {
@@ -288,11 +287,10 @@ class DeviceAerosolProcess : public AerosolProcess {
     // a lambda capture.
     const auto& host_process = dynamic_cast<const Subclass&>(*this);
     Kokkos::parallel_for(
-        debug_name + "_copy", 1,
-        KOKKOS_LAMBDA(const int) {
-      new (device_process) Subclass(host_process);
-      device_process->on_device_ = true;
-    });
+        debug_name + "_copy", 1, KOKKOS_LAMBDA(const int) {
+          new (device_process) Subclass(host_process);
+          device_process->on_device_ = true;
+        });
 
     return device_process;
   }
@@ -406,7 +404,6 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
   }
 
  protected:
-
   void init_(const ModalAerosolConfig& modal_aerosol_config) override {
     if (not initialized_) {
       init_process_();
