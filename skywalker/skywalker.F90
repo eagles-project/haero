@@ -29,6 +29,9 @@ module skywalker
                                               cloud_aero_mmrs
     ! Gas mass mixing ratios [kg gas / kg air]
     real(c_real), dimension(:), pointer :: gas_mmrs
+  contains
+    ! Fetches a user-defined parameter.
+    procedure :: user_param => i_user_param
   end type input_data_t
 
   type :: output_data_t
@@ -312,6 +315,18 @@ contains
 
     ! Clean up.
     deallocate(int_aero_data, cld_aero_data, mode_array_sizes)
+  end function
+
+  ! Fetches a user-defined parameter.
+  function i_user_param(input, name) result(val)
+    use iso_c_binding, only: c_ptr, c_double, c_float
+    use haero, only: f_to_c_string
+    implicit none
+
+    class(input_data_t), intent(in) :: input
+    character(len=*), intent(in) :: name
+    real(c_real) :: val
+
   end function
 
   ! Adds a value for a named metric to output data.

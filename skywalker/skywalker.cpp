@@ -25,6 +25,10 @@ bool is_atmosphere(const std::string& param_name) {
   return (param_name.find("atmosphere.") != std::string::npos);
 }
 
+bool is_user_param(const std::string& param_name) {
+  return (param_name.find("user.") != std::string::npos);
+}
+
 void parse_aerosol(const haero::ModalAerosolConfig& aero_config,
                    const std::string& param_name, bool& cloudy,
                    int& pop_index) {
@@ -106,6 +110,15 @@ Real InputData::operator[](const std::string& param_name) const {
     } else {
       return 0.0;
     }
+  } else if (is_user_param(param_name)) {
+    // Strip "user." off the front and get it from user_params.
+    auto name = param_name.substr(5, param_name.length()-5);
+    auto iter = user_params.find(name);
+    if (iter != user_params.end()) {
+      return iter->second;
+    } else {
+      return 0.0;
+    }
   } else {
     return 0.0;
   }
@@ -171,6 +184,10 @@ Real& InputData::operator[](const std::string& param_name) {
       zero_value = 0.0;
       return zero_value;
     }
+  } else if (is_user_param(param_name)) {
+    // Strip "user." off the front and stuff it into user_params.
+    auto name = param_name.substr(5, param_name.length()-5);
+    return user_params[name];
   } else {
     zero_value = 0.0;
     return zero_value;

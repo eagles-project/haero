@@ -43,6 +43,9 @@ struct InputData {
   // Gas mass mixing ratios [kg gas / kg air]
   std::vector<Real> gas_mmrs;
 
+  // Named user-defined parameters (found in "user" blocks).
+  std::map<std::string, Real> user_params;
+
   // Fetches the parameter with the given name. If no parameter is found, these
   // operators return a zero value (or a reference to a zeroed value).
   Real operator[](const std::string& param_name) const;

@@ -121,6 +121,20 @@ void parse_gas_ensemble_params(
   }
 }
 
+void parse_user_ensemble_params(const YAML::Node& user,
+    std::map<std::string, std::vector<Real>>& params) {
+  for (auto iter : user) {
+    auto param = iter.second;
+    if (not param.IsSequence()) {
+      throw YamlException(std::string("Parameter 'user:") +
+                          iter.first.as<std::string>() +
+                          std::string("' is not a sequence!\n"));
+    }
+    auto name = std::string("user.") + iter.first.as<std::string>();
+    params[name] = parse_value_array(name, param);
+  }
+}
+
 void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
   // Parse the process based on the model implementation (e.g. "mam" or "haero")
   if (not process[pw.model_impl]) {
@@ -179,8 +193,12 @@ void parse_ensemble_section(const YAML::Node& ensemble,
       parse_atm_ensemble_params(group, pw.ensemble);
     } else if (group_name == "gases") {
       parse_gas_ensemble_params(aerosol_config, group, pw.ensemble);
-    } else {
+    } else if (group_name == "aerosols") {
       parse_aero_ensemble_params(aerosol_config, group, pw.ensemble);
+    } else if (group_name == "user") {
+      parse_user_ensemble_params(group, pw.ensemble);
+    } else {
+      throw YamlException("Unrecognized subsection found in ensemble section!");
     }
   }
 }
@@ -360,6 +378,15 @@ void parse_gases_section(const YAML::Node& gases,
   }
 }
 
+void parse_user_section(const YAML::Node& user,
+                        ParameterWalk& pw) {
+  for (auto iter : user) {
+    auto name = iter.first.as<std::string>();
+    Real value = iter.second.as<Real>();
+    pw.ref_input.user_params[name] = value;
+  }
+}
+
 }  // namespace
 
 namespace skywalker {
@@ -400,6 +427,14 @@ ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
       throw YamlException("Did not find a valid gases section!");
     }
     parse_gases_section(root["gases"], aerosol_config, pw);
+
+    // Are there user-defined parameters?
+    if (root["user"]) {
+      if (not root["user"].IsMap()) {
+        throw YamlException("user section is not valid!");
+      }
+      parse_user_section(root["user"], pw);
+    }
   } catch (std::exception& e) {
     throw YamlException(e.what());
   }
