@@ -37,6 +37,19 @@ using MaskType = ekat::Mask<HAERO_PACK_SIZE>;
 using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
 using HostType   = ekat::KokkosTypes<ekat::HostDevice>;
 
+/// Execution space (based on DeviceType)
+using ExecutionSpace = typename DeviceType::ExeSpace;
+
+/// Kokkos team policy used to perform parallel dispatches of aerosol processes
+/// over several columns.
+using TeamPolicy = typename DeviceType::TeamPolicy;
+
+/// Kokkos team type for the Kokkos::TeamThreadRange parallel dispatch policy.
+/// This type is often called a TeamMember in other Kokkos codes, but it's
+/// actually not a member of a team--it's a member of a league: in other words,
+/// a team!
+using TeamType = typename DeviceType::MemberType;
+
 /// Views of this type store packs in a vertical column, with
 /// ceil(num_levels/HAERO_PACK_SIZE) packs spanning the column's vertical
 /// levels. If k identifies a vertical level, the corresponding data is

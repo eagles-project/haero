@@ -181,6 +181,10 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // Initialize it for the given aerosol configuration.
   process->init(aero_config);
 
+  // Set up a team dispatch policy and copy the process to the device.
+  auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
+  auto d_process = process->copy_to_device();
+
   // Run a set of simulations, each of which computes tendencies for aerosols
   // and gases over different vertical levels, to maximize parallelism. We do
   // include two loops here to accommodate different values of the planetary
@@ -196,8 +200,11 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       // Run the thing.
       haero::Real t = 0.0, t_end = param_walk.ref_input.total_time;
       while (t < t_end) {
-        process->run(t, dt, *prognostics, *atmosphere, *diagnostics,
-                     *tendencies);
+        Kokkos::parallel_for(
+          team_policy, KOKKOS_LAMBDA(const haero::TeamType &team) {
+            d_process->run(team, t, dt, *prognostics, *atmosphere,
+                             *diagnostics, *tendencies);
+        });
 
         // Advance the time and prognostic state.
         t += dt;
@@ -234,6 +241,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   write_py_module(input_data, output_data, py_module_name);
 
   // Clean up.
+  haero::AerosolProcess::delete_on_device(d_process);
   delete tendencies;
   delete atmosphere;
   delete diagnostics;

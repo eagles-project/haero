@@ -217,8 +217,9 @@ class MAMNucleationProcess final
   void init_(const ModalAerosolConfig &modal_aerosol_config) override;
 
   KOKKOS_FUNCTION
-  void run_(Real t, Real dt, const Prognostics &prognostics,
-            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+  void run_(const TeamType &team, Real t, Real dt,
+            const Prognostics &prognostics, const Atmosphere &atmosphere,
+            const Diagnostics &diagnostics,
             const Tendencies &tendencies) const override {
     // First of all, check to make sure our model has an aitken mode. If it
     // doesn't, we can return immediately.

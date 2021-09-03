@@ -56,11 +56,6 @@ enum AerosolProcessType {
 /// compute tendencies for aerosol systems.
 class AerosolProcess {
  public:
-  /// Managed pointer type for on-device aerosol processes. We can't use a
-  /// unique_ptr here, since Kokkos's lambda capture requires pointers to be
-  /// copied.
-  using ManagedPointer = std::shared_ptr<AerosolProcess>;
-
   /// Constructor, called by all AerosolProcess subclasses.
   /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
@@ -128,6 +123,8 @@ class AerosolProcess {
   }
 
   /// On device: runs the aerosol process at a given time with the given data.
+  /// @param [in] team The Kokkos team used to run this process in a parallel
+  ///                  dispatch.
   /// @param [in] t The simulation time at which this process is being invoked
   ///               (in seconds).
   /// @param [in] dt The simulation time interval ("timestep size") over which
@@ -141,11 +138,11 @@ class AerosolProcess {
   /// @param [out] tendencies A container that stores time derivatives for
   ///                         prognostic variables evolved by this process.
   KOKKOS_FUNCTION
-  void run(Real t, Real dt, const Prognostics& prognostics,
-           const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-           const Tendencies& tendencies) const {
+  void run(const TeamType& team, Real t, Real dt,
+           const Prognostics& prognostics, const Atmosphere& atmosphere,
+           const Diagnostics& diagnostics, const Tendencies& tendencies) const {
     // This method must be called on the device.
-    run_(t, dt, prognostics, atmosphere, diagnostics, tendencies);
+    run_(team, t, dt, prognostics, atmosphere, diagnostics, tendencies);
   }
 
   /// On host: Sets a named integer value for this aerosol process.
@@ -189,9 +186,20 @@ class AerosolProcess {
     return required_diagnostics_();
   }
 
-  /// On host: copies this aerosol process to the device, returning a managed
+  /// On host: copies this aerosol process to the device, returning a
   /// pointer to the copy.
-  ManagedPointer copy_to_device() const { return copy_to_device_(); }
+  AerosolProcess* copy_to_device() const { return copy_to_device_(); }
+
+  /// On host: call this static method to delete a copy of the process
+  /// that has been created on a device.
+  /// @param [inout] device_process A pointer to a process created with
+  ///                copy_to_device().
+  KOKKOS_INLINE_FUNCTION
+  static void delete_on_device(AerosolProcess* device_process) {
+    Kokkos::parallel_for("delete", 1,
+      KOKKOS_LAMBDA(const int) { device_process->~AerosolProcess(); });
+    Kokkos::kokkos_free<MemorySpace>((void*)device_process);
+  }
 
  protected:
   /// On host: override this method to perform system-specific initialization
@@ -200,8 +208,23 @@ class AerosolProcess {
 
   /// On device: override this method to run the aerosol process using its
   /// specific parameterizations for a subclass.
+  /// @param [in] team The Kokkos team used to run this process in a parallel
+  ///                  dispatch. Not used by Fortran process implementations.
+  /// @param [in] t The simulation time at which this process is being invoked
+  ///               (in seconds).
+  /// @param [in] dt The simulation time interval ("timestep size") over which
+  ///                this process occurs.
+  /// @param [in] prognostics The prognostic variables used by and affected by
+  ///                         this process.
+  /// @param [in] atmosphere The atmosphere state variables used by this
+  ///                        process.
+  /// @param [in] diagnostics The prognostic variables used by and affected by
+  ///                         this process.
+  /// @param [out] tendencies A container that stores time derivatives for
+  ///                         prognostic variables evolved by this process.
   KOKKOS_FUNCTION
-  virtual void run_(Real t, Real dt, const Prognostics& prognostics,
+  virtual void run_(const TeamType& team, Real t, Real dt,
+                    const Prognostics& prognostics,
                     const Atmosphere& atmosphere,
                     const Diagnostics& diagnostics,
                     const Tendencies& tendencies) const = 0;
@@ -222,7 +245,7 @@ class AerosolProcess {
   virtual void set_param_(const std::string& name, const std::string& value) {}
 
   /// This gets overridden by the AerosolProcessOnDevice middleware class.
-  virtual ManagedPointer copy_to_device_() const = 0;
+  virtual AerosolProcess* copy_to_device_() const = 0;
 
  private:
   const AerosolProcessType type_;
@@ -249,17 +272,7 @@ class DeviceAerosolProcess : public AerosolProcess {
       : AerosolProcess(type, name) {}
 
  protected:
-  struct custom_deleter {
-    void operator()(AerosolProcess* process) {
-      AerosolProcess* dev_ptr = process;
-      Kokkos::parallel_for(
-          "delete", 1,
-          KOKKOS_LAMBDA(const int) { dev_ptr->~AerosolProcess(); });
-      Kokkos::kokkos_free<MemorySpace>((void*)process);
-    }
-  };
-
-  ManagedPointer copy_to_device_() const override {
+  AerosolProcess* copy_to_device_() const override {
     const std::string debug_name = name();
     Subclass* process =
         static_cast<Subclass*>(Kokkos::kokkos_malloc<MemorySpace>(
@@ -267,11 +280,11 @@ class DeviceAerosolProcess : public AerosolProcess {
 
     // Copy this object (including our virtual table) into the storage using
     // a lambda capture.
-    const auto& this_process = dynamic_cast<const Subclass&>(*this);
+    const auto* this_process = dynamic_cast<const Subclass*>(this);
     Kokkos::parallel_for(
         debug_name + "_copy", 1,
-        KOKKOS_LAMBDA(const int) { new (process) Subclass(this_process); });
-    return ManagedPointer(process, custom_deleter());
+        KOKKOS_LAMBDA(const int) { new (process) Subclass(*this_process); });
+    return process;
   }
 };
 
@@ -289,8 +302,9 @@ class NullAerosolProcess : public DeviceAerosolProcess<NullAerosolProcess> {
 
   // Overrides
   KOKKOS_FUNCTION
-  void run_(Real t, Real dt, const Prognostics& prognostics,
-            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+  void run_(const TeamType& team, Real t, Real dt,
+            const Prognostics& prognostics, const Atmosphere& atmosphere,
+            const Diagnostics& diagnostics,
             const Tendencies& tendencies) const override {}
 };
 
@@ -386,8 +400,9 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
     }
   }
 
-  void run_(Real t, Real dt, const Prognostics& prognostics,
-            const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+  void run_(const TeamType& team, Real t, Real dt,
+            const Prognostics& prognostics, const Atmosphere& atmosphere,
+            const Diagnostics& diagnostics,
             const Tendencies& tendencies) const override {
     // Set tendencies to zero.
     auto nc_tendencies = const_cast<Tendencies&>(tendencies);

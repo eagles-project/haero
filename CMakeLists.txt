@@ -7,6 +7,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 
 set(ENABLE_FORTRAN ON)
 
+# Check our pack size
+if (NOT HAERO_PACK_SIZE)
+  message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
+elseif(HAERO_PACK_SIZE LESS 1)
+  message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
+elseif(HAERO_PACK_SIZE GREATER 1)
+  set(ENABLE_FORTRAN OFF)
+endif()
+message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
+
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.
 option(HAERO_DISABLE_SUBMODULE_CHECKS "Skip checks for git submodules" OFF)
@@ -20,23 +30,16 @@ elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
 elseif(HAERO_DEVICE STREQUAL CUDA)
   set(ENABLE_FORTRAN OFF)
   set(HAERO_USE_CUDA ON)
-else() # CPU -- use OpenMP as "device" for non-Apple architectures.
-  if (NOT APPLE)
+else() #CPU
+  # If we're C++ only and not using a Mac, use OpenMP.
+  if (NOT APPLE AND NOT ENABLE_FORTRAN)
     set(USE_OPENMP ON)
+  else()
+    set(USE_OPENMP OFF)
   endif()
 endif()
 message(STATUS "Configuring for Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
 message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
-
-# Check our pack size
-if (NOT HAERO_PACK_SIZE)
-  message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
-elseif(HAERO_PACK_SIZE LESS 1)
-  message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
-elseif(HAERO_PACK_SIZE GREATER 1)
-  set(ENABLE_FORTRAN OFF)
-endif()
-message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
 
 # Define default Kokkos View types
 if (NOT HAERO_COLUMN_VIEW_TYPE)
@@ -229,9 +232,6 @@ if (USE_OPENMP)
   if (OPENMP_FOUND)
     message(STATUS "OpenMP is enabled")
     set(HAVE_OPENMP 1)
-    if (HAERO_FORTRAN)
-      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
-    endif()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")

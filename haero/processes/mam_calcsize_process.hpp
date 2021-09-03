@@ -35,8 +35,9 @@ class MAMCalcsizeProcess final
   //------------------------------------------------------------------------
 
   KOKKOS_FUNCTION
-  void run_(Real t, Real dt, const Prognostics &prognostics,
-            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+  void run_(const TeamType &team, Real t, Real dt,
+            const Prognostics &prognostics, const Atmosphere &atmosphere,
+            const Diagnostics &diagnostics,
             const Tendencies &tendencies) const override{};
 };
 

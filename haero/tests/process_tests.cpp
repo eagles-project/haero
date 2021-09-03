@@ -43,8 +43,9 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
   //------------------------------------------------------------------------
 
   KOKKOS_FUNCTION
-  void run_(Real t, Real dt, const Prognostics &prognostics,
-            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+  void run_(const TeamType &team, Real t, Real dt,
+            const Prognostics &prognostics, const Atmosphere &atmosphere,
+            const Diagnostics &diagnostics,
             const Tendencies &tendencies) const {
     const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
     const ColumnView temp = atmosphere.temperature;
@@ -211,21 +212,15 @@ TEST_CASE("process_tests", "aerosol_process") {
   // Move the process to the device and run it.
   auto device_pp = pp.copy_to_device();
   const Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
-  typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
-      TeamHandleType;
-  const auto &teamPolicy =
-      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
-  auto device_ptr = device_pp.get();
+  const auto &team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
   Kokkos::parallel_for(
-      teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
-        Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(team, 0u, 1u), [&](const int &i) {
-              // Const cast because everything in lambda is const. Need to
-              // google how to fix.
-              Tendencies *tendency = const_cast<Tendencies *>(&tends);
-              device_ptr->run(t, dt, progs, atmos, diagnostics, *tendency);
-            });
+      team_policy, KOKKOS_LAMBDA(const TeamType &team) {
+        // Const cast because everything in lambda is const. Need to
+        // google how to fix.
+        Tendencies *tendency = const_cast<Tendencies *>(&tends);
+        device_pp->run(team, t, dt, progs, atmos, diagnostics, *tendency);
       });
+  AerosolProcess::delete_on_device(device_pp);
 
   {
     using fp_helper = FloatingPoint<float>;

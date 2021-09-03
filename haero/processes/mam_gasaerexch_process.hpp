@@ -35,7 +35,8 @@ class MAMGasAerosolExchangeProcess
   virtual void init_(const ModalAerosolConfig &config) final;
 
   KOKKOS_FUNCTION
-  virtual void run_(Real t, Real dt, const Prognostics &prognostics,
+  virtual void run_(const TeamType &team, Real t, Real dt,
+                    const Prognostics &prognostics,
                     const Atmosphere &atmosphere,
                     const Diagnostics &diagnostics,
                     const Tendencies &tendencies) const final {}

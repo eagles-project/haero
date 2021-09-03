@@ -97,7 +97,7 @@ contains
   subroutine initialize_diameters(model)
 
     implicit none
-    
+
     type(model_t), intent(in)    :: model
 
     ! Holds most recent error code
@@ -141,22 +141,28 @@ contains
 
     ierr = 0
 
-    deallocate(dgnumlo_aer, stat=ierr)
-    if (ierr .ne. 0) then
-      print *, 'Could not deallocate dgnumlo_aer'
-      stop ierr
+    if (allocated(dgnumlo_aer)) then
+      deallocate(dgnumlo_aer, stat=ierr)
+      if (ierr .ne. 0) then
+        print *, 'Could not deallocate dgnumlo_aer'
+        stop ierr
+      endif
     endif
 
-    deallocate(dgnumhi_aer, stat=ierr)
-    if (ierr .ne. 0) then
-      print *, 'Could not deallocate dgnumhi_aer'
-      stop ierr
+    if (allocated(dgnumhi_aer)) then
+      deallocate(dgnumhi_aer, stat=ierr)
+      if (ierr .ne. 0) then
+        print *, 'Could not deallocate dgnumhi_aer'
+        stop ierr
+      endif
     endif
 
-    deallocate(dgnum_aer, stat=ierr)
-    if (ierr .ne. 0) then
-      print *, 'Could not deallocate dgnum_aer'
-      stop ierr
+    if (allocated(dgnum_aer)) then
+      deallocate(dgnum_aer, stat=ierr)
+      if (ierr .ne. 0) then
+        print *, 'Could not deallocate dgnum_aer'
+        stop ierr
+      endif
     endif
 
   end subroutine finalize_diameters
@@ -190,10 +196,12 @@ contains
 
     ierr = 0
 
-    deallocate(alnsg, stat=ierr)
-    if (ierr .ne. 0) then
-      print *, 'Could not deallocate alnsg'
-      stop ierr
+    if (allocated(alnsg)) then
+      deallocate(alnsg, stat=ierr)
+      if (ierr .ne. 0) then
+        print *, 'Could not deallocate alnsg'
+        stop ierr
+      endif
     endif
 
   end subroutine finalize_ln_of_std_dev

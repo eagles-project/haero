@@ -384,16 +384,16 @@ subroutine finalize(model)
   type(model_t), intent(in) :: model
 
   ! Deallocate gas and aerosol state buffers
-  deallocate(qgas_cur)
-  deallocate(qgas_avg)
-  deallocate(qnum_cur)
-  deallocate(qaer_cur)
-  deallocate(qwtr_cur)
+  if (allocated(qgas_cur)) deallocate(qgas_cur)
+  if (allocated(qgas_avg)) deallocate(qgas_avg)
+  if (allocated(qnum_cur)) deallocate(qnum_cur)
+  if (allocated(qaer_cur)) deallocate(qaer_cur)
+  if (allocated(qwtr_cur)) deallocate(qwtr_cur)
 
   ! Deallocate mode metadata.
-  deallocate(dgnum_aer)
-  deallocate(dgnumlo_aer)
-  deallocate(dgnumhi_aer)
+  if (allocated(dgnum_aer)) deallocate(dgnum_aer)
+  if (allocated(dgnumlo_aer)) deallocate(dgnumlo_aer)
+  if (allocated(dgnumhi_aer)) deallocate(dgnumhi_aer)
 
 end subroutine
 
