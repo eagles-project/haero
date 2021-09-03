@@ -274,7 +274,7 @@ class DeviceAerosolProcess : public AerosolProcess {
   /// Copy constructor, called by subclasses.
   KOKKOS_INLINE_FUNCTION
   DeviceAerosolProcess(const DeviceAerosolProcess& other)
-      : AerosolProcess(other), on_device_(false) {}
+      : AerosolProcess(other), on_device_(other.on_device_) {}
 
  protected:
   AerosolProcess* copy_to_device_() const override {
@@ -283,14 +283,22 @@ class DeviceAerosolProcess : public AerosolProcess {
         static_cast<Subclass*>(Kokkos::kokkos_malloc<MemorySpace>(
             debug_name + "_malloc", sizeof(Subclass)));
 
-    // Copy this object (including our virtual table) into the storage using
-    // a lambda capture.
-    const auto& host_process = dynamic_cast<const Subclass&>(*this);
+    // Copy this object (including our virtual table) onto the device using
+    // a lambda capture and placement new. We have to monkey with our on_device_
+    // flag here, which governs the finalization of Fortran aerosol processes.
+    // This is because C++ objects that are lambda-captured get their
+    // destructors called when they exit the scope of the parallel_for loop.
+    // C++ is truly a language of unintended consequences.
+    auto nonconst_this = const_cast<DeviceAerosolProcess*>(this);
+    // The lambda copy is read-only, so we have to set this here.
+    nonconst_this->on_device_ = true;
+    auto& host_process = dynamic_cast<Subclass&>(*nonconst_this);
     Kokkos::parallel_for(
         debug_name + "_copy", 1, KOKKOS_LAMBDA(const int) {
           new (device_process) Subclass(host_process);
-          device_process->on_device_ = true;
         });
+    // We're finished with the lambda copy, so set this back on the host.
+    nonconst_this->on_device_ = false;
 
     return device_process;
   }
