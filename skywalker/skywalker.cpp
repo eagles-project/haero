@@ -359,8 +359,8 @@ using InputData = skywalker::InputData;
 using OutputData = skywalker::OutputData;
 
 struct EnsembleData {
-  std::string process;
-  std::map<std::string, std::string> process_params;
+  std::string program_name;
+  std::map<std::string, std::string> program_params;
   std::vector<InputData> inputs;
   std::vector<OutputData> outputs;
 };
@@ -388,13 +388,14 @@ void* sw_load_ensemble(const char* aerosol_config, const char* filename,
                        const char* model_impl) {
   // Create a ParameterWalk object from the given config and file.
   try {
-    auto param_walk = skywalker::load_ensemble(aerosol_config, filename, model_impl);
+    auto param_walk =
+        skywalker::load_ensemble(aerosol_config, filename, model_impl);
 
     // Create an ensemble, allocating storage for output data equal in length
     // to the given input data.
     auto ensemble = new EnsembleData;
-    ensemble->process = param_walk.process;
-    ensemble->process_params = param_walk.process_params;
+    ensemble->program_name = param_walk.program_name;
+    ensemble->program_params = param_walk.program_params;
     ensemble->inputs = param_walk.gather_inputs();
     OutputData ref_output(param_walk.aero_config);
     ensemble->outputs =
@@ -427,25 +428,25 @@ void* sw_load_ensemble(const char* aerosol_config, const char* filename,
 }
 
 /// Returns the name of the process being studied by the ensemble.
-const char* sw_ensemble_process_name(void* ensemble) {
+const char* sw_ensemble_program_name(void* ensemble) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  return data->process.c_str();
+  return data->program_name.c_str();
 }
 
 /// Returns the number of parameters passed to the process being studied by the
 /// ensemble.
-int sw_ensemble_num_process_params(void* ensemble) {
+int sw_ensemble_num_program_params(void* ensemble) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
-  return static_cast<int>(data->process_params.size());
+  return static_cast<int>(data->program_params.size());
 }
 
 /// Sets the given pointers to the name and value of the parameter with the
 /// given index, passed to the process for the ensemble.
-void sw_ensemble_get_process_param(void* ensemble, int index, const char** name,
+void sw_ensemble_get_program_param(void* ensemble, int index, const char** name,
                                    const char** value) {
   auto data = reinterpret_cast<EnsembleData*>(ensemble);
   int i = 0;
-  for (const auto& param_kv : data->process_params) {
+  for (const auto& param_kv : data->program_params) {
     if (i ==
         index - 1) {  // if the (1-based) index matches, fill in the blanks.
       *name = param_kv.first.c_str();

@@ -77,11 +77,12 @@ void write_py_module(const std::vector<InputData>& inputs,
     for (int m = 0; m < aero_config.num_modes(); ++m) {
       auto mode = aero_config.aerosol_modes[m];
       fprintf(file, "input.aerosols.interstitial.%s = Object()\n",
-          mode.name().c_str());
-      fprintf(file, "input.aerosols.cloudy.%s = Object()\n", mode.name().c_str());
+              mode.name().c_str());
+      fprintf(file, "input.aerosols.cloudy.%s = Object()\n",
+              mode.name().c_str());
     }
     fprintf(file, "input.gases = Object()\n");
-  } // if not user config
+  }  // if not user config
   fprintf(file, "input.user = Object()\n");
 
   if (not user_config) {
@@ -104,7 +105,7 @@ void write_py_module(const std::vector<InputData>& inputs,
           prefix = "aerosols.interstitial.";
         }
         auto num_mix_ratio_name =
-          prefix + mode.name() + std::string(".number_mix_ratio");
+            prefix + mode.name() + std::string(".number_mix_ratio");
         write_input_var(file, inputs, num_mix_ratio_name.c_str());
         auto species_for_mode = aero_config.aerosol_species_for_mode(m);
         for (auto species : species_for_mode) {
@@ -121,10 +122,10 @@ void write_py_module(const std::vector<InputData>& inputs,
       auto gas = aero_config.gas_species[g];
       auto gas_name = std::string("gases.") + gas.symbol();
       std::transform(gas_name.begin(), gas_name.end(), gas_name.begin(),
-          ::tolower);
+                     ::tolower);
       write_input_var(file, inputs, gas_name.c_str());
     }
-  } // if not user config
+  }  // if not user config
 
   // Write out user-defined parameters.
   for (const auto& user_param : inputs[0].user_params) {
@@ -143,12 +144,12 @@ void write_py_module(const std::vector<InputData>& inputs,
     for (int m = 0; m < aero_config.num_modes(); ++m) {
       auto mode = aero_config.aerosol_modes[m];
       fprintf(file, "output.aerosols.interstitial.%s = Object()\n",
-          mode.name().c_str());
+              mode.name().c_str());
       fprintf(file, "output.aerosols.cloudy.%s = Object()\n",
-          mode.name().c_str());
+              mode.name().c_str());
     }
     fprintf(file, "output.gases = Object()\n");
-  } // if not user config
+  }  // if not user config
   fprintf(file, "output.metrics = Object()\n");
 
   if (not user_config) {
@@ -163,7 +164,7 @@ void write_py_module(const std::vector<InputData>& inputs,
           prefix = "aerosols.interstitial.";
         }
         auto num_mix_ratio_name =
-          prefix + mode.name() + std::string(".number_mix_ratio");
+            prefix + mode.name() + std::string(".number_mix_ratio");
         write_output_var(file, outputs, num_mix_ratio_name.c_str());
         auto species_for_mode = aero_config.aerosol_species_for_mode(m);
         for (auto species : species_for_mode) {
@@ -180,10 +181,10 @@ void write_py_module(const std::vector<InputData>& inputs,
       auto gas = aero_config.gas_species[g];
       auto gas_name = std::string("gases.") + gas.symbol();
       std::transform(gas_name.begin(), gas_name.end(), gas_name.begin(),
-          ::tolower);
+                     ::tolower);
       write_output_var(file, outputs, gas_name.c_str());
     }
-  } // if not user config
+  }  // if not user config
 
   // Metrics.
   write_output_metrics(file, outputs);

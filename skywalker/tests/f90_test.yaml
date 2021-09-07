@@ -1,16 +1,13 @@
 # This input file tests Skywalker's Fortran 90 module.
 
-process:
-  mam_box_model:
-    name: newnuc
-    params:
-      param1: hello
-      param2: 81
-      param3: 3.14159265357
-  haero:
-    name: SimpleNucleationProcess
-    params:
-      skywalker_mode: 1
+mam_box_model:
+  param1: hello
+  param2: 81
+  param3: 3.14159265357
+
+haero:
+  process: SimpleNucleationProcess
+  skywalker_mode: 1
 
 timestepping: # [s]
   dt: 1

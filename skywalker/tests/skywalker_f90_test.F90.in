@@ -48,14 +48,14 @@ program skywalker_f90_test
   ! Make sure everything is as it should be.
 
   ! process section
-  assert(trim(ensemble%process_name) == "newnuc")
-  assert(ensemble%num_process_params == 3)
-  assert(trim(ensemble%process_param_names(1)) == "param1")
-  assert(trim(ensemble%process_param_values(1)) == "hello")
-  assert(trim(ensemble%process_param_names(2)) == "param2")
-  assert(trim(ensemble%process_param_values(2)) == "81")
-  assert(trim(ensemble%process_param_names(3)) == "param3")
-  assert(trim(ensemble%process_param_values(3)) == "3.14159265357")
+  assert(trim(ensemble%program_name) == "mam_box_model")
+  assert(ensemble%num_program_params == 3)
+  assert(trim(ensemble%program_param_names(1)) == "param1")
+  assert(trim(ensemble%program_param_values(1)) == "hello")
+  assert(trim(ensemble%program_param_names(2)) == "param2")
+  assert(trim(ensemble%program_param_values(2)) == "81")
+  assert(trim(ensemble%program_param_names(3)) == "param3")
+  assert(trim(ensemble%program_param_values(3)) == "3.14159265357")
 
   ! aerosol configuration
   assert(ensemble%num_modes == 4)

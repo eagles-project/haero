@@ -56,13 +56,13 @@ module skywalker
     ! C pointer
     type(c_ptr) :: ptr
     ! Name of the aerosol process being studied by this ensemble
-    character(len=255) :: process_name
+    character(len=255) :: program_name
     ! Number of parameters passed to the process
-    integer :: num_process_params
+    integer :: num_program_params
     ! List of names of parameters passed to the process
-    character(len=255), dimension(:), allocatable :: process_param_names
+    character(len=255), dimension(:), allocatable :: program_param_names
     ! List of values of parameters passed to the process
-    character(len=255), dimension(:), allocatable :: process_param_values
+    character(len=255), dimension(:), allocatable :: program_param_values
     ! The number of members in the ensemble
     integer :: size
     ! Number of aerosol modes and populations, and number of gases
@@ -89,21 +89,21 @@ module skywalker
     end function
 
     ! Returns the name of the selected process for the given ensemble.
-    type(c_ptr) function sw_ensemble_process_name(ensemble) bind(c)
+    type(c_ptr) function sw_ensemble_program_name(ensemble) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
     end function
 
     ! Returns the number of parameters passed to the selected process for the
     ! given ensemble.
-    integer(c_int) function sw_ensemble_num_process_params(ensemble) bind(c)
+    integer(c_int) function sw_ensemble_num_program_params(ensemble) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
     end function
 
     ! Sets the given pointers to strings that contain the name and value for
     ! the parameter with the given index passed to an ensemble.
-    subroutine sw_ensemble_get_process_param(ensemble, index, param_name, param_value) bind(c)
+    subroutine sw_ensemble_get_program_param(ensemble, index, param_name, param_value) bind(c)
       use iso_c_binding, only: c_ptr, c_int
       type(c_ptr), value, intent(in) :: ensemble
       integer(c_int), value, intent(in) :: index
@@ -242,15 +242,15 @@ contains
     end if
 
     ! Fetch the name of the process and its associated parameters
-    ensemble%process_name = c_to_f_string(sw_ensemble_process_name(ensemble%ptr))
-    ensemble%num_process_params = sw_ensemble_num_process_params(ensemble%ptr)
-    if (ensemble%num_process_params > 0) then
-      allocate(ensemble%process_param_names(ensemble%num_process_params))
-      allocate(ensemble%process_param_values(ensemble%num_process_params))
-      do p = 1, ensemble%num_process_params
-        call sw_ensemble_get_process_param(ensemble%ptr, p, p_name, p_value)
-        ensemble%process_param_names(p) = c_to_f_string(p_name)
-        ensemble%process_param_values(p) = c_to_f_string(p_value)
+    ensemble%program_name = c_to_f_string(sw_ensemble_program_name(ensemble%ptr))
+    ensemble%num_program_params = sw_ensemble_num_program_params(ensemble%ptr)
+    if (ensemble%num_program_params > 0) then
+      allocate(ensemble%program_param_names(ensemble%num_program_params))
+      allocate(ensemble%program_param_values(ensemble%num_program_params))
+      do p = 1, ensemble%num_program_params
+        call sw_ensemble_get_program_param(ensemble%ptr, p, p_name, p_value)
+        ensemble%program_param_names(p) = c_to_f_string(p_name)
+        ensemble%program_param_values(p) = c_to_f_string(p_value)
       end do
     end if
 
@@ -419,9 +419,9 @@ contains
     end do
     deallocate(ensemble%inputs)
     deallocate(ensemble%outputs)
-    if (ensemble%num_process_params > 0) then
-      deallocate(ensemble%process_param_names)
-      deallocate(ensemble%process_param_values)
+    if (ensemble%num_program_params > 0) then
+      deallocate(ensemble%program_param_names)
+      deallocate(ensemble%program_param_values)
     end if
   end subroutine
 

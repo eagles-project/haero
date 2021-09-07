@@ -135,35 +135,12 @@ void parse_user_ensemble_params(
   }
 }
 
-void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
-  // Parse the process based on the model implementation (e.g. "mam" or "haero")
-  if (not process[pw.model_impl]) {
-    throw YamlException(std::string("'") + pw.model_impl +
-                        std::string("' entry not found in process section!"));
-  }
-  const auto& model_impl = process[pw.model_impl];
-  if (not model_impl.IsMap()) {
-    throw YamlException(std::string("'") + pw.model_impl +
-                        "' in process section must be a map!");
-  }
-  if (not model_impl["name"]) {
-    throw YamlException(std::string("'") + pw.model_impl +
-                        "' in process section must have a 'name' entry!");
-  }
-  pw.process = model_impl["name"].as<std::string>();
-
-  // Parse process-specific parameters.
-  if (model_impl["params"]) {
-    const auto& params = model_impl["params"];
-    if (not params.IsMap()) {
-      throw YamlException(std::string("'params' in process:") + pw.model_impl +
-                          std::string(" section must be a map!"));
-    }
-    for (const auto& param : params) {
-      const auto& name = param.first.as<std::string>();
-      const auto& value = param.second.as<std::string>();
-      pw.process_params[name] = value;
-    }
+void parse_program_section(const YAML::Node& program, ParameterWalk& pw) {
+  // Parse program-specific parameters.
+  for (const auto& param : program) {
+    const auto& name = param.first.as<std::string>();
+    const auto& value = param.second.as<std::string>();
+    pw.program_params[name] = value;
   }
 }
 
@@ -392,15 +369,18 @@ namespace skywalker {
 
 ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
                             const std::string& filename,
-                            const std::string& model_impl) {
-  ParameterWalk pw(aerosol_config, model_impl);
+                            const std::string& program_name) {
+  ParameterWalk pw(aerosol_config, program_name);
   try {
     auto root = YAML::LoadFile(filename);
 
-    if (not(root["process"] and root["process"].IsMap())) {
-      throw YamlException("Did not find a valid process section!");
+    if (not(root[program_name] and root[program_name].IsMap())) {
+      std::ostringstream s;
+      s << "Did not find a valid '" << program_name << "' section!";
+      throw YamlException(s.str());
     }
-    parse_process_section(root["process"], pw);
+    pw.program_name = program_name;
+    parse_program_section(root[program_name], pw);
 
     if (not(root["timestepping"] and root["timestepping"].IsMap())) {
       throw YamlException("Did not find a valid timestepping section!\n");
@@ -442,7 +422,7 @@ ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
 
 ParameterWalk load_ensemble(const std::string& config_name,
                             const std::string& filename,
-                            const std::string& model_impl) {
+                            const std::string& program_name) {
   ModalAerosolConfig config;
   if (strcasecmp(config_name.c_str(), "mam4") == 0) {
     config = haero::create_mam4_modal_aerosol_config();
@@ -452,7 +432,7 @@ ParameterWalk load_ensemble(const std::string& config_name,
       << ": Invalid config: " << config_name << std::endl;
     throw YamlException(s.str());
   }
-  return load_ensemble(config, filename, model_impl);
+  return load_ensemble(config, filename, program_name);
 }
 
 }  // namespace skywalker

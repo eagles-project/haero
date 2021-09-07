@@ -170,33 +170,36 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // Create tendencies for the given prognostics.
   auto* tendencies = new haero::Tendencies(*prognostics);
 
-  // Create the specified process.
-  haero::AerosolProcess* process = nullptr;
-  if (param_walk.process == "MAMNucleationProcess") {  // C++ nucleation
-    process = new haero::MAMNucleationProcess();
-#if HAERO_FORTRAN
-  } else if (param_walk.process ==
-             "MAMNucleationFProcess") {  // fortran nucleation
-    process = new haero::MAMNucleationFProcess();
-#endif
-  } else if (param_walk.process == "SimpleNucleationProcess") {
-    process = new haero::SimpleNucleationProcess();
-  } else {  // unknown
-    fprintf(stderr, "Unknown aerosol process: %s\n",
-            param_walk.process.c_str());
-    return;
-  }
-  printf("skywalker: selected %s process.\n", param_walk.process.c_str());
+  printf("skywalker: running a parameter study for %s.\n",
+         param_walk.program_name.c_str());
 
-  // Set process parameters.
-  if (not param_walk.process_params.empty()) {
-    printf("skywalker: setting process parameters:\n");
-  }
-  for (const auto& param : param_walk.process_params) {
+  // Configure program parameters.
+  haero::AerosolProcess* process = nullptr;
+  printf("skywalker: setting parameters:\n");
+  for (const auto& param : param_walk.program_params) {
     const std::string& name = param.first;
     const std::string& value = param.second;
-    printf("  %s = %s\n", name.c_str(), value.c_str());
-    process->interpret_and_set_param(name, value);
+    if (name == "process") {
+      // Create the specified process.
+      if (value == "MAMNucleationProcess") {  // C++ nucleation
+        process = new haero::MAMNucleationProcess();
+#if HAERO_FORTRAN
+      } else if (value == "MAMNucleationFProcess") {  // fortran nucleation
+        process = new haero::MAMNucleationFProcess();
+#endif
+      } else if (value == "SimpleNucleationProcess") {
+        process = new haero::SimpleNucleationProcess();
+      } else {  // unknown
+        fprintf(stderr, "Unknown aerosol process: %s\n", value.c_str());
+        return;
+      }
+    } else {
+      printf("  %s = %s\n", name.c_str(), value.c_str());
+      process->interpret_and_set_param(name, value);
+    }
+  }
+  if (process == nullptr) {
+    fprintf(stderr, "Name of aerosol process (haero:process) not found!\n");
   }
 
   // Initialize it for the given aerosol configuration.
@@ -278,7 +281,7 @@ int main(int argc, const char* argv[]) {
   // Read the input file and extract input.
   std::string input_file(argv[1]);
   try {
-    auto param_walk = load_ensemble(aero_config, input_file);
+    auto param_walk = load_ensemble(aero_config, input_file, "haero");
 
     // Set up the desired aerosol process and run it, dumping output to
     // "haero_skywalker.py".
