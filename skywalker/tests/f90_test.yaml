@@ -16,7 +16,7 @@ timestepping: # [s]
 ensemble:
   atmosphere:
     temperature: [230.15, 300.15, 5]
-    relative_humidity: [0.05, 1, 0.05]
+    relative_humidity: [0.1, 1, 0.1]
 
   aerosols:
     aitken:

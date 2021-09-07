@@ -382,30 +382,36 @@ ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
     pw.program_name = program_name;
     parse_program_section(root[program_name], pw);
 
-    if (not(root["timestepping"] and root["timestepping"].IsMap())) {
-      throw YamlException("Did not find a valid timestepping section!\n");
-    }
-    parse_timestepping_section(root["timestepping"], pw);
+    // Are we running a user-defined configuration?
+    bool user_config = (aerosol_config.num_modes() == 0);
+    if (not user_config) {
+      // Parse timestepping and initial conditions.
+      if (not(root["timestepping"] and root["timestepping"].IsMap())) {
+        throw YamlException("Did not find a valid timestepping section!\n");
+      }
+      parse_timestepping_section(root["timestepping"], pw);
 
+      if (not(root["atmosphere"] and root["atmosphere"].IsMap())) {
+        throw YamlException("Did not find a valid atmosphere section!\n");
+      }
+      parse_atmosphere_section(root["atmosphere"], pw);
+
+      if (not(root["aerosols"] and root["aerosols"].IsMap())) {
+        throw YamlException("Did not find a valid aerosols section!");
+      }
+      parse_aerosols_section(root["aerosols"], aerosol_config, pw);
+
+      if (not(root["gases"] and root["gases"].IsMap())) {
+        throw YamlException("Did not find a valid gases section!");
+      }
+      parse_gases_section(root["gases"], aerosol_config, pw);
+    }  // if not user config
+
+    // Parse ensemble parameters.
     if (not(root["ensemble"] and root["ensemble"].IsMap())) {
       throw YamlException("Did not find a valid ensemble section!\n");
     }
     parse_ensemble_section(root["ensemble"], aerosol_config, pw);
-
-    if (not(root["atmosphere"] and root["atmosphere"].IsMap())) {
-      throw YamlException("Did not find a valid atmosphere section!\n");
-    }
-    parse_atmosphere_section(root["atmosphere"], pw);
-
-    if (not(root["aerosols"] and root["aerosols"].IsMap())) {
-      throw YamlException("Did not find a valid aerosols section!");
-    }
-    parse_aerosols_section(root["aerosols"], aerosol_config, pw);
-
-    if (not(root["gases"] and root["gases"].IsMap())) {
-      throw YamlException("Did not find a valid gases section!");
-    }
-    parse_gases_section(root["gases"], aerosol_config, pw);
 
     // Are there user-defined parameters?
     if (root["user"]) {

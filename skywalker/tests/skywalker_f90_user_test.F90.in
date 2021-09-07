@@ -1,6 +1,7 @@
-! This program tests Skywalker's Fortran 90 interface.
+! This program tests Skywalker's Fortran 90 interface with a user-defined
+! configuration.
 
-module f90_test
+module f90_user_test
   implicit none
 contains
   subroutine fatal_error(message, line)
@@ -22,33 +23,33 @@ contains
       equal = .false.
     end if
   end function
-end module f90_test
+end module f90_user_test
 
 ! This macro halts the program if the predicate x isn't true.
 #define assert(x) if (.not. (x)) call fatal_error("Assertion failed at line", __LINE__)
 
 program skywalker_f90_test
 
-  use f90_test
+  use f90_user_test
   use skywalker
   use haero_precision, only: wp
 
   implicit none
 
-  character(len=255)  :: input_file = "@CMAKE_CURRENT_SOURCE_DIR@/f90_test.yaml"
+  character(len=255)  :: input_file = "@CMAKE_CURRENT_SOURCE_DIR@/f90_user_test.yaml"
   type(ensemble_t)    :: ensemble
   type(input_data_t)  :: input
   type(output_data_t) :: output
   integer             :: i
 
   ! Load the ensemble. Any error encountered is fatal.
-  print *, "skywalker_f90_test: Loading ensemble from ", trim(input_file)
-  ensemble = load_ensemble("mam4", trim(input_file), "mam_box_model")
+  print *, "skywalker_f90_user_test: Loading ensemble from ", trim(input_file)
+  ensemble = load_ensemble("user", trim(input_file), "user_program")
 
   ! Make sure everything is as it should be.
 
   ! process section
-  assert(trim(ensemble%program_name) == "mam_box_model")
+  assert(trim(ensemble%program_name) == "user_program")
   assert(ensemble%num_program_params == 3)
   assert(trim(ensemble%program_param_names(1)) == "param1")
   assert(trim(ensemble%program_param_values(1)) == "hello")
@@ -57,26 +58,26 @@ program skywalker_f90_test
   assert(trim(ensemble%program_param_names(3)) == "param3")
   assert(trim(ensemble%program_param_values(3)) == "3.14159265357")
 
-  ! aerosol configuration
-  assert(ensemble%num_modes == 4)
-  assert(ensemble%num_populations == 21) ! all species in all modes
-  assert(ensemble%num_gases == 13)
+  ! aerosol configuration -- everything should be zero
+  assert(ensemble%num_modes == 0)
+  assert(ensemble%num_populations == 0) ! all species in all modes
+  assert(ensemble%num_gases == 0)
 
   ! ensemble information
-  assert(ensemble%size == 3300)
+  assert(ensemble%size == 11)
   do i = 1, ensemble%size
     input = ensemble%inputs(i)
 
-    ! Time stepping parameters
-    assert(input%dt == 1._wp)
-    assert(input%total_time == 1._wp)
+    ! Time stepping parameters -- should be zero
+    assert(input%dt == 0._wp)
+    assert(input%total_time == 0._wp)
 
-    ! Atmospheric parameters
-    assert(approx_equal(input%pressure, 100000._wp))
-    assert(approx_equal(input%vapor_mixing_ratio, 0.4_wp))
-    assert(approx_equal(input%height, 3000._wp))
-    assert(approx_equal(input%hydrostatic_dp, 200._wp))
-    assert(approx_equal(input%planetary_boundary_layer_height, 1100._wp))
+    ! Atmospheric parameters -- should be zero
+    assert(approx_equal(input%pressure, 0._wp))
+    assert(approx_equal(input%vapor_mixing_ratio, 0._wp))
+    assert(approx_equal(input%height, 0._wp))
+    assert(approx_equal(input%hydrostatic_dp, 0._wp))
+    assert(approx_equal(input%planetary_boundary_layer_height, 0._wp))
 
     ! User parameters
     assert(approx_equal(input%user_param("p1"), 1.0_wp))
@@ -101,7 +102,7 @@ program skywalker_f90_test
   end do
 
   ! Now we write out a Python module containing the output data.
-  call ensemble%write_py_module("f90_test.py")
+  call ensemble%write_py_module("f90_user_test.py")
 
   ! Clean up.
   call ensemble%free()
