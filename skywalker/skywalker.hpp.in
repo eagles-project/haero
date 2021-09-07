@@ -16,7 +16,10 @@ using ModalAerosolConfig = haero::ModalAerosolConfig;
 struct InputData {
   InputData() = delete;
   InputData(const ModalAerosolConfig& config)
-    : aero_config(config), relative_humidity(-1) {}
+    : aero_config(config), dt(0.0), total_time(0.0),
+      temperature(0.0), pressure(0.0), vapor_mixing_ratio(0.0), height(0.0),
+      hydrostatic_dp(0.0), planetary_boundary_layer_height(0.0),
+      relative_humidity(-1) {}
   InputData(const InputData& rhs) = default;
   InputData& operator=(const InputData& rhs) = default;
 
@@ -138,6 +141,25 @@ class YamlException : public std::exception {
 /// \returns A set of data and metadata used by skywalker to run a parameter
 ///          study
 ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
+    const std::string& filename,
+    const std::string& model_impl = "haero");
+
+/// This function reads ensemble input from a YAML input file, producing a
+/// ParameterWalk object to be used for walking parameter space. If an error is
+/// encountered, this throws a skywalker::YamlException. This version of
+/// `load_ensemble` accepts the symbolic name of an aerosol configuration, or
+/// "user" to indicate that only the "user" sections will be used to initialize
+/// an ensemble. All parameters except user-defined parameters within InputData
+/// objects in this ensemble are assumed to be zero.
+/// \param [in] config_name The name of an aerosol configuration ("mamX", where
+///                         X is the number of aerosol modes; "user" for user-
+///                         defined configurations)
+/// \param [in] filename The name of the file to be read
+/// \param [in] model_impl The name of the implementation for the aerosol
+///                        model. Typically "haero" or "mam" (default: "haero")
+/// \returns A set of data and metadata used by skywalker to run a parameter
+///          study
+ParameterWalk load_ensemble(const std::string& config_name,
     const std::string& filename,
     const std::string& model_impl = "haero");
 

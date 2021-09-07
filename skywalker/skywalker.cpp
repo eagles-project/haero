@@ -386,18 +386,9 @@ static void destroy_ensembles() {
 ///                        "haero" or "mam").
 void* sw_load_ensemble(const char* aerosol_config, const char* filename,
                        const char* model_impl) {
-  ModalAerosolConfig config;
-  if (strcasecmp(aerosol_config, "mam4") == 0) {
-    config = haero::create_mam4_modal_aerosol_config();
-  } else {
-    fprintf(stderr, "Error loading ensemble from %s: Invalid config: %s\n",
-            filename, aerosol_config);
-    return nullptr;  // no dice!
-  }
-
   // Create a ParameterWalk object from the given config and file.
   try {
-    auto param_walk = skywalker::load_ensemble(config, filename, model_impl);
+    auto param_walk = skywalker::load_ensemble(aerosol_config, filename, model_impl);
 
     // Create an ensemble, allocating storage for output data equal in length
     // to the given input data.

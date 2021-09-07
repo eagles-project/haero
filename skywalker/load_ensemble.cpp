@@ -440,4 +440,19 @@ ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
   return pw;
 }
 
+ParameterWalk load_ensemble(const std::string& config_name,
+                            const std::string& filename,
+                            const std::string& model_impl) {
+  ModalAerosolConfig config;
+  if (strcasecmp(config_name.c_str(), "mam4") == 0) {
+    config = haero::create_mam4_modal_aerosol_config();
+  } else if (strcasecmp(config_name.c_str(), "user") != 0) {
+    std::ostringstream s;
+    s << "Error loading ensemble from " << filename
+      << ": Invalid config: " << config_name << std::endl;
+    throw YamlException(s.str());
+  }
+  return load_ensemble(config, filename, model_impl);
+}
+
 }  // namespace skywalker
