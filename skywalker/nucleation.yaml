@@ -1,4 +1,4 @@
-# This input walks 3 parameters to which the nucleation process is sensitive.
+# This input walks 2 parameters to which the nucleation process is sensitive.
 
 mam_box_model:
   process: newnuc
