@@ -8,7 +8,6 @@ module mam_rename
   implicit none
   private
 
-  ! FIXME: Should all of these be 'save'?
   integer, save :: ntot_amode
   integer, save :: max_aer
   integer, save :: nmodes
