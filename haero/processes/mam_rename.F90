@@ -97,7 +97,7 @@ contains
   subroutine initialize_diameters(model)
 
     implicit none
-    
+
     type(model_t), intent(in)    :: model
 
     ! Holds most recent error code

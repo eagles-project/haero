@@ -178,7 +178,7 @@ TEST_CASE("pbl_nuc_wang2008", "mam_nucleation_process") {
     FlagaaView flags("newnuc_method_flagaa", 1);
 
     auto device_pp = mam_nucleation_process.copy_to_device();
-    auto device_ptr = static_cast<MAMNucleationProcess*>(device_pp.get());
+    auto device_ptr = static_cast<MAMNucleationProcess*>(device_pp);
     Kokkos::parallel_for(
         "pbl_nuc_wang2008.mam_nucleation_process", 1, KOKKOS_LAMBDA(const int) {
           ekat::Pack<int, 1> flagaa2(0);
@@ -317,7 +317,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
     Kokkos::deep_copy(dphim_sect_view, h_dphim_sect_view);
 
     auto device_pp = mam_nucleation_process.copy_to_device();
-    auto device_ptr = static_cast<MAMNucleationProcess*>(device_pp.get());
+    auto device_ptr = static_cast<MAMNucleationProcess*>(device_pp);
     Kokkos::parallel_for(
         "mer07_veh02_nuc_mosaic_1box.mam_nucleation_process", 1,
         KOKKOS_LAMBDA(const int) {
@@ -346,6 +346,7 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
           solution(6) = dnclusterdt[0];
           flags(0) = isize_nuc[0];
         });
+    AerosolProcess::delete_on_device(device_pp);
     auto h_solution = Kokkos::create_mirror_view(solution);
     auto h_flags = Kokkos::create_mirror_view(flags);
     Kokkos::deep_copy(h_solution, solution);
@@ -521,17 +522,17 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     // Now compute the tendencies by running the process.
     {
       Real t = 0.0, dt = 30.0;
-      auto device_pp = process->copy_to_device();
-      AerosolProcess* device_ptr = device_pp.get();
-      Prognostics device_progs = *progs;
-      Atmosphere device_atm = *atm;
-      Diagnostics device_diags = *diags;
-      Tendencies device_tends = *tends;
+      auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
+      auto d_process = process->copy_to_device();
+      auto& p = *progs;
+      auto& a = *atm;
+      auto& d = *diags;
+      auto& te = *tends;
       Kokkos::parallel_for(
-          "run.run", 1, KOKKOS_LAMBDA(const int) {
-            device_ptr->run(t, dt, device_progs, device_atm, device_diags,
-                            device_tends);
+          team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+            d_process->run(team, t, dt, p, a, d, te);
           });
+      AerosolProcess::delete_on_device(d_process);
     }
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
@@ -637,17 +638,17 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     // Now compute the tendencies by running the process.
     {
       Real t = 0.0, dt = 30.0;
-      auto device_pp = process->copy_to_device();
-      AerosolProcess* device_ptr = device_pp.get();
-      Prognostics device_progs = *progs;
-      Atmosphere device_atm = *atm;
-      Diagnostics device_diags = *diags;
-      Tendencies device_tends = *tends;
+      auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
+      auto d_process = process->copy_to_device();
+      auto& p = *progs;
+      auto& a = *atm;
+      auto& d = *diags;
+      auto& te = *tends;
       Kokkos::parallel_for(
-          "run.run", 1, KOKKOS_LAMBDA(const int) {
-            device_ptr->run(t, dt, device_progs, device_atm, device_diags,
-                            device_tends);
+          team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+            d_process->run(team, t, dt, p, a, d, te);
           });
+      AerosolProcess::delete_on_device(d_process);
     }
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
