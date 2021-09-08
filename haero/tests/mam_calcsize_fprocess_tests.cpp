@@ -59,20 +59,19 @@ TEST_CASE("mam_calcsize_run", "") {
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
   Real pblh{100.0};  // planetary BL height [m]
-  auto atm = std::make_unique<Atmosphere>(num_levels, temp, press, qv, ht, pdel,
-                                          pblh);  // create atmosphere object
+  auto atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
 
   // This will drive the "run" method of calcsize
   SECTION("calcsize_run") {
-    auto process = std::make_unique<MAMCalcsizeFProcess>();
+    auto process = new MAMCalcsizeFProcess();
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                            int_num_mix_ratios,
-                                            cld_num_mix_ratios, gases);
-    auto* diags = model->create_diagnostics();
-    auto tends = std::make_unique<Tendencies>(*progs);
+    auto progs = model->create_prognostics(int_aerosols, cld_aerosols,
+                                           int_num_mix_ratios,
+                                           cld_num_mix_ratios, gases);
+    auto diags = model->create_diagnostics();
+    auto tends = new Tendencies(*progs);
 
     // Define a pseudo-random generator [0-1) that is consistent across
     // platforms. Manually checked the first 100,000 values to be unique.
@@ -103,8 +102,24 @@ TEST_CASE("mam_calcsize_run", "") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 30.0;
-    process->run(t, dt, *progs, *atm, *diags, *tends);
+    auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
+    auto d_process = process->copy_to_device();
+    const auto& p = *progs;
+    const auto& a = *atm;
+    const auto& d = *diags;
+    auto& te = *tends;
+    Kokkos::parallel_for(
+        team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+          d_process->run(team, t, dt, p, a, d, te);
+        });
+    AerosolProcess::delete_on_device(d_process);
 
+    // Clean up.
+    delete tends;
+    delete atm;
+    delete progs;
+    delete diags;
+    delete process;
   }  // section:calcsize_run
 
 }  // TEST_CASE mam_calcsize_run

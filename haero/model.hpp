@@ -58,11 +58,9 @@ class Model final {
   HostDiagnostics* create_diagnostics() const;
 
   /// Returns a pointer to an instance of an aerosol process of the given type
-  /// on the device, initialized and ready to run. This pointer is managed, so
-  /// there's no need to delete it after using it.
+  /// on the device, initialized and ready to run.
   /// @param [in] type The type of the aerosol process for this model.
-  AerosolProcess::ManagedPointer process_on_device(
-      AerosolProcessType type) const;
+  AerosolProcess* process_on_device(AerosolProcessType type) const;
 
   // Accessors
 

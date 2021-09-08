@@ -67,8 +67,6 @@ Prognostics::Prognostics(
       "cloud_num_mix_ratios must have extent(1) == " << num_vert_packs);
 }
 
-Prognostics::~Prognostics() {}
-
 int Prognostics::num_aerosol_modes() const { return num_aero_species_.size(); }
 
 int Prognostics::num_aerosol_species(int mode_index) const {

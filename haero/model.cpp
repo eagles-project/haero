@@ -148,8 +148,7 @@ HostDiagnostics* Model::create_diagnostics() const {
   return diags;
 }
 
-AerosolProcess::ManagedPointer Model::process_on_device(
-    AerosolProcessType type) const {
+AerosolProcess* Model::process_on_device(AerosolProcessType type) const {
   auto iter = aero_processes_.find(type);
   EKAT_REQUIRE_MSG(iter != aero_processes_.end(),
                    "No process of the selected type is available!");

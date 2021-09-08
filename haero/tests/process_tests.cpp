@@ -42,9 +42,10 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
   //                                Overrides
   //------------------------------------------------------------------------
 
-  KOKKOS_FUNCTION
-  void run_(Real t, Real dt, const Prognostics &prognostics,
-            const Atmosphere &atmosphere, const Diagnostics &diagnostics,
+  KOKKOS_INLINE_FUNCTION
+  void run_(const TeamType &team, Real t, Real dt,
+            const Prognostics &prognostics, const Atmosphere &atmosphere,
+            const Diagnostics &diagnostics,
             const Tendencies &tendencies) const {
     const SpeciesColumnView int_aerosols = prognostics.interstitial_aerosols;
     const ColumnView temp = atmosphere.temperature;
@@ -178,11 +179,11 @@ TEST_CASE("process_tests", "aerosol_process") {
     num_aero_species[m] = mode_species[modes[m].name()].size();
   }
 
-  HostDiagnostics diagnostics_register(num_modes, num_aero_species, num_gases,
-                                       num_levels);
-  auto aersol_0 = diagnostics_register.create_aerosol_var("First Aerosol");
-  auto aersol_1 = diagnostics_register.create_aerosol_var("Second Aerosol");
-  auto generic_0 = diagnostics_register.create_var("Generic Aerosol");
+  HostDiagnostics host_diags(num_modes, num_aero_species, num_gases,
+                             num_levels);
+  auto aersol_0 = host_diags.create_aerosol_var("First Aerosol");
+  auto aersol_1 = host_diags.create_aerosol_var("Second Aerosol");
+  auto generic_0 = host_diags.create_var("Generic Aerosol");
 
   Tendencies tends(progs);
   {
@@ -201,39 +202,31 @@ TEST_CASE("process_tests", "aerosol_process") {
   // Create and initialize our process.
   AerosolProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudProcess";
-  MyAerosolProcess pp(type, name, num_levels, aersol_0, aersol_1, generic_0);
+  auto pp = new MyAerosolProcess(type, name, num_levels, aersol_0, aersol_1,
+                                 generic_0);
   std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
   std::vector<GasSpecies> gas_species = create_mam4_gas_species();
   ModalAerosolConfig aero_config(modes, aero_species, mode_species,
                                  gas_species);
-  pp.init(aero_config);
+  pp->init(aero_config);
 
   // Move the process to the device and run it.
-  auto device_pp = pp.copy_to_device();
-  const Diagnostics &diagnostics = diagnostics_register.GetDiagnostics();
-  typedef Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>::member_type
-      TeamHandleType;
-  const auto &teamPolicy =
-      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>(1u, Kokkos::AUTO);
-  auto device_ptr = device_pp.get();
+  auto device_pp = pp->copy_to_device();
+  const Diagnostics &diags = host_diags.GetDiagnostics();
+  const auto &team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
   Kokkos::parallel_for(
-      teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
-        Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(team, 0u, 1u), [&](const int &i) {
-              // Const cast because everything in lambda is const. Need to
-              // google how to fix.
-              Tendencies *tendency = const_cast<Tendencies *>(&tends);
-              device_ptr->run(t, dt, progs, atmos, diagnostics, *tendency);
-            });
+      team_policy, KOKKOS_LAMBDA(const TeamType &team) {
+        device_pp->run(team, t, dt, progs, atmos, diags, tends);
       });
+  AerosolProcess::delete_on_device(device_pp);
 
   {
     using fp_helper = FloatingPoint<float>;
     const SpeciesColumnView int_aerosols = progs.interstitial_aerosols;
     const ColumnView temp = atmos.temperature;
-    const SpeciesColumnView first_aersol = diagnostics.aerosol_var(aersol_0);
-    const SpeciesColumnView second_aersol = diagnostics.aerosol_var(aersol_1);
-    const ColumnView generic_var = diagnostics.var(generic_0);
+    const SpeciesColumnView first_aersol = diags.aerosol_var(aersol_0);
+    const SpeciesColumnView second_aersol = diags.aerosol_var(aersol_1);
+    const ColumnView generic_var = diags.var(generic_0);
     SpeciesColumnView aero_tend = tends.interstitial_aerosols;
 
     auto host_first_aersol = Kokkos::create_mirror_view(first_aersol);
@@ -277,4 +270,6 @@ TEST_CASE("process_tests", "aerosol_process") {
       }
     }
   }
+
+  delete pp;
 }

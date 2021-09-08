@@ -1,0 +1,69 @@
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+      # variables:
+      #   GIT_SUBMODULE_STRATEGY: recursive
+
+.pnnl_tags_template: &pnnl_tags_definition
+  tags:
+    - k8s
+    - ikp
+    - eagles
+    - deception
+
+stages:
+  - build_and_test
+
+# PNNL Pipeline
+#
+x86_64-gcc-cuda-build:
+  stage: build_and_test
+  <<: *pnnl_tags_definition
+  script:
+    - |
+      set -xv
+      whoami
+
+      #
+      #  NOTES:  WORKDIR is on constance/marianas/newell
+      #          ./      is only on the Kubernetes instance
+      #
+      export WORKDIR="$HOME/gitlab/${CI_PIPELINE_ID}/${WORKDIR_SUFFIX}/"
+      export BUILD_DIR="/scratch/eagles-ci/${CI_PIPELINE_ID}/"
+      export SRCDIR=${WORKDIR}
+
+      if [[ ! -d "$WORKDIR" ]]; then
+        # if workdir already exists, we're in the testing job
+        mkdir -p "$WORKDIR"
+        cp -R ./* "$WORKDIR"
+        cp -R ./.git "$WORKDIR"
+        cp .gitmodules "$WORKDIR"
+      fi
+
+      [ -d "$WORKDIR/build" ] && rm -rf "$WORKDIR/build"
+      mkdir -p "$WORKDIR/build"
+
+      export output_filename="${WORKDIR}/job.out"
+      [ -f $output_filename ] && rm $output_filename
+      touch $output_filename
+      tail -f $output_filename &
+      export tailpid=$!
+      jobid=$(sbatch --export=ALL -A eagles --gres=gpu:1 --ntasks=2 -p dlt -o $output_filename -e $output_filename -t 1:00:00 $WORKDIR/tools/marianas-cuda-ci.sh)
+
+      export jobid=$(echo $jobid | cut -f4 -d' ')
+      res=1
+      while :;
+      do
+        export count=$(grep BUILD_STATUS $output_filename | wc -l)
+        if [[ "$count" != "0" ]]; then
+          kill $tailpid
+          echo 'Last tail of build output:'
+          tail -n 50 $output_filename
+          res=$(perl -ne 'if (/BUILD_STATUS/) { s/.+://; print; exit; }' $output_filename)
+          break
+        fi
+        sleep 10
+      done
+      echo "Finished batch job with exit code: $res"
+      exit $res

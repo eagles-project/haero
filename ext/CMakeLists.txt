@@ -14,7 +14,7 @@ endforeach()
 # Keep track of whether we've updated our submodules.
 set(SUBMODULES_UPDATED FALSE)
 macro(update_submodules)
-  if (NOT SUBMODULES_UPDATED)
+  if (NOT SUBMODULES_UPDATED OR HAERO_DISABLE_SUBMODULE_CHECKS)
     message(STATUS "Updating git submodules recursively...")
     execute_process(COMMAND ${GIT} submodule update --init --recursive
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
@@ -220,6 +220,9 @@ if (NOT EXISTS ${EKAT_LIBRARY})
     if (HAVE_OPENMP)
       set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
                           -DKokkos_ENABLE_OPENMP=ON)
+    else()
+      set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
+                          -DKokkos_ENABLE_OPENMP=OFF)
     endif()
   elseif (HAERO_DEVICE STREQUAL CUDA)
     set(KOKKOS_ARCH_FLAG "Kokkos_ARCH_${HAERO_DEVICE_ARCH}")

@@ -40,8 +40,6 @@ Atmosphere::Atmosphere(int num_levels, const ColumnView temp,
                    "Height view must have extent == " << num_iface_packs);
 }
 
-Atmosphere::~Atmosphere() {}
-
 #if HAERO_FORTRAN
 
 // Interoperable C functions for providing data to Fortran.

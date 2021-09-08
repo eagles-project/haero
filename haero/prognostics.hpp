@@ -81,8 +81,8 @@ class Prognostics final {
               ModeColumnView cld_mode_num_mix_ratios, SpeciesColumnView gases);
 
   /// Destructor.
-  KOKKOS_FUNCTION
-  ~Prognostics();
+  KOKKOS_INLINE_FUNCTION
+  ~Prognostics() {}
 
   // --------------------------------------------------------------------------
   //                                Metadata

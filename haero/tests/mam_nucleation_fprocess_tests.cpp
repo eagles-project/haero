@@ -64,7 +64,7 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
   MAMNucleationProcess mam_nucleation_process(type, "Nucleation Test",
                                               aero_config, diagnostics);
 
-  init_bridge();
+  nucleation_init_bridge();
 
   for (int i = 0; i < 100; ++i) {
     const Real deltat(random());
@@ -537,7 +537,17 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
 
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 30.0;
-    process->run(t, dt, *progs, *atm, *diags, *tends);
+    auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
+    auto d_process = process->copy_to_device();
+    const auto& p = *progs;
+    const auto& a = *atm;
+    const auto& d = *diags;
+    auto& te = *tends;
+    Kokkos::parallel_for(
+        team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+          d_process->run(team, t, dt, p, a, d, te);
+        });
+    AerosolProcess::delete_on_device(d_process);
 
     // --------------------------------------------------
     // Check the tendencies to make sure they make sense.
@@ -583,4 +593,6 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
     delete tends;
     delete process;
   }
+
+  delete atm;
 }

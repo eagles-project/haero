@@ -7,22 +7,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 
 set(ENABLE_FORTRAN ON)
 
-# Check our device parameters
-if (NOT HAERO_DEVICE)
-  message(FATAL_ERROR "HAERO_DEVICE is not specified! (Must be CPU or CUDA).")
-elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
-  message(FATAL_ERROR "Invalid HAERO_DEVICE: ${HAERO_DEVICE} (Must be CPU or CUDA).")
-elseif(HAERO_DEVICE STREQUAL CUDA)
-  set(ENABLE_FORTRAN OFF)
-  set(HAERO_USE_CUDA ON)
-else() # CPU -- use OpenMP as "device" for non-Apple architectures.
-  if (NOT APPLE)
-    set(USE_OPENMP ON)
-  endif()
-endif()
-message(STATUS "Configuring for Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
-message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
-
 # Check our pack size
 if (NOT HAERO_PACK_SIZE)
   message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
@@ -32,6 +16,30 @@ elseif(HAERO_PACK_SIZE GREATER 1)
   set(ENABLE_FORTRAN OFF)
 endif()
 message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
+
+# This option is only used in CI, where we have to use special sauce to get the
+# submodules working with SSH. No mortal user should be concerned with this.
+option(HAERO_DISABLE_SUBMODULE_CHECKS "Skip checks for git submodules" OFF)
+mark_as_advanced(FORCE HAERO_DISABLE_SUBMODULE_CHECKS)
+
+# Check our device parameters
+if (NOT HAERO_DEVICE)
+  message(FATAL_ERROR "HAERO_DEVICE is not specified! (Must be CPU or CUDA).")
+elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
+  message(FATAL_ERROR "Invalid HAERO_DEVICE: ${HAERO_DEVICE} (Must be CPU or CUDA).")
+elseif(HAERO_DEVICE STREQUAL CUDA)
+  set(ENABLE_FORTRAN OFF)
+  set(HAERO_USE_CUDA ON)
+else() #CPU
+  # If we're C++ only and not using a Mac, use OpenMP.
+  if (NOT APPLE AND NOT ENABLE_FORTRAN)
+    set(USE_OPENMP ON)
+  else()
+    set(USE_OPENMP OFF)
+  endif()
+endif()
+message(STATUS "Configuring for Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
+message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
 
 # Define default Kokkos View types
 if (NOT HAERO_COLUMN_VIEW_TYPE)
@@ -204,10 +212,20 @@ if (HAVE_MPI)
   # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone.
   set(NO_MPI_CXX_FLAGS "-DMPICH_SKIP_MPICXX -UHAVE_MPI_CPP -DLAM_WANT_MPI2CPP=0 -DLAM_BUILDING=1 -DOMPI_WANT_CXX_BINDINGS=0 -DOMPI_BUILDING=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NO_MPI_CXX_FLAGS}")
+  if (HAERO_MPI_EXEC)
+    message(STATUS "MPI exec: ${HAERO_MPI_EXEC}")
+    if (NOT HAERO_MPI_NP_FLAG)
+      message(FATAL_ERROR "HAERO_MPI_EXEC was given, but HAERO_MPI_NP_FLAG was not!")
+    endif()
+    message(STATUS "MPI np flag: ${HAERO_MPI_NP_FLAG}")
+    if (HAERO_MPI_EXTRA_FLAGS)
+      message(STATUS "MPI extra flags: ${HAERO_MPI_EXTRA_FLAGS}")
+    endif()
+  endif()
 else()
   message(STATUS "MPI is disabled")
   set(HAVE_MPI 0) # Normalize.
-endif ()
+endif()
 
 # OpenMP support?
 if (USE_OPENMP)
@@ -215,9 +233,6 @@ if (USE_OPENMP)
   if (OPENMP_FOUND)
     message(STATUS "OpenMP is enabled")
     set(HAVE_OPENMP 1)
-    if (HAERO_FORTRAN)
-      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
-    endif()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
