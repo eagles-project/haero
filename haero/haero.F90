@@ -533,14 +533,20 @@ contains
     class(model_t),   intent(in) :: m
     integer,          intent(in) :: mode_index
     character(len=*), intent(in) :: species_symbol
-    integer :: a_index
+    integer :: a_index, max_mode
 
     ! If our mode index is invalid, return an invalid aerosol index.
     if (mode_index == 0) then
       a_index = 0
       return
     else
-      do a_index = 1,size(m%aero_species, mode_index)
+      if (size(m%aero_species, 1) < mode_index) then
+        print *,"ERROR: mode_index:",mode_index," exceeds max:", &
+          size(m%aero_species, 1)
+        stop 1
+      endif
+      max_mode = model%num_mode_species(mode_index)
+      do a_index = 1,max_mode
         if (m%aero_species(mode_index, a_index)%symbol == species_symbol) then
           return
         end if
