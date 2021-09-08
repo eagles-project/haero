@@ -8,6 +8,11 @@ module mam_rename
   implicit none
   private
 
+  integer :: ntot_amode
+  integer :: max_aer
+  integer :: nmodes
+  integer :: naer
+
   ! Upper and lower limits for diameters
   real(wp), save, allocatable :: dgnumlo_aer(:), &
                                  dgnumhi_aer(:), &
@@ -30,6 +35,16 @@ contains
     ! Arguments
     type(model_t), intent(in) :: model
 
+    ntot_amode = model%num_modes
+
+    ! FIXME: How should this be initialized?
+    naer = model%num_modes
+
+    ! FIXME: Should this be model%num_modes + 1?
+    max_aer = model%num_modes
+
+    nmodes = model%num_modes
+
     call initialize_diameters(model)
 
     call initialize_ln_of_std_dev(model)
@@ -51,9 +66,6 @@ contains
     type(tendencies_t), intent(inout) :: tendencies
 
     ! --- Local variables
-
-    ! Total number of modes
-    integer  :: nmodes
 
     ! Contains information about the destination mode for a given mode
     integer  :: dest_mode_of_mode(model%num_modes)
@@ -80,12 +92,8 @@ contains
 
     ! Start new variables from original fortran routine
     ! TODO: Find better names for these variables ported from the fortran routine
-    real(wp) :: dryvol_t_del, dryvol_t_new
-    real(wp) :: dryvol_t_old, dryvol_t_oldaa, dryvol_t_oldbnd
     logical  :: iscldy_subarea        ! true if sub-area is cloudy
-    real(wp) :: qnum_cur(model%num_modes)
-    integer  :: mtoo_renamexf(model%num_modes)
-    integer  :: naer, max_aer, max_mode, ntot_amode
+    integer  :: max_mode
 
     ! TODO: how is max_aer defined? In the original fortran routine, it's often
     ! defined like: 
@@ -101,10 +109,10 @@ contains
     real(wp) :: qaer_del_grow4rnam(1:model%num_modes, 1:model%num_modes)
 
     ! real(wp), intent(inout), dimension( 1:max_aer, 1:max_mode ) :: qaer_cur
-    real(wp) :: qaer_cur(1:model%num_modes, 1:model%num_modes)
+    real(wp), pointer :: q_interstitial(:, :)
 
     ! real(wp), intent(inout), optional, dimension( 1:max_aer, 1:max_mode ) :: qaercw_cur
-    real(wp) :: qaercw_cur(1:model%num_modes, 1:model%num_modes)
+    real(wp), pointer :: q_cloudborne(:, :)
 
     ! These lengths were originally ntot_amode
     real(wp) :: dryvol_a(model%num_modes)
@@ -113,36 +121,15 @@ contains
     real(wp) :: deldryvol_c(model%num_modes)
     ! End newly ported variables
 
-    ! TODO: How should ntot_amode be initialized? It seems to come from the global
-    ! aero config in the original code
-    ntot_amode = model%num_modes
-    ! ---
+    iscldy_subarea = .true.
 
-    nmodes = model%num_modes
-
-    iscldy_subarea = .false.
-
-    ! TODO: Initialize newly ported arrays to 0. How should all these really be
-    ! initialized?
-    dryvol_t_del    = 0._wp
-    dryvol_t_new    = 0._wp
-    dryvol_t_old    = 0._wp
-    dryvol_t_oldaa  = 0._wp
-    dryvol_t_oldbnd = 0._wp
-
-    qnum_cur(:)      = 0
-    mtoo_renamexf(:) = 0
-
+    ! FIXME: diagnostics should be updated
     qaercw_del_grow4rnam(:, :) = 0
     qaer_del_grow4rnam(:, :)   = 0
-    qaer_cur(:, :)             = 0
-    qaercw_cur(:, :)           = 0
-
-    dryvol_c(:)    = 0
-    dryvol_a(:)    = 0
-    deldryvol_a(:) = 0
-    deldryvol_c(:) = 0
     ! ---
+
+    q_interstitial => prognostics%interstitial_aerosols()
+    q_cloudborne => prognostics%cloud_aerosols()
 
     ! TODO: This should not be hardwired here but should be either part of the
     ! metadata or otherwise populated.
@@ -158,8 +145,8 @@ contains
     ! Compute initial (before growth) aerosol dry volume and also the growth in
     ! dryvolume for both interstitial and cloud-borne (if iscldy_subaera is
     ! true) aerosols of the "src" mode
-    call compute_dryvol_change_in_src_mode(ntot_amode, naer, mtoo_renamexf, &              !input
-        iscldy_subarea, qaer_cur, qaer_del_grow4rnam, qaercw_cur, qaercw_del_grow4rnam, & !input
+    call compute_dryvol_change_in_src_mode(ntot_amode, naer, dest_mode_of_mode, &              !input
+        iscldy_subarea, q_interstitial, qaer_del_grow4rnam, q_cloudborne, qaercw_del_grow4rnam, & !input
         dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)                                     !output
 
   end subroutine run
