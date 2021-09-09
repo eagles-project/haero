@@ -40,6 +40,7 @@ CreateUnitTest(wang2008_tests wang2008_tests.cpp)
 CreateUnitTest(mam_nucleation_process_tests mam_nucleation_process_tests.cpp)
 CreateUnitTest(mam_rename_process_tests mam_rename_process_tests.cpp)
 CreateUnitTest(mam_nucleation_packed_tests mam_nucleation_packed_tests.cpp)
+CreateUnitTest(aerosol_activation_tests aerosol_activation_tests.cpp)
 
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and

@@ -222,7 +222,19 @@ inline ModalAerosolConfig create_mam4_modal_aerosol_config() {
                             create_mam4_gas_species());
 }
 
+/// Create a simple 2-mode, 3-species configuration for unit tests
 ModalAerosolConfig create_simple_test_config();
+
+/// Create a modal config corresponding to Abdul-Razaak, Ghan, 2000
+/// Activation paper (part 2).
+ModalAerosolConfig create_ag00_2mode_config();
+
+/// Create a modal config corresponding to Abdul-Razaak, Ghan, 2000
+/// Activation paper (part 2).
+ModalAerosolConfig create_ag00_3mode_config();
+
+/// Create a modal config corresponding to Whitby, 1978
+ModalAerosolConfig create_whitby78_config();
 
 }  // namespace haero
 

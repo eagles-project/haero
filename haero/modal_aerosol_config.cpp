@@ -106,4 +106,42 @@ ModalAerosolConfig create_simple_test_config() {
   return ModalAerosolConfig(test_modes, aeros, mode_spec_map, test_gases);
 }
 
+ModalAerosolConfig create_ag00_2mode_config() {
+  const int nmodes = 2;
+  const std::vector<std::string> mode_names = {"mode1", "mode2"};
+  const std::vector<std::pair<Real,Real>> mode_min_max_diams = {
+    std::make_pair(0,1),
+    std::make_pair(0,1)};
+  const std::vector<Real> mode_sigmas = {2, 2};
+  const Real rh_cryst = 0.35;
+  const Real rh_deliq = 0.8;
+
+  std::map<std::string, std::vector<std::string>> mode_spec_map;
+  std::vector<Mode> modes(nmodes);
+  for (int m=0; m<nmodes; ++m) {
+    modes[m] = Mode(mode_names[m], mode_min_max_diams[m].first,
+      mode_min_max_diams[m].second, mode_sigmas[m], rh_cryst, rh_deliq);
+    mode_spec_map.emplace(mode_names[m], std::vector<std::string>());
+  }
+
+  const int nspec = 2;
+  const std::vector<std::string> spec_names = {"ammonium_sulfate", "90percent_insoluble"};
+  const std::vector<std::string> spec_symbs = {"(NH4)2SO4", "insol"};
+  const auto spec_molec_weights = std::vector<Real>(2,
+    2*Constants::molec_weight_nh4 + 2*Constants::molec_weight_so4);
+  const auto spec_dens = std::vector<Real>(2, 1770);
+  const std::vector<Real> spec_hygro = {7.23978, 0.723978};
+  const std::vector<std::string> spec_descs = {"soluble", "insoluble"};
+  std::vector<AerosolSpecies> aeros(2);
+  for (int s=0; s<nspec; ++s) {
+    aeros[s] = AerosolSpecies(spec_names[s], spec_symbs[s], spec_descs[s],
+      spec_molec_weights[s], spec_dens[s], spec_hygro[s]);
+    mode_spec_map[mode_names[s]].push_back(spec_symbs[s]);
+  }
+
+  const std::vector<GasSpecies> null_gas(1);
+  return ModalAerosolConfig(modes, aeros, mode_spec_map, null_gas);
+}
+
+
 }  // namespace haero
