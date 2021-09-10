@@ -127,6 +127,20 @@ contains
     q_interstitial => prognostics%interstitial_aerosols()
     q_cloudborne => prognostics%cloud_aerosols()
 
+    !------------------------------------------------------------------------
+    ! Find mapping between different modes, so that we can move aerosol
+    ! particles from one mode to another
+    !------------------------------------------------------------------------
+
+    ! FIXME: All the arrays in find_renaming_pairs subroutine call should be
+    ! initialized to HUGE or NaNs as they are partially populated
+      
+    ! Find (src->destination) pairs of modes which can participate in inter-mode particle transfer
+      
+    ! NOTE:dryvol_smallest is a very small volume mixing ratio [m3-spc/kmol-air] (where m3-spc
+    ! is meter cubed volume of a specie "spc") used for avoiding overflow.  it corresponds to dp = 1 nm
+    ! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
+
     ! TODO: This should not be hardwired here but should be either part of the
     ! metadata or otherwise populated.
     dest_mode_of_mode(:) = [0, 1, 0, 0]
