@@ -9,6 +9,7 @@ module mam_rename
   private
 
   integer, save :: max_aer
+  integer, save :: num_populations
   integer, save :: naer
   integer, save :: num_modes
   integer, save, allocatable :: population_offsets(:)
@@ -39,6 +40,7 @@ contains
     integer :: ierr
 
     num_modes = model%num_modes
+    num_populations = model%num_populations
 
     allocate(population_offsets(num_modes), stat=ierr)
     if (ierr .ne. 0) then
@@ -192,6 +194,10 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     ! The indices are same for interstitial and cloudborne species
     start_species_index = population_offsets(imode)
     end_species_index = population_offsets(imode+1) - 1
+
+    if (imode .eq. num_modes) then
+      end_species_index = num_populations
+    endif
 
     !compute dry volumes (before growth) and its change for interstitial aerosols
     call dryvolume_change(imode, qi_vmr, qi_del_growth, & !input
