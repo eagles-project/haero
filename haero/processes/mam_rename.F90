@@ -8,9 +8,7 @@ module mam_rename
   implicit none
   private
 
-  integer, save :: ntot_amode
   integer, save :: max_aer
-  integer, save :: nmodes
   integer, save :: naer
   integer, save :: num_modes
   integer, save, allocatable :: population_offsets(:)
@@ -40,8 +38,6 @@ contains
     ! Locals
     integer :: ierr
 
-    ! FIXME: are these "synonyms"?
-    ntot_amode = model%num_modes
     num_modes = model%num_modes
 
     allocate(population_offsets(num_modes), stat=ierr)
@@ -51,14 +47,13 @@ contains
     endif
     population_offsets(:) = model%population_offsets(:)
 
-    ! FIXME: How should this be initialized?
-    naer = model%num_modes
+    ! FIXME: naer is the total number of species in a mode, it is hardwired here
+    ! FIXME: but it should be computed based on the mode number in a mode loop
+    naer = population_offsets(2) - population_offsets(1)
 
-    ! FIXME: Should this be model%num_modes + 1? 
-    ! This should ideally be computed here.
+    ! FIXME: max_aer is number of species in the mode with most species, it
+    ! FIXME: should be computed dynamically using population_offsets
     max_aer = model%num_modes
-
-    nmodes = model%num_modes
 
     call initialize_diameters(model)
 
@@ -72,6 +67,7 @@ contains
     implicit none
 
     ! --- Parameters
+
     type(model_t), intent(in)         :: model
     real(wp), value, intent(in)       :: t
     real(wp), value, intent(in)       :: dt
@@ -105,36 +101,21 @@ contains
     real(wp) :: diameter_belowcutoff(num_modes), &
                 dryvol_smallest(num_modes)
 
-    ! Start new variables from original fortran routine
-    ! TODO: Find better names for these variables ported from the fortran routine
-    logical  :: iscldy_subarea        ! true if sub-area is cloudy
+    ! true if sub-area is cloudy
+    logical  :: iscldy_subarea
+
     integer  :: max_mode
 
-    ! TODO: how is max_aer defined? In the original fortran routine, it's often
-    ! defined like: 
-    ! integer, parameter :: max_aer = nsoa + npoa + nbc + 8
-
-    ! For the following variables, the original declaration is in the comment
-    ! preceding the declaration.
-
-    ! real(wp) :: qaercw_del_grow4rnam(1:max_aer, 1:max_mode)
     real(wp) :: qaercw_del_grow4rnam(max_aer, num_modes)
-
-    ! real(wp), intent(in   ), dimension( 1:max_aer, 1:max_mode ) :: qaer_del_grow4rnam
     real(wp) :: qaer_del_grow4rnam(max_aer, num_modes)
 
-    ! real(wp), intent(inout), dimension( 1:max_aer, 1:max_mode ) :: qaer_cur
     real(wp), pointer :: q_interstitial(:, :)
-
-    ! real(wp), intent(inout), optional, dimension( 1:max_aer, 1:max_mode ) :: qaercw_cur
     real(wp), pointer :: q_cloudborne(:, :)
 
-    ! These lengths were originally ntot_amode
     real(wp) :: dryvol_a(num_modes)
     real(wp) :: dryvol_c(num_modes)
     real(wp) :: deldryvol_a(num_modes)
     real(wp) :: deldryvol_c(num_modes)
-    ! End newly ported variables
 
     iscldy_subarea = .true.
 
@@ -150,9 +131,7 @@ contains
     ! metadata or otherwise populated.
     dest_mode_of_mode(:) = [0, 1, 0, 0]
 
-    ! TODO: new parameters needed for _find_renaming_pairs_; extract data from
-    ! _model_ and pass to _find_renaming_pairs_. DONT pass model to subroutines.
-    call find_renaming_pairs(nmodes, dest_mode_of_mode,        &    ! input
+    call find_renaming_pairs(num_modes, dest_mode_of_mode,        &    ! input
         num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, &    ! output
         v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     &    ! output
         ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)       ! output
@@ -160,18 +139,17 @@ contains
     ! Compute initial (before growth) aerosol dry volume and also the growth in
     ! dryvolume for both interstitial and cloud-borne (if iscldy_subaera is
     ! true) aerosols of the "src" mode
-    call compute_dryvol_change_in_src_mode(ntot_amode, naer, dest_mode_of_mode, &              !input
+    call compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &              !input
         iscldy_subarea, q_interstitial, qaer_del_grow4rnam, q_cloudborne, qaercw_del_grow4rnam, & !input
         dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)                                     !output
 
   end subroutine run
 
-subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
+subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     iscldy, qi_vmr, qi_del_growth, qcld_vmr, qcld_del_growth, &
     dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)
 
-  integer,  intent(in):: nmode ! total number of modes
-  integer,  intent(in):: nspec !total number of species in a mode
+  integer,  intent(in):: num_modes ! total number of modes
   integer,  intent(in):: dest_mode_of_mode(:) ! destination mode for a mode
 
   logical,  intent(in) :: iscldy ! true if it is a cloudy cell
@@ -191,7 +169,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
   integer :: start_species_index, end_species_index
 
   !For each mode, compute the initial (before growth) dryvolume and the growth in dryvolume
-  do imode = 1, nmode
+  do imode = 1, num_modes
     !compute dry volume only for modes participating in inter-modal transfer
     dest_mode = dest_mode_of_mode(imode)
     if (dest_mode <= 0) cycle
@@ -202,7 +180,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
     end_species_index = population_offsets(imode+1) - 1
 
     !compute dry volumes (before growth) and its change for interstitial aerosols
-    call dryvolume_change(imode, nspec, qi_vmr, qi_del_growth, & !input
+    call dryvolume_change(imode, qi_vmr, qi_del_growth, & !input
       start_species_index, end_species_index, & ! input
       dryvol_a(imode), deldryvol_a(imode)) !output
 
@@ -214,7 +192,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
       endif
 
       !compute dry volume (before growth) and its change for cloudborne aerosols
-      call dryvolume_change(imode, nspec, qcld_vmr, qcld_del_growth, &!input
+      call dryvolume_change(imode, qcld_vmr, qcld_del_growth, &!input
             start_species_index, end_species_index, & ! input
             dryvol_c(imode), deldryvol_c(imode)) !output
 
@@ -223,13 +201,12 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
 
   end subroutine compute_dryvol_change_in_src_mode
 
-  subroutine dryvolume_change (imode, nspec, q_vmr, q_del_growth, & ! input
+  subroutine dryvolume_change (imode, q_vmr, q_del_growth, & ! input
                                start_species_index, end_species_index, & ! input
                                dryvol, deldryvol) ! output
 
     !intent-ins
     integer,  intent(in) :: imode           !current mode number
-    integer,  intent(in) :: nspec           !number of species in the current mode
     integer,  intent(in) :: start_species_index, end_species_index
     real(wp), intent(in) :: q_vmr(:,:)        !volume mixing ratio [kmol/kmol] FIXME: units needs to be reverified
     real(wp), intent(in) :: q_del_growth(:,:) !change (delta) in volume mixing ratio [kmol/kmol]
@@ -239,14 +216,12 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
 
     !local variables
     integer  :: ispec
-    real(wp) :: mass_2_vol(nspec) ! converts specie mass to dry volume !DO NOT PORT, we will construct it during "init"
-    real(wp) :: tmp_dryvol, tmp_del_dryvol
 
-    ! Original comment: "Temporary variable name change- do not port"
-    ! I've therefore commented out this line. It seems this is copying to/from
-    ! a module-level variable that we shouldn't touch in hearo?
-    !
+    !FIXME: This factor needs to be precomputed
     ! mass_2_vol(:) = fac_m2v_aer(:)
+    real(wp) :: mass_2_vol(naer)
+
+    real(wp) :: tmp_dryvol, tmp_del_dryvol
 
     !For each mode, we compute a dry volume by combining (accumulating) mass/density for each specie in that mode.
     !conversion from mass to volume is accomplished by multiplying with precomputed "mass_2_vol" factor
@@ -394,7 +369,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
 
   end subroutine finalize
 
-  subroutine find_renaming_pairs (nmodes, dest_mode_of_mode,  & ! input
+  subroutine find_renaming_pairs (num_modes, dest_mode_of_mode,  & ! input
        num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & ! output
        v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff,     & ! output
        ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    ! output
@@ -402,7 +377,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
     ! --- arguments (intent-ins)
 
     ! total number of modes
-    integer,  intent(in) :: nmodes
+    integer,  intent(in) :: num_modes
 
     ! Array for information about the destination mode of a particular mode
     integer,  intent(in) :: dest_mode_of_mode(:)
@@ -460,7 +435,7 @@ subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
     endif
 
     ! Find >=1 pair
-    do imode = 1, nmodes
+    do imode = 1, num_modes
 
       ! Destination mode for mode _imode_
       dest_mode = dest_mode_of_mode(imode)
