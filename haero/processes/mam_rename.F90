@@ -122,8 +122,8 @@ contains
     iscldy_subarea = .true.
 
     ! FIXME: diagnostics should be updated
-    qaercw_del_grow4rnam(:, :) = 0
-    qaer_del_grow4rnam(:, :)   = 0
+    qaercw_del_grow4rnam(:, :) = 0.0_wp
+    qaer_del_grow4rnam(:, :)   = 0.0_wp
     ! ---
 
     q_interstitial => prognostics%interstitial_aerosols()
