@@ -311,11 +311,15 @@ if (HAERO_ENABLE_CHEM_DRIVER)
   add_subdirectory(chem_driver)
 endif()
 
-# Skywalker--a tool for exploring aerosol processes in low-dimensional parameter spaces
-add_subdirectory(skywalker)
+# Validation tools (currently offered only for CPU builds)
+if(NOT HAERO_USE_CUDA)
+  # Skywalker--a tool for exploring aerosol processes in low-dimensional
+  # parameter spaces.
+  add_subdirectory(skywalker)
 
-# Validation tools
-add_subdirectory(validation)
+  # Aerosol cross-validation materials
+  add_subdirectory(validation)
+endif()
 
 # Documentation.
 if (HAERO_DOC_INCLUDE_COMMENTS)
