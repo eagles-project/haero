@@ -4,15 +4,9 @@
 #include "ekat/ekat_scalar_traits.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/math.hpp"
+#include "haero/microphysics_functions.hpp"
 
 namespace haero {
-/** Coefficient accounting for Kelvin effect on droplets
-
-   In the documentation, this constant is denoted by A.
-
-  @todo verify that the assumptions that lead to this constant still hold at
- SCREAM resolutions (e.g., constant temperature, constant surface tension) */
-static constexpr Real kelvin_droplet_effect_coeff = 0.00120746723156361711;
 
 /** @brief Struct that represents the Kohler polynomial.
 
@@ -125,7 +119,7 @@ struct KohlerPolynomial {
   template <typename U>
   KOKKOS_INLINE_FUNCTION T operator()(const U& wet_radius) const {
     const T rwet = T(wet_radius);
-    const Real kelvinA = kelvin_droplet_effect_coeff;
+    const Real kelvinA = kelvin_coeff_A(Real(273.15));
     const T result = (log_rel_humidity * rwet - kelvinA) * cube(rwet) +
                      ((hygroscopicity - log_rel_humidity) * rwet + kelvinA) *
                          dry_radius_cubed;
@@ -144,7 +138,7 @@ struct KohlerPolynomial {
   KOKKOS_INLINE_FUNCTION T derivative(const U& wet_radius) const {
     const T rwet = T(wet_radius);
     const T wet_radius_squared = square(rwet);
-    const Real kelvinA = kelvin_droplet_effect_coeff;
+    const Real kelvinA = kelvin_coeff_A(Real(273.15));
     const T result =
         (4 * log_rel_humidity * rwet - 3 * kelvinA) * wet_radius_squared +
         (hygroscopicity - log_rel_humidity) * dry_radius_cubed;

@@ -222,7 +222,7 @@ TEST_CASE("KohlerPolynomial properties", "") {
   for (int i = 0; i < num_packs; ++i) {
     // check Property 1
     REQUIRE(FloatingPoint<PackType>::equiv(
-        h_kohler_at_zero(i), kelvin_droplet_effect_coeff * cube(h_rdry(i))));
+        h_kohler_at_zero(i), kelvin_coeff_A(Real(273.15)) * cube(h_rdry(i))));
 
     if (!(h_kohler_at_rdry(i) > 0).all()) {
       std::cout << "K(r_dry) = " << h_kohler_at_rdry(i)
