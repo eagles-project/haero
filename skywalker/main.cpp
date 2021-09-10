@@ -21,6 +21,7 @@ void usage(const char* exe) {
 void set_input(const std::vector<InputData>& inputs,
                haero::Atmosphere& atmosphere, haero::Prognostics& prognostics) {
   int num_levels = prognostics.num_levels();
+  int num_vert_packs = haero::PackInfo::num_packs(num_levels);
   int num_modes = prognostics.num_aerosol_modes();
   int num_gases = prognostics.num_gases();
 
@@ -35,7 +36,7 @@ void set_input(const std::vector<InputData>& inputs,
   auto int_num_mix_ratios =
       ekat::scalarize(prognostics.interstitial_num_mix_ratios);
   auto cld_num_mix_ratios = ekat::scalarize(prognostics.cloud_num_mix_ratios);
-  for (int l = 0; l < num_levels; ++l) {
+  for (int l = 0; l < num_vert_packs; ++l) {
     // Atmospheric state
     T(l) = inputs[l].temperature;
     p(l) = inputs[l].pressure;
@@ -130,6 +131,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
     dts.push_back(param_walk.ref_input.dt);
   }
 
+  int num_vert_packs = haero::PackInfo::num_packs(num_levels);
+
   // Create an ensemble's worth of input data from our parameter walker,
   // excluding "dt" and "pblh" parameters from the walk.
   auto inputs =
@@ -144,14 +147,14 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   int num_aero_populations = model->num_aerosol_populations();
   int num_gases = aero_config.gas_species.size();
   haero::SpeciesColumnView int_aerosols("interstitial aerosols",
-                                        num_aero_populations, num_levels);
+                                        num_aero_populations, num_vert_packs);
   haero::SpeciesColumnView cld_aerosols("cloud aerosols", num_aero_populations,
-                                        num_levels);
-  haero::SpeciesColumnView gases("gases", num_gases, num_levels);
+                                        num_vert_packs);
+  haero::SpeciesColumnView gases("gases", num_gases, num_vert_packs);
   haero::ModeColumnView int_num_mix_ratios("interstitial number mix_ratios",
-                                           num_modes, num_levels);
+                                           num_modes, num_vert_packs);
   haero::ModeColumnView cld_num_mix_ratios("cloud number mix_ratios", num_modes,
-                                           num_levels);
+                                           num_vert_packs);
 
   auto* prognostics =
       model->create_prognostics(int_aerosols, cld_aerosols, int_num_mix_ratios,
@@ -159,11 +162,13 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   auto* diagnostics = model->create_diagnostics();
 
   // Set up an atmospheric state and initialize it with reference data.
-  haero::ColumnView temp("temperature", num_levels);
-  haero::ColumnView press("pressure", num_levels);
-  haero::ColumnView qv("vapor mixing ratio", num_levels);
-  haero::ColumnView ht("height", num_levels + 1);
-  haero::ColumnView dp("hydrostatic pressure thickness", num_levels);
+  haero::ColumnView temp("temperature", num_vert_packs);
+  haero::ColumnView press("pressure", num_vert_packs);
+  haero::ColumnView qv("vapor mixing ratio", num_vert_packs);
+  int num_vert_int_packs =
+      (num_levels % num_vert_packs) ? num_vert_packs : num_vert_packs + 1;
+  haero::ColumnView ht("height", num_vert_int_packs);
+  haero::ColumnView dp("hydrostatic pressure thickness", num_vert_packs);
   auto* atmosphere = new haero::Atmosphere(
       num_levels, temp, press, qv, ht, dp,
       param_walk.ref_input.planetary_boundary_layer_height);
@@ -248,20 +253,20 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       // If the planetary boundary layer height is actually a walked parameter,
       // make sure its value is reflected in our input parameters.
       if (pblhs.size() > 1) {
-        for (int l = 0; l < num_levels; ++l) {
+        for (int l = 0; l < num_vert_packs; ++l) {
           inputs[l].planetary_boundary_layer_height = pblh;
         }
       }
 
       // Same for time steps.
       if (dts.size() > 1) {
-        for (int l = 0; l < num_levels; ++l) {
+        for (int l = 0; l < num_vert_packs; ++l) {
           inputs[l].dt = dt;
         }
       }
 
       // Stash input and output data.
-      for (int l = 0; l < num_levels; ++l) {
+      for (int l = 0; l < num_vert_packs; ++l) {
         input_data.push_back(inputs[l]);
         output_data.push_back(outputs[l]);
       }
