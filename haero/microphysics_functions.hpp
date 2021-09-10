@@ -21,7 +21,9 @@ and capable of running on the device.
   Legacy MAM4 uses T = 273 everywhere surface tension is
   required.
 
-  Defined by Prupaccher/Klett 2nd. ed. eqn (5.12).
+  Defined by Prupaccher/Klett 2nd. ed. eqn (5.12),
+  @f$ \sigma_{w/a} = \sum_{i=0}^6 a_0 T^i @f$
+  where T is deg C and the coefficients are a curve fit
 
   @param T temperature [K]
   @return surface tension [N/m]
@@ -37,8 +39,10 @@ ScalarType surface_tension_water_air(const ScalarType& T) {
                           5.285e-8}; // a6
   const Real K_to_C = Constants::freezing_pt_h2o;
   const Real erg_per_cm2_to_N_per_m = 1e-3;
-  ScalarType result = 0;
-  for (int i=0; i<7; ++i) {
+  // the curve fit is defined in degrees C, so we have to watch out for
+  // 0^0.  Easy fix: move the 0th term of the sum outside the loop.
+  ScalarType result = coeffs[0];
+  for (int i=1; i<7; ++i) {
     result += coeffs[i] * pow(T - K_to_C, i);
   }
   return erg_per_cm2_to_N_per_m * result;
@@ -47,17 +51,15 @@ ScalarType surface_tension_water_air(const ScalarType& T) {
 
 /** @brief This function defines the "A" constant that describes the effect
  of surface tension and curvature on a water droplet, as
- described by Kelvin's equation.  Frequently,
+ described by Kelvin's equation.  A has units of length. Frequently,
  this quantity is denoted "A" in the literature.
-
-@warning It may or may not be used in SI units.
 
 Pruppacher/Klett 2nd ed. (6.28) defines
  @f$  A = \frac{2 M_{H_2O} \sigma_{w/a}}{\mathcal{R} T \rho_{H_2O}} @f$,
  where the molar mass of water, M_w, surface tension \sigma, the
  universal gas constant R, and the density of liquid water \rho_w,
  are all defined in c.g.s. units.   Temperature T is given in Kelvin.
- A has units of length, cm, in c.g.s. units.
+ A is given in cm in c.g.s. units.
 
 In legacy MAM4, it is computed as
  - modal_aero_wateruptake.F90: a = 2.e4_r8*mw*surften/(ugascon*tair*rhow)
@@ -69,13 +71,12 @@ In legacy MAM4, it is computed as
       with mwh20 = 18.016 kg/kmol, surften = 0.076 N/m,
       r_universal = 8.31456e3 J/K/kmol, t0 = 273 K, rhoh2o 1000 kg/m3,
       so that aten = 1.206e-9 m.
-      ndrop.F90 uses kmol, not mol, so is not quite the same as SI.
+      ndrop.F90 uses kmol, not mol, so is not quite the same as SI, but its
+      output is in meters as is ours, below.
 
-  Prupaccher & Klett 2nd ed. eqn. (6.28) approximates A in cgs units
+  Prupaccher & Klett 2nd ed. eqn. (6.28) approximate A in cgs units
     as 3.3e-5/T with T in K.  For T = 273.15, this gives 1.208e-7 cm.
-
-In Haero, consistent with our SI unit design convention, we use constants.hpp:
-  molar mass of water =
+    This ignores the variance of surface tension with temperature.
 
   @param T temperature [K]
   @return A [m]
