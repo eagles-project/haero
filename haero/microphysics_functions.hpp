@@ -16,6 +16,35 @@ and capable of running on the device.
 */
 
 
+/** @brief Surface tension of water/air interface
+
+  Legacy MAM4 uses T = 273 everywhere surface tension is
+  required.
+
+  Defined by Prupaccher/Klett 2nd. ed. eqn (5.12).
+
+  @param T temperature [K]
+  @return surface tension [N/m]
+*/
+template <typename ScalarType> KOKKOS_INLINE_FUNCTION
+ScalarType surface_tension_water_air(const ScalarType& T) {
+  const Real coeffs[7] = {75.93,     // a0
+                          0.115,     // a1
+                          6.818e-2,  // a2
+                          6.511e-3,  // a3
+                          2.933e-4,  // a4
+                          6.283e-6,  // a5
+                          5.285e-8}; // a6
+  const Real K_to_C = Constants::freezing_pt_h2o;
+  const Real erg_per_cm2_to_N_per_m = 1e-3;
+  ScalarType result = 0;
+  for (int i=0; i<7; ++i) {
+    result += coeffs[i] * pow(T - K_to_C, i);
+  }
+  return erg_per_cm2_to_N_per_m * result;
+}
+
+
 /** @brief This function defines the "A" constant that describes the effect
  of surface tension and curvature on a water droplet, as
  described by Kelvin's equation.  Frequently,
@@ -61,33 +90,7 @@ ScalarType kelvin_coeff_A(const ScalarType& T) {
 }
 
 
-/** @brief Surface tension of water/air interface
 
-  Legacy MAM4 uses T = 273 everywhere surface tension is
-  required.
-
-  Defined by Prupaccher/Klett 2nd. ed. eqn (5.12).
-
-  @param T temperature [K]
-  @return surface tension [N/m]
-*/
-template <typename ScalarType> KOKKOS_INLINE_FUNCTION
-ScalarType surface_tension_water_air(const ScalarType& T) {
-  const Real coeffs[7] = {75.93,    // a0
-                          0.115,    // a1
-                          6.818e-2, // a2
-                          6.511e-3, // a3
-                          2.933e-4, // a4
-                          6.283e-6, // a5
-                          5.285e-8} // a6
-  const Real K_to_C = Constants::freezing_pt_h2o;
-  const Real erg_per_cm2_to_N_per_m = 1e-3;
-  ScalarType result = 0;
-  for (int i=0; i<7; ++i) {
-    result += coeffs[i] * pow(T - K_to_C, i);
-  }
-  return erg_per_cm2_to_N_per_m * result;
-}
 
 } // namespace haero
 #endif

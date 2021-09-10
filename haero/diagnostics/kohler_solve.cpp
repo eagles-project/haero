@@ -11,7 +11,7 @@ std::string KohlerPolynomial<T>::mathematica_verification_program(const int n) {
   /* mathematica doesn't like exponential notation, so we use setprecision
    * instead.*/
   ss << "kelvinCoeff = " << std::fixed << std::setprecision(16)
-     << kelvin_droplet_effect_coeff << ";\n";
+     << kelvin_coeff_A(Real(273.15)) << ";\n";
   ss << "rhMin = " << rel_humidity_min << ";\n";
   ss << "rhMax = " << rel_humidity_max << ";\n";
   ss << "hygMin = " << hygro_min << ";\n";
@@ -40,7 +40,7 @@ std::string KohlerPolynomial<T>::matlab_verification_program(const int n) {
   ss << "clear; format long;\n";
   ss << "%% parameter bounds\n";
   ss << "kelvinCoeff = " << std::fixed << std::setprecision(16)
-     << kelvin_droplet_effect_coeff << ";\n";
+     << kelvin_coeff_A(Real(273.15)) << ";\n";
   ss << "rhMin = " << rel_humidity_min << ";\n";
   ss << "rhMax = " << rel_humidity_max << ";\n";
   ss << "hygMin = " << hygro_min << ";\n";
