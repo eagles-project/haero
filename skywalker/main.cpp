@@ -103,7 +103,8 @@ std::vector<OutputData> get_output(const haero::ModalAerosolConfig& aero_config,
 // Runs an aerosol process using the parameters in param_walk, writing output
 // ŧo a Python module with the given name.
 void run_process(const haero::ModalAerosolConfig& aero_config,
-                 const ParameterWalk& param_walk, const char* py_module_name) {
+                 const ParameterWalk& param_walk,
+                 const std::string& py_module_name) {
   // Count up the number of simulations we need (excluding the planetary
   // boundary layer parameter). We can run all simulations simultaneously
   // by setting data for each simulation at a specific vertical level.
@@ -215,7 +216,7 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // include two loops here to accommodate different values of the planetary
   // boundary layer height and the use of different time steps.
   printf("skywalker: running %ld simulations and writing output to '%s'...\n",
-         inputs.size(), py_module_name);
+         inputs.size(), py_module_name.c_str());
   std::vector<InputData> input_data;
   std::vector<OutputData> output_data;
   for (auto pblh : pblhs) {

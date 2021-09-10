@@ -1,5 +1,6 @@
 haero:
-  param1: hello
+  nucleation_method: 2
+  pbl_method: 0
 
 ensemble:
   user:
