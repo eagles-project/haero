@@ -301,4 +301,6 @@ int main(int argc, const char* argv[]) {
     printf("%s: error: %s\n", argv[0], e.what());
     exit(1);
   }
+
+  return 0;
 }

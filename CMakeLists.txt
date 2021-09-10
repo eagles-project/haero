@@ -314,6 +314,9 @@ endif()
 # Skywalker--a tool for exploring aerosol processes in low-dimensional parameter spaces
 add_subdirectory(skywalker)
 
+# Validation tools
+add_subdirectory(validation)
+
 # Documentation.
 if (HAERO_DOC_INCLUDE_COMMENTS)
   set(HAERO_INCLUDE_DESIGN_COMMENTS "\\inccommentstrue")

@@ -7,16 +7,16 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.tri as tri
 import numpy as np
-import haero_skywalker as haero_data
+import haero_nucleation as haero_data
 
 def plot_nucleation_rate_contours(filename):
     """Plot the contours of the rate of nucleation as a function of temperature
 and relative humidity."""
 
     # Fetch scatter data from skywalker.
-    RH, T, J = haero_data.input.atmosphere.relative_humidity, \
-               haero_data.input.atmosphere.temperature, \
-               haero_data.output.aerosols.interstitial.aitken.so4
+    RH, T, J = haero_data.input.user.relative_humidity, \
+               haero_data.input.user.temperature, \
+               haero_data.output.metrics.nucleation_rate
 
     # Convert relative humidity to percent.
     RH = [100*rh for rh in RH]
