@@ -1,5 +1,9 @@
 module mam_calcsize
 
+
+  !TODO:
+  !1.  do_adjust and do_aitacc_transfer should be set somewhere else and should be an input to this process
+  !
   use haero_precision, only: wp
   use haero, only: model_t, aerosol_species_t, gas_species_t, &
        prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
@@ -13,6 +17,10 @@ module mam_calcsize
             set_integer_param, &
             set_logical_param, &
             set_real_param
+
+  !FIXME: The following parameters should set somewhere else
+  logical, parameter :: do_adjust = .true.
+  logical, parameter :: do_aitacc_transfer = .true.
 
   !global parameters
   real(wp), parameter :: third   = 1.0_wp/3.0_wp
@@ -51,9 +59,10 @@ contains
     integer  :: ierr, klev
 
     real(wp) :: v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor !max and mins for diameter and volume to number ratios
+    real(wp) :: v2nminrl, v2nmaxrl !relaxed counterparts of max and mins for volume to number ratios
 
-    real(wp) :: drv_a, drv_c
-    real(wp) :: num_a, num_c
+    real(wp) :: drv_a, drv_c !dry volume [FIXME: unit????]
+    real(wp) :: num_a, num_c ![#/kg(of air)]
 
     real(wp) :: dgncur_a(model%num_levels, model%num_modes) !interstitial particle diameter[m](FIXME: This should be diagnostic variable)
     real(wp) :: dgncur_c(model%num_levels, model%num_modes) !cldborne particle diameter [m](FIXME: This should be diagnostic variable)
@@ -62,12 +71,18 @@ contains
     real(wp) :: v2ncur_c(model%num_levels, model%num_modes) !cldborne vol2num ratio [FIXME:units???]
 
     real(wp) :: dryvol_a(model%num_levels), dryvol_c(model%num_levels) !dry volume of a particle[m3/kg(of air)]
+    real(wp) :: init_num_a, init_num_c !initial number mixing ratios entering this process [#/kg(of air)]
+    real(wp) :: interstitial_tend, cloudborne_tend ![#/kg(of air)/s]
+
 
     real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios [kg/kg(of air)]]
     real(wp), pointer, dimension(:,:) :: q_c    ! cldborne aerosol mix ratios [kg/kg(of air)]
 
     real(wp), pointer, dimension(:,:) :: n_i    ! interstitial aerosol number mixing ratios [#/kg(of air)]
     real(wp), pointer, dimension(:,:) :: n_c    ! cldborne aerosol number mixing ratios [#/kg(of air)]
+
+    real(wp), pointer, dimension(:,:) :: dnidt    ! interstitial aerosol number mixing ratios tendency [#/kg(of air)/s]
+    real(wp), pointer, dimension(:,:) :: dncdt    ! cldborne     aerosol number mixing ratios tendency [#/kg(of air)/s]
 
     real(wp), allocatable, dimension(:) :: density !specie density array for each mode [kg/m3]
 
@@ -94,6 +109,12 @@ contains
     !cloud-borne mass and number mixing ratios
     q_c => prognostics%cloud_aerosols()
     n_c => prognostics%cloud_num_mix_ratios()
+
+    !tendencies for interstitial number mixing ratios
+    dnidt => tendencies%interstitial_num_concs()
+
+    !tendencies for cloud-borne number mixing ratios
+    dncdt => tendencies%cloudborne_num_concs()
 
     !allocate variable to store densities of all species in a mode
     !(use max_nspec to allocate, so as to avoid allocation in the nmodes loop below)
@@ -129,6 +150,7 @@ contains
        if(imode.eq.nmodes) then ! for last mode
           e_spec_ind = model%num_populations !if imode==nmodes, end index is the total number of species
        endif
+       print*,imode,s_spec_ind, e_spec_ind, model%population_offsets(imode)
 
        nspec = model%num_mode_species(imode) !total number of species in mode "imode"
 
@@ -146,15 +168,27 @@ contains
        dgnmin = model%modes(imode)%min_diameter
        dgnmax = model%modes(imode)%max_diameter
 
-       !FIXME: compute relaxed counterparts as well
+       !Get relaxed limits for volume_to_num
+       !(we use relaxed limits for aerosol number "adjustment" calculations via "adjust_num_sizes" subroutine.
+       !Note: The relaxed limits will be artifically inflated (or deflated) for the aitken and accumulation modes
+       !if "do_aitacc_transfer" flag is true to effectively shut-off aerosol number "adjustment" calculations
+       !for these modes because we do the explicit transfer (via "aitken_accum_exchange" subroutine) from one
+       !mode to another instead of adjustments for these modes)
+       call get_relaxed_v2n_limits(do_aitacc_transfer, & !inputs
+            imode == model%mode_index("aitken"), imode == model%mode_index("accum"), & !inputs
+            v2nmin, v2nmax, v2nminrl, v2nmaxrl)!outputs (NOTE: v2nmin and v2nmax are only updated for aitken and accumulation modes)
 
        do klev = top_lev, nlevs
 
-          drv_a = dryvol_a(klev)
-          num_a = max( 0.0_wp, n_i(klev,imode))
+          !interstital aerosols
+          drv_a = dryvol_a(klev) !dry volume
+          init_num_a = n_i(klev,imode) !inital value of num_a for this level and mode
+          num_a = max( 0.0_wp, init_num_a) ! Make it non-negative
 
-          drv_c = dryvol_c(klev)
-          num_c = max( 0.0_wp, n_c(klev,imode))
+          !cloudborne aerosols
+          drv_c = dryvol_c(klev) !dry volume
+          init_num_c = n_c(klev,imode) !inital value of num_c for this level and mode
+          num_c = max( 0.0_wp, init_num_c) ! Make it non-negative
 
           !compute a common factor
           cmn_factor = exp(4.5_wp*log(model%modes(imode)%mean_std_dev)**2.0_wp)*pi_sixth
@@ -162,23 +196,31 @@ contains
           !FIXME: size adjustment is done here based on volume to num ratios
           if (do_adjust) then
 
+
              !-----------------------------------------------------------------
              ! Do number adjustment for interstitial and activated particles
              !-----------------------------------------------------------------
-             !Adjustments that:
+             !Adjustments that are applied over time-scale deltat (model time step in seconds):
              !(1) make numbers non-negative or
              !(2) make numbers zero when volume is zero
-             !are applied over time-scale deltat
-             !Adjustments that bring numbers to within specified bounds are
-             !applied over time-scale tadj
+             !
+             !
+             !Adjustments that are applied over time-scale of a day (in seconds)
+             !(3) bring numbers to within specified bounds
+             ![Adjustment details are explained in the process]
              !-----------------------------------------------------------------
+
+
+             !number tendencies to be updated by adjust_num_sizes subroutine
+             interstitial_tend = dnidt(klev,imode)
+             cloudborne_tend   = dncdt(klev,imode)
+
              !call adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &                   !input
              !     drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
              !     num_a, num_c, dqdt, dqqcwdt)                                                        !output
 
-             call adjust_num_sizes(klev, update_mmr, drv_a, num_a0, drv_c, num_c0, & !input
-                  deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
-                  num_a, num_c, dqdt, dqqcwdt) !output
+             call adjust_num_sizes (drv_a, drv_c, init_num_a, init_num_c, dt, v2nmin, v2nmax, v2nminrl, v2nmaxrl, & !input
+                  num_a, num_c, interstitial_tend, cloudborne_tend )!output
 
 
 
@@ -187,7 +229,7 @@ contains
 
 
           !FIXME: in (or better done after) the following update_diameter_and_vol2num calls, we need to update mmr as well
-          !but we are currently skipping that update. That update wil require additional arguments
+          !but we are currently skipping that update. That update will require additional arguments
 
           !update diameters and volume to num ratios for interstitial aerosols
           call update_diameter_and_vol2num(klev, imode, drv_a, num_a, &
@@ -312,13 +354,89 @@ contains
     return
   end subroutine update_diameter_and_vol2num
 
-  !----------------------------------------------------------------------------------------
-  !----------------------------------------------------------------------------------------
-  subroutine adjust_num_sizes (drv_a, drv_c
-    num_a, num_c
+  subroutine get_relaxed_v2n_limits( do_aitacc_transfer, & !inputs
+       is_aitken_mode, is_accum_mode, & ! inputs
+       v2nmin, v2nmax, v2nminrl, v2nmaxrl ) !outputs
+
     implicit none
 
-    real(wp) :: deltatinv
+    !intent-ins
+    logical,  intent(in) :: do_aitacc_transfer !flag to control whether to transfer aerosols from one mode to another
+    logical,  intent(in) :: is_aitken_mode     !true if this mode is aitken mode
+    logical,  intent(in) :: is_accum_mode      !true if this mode is accumulation mode
+
+    !intent-(in)outs
+    real(wp), intent(inout) :: v2nmin, v2nmax     !volume_to_num min/max ratios
+    real(wp), intent(out)   :: v2nminrl, v2nmaxrl ! relaxed counterparts of volume_to_num min/max ratios
+
+    !local
+    !(relaxation factor is currently assumed to be a factor of 3 in diameter
+    !which makes it 3**3=27 for volume)
+    !i.e. dgnumlo_relaxed = dgnumlo/3 and dgnumhi_relaxed = dgnumhi*3; therefore we use
+    !3**3=27 as a relaxation factor for volume
+    real(wp), parameter :: relax_factor = 27.0_wp !relax_factor=3**3=27
+
+    !factor to artifically inflate or deflate v2nmin and v2nmax
+    real(wp), parameter :: szadj_block_fac = 1.0e6_wp
+
+    !default relaxation:
+    v2nminrl = v2nmin/relax_factor
+    v2nmaxrl = v2nmax*relax_factor
+
+    !if do_aitacc_transfer is turned on, we will do the ait<->acc tranfer separately in
+    !aitken_accum_exchange subroutine, so we are effectively turning OFF the size adjustment for these
+    !two modes here by artifically inflating (or deflating) v2min and v2nmax using "szadj_block_fac"
+    !and then computing v2minrl and v2nmaxrl based on newly computed v2min and v2nmax.
+    if ( do_aitacc_transfer ) then
+       !for aitken mode, divide v2nmin by 1.0e6 to effectively turn off the
+       !         adjustment when number is too small (size is too big)
+       if (is_aitken_mode) v2nmin = v2nmin/szadj_block_fac
+
+       !for accumulation, multiply v2nmax by 1.0e6 to effectively turn off the
+       !         adjustment when number is too big (size is too small)
+       if (is_accum_mode) v2nmax = v2nmax*szadj_block_fac
+
+       !Also change the v2nmaxrl/v2nminrl so that
+       !the interstitial<-->activated number adjustment is effectively turned off
+       v2nminrl = v2nmin/relax_factor
+       v2nmaxrl = v2nmax*relax_factor
+    end if
+
+    return
+  end subroutine get_relaxed_v2n_limits
+
+  !----------------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------------
+  subroutine adjust_num_sizes (drv_a, drv_c, init_num_a, init_num_c, dt, v2nmin, v2nmax, v2nminrl, v2nmaxrl, & !input
+       num_a, num_c, dqdt, dqqcwdt )!output
+
+    implicit none
+
+    !intent-ins
+    real(wp), intent(in) :: drv_a, drv_c      !dry volumes [TODO:units]
+    real(wp), intent(in) :: init_num_a, init_num_c    !initial number mixing ratios [TODO:units]
+    real(wp), intent(in) :: dt                !time step [s]
+    real(wp), intent(in) :: v2nmin, v2nmax    !volume to number min and max[TODO:units]
+    real(wp), intent(in) :: v2nminrl, v2nmaxrl!volume to number "relaxed" min and max[TODO:units]
+
+    !intent-outs
+    real(wp), intent(out):: num_a, num_c  !final number  mixing ratios after size adjument
+    real(wp), intent(out):: dqdt, dqqcwdt ! number mixing ratio tendencies
+
+    !local variables
+    real(wp) :: numbnd, num_a_stp1, num_c_stp1, num_a_stp2, num_c_stp2, num_a_stp3,num_c_stp3
+    real(wp) :: delnum_a_stp2, delnum_c_stp2, delnum_a_stp3,delnum_c_stp3
+    real(wp) :: total_drv, total_num ![TODO: units???]
+    real(wp) :: min_number_bound, max_number_bound
+    real(wp) :: deltatinv, fracadj, delnum_t3
+
+    real(wp), parameter :: close_to_one = 1.0_wp + 1.0e-15_wp
+    real(wp), parameter :: seconds_in_a_day = 86400.0_wp
+
+    !adj_tscale     = max( seconds_in_a_day, dt ) !time scale for number adjustment
+    !adj_tscale_inv = 1.0_wp/(adj_tscale*close_to_one)  !inverse of the adjustment time scale
+    !fracadj = max( 0.0_wp, min( 1.0_wp, dt*adj_tscale_inv ) )
+
 
     ! If both interstitial (drv_a) and cloud borne (drv_c) dry volumes are zero (or less)
     ! adjust numbers(num_a and num_c respectively) for both of them to zero for this mode and level
@@ -326,48 +444,44 @@ contains
 
      num_a   = 0.0_wp
      num_c   = 0.0_wp
-     dqdt    = update_num_tends(num_a, num_a0, deltatinv)
-     dqqcwdt = update_num_tends(num_c, num_c0, deltatinv)
-----------------------------
+     dqdt    = update_num_tends(num_a, init_num_a, deltatinv)
+     dqqcwdt = update_num_tends(num_c, init_num_c, deltatinv)
+
+  else if (drv_c <= 0.0_wp) then
      ! if cloud borne dry volume (drv_c) is zero(or less), the interstitial number/volume == total/combined
      ! apply step 1 and 3, but skip the relaxed adjustment (step 2, see below)
-  else if (drv_c <= 0.0_wp) then
      num_c = 0.0_wp
      numbnd = min_max_bounded(drv_a, v2nmin, v2nmax, num_a)
      num_a  = num_a + (numbnd - num_a)*fracadj
 
-     dqdt    = update_num_tends(num_a, num_a0, deltatinv)
-     dqqcwdt = update_num_tends(num_c, num_c0, deltatinv)
-
   else if (drv_a <= 0.0_wp) then
      ! interstitial volume is zero, treat similar to above
      num_a = 0.0_wp
-     numbnd = min_max_bounded(drv_c, v2nmin, v2nmax, num_c) )
+     numbnd = min_max_bounded(drv_c, v2nmin, v2nmax, num_c)
      num_c  = num_c + (numbnd - num_c)*fracadj
-     dqdt    = update_num_tends(num_a, num_a0, deltatinv)
-     dqqcwdt = update_num_tends(num_c, num_c0, deltatinv)
+
   else
      !The number adjustment is done in 3 steps:
      !Step 1: assumes that num_a and num_c are non-negative (nothing to be done here)
      !------
-     num_a1 = num_a
-     num_c1 = num_c
+     num_a_stp1 = num_a
+     num_c_stp1 = num_c
 
      !Step 2 [Apply relaxed bounds] has 3 parts (a), (b) and (c)
      !Step 2: (a)Apply relaxed bounds to bound num_a and num_c within "relaxed" bounds.
      !------
-     numbnd = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a1) !bounded to relaxed min and max
+     numbnd = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a_stp1) !bounded to relaxed min and max
 
      !------:(b)Ideally, num_* should be in range. If they are not, we assume that
      !        they will reach their maximum (or minimum)for this mode within a day (time scale).
      !        We then compute how much num_* will change in a time step by multiplying the difference
      !        between num_* and its maximum(or minimum) with "fracadj".
-     delnum_a2 = (numbnd - num_a1)*fracadj
-     num_a2 = num_a1 + delnum_a2 !change in num_a in one time step
+     delnum_a_stp2 = (numbnd - num_a_stp1)*fracadj
+     num_a_stp2 = num_a_stp1 + delnum_a_stp2 !change in num_a in one time step
 
-     numbnd = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c1) !bounded to relaxed min and max
-     delnum_c2 = (numbnd - num_c1)*fracadj
-     num_c2 = num_c1 + delnum_c2 !change in num_a in one time step
+     numbnd = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c_stp1) !bounded to relaxed min and max
+     delnum_c_stp2 = (numbnd - num_c_stp1)*fracadj
+     num_c_stp2 = num_c_stp1 + delnum_c_stp2 !change in num_a in one time step
 
 
      !------:(c)We now also need to balance num_* incase only one among the interstitial or cloud-
@@ -378,94 +492,100 @@ contains
      !        direction as much as possible to conserve num_a + num_c (such that num_a+num_c
      !        stays close to its original value)
 
-     if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
-        num_a2 = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a1-delnum_c2)
-     else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
-        num_c2 = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c1-delnum_a2)
+     if ((delnum_a_stp2 == 0.0_wp) .and. (delnum_c_stp2 /= 0.0_wp)) then
+        num_a_stp2 = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a_stp1-delnum_c_stp2)
+     else if ((delnum_a_stp2 /= 0.0_wp) .and. (delnum_c_stp2 == 0.0_wp)) then
+        num_c_stp2 = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c_stp1-delnum_a_stp2)
      end if
 
 
      !Step3[apply stricter bounds] has 3 parts (a), (b) and (c)
      !Step 3:(a) compute combined total of num_a and num_c
      total_drv = drv_a + drv_c
-     total_num = num_a2 + num_c2
+     total_num = num_a_stp2 + num_c_stp2
 
      !-----:(b) We now compute amount of num_* to change if total_num
      !          is out of range. If totl_num is within range, we don't do anything (i.e.
-     !          delnuma3 and delnum_c3 remain zero)
-     delnum_a3 = 0.0_r8
-     delnum_c3 = 0.0_r8
+     !          delnuma3 and delnum_c_stp3 remain zero)
+     delnum_a_stp3 = 0.0_wp
+     delnum_c_stp3 = 0.0_wp
 
-     min_number_bound =total_drv*v2nmin !"total_drv*v2nmin" represents minimum number for this mode
-     max_number_bound =total_drv*v2nmax !"total_drv*v2nmxn" represents maximum number for this mode
+     min_number_bound = total_drv*v2nmin !"total_drv*v2nmin" represents minimum number for this mode
+     max_number_bound = total_drv*v2nmax !"total_drv*v2nmxn" represents maximum number for this mode
 
      if (total_num < min_number_bound) then
         delnum_t3 = (min_number_bound - total_num)*fracadj!change in total_num in one time step
 
         !Now we need to decide how to distribute "delnum"(change in number) for num_a and num_c
-        if ((num_a2 < drv_a*v2nmin) .and. (num_c2 < drv_c*v2nmin)) then
+        if ((num_a_stp2 < drv_a*v2nmin) .and. (num_c_stp2 < drv_c*v2nmin)) then
            !if both num_a and num_c are less than the lower bound
            !distribute "delnum" using weighted ratios
-           delnum_a3 = delnum_t3*(num_a2/total_num)
-           delnum_c3 = delnum_t3*(num_c2/total_num)
+           delnum_a_stp3 = delnum_t3*(num_a_stp2/total_num)
+           delnum_c_stp3 = delnum_t3*(num_c_stp2/total_num)
 
-        else if (num_c2 < drv_c*v2nmin) then
+        else if (num_c_stp2 < drv_c*v2nmin) then
            !if only num_c is less than lower bound, assign total change to num_c
-           delnum_c3 = delnum_t3
-        else if (num_a2 < drv_a*v2nmin) then
+           delnum_c_stp3 = delnum_t3
+        else if (num_a_stp2 < drv_a*v2nmin) then
            !if only num_a is less than lower bound, assign total change to num_a
-           delnum_a3 = delnum_t3
+           delnum_a_stp3 = delnum_t3
         end if
 
      else if (total_num > max_number_bound) then
         delnum_t3 = (max_number_bound - total_num)*fracadj !change in total_num in one time step
 
         !Now we need to decide how to distribute "delnum"(change in number) for num_a and num_c
-        if ((num_a2 > drv_a*v2nmax) .and. (num_c2 > drv_c*v2nmax)) then
+        if ((num_a_stp2 > drv_a*v2nmax) .and. (num_c_stp2 > drv_c*v2nmax)) then
            !if both num_a and num_c are more than the upper bound
            !distribute "delnum" using weighted ratios
-           delnum_a3 = delnum_t3*(num_a2/total_num)
-           delnum_c3 = delnum_t3*(num_c2/total_num)
-        else if (num_c2 > drv_c*v2nmax) then
+           delnum_a_stp3 = delnum_t3*(num_a_stp2/total_num)
+           delnum_c_stp3 = delnum_t3*(num_c_stp2/total_num)
+        else if (num_c_stp2 > drv_c*v2nmax) then
            !if only num_c is more than the upper bound, assign total change to num_c
-           delnum_c3 = delnum_t3
-        else if (num_a2 > drv_a*v2nmax) then
+           delnum_c_stp3 = delnum_t3
+        else if (num_a_stp2 > drv_a*v2nmax) then
            !if only num_a is more than the upper bound, assign total change to num_a
-           delnum_a3 = delnum_t3
+           delnum_a_stp3 = delnum_t3
         end if
      end if
 
      !update num_a and num_c
-     num_a = num_a2 + delnum_a3
-     num_c = num_c2 + delnum_c3
-
-     if(update_mmr) then
-        dqdt(icol,klev,num_mode_idx)           = (num_a - num_a0)*deltatinv
-        dqqcwdt(icol,klev,num_cldbrn_mode_idx) = (num_c - num_c0)*deltatinv
-     endif
+     num_a = num_a_stp2 + delnum_a_stp3
+     num_c = num_c_stp2 + delnum_c_stp3
   end if
 
+  !update tendencies
+  dqdt    = update_num_tends(num_a, init_num_a, deltatinv)
+  dqqcwdt = update_num_tends(num_c, init_num_c, deltatinv)
 
   end subroutine adjust_num_sizes
 
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------
 
-  pure function update_num_tends(num, num0, deltatinv)
+  pure function update_num_tends(num, num0, deltatinv) result (function_return)
 
-    real(wp) , intent(in) :: num, num0, deltainv
+    real(wp) , intent(in) :: num, num0, deltatinv
 
-    return (num - num0)*deltatinv
+    real(wp) :: function_return
 
-  end subroutine update_num_tends
+    function_return = (num - num0)*deltatinv
+
+    !return function_return
+
+  end function update_num_tends
 
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------
 
-  pure function min_max_bounded(drv, v2nmin, v2nmax, num)
+  pure function min_max_bounded(drv, v2nmin, v2nmax, num) result (function_return)
+
     real(wp), intent(in) :: drv, v2nmin, v2nmax, num
 
-    return max( drv*v2nmin, min( drv*v2nmax, num ) )
+    real(wp) :: function_return
+
+    function_return = max( drv*v2nmin, min( drv*v2nmax, num ) )
+    !return function_return
 
   end function min_max_bounded
 
