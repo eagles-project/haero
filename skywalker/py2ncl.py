@@ -6,51 +6,56 @@ import os.path, sys
 
 def write_ncl_var(ncl, name, var):
     if isinstance(var, float):
-        ncl.write('%s = %e\n'%var)
-    else:
+        ncl.write('%s = %e\n'%(name, var))
+    elif isinstance(var, list):
+        ncl.write('%s = \\\n(/ \\\n'%name)
         for v in var:
             ncl.write('    %e,\\\n'%v)
         ncl.write('/)\n')
+    else: # object?
+        for f in [x for x in dir(var) if '_' not in x]:
+            v = getattr(var, f)
+            write_ncl_var(ncl, '%s_%s'%(name, f), v)
 
 def translate_atmosphere_input(atmosphere, ncl):
     for item_name in [x for x in dir(atmosphere) if '_' not in x]:
-        var_name = 'atm_%s'%item_name
+        var_name = 'in_atm_%s'%item_name
         var = getattr(atmosphere, item_name)
         write_ncl_var(ncl, var_name, var)
 
 def translate_aerosols_input(aerosols, ncl):
     for item_name in [x for x in dir(aerosols) if '_' not in x]:
-        var_name = 'aero_in_%s'%item_name
+        var_name = 'in_aero_%s'%item_name
         var = getattr(aerosols, item_name)
         write_ncl_var(ncl, var_name, var)
 
 def translate_gases_input(gases, ncl):
     for item_name in [x for x in dir(gases) if '_' not in x]:
-        var_name = 'gases_in_%s'%item_name
+        var_name = 'in_gas_%s'%item_name
         var = getattr(gases, item_name)
         write_ncl_var(ncl, var_name, var)
 
 def translate_user_input(user, ncl):
     for item_name in [x for x in dir(user) if '_' not in x]:
-        var_name = 'user_%s'%item_name
+        var_name = 'in_user_%s'%item_name
         var = getattr(user, item_name)
         write_ncl_var(ncl, var_name, var)
 
 def translate_aerosols_output(aerosols, ncl):
-    for item_name in [x for x in dir(gases) if '_' not in x]:
-        var_name = 'aero_out_%s'%item_name
+    for item_name in [x for x in dir(aerosols) if '_' not in x]:
+        var_name = 'out_aero_%s'%item_name
         var = getattr(aerosols, item_name)
         write_ncl_var(ncl, var_name, var)
 
 def translate_gases_output(gases, ncl):
     for item_name in [x for x in dir(gases) if '_' not in x]:
-        var_name = 'gases_out_%s'%item_name
+        var_name = 'out_gas_%s'%item_name
         var = getattr(gases, item_name)
         write_ncl_var(ncl, var_name, var)
 
 def translate_metrics_output(metrics, ncl):
     for item_name in [x for x in dir(metrics) if '_' not in x]:
-        var_name = 'metrics_%s'%item_name
+        var_name = 'out_metric_%s'%item_name
         var = getattr(metrics, item_name)
         write_ncl_var(ncl, var_name, var)
 
@@ -71,9 +76,9 @@ def translate_module(mod, ncl):
         outp = mod.output
         if 'aerosols' in dir(outp):
             translate_aerosols_output(outp.aerosols, ncl)
-        if 'gases' in dir(output_obj):
+        if 'gases' in dir(outp):
             translate_gases_output(outp.gases, ncl)
-        if 'metrics' in dir(output_obj):
+        if 'metrics' in dir(outp):
             translate_metrics_output(outp.metrics, ncl)
 
 if __name__ == "__main__":
