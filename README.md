@@ -1,3 +1,6 @@
+![auto_test](https://github.com/jeff-cohere/haero/actions/workflows/auto_test.yml/badge.svg)
+![push_mirror](https://github.com/jeff-cohere/haero/actions/workflows/push_mirror.yml/badge.svg)
+
 # Haero: A High-Performance Modal Aerosol Model
 
 Haero is a library that can be used to solve the modal aerosol equations in
