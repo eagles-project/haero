@@ -258,7 +258,9 @@ add_library(kokkoscore STATIC IMPORTED GLOBAL)
 set_target_properties(kokkoscore PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscore.a)
 add_library(kokkoscontainers STATIC IMPORTED GLOBAL)
 set_target_properties(kokkoscontainers PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a)
-set(HAERO_EXT_LIBRARIES ekat;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
+add_library(spdlog STATIC IMPORTED GLOBAL)
+set_target_properties(spdlog PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libspdlog.a)
+set(HAERO_EXT_LIBRARIES ekat;spdlog;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
 set(HAERO_EXT_DRIVER_LIBRARIES yaml_cpp;${HAERO_EXT_DRIVER_LIBRARIES})
 list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR})
 list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/ekat)
@@ -466,6 +468,7 @@ if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
   install(FILES       ${EKAT_LIBRARY}
                       ${EKAT_LIBRARY_DIR}/libekat_test_main.a
                       ${EKAT_LIBRARY_DIR}/libekat_test_session.a
+                      ${EKAT_LIBRARY_DIR}/libspdlog.a
                       ${EKAT_LIBRARY_DIR}/libkokkoscore.a
                       ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
           DESTINATION lib)
