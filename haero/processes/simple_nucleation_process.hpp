@@ -34,6 +34,17 @@ class SimpleNucleationProcess final
     SkywalkerParams() : c_h2so4(-1.0) {}
   };
 
+  /// Binary nucleation as implemented by Vehkamaki et al (2002).
+  static const int binary_nucleation = 2;
+
+  /// Ternary nucleation as implemented by Merikanto et al (2007).
+  static const int ternary_nucleation = 3;
+
+  /// Planetary boundary corrections as described in Wang et al (2008).
+  static const int no_pbl_correction = 0;
+  static const int first_order_pbl_correction = 1;
+  static const int second_order_pbl_correction = 2;
+
   //----------------------------------------------------------
   //                  Adjustable parameters
   //----------------------------------------------------------
@@ -50,15 +61,10 @@ class SimpleNucleationProcess final
   /// Adjustment factor applied to tendency for nucleated species (default: 1)
   Real tendency_factor_;
 
-  /// Nucleation method selection (default: 2)
-  /// 2 = Vehkamaki et al (2002) binary nucleation
-  /// 3 = Merikanto el al (2007) ternary nucleation
+  /// Nucleation method selection (default: binary_nucleation)
   int nucleation_method_;
 
-  /// Planetary boundary layer (PBL) method selection (default: 0)
-  /// 0 = no PBL adjustment
-  /// 1 = first-order
-  /// 2 = second-order
+  /// Planetary boundary layer (PBL) method selection (default: none)
   int pbl_method_;
 
   //----------------------------------------------------------
@@ -142,7 +148,7 @@ class SimpleNucleationProcess final
             const Tendencies &tendencies) const override {
     // Do we have any gas from which to nucleate new aerosol particles?
     if ((igas_h2so4_ == -1) or
-        ((nucleation_method_ == 3) and (igas_nh3_ == -1))) {
+        ((nucleation_method_ == ternary_nucleation) and (igas_nh3_ == -1))) {
       return;
     }
 
@@ -183,7 +189,7 @@ class SimpleNucleationProcess final
       PackType n_crit;  // total # of molecules in a critical cluster [#]
       PackType n_crit_h2so4, n_crit_nh3;  // numbers of gas molecules in
       // the critical cluser [#]
-      if (nucleation_method_ == 2) {  // binary nucleation
+      if (nucleation_method_ == binary_nucleation) {
         auto x_crit =
             vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp, rel_hum);
         J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
@@ -193,7 +199,7 @@ class SimpleNucleationProcess final
         n_crit_nh3 = 0;
         r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
       } else {
-        EKAT_KERNEL_ASSERT(nucleation_method_ == 3);
+        EKAT_KERNEL_ASSERT(nucleation_method_ == ternary_nucleation);
         // Compute the molar/volume mixing ratio of NH3 gas [ppt].
         const auto q_nh3 = prognostics.gases(igas_nh3_, k);  // mmr
         auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3_);
@@ -210,13 +216,13 @@ class SimpleNucleationProcess final
       }
 
       // Apply a correction for the planetary boundary layer if requested.
-      if (pbl_method_ > 0) {
+      if (pbl_method_ != no_pbl_correction) {
         PackType J_pbl(0);
         const auto within_pbl = (h <= atmosphere.planetary_boundary_height);
-        if (pbl_method_ == 1) {
+        if (pbl_method_ == first_order_pbl_correction) {
           J_pbl.set(within_pbl,
                     wang2008::first_order_pbl_nucleation_rate(c_h2so4));
-        } else if (pbl_method_ == 2) {
+        } else if (pbl_method_ == second_order_pbl_correction) {
           J_pbl.set(within_pbl,
                     wang2008::second_order_pbl_nucleation_rate(c_h2so4));
         }

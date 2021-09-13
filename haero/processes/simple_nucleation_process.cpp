@@ -108,7 +108,7 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
 
   // Set our region of validity based on our nucleation parameterization.
   auto &rov = region_of_validity();
-  if (nucleation_method_ == 2) {
+  if (nucleation_method_ == binary_nucleation) {
     rov.temp_bounds = vehkamaki2002::valid_temp_range();
     rov.rel_hum_bounds = vehkamaki2002::valid_rel_hum_range();
     if (igas_h2so4_ != -1) {
@@ -117,7 +117,7 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
                          c_h2so4_range.second);
     }
   } else {
-    EKAT_ASSERT(nucleation_method_ == 3);
+    EKAT_ASSERT(nucleation_method_ == ternary_nucleation);
     rov.temp_bounds = merikanto2007::valid_temp_range();
     rov.rel_hum_bounds = merikanto2007::valid_rel_hum_range();
     if (igas_h2so4_ != -1) {
@@ -164,13 +164,14 @@ void SimpleNucleationProcess::set_param_(const std::string &name, Real value) {
 
 void SimpleNucleationProcess::set_param_(const std::string &name, int value) {
   if ("nucleation_method" == name) {
-    if ((value == 2) or (value == 3)) {
+    if ((value == binary_nucleation) or (value == ternary_nucleation)) {
       nucleation_method_ = value;
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
     }
   } else if ("pbl_method" == name) {
-    if ((value == 0) or (value == 1) or (value == 2)) {
+    if ((value == no_pbl_correction) or (value == first_order_pbl_correction) or
+        (value == second_order_pbl_correction)) {
       pbl_method_ = value;
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
