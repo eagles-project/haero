@@ -28,7 +28,7 @@ std::string& tolower(std::string& s);
 bool is_boolean(const std::string& s);
 
 /// Returns the boolean value interpreted from the string s. If is_boolean(s)
-/// returns false, this function returns false.
+/// returns false, this function throws an exception.
 bool as_boolean(const std::string& s);
 
 /// Get the filename extension from a string containing a filename

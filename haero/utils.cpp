@@ -32,6 +32,11 @@ bool is_boolean(const std::string& s) {
 }
 
 bool as_boolean(const std::string& s) {
+  EKAT_REQUIRE_MSG(is_boolean(s), "'" << s << "' is not a boolean!\n"
+                                      << "Must be one of (case-insensitive):\n"
+                                      << "* \"true\", \"false\"\n"
+                                      << "* \"yes\", \"no\"\n"
+                                      << "* \"on\", \"off\",\n");
   return ((strcasecmp("true", s.c_str()) == 0) ||
           (strcasecmp("yes", s.c_str()) == 0) ||
           (strcasecmp("on", s.c_str()) == 0));
