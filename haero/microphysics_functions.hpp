@@ -3,6 +3,7 @@
 
 #include "haero/haero.hpp"
 #include "constants.hpp"
+#include "math.hpp"
 
 namespace haero {
 
@@ -21,6 +22,12 @@ and capable of running on the device.
   Legacy MAM4 uses T = 273 everywhere surface tension is
   required.
 
+  Primary temperature range is defined by the quadratic best fit coefficients
+  for Drop Volume data in Table IV from Gittens, 1969, Variation of
+  surface tension of water with temperature, J. Colloid and Interface Sciences
+  30(3), 406--412.
+
+  Extrapolation to supercooled regime given by
   Defined by Prupaccher/Klett 2nd. ed. eqn (5.12),
   @f$ \sigma_{w/a} = \sum_{i=0}^6 a_0 T^i @f$
   where T is deg C and the coefficients are a curve fit
@@ -30,20 +37,31 @@ and capable of running on the device.
 */
 template <typename ScalarType> KOKKOS_INLINE_FUNCTION
 ScalarType surface_tension_water_air(const ScalarType& T) {
-  const Real coeffs[7] = {75.93,     // a0
+  const Real coeffs_extrap[7] = {75.93,     // a0
                           0.115,     // a1
                           6.818e-2,  // a2
                           6.511e-3,  // a3
                           2.933e-4,  // a4
                           6.283e-6,  // a5
                           5.285e-8}; // a6
+  const Real coeffs_interp[3] = {75.93, -0.1365, -0.3827e-3};
   const Real K_to_C = Constants::freezing_pt_h2o;
   const Real erg_per_cm2_to_N_per_m = 1e-3;
-  // the curve fit is defined in degrees C, so we have to watch out for
-  // 0^0.  Easy fix: move the 0th term of the sum outside the loop.
-  ScalarType result = coeffs[0];
-  for (int i=1; i<7; ++i) {
-    result += coeffs[i] * pow(T - K_to_C, i);
+
+  const bool do_extrap = T < Constants::freezing_pt_h2o;
+
+  ScalarType result;
+  if (do_extrap) {
+    // the curve fit is defined in degrees C, so we have to watch out for
+    // 0^0.  Easy fix: move the 0th term of the sum outside the loop.
+    result = coeffs_extrap[0];
+    for (int i=1; i<7; ++i) {
+      result += coeffs_extrap[i] * pow(T - K_to_C, i);
+    }
+  }
+  else {
+    result = coeffs_interp[0] + coeffs_interp[1]*(T - K_to_C) +
+      coeffs_interp[2]*square(T-K_to_C);
   }
   return erg_per_cm2_to_N_per_m * result;
 }
