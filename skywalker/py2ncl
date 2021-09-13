@@ -1,8 +1,14 @@
+#!/usr/bin/env python3
+
 # This script translates the output data in the given file to a text format
 # usable by the NCAR Command Language (NCL). For more information about NCL, see
 # https://www.ncl.ucar.edu.
 
 import os.path, sys
+
+def usage():
+    print('%s: Translates a Skywalker Python output module to NCL.'%sys.argv[0])
+    print('Usage: %s <skywalker_output.py>'%sys.argv[0])
 
 def write_ncl_var(ncl, name, var):
     if isinstance(var, float):
@@ -84,7 +90,6 @@ def translate_module(mod, ncl):
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         usage()
-        exit(0)
     else:
         py_file = sys.argv[1]
         if not os.path.exists(py_file):

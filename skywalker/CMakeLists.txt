@@ -34,6 +34,14 @@ endif()
 install(TARGETS skywalker DESTINATION lib)
 install(TARGETS skywalker_exe DESTINATION bin)
 
+# Install py2ncl, a post-processing script that translates Skywalker output
+# Python modules into NCL data files.
+install(FILES py2ncl
+        PERMISSIONS OWNER_READ;GROUP_READ;WORLD_READ;
+                    OWNER_WRITE;
+                    OWNER_EXECUTE;GROUP_EXECUTE;WORLD_EXECUTE
+        DESTINATION bin)
+
 # Generate skywalker.cmake with installation information
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/skywalker.cmake.in
