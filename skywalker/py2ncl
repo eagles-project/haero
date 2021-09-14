@@ -15,8 +15,11 @@ def write_ncl_var(ncl, name, var):
         ncl.write('%s = %e\n'%(name, var))
     elif isinstance(var, list):
         ncl.write('%s = \\\n(/ \\\n'%name)
-        for v in var:
-            ncl.write('    %e,\\\n'%v)
+        for i in range(len(var)):
+            if i == len(var)-1:
+                ncl.write('    %e \\\n'%var[i])
+            else:
+                ncl.write('    %e,\\\n'%var[i])
         ncl.write('/)\n')
     else: # object?
         for f in [x for x in dir(var) if '_' not in x]:
@@ -91,15 +94,16 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         usage()
     else:
-        py_file = sys.argv[1]
-        if not os.path.exists(py_file):
-            print("%s: nonexistent file: %s\n", sys.argv[0], py_file)
+        py_path = sys.argv[1]
+        if not os.path.exists(py_path):
+            print("%s: nonexistent file: %s\n", sys.argv[0], py_path)
             exit(1)
+        sys.path.append(os.path.dirname(py_path))
+        py_file = os.path.basename(py_path)
         suffix = py_file.find('.py')
         if suffix == -1: # Not a Python module!
-            print("%s: invalid Python module: %s\n"%(sys.argv[0], py_file))
+            print("%s: invalid Python module: %s\n"%(sys.argv[0], py_path))
             exit(1)
-        sys.path.append(os.path.dirname(py_file))
         mod_name = py_file[:suffix]
         ncl_file = mod_name + ".ncl"
         ncl = open(ncl_file, 'w')
@@ -109,4 +113,5 @@ if __name__ == "__main__":
         mod = importlib.import_module(mod_name)
 
         # Translate!
+        print("py2ncl: Converting %s to %s."%(py_file, ncl_file))
         translate_module(mod, ncl)
