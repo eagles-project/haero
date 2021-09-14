@@ -30,3 +30,4 @@ set_target_properties(kokkoscore PROPERTIES IMPORTED_LOCATION @EKAT_LIBRARY_DIR@
 
 set(SKYWALKER_INCLUDE_DIR ${SKYWALKER_PREFIX}/include/skywalker)
 set(SKYWALKER_LIBRARIES skywalker;haero;yaml_cpp;ekat;kokkoscore)
+set(SKYWALKER_PY2NCL ${SKYWALKER_PREFIX}/bin/py2ncl)
