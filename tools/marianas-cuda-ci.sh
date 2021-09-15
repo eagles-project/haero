@@ -174,13 +174,15 @@ cmake \
   -DHAERO_SPECIES_COLUMN_VIEW_TYPE="$HAERO_SPECIES_COLUMN_VIEW_TYPE" \
   -DHAERO_MODE_COLUMN_VIEW_TYPE="$HAERO_MODE_COLUMN_VIEW_TYPE" \
   -DHAERO_DOC_INCLUDE_COMMENTS=$INCLUDE_DESIGN_DOC_COMMENTS \
+  -DHAERO_MPI_EXEC=mpiexec \
+  -DHAERO_MPI_NP_FLAG=-n \
   $OPTIONS \
   -G "$GENERATOR" \
   $SOURCE_DIR || exit 1
 
 make VERBOSE=1 -j `nproc` || exit 1
 
-# ctest -VV
+ctest -VV || exit 1
 
 echo
 echo Build finished successfully

@@ -49,24 +49,24 @@ if (HAERO_FORTRAN)
               mam_gasaerexch_test_bridge.F90
               mam_nucleation_test_bridge.F90)
   add_dependencies(haero_faerosol_process_stubs haero)
-  EkatCreateUnitTest(faerosol_process_stub_tests faerosol_process_stub_tests.cpp
-                     LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
+  CreateUnitTest(faerosol_process_stub_tests faerosol_process_stub_tests.cpp
+                 LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
 
   # TODO: the Fortran version of the nucleation process doesn't currently pass
   # TODO: tests in single-precision builds. We'll punt for now, but should
   # TODO: probably try to figure this out soon.
   if (HAERO_DOUBLE_PRECISION)
     # Aerosol process unit tests
-    EkatCreateUnitTest(mam_gasaerexch_fprocess_tests mam_gasaerexch_fprocess_tests.cpp
-                       LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
+    CreateUnitTest(mam_gasaerexch_fprocess_tests mam_gasaerexch_fprocess_tests.cpp
+                   LIBS haero_faerosol_process_stubs)
 
-    EkatCreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
-                       LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
+    CreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
+                   LIBS haero_faerosol_process_stubs)
 
-    EkatCreateUnitTest(mam_calcsize_fprocess_tests mam_calcsize_fprocess_tests.cpp
-                       LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
+    CreateUnitTest(mam_calcsize_fprocess_tests mam_calcsize_fprocess_tests.cpp
+                   LIBS haero_faerosol_process_stubs)
 
-    EkatCreateUnitTest(mam_rename_fprocess_tests mam_rename_fprocess_tests.cpp
-                       LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
+    CreateUnitTest(mam_rename_fprocess_tests mam_rename_fprocess_tests.cpp
+                   LIBS haero_faerosol_process_stubs)
   endif()
 endif()
