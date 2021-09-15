@@ -10,6 +10,11 @@ function(CreateUnitTest test_name test_srcs)
 
   set(CreateUnitTest_LIBRARIES ${HAERO_LIBRARIES} ${CreateUnitTest_LIBS})
 
+  list(LENGTH CreateUnitTest_LIBS CreateUnitTest_LIBS_LENGTH)
+  if(${CreateUnitTest_LIBS_LENGTH} GREATER 0)
+    list(PREPEND CreateUnitTest_LIBRARIES CreateUnitTest_LIBS)
+  endif()
+
   if (HAERO_MPI_EXEC)
     if (HAERO_MPI_EXTRA_ARGS)
       EkatCreateUnitTest(${test_name} ${test_srcs}
