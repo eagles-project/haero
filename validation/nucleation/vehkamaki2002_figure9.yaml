@@ -1,0 +1,15 @@
+# Computes the rate of binary nucleation as a function of H2SO4 number
+# concentration [molecules/cc] at T = 298K and at two different relative
+# humidities. Output can be compared with Figure 9 of Vehkamaki et al (2002).
+
+haero:
+  nucleation_method: 2
+
+ensemble:
+  user:
+    relative_humidity: [0.382, 0.523]
+    c_h2so4: [0.75e10, 3.5e10, 1e8]
+
+user:
+  temperature: 298
+
