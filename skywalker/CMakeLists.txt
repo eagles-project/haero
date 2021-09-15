@@ -43,3 +43,10 @@ configure_file(
 install(FILES ${PROJECT_BINARY_DIR}/cmake/skywalker.cmake
         DESTINATION cmake)
 
+# Skywalker smoke test -- to ensure that we can build and run skywalker!
+add_test(skywalker_smoke_test ${CMAKE_CURRENT_BINARY_DIR}/skywalker ${CMAKE_CURRENT_SOURCE_DIR}/nucleation.yaml)
+set_tests_properties(skywalker_smoke_test PROPERTIES
+  FAIL_REGULAR_EXPRESSION "error:"
+)
+
+add_subdirectory(tests)

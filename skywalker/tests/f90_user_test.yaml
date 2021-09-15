@@ -1,0 +1,17 @@
+# This input file tests Skywalker's Fortran 90 module with a user-defined
+# configuration tailored to a given test program, which only pays attention
+# to "user" variables.
+
+user_program:
+  param1: hello
+  param2: 81
+  param3: 3.14159265357
+
+ensemble:
+  user:
+    tick: [0, 10, 1]
+
+user:
+  p1: 1
+  p2: 2
+  p3: 3

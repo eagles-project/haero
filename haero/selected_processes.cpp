@@ -67,6 +67,8 @@ AerosolProcess* select_aerosol_process(AerosolProcessType type,
       } else if (selections.nucleation == SelectedProcesses::MAMFNucleation) {
         process = new MAMNucleationFProcess();
 #endif
+      } else if (selections.nucleation == SelectedProcesses::SimpleNucleation) {
+        process = new SimpleNucleationProcess();
       } else if (selections.nucleation == SelectedProcesses::NoNucleation) {
         process = new NullAerosolProcess(type);
       }

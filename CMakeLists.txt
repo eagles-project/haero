@@ -131,6 +131,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=10")
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
@@ -309,8 +310,16 @@ if (HAERO_ENABLE_CHEM_DRIVER)
   message(STATUS "Building chem_driver.")
   add_subdirectory(chem_driver)
 endif()
-# Skywalker--a tool for exploring aerosol processes in low-dimensional parameter spaces
-add_subdirectory(sw)
+
+# Validation tools (currently offered only for CPU builds)
+if(NOT HAERO_USE_CUDA)
+  # Skywalker--a tool for exploring aerosol processes in low-dimensional
+  # parameter spaces.
+  add_subdirectory(skywalker)
+
+  # Aerosol cross-validation materials
+  add_subdirectory(validation)
+endif()
 
 # Documentation.
 if (HAERO_DOC_INCLUDE_COMMENTS)
@@ -326,13 +335,15 @@ if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
   add_custom_target(format
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/sw -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/skywalker -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     VERBATIM
     COMMENT "Auto-formatting C++ code...")
   add_custom_target(format-check
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/sw -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/skywalker -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
+    COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     VERBATIM
     COMMENT "Checking C++ formatting...")
 endif()

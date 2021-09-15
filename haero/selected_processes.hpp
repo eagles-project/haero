@@ -84,6 +84,8 @@ struct SelectedProcesses final {
     /// MAM legacy Fortran nucleation process
     MAMFNucleation,
 #endif
+    /// Simplified nucleation process
+    SimpleNucleation,
     /// No nucleation process
     NoNucleation
   };
