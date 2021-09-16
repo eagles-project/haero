@@ -81,6 +81,21 @@ module mam_nucleation
   ! configuration. Accordingly, their values must be retained between calls.
   save
 
+  !> Number of aerosol modes
+  integer :: num_modes
+
+  !> Number of aerosol populations (mode/species combinations)
+  integer :: num_populations
+
+  !> Array that maps a population to a mode
+  integer, dimension(:), allocatable :: mode_for_pop
+
+  !> Array that maps a population to a species
+  integer, dimension(:), allocatable :: species_for_pop
+
+  !> Number of vertical levels in a column
+  integer :: num_levels
+
   !> The index of the Aitken mode
   integer :: nait
 
@@ -157,7 +172,20 @@ subroutine init(model)
   type(model_t), intent(in) :: model
 
   type(aerosol_species_t) so4, nh4
-  integer :: m
+  integer :: m, p
+
+  ! Write down some things.
+  num_modes = model%num_modes
+  num_populations = model%num_populations
+  if (.not. allocated(mode_for_pop)) then
+    allocate(mode_for_pop(num_populations))
+    allocate(species_for_pop(num_populations))
+    do p = 1,num_populations
+      call model%get_mode_and_species(p, mode_for_pop(p), species_for_pop(p))
+    end do
+  end if
+
+  num_levels = model%num_levels
 
   ! Make this multiply callable.  No check
   ! is done that the lengths have not changed.
@@ -166,11 +194,11 @@ subroutine init(model)
   ! so each test needs to be able to call init.
   if (.not. allocated(dgnum_aer)) then
     ! Extract mode properties.
-    allocate(dgnum_aer(model%num_modes))
-    allocate(dgnumlo_aer(model%num_modes))
-    allocate(dgnumhi_aer(model%num_modes))
+    allocate(dgnum_aer(num_modes))
+    allocate(dgnumlo_aer(num_modes))
+    allocate(dgnumhi_aer(num_modes))
 
-    do m = 1,model%num_modes
+    do m = 1,num_modes
       dgnum_aer(m) = model%modes(m)%mean_std_dev
       dgnumlo_aer(m) = model%modes(m)%min_diameter
       dgnumhi_aer(m) = model%modes(m)%max_diameter
@@ -179,9 +207,9 @@ subroutine init(model)
     ! Allocate gas and aerosol state buffers.
     allocate(qgas_cur(model%num_gases))
     allocate(qgas_avg(model%num_gases))
-    allocate(qnum_cur(model%num_modes))
-    allocate(qaer_cur(maxval(model%num_mode_species), model%num_modes))
-    allocate(qwtr_cur(model%num_modes))
+    allocate(qnum_cur(num_modes))
+    allocate(qaer_cur(maxval(model%num_mode_species), num_modes))
+    allocate(qwtr_cur(num_modes))
 
     ! Record the aitken mode index.
     nait = model%mode_index("aitken")
@@ -213,11 +241,10 @@ subroutine init(model)
   end if
 end subroutine
 
-subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
   implicit none
 
   ! Arguments
-  type(model_t), intent(in)         :: model
   real(wp), value, intent(in)       :: t
   real(wp), value, intent(in)       :: dt
   type(prognostics_t), intent(in)   :: prognostics
@@ -322,7 +349,7 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   end if
 
   ! Traverse the vertical levels and compute tendencies from nucleation.
-  do k = 1,model%num_levels
+  do k = 1,num_levels
     ! Compute the molar concentration of air at the given pressure and
     ! temperature.
     aircon = press(k)/(temp(k)*R_gas)
@@ -330,8 +357,9 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
     ! Extract prognostic state data.
     qgas_cur(:) = q_g(k, :)
     qnum_cur(:) = n(k, :)
-    do p = 1,model%num_populations
-      call model%get_mode_and_species(p, m, s)
+    do p = 1,num_populations
+      m = mode_for_pop(p)
+      s = species_for_pop(p)
       qaer_cur(s,m) = q_i(k, p)
     end do
 
@@ -377,11 +405,13 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   end do
 end subroutine
 
-subroutine finalize(model)
+subroutine finalize()
   implicit none
 
-  ! Arguments
-  type(model_t), intent(in) :: model
+  ! Deallocate metadata
+  if (allocated(mode_for_pop)) then
+    deallocate(mode_for_pop, species_for_pop)
+  end if
 
   ! Deallocate gas and aerosol state buffers
   deallocate(qgas_cur)

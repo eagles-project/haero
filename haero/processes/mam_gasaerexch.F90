@@ -1,14 +1,14 @@
 module mam_gasaerexch
 !-----------------------------------------------------------------------------------------
-! Purpose: 
-!  Parameterization of gas-aerosol exchange. This microphysical process is 
+! Purpose:
+!  Parameterization of gas-aerosol exchange. This microphysical process is
 !  also referred to as the condensation/evaporation of chemical species
 !  or the uptake of gas-phase species by aerosol particles.
 !
-!  This module contains 
+!  This module contains
 !    - condensation-specific parameters and their initialization,
-!    - a "main" subroutine that calls child subroutines to 
-!      * calculate the condensation (uptake) coefficient 
+!    - a "main" subroutine that calls child subroutines to
+!      * calculate the condensation (uptake) coefficient
 !        for all gas species and aerosol modes, and
 !      * solve the condensation equations for nonvolatile species
 !        and SOAs
@@ -23,16 +23,16 @@ module mam_gasaerexch
 !  Aging of the primary carbon mode as a result of condensation has been
 !  moved to modal_aero_aging.F90
 !
-! History: 
+! History:
 !   Original version by R. C. Easter
 !   Separated from modal_aero_amicphys.F90 in EAMv1 and refactored by Hui Wan, 2020-2021
 !-----------------------------------------------------------------------------------------
-   use haero_precision,   only: wp  
+   use haero_precision,   only: wp
    use haero,             only: model_t, aerosol_species_t, &
                                 prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
    use haero_constants,   only: pi, pstd => pressure_stp, &
                                 r_universal => r_gas, &
-                                mw_air => molec_weight_dry_air, &  ! kg/mole 
+                                mw_air => molec_weight_dry_air, &  ! kg/mole
                                 vol_molar_air => molec_diffusion_dry_air
 
    implicit none
@@ -42,9 +42,9 @@ module mam_gasaerexch
    public :: run            ! main subroutine for condensation
    public :: finalize       ! end  subroutine for condensation
 
-   public :: mam_soaexch_1subarea                      ! for unit testing only, 
+   public :: mam_soaexch_1subarea                      ! for unit testing only,
    public :: gas_aer_uptkrates_1box1gas                ! not ment to be called directly
-   public :: mam_gasaerexch_1subarea_1gas_nonvolatile  
+   public :: mam_gasaerexch_1subarea_1gas_nonvolatile
    !-------------------------
    ! Module global variables
    !-------------------------
@@ -54,7 +54,7 @@ module mam_gasaerexch
    ! parameters, because their values depend on the particular model
    ! configuration. Accordingly, their values must be retained between calls.
    save
- 
+
    !> Settable parameters:
    !> * aitken_adjust_factor (real) - Adjustment factor for Aitken number
    !>     concentration tendency
@@ -74,19 +74,19 @@ module mam_gasaerexch
    integer, parameter :: IMPL = 2  ! implicit method with adaptive time steps for SOAG
 
    !> array containing flags for all gas species
-   integer, dimension(:), allocatable :: eqn_and_numerics_category 
-                                                 
+   integer, dimension(:), allocatable :: eqn_and_numerics_category
+
    !> array containg flags indicating whether a specific gas can condense to a specific aerosol mode
-   logical ,dimension(:,:), allocatable  ::  l_gas_condense_to_mode 
- 
+   logical ,dimension(:,:), allocatable  ::  l_gas_condense_to_mode
+
    !> The index of the Aitken mode
    integer :: nait
 
    !> Index for secondary-organic aerosol species.
    integer :: nsoa
- 
+
    !> Index for primary-organic aerosol species.
-   integer :: npoa 
+   integer :: npoa
 
    !> Index of h2so4 aerosol within the Aitken mode
    integer :: iaer_h2so4
@@ -98,11 +98,11 @@ module mam_gasaerexch
    real(wp) :: vol_molar_h2so4
 
    !> save off model%num_modes for use in subroutines
-   integer ::  max_mode  
+   integer ::  max_mode
 
    !> Save off model%num_gases
    integer :: max_gas
-  
+
    !> Save off maxval(model%num_mode_species)
    integer :: max_aer
 
@@ -113,20 +113,20 @@ module mam_gasaerexch
    real(wp),parameter :: soag_h2so4_uptake_coeff_ratio = 0.81_wp  ! for SOAG
    real(wp),parameter ::  nh3_h2so4_uptake_coeff_ratio = 2.08_wp  ! for NH3
 
-   !> number geometric_mean diameter 
+   !> number geometric_mean diameter
    real(wp), dimension(:), allocatable :: alnsg_aer
 
-   !> array containing the ratios of all gas species 
-   real(wp), dimension(:), allocatable :: uptk_rate_factor  
+   !> array containing the ratios of all gas species
+   real(wp), dimension(:), allocatable :: uptk_rate_factor
 
    !> for a limiter applied to NH4
    real(wp),parameter :: aer_nh4_so4_molar_ratio_max = 2._wp
 
    !> current gas mix ratios (mol/mol)
-   real(wp), dimension(:), allocatable :: qgas_cur 
+   real(wp), dimension(:), allocatable :: qgas_cur
 
    !> average gas mix ratios over the dt integration
-   real(wp), dimension(:), allocatable :: qgas_avg 
+   real(wp), dimension(:), allocatable :: qgas_avg
 
    !> qgas_netprod_otrproc = gas net production rate from other processes
    !>    such as gas-phase chemistry and emissions (mol/mol/s)
@@ -138,19 +138,19 @@ module mam_gasaerexch
 
 
    ! gas to aerosol mass transfer rate (1/s)
-   real(wp), dimension(:,:), allocatable :: uptkaer      
+   real(wp), dimension(:,:), allocatable :: uptkaer
 
    ! quadrature parameter related to uptake rate
    real(wp), parameter :: beta_inp = 0._wp     ! quadrature parameter (--)
 
    ! dimensions: (aerosol species, modes)
-   logical, dimension(:,:), allocatable :: l_mode_can_contain_species  
+   logical, dimension(:,:), allocatable :: l_mode_can_contain_species
 
    ! dimension:  (aerosol species)
-   logical, dimension(:), allocatable   :: l_mode_can_age              
+   logical, dimension(:), allocatable   :: l_mode_can_age
 
-   integer :: ngas                             ! total # of gases handled by the parameterization 
-   integer :: ntot_amode                       ! total # of aerosol modes handled by the parameterization 
+   integer :: ngas                             ! total # of gases handled by the parameterization
+   integer :: ntot_amode                       ! total # of aerosol modes handled by the parameterization
    integer :: igas_h2so4
    integer :: igas_nh3
    ! integer :: igas_soag_bgn  Not sure what SOAG is and how these were set in MAMRefactor
@@ -193,9 +193,9 @@ contains
    allocate(mode_aging_optaa(model%num_modes))
 
    !------------------------------------------------------------------
-   ! MAM currently assumes that the uptake rate of other gases 
+   ! MAM currently assumes that the uptake rate of other gases
    ! are proportional to the uptake rate of sulfuric acid gas (H2SO4).
-   ! Here the array uptk_rate_factor contains the uptake rate ratio 
+   ! Here the array uptk_rate_factor contains the uptake rate ratio
    ! w.r.t. that of H2SO4.
    !------------------------------------------------------------------
    ! Set default to 0, meaning no uptake
@@ -227,14 +227,14 @@ contains
    npoa = model%aerosol_index(nait, "POA")
 
    !-------------------------------------------------------------------
-   ! MAM currently uses a splitting method to deal with gas-aerosol 
-   ! mass exchange. A quasi-analytical solution assuming timestep-wise 
+   ! MAM currently uses a splitting method to deal with gas-aerosol
+   ! mass exchange. A quasi-analytical solution assuming timestep-wise
    ! constant uptake rate is applied to nonvolatile species, while
    ! an implicit time stepping method with adaptive step size
    ! is applied to gas-phase SOA species which are assumed semi-volatile.
    ! There are two different subroutines in this modules to deal
-   ! with the two categories of cases. The array 
-   ! eqn_and_numerics_category flags which gas species belongs to 
+   ! with the two categories of cases. The array
+   ! eqn_and_numerics_category flags which gas species belongs to
    ! which category.
    !-------------------------------------------------------------------
    eqn_and_numerics_category(:)                           = NA
@@ -243,14 +243,14 @@ contains
    !eqn_and_numerics_category(igas_soag_bgn:igas_soag_end) = IMPL
 
    if (igas_nh3 > 0 ) eqn_and_numerics_category(igas_nh3) = ANAL
-      
+
    !-------------------------------------------------------------------
    ! Determine whether specific gases will condense to specific modes
    !-------------------------------------------------------------------
-   l_gas_condense_to_mode(:,:) = .false. 
+   l_gas_condense_to_mode(:,:) = .false.
 
    do igas = 1, ngas    !loop through all registered gas species
-      if (eqn_and_numerics_category(igas) /= NA) then ! this gas species can condense 
+      if (eqn_and_numerics_category(igas) /= NA) then ! this gas species can condense
 
          iaer = idx_gas_to_aer(igas)   ! what aerosol species does the gas become when condensing?
          l_gas_condense_to_mode(igas,1:ntot_amode) = l_mode_can_contain_species(iaer,1:ntot_amode) &
@@ -260,11 +260,8 @@ contains
 
   end subroutine init
 
-  subroutine finalize(model)
+  subroutine finalize()
     implicit none
-
-    ! Arguments
-    type(model_t), intent(in) :: model
 
     ! Deallocate mode metadata.
     deallocate(l_mode_can_contain_species)
@@ -304,14 +301,14 @@ contains
 
   subroutine set_real_param(name, val)
     implicit none
-  
+
     character(len=*), intent(in) :: name
     real(wp), intent(in) :: val
 
   end subroutine
 
   !----------------------------------------------------------------------
-  subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+  subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
 
      !   igas_h2so4, igas_nh3, idx_gas_to_aer, iaer_so4,       &! in
      !   l_calc_gas_uptake_coeff,                              &! in
@@ -329,7 +326,6 @@ contains
       implicit none
 
       ! Arguments
-      type(model_t), intent(in)         :: model
       real(wp), value, intent(in)       :: t
       real(wp), value, intent(in)       :: dt    ! integration timestep (s)
       type(prognostics_t), intent(in)   :: prognostics
@@ -339,11 +335,11 @@ contains
 
       integer   :: igas_h2so4, igas_nh3, iaer_so4
 
-      logical   :: l_calc_gas_uptake_coeff 
+      logical   :: l_calc_gas_uptake_coeff
       integer   :: lund        ! logical unit for diagnostic output
-      !integer   :: ngas        ! number of potentially condensable gases 
+      !integer   :: ngas        ! number of potentially condensable gases
       integer   :: n_mode      ! current number of modes (including temporary) !Q: what are temporary modes?
-      integer   :: ntot_amode  ! total of modes (not including temporary?) 
+      integer   :: ntot_amode  ! total of modes (not including temporary?)
 
       real(wp)  :: temp        ! air temperature (K)
       real(wp)  :: pmid        ! air pressure at model levels (Pa)
@@ -366,35 +362,35 @@ contains
       integer :: iaer, igas
       integer :: n
 
-      real(wp) :: mass_excess  !amount of nh4 mass exceeding aer_nh4_so4_molar_ratio_max*so4 on 
-                               !molar basis after condensation of nh3. This 
+      real(wp) :: mass_excess  !amount of nh4 mass exceeding aer_nh4_so4_molar_ratio_max*so4 on
+                               !molar basis after condensation of nh3. This
                                !amount is then reduced to 0 by effectively evaporating nh4 back to nh3
 
       logical :: l_condense_to_mode(max_mode)
 
-      real(wp) :: uptkaer_ref(1:max_mode) 
+      real(wp) :: uptkaer_ref(1:max_mode)
 
       real(wp) :: r_pi = pi
 
       n_mode = max_mode
       ntot_amode = max_mode
       !=========================================================================
-      ! Hui Wan's note from March 2021: 
-      ! I have not fully understood the mixed use of n_mode and ntot_amode 
+      ! Hui Wan's note from March 2021:
+      ! I have not fully understood the mixed use of n_mode and ntot_amode
       ! in this module. Need to watch out for possible bugs.
       ! (It looks like ntot_amode is the # of modes tracked by the host model
       ! while n_mode also includes the # of temporary modes. Does this mean
       ! n_mode could be larger than ntot_amode? If we indeed run into a case
-      ! where n_mode > ntot_amode, should the uptake rates be calculated 
+      ! where n_mode > ntot_amode, should the uptake rates be calculated
       ! for the temporary modes, too, or is it assumed that the gases will
       ! not condense to the temporary modes?)
       !=========================================================================
-      if (n_mode/=ntot_amode) then 
+      if (n_mode/=ntot_amode) then
         print *, 'Value of n_mode not equal to ntot_amode. See comment ', &
                  'in mam_gasaerexch.F90::run(). n_mode:', n_mode, &
                  ' ntot_amode:', ntot_amode
         stop 1
-      endif 
+      endif
 
       !=========================================================================
       ! Initialize the time-step mean gas concentration (explain why?)
@@ -421,7 +417,7 @@ contains
 
       !========================================================================================
       ! Assign uptake rate to each gas species and each mode using the ref. value uptkaer_ref
-      ! calculated above and the uptake rate factor specified as constants at the 
+      ! calculated above and the uptake rate factor specified as constants at the
       ! beginning of the module
       !========================================================================================
         uptkaer(:,:) = 0._wp  !default is no uptake
@@ -431,7 +427,7 @@ contains
            uptkaer(igas,1:ntot_amode) = uptkaer_ref(1:ntot_amode) * uptk_rate_factor(igas)
         end do
 
-        ! total uptake rate (sum of all aerosol modes) for h2so4. 
+        ! total uptake rate (sum of all aerosol modes) for h2so4.
         ! Diagnosed for calling routine. Not used in this subroutne.
         uptkrate_h2so4 = sum( uptkaer(igas_h2so4,1:ntot_amode) )
 
@@ -448,15 +444,15 @@ contains
 
         iaer = idx_gas_to_aer(igas)
 
-        call mam_gasaerexch_1subarea_1gas_nonvolatile( dt, qgas_netprod_otrproc(igas),  &! in, in 
+        call mam_gasaerexch_1subarea_1gas_nonvolatile( dt, qgas_netprod_otrproc(igas),  &! in, in
                                                        n_mode,  uptkaer(igas,:),        &! in, in
                                                        qgas_cur(igas),  qgas_avg(igas), &! inout, out
                                                        qaer_cur(iaer,:)                 )! inout
-      end do 
+      end do
 
       !---------------------------------------------------------------------------------
-      ! Clip condensation rate when nh3 is on the list of non-volatile gases: 
-      ! limit the condensation of nh3 so that nh4 does not exceed 
+      ! Clip condensation rate when nh3 is on the list of non-volatile gases:
+      ! limit the condensation of nh3 so that nh4 does not exceed
       ! aer_nh4_so4_molar_ratio_max * so4 (molar basis).
       ! (Hui Wan's comment from Dec. 2020: chose to leave the following block here instead
       ! of moving it to the subroutine mam_gasaerexch_1subarea_nonvolatile_quasi_analytical,
@@ -465,12 +461,12 @@ contains
       if ( igas_nh3 > 0 ) then
 
          igas = igas_nh3
-         iaer = idx_gas_to_aer(igas) 
+         iaer = idx_gas_to_aer(igas)
 
          do n = 1, n_mode
             if (uptkaer(igas,n) <= 0.0_wp) cycle
 
-            ! if nh4 exceeds aer_nh4_so4_molar_ratio_max*so4 (molar basis), 
+            ! if nh4 exceeds aer_nh4_so4_molar_ratio_max*so4 (molar basis),
             ! put the excessive amount back to gas phase (nh3)
 
             mass_excess = qaer_cur(iaer,n) - aer_nh4_so4_molar_ratio_max*qaer_cur(iaer_so4,n)
@@ -482,10 +478,10 @@ contains
             end if
          end do
 
-      end if ! igas_nh3 > 0 
+      end if ! igas_nh3 > 0
 
       !============================================
-      ! Solve condensation equations for SOA 
+      ! Solve condensation equations for SOA
       !============================================
       call mam_soaexch_1subarea(                                    &
          lund,              dt,                                     &
@@ -554,8 +550,8 @@ contains
 !                            /
 !
 !   is the uptake rate for aerosol mode i with size distribution n_i(lnDp)
-!   and number concentration of = 1 #/m3; aernum(i) is the actual number 
-!   mixing ratio of mode i in the unit of  #/kmol-air, and aircon is 
+!   and number concentration of = 1 #/m3; aernum(i) is the actual number
+!   mixing ratio of mode i in the unit of  #/kmol-air, and aircon is
 !   the air concentration in the unit of kmol/m3.
 !
 !   gas_conden_rate(D_p) = 2 * pi * gasdiffus * D_p * F(Kn,ac), with
@@ -575,7 +571,7 @@ contains
       logical,  intent(in) :: l_condense_to_mode(n_mode) ! flags indicating whether gas can condense to aerosol
       real(wp), intent(in) :: temp             ! air temperature (K)
       real(wp), intent(in) :: pmid             ! air pressure at model levels (Pa)
-      real(wp), intent(in) :: pstd             ! 101325 Pa 
+      real(wp), intent(in) :: pstd             ! 101325 Pa
       real(wp), intent(in) :: mw_gas           ! molecular weight of gas
       real(wp), intent(in) :: mw_air           ! molecular weight of air
       real(wp), intent(in) :: vol_molar_gas    ! The molecular weight of aerosol as assumed by the host atm model
@@ -591,7 +587,7 @@ contains
       real(wp), intent(in)  :: dgncur_awet(n_mode) ! mode-median wet diameter of number distribution (m)
       real(wp), intent(in)  :: lnsg(n_mode)        ! ln( sigmag )  (--)
 
-      real(wp), intent(in)  :: aernum(n_mode)   ! aerosol number mixing ratio 
+      real(wp), intent(in)  :: aernum(n_mode)   ! aerosol number mixing ratio
       real(wp), intent(in)  :: aircon           ! air molar concentration (kmol/m3)
 
       real(wp), intent(out) :: uptkaer(n_mode)  ! gas-to-aerosol mass transfer rates (1/s)
@@ -616,7 +612,7 @@ contains
 
       real(wp) :: hh
 
-      real(wp) :: p_in_atm 
+      real(wp) :: p_in_atm
       real(wp) :: gasdiffus            ! gas diffusivity (m2/s)
       real(wp) :: gasfreepath          ! gas mean free path (m)
 
@@ -689,10 +685,10 @@ contains
       !-----------------------------------------------------------------------------------
       ! Unit conversion: uptkrate is for number = 1 #/m3, so mult. by number conc. (#/m3)
       !-----------------------------------------------------------------------------------
-      where ( l_condense_to_mode(:) ) 
+      where ( l_condense_to_mode(:) )
         uptkaer(:) = uptkrate(:) * (aernum(:) * aircon)
       elsewhere
-        uptkaer(:) = 0.0_wp  ! zero means no uptake 
+        uptkaer(:) = 0.0_wp  ! zero means no uptake
       end where
 
   contains
@@ -775,18 +771,18 @@ contains
          ! zqgas_avg (was tmp_q4) = avg mix-rat between t=tcur and t=tcur+dt
 
          if (tmp_kxt < 1.0e-20_wp) then
-         ! Consider uptake to aerosols = 0.0, hence there is no change in aerosol mass; 
+         ! Consider uptake to aerosols = 0.0, hence there is no change in aerosol mass;
          ! gas concentration is updated using the passed-in production rate
          ! which is considered step-wise constant
 
             qgas_cur = zqgas_init + tmp_pxt
             qgas_avg = zqgas_init + tmp_pxt*0.5_wp
 
-         else 
+         else
          ! tmp_kxt >= 1.0e-20_wp: there is non-negligible condensation;
          ! calculate amount of gas condensation and update gas concentration.
 
-            if (tmp_kxt > 0.001_wp) then 
+            if (tmp_kxt > 0.001_wp) then
             ! Stronger condesation, no worry about division by zero or singularity;
             ! calculate analytical solution assuming step-wise constant condensation coeff.
 
@@ -812,7 +808,7 @@ contains
 
             do n = 1, n_mode
                if (uptkaer(n) <= 0.0_wp) cycle
-               qaer_cur(n) = qaer_prv(n) & 
+               qaer_cur(n) = qaer_prv(n) &
                            + tmp_qdel_cond*(uptkaer(n)/total_uptake_coeff_of_all_modes)
             end do
 
@@ -848,7 +844,7 @@ contains
 ! arguments
       integer,  intent(in) :: lund                  ! logical unit for diagnostic output
       integer,  intent(in) :: n_mode                ! current number of modes (including temporary)
-      integer,  intent(in) :: ntot_amode 
+      integer,  intent(in) :: ntot_amode
       integer,  intent(in) :: max_mode
 
       real(wp), intent(in) :: dt        ! current integration timestep (s)
@@ -864,8 +860,8 @@ contains
       integer,  intent(in   ), dimension( 1:max_mode, 1:nsoa) ::  lptr2_soa_a_amode
 
 ! local
-      integer :: ntot_poaspec 
-      integer :: ntot_soaspec 
+      integer :: ntot_poaspec
+      integer :: ntot_soaspec
 
       integer :: iaer, igas
       integer :: ll
