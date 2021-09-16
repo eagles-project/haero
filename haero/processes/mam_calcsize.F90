@@ -26,15 +26,21 @@ module mam_calcsize
   real(wp), parameter :: third   = 1.0_wp/3.0_wp
 
   !module-level private variables used accross this module (initialized in "init" routine)
-  integer,save :: nlevs     !number of levels
-  integer,save :: nmodes    !number of modes
-  integer,save :: max_nspec !number of species in the mode with the max species
-  integer,save :: num_populations !total number of species
+  integer, save :: nlevs      !number of levels
+  integer, save :: nmodes     !number of modes
+  integer, save :: max_nspec  !number of species in the mode with the max species
+  integer, save :: num_populations !total number of species
+  integer, save :: aitken_idx !index of aitken mode
+  integer, save :: accum_idx  !index of accumulation mode
 
-  integer,save, allocatable :: population_offsets(:) ! start and end indices of species in a mode innpopulation arrays
-  integer,save, allocatable :: num_mode_species(:)   ! number of species in a mode
-  integer,save, allocatable :: spec_density(:,:)     ! density of species
+  integer, save, allocatable :: population_offsets(:) ! start and end indices of species in a mode innpopulation arrays
+  integer, save, allocatable :: num_mode_species(:)   ! number of species in a mode
+  integer, save, allocatable :: spec_density(:,:)     ! density of species
 
+  real(wp), save, allocatable :: v2nmin_nmodes(:)
+  real(wp), save, allocatable :: v2nmax_nmodes(:)
+  real(wp), save, allocatable :: dgnmin_nmodes(:)
+  real(wp), save, allocatable :: dgnmax_nmodes(:)
 
 contains
   subroutine init(model)
@@ -46,6 +52,7 @@ contains
 
     !local
     integer :: ierr !error code
+    integer :: imode
 
     !initialize module-level variables
     nlevs     = model%num_levels !number of levels
@@ -77,7 +84,23 @@ contains
        stop
     endif
 
-    spec_density(1:nmodes,1:max_nspec) = model%aero_species(1:nmodes,1:max_nspec)%density
+    spec_density(1:nmodes,1:max_nspec) = model%aero_species(1:nmodes,1:max_nspec)%density !specie density TODO: units
+
+    allocate(v2nmin_nmodes(nmodes), v2nmax_nmodes(nmodes), dgnmin_nmodes(nmodes), dgnmax_nmodes(nmodes), stat=ierr)
+    if (ierr .ne. 0) then
+       print *, 'Could not allocate v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes with length ', nmodes
+       stop
+    endif
+
+    do imode = 1, nmodes
+       v2nmin_nmodes(imode) = model%modes(imode)%min_vol_to_num_ratio()
+       v2nmax_nmodes(imode) = model%modes(imode)%max_vol_to_num_ratio()
+       dgnmin_nmodes(imode) = model%modes(imode)%min_diameter
+       dgnmax_nmodes(imode) = model%modes(imode)%max_diameter
+    enddo
+
+    aitken_idx = model%mode_index("aitken")
+    accum_idx  = model%mode_index("accum")
 
   end subroutine init
 
@@ -190,10 +213,10 @@ contains
        call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
 
        !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
-       v2nmin = model%modes(imode)%min_vol_to_num_ratio()
-       v2nmax = model%modes(imode)%max_vol_to_num_ratio()
-       dgnmin = model%modes(imode)%min_diameter
-       dgnmax = model%modes(imode)%max_diameter
+       v2nmin = v2nmin_nmodes(imode)
+       v2nmax = v2nmax_nmodes(imode)
+       dgnmin = dgnmin_nmodes(imode)
+       dgnmax = dgnmax_nmodes(imode)
 
        !Get relaxed limits for volume_to_num
        !(we use relaxed limits for aerosol number "adjustment" calculations via "adjust_num_sizes" subroutine.
@@ -202,7 +225,7 @@ contains
        !for these modes because we do the explicit transfer (via "aitken_accum_exchange" subroutine) from one
        !mode to another instead of adjustments for these modes)
        call get_relaxed_v2n_limits(do_aitacc_transfer, & !inputs
-            imode == model%mode_index("aitken"), imode == model%mode_index("accum"), & !inputs
+            imode == aitken_idx, imode == accum_idx, & !inputs
             v2nmin, v2nmax, v2nminrl, v2nmaxrl)!outputs (NOTE: v2nmin and v2nmax are only updated for aitken and accumulation modes)
 
        do klev = top_lev, nlevs
