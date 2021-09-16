@@ -1,6 +1,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdarg>
 #include <set>
 
@@ -14,7 +15,12 @@ using ModalAerosolConfig = haero::ModalAerosolConfig;
 using ParameterWalk = skywalker::ParameterWalk;
 using YamlException = skywalker::YamlException;
 
-std::vector<Real> parse_value_array(const std::string& name,
+// Parses the values given in an array, applying uniform spacing for 3 values
+// specified with the third out of ascending order. If the name is of the form
+// "log(x)", where x is the name of a quantity, the array is interpreted
+// normally and then is values are exponentiated (in powers of 10). In addition,
+// "log(x)" is transformed to just "x".
+std::vector<Real> parse_value_array(std::string& name,
                                     const YAML::Node& value) {
   size_t len = value.size();
   if (len == 3) {
@@ -30,6 +36,21 @@ std::vector<Real> parse_value_array(const std::string& name,
       std::vector<Real> values(len);
       for (int j = 0; j < len; ++j) {
         values[j] = value0 + j * value2;
+      }
+
+      // Now, is this a logarithmic spacing?
+      if (name.find("log(") == 0) {
+        if (name.rfind(")") != name.length() - 1) {
+          throw YamlException(std::string("Invalid name: '") + name +
+                              std::string("': no closing parenthesis."));
+        }
+        // Exponentiate the values.
+        for (int j = 0; j < len; ++j) {
+          values[j] = std::log10(values[j]);
+        }
+
+        // Strip the log stuff out of the name.
+        name.erase(name.length() - 1, 1).erase(0, 4);
       }
       return values;
     } else {
