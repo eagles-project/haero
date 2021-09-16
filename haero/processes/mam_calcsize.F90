@@ -38,13 +38,16 @@ module mam_calcsize
   integer, save, allocatable :: num_mode_species(:)   ! number of species in a mode
   integer, save, allocatable :: spec_density(:,:)     ! density of species
 
-  real(wp), save, allocatable :: v2nmin_nmodes(:)
-  real(wp), save, allocatable :: v2nmax_nmodes(:)
-  real(wp), save, allocatable :: dgnmin_nmodes(:)
-  real(wp), save, allocatable :: dgnmax_nmodes(:)
+  real(wp), save, allocatable :: v2nmin_nmodes(:) !Minimum value of volume to number for each mode
+  real(wp), save, allocatable :: v2nmax_nmodes(:) !Maximum value of volume to number for each mode
+  real(wp), save, allocatable :: dgnmin_nmodes(:) !Minimum diameter value for each mode
+  real(wp), save, allocatable :: dgnmax_nmodes(:) !Maximum diameter value for each mode
+  real(wp), save, allocatable :: cmn_factor_nmodes(:)    !A common factor used in size calculation
 
 contains
   subroutine init(model)
+
+    use haero_constants, only: pi_sixth
 
     implicit none
 
@@ -63,7 +66,7 @@ contains
     allocate(population_offsets(nmodes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate population_offsets with length ', nmodes
-      stop
+      stop 1
     endif
 
     !An array that stores species' start and end indices in a specie spopulation index
@@ -72,7 +75,7 @@ contains
     allocate(num_mode_species(nmodes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate num_mode_species with length ', nmodes
-      stop
+      stop 1
     endif
     num_mode_species(1:nmodes) = model%num_mode_species(1:nmodes) !total number of species in a mode
 
@@ -82,22 +85,25 @@ contains
     allocate(spec_density(nmodes,max_nspec), stat=ierr)
     if (ierr .ne. 0) then
        print *, 'Could not allocate spec_density with length ', nmodes
-       stop
+       stop 1
     endif
 
     spec_density(1:nmodes,1:max_nspec) = model%aero_species(1:nmodes,1:max_nspec)%density !specie density TODO: units
 
-    allocate(v2nmin_nmodes(nmodes), v2nmax_nmodes(nmodes), dgnmin_nmodes(nmodes), dgnmax_nmodes(nmodes), stat=ierr)
+    allocate(v2nmin_nmodes(nmodes), v2nmax_nmodes(nmodes), dgnmin_nmodes(nmodes), dgnmax_nmodes(nmodes), &
+         cmn_factor_nmodes(nmodes), stat=ierr)
     if (ierr .ne. 0) then
-       print *, 'Could not allocate v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes with length ', nmodes
-       stop
+       print *, 'Could not allocate v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes, ', &
+            'cmn_factor_nmodes with length ', nmodes
+       stop 1
     endif
 
     do imode = 1, nmodes
-       v2nmin_nmodes(imode) = model%modes(imode)%min_vol_to_num_ratio()
-       v2nmax_nmodes(imode) = model%modes(imode)%max_vol_to_num_ratio()
-       dgnmin_nmodes(imode) = model%modes(imode)%min_diameter
-       dgnmax_nmodes(imode) = model%modes(imode)%max_diameter
+       v2nmin_nmodes(imode)     = model%modes(imode)%min_vol_to_num_ratio()!Minimum value of volume to number for each mode
+       v2nmax_nmodes(imode)     = model%modes(imode)%max_vol_to_num_ratio()!Maximum value of volume to number for each mode
+       dgnmin_nmodes(imode)     = model%modes(imode)%min_diameter          !Minimum diameter value for each mode
+       dgnmax_nmodes(imode)     = model%modes(imode)%max_diameter          !Maximum diameter value for each mode
+       cmn_factor_nmodes(imode) = exp(4.5_wp*log(model%modes(imode)%mean_std_dev)**2.0_wp)*pi_sixth !A common factor
     enddo
 
     aitken_idx = model%mode_index("aitken")
@@ -109,8 +115,6 @@ contains
   !----------------------------------------------------------------------------------------
 
   subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
-
-    use haero_constants, only: pi_sixth
 
     implicit none
 
@@ -241,8 +245,8 @@ contains
           init_num_c = n_c(klev,imode) !inital value of num_c for this level and mode
           num_c = max( 0.0_wp, init_num_c) ! Make it non-negative
 
-          !compute a common factor
-          cmn_factor = exp(4.5_wp*log(model%modes(imode)%mean_std_dev)**2.0_wp)*pi_sixth
+          !a common factor
+          cmn_factor = cmn_factor_nmodes(imode)
 
           !FIXME: size adjustment is done here based on volume to num ratios
           if (do_adjust) then
@@ -687,13 +691,14 @@ contains
     deallocate(spec_density, stat=ierr)
     if (ierr .ne. 0) then
        print *, 'Could not deallocate spec_density'
-       stop
+       stop 1
     endif
 
-    deallocate(v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes, stat=ierr)
+    deallocate(v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes, cmn_factor_nmodes, stat=ierr)
     if (ierr .ne. 0) then
-       print *, 'Could not deallocate v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes with length ', nmodes
-       stop
+       print *, 'Could not deallocate v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes, ', &
+            'cmn_factor_nmodes with length ', nmodes
+       stop 1
     endif
 
   end subroutine finalize
