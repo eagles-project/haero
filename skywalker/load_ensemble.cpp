@@ -119,8 +119,8 @@ void parse_aero_ensemble_params(
                               std::string("' in the ensemble section!"));
         }
         auto full_name = std::string("aerosols.") + group_name +
-                        std::string(".") + mode_name + std::string(".") +
-                        aero_name;  // also works for num_mix_ratio
+                         std::string(".") + mode_name + std::string(".") +
+                         aero_name;  // also works for num_mix_ratio
         params[full_name] = values;
       }
     }
