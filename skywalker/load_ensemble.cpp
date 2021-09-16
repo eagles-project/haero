@@ -26,7 +26,7 @@ std::vector<Real> parse_value_array(const std::string& name,
                           std::string("': second must be greater than first."));
     }
     if (not(value1 < value2)) {  // [start, stop, step]
-      len = static_cast<size_t>((value1 - value0) / value2) + 1;
+      len = static_cast<size_t>(std::ceil((value1 - value0) / value2) + 1);
       std::vector<Real> values(len);
       for (int j = 0; j < len; ++j) {
         values[j] = value0 + j * value2;
@@ -92,7 +92,7 @@ void parse_aero_ensemble_params(
         }
         auto mmr_name = std::string("aerosols.") + group_name +
                         std::string(".") + mode_name + std::string(".") +
-                        aero_name;  // also works for number_conc
+                        aero_name;  // also works for num_mix_ratio
         auto aero_species = giter.second;
         params[mmr_name] = parse_value_array(mmr_name, aero_species);
       }
@@ -121,22 +121,37 @@ void parse_gas_ensemble_params(
   }
 }
 
-void parse_process_section(const YAML::Node& process, ParameterWalk& pw) {
-  if (not process[pw.model_impl]) {
-    throw YamlException(std::string("'") + pw.model_impl +
-                        std::string("' entry not found in process section!"));
+void parse_user_ensemble_params(
+    const YAML::Node& user, std::map<std::string, std::vector<Real>>& params) {
+  for (auto iter : user) {
+    auto param = iter.second;
+    if (not param.IsSequence()) {
+      throw YamlException(std::string("Parameter 'user:") +
+                          iter.first.as<std::string>() +
+                          std::string("' is not a sequence!\n"));
+    }
+    auto name = std::string("user.") + iter.first.as<std::string>();
+    params[name] = parse_value_array(name, param);
   }
-  pw.process = process[pw.model_impl].as<std::string>();
+}
+
+void parse_program_section(const YAML::Node& program, ParameterWalk& pw) {
+  // Parse program-specific parameters.
+  for (const auto& param : program) {
+    const auto& name = param.first.as<std::string>();
+    const auto& value = param.second.as<std::string>();
+    pw.program_params[name] = value;
+  }
 }
 
 void parse_timestepping_section(const YAML::Node& ts, ParameterWalk& pw) {
   if (not ts["dt"]) {
-    throw YamlException("'dt' not found in timestepping section!\n");
+    throw YamlException("'dt' not found in timestepping section!");
   }
   pw.ref_input.dt = ts["dt"].as<Real>();
 
   if (not ts["total_time"]) {
-    throw YamlException("'total_time' not found in timestepping section!\n");
+    throw YamlException("'total_time' not found in timestepping section!");
   }
   pw.ref_input.total_time = ts["total_time"].as<Real>();
 }
@@ -147,7 +162,7 @@ void parse_ensemble_section(const YAML::Node& ensemble,
   for (auto eiter : ensemble) {
     auto group_name = eiter.first.as<std::string>();
     if ((group_name != "atmosphere") and (group_name != "gases") and
-        (group_name != "aerosols")) {
+        (group_name != "aerosols") and (group_name != "user")) {
       continue;
     }
     auto group = eiter.second;
@@ -155,8 +170,12 @@ void parse_ensemble_section(const YAML::Node& ensemble,
       parse_atm_ensemble_params(group, pw.ensemble);
     } else if (group_name == "gases") {
       parse_gas_ensemble_params(aerosol_config, group, pw.ensemble);
-    } else {
+    } else if (group_name == "aerosols") {
       parse_aero_ensemble_params(aerosol_config, group, pw.ensemble);
+    } else if (group_name == "user") {
+      parse_user_ensemble_params(group, pw.ensemble);
+    } else {
+      throw YamlException("Unrecognized subsection found in ensemble section!");
     }
   }
 }
@@ -241,7 +260,7 @@ void parse_aerosols_section(const YAML::Node& aerosols,
 
       // Get the initial data for the aerosol species in this mode.
       auto mode_species = aerosol_config.aerosol_species_for_mode(mode_index);
-      bool found_number_conc = false;
+      bool found_num_mix_ratio = false;
       std::vector<int> found_aerosol(mode_species.size());
       for (auto aiter : group) {
         auto aero_name = aiter.first.as<std::string>();
@@ -254,7 +273,7 @@ void parse_aerosols_section(const YAML::Node& aerosols,
             pw.ref_input.cloud_number_mix_ratios[mode_index] =
                 aero_species.as<Real>();
           }
-          found_number_conc = true;
+          found_num_mix_ratio = true;
         } else {
           // Find the aerosol index within this species.
           int aero_index = aerosol_config.aerosol_species_index(
@@ -274,11 +293,11 @@ void parse_aerosols_section(const YAML::Node& aerosols,
           } else {
             pw.ref_input.cloud_aero_mmrs[pop_index] = aero_species.as<Real>();
           }
-          // Did we find a number_conc value for this aerosol?
-          if (not found_number_conc) {
-            throw YamlException(std::string("Did not find 'number_conc' in ") +
-                                group_name + std::string("'") + mode_name +
-                                std::string("' mode!"));
+          // Did we find a num_mix_ratio value for this mode?
+          if (not found_num_mix_ratio) {
+            throw YamlException(
+                std::string("Did not find 'num_mix_ratio' in ") + group_name +
+                std::string("'") + mode_name + std::string("' mode!"));
           }
         }
       }
@@ -336,50 +355,90 @@ void parse_gases_section(const YAML::Node& gases,
   }
 }
 
+void parse_user_section(const YAML::Node& user, ParameterWalk& pw) {
+  for (auto iter : user) {
+    auto name = iter.first.as<std::string>();
+    Real value = iter.second.as<Real>();
+    pw.ref_input.user_params[name] = value;
+  }
+}
+
 }  // namespace
 
 namespace skywalker {
 
 ParameterWalk load_ensemble(const haero::ModalAerosolConfig& aerosol_config,
                             const std::string& filename,
-                            const std::string& model_impl) {
-  ParameterWalk pw(aerosol_config, model_impl);
+                            const std::string& program_name) {
+  ParameterWalk pw(aerosol_config, program_name);
   try {
     auto root = YAML::LoadFile(filename);
 
-    if (not(root["process"] and root["process"].IsMap())) {
-      throw YamlException("Did not find a valid process section!");
+    if (not(root[program_name] and root[program_name].IsMap())) {
+      std::ostringstream s;
+      s << "Did not find a valid '" << program_name << "' section!";
+      throw YamlException(s.str());
     }
-    parse_process_section(root["process"], pw);
+    pw.program_name = program_name;
+    parse_program_section(root[program_name], pw);
 
-    if (not(root["timestepping"] and root["timestepping"].IsMap())) {
-      throw YamlException("Did not find a valid timestepping section!\n");
-    }
-    parse_timestepping_section(root["timestepping"], pw);
+    // Are we running a user-defined configuration?
+    bool user_config = (aerosol_config.num_modes() == 0);
+    if (not user_config) {
+      // Parse timestepping and initial conditions.
+      if (not(root["timestepping"] and root["timestepping"].IsMap())) {
+        throw YamlException("Did not find a valid timestepping section!\n");
+      }
+      parse_timestepping_section(root["timestepping"], pw);
 
+      if (not(root["atmosphere"] and root["atmosphere"].IsMap())) {
+        throw YamlException("Did not find a valid atmosphere section!\n");
+      }
+      parse_atmosphere_section(root["atmosphere"], pw);
+
+      if (not(root["aerosols"] and root["aerosols"].IsMap())) {
+        throw YamlException("Did not find a valid aerosols section!");
+      }
+      parse_aerosols_section(root["aerosols"], aerosol_config, pw);
+
+      if (not(root["gases"] and root["gases"].IsMap())) {
+        throw YamlException("Did not find a valid gases section!");
+      }
+      parse_gases_section(root["gases"], aerosol_config, pw);
+    }  // if not user config
+
+    // Parse ensemble parameters.
     if (not(root["ensemble"] and root["ensemble"].IsMap())) {
       throw YamlException("Did not find a valid ensemble section!\n");
     }
     parse_ensemble_section(root["ensemble"], aerosol_config, pw);
 
-    if (not(root["atmosphere"] and root["atmosphere"].IsMap())) {
-      throw YamlException("Did not find a valid atmosphere section!\n");
+    // Are there user-defined parameters?
+    if (root["user"]) {
+      if (not root["user"].IsMap()) {
+        throw YamlException("user section is not valid!");
+      }
+      parse_user_section(root["user"], pw);
     }
-    parse_atmosphere_section(root["atmosphere"], pw);
-
-    if (not(root["aerosols"] and root["aerosols"].IsMap())) {
-      throw YamlException("Did not find a valid aerosols section!");
-    }
-    parse_aerosols_section(root["aerosols"], aerosol_config, pw);
-
-    if (not(root["gases"] and root["gases"].IsMap())) {
-      throw YamlException("Did not find a valid gases section!");
-    }
-    parse_gases_section(root["gases"], aerosol_config, pw);
   } catch (std::exception& e) {
     throw YamlException(e.what());
   }
   return pw;
+}
+
+ParameterWalk load_ensemble(const std::string& config_name,
+                            const std::string& filename,
+                            const std::string& program_name) {
+  ModalAerosolConfig config;
+  if (strcasecmp(config_name.c_str(), "mam4") == 0) {
+    config = haero::create_mam4_modal_aerosol_config();
+  } else if (strcasecmp(config_name.c_str(), "user") != 0) {
+    std::ostringstream s;
+    s << "Error loading ensemble from " << filename
+      << ": Invalid config: " << config_name << std::endl;
+    throw YamlException(s.str());
+  }
+  return load_ensemble(config, filename, program_name);
 }
 
 }  // namespace skywalker

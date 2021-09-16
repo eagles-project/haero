@@ -1,28 +1,35 @@
-# This input walks 3 parameters to which the nucleation process is sensitive.
+# This input file tests Skywalker's Fortran 90 module.
 
-process:
-  mam: newnuc
-  haero: MAMNucleationFProcess
+mam_box_model:
+  param1: hello
+  param2: 81
+  param3: 3.14159265357
+
+haero:
+  process: SimpleNucleationProcess
+  skywalker_mode: 1
 
 timestepping: # [s]
-  dt: 3600
-  total_time: 3600
+  dt: 1
+  total_time: 1
 
 ensemble:
   atmosphere:
-    relative_humidity: [0, 1, 0.01]
-
-  gases:
-    h2so4: [0, 1.e-2, 1.e-4]
+    temperature: [230.15, 300.15, 5]
+    relative_humidity: [0.1, 1, 0.1]
 
   aerosols:
     aitken:
       interstitial:
         so4: [0, 0.001]
 
+  user:
+    tick: [0, 10, 1]
+
 atmosphere:
   temperature: 273
   pressure: 100000
+  vapor_mixing_ratio: 0.4
   relative_humidity: 0.95
   height: 3000
   hydrostatic_dp: 200
@@ -30,8 +37,8 @@ atmosphere:
 
 aerosols:
   accumulation:
-    interstitial: # number_conc is [1/kg air], aerosols are [kg aerosol/kg air]
-      number_conc: 0.7836255100E+08
+    interstitial: # number_mix_ratio is [#/kg air], aerosols are [kg aerosol/kg air]
+      number_mix_ratio: 0.7836255100E+08
       so4: 0.1140491823e-9
       pom: 0
       soa: 0.1140491823e-9
@@ -40,7 +47,7 @@ aerosols:
       nacl: 0.1520655763e-9
       mom: 0
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       so4: 0
       pom: 0
       soa: 0
@@ -50,20 +57,20 @@ aerosols:
       mom: 0
   aitken:
     interstitial:
-      number_conc: 0.7836255100e+09
+      number_mix_ratio: 0.7836255100e+09
       so4: 0.8596967327e-11
       soa: 0.8596967327e-11
       nacl: 0.1146262310e-10
       mom: 0
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       so4: 0
       soa: 0
       nacl: 0
       mom: 0
   coarse:
     interstitial:
-      number_conc: 0.7836255100e+05
+      number_mix_ratio: 0.7836255100e+05
       so4: 0.6854947093e-09
       pom: 0
       mom: 0
@@ -72,7 +79,7 @@ aerosols:
       dst: 0
       nacl: 0.9139929457e-09
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       so4: 0
       pom: 0
       mom: 0
@@ -82,20 +89,21 @@ aerosols:
       nacl: 0
   primary_carbon:
     interstitial:
-      number_conc: 0.1567251020e+09
+      number_mix_ratio: 0.1567251020e+09
       pom: 0
       bc: 0.4712086072e-10
       mom: 0
     cloud:
-      number_conc: 0
+      number_mix_ratio: 0
       pom: 0
       bc: 0
       mom: 0
 
 gases: # [kg gas / kg air]
   so2: 1.e-4
-  h2so4: 1.e-13
+  h2so4: 5.3796e-23 # corresponds to a number conc of 5e8 / m3
   soag: 5.e-10
+  nh3: 0
   o3: 0
   o2: 0
   co2: 0
@@ -106,3 +114,7 @@ gases: # [kg gas / kg air]
   h2o2: 0
   dms: 0
 
+user:
+  p1: 1
+  p2: 2
+  p3: 3

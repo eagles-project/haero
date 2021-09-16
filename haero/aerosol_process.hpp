@@ -103,6 +103,8 @@ class AerosolProcess {
   //------------------------------------------------------------------------
 
   /// On host: performs any system-specific process initialization.
+  /// Initialization is typically performed after process parameters are set
+  /// with set_param().
   /// @param [in] config The aerosol configuration describing the aerosol
   ///                    system to which this process belongs.
   void init(const ModalAerosolConfig& config) {
@@ -145,7 +147,8 @@ class AerosolProcess {
     run_(team, t, dt, prognostics, atmosphere, diagnostics, tendencies);
   }
 
-  /// On host: Sets a named integer value for this aerosol process.
+  /// On host: Sets a named integer value for this aerosol process. Set
+  /// parameters before calling init() to ensure they have the desired effect.
   /// @param [in] name The name of the parameter to set
   /// @param [in] value The parameter's value
   void set_param(const std::string& name, int value) {
@@ -153,7 +156,8 @@ class AerosolProcess {
     set_param_(name, value);
   }
 
-  /// On host: Sets a named boolean value for this aerosol process.
+  /// On host: Sets a named boolean value for this aerosol process. Set
+  /// parameters before calling init() to ensure they have the desired effect.
   /// @param [in] name The name of the parameter to set
   /// @param [in] value The parameter's value
   void set_param(const std::string& name, bool value) {
@@ -161,7 +165,8 @@ class AerosolProcess {
     set_param_(name, value);
   }
 
-  /// On host: Sets a named real value for this aerosol process.
+  /// On host: Sets a named real value for this aerosol process. Set
+  /// parameters before calling init() to ensure they have the desired effect.
   /// @param [in] name The name of the parameter to set
   /// @param [in] value The parameter's value
   void set_param(const std::string& name, Real value) {
@@ -169,13 +174,23 @@ class AerosolProcess {
     set_param_(name, value);
   }
 
-  /// On host: Sets a named string value for this aerosol process.
+  /// On host: Sets a named string value for this aerosol process. Set
+  /// parameters before calling init() to ensure they have the desired effect.
   /// @param [in] name The name of the parameter to set
   /// @param [in] value The parameter's value
   void set_param(const std::string& name, const std::string& value) {
     // This method must be called on the host.
     set_param_(name, value);
   }
+
+  /// On host: Attempts to interpret the given named parameter value as an
+  /// integer, a real number, or a boolean value before falling back to a
+  /// string. Sets the named parameter to the interpreted value. Set parameters
+  /// before calling init() to ensure they have the desired effect.
+  /// @param [in] name The name of the parameter to set
+  /// @param [in] value The parameter's value
+  void interpret_and_set_param(const std::string& name,
+                               const std::string& value);
 
   /// On host: returns a vector of strings containing the names of diagnostic
   /// variables required by this aerosol process in order to compute its

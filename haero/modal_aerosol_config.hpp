@@ -22,7 +22,7 @@ namespace haero {
 class ModalAerosolConfig final {
  public:
   /// Default constructor -- use with caution.
-  ModalAerosolConfig() = default;
+  ModalAerosolConfig() : num_aerosol_populations(0) {}
 
   /// Creates a model configuration that defines the represenation of a set of
   /// aerosols and gases in the atmosphere. This constructor only works on the
@@ -44,11 +44,8 @@ class ModalAerosolConfig final {
       const std::map<std::string, std::vector<std::string>>& mode_species,
       const std::vector<GasSpecies>& gas_species)
       : aerosol_modes(aerosol_modes),
-        aerosol_modes_size(aerosol_modes.size()),
         aerosol_species(aerosol_species),
-        aerosol_species_size(aerosol_species.size()),
         gas_species(gas_species),
-        gas_species_size(gas_species.size()),
         // Sum the length of all vectors in the mode_species map.
         // Is the use of std::accumulate here too obscure?
         num_aerosol_populations(std::accumulate(
@@ -76,25 +73,22 @@ class ModalAerosolConfig final {
 
   /// The list of aerosol modes associated with this aerosol model.
   std::vector<Mode> aerosol_modes;
-  int aerosol_modes_size;
 
   /// The list of all aerosol species associated with this aerosol model.
   std::vector<AerosolSpecies> aerosol_species;
-  int aerosol_species_size;
 
   /// The list of gas species associated with this aerosol model.
   std::vector<GasSpecies> gas_species;
-  int gas_species_size;
 
   /// The total number of distinct aerosol species populations in the
   /// model, counting appearances of one species in different modes separately.
   int num_aerosol_populations;
 
-  KOKKOS_INLINE_FUNCTION
-  int num_modes() const { return aerosol_modes_size; }
+  /// The number of modes in this aerosol configuration.
+  int num_modes() const { return static_cast<int>(aerosol_modes.size()); }
 
-  KOKKOS_INLINE_FUNCTION
-  int num_gases() const { return gas_species_size; }
+  /// The number of gases in this aerosol configuration.
+  int num_gases() const { return static_cast<int>(gas_species.size()); }
 
   inline int max_species_per_mode() const {
     int result = 0;

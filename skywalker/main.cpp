@@ -1,6 +1,7 @@
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_session.hpp"
 #include "haero/available_processes.hpp"
+#include "haero/conversions.hpp"
 #include "haero/model.hpp"
 #include "skywalker.hpp"
 
@@ -20,6 +21,7 @@ void usage(const char* exe) {
 void set_input(const std::vector<InputData>& inputs,
                haero::Atmosphere& atmosphere, haero::Prognostics& prognostics) {
   int num_levels = prognostics.num_levels();
+  int num_vert_packs = haero::PackInfo::num_packs(num_levels);
   int num_modes = prognostics.num_aerosol_modes();
   int num_gases = prognostics.num_gases();
 
@@ -34,13 +36,19 @@ void set_input(const std::vector<InputData>& inputs,
   auto int_num_mix_ratios =
       ekat::scalarize(prognostics.interstitial_num_mix_ratios);
   auto cld_num_mix_ratios = ekat::scalarize(prognostics.cloud_num_mix_ratios);
-  for (int l = 0; l < num_levels; ++l) {
+  for (int l = 0; l < num_vert_packs; ++l) {
     // Atmospheric state
     T(l) = inputs[l].temperature;
     p(l) = inputs[l].pressure;
     qv(l) = inputs[l].vapor_mixing_ratio;
     h(l) = inputs[l].height;
     dp(l) = inputs[l].hydrostatic_dp;
+
+    // Are we given relative humiditіes? If so, we compute qv from them.
+    if (inputs[l].relative_humidity >= 0.0) {
+      qv(l) = haero::conversions::vapor_mixing_ratio_from_relative_humidity(
+          inputs[l].relative_humidity, p(l), T(l));
+    }
 
     // Aerosol prognostics.
     for (int m = 0; m < num_modes; ++m) {
@@ -96,11 +104,13 @@ std::vector<OutputData> get_output(const haero::ModalAerosolConfig& aero_config,
 // Runs an aerosol process using the parameters in param_walk, writing output
 // ŧo a Python module with the given name.
 void run_process(const haero::ModalAerosolConfig& aero_config,
-                 const ParameterWalk& param_walk, const char* py_module_name) {
+                 const ParameterWalk& param_walk,
+                 const std::string& py_module_name) {
   // Count up the number of simulations we need (excluding the planetary
   // boundary layer parameter). We can run all simulations simultaneously
   // by setting data for each simulation at a specific vertical level.
   std::vector<haero::Real> pblhs, dts;
+  std::vector<haero::Real> RHs;  // relative humidities, if given.
   int num_levels = 1;
   for (auto iter = param_walk.ensemble.begin();
        iter != param_walk.ensemble.end(); ++iter) {
@@ -108,6 +118,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       pblhs = iter->second;
     } else if (iter->first == "dt") {
       dts = iter->second;
+    } else if (iter->first == "relative_humidity") {
+      RHs = iter->second;
     } else {
       num_levels *= static_cast<int>(iter->second.size());
     }
@@ -119,13 +131,12 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
     dts.push_back(param_walk.ref_input.dt);
   }
 
+  int num_vert_packs = haero::PackInfo::num_packs(num_levels);
+
   // Create an ensemble's worth of input data from our parameter walker,
   // excluding "dt" and "pblh" parameters from the walk.
   auto inputs =
       param_walk.gather_inputs({"dt", "planetary_boundary_layer_height"});
-
-  printf("skywalker: running %ld simulations and writing output to '%s'...\n",
-         inputs.size(), py_module_name);
 
   // Create a model initialized for a number of vertical levels equal to the
   // number of (0D) simulations we need for our parameter walk.
@@ -136,26 +147,28 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   int num_aero_populations = model->num_aerosol_populations();
   int num_gases = aero_config.gas_species.size();
   haero::SpeciesColumnView int_aerosols("interstitial aerosols",
-                                        num_aero_populations, num_levels);
+                                        num_aero_populations, num_vert_packs);
   haero::SpeciesColumnView cld_aerosols("cloud aerosols", num_aero_populations,
-                                        num_levels);
-  haero::SpeciesColumnView gases("gases", num_gases, num_levels);
+                                        num_vert_packs);
+  haero::SpeciesColumnView gases("gases", num_gases, num_vert_packs);
   haero::ModeColumnView int_num_mix_ratios("interstitial number mix_ratios",
-                                           num_modes, num_levels);
+                                           num_modes, num_vert_packs);
   haero::ModeColumnView cld_num_mix_ratios("cloud number mix_ratios", num_modes,
-                                           num_levels);
+                                           num_vert_packs);
 
   auto* prognostics =
-      model->create_prognostics(int_aerosols, cld_aerosols, gases,
-                                int_num_mix_ratios, cld_num_mix_ratios);
+      model->create_prognostics(int_aerosols, cld_aerosols, int_num_mix_ratios,
+                                cld_num_mix_ratios, gases);
   auto* diagnostics = model->create_diagnostics();
 
   // Set up an atmospheric state and initialize it with reference data.
-  haero::ColumnView temp("temperature", num_levels);
-  haero::ColumnView press("pressure", num_levels);
-  haero::ColumnView qv("vapor mixing ratio", num_levels);
-  haero::ColumnView ht("height", num_levels + 1);
-  haero::ColumnView dp("hydrostatic pressure thickness", num_levels);
+  haero::ColumnView temp("temperature", num_vert_packs);
+  haero::ColumnView press("pressure", num_vert_packs);
+  haero::ColumnView qv("vapor mixing ratio", num_vert_packs);
+  int num_vert_int_packs =
+      (num_levels % num_vert_packs) ? num_vert_packs : num_vert_packs + 1;
+  haero::ColumnView ht("height", num_vert_int_packs);
+  haero::ColumnView dp("hydrostatic pressure thickness", num_vert_packs);
   auto* atmosphere = new haero::Atmosphere(
       num_levels, temp, press, qv, ht, dp,
       param_walk.ref_input.planetary_boundary_layer_height);
@@ -163,22 +176,40 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // Create tendencies for the given prognostics.
   auto* tendencies = new haero::Tendencies(*prognostics);
 
-  // Create the specified process.
+  printf("skywalker: running a parameter study for %s.\n",
+         param_walk.program_name.c_str());
+
+  // Configure program parameters.
   haero::AerosolProcess* process = nullptr;
-  if (param_walk.process == "MAMNucleationProcess") {  // C++ nucleation
-    process = new haero::MAMNucleationProcess();
+  printf("skywalker: setting parameters:\n");
+  for (const auto& param : param_walk.program_params) {
+    const std::string& name = param.first;
+    const std::string& value = param.second;
+    if (name == "process") {
+      // Create the specified process.
+      if (value == "MAMNucleationProcess") {  // C++ nucleation
+        process = new haero::MAMNucleationProcess();
 #if HAERO_FORTRAN
-  } else if (param_walk.process ==
-             "MAMNucleationFProcess") {  // fortran nucleation
-    process = new haero::MAMNucleationFProcess();
+      } else if (value == "MAMNucleationFProcess") {  // fortran nucleation
+        process = new haero::MAMNucleationFProcess();
 #endif
-  } else {  // unknown
-    fprintf(stderr, "Unknown aerosol process: %s\n",
-            param_walk.process.c_str());
-    return;
+      } else if (value == "SimpleNucleationProcess") {
+        process = new haero::SimpleNucleationProcess();
+      } else {  // unknown
+        fprintf(stderr, "Unknown aerosol process: %s\n", value.c_str());
+        return;
+      }
+    } else {
+      printf("  %s = %s\n", name.c_str(), value.c_str());
+      process->interpret_and_set_param(name, value);
+    }
+  }
+  if (process == nullptr) {
+    fprintf(stderr, "Name of aerosol process (haero:process) not found!\n");
   }
 
   // Initialize it for the given aerosol configuration.
+  printf("skywalker: initializing process...\n");
   process->init(aero_config);
 
   // Set up a team dispatch policy and copy the process to the device.
@@ -189,6 +220,8 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
   // and gases over different vertical levels, to maximize parallelism. We do
   // include two loops here to accommodate different values of the planetary
   // boundary layer height and the use of different time steps.
+  printf("skywalker: running %ld simulations and writing output to '%s'...\n",
+         inputs.size(), py_module_name.c_str());
   std::vector<InputData> input_data;
   std::vector<OutputData> output_data;
   for (auto pblh : pblhs) {
@@ -199,11 +232,14 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
     for (auto dt : dts) {
       // Run the thing.
       haero::Real t = 0.0, t_end = param_walk.ref_input.total_time;
+      auto& p = *prognostics;
+      auto& a = *atmosphere;
+      auto& d = *diagnostics;
+      auto& te = *tendencies;
       while (t < t_end) {
         Kokkos::parallel_for(
             team_policy, KOKKOS_LAMBDA(const haero::TeamType& team) {
-              d_process->run(team, t, dt, *prognostics, *atmosphere,
-                             *diagnostics, *tendencies);
+              d_process->run(team, t, dt, p, a, d, te);
             });
 
         // Advance the time and prognostic state.
@@ -217,20 +253,20 @@ void run_process(const haero::ModalAerosolConfig& aero_config,
       // If the planetary boundary layer height is actually a walked parameter,
       // make sure its value is reflected in our input parameters.
       if (pblhs.size() > 1) {
-        for (int l = 0; l < num_levels; ++l) {
+        for (int l = 0; l < num_vert_packs; ++l) {
           inputs[l].planetary_boundary_layer_height = pblh;
         }
       }
 
       // Same for time steps.
       if (dts.size() > 1) {
-        for (int l = 0; l < num_levels; ++l) {
+        for (int l = 0; l < num_vert_packs; ++l) {
           inputs[l].dt = dt;
         }
       }
 
       // Stash input and output data.
-      for (int l = 0; l < num_levels; ++l) {
+      for (int l = 0; l < num_vert_packs; ++l) {
         input_data.push_back(inputs[l]);
         output_data.push_back(outputs[l]);
       }
@@ -262,7 +298,7 @@ int main(int argc, const char* argv[]) {
   // Read the input file and extract input.
   std::string input_file(argv[1]);
   try {
-    auto param_walk = load_ensemble(aero_config, input_file);
+    auto param_walk = load_ensemble(aero_config, input_file, "haero");
 
     // Set up the desired aerosol process and run it, dumping output to
     // "haero_skywalker.py".
@@ -271,4 +307,6 @@ int main(int argc, const char* argv[]) {
     printf("%s: error: %s\n", argv[0], e.what());
     exit(1);
   }
+
+  return 0;
 }
