@@ -34,7 +34,7 @@ class MAMCalcsizeProcess final
   //                                Overrides
   //------------------------------------------------------------------------
 
-  void init(const ModalAerosolConfig &modal_aerosol_config) override;
+  void init_(const ModalAerosolConfig &modal_aerosol_config) override;
 
   KOKKOS_FUNCTION
   void run_(const TeamType &team, Real t, Real dt,

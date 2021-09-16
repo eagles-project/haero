@@ -4,6 +4,7 @@ module mam_calcsize
   !TODO:
   !1.  do_adjust and do_aitacc_transfer should be set somewhere else and should be an input to this process
   !2. We might need to revist "close_to_one" variable for single precision???
+
   use haero_precision, only: wp
   use haero, only: model_t, aerosol_species_t, gas_species_t, &
        prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
@@ -170,10 +171,10 @@ contains
     n_c => prognostics%cloud_num_mix_ratios()
 
     !tendencies for interstitial number mixing ratios
-    dnidt => tendencies%interstitial_num_concs()
+    dnidt => tendencies%interstitial_num_mix_ratios()
 
     !tendencies for cloud-borne number mixing ratios
-    dncdt => tendencies%cloudborne_num_concs()
+    dncdt => tendencies%cloud_num_mix_ratios()
 
     !Loop through each mode and find particle diameter
     do imode = 1, nmodes
@@ -271,8 +272,6 @@ contains
 
 
           endif !do_adjust
-
-
 
           !FIXME: in (or better done after) the following update_diameter_and_vol2num calls, we need to update mmr as well
           !but we are currently skipping that update. That update will require additional arguments
@@ -635,6 +634,7 @@ contains
   !----------------------------------------------------------------------------------------
 
   pure function update_num_tends(num, num0, dtinv) result (function_return)
+    !update number mixing ratio tendencies
 
     real(wp) , intent(in) :: num, num0, dtinv
 
@@ -642,21 +642,19 @@ contains
 
     function_return = (num - num0)*dtinv
 
-    !return function_return
-
   end function update_num_tends
 
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------
 
   pure function min_max_bounded(drv, v2nmin, v2nmax, num) result (function_return)
+    !Bounds the number mixing ratio in min/max bounds, so that it stays within bounds
 
     real(wp), intent(in) :: drv, v2nmin, v2nmax, num
 
     real(wp) :: function_return
 
     function_return = max( drv*v2nmin, min( drv*v2nmax, num ) )
-    !return function_return
 
   end function min_max_bounded
 
@@ -677,11 +675,27 @@ contains
     deallocate(population_offsets, stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not deallocate population_offsets'
-      stop
+      stop 1
     endif
 
+    deallocate(num_mode_species, stat=ierr)
+    if (ierr .ne. 0) then
+      print *, 'Could not deallocate num_mode_species'
+      stop 1
+    endif
 
-    !deallocate()
+    deallocate(spec_density, stat=ierr)
+    if (ierr .ne. 0) then
+       print *, 'Could not deallocate spec_density'
+       stop
+    endif
+
+    deallocate(v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes, stat=ierr)
+    if (ierr .ne. 0) then
+       print *, 'Could not deallocate v2nmin_nmodes, v2nmax_nmodes, dgnmin_nmodes, dgnmax_nmodes with length ', nmodes
+       stop
+    endif
+
   end subroutine finalize
 
   !----------------------------------------------------------------------------------------

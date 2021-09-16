@@ -7,11 +7,11 @@ namespace haero {
 MAMCalcsizeProcess::MAMCalcsizeProcess()
     : DeviceAerosolProcess<MAMCalcsizeProcess>(CalcsizeProcess,
                                                "MAMCalcsizeProcess") {}
-  //------------------------------------------------------------------------
-  //                                Accessors
-  //------------------------------------------------------------------------
+//------------------------------------------------------------------------
+//                                Accessors
+//------------------------------------------------------------------------
 
-void MAMCalcsizeProcess::init(
-    const ModalAerosolConfig& modal_aerosol_config) {}
+void MAMCalcsizeProcess::init_(const ModalAerosolConfig& modal_aerosol_config) {
+}
 
 }  // namespace haero
