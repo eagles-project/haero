@@ -10,6 +10,6 @@ configure_file(
 )
 
 # Run it in several configurations to produce datasets.
-add_test(validate_binary_nuc_rate validate ${CMAKE_CURRENT_SOURCE_DIR}/binary_nuc_rate.yaml)
+add_test(validate_binary_nuc_rate validate ${CMAKE_CURRENT_SOURCE_DIR}/binary_nuc_contour.yaml)
 set_tests_properties(validate_binary_nuc_rate PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
