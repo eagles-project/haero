@@ -9,7 +9,8 @@ user_program:
 
 ensemble:
   user:
-    tick: [0, 10, 1]
+    tick:        [0, 10, 1]  # linear spacing
+    log10(tock): [1, 4, 0.1] # logarithmic spacing
 
 user:
   p1: 1

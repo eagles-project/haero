@@ -64,7 +64,7 @@ program skywalker_f90_test
   assert(ensemble%num_gases == 0)
 
   ! ensemble information
-  assert(ensemble%size == 11)
+  assert(ensemble%size == 341)
   do i = 1, ensemble%size
     input = ensemble%inputs(i)
 
@@ -85,6 +85,8 @@ program skywalker_f90_test
     assert(approx_equal(input%user_param("p3"), 3.0_wp))
     assert(input%user_param("tick") >= 0.0_wp)
     assert(input%user_param("tick") <= 10.0_wp)
+    assert(input%user_param("tock") >= 1e1_wp)
+    assert(input%user_param("tock") <= 1e4_wp)
   end do
 
   ! Process input to get output! To keep things simple, we just copy our input
