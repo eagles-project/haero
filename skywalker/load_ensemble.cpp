@@ -46,7 +46,7 @@ std::vector<Real> parse_value_array(std::string& name,
         }
         // Exponentiate the values.
         for (int j = 0; j < len; ++j) {
-          values[j] = std::log10(values[j]);
+          values[j] = std::pow(10.0, values[j]);
         }
 
         // Strip the log stuff out of the name.
