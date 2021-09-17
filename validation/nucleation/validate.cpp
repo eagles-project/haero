@@ -10,7 +10,7 @@ using namespace haero;
 // Print driver usage information and exit.
 void usage(const char* exe) {
   fprintf(stderr, "%s: usage:\n", exe);
-  fprintf(stderr, "%s <input.yml>\n", exe);
+  fprintf(stderr, "%s <input.yaml>\n", exe);
   exit(1);
 }
 

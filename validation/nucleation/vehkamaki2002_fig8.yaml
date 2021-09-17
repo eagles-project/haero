@@ -7,9 +7,9 @@ haero:
 
 ensemble:
   user:
-    relative_humidity: [0.382, 0.523]
-    c_h2so4: [0.75e10, 3.5e10, 1e8]
+    log10(c_h2so4): [6, 9, 0.1]
 
 user:
-  temperature: 298
+  temperature: 236
+  relative_humidity: 0.55
 

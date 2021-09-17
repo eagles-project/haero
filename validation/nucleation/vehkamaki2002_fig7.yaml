@@ -1,0 +1,10 @@
+# Output can be compared with Figure 7 of Vehkamaki et al (2002).
+
+haero:
+  nucleation_method: 2
+
+ensemble:
+  user:
+    temperature: [190.15, 290.15, 5]
+    relative_humidity: [0.05, 1, 0.01]
+
