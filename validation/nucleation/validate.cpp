@@ -1,11 +1,14 @@
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_session.hpp"
+#include "ekat/logging/ekat_logger.hpp"
+#include "haero/processes/merikanto2007.hpp"
 #include "haero/processes/vehkamaki2002.hpp"
 #include "skywalker/skywalker.hpp"
 
 namespace {
 
 using namespace haero;
+using namespace ekat::logger;
 
 // Print driver usage information and exit.
 void usage(const char* exe) {
@@ -32,17 +35,55 @@ void run_process(const ModalAerosolConfig& aero_config,
   auto inputs = param_walk.gather_inputs();
   std::vector<skywalker::OutputData> outputs;
 
+  if (nucleation_method == 2) {  // binary nucleation
+    Log::info("Validating binary nucleation (Vehkamaki et al 2002)");
+  } else {
+    Log::info("Validating ternary nucleation (Merikanto et al 2007)");
+  }
+
   for (auto& input : inputs) {
-    haero::PackType c_h2so4(input.user_params["c_h2so4"]);
     haero::PackType T(input.user_params["temperature"]);
     haero::PackType RH(input.user_params["relative_humidity"]);
+    haero::PackType c_h2so4;
 
-    haero::PackType J;  // nucleation rate
-    if (nucleation_method == 2) {
+    haero::PackType J;             // nucleation rate
+    if (nucleation_method == 2) {  // binary nucleation
+      // Figure out the number concentration for H2SO4.
+      auto iter = input.user_params.find("c_h2so4");
+      if (iter != input.user_params.end()) {  // given as input
+        c_h2so4 = haero::PackType(iter->second);
+      } else {  // not given: compute nucleation threshold
+        Log::info("c_h2so4 not given... computing nucleation threshold.");
+        c_h2so4 = vehkamaki2002::h2so4_nucleation_threshold(T, RH);
+      }
       auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, T, RH);
       J = vehkamaki2002::nucleation_rate(c_h2so4, T, RH, x_crit);
-    } else {
-      // TODO
+    } else {  // ternary nucleation
+      // Fetch the number concentration for H2SO4 gas.
+      auto iter = input.user_params.find("c_h2so4");
+      EKAT_REQUIRE_MSG(
+          iter != input.user_params.end(),
+          "c_h2so4 was not given and is required for ternary nucleation.");
+      c_h2so4 = haero::PackType(iter->second);
+
+      // Fetch the mole fraction for NH3 gas.
+      haero::PackType xi_nh3;
+      iter = input.user_params.find("xi_nh3");
+      EKAT_REQUIRE_MSG(
+          iter != input.user_params.end(),
+          "xi_nh3 was not given and is required for ternary nucleation.");
+      xi_nh3 = haero::PackType(iter->second);
+
+      // Check the onset temperature, above which J = 0.
+      J = 0.0;
+      auto T_onset = merikanto2007::onset_temperature(RH, c_h2so4, xi_nh3);
+      auto below_T_onset = (T < T_onset);
+      if (below_T_onset.any()) {
+        haero::PackType log_J;
+        log_J.set(below_T_onset,
+                  merikanto2007::log_nucleation_rate(T, RH, c_h2so4, xi_nh3));
+        J.set(below_T_onset, exp(log_J));
+      }
     }
     skywalker::OutputData output(aero_config);
     output.metrics["nucleation_rate"] = J[0];

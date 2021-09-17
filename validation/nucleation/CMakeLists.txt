@@ -11,6 +11,7 @@ configure_file(
 
 # Run it in several configurations to produce datasets.
 foreach (input vehkamaki2002_contour;vehkamaki2002_fig7;vehkamaki2002_fig8;
-               vehkamaki2002_fig9;vehkamaki2002_fig10;vehkamaki2002_fig11)
+               vehkamaki2002_fig9;vehkamaki2002_fig10;vehkamaki2002_fig11;
+               merikanto2007_fig2;merikanto2007_fig3;merikanto2007_fig4)
   add_test(gen_${input} validate ${CMAKE_CURRENT_SOURCE_DIR}/${input}.yaml)
 endforeach()

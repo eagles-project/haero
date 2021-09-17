@@ -1,0 +1,14 @@
+# Output can be compared with Figure 2 of Merikanto et al (2007).
+
+haero:
+  nucleation_method: 3
+
+ensemble:
+  user:
+    temperature: [235.15, 273.15]
+    xi_nh3: [0.1, 10, 1000]
+    log10(c_h2so4): [5, 9, 0.1]
+
+user:
+  relative_humidity: 0.5
+
