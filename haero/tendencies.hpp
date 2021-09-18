@@ -22,6 +22,7 @@ class Tendencies final {
   ///                         corresponding tendencies.
   explicit Tendencies(const Prognostics& prognostics);
 
+  Tendencies() = default;
   /// Destructor.
   KOKKOS_FUNCTION
   ~Tendencies();

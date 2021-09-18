@@ -26,20 +26,22 @@ class Atmosphere final {
   /// @param [in] pdel The hydrostatic "pressure thickness" defined as the
   ///                  difference in hydrostatic pressure levels at interfaces
   ///                  bounding each vertical level [Pa]
+  KOKKOS_FUNCTION
   Atmosphere(int num_levels, const ColumnView temp, const ColumnView press,
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              Real pblh);
 
+  Atmosphere() = default;
   /// Destructor.
   KOKKOS_FUNCTION
   ~Atmosphere() {}
 
   // Views.
-  const ColumnView temperature;
-  const ColumnView pressure;
-  const ColumnView vapor_mixing_ratio;
-  const ColumnView height;
-  const ColumnView hydrostatic_dp;
+  ColumnView temperature;
+  ColumnView pressure;
+  ColumnView vapor_mixing_ratio;
+  ColumnView height;
+  ColumnView hydrostatic_dp;
 
   // Planetary boundary height.
   Real planetary_boundary_height;
@@ -56,7 +58,7 @@ class Atmosphere final {
 
  private:
   // Number of vertical levels.
-  const int num_levels_;
+  int num_levels_;
 };
 
 }  // namespace haero

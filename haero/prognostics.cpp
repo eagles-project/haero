@@ -5,6 +5,69 @@
 namespace haero {
 
 Prognostics::Prognostics(
+    int num_aerosol_modes, view_1d_int_type num_aerosol_species,
+    int num_gases, int num_levels, SpeciesColumnView int_aerosols,
+    SpeciesColumnView cld_aerosols, ModeColumnView int_mode_num_mix_ratios_,
+    ModeColumnView cld_mode_num_mix_ratios_, SpeciesColumnView gases_)
+    : interstitial_aerosols(int_aerosols),
+      cloud_aerosols(cld_aerosols),
+      interstitial_num_mix_ratios(int_mode_num_mix_ratios_),
+      cloud_num_mix_ratios(cld_mode_num_mix_ratios_),
+      gases(gases_),
+      num_aero_species_(num_aerosol_species),
+      num_aero_populations_(0),
+      num_gases_(num_gases),
+      num_levels_(num_levels) {
+  // Count up the mode/species combinations.
+  for (int m = 0; m < num_aerosol_species.extent(0); ++m) {
+    num_aero_populations_ += num_aerosol_species(m);
+  }
+  EKAT_REQUIRE_MSG(
+      num_aerosol_modes == num_aerosol_species.size(),
+      "num_aerosol_species must be a vector of length " << num_aerosol_modes);
+  int num_vert_packs = PackInfo::num_packs(num_levels_);
+  const int int_aerosols_extent_0 = int_aerosols.extent(0);
+  const int int_aerosols_extent_1 = int_aerosols.extent(1);
+  const int cld_aerosols_extent_0 = cld_aerosols.extent(0);
+  const int cld_aerosols_extent_1 = cld_aerosols.extent(1);
+  const int gases_extent_0 = gases.extent(0);
+  const int gases_extent_1 = gases.extent(1);
+  const int interstitial_num_mix_ratios_extent_0 =
+      interstitial_num_mix_ratios.extent(0);
+  const int interstitial_num_mix_ratios_extent_1 =
+      interstitial_num_mix_ratios.extent(1);
+  const int cloud_num_mix_ratios_extent_0 = cloud_num_mix_ratios.extent(0);
+  const int cloud_num_mix_ratios_extent_1 = cloud_num_mix_ratios.extent(1);
+  EKAT_REQUIRE_MSG(
+      int_aerosols_extent_0 == num_aero_populations_,
+      "int_aerosols must have extent(0) == " << num_aero_populations_);
+  EKAT_REQUIRE_MSG(int_aerosols_extent_1 == num_vert_packs,
+                   "int_aerosols must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(
+      cld_aerosols_extent_0 == num_aero_populations_,
+      "cld_aerosols must have extent(0) == " << num_aero_populations_);
+  EKAT_REQUIRE_MSG(cld_aerosols_extent_1 == num_vert_packs,
+                   "cld_aerosols must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(gases_extent_0 == num_gases_,
+                   "gases must have extent(0) == " << num_gases_);
+  EKAT_REQUIRE_MSG(gases_extent_1 == num_vert_packs,
+                   "gases must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(interstitial_num_mix_ratios_extent_0 == num_aerosol_modes,
+                   "interstitial_num_mix_ratios must have extent(0) == "
+                       << num_aerosol_modes);
+  EKAT_REQUIRE_MSG(
+      interstitial_num_mix_ratios_extent_1 == num_vert_packs,
+      "interstitial_num_mix_ratios must have extent(1) == " << num_vert_packs);
+  EKAT_REQUIRE_MSG(
+      cloud_num_mix_ratios_extent_0 == num_aerosol_modes,
+      "cloud_num_mix_ratios must have extent(0) == " << num_aerosol_modes);
+  EKAT_REQUIRE_MSG(
+      cloud_num_mix_ratios_extent_1 == num_vert_packs,
+      "cloud_num_mix_ratios must have extent(1) == " << num_vert_packs);
+}
+
+
+Prognostics::Prognostics(
     int num_aerosol_modes, const std::vector<int>& num_aerosol_species,
     int num_gases, int num_levels, SpeciesColumnView int_aerosols,
     SpeciesColumnView cld_aerosols, ModeColumnView int_mode_num_mix_ratios_,

@@ -39,6 +39,9 @@ class Diagnostics {
               const std::vector<int> &num_aerosol_species, int num_gases,
               int num_levels);
 
+  Diagnostics() = default;
+  Diagnostics(const Diagnostics &d) = default;
+
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
   ~Diagnostics() {}
@@ -127,16 +130,16 @@ class Diagnostics {
   using ModeColumnViewArray = kokkos_device_type::view_3d<PackType>;
 
   // Number of aerosol species in each mode.
-  const view_1d_int_type num_aero_species_;
+  view_1d_int_type num_aero_species_;
 
   // Number of distinct aerosol populations.
-  const int num_aero_populations_;
+  int num_aero_populations_;
 
   // Number of gas species.
-  const int num_gases_;
+  int num_gases_;
 
   /// Number of vertical levels per column in the system.
-  const int num_levels_;
+  int num_levels_;
 
   // Named diagnostic variables.  These are arrays of views in which the
   // assigned token can be used to index to the proper sub-view.
