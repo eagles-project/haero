@@ -26,7 +26,6 @@ class Atmosphere final {
   /// @param [in] pdel The hydrostatic "pressure thickness" defined as the
   ///                  difference in hydrostatic pressure levels at interfaces
   ///                  bounding each vertical level [Pa]
-  KOKKOS_FUNCTION
   Atmosphere(int num_levels, const ColumnView temp, const ColumnView press,
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              Real pblh);
