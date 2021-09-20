@@ -4,11 +4,13 @@
 
 namespace haero {
 
-Prognostics::Prognostics(
-    int num_aerosol_modes, view_1d_int_type num_aerosol_species,
-    int num_gases, int num_levels, SpeciesColumnView int_aerosols,
-    SpeciesColumnView cld_aerosols, ModeColumnView int_mode_num_mix_ratios_,
-    ModeColumnView cld_mode_num_mix_ratios_, SpeciesColumnView gases_)
+Prognostics::Prognostics(int num_aerosol_modes,
+                         view_1d_int_type num_aerosol_species, int num_gases,
+                         int num_levels, SpeciesColumnView int_aerosols,
+                         SpeciesColumnView cld_aerosols,
+                         ModeColumnView int_mode_num_mix_ratios_,
+                         ModeColumnView cld_mode_num_mix_ratios_,
+                         SpeciesColumnView gases_)
     : interstitial_aerosols(int_aerosols),
       cloud_aerosols(cld_aerosols),
       interstitial_num_mix_ratios(int_mode_num_mix_ratios_),
@@ -65,7 +67,6 @@ Prognostics::Prognostics(
       cloud_num_mix_ratios_extent_1 == num_vert_packs,
       "cloud_num_mix_ratios must have extent(1) == " << num_vert_packs);
 }
-
 
 Prognostics::Prognostics(
     int num_aerosol_modes, const std::vector<int>& num_aerosol_species,

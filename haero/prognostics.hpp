@@ -81,9 +81,8 @@ class Prognostics final {
               ModeColumnView cld_mode_num_mix_ratios, SpeciesColumnView gases);
 
   KOKKOS_FUNCTION
-  Prognostics(int num_aerosol_modes,
-              view_1d_int_type num_aerosol_species, int num_gases,
-              int num_levels, SpeciesColumnView int_aerosols,
+  Prognostics(int num_aerosol_modes, view_1d_int_type num_aerosol_species,
+              int num_gases, int num_levels, SpeciesColumnView int_aerosols,
               SpeciesColumnView cld_aerosols,
               ModeColumnView int_mode_num_mix_ratios,
               ModeColumnView cld_mode_num_mix_ratios, SpeciesColumnView gases);
