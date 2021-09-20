@@ -526,7 +526,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
       auto d_process = process->copy_to_device();
       auto& p = *progs;
       auto& a = *atm;
-      auto& d = *diags;
+      Diagnostics& d = *diags;
       auto& te = *tends;
       Kokkos::parallel_for(
           team_policy, KOKKOS_LAMBDA(const TeamType& team) {
@@ -642,7 +642,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
       auto d_process = process->copy_to_device();
       auto& p = *progs;
       auto& a = *atm;
-      auto& d = *diags;
+      Diagnostics& d = *diags;
       auto& te = *tends;
       Kokkos::parallel_for(
           team_policy, KOKKOS_LAMBDA(const TeamType& team) {
