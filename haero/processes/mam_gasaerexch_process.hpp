@@ -43,6 +43,7 @@ class MAMGasAerosolExchangeProcess
 
   /// Set the named parameter to the given value.
   /// It is a fatal error to pass an unknown name.
+  using AerosolProcess::set_param_;
   virtual void set_param_(const std::string &name, Real value) final {}
 };
 

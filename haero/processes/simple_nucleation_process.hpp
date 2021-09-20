@@ -164,7 +164,7 @@ class SimpleNucleationProcess final
 
     // If we're in skywalker mode, go do that thing.
     if (skywalker_mode_ == 1) {
-      run_skywalker_mode_(t, dt, prognostics, atmosphere, diagnostics,
+      run_skywalker_mode_(team, t, dt, prognostics, atmosphere, diagnostics,
                           tendencies);
       return;
     }
@@ -283,19 +283,20 @@ class SimpleNucleationProcess final
     });
   }
 
+  using AerosolProcess::set_param_;
   void set_param_(const std::string &name, Real value) override;
   void set_param_(const std::string &name, int value) override;
 
   // This method is for Jeff and Hui's nucleation cross-validation exercise.
   KOKKOS_INLINE_FUNCTION
-  void run_skywalker_mode_(Real t, Real dt, const Prognostics &prognostics,
+  void run_skywalker_mode_(const TeamType &team,
+                           Real t, Real dt, const Prognostics &prognostics,
                            const Atmosphere &atmosphere,
                            const Diagnostics &diagnostics,
                            const Tendencies &tendencies) const {
     // Compute the nucleation rate and apply it directly to the aitken mode.
     const int nk = atmosphere.temperature.extent(0);
-    Kokkos::parallel_for(
-        "nucleation rate (skywalker mode)", nk, KOKKOS_LAMBDA(const int k) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk), [=](int k) {
           const auto temp = atmosphere.temperature(k);
           const auto press = atmosphere.pressure(k);
           const auto qv = atmosphere.vapor_mixing_ratio(k);

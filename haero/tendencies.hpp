@@ -24,7 +24,7 @@ class Tendencies final {
 
   /// Destructor.
   KOKKOS_FUNCTION
-  ~Tendencies();
+  ~Tendencies(){};
 
   /// Interstitial aerosol species mixing ratio tendencies.
   SpeciesColumnView interstitial_aerosols;
