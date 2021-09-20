@@ -42,8 +42,6 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
   Kokkos::deep_copy(cloud_num_mix_ratios, PackType(0));
 }
 
-Tendencies::~Tendencies() {}
-
 const Tendencies& Tendencies::scale(Real factor) const {
   int num_populations = interstitial_aerosols.extent(0);
   int num_levels = interstitial_aerosols.extent(1);

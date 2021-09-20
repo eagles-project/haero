@@ -113,7 +113,7 @@ TEST_CASE("mam_rename_run", "") {
     auto d_process = process->copy_to_device();
     const auto& p = *progs;
     const auto& a = *atm;
-    const auto& d = *diags;
+    const Diagnostics& d = *diags;
     auto& te = *tends;
     Kokkos::parallel_for(
         team_policy, KOKKOS_LAMBDA(const TeamType& team) {

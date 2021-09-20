@@ -338,6 +338,7 @@ class MAMNucleationProcess final
 
   /// Set the named parameter to the given value.
   /// It is a fatal error to pass an unknown name.
+  using AerosolProcess::set_param_;
   void set_param_(const std::string &name, int value) override {}
   void set_param_(const std::string &name, bool value) override {}
   void set_param_(const std::string &name, Real value) override {
