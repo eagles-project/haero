@@ -4,7 +4,8 @@ source /etc/profile.d/modules.sh
 
 # Load relevant modules:
 #(Intel 20.0)
-module purge && module load llvm/12.0.0 cmake/3.19.6  intel/20.0.0   mvapich2/2.3.1   netcdf/4.6.3 mkl/2020
+module purge && module load llvm/12.0.0 gcc/8.1.0  cmake/3.19.6  intel/20.0.0   mvapich2/2.3.1   netcdf/4.6.3 mkl/2020
+export LD_LIBRARY_PATH=/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:$LD_LIBRARY_PATH
 
 
 # Set third-party library paths
