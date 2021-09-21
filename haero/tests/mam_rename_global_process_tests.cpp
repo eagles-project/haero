@@ -15,7 +15,7 @@ Model *get_model_for_unit_tests(const ModalAerosolConfig &aero_config,
 }
 
 TEST_CASE("mam_rename_global_run", "") {
-  const int number_of_columns_in_atmosphere = 1245;
+  const int num_atm_columns = 1245;
   using View1D = Kokkos::View<PackType *>;
 
   auto aero_config = create_mam4_modal_aerosol_config();
@@ -49,11 +49,11 @@ TEST_CASE("mam_rename_global_run", "") {
   };
 
   GlobalSpeciesColumnView global_int_aerosols(
-      "global interstitial aerosols", number_of_columns_in_atmosphere,
+      "global interstitial aerosols", num_atm_columns,
       num_aero_populations,
       num_vert_packs);  // interstitial aerosols mmr [kg/kg(of air)]
   GlobalSpeciesColumnView global_cld_aerosols(
-      "global cloudborne aerosols", number_of_columns_in_atmosphere,
+      "global cloudborne aerosols", num_atm_columns,
       num_aero_populations,
       num_vert_packs);  // cloud borne aerosols mmr [kg/kg(of air)]
   {
@@ -61,7 +61,7 @@ TEST_CASE("mam_rename_global_run", "") {
     // aerosols mass mixing ratios
     auto h_int_aerosols = Kokkos::create_mirror_view(global_int_aerosols);
     auto h_cld_aerosols = Kokkos::create_mirror_view(global_cld_aerosols);
-    for (int column = 0; column < number_of_columns_in_atmosphere; ++column) {
+    for (int column = 0; column < num_atm_columns; ++column) {
       for (std::size_t p = 0; p < num_aero_populations; ++p) {
         for (std::size_t k = 0; k < num_vert_packs; ++k) {
           h_int_aerosols(column, p, k) = random() * 10e-10;
@@ -73,59 +73,59 @@ TEST_CASE("mam_rename_global_run", "") {
     Kokkos::deep_copy(global_cld_aerosols, h_cld_aerosols);
   }
   GlobalSpeciesColumnView global_gases("global gases",
-                                       number_of_columns_in_atmosphere,
+                                       num_atm_columns,
                                        num_gases, num_vert_packs);
 
   GlobalModeColumnView global_int_num_concs(
-      "global interstitial number concs", number_of_columns_in_atmosphere,
+      "global interstitial number concs", num_atm_columns,
       num_modes,
       num_vert_packs);  // interstitial aerosols number
                         // mixing ratios [#/kg(of air)]
   GlobalModeColumnView global_cld_num_concs(
-      "global cloud borne number concs", number_of_columns_in_atmosphere,
+      "global cloud borne number concs", num_atm_columns,
       num_modes,
       num_vert_packs);  // cloud borne aerosols number
                         // mixing ratios [#/kg(of air)]
   {
     // aerosols number mixing ratios
-    auto h_int_num_concs = Kokkos::create_mirror_view(global_int_num_concs);
-    auto h_cld_num_concs = Kokkos::create_mirror_view(global_cld_num_concs);
-    for (int column = 0; column < number_of_columns_in_atmosphere; ++column) {
+    auto h_int_nmrs = Kokkos::create_mirror_view(global_int_num_concs);
+    auto h_cld_nmrs = Kokkos::create_mirror_view(global_cld_num_concs);
+    for (int column = 0; column < num_atm_columns; ++column) {
       for (std::size_t imode = 0; imode < num_modes; ++imode) {
         for (std::size_t k = 0; k < num_vert_packs; ++k) {
-          h_int_num_concs(column, imode, k) = 1e8 + random();
-          h_cld_num_concs(column, imode, k) = 1e8 + random();
+          h_int_nmrs(column, imode, k) = 1e8 + random();
+          h_cld_nmrs(column, imode, k) = 1e8 + random();
         }
       }
     }
-    Kokkos::deep_copy(global_int_num_concs, h_int_num_concs);
-    Kokkos::deep_copy(global_cld_num_concs, h_cld_num_concs);
+    Kokkos::deep_copy(global_int_num_concs, h_int_nmrs);
+    Kokkos::deep_copy(global_cld_num_concs, h_cld_nmrs);
   }
   // Set up atmospheric data and populate it with some views.
   using View2D = Kokkos::View<PackType **>;
-  View2D global_temp("temperature", number_of_columns_in_atmosphere,
+  View2D global_temp("temperature", num_atm_columns,
                      num_vert_packs);  //[K]
-  View2D global_press("pressure", number_of_columns_in_atmosphere,
+  View2D global_press("pressure", num_atm_columns,
                       num_vert_packs);  //[Pa]
-  View2D global_rel_hum("relative humidity", number_of_columns_in_atmosphere,
+  View2D global_rel_hum("relative humidity", num_atm_columns,
                         num_vert_packs);
-  View2D global_qv("vapor mixing ratio", number_of_columns_in_atmosphere,
+  View2D global_qv("vapor mixing ratio", num_atm_columns,
                    num_vert_packs);
-  View2D global_pdel("hydrostatic_dp", number_of_columns_in_atmosphere,
+  View2D global_pdel("hydrostatic_dp", num_atm_columns,
                      num_vert_packs);  //[Pa]
-  View2D global_ht("height", number_of_columns_in_atmosphere, num_iface_packs);
+  View2D global_ht("height", num_atm_columns, num_iface_packs);
 
   kokkos_device_type::view_1d<Diagnostics> global_diagnostics(
-      "global diags", number_of_columns_in_atmosphere);
+      "global diags", num_atm_columns);
   ;
   kokkos_device_type::view_1d<Atmosphere> global_atmosphere(
-      "global Atmosphere", number_of_columns_in_atmosphere);
+      "global Atmosphere", num_atm_columns);
   ;
   kokkos_device_type::view_1d<Prognostics> global_prognostics(
-      "global Prognostics", number_of_columns_in_atmosphere);
+      "global Prognostics", num_atm_columns);
   ;
   kokkos_device_type::view_1d<Tendencies> global_tendencies(
-      "global Tendencies", number_of_columns_in_atmosphere);
+      "global Tendencies", num_atm_columns);
   ;
 
   {  // Create the device copies of diagnostics,, atmosphere, prognostics and
@@ -142,7 +142,7 @@ TEST_CASE("mam_rename_global_run", "") {
 
     view_1d_int_type num_aero_species = vector_to_basic_1dview(
         model->calc_num_aero_species(), "Number aero species");
-    for (int column = 0; column < number_of_columns_in_atmosphere; ++column) {
+    for (int column = 0; column < num_atm_columns; ++column) {
       SpeciesColumnView int_aerosols = Kokkos::subview(
           global_int_aerosols, column, Kokkos::ALL, Kokkos::ALL);
       SpeciesColumnView cld_aerosols = Kokkos::subview(
@@ -192,7 +192,7 @@ TEST_CASE("mam_rename_global_run", "") {
     auto d_process = process->copy_to_device();
     typedef ekat::ExeSpaceUtils<>::TeamPolicy::member_type TeamHandleType;
     const auto &teamPolicy = ekat::ExeSpaceUtils<>::get_default_team_policy(
-        number_of_columns_in_atmosphere, num_vert_packs);
+        num_atm_columns, num_vert_packs);
     Real t = 0.0, dt = 30.0;
     Kokkos::parallel_for(
         teamPolicy, KOKKOS_LAMBDA(const TeamHandleType &team) {
