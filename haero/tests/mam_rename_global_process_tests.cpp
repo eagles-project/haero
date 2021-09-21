@@ -140,8 +140,7 @@ TEST_CASE("mam_rename_global_run", "") {
     auto host_progs = Kokkos::create_mirror_view(global_prognostics);
     auto host_tends = Kokkos::create_mirror_view(global_tendencies);
 
-    view_1d_int_type num_aero_species = vector_to_basic_1dview(
-        model->calc_num_aero_species(), "Number aero species");
+    const std::vector<int> num_aero_species = model->calc_num_aero_species();
     for (int column = 0; column < num_atm_columns; ++column) {
       SpeciesColumnView int_aerosols = Kokkos::subview(
           global_int_aerosols, column, Kokkos::ALL, Kokkos::ALL);
@@ -167,7 +166,7 @@ TEST_CASE("mam_rename_global_run", "") {
       Real pblh{100.0};  // planetary BL height [m]
 
       const Atmosphere atm(num_levels, temp, press, qv, ht, pdel, pblh);
-      const Prognostics progs(num_aero_species.extent(0), num_aero_species,
+      const Prognostics progs(num_aero_species.size(), num_aero_species,
                               num_gases, num_levels, int_aerosols, cld_aerosols,
                               int_num_concs, cld_num_concs, gases);
       const Tendencies tends(progs);
