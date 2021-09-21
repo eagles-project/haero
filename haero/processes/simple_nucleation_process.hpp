@@ -289,90 +289,88 @@ class SimpleNucleationProcess final
 
   // This method is for Jeff and Hui's nucleation cross-validation exercise.
   KOKKOS_INLINE_FUNCTION
-  void run_skywalker_mode_(const TeamType &team,
-                           Real t, Real dt, const Prognostics &prognostics,
+  void run_skywalker_mode_(const TeamType &team, Real t, Real dt,
+                           const Prognostics &prognostics,
                            const Atmosphere &atmosphere,
                            const Diagnostics &diagnostics,
                            const Tendencies &tendencies) const {
     // Compute the nucleation rate and apply it directly to the aitken mode.
     const int nk = atmosphere.temperature.extent(0);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk), [=](int k) {
-          const auto temp = atmosphere.temperature(k);
-          const auto press = atmosphere.pressure(k);
-          const auto qv = atmosphere.vapor_mixing_ratio(k);
-          const auto rho_d = gas_kinetics::air_mass_density(press, temp, qv);
+      const auto temp = atmosphere.temperature(k);
+      const auto press = atmosphere.pressure(k);
+      const auto qv = atmosphere.vapor_mixing_ratio(k);
+      const auto rho_d = gas_kinetics::air_mass_density(press, temp, qv);
 
-          auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
-              qv, press, temp);
+      auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
+          qv, press, temp);
 
-          // Determine the number concentration of H2SO4 gas [#/cc].
-          PackType c_h2so4;
-          if (skywalker_.c_h2so4 > 0.0) {
-            c_h2so4 = skywalker_.c_h2so4;
-          } else {
-            const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);  // mmr
-            c_h2so4 = 1e6 * conversions::number_conc_from_mmr(q_h2so4,
-                                                              mu_h2so4_, rho_d);
-          }
+      // Determine the number concentration of H2SO4 gas [#/cc].
+      PackType c_h2so4;
+      if (skywalker_.c_h2so4 > 0.0) {
+        c_h2so4 = skywalker_.c_h2so4;
+      } else {
+        const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);  // mmr
+        c_h2so4 =
+            1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
+      }
 
-          // Compute the nucleation rate using our selected method.
-          PackType J;       // nucleation rate [#/cc]
-          PackType r_crit;  // radius of critical cluster [nm]
-          PackType n_crit;  // total # of molecules in a critical cluster [#]
-          PackType n_crit_h2so4, n_crit_nh3;  // numbers of gas molecules in
-                                              // the critical cluser [#]
-          // TODO: x_crit blows up for relative humidity = 0. Do we need to
-          // TODO: handle this case gracefully?
-          auto x_crit = vehkamaki2002::h2so4_critical_mole_fraction(
-              c_h2so4, temp, rel_hum);
-          if (nucleation_method_ == 2) {  // binary nucleation
-            J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
-            n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp,
-                                                           rel_hum, x_crit);
-            n_crit_h2so4 = n_crit;
-            n_crit_nh3 = 0;
-            r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
-          } else {  // ternary nucleation
-            const auto q_nh3 = prognostics.gases(igas_nh3_, k);  // mmr
-            auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3_);
-            auto log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
-                                                            c_h2so4, xi_nh3);
-            J = exp(log_J);
-            n_crit_h2so4 = merikanto2007::num_h2so4_molecules(log_J, temp,
-                                                              c_h2so4, xi_nh3);
-            n_crit_nh3 =
-                merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
-            n_crit = n_crit_h2so4 + n_crit_nh3;
-            r_crit =
-                merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
-          }
+      // Compute the nucleation rate using our selected method.
+      PackType J;       // nucleation rate [#/cc]
+      PackType r_crit;  // radius of critical cluster [nm]
+      PackType n_crit;  // total # of molecules in a critical cluster [#]
+      PackType n_crit_h2so4, n_crit_nh3;  // numbers of gas molecules in
+                                          // the critical cluser [#]
+      // TODO: x_crit blows up for relative humidity = 0. Do we need to
+      // TODO: handle this case gracefully?
+      auto x_crit =
+          vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp, rel_hum);
+      if (nucleation_method_ == 2) {  // binary nucleation
+        J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
+        n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp, rel_hum,
+                                                       x_crit);
+        n_crit_h2so4 = n_crit;
+        n_crit_nh3 = 0;
+        r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
+      } else {  // ternary nucleation
+        const auto q_nh3 = prognostics.gases(igas_nh3_, k);  // mmr
+        auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3_);
+        auto log_J =
+            merikanto2007::log_nucleation_rate(temp, rel_hum, c_h2so4, xi_nh3);
+        J = exp(log_J);
+        n_crit_h2so4 =
+            merikanto2007::num_h2so4_molecules(log_J, temp, c_h2so4, xi_nh3);
+        n_crit_nh3 =
+            merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
+        n_crit = n_crit_h2so4 + n_crit_nh3;
+        r_crit = merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
+      }
 
-          // Place the nucleation rate into the H2SO4 species of the Aitken
-          // mode.
-          int nuc_mode = 1;
+      // Place the nucleation rate into the H2SO4 species of the Aitken
+      // mode.
+      int nuc_mode = 1;
 
-          //          if (k == 0) {
-          //            printf("c_h2so4\tT\tRH\tx*\tJ\n");
-          //          }
-          //          printf("%g\t%g\t%g\t%g\t%g\n", c_h2so4[0], temp[0],
-          //          rel_hum[0], x_crit[0], J[0]);
+      //          if (k == 0) {
+      //            printf("c_h2so4\tT\tRH\tx*\tJ\n");
+      //          }
+      //          printf("%g\t%g\t%g\t%g\t%g\n", c_h2so4[0], temp[0],
+      //          rel_hum[0], x_crit[0], J[0]);
 
-          PackType &dqdt =
-              tendencies.interstitial_aerosols(ipop_so4_(nuc_mode), k);
-          J.set(J < 0, 0);
-          dqdt = J;
-          //          const auto mw_air = Constants::molec_weight_dry_air;
-          //          const auto mw_so4 = Constants::molec_weight_so4;
-          //          auto c_air = rho_d / mw_air;
-          //          PackType& dqndt =
-          //          tendencies.interstitial_num_mix_ratios(nuc_mode, k);
-          //          PackType& dqdt =
-          //          tendencies.interstitial_aerosols(ipop_so4_(nuc_mode), k);
-          //          PackType& dqgdt = tendencies.gases(igas_h2so4_, k);
-          //          dqndt = 1e6 * J / c_air; // convert to [#/m3]
-          //          dqdt = dqndt * mw_so4 / mw_air;
-          //          dqgdt = -dqdt;
-        });
+      PackType &dqdt = tendencies.interstitial_aerosols(ipop_so4_(nuc_mode), k);
+      J.set(J < 0, 0);
+      dqdt = J;
+      //          const auto mw_air = Constants::molec_weight_dry_air;
+      //          const auto mw_so4 = Constants::molec_weight_so4;
+      //          auto c_air = rho_d / mw_air;
+      //          PackType& dqndt =
+      //          tendencies.interstitial_num_mix_ratios(nuc_mode, k);
+      //          PackType& dqdt =
+      //          tendencies.interstitial_aerosols(ipop_so4_(nuc_mode), k);
+      //          PackType& dqgdt = tendencies.gases(igas_h2so4_, k);
+      //          dqndt = 1e6 * J / c_air; // convert to [#/m3]
+      //          dqdt = dqndt * mw_so4 / mw_air;
+      //          dqgdt = -dqdt;
+    });
   }
 };
 

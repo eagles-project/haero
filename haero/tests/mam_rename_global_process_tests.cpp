@@ -49,17 +49,13 @@ TEST_CASE("mam_rename_global_run", "") {
   };
 
   // interstitial aerosols mmr [kg/kg(of air)]
-  GlobalSpeciesColumnView global_int_aerosols(
-      "global interstitial aerosols", 
-      num_aero_populations,
-      num_vert_packs,  
-      num_atm_columns);
+  GlobalSpeciesColumnView global_int_aerosols("global interstitial aerosols",
+                                              num_aero_populations,
+                                              num_vert_packs, num_atm_columns);
   // cloud borne aerosols mmr [kg/kg(of air)]
-  GlobalSpeciesColumnView global_cld_aerosols(
-      "global cloudborne aerosols", 
-      num_aero_populations,
-      num_vert_packs,  
-      num_atm_columns);
+  GlobalSpeciesColumnView global_cld_aerosols("global cloudborne aerosols",
+                                              num_aero_populations,
+                                              num_vert_packs, num_atm_columns);
   {
     // Set initial conditions
     // aerosols mass mixing ratios
@@ -76,19 +72,18 @@ TEST_CASE("mam_rename_global_run", "") {
     Kokkos::deep_copy(global_int_aerosols, h_int_aerosols);
     Kokkos::deep_copy(global_cld_aerosols, h_cld_aerosols);
   }
-  GlobalSpeciesColumnView global_gases("global gases",
-                                       num_gases, num_vert_packs,
-                                       num_atm_columns);
+  GlobalSpeciesColumnView global_gases("global gases", num_gases,
+                                       num_vert_packs, num_atm_columns);
 
   GlobalModeColumnView global_int_num_concs(
-      "global interstitial number concs", 
-      num_modes,           // interstitial aerosols number
-      num_vert_packs,     // mixing ratios [#/kg(of air)]
+      "global interstitial number concs",
+      num_modes,       // interstitial aerosols number
+      num_vert_packs,  // mixing ratios [#/kg(of air)]
       num_atm_columns);
   GlobalModeColumnView global_cld_num_concs(
-      "global cloud borne number concs", 
-      num_modes,         // cloud borne aerosols number
-      num_vert_packs,   // mixing ratios [#/kg(of air)]  
+      "global cloud borne number concs",
+      num_modes,       // cloud borne aerosols number
+      num_vert_packs,  // mixing ratios [#/kg(of air)]
       num_atm_columns);
   {
     // aerosols number mixing ratios
@@ -111,22 +106,20 @@ TEST_CASE("mam_rename_global_run", "") {
                      num_atm_columns);  //[K]
   View2D global_press("pressure", num_vert_packs,
                       num_atm_columns);  //[Pa]
-  View2D global_rel_hum("relative humidity", num_vert_packs,
-                        num_atm_columns);
-  View2D global_qv("vapor mixing ratio", num_vert_packs,
-                   num_atm_columns);
+  View2D global_rel_hum("relative humidity", num_vert_packs, num_atm_columns);
+  View2D global_qv("vapor mixing ratio", num_vert_packs, num_atm_columns);
   View2D global_pdel("hydrostatic_dp", num_vert_packs,
                      num_atm_columns);  //[Pa]
   View2D global_ht("height", num_iface_packs, num_atm_columns);
 
-  kokkos_device_type::view_1d<Diagnostics> global_diagnostics(
-      "global diags", num_atm_columns);
-  kokkos_device_type::view_1d<Atmosphere> global_atmosphere(
-      "global Atmosphere", num_atm_columns);
+  kokkos_device_type::view_1d<Diagnostics> global_diagnostics("global diags",
+                                                              num_atm_columns);
+  kokkos_device_type::view_1d<Atmosphere> global_atmosphere("global Atmosphere",
+                                                            num_atm_columns);
   kokkos_device_type::view_1d<Prognostics> global_prognostics(
       "global Prognostics", num_atm_columns);
-  kokkos_device_type::view_1d<Tendencies> global_tendencies(
-      "global Tendencies", num_atm_columns);
+  kokkos_device_type::view_1d<Tendencies> global_tendencies("global Tendencies",
+                                                            num_atm_columns);
 
   {  // Create the device copies of diagnostics,, atmosphere, prognostics and
      // tendencies
@@ -142,14 +135,18 @@ TEST_CASE("mam_rename_global_run", "") {
 
     const std::vector<int> num_aero_species = model->calc_num_aero_species();
     for (int column = 0; column < num_atm_columns; ++column) {
-      SpeciesColumnView int_aerosols(global_int_aerosols, Kokkos::ALL, Kokkos::ALL, column);
-      SpeciesColumnView cld_aerosols(global_cld_aerosols, Kokkos::ALL, Kokkos::ALL, column);
+      SpeciesColumnView int_aerosols(global_int_aerosols, Kokkos::ALL,
+                                     Kokkos::ALL, column);
+      SpeciesColumnView cld_aerosols(global_cld_aerosols, Kokkos::ALL,
+                                     Kokkos::ALL, column);
       SpeciesColumnView gases(global_gases, Kokkos::ALL, Kokkos::ALL, column);
 
-      ModeColumnView int_num_concs(global_int_num_concs, Kokkos::ALL, Kokkos::ALL, column);
-      ModeColumnView cld_num_concs(global_cld_num_concs, Kokkos::ALL, Kokkos::ALL, column);
+      ModeColumnView int_num_concs(global_int_num_concs, Kokkos::ALL,
+                                   Kokkos::ALL, column);
+      ModeColumnView cld_num_concs(global_cld_num_concs, Kokkos::ALL,
+                                   Kokkos::ALL, column);
 
-      View1D temp(global_temp,  Kokkos::ALL, column);    //[K]
+      View1D temp(global_temp, Kokkos::ALL, column);    //[K]
       View1D press(global_press, Kokkos::ALL, column);  //[Pa]
       View1D rel_hum(global_rel_hum, Kokkos::ALL, column);
       View1D qv(global_qv, Kokkos::ALL, column);
