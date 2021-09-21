@@ -39,6 +39,8 @@ class Diagnostics {
               const std::vector<int> &num_aerosol_species, int num_gases,
               int num_levels);
 
+  /// Default constructor and copy constructor is needed to define Views
+  /// of Diagnostics classes and then copy data into the views.
   Diagnostics() = default;
   Diagnostics(const Diagnostics &d) = default;
 

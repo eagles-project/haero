@@ -30,7 +30,11 @@ class Atmosphere final {
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              Real pblh);
 
+  /// Default constructor and copy constructor is needed to define Views
+  /// of Atmosphere classes and then copy data into the views.
   Atmosphere() = default;
+  Atmosphere(const Atmosphere &) = default;
+
   /// Destructor.
   KOKKOS_FUNCTION
   ~Atmosphere() {}

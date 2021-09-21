@@ -22,7 +22,10 @@ class Tendencies final {
   ///                         corresponding tendencies.
   explicit Tendencies(const Prognostics& prognostics);
 
+  /// Default constructor and copy constructor is needed to define Views
+  /// of Tendencies classes and then copy data into the views.
   Tendencies() = default;
+  Tendencies(const Tendencies&) = default;
   /// Destructor.
   KOKKOS_FUNCTION
   ~Tendencies(){};

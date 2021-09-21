@@ -113,14 +113,6 @@ Model::~Model() {
 #endif  // HAERO_FORTRAN
 }
 
-std::vector<int> Model::calc_num_aero_species() const {
-  std::vector<int> num_aero_species(config_.aerosol_modes.size());
-  for (size_t m = 0; m < config_.aerosol_modes.size(); ++m) {
-    const auto mode_species = config_.aerosol_species_for_mode(m);
-    num_aero_species[m] = static_cast<int>(mode_species.size());
-  }
-  return num_aero_species;
-}
 Prognostics* Model::create_prognostics(
     SpeciesColumnView int_aerosols, SpeciesColumnView cld_aerosols,
     SpeciesColumnView gases, ModeColumnView interstitial_num_mix_ratios,

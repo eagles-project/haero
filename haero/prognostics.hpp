@@ -80,7 +80,11 @@ class Prognostics final {
               ModeColumnView int_mode_num_mix_ratios,
               ModeColumnView cld_mode_num_mix_ratios, SpeciesColumnView gases);
 
+  /// Default constructor and copy constructor is needed to define Views
+  /// of Prognostics classes and then copy data into the views.
   Prognostics() = default;
+  Prognostics(const Prognostics&) = default;
+
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
   ~Prognostics() {}

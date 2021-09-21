@@ -43,8 +43,6 @@ class Model final {
   /// Models are not assignable.
   Model& operator=(const Model&) = delete;
 
-  std::vector<int> calc_num_aero_species() const;
-
   /// Creates a new Prognostics object that can be used with this Model, given
   /// a set of views representing aerosol data managed by a host model. See
   /// the Prognostics class constructor for details on these views.
