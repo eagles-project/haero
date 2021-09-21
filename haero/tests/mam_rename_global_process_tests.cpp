@@ -48,14 +48,18 @@ TEST_CASE("mam_rename_global_run", "") {
     return Real(seed) / p0;
   };
 
+  // interstitial aerosols mmr [kg/kg(of air)]
   GlobalSpeciesColumnView global_int_aerosols(
-      "global interstitial aerosols", num_atm_columns,
+      "global interstitial aerosols", 
       num_aero_populations,
-      num_vert_packs);  // interstitial aerosols mmr [kg/kg(of air)]
+      num_vert_packs,  
+      num_atm_columns);
+  // cloud borne aerosols mmr [kg/kg(of air)]
   GlobalSpeciesColumnView global_cld_aerosols(
-      "global cloudborne aerosols", num_atm_columns,
+      "global cloudborne aerosols", 
       num_aero_populations,
-      num_vert_packs);  // cloud borne aerosols mmr [kg/kg(of air)]
+      num_vert_packs,  
+      num_atm_columns);
   {
     // Set initial conditions
     // aerosols mass mixing ratios
@@ -64,8 +68,8 @@ TEST_CASE("mam_rename_global_run", "") {
     for (int column = 0; column < num_atm_columns; ++column) {
       for (std::size_t p = 0; p < num_aero_populations; ++p) {
         for (std::size_t k = 0; k < num_vert_packs; ++k) {
-          h_int_aerosols(column, p, k) = random() * 10e-10;
-          h_cld_aerosols(column, p, k) = random() * 10e-10;
+          h_int_aerosols(p, k, column) = random() * 10e-10;
+          h_cld_aerosols(p, k, column) = random() * 10e-10;
         }
       }
     }
@@ -73,19 +77,19 @@ TEST_CASE("mam_rename_global_run", "") {
     Kokkos::deep_copy(global_cld_aerosols, h_cld_aerosols);
   }
   GlobalSpeciesColumnView global_gases("global gases",
-                                       num_atm_columns,
-                                       num_gases, num_vert_packs);
+                                       num_gases, num_vert_packs,
+                                       num_atm_columns);
 
   GlobalModeColumnView global_int_num_concs(
-      "global interstitial number concs", num_atm_columns,
-      num_modes,
-      num_vert_packs);  // interstitial aerosols number
-                        // mixing ratios [#/kg(of air)]
+      "global interstitial number concs", 
+      num_modes,           // interstitial aerosols number
+      num_vert_packs,     // mixing ratios [#/kg(of air)]
+      num_atm_columns);
   GlobalModeColumnView global_cld_num_concs(
-      "global cloud borne number concs", num_atm_columns,
-      num_modes,
-      num_vert_packs);  // cloud borne aerosols number
-                        // mixing ratios [#/kg(of air)]
+      "global cloud borne number concs", 
+      num_modes,         // cloud borne aerosols number
+      num_vert_packs,   // mixing ratios [#/kg(of air)]  
+      num_atm_columns);
   {
     // aerosols number mixing ratios
     auto h_int_nmrs = Kokkos::create_mirror_view(global_int_num_concs);
@@ -93,8 +97,8 @@ TEST_CASE("mam_rename_global_run", "") {
     for (int column = 0; column < num_atm_columns; ++column) {
       for (std::size_t imode = 0; imode < num_modes; ++imode) {
         for (std::size_t k = 0; k < num_vert_packs; ++k) {
-          h_int_nmrs(column, imode, k) = 1e8 + random();
-          h_cld_nmrs(column, imode, k) = 1e8 + random();
+          h_int_nmrs(imode, k, column) = 1e8 + random();
+          h_cld_nmrs(imode, k, column) = 1e8 + random();
         }
       }
     }
@@ -103,30 +107,26 @@ TEST_CASE("mam_rename_global_run", "") {
   }
   // Set up atmospheric data and populate it with some views.
   using View2D = Kokkos::View<PackType **>;
-  View2D global_temp("temperature", num_atm_columns,
-                     num_vert_packs);  //[K]
-  View2D global_press("pressure", num_atm_columns,
-                      num_vert_packs);  //[Pa]
-  View2D global_rel_hum("relative humidity", num_atm_columns,
-                        num_vert_packs);
-  View2D global_qv("vapor mixing ratio", num_atm_columns,
-                   num_vert_packs);
-  View2D global_pdel("hydrostatic_dp", num_atm_columns,
-                     num_vert_packs);  //[Pa]
-  View2D global_ht("height", num_atm_columns, num_iface_packs);
+  View2D global_temp("temperature", num_vert_packs,
+                     num_atm_columns);  //[K]
+  View2D global_press("pressure", num_vert_packs,
+                      num_atm_columns);  //[Pa]
+  View2D global_rel_hum("relative humidity", num_vert_packs,
+                        num_atm_columns);
+  View2D global_qv("vapor mixing ratio", num_vert_packs,
+                   num_atm_columns);
+  View2D global_pdel("hydrostatic_dp", num_vert_packs,
+                     num_atm_columns);  //[Pa]
+  View2D global_ht("height", num_iface_packs, num_atm_columns);
 
   kokkos_device_type::view_1d<Diagnostics> global_diagnostics(
       "global diags", num_atm_columns);
-  ;
   kokkos_device_type::view_1d<Atmosphere> global_atmosphere(
       "global Atmosphere", num_atm_columns);
-  ;
   kokkos_device_type::view_1d<Prognostics> global_prognostics(
       "global Prognostics", num_atm_columns);
-  ;
   kokkos_device_type::view_1d<Tendencies> global_tendencies(
       "global Tendencies", num_atm_columns);
-  ;
 
   {  // Create the device copies of diagnostics,, atmosphere, prognostics and
      // tendencies
@@ -142,27 +142,19 @@ TEST_CASE("mam_rename_global_run", "") {
 
     const std::vector<int> num_aero_species = model->calc_num_aero_species();
     for (int column = 0; column < num_atm_columns; ++column) {
-      SpeciesColumnView int_aerosols = Kokkos::subview(
-          global_int_aerosols, column, Kokkos::ALL, Kokkos::ALL);
-      SpeciesColumnView cld_aerosols = Kokkos::subview(
-          global_cld_aerosols, column, Kokkos::ALL, Kokkos::ALL);
-      SpeciesColumnView gases =
-          Kokkos::subview(global_gases, column, Kokkos::ALL, Kokkos::ALL);
-      ;
+      SpeciesColumnView int_aerosols(global_int_aerosols, Kokkos::ALL, Kokkos::ALL, column);
+      SpeciesColumnView cld_aerosols(global_cld_aerosols, Kokkos::ALL, Kokkos::ALL, column);
+      SpeciesColumnView gases(global_gases, Kokkos::ALL, Kokkos::ALL, column);
 
-      ModeColumnView int_num_concs = Kokkos::subview(
-          global_int_num_concs, column, Kokkos::ALL, Kokkos::ALL);
-      ;
-      ModeColumnView cld_num_concs = Kokkos::subview(
-          global_cld_num_concs, column, Kokkos::ALL, Kokkos::ALL);
-      ;
+      ModeColumnView int_num_concs(global_int_num_concs, Kokkos::ALL, Kokkos::ALL, column);
+      ModeColumnView cld_num_concs(global_cld_num_concs, Kokkos::ALL, Kokkos::ALL, column);
 
-      View1D temp = Kokkos::subview(global_temp, column, Kokkos::ALL);    //[K]
-      View1D press = Kokkos::subview(global_press, column, Kokkos::ALL);  //[Pa]
-      View1D rel_hum = Kokkos::subview(global_rel_hum, column, Kokkos::ALL);
-      View1D qv = Kokkos::subview(global_qv, column, Kokkos::ALL);
-      View1D pdel = Kokkos::subview(global_pdel, column, Kokkos::ALL);  //[Pa]
-      View1D ht = Kokkos::subview(global_ht, column, Kokkos::ALL);
+      View1D temp(global_temp,  Kokkos::ALL, column);    //[K]
+      View1D press(global_press, Kokkos::ALL, column);  //[Pa]
+      View1D rel_hum(global_rel_hum, Kokkos::ALL, column);
+      View1D qv(global_qv, Kokkos::ALL, column);
+      View1D pdel(global_pdel, Kokkos::ALL, column);  //[Pa]
+      View1D ht(global_ht, Kokkos::ALL, column);
       Real pblh{100.0};  // planetary BL height [m]
 
       const Atmosphere atm(num_levels, temp, press, qv, ht, pdel, pblh);
