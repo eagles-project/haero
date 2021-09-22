@@ -36,7 +36,7 @@ program skywalker_f90_test
 
   implicit none
 
-  character(len=255)  :: input_file = "@CMAKE_CURRENT_SOURCE_DIR@/f90_user_test.yaml"
+  character(len=255)  :: input_file = "f90_user_test.yaml"
   type(ensemble_t)    :: ensemble
   type(input_data_t)  :: input
   type(output_data_t) :: output
