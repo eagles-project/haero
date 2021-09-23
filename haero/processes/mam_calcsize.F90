@@ -114,12 +114,11 @@ contains
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------
 
-  subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+  subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
 
     implicit none
 
     ! Arguments
-    type(model_t), intent(in)         :: model
     real(wp), value, intent(in)       :: t
     real(wp), value, intent(in)       :: dt
     type(prognostics_t), intent(in)   :: prognostics
@@ -665,11 +664,8 @@ contains
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------
 
-  subroutine finalize(model)
+  subroutine finalize()
     implicit none
-
-    ! Arguments
-    type(model_t), intent(in) :: model
 
     !local
     integer :: ierr

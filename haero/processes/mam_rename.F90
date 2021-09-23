@@ -65,12 +65,11 @@ contains
 
   ! TODO: Move all parts of this subroutine that are only called once into the
   ! init routine
-  subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+  subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
     implicit none
 
     ! --- Parameters
 
-    type(model_t), intent(in)         :: model
     real(wp), value, intent(in)       :: t
     real(wp), value, intent(in)       :: dt
     type(prognostics_t), intent(in)   :: prognostics
@@ -377,11 +376,8 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
 
   end subroutine finalize_ln_of_std_dev
 
-  subroutine finalize(model)
+  subroutine finalize()
     implicit none
-
-    ! Arguments
-    type(model_t), intent(in) :: model
 
     call finalize_diameters()
 
