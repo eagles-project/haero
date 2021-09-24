@@ -334,13 +334,14 @@ if (NOT EXISTS ${TINES_LIBRARY})
   set(TINES_CXX_FLAGS "-I${EKAT_LIBRARY_DIR}/../include/kokkos -I${PROJECT_BINARY_DIR}/include")
   set(TINES_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-		       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-		       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-           -DCMAKE_CXX_FLAGS=${TINES_CXX_FLAGS}
+                       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                       -DCMAKE_CXX_FLAGS=${TINES_CXX_FLAGS}
                        -DTINES_ENABLE_VERBOSE=OFF
                        -DTINES_ENABLE_TEST=OFF
                        -DTINES_ENABLE_EXAMPLE=OFF
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                       -DYAML_INSTALL_PATH=${EKAT_INSTALL_ROOT}/share
                      )
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
@@ -408,7 +409,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" TINES_INSTALL_PATH ${TINES_LIBRARY_DIR})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-		       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                        -DTCHEM_INSTALL_LIB_PATH=${CMAKE_INSTALL_LIBDIR}
                        -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
@@ -416,6 +417,10 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DTCHEM_ENABLE_EXAMPLE=OFF
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DTINES_INSTALL_PATH=${TINES_INSTALL_PATH}
+                       # FIXME(mjs): this is only used for a chem_driver unit test,
+                       # since we only compute tendencies for haero, so perhaps
+                       # include logic to only turn this on when building tests
+                       -DTCHEM_ENABLE_SACADO_JACOBIAN_ATMOSPHERIC_CHEMISTRY=ON
                      )
   if (HAERO_DEVICE STREQUAL "CUDA")
     # We use EKAT's C++ compiler helper script. Also, we need to nudge TChem
