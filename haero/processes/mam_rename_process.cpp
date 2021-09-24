@@ -35,6 +35,7 @@ void initialize_dest_mode_of_mode_mapping(
     view_1d_int_type dest_mode_of_mode_mapping,
     const ModalAerosolConfig& model) {
   (void)model;
+  Kokkos::resize(dest_mode_of_mode_mapping, 4);
   Kokkos::parallel_for(
       "delete", 4, KOKKOS_LAMBDA(const int i) {
         if (i == 1)
@@ -56,10 +57,12 @@ static inline PackType compute_relaxed_volume_to_num_ratio(
 
 MAMRenameProcess::MAMRenameProcess()
     : DeviceAerosolProcess<MAMRenameProcess>(RenameProcess,
-                                             "MAMRenameProcess") {}
+                                             "MAMRenameProcess")
+    , is_cloudy{true} {}
 
 void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   num_modes = config.num_modes();
+  max_aer = num_modes;
   num_populations = config.num_aerosol_populations;
 
   // Reserve memory for private fields
@@ -67,8 +70,6 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   Kokkos::resize(dgnumhi, num_modes);
   Kokkos::resize(dgnum, num_modes);
   Kokkos::resize(alnsg, num_modes);
-
-  view_1d_int_type dest_mode_of_mode_mapping("dest mode of mode mapping", 4);
 
   initialize_dest_mode_of_mode_mapping(dest_mode_of_mode_mapping, config);
 
