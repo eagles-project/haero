@@ -28,8 +28,7 @@ end subroutine
 subroutine @F90_MODULE_NAME@_run(t, dt, progs, atm, diags, tends) bind(c)
   use iso_c_binding, only: c_ptr, c_f_pointer
   use haero_precision, only: wp
-  use haero, only: model, &
-                   prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
+  use haero, only: prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
                    prognostics_from_c_ptr, atmosphere_from_c_ptr, &
                    diagnostics_from_c_ptr, tendencies_from_c_ptr
   use @F90_MODULE_NAME@, only: run
@@ -56,16 +55,15 @@ subroutine @F90_MODULE_NAME@_run(t, dt, progs, atm, diags, tends) bind(c)
   tendencies = tendencies_from_c_ptr(tends)
 
   ! Call the actual subroutine.
-  call run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+  call run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
 end subroutine
 
 ! Finalizes the prognostic process
 subroutine @F90_MODULE_NAME@_finalize() bind(c)
-  use haero, only: model
   use @F90_MODULE_NAME@, only: finalize
   implicit none
 
-  call finalize(model)
+  call finalize()
 end subroutine
 
 ! Sets an integer parameter within the module

@@ -45,7 +45,7 @@ contains
     allocate(population_offsets(num_modes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate population_offsets with length ', num_modes
-      stop ierr
+      stop 1
     endif
     population_offsets(:) = model%population_offsets(:)
 
@@ -65,12 +65,11 @@ contains
 
   ! TODO: Move all parts of this subroutine that are only called once into the
   ! init routine
-  subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+  subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
     implicit none
 
     ! --- Parameters
 
-    type(model_t), intent(in)         :: model
     real(wp), value, intent(in)       :: t
     real(wp), value, intent(in)       :: dt
     type(prognostics_t), intent(in)   :: prognostics
@@ -281,19 +280,19 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     allocate(dgnumlo_aer(num_modes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate dgnumlo_aer with length ', num_modes
-      stop ierr
+      stop 1
     endif
 
     allocate(dgnumhi_aer(num_modes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate dgnumhi_aer with length ', num_modes
-      stop ierr
+      stop 1
     endif
 
     allocate(dgnum_aer(num_modes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate dgnum_aer with length ', num_modes
-      stop ierr
+      stop 1
     endif
 
     ! Initialize min and max diameters
@@ -317,25 +316,25 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     deallocate(dgnumlo_aer, stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not deallocate dgnumlo_aer'
-      stop ierr
+      stop 1
     endif
 
     deallocate(dgnumhi_aer, stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not deallocate dgnumhi_aer'
-      stop ierr
+      stop 1
     endif
 
     deallocate(dgnum_aer, stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not deallocate dgnum_aer'
-      stop ierr
+      stop 1
     endif
 
     deallocate(population_offsets, stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not deallocate population_offsets'
-      stop ierr
+      stop 1
     endif
 
   end subroutine finalize_diameters
@@ -353,7 +352,7 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     allocate(alnsg(num_modes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate alnsg with length ', num_modes
-      stop ierr
+      stop 1
     endif
 
     alnsg(:) = log(model%modes(:)%mean_std_dev)
@@ -372,16 +371,13 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     deallocate(alnsg, stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not deallocate alnsg'
-      stop ierr
+      stop 1
     endif
 
   end subroutine finalize_ln_of_std_dev
 
-  subroutine finalize(model)
+  subroutine finalize()
     implicit none
-
-    ! Arguments
-    type(model_t), intent(in) :: model
 
     call finalize_diameters()
 

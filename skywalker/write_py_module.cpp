@@ -145,7 +145,6 @@ void write_py_module(const std::vector<InputData>& inputs,
   fprintf(file, "\n# Output data is stored here.\n");
   fprintf(file, "output = Object()\n");
   if (not user_config) {
-    fprintf(file, "output.atmosphere = Object()\n");
     fprintf(file, "output.aerosols = Object()\n");
     fprintf(file, "output.aerosols.interstitial = Object()\n");
     fprintf(file, "output.aerosols.cloudy = Object()\n");

@@ -100,6 +100,9 @@ TEST_CASE("mam_calcsize_run", "") {
       }
     }
 
+    // Initialize the process
+    process->init(aero_config);
+
     // Now compute the tendencies by running the process.
     Real t = 0.0, dt = 30.0;
     auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
