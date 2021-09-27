@@ -5,7 +5,6 @@ mam_box_model:
 
 haero:
   process: SimpleNucleationProcess
-  skywalker_mode: 1
 
 timestepping: # [s]
   dt: 1

@@ -25,8 +25,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       ipop_nh4_(),
       d_mean_aer_(),
       d_min_aer_(),
-      d_max_aer_(),
-      skywalker_mode_(0) {}
+      d_max_aer_() {}
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   num_modes_ = config.num_modes();
@@ -155,8 +154,6 @@ void SimpleNucleationProcess::set_param_(const std::string &name, Real value) {
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
     }
-  } else if ("c_h2so4" == name) {
-    skywalker_.c_h2so4 = value;
   } else {
     EKAT_REQUIRE_MSG(false, "Invalid parameter: " << name);
   }
@@ -175,10 +172,6 @@ void SimpleNucleationProcess::set_param_(const std::string &name, int value) {
       pbl_method_ = value;
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
-    }
-  } else if ("skywalker_mode") {
-    if (value == 1) {
-      skywalker_mode_ = value;
     }
   } else {
     EKAT_REQUIRE_MSG(false, "Invalid parameter: " << name);
