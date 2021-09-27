@@ -72,7 +72,7 @@ void parse_atm_ensemble_params(
                           iter.first.as<std::string>() +
                           std::string("' is not a sequence of values!\n"));
     }
-    auto param_name = std::string("atmosphere.") + iter.first.as<std::string>();
+    auto param_name = iter.first.as<std::string>();
     auto values = parse_value_array(param_name, param);
     auto full_name = std::string("atmosphere.") + param_name;
     params[full_name] = values;
