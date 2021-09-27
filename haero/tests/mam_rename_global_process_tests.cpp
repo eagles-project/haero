@@ -50,7 +50,8 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
     SpeciesColumnView aero_tend = tendencies.interstitial_aerosols;
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
-    const int nk = temp.extent(0);
+    const int num_vert_packs = temp.extent(0);
+    const int nk = HAERO_PACK_SIZE * num_vert_packs;
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk), [=](int k) {
       generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 0;
@@ -346,8 +347,10 @@ TEST_CASE("mam_my_aerosol_process_global_run", "")
     auto host_temp = Kokkos::create_mirror_view(atm.temperature);
     Kokkos::deep_copy(host_temp, atm.temperature);
     for (int lev=0; lev<num_vert_packs; ++lev) {
-      for (int s=0; s<HAERO_PACK_SIZE; ++s) 
-        REQUIRE(host_temp(lev)[s] == lev);
+      for (int s=0; s<HAERO_PACK_SIZE; ++s) {
+        const Real temp = host_temp(lev)[s];
+        REQUIRE(temp == lev*HAERO_PACK_SIZE+s);
+      }
     }
 
     using fp_helper = FloatingPoint<float>;
@@ -368,21 +371,22 @@ TEST_CASE("mam_my_aerosol_process_global_run", "")
     Kokkos::deep_copy(host_aero_tend, aero_tend);
     const int num_populations = first_aersol.extent(0);
     const int num_aerosol_populations = aero_tend.extent(0);
-    for (int i = 0; i < num_levels; ++i) {
-      for (int k = 0; k < num_levels; ++k) {
-        const Real val = num_levels * k;
+    for (int k = 0; k < num_levels; ++k) {
+      const Real val = num_levels * k;
+      const int pack_idx = pack_info::pack_idx(k);
+      const int vec_idx  = pack_info::vec_idx(k);  
+      const Real tst = host_generic_var(pack_idx)[vec_idx];
+      REQUIRE(fp_helper::equiv(tst, val));
+    }
+    for (int j = 0; j < num_aerosol_populations; ++j) {
+      for (int i = 0; i < num_levels; ++i) {
+        const Real val = 2556 * i;
         const Real tst =
-            host_generic_var(pack_info::pack_idx(k))[pack_info::vec_idx(k)];
+            host_aero_tend(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)];
         REQUIRE(fp_helper::equiv(tst, val));
       }
-      for (int j = 0; j < num_aerosol_populations; ++j) {
-        for (int i = 0; i < num_levels; ++i) {
-          const Real val = 2556 * i;
-          const Real tst =
-              host_aero_tend(j, pack_info::pack_idx(i))[pack_info::vec_idx(i)];
-          REQUIRE(fp_helper::equiv(tst, val));
-        }
-      }
+    }
+    for (int i = 0; i < num_levels; ++i) {
       for (int j = 0; j < num_populations; ++j) {
         {
           const Real val = 2556 * (i * j);
