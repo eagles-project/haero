@@ -80,6 +80,11 @@ class Prognostics final {
               ModeColumnView int_mode_num_mix_ratios,
               ModeColumnView cld_mode_num_mix_ratios, SpeciesColumnView gases);
 
+  /// Default constructor and copy constructor is needed to define Views
+  /// of Prognostics classes and then copy data into the views.
+  Prognostics() = default;
+  Prognostics(const Prognostics&) = default;
+
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
   ~Prognostics() {}
@@ -146,16 +151,16 @@ class Prognostics final {
 
  private:
   // Aerosol species names within each mode.
-  const view_1d_int_type num_aero_species_;
+  view_1d_int_type num_aero_species_;
 
   // Number of distinct aerosol populations.
   int num_aero_populations_;
 
   // Number of gas species.
-  const int num_gases_;
+  int num_gases_;
 
   // Number of vertical levels.
-  const int num_levels_;
+  int num_levels_;
 };
 
 }  // namespace haero
