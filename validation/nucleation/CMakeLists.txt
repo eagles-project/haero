@@ -10,6 +10,8 @@ configure_file(
 )
 
 # Run it in several configurations to produce datasets.
-add_test(validate_binary_nuc_rate validate ${CMAKE_CURRENT_SOURCE_DIR}/binary_nuc_rate.yaml)
-set_tests_properties(validate_binary_nuc_rate PROPERTIES
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+foreach (input vehkamaki2002_contour;vehkamaki2002_fig7;vehkamaki2002_fig8;
+               vehkamaki2002_fig9;vehkamaki2002_fig10;vehkamaki2002_fig11;
+               merikanto2007_fig2;merikanto2007_fig3;merikanto2007_fig4)
+  add_test(gen_${input} validate ${CMAKE_CURRENT_SOURCE_DIR}/${input}.yaml)
+endforeach()

@@ -1,6 +1,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdarg>
 #include <set>
 
@@ -14,7 +15,12 @@ using ModalAerosolConfig = haero::ModalAerosolConfig;
 using ParameterWalk = skywalker::ParameterWalk;
 using YamlException = skywalker::YamlException;
 
-std::vector<Real> parse_value_array(const std::string& name,
+// Parses the values given in an array, applying uniform spacing for 3 values
+// specified with the third out of ascending order. If the name is of the form
+// "log10(x)", where x is the name of a quantity, the array is interpreted
+// normally and then is values are exponentiated (in powers of 10). In addition,
+// "log10(x)" is transformed to just "x".
+std::vector<Real> parse_value_array(std::string& name,
                                     const YAML::Node& value) {
   size_t len = value.size();
   if (len == 3) {
@@ -30,6 +36,23 @@ std::vector<Real> parse_value_array(const std::string& name,
       std::vector<Real> values(len);
       for (int j = 0; j < len; ++j) {
         values[j] = value0 + j * value2;
+      }
+
+      // Now, is this a logarithmic spacing?
+      static const auto log10 = "log10(";
+      static const auto log10_len = strlen(log10);
+      if (name.find(log10) == 0) {
+        if (name.rfind(")") != name.length() - 1) {
+          throw YamlException(std::string("Invalid name: '") + name +
+                              std::string("': no closing parenthesis."));
+        }
+        // Exponentiate the values.
+        for (int j = 0; j < len; ++j) {
+          values[j] = std::pow(10.0, values[j]);
+        }
+
+        // Strip the log stuff out of the name.
+        name.erase(name.length() - 1, 1).erase(0, log10_len);
       }
       return values;
     } else {
@@ -49,8 +72,10 @@ void parse_atm_ensemble_params(
                           iter.first.as<std::string>() +
                           std::string("' is not a sequence of values!\n"));
     }
-    auto param_name = std::string("atmosphere.") + iter.first.as<std::string>();
-    params[param_name] = parse_value_array(param_name, param);
+    auto param_name = iter.first.as<std::string>();
+    auto values = parse_value_array(param_name, param);
+    auto full_name = std::string("atmosphere.") + param_name;
+    params[full_name] = values;
   }
 }
 
@@ -81,6 +106,9 @@ void parse_aero_ensemble_params(
       for (auto giter : group) {
         // Is this a valid aerosol species?
         auto aero_name = giter.first.as<std::string>();
+        auto aero_species = giter.second;
+        auto values = parse_value_array(aero_name, aero_species);
+
         // Find the aerosol index within this species.
         int aero_index =
             aerosol_config.aerosol_species_index(mode_index, aero_name, false);
@@ -90,11 +118,10 @@ void parse_aero_ensemble_params(
                               mode_name +
                               std::string("' in the ensemble section!"));
         }
-        auto mmr_name = std::string("aerosols.") + group_name +
-                        std::string(".") + mode_name + std::string(".") +
-                        aero_name;  // also works for num_mix_ratio
-        auto aero_species = giter.second;
-        params[mmr_name] = parse_value_array(mmr_name, aero_species);
+        auto full_name = std::string("aerosols.") + group_name +
+                         std::string(".") + mode_name + std::string(".") +
+                         aero_name;  // also works for num_mix_ratio
+        params[full_name] = values;
       }
     }
   }
@@ -111,27 +138,30 @@ void parse_gas_ensemble_params(
                           std::string("' is not a sequence!\n"));
     }
     auto gas_name = iter.first.as<std::string>();
+    auto values = parse_value_array(gas_name, param);
     int gas_index = aerosol_config.gas_index(gas_name, false);
     if (gas_index == -1) {
       throw YamlException(std::string("Parameter 'gases:") + gas_name +
                           std::string("' is not a valid gas species!\n"));
     }
-    gas_name = std::string("gases.") + gas_name;
-    params[gas_name] = parse_value_array(gas_name, param);
+    auto full_name = std::string("gases.") + gas_name;
+    params[full_name] = values;
   }
 }
 
 void parse_user_ensemble_params(
     const YAML::Node& user, std::map<std::string, std::vector<Real>>& params) {
   for (auto iter : user) {
+    auto param_name = iter.first.as<std::string>();
     auto param = iter.second;
+    auto values = parse_value_array(param_name, param);
     if (not param.IsSequence()) {
       throw YamlException(std::string("Parameter 'user:") +
                           iter.first.as<std::string>() +
                           std::string("' is not a sequence!\n"));
     }
-    auto name = std::string("user.") + iter.first.as<std::string>();
-    params[name] = parse_value_array(name, param);
+    auto full_name = std::string("user.") + param_name;
+    params[full_name] = values;
   }
 }
 

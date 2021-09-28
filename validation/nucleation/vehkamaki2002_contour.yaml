@@ -1,3 +1,6 @@
+# Computes the rate of binary nucleation as a function of relative humidity [-]
+# and temperature [K]
+
 haero:
   nucleation_method: 2
   pbl_method: 0
