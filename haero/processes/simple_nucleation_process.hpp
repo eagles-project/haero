@@ -123,9 +123,55 @@ class SimpleNucleationProcess final
         d_min_aer_(rhs.d_min_aer_),
         d_max_aer_(rhs.d_max_aer_) {}
 
- protected:
+ private:
   void init_(const ModalAerosolConfig &config) override;
 
+  /// Computes the base nucleation rate.
+  /// @param [in] q_h2so4 the mass mixing ratio of H2SO4 gas [kg gas/kg dry air]
+  /// @param [in] q_nh3 the mass mixing ratio of NH3 gas [kg gas/kg dry air]
+  /// @param [in] temp atmospheric temperature [K]
+  /// @param [in] rel_hum atmospheric relative humidity [-]
+  /// @param [in] rho_d mass density of dry air [kg/m3]
+  /// @param [out] J the base nucleation rate [#/cc/s]
+  /// @param [out] r_crit the radius of a critical cluster [nm]
+  /// @param [out] n_crit_h2so4 the number of H2SO4 gas molecules in the cluster
+  /// @param [out] n_crit_nh3 the number of NH3 gas molecules in the cluster
+  KOKKOS_INLINE_FUNCTION
+  void compute_nucleation_rate_(const PackType& q_h2so4, const PackType& q_nh3,
+                                const PackType& temp, const PackType& rel_hum,
+                                const PackType& rho_d,
+                                PackType& J, PackType& r_crit,
+                                PackType& n_crit_h2so4, PackType& n_crit_nh3) {
+    auto c_h2so4 =
+        1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
+    if (nucleation_method_ == binary_nucleation) {
+      auto x_crit =
+        vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp, rel_hum);
+      J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
+      auto n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp,
+          rel_hum, x_crit);
+      n_crit_h2so4 = n_crit;
+      n_crit_nh3 = 0;
+      r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
+    } else {
+      EKAT_KERNEL_ASSERT(nucleation_method_ == ternary_nucleation);
+      // Compute the molar/volume mixing ratio of NH3 gas [ppt].
+      auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3_);
+
+      auto log_J =
+        merikanto2007::log_nucleation_rate(temp, rel_hum, c_h2so4, xi_nh3);
+      J = exp(log_J);
+      n_crit_h2so4 =
+        merikanto2007::num_h2so4_molecules(log_J, temp, c_h2so4, xi_nh3);
+      n_crit_nh3 =
+        merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
+      r_crit = merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
+    }
+  }
+
+  // Applies a planetary boundary layer correction to the nucleation rate J,
+  // the critical cluster radius r_crit, and the critical number concentrations
+  // of H2SO4 and NH3 gases.
   KOKKOS_INLINE_FUNCTION
   void apply_pbl_correction_(PackType& J, PackType& r_crit,
                              PackType& n_crit_h2so4, PackType& n_crit_nh3) {
@@ -162,8 +208,8 @@ class SimpleNucleationProcess final
   }
 
   KOKKOS_INLINE_FUNCTION
-  void grow_and_place_particles_(const PackType& c_h2so4, const PackType& temp,
-                                 PackType& J) {
+  void apply_growth_correction_(const PackType& c_h2so4, const PackType& temp,
+                                PackType& J) {
     // Determine the mode(s) into which we place the nucleated particles.
     // Each particle large enough to fit into a mode directly is placed
     // into this mode--others are grown until they fit into the mode with
@@ -229,47 +275,31 @@ class SimpleNucleationProcess final
       const auto rho_d = gas_kinetics::air_mass_density(press, temp, qv);
       auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
           qv, press, temp);
-      const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);  // mmr
-      auto c_h2so4 =  // number concentration of H2SO4 [#/cc]
-          1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
+      // Mass mixing ratios (mmr, [kg gas/kg dry air]) for H2SO4 and NH3 gas.
+      const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);
+      auto q_nh3 = 0;
+      if (igas_nh3_ >= 0) {
+        q_nh3 = prognostics.gases(igas_nh3_, k);
+      }
 
       // Compute the base rate of nucleation using our selected method.
       PackType J;       // nucleation rate [#/cc]
       PackType r_crit;  // radius of critical cluster [nm]
-      PackType n_crit;  // total # of molecules in a critical cluster [#]
-      PackType n_crit_h2so4, n_crit_nh3;  // numbers of gas molecules in
-      // the critical cluser [#]
-      if (nucleation_method_ == binary_nucleation) {
-        auto x_crit =
-            vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp, rel_hum);
-        J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
-        n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp, rel_hum,
-                                                       x_crit);
-        n_crit_h2so4 = n_crit;
-        n_crit_nh3 = 0;
-        r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
-      } else {
-        EKAT_KERNEL_ASSERT(nucleation_method_ == ternary_nucleation);
-        // Compute the molar/volume mixing ratio of NH3 gas [ppt].
-        const auto q_nh3 = prognostics.gases(igas_nh3_, k);  // mmr
-        auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3_);
-
-        auto log_J =
-            merikanto2007::log_nucleation_rate(temp, rel_hum, c_h2so4, xi_nh3);
-        J = exp(log_J);
-        n_crit_h2so4 =
-            merikanto2007::num_h2so4_molecules(log_J, temp, c_h2so4, xi_nh3);
-        n_crit_nh3 =
-            merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
-        r_crit = merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
-      }
+      PackType n_crit_h2so4, n_crit_nh3; // # gas molecules in the cluser [#]
+      compute_nucleation_rate_(q_h2so4, q_nh3, temp, rel_hum, rho_d,
+                               J, r_crit, n_crit_h2so4, n_crit_nh3);
 
       // Apply a correction for the planetary boundary layer if requested.
       apply_pbl_correction_(J, r_crit, n_crit_h2so4, n_crit_nh3);
-      n_crit = n_crit_h2so4 + n_crit_nh3;
+      auto n_crit = n_crit_h2so4 + n_crit_nh3;
 
-      // Now grow the nucleated particles and place them into appropriate modes.
-      grow_and_place_particles_(prognostics, atmosphere, J);
+      // Grow the nucleated particles, applying the growth factor to J.
+      //apply_growth_correction_(?);
+
+      // Determine the mode(s) into which the nucleated particles are placed.
+      //auto destModes = determine_particle_modes_(q_h2so4, q_nh3, rel_hum, ?);
+
+      // Compute tendencies.
     });
   }
 
