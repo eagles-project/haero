@@ -13,38 +13,90 @@ namespace {
 using haero::ColumnView;
 using haero::SpeciesColumnView;
 
-template<std::size_t Rank, Kokkos::Iterate Layout=Kokkos::Iterate::Left>
+template <std::size_t Rank, Kokkos::Iterate Layout = Kokkos::Iterate::Left>
 using RangeHelper = Kokkos::MDRangePolicy<Kokkos::Rank<Rank, Layout>>;
 
-  // integer,  intent(in):: num_modes ! total number of modes
-  // integer,  intent(in):: dest_mode_of_mode(:) ! destination mode for a mode
-  // logical,  intent(in) :: iscldy ! true if it is a cloudy cell
-  // real(wp), intent(in) :: qi_vmr(:,:)           ! mass mixing ratios (mmr) [kmol/kmol]
-  // real(wp), intent(in) :: qi_del_growth(:,:) !growth in mmr [kmol/kmol]
-  // real(wp), intent(in), optional :: qcld_vmr(:,:)
-  // real(wp), intent(in), optional :: qcld_del_growth(:,:)
-  // !intent-outs
-  // real(wp), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
-  // real(wp), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
 KOKKOS_INLINE_FUNCTION
-void compute_dryvol_change_in_src_mode(int num_modes, int dest_mode_of_mode,
-    bool is_cloudy, SpeciesColumnView qi_vmr, SpeciesColumnView qi_del_growth,
-    SpeciesColumnView qcld_vmr, SpeciesColumnView qcld_del_growth,
-    ColumnView dryvol_a, ColumnView deldryvol_a,
-    ColumnView dryvol_c, ColumnView deldryvol_c) {
-  // 
+void dryvolume_change(const int imode, SpeciesColumnView q_vmr,
+                      SpeciesColumnView q_del_growth,
+                      const int start_species_index,
+                      const int end_species_index, PackType& dryvol,
+                      PackType& deldryvol, const ColumnView& mass_2_vol) {
+  PackType tmp_dryvol{0.}, tmp_del_dryvol{0.};
+  for (int ispec = start_species_index; ispec < end_species_index; ispec++) {
+    tmp_dryvol = tmp_dryvol + q_vmr(ispec, imode) * mass_2_vol(ispec);
+    tmp_del_dryvol =
+        tmp_del_dryvol + q_del_growth(ispec, imode) * mass_2_vol(ispec);
+  }
+
+  dryvol = tmp_dryvol - tmp_del_dryvol;
+  deldryvol = tmp_del_dryvol;
 }
 
+KOKKOS_INLINE_FUNCTION
+void compute_dryvol_change_in_src_mode(
+    int num_modes, const view_1d_int_type& dest_mode_of_mode_mapping,
+    bool is_cloudy, SpeciesColumnView qi_vmr, SpeciesColumnView qi_del_growth,
+    SpeciesColumnView qcld_vmr, SpeciesColumnView qcld_del_growth,
+    ColumnView& dryvol_a, ColumnView& deldryvol_a, ColumnView& dryvol_c,
+    ColumnView& deldryvol_c, view_1d_int_type population_offsets,
+    int num_populations, const ColumnView& mass_2_vol) {
+  // FIXME: This array seems to only be assigned to once, and it's taken
+  // directly from population_offsets. Will this ever be calculated differently?
+  view_1d_int_type start_species_for_mode("start_species_for_mode", num_modes);
+  Kokkos::deep_copy(start_species_for_mode, population_offsets);
+
+  view_1d_int_type end_species_for_mode("end_species_for_mode", num_modes);
+  Kokkos::parallel_for(
+      num_modes, KOKKOS_LAMBDA(const int src_mode) {
+        // find start and end index of species in this mode in the "population"
+        // array The indices are same for interstitial and cloudborne species
+        end_species_for_mode(src_mode) =
+            (src_mode == num_modes) ? num_populations
+                                    : population_offsets(src_mode + 1) - 1;
+      });
+
+  Kokkos::parallel_for(
+      num_modes, KOKKOS_LAMBDA(const int src_mode) {
+        const auto dest_mode = dest_mode_of_mode_mapping(src_mode);
+
+        // FIXME: How sparse is dest_mode_of_mode_mapping? If it's sparse,
+        // should we generate tuples of source/destination modes as a
+        // first-pass? This sort of early return could kill performance if it
+        // happens often.
+        if (dest_mode <= 0) return;
+
+        dryvolume_change(src_mode, qi_vmr, qi_del_growth,
+                         start_species_for_mode(src_mode),
+                         end_species_for_mode(src_mode), dryvol_a(src_mode),
+                         deldryvol_a(src_mode), mass_2_vol);
+      });
+
+  if (is_cloudy) {
+    Kokkos::parallel_for(
+        num_modes, KOKKOS_LAMBDA(const int src_mode) {
+          const auto dest_mode = dest_mode_of_mode_mapping(src_mode);
+
+          // FIXME: see above
+          if (dest_mode <= 0) return;
+
+          dryvolume_change(src_mode, qi_vmr, qi_del_growth,
+                           start_species_for_mode(src_mode),
+                           end_species_for_mode(src_mode), dryvol_c(src_mode),
+                           deldryvol_c(src_mode), mass_2_vol);
+        });
+  }
 }
+
+}  // namespace
 
 /// \brief Bindings for the rename subroutine
 class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
  public:
-
-  using integral_type = int;
-  using size_type = std::size_t;
-
-  MAMRenameProcess();
+  MAMRenameProcess()
+      : DeviceAerosolProcess<MAMRenameProcess>(RenameProcess,
+                                               "MAMRenameProcess"),
+        is_cloudy{true} {}
 
   KOKKOS_INLINE_FUNCTION
   ~MAMRenameProcess() {}
@@ -61,50 +113,36 @@ class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
             const Prognostics& prognostics, const Atmosphere& atmosphere,
             const Diagnostics& diagnostics,
             const Tendencies& tendencies) const override {
-
-    auto qi_vmr = prognostics.interstitial_aerosols();
-    auto qcld_vmr = prognostics.cloud_aerosols();
+    const auto& qi_vmr = prognostics.interstitial_aerosols;
+    const auto& qcld_vmr = prognostics.cloud_aerosols;
 
     // FIXME: naming
     SpeciesColumnView qi_del_growth("intersitial growth", max_aer, num_modes);
     SpeciesColumnView qcld_del_growth("cloudborne growth", max_aer, num_modes);
 
-    Kokkos::parallel_for(RangeHelper<2>({{0, 0}}, {{max_aer, num_modes}}),
+    Kokkos::parallel_for(
+        RangeHelper<2>({{0, 0}}, {{max_aer, num_modes}}),
         KOKKOS_LAMBDA(const int i, const int j) {
           qi_del_growth(i, j) = 0;
           qcld_del_growth(i, j) = 0;
         });
 
-    // have:
-    // - dest_mode_of_mode_mapping
-    // - num_modes
-    // - dgnumlo;
-    // - dgnumhi;
-    // - dgnum;
-    // - alnsg;
-    // - population_offsets;
-    // - max_aer;
-    // - num_populations;
-    // - naer;
-    // - num_modes;
+    ColumnView dryvol_a("dryvol_a", num_modes);
+    ColumnView dryvol_c("dryvol_c", num_modes);
+    ColumnView deldryvol_a("deldryvol_a", num_modes);
+    ColumnView deldryvol_c("deldryvol_c", num_modes);
 
-    // compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode_mapping, is_cloudy, qi_vmr, qi_del_growth)
-
-    // Callsite -- dont use
-    // call compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &              !input
-    //     iscldy_subarea, q_interstitial, qaer_del_grow4rnam, q_cloudborne, qaercw_del_grow4rnam, & !input
-    //     dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)                                     !output
-    //
-    // Def site -- use these names
-    // compute_dryvol_change_in_src_mode(
-    //     num_modes, dest_mode_of_mode, iscldy, qi_vmr, qi_del_growth, qcld_vmr,
-    //     qcld_del_growth, dryvol_a, deldryvol_a, dryvol_c, deldryvol_c);
+    compute_dryvol_change_in_src_mode(
+        num_modes, dest_mode_of_mode_mapping, is_cloudy, qi_vmr, qi_del_growth,
+        qcld_vmr, qcld_del_growth, dryvol_a, deldryvol_a, dryvol_c, deldryvol_c,
+        population_offsets, num_populations, mass_2_vol);
   }
 
  private:
   void find_renaming_pairs_(const ModalAerosolConfig& config,
                             view_1d_int_type& dest_mode_of_mode_mapping,
-                            size_type& num_pairs, view_1d_pack_type& size_factor,
+                            std::size_t& num_pairs,
+                            view_1d_pack_type& size_factor,
                             view_1d_pack_type& fmode_dist_tail_fac,
                             view_1d_pack_type& volume2num_lo_relaxed,
                             view_1d_pack_type& volume2num_hi_relaxed,
@@ -121,12 +159,13 @@ class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
   ColumnView dgnumhi;
   ColumnView dgnum;
   ColumnView alnsg;
-  ColumnView population_offsets;
+  ColumnView mass_2_vol;
+  view_1d_int_type population_offsets;
 
-  integral_type max_aer;
-  integral_type num_populations;
-  integral_type naer;
-  integral_type num_modes;
+  int max_aer;
+  int num_populations;
+  int naer;
+  int num_modes;
 
   view_1d_int_type dest_mode_of_mode_mapping;
 

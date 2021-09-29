@@ -16,9 +16,6 @@ namespace {
 
 using HostExec = Kokkos::HostSpace;
 
-using size_type = MAMRenameProcess::size_type;
-using integral_type = MAMRenameProcess::integral_type;
-
 static constexpr auto& pi_sixth = haero::Constants::pi_sixth;
 static constexpr Real frelax = 27.0;
 static const Real sqrt_half = sqrt((Real)0.5);
@@ -32,7 +29,7 @@ static constexpr Real smallest_dryvol_value = 1.0e-25;
 // \post _dest_mode_of_mode_mapping_ will have predetermined size of 4 due to
 // temporary workaround.
 void initialize_dest_mode_of_mode_mapping(
-    view_1d_int_type dest_mode_of_mode_mapping,
+    view_1d_int_type& dest_mode_of_mode_mapping,
     const ModalAerosolConfig& model) {
   (void)model;
   Kokkos::resize(dest_mode_of_mode_mapping, 4);
@@ -55,11 +52,6 @@ static inline PackType compute_relaxed_volume_to_num_ratio(
 
 }  // namespace
 
-MAMRenameProcess::MAMRenameProcess()
-    : DeviceAerosolProcess<MAMRenameProcess>(RenameProcess,
-                                             "MAMRenameProcess")
-    , is_cloudy{true} {}
-
 void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   num_modes = config.num_modes();
   max_aer = num_modes;
@@ -70,6 +62,14 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   Kokkos::resize(dgnumhi, num_modes);
   Kokkos::resize(dgnum, num_modes);
   Kokkos::resize(alnsg, num_modes);
+  Kokkos::resize(mass_2_vol, num_modes);
+  Kokkos::resize(population_offsets, num_modes);
+
+  Kokkos::parallel_for(
+      num_modes, KOKKOS_LAMBDA(const int i) {
+        population_offsets(i) = config.population_index(i, 0);
+        mass_2_vol(i) = 0.;
+      });
 
   initialize_dest_mode_of_mode_mapping(dest_mode_of_mode_mapping, config);
 
@@ -85,7 +85,7 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   view_1d_pack_type ln_dia_cutoff("ln of diameter cutoff", num_modes);
   view_1d_pack_type dryvol_smallest("dry volume smallest", num_modes);
 
-  size_type num_pairs = 0;
+  std::size_t num_pairs = 0;
 
   find_renaming_pairs_(config, dest_mode_of_mode_mapping, num_pairs,
                        size_factor, fmode_dist_tail_fac, volume2num_lo_relaxed,
@@ -96,7 +96,7 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
 
 void MAMRenameProcess::find_renaming_pairs_(
     const ModalAerosolConfig& config,
-    view_1d_int_type& dest_mode_of_mode_mapping, size_type& num_pairs,
+    view_1d_int_type& dest_mode_of_mode_mapping, std::size_t& num_pairs,
     view_1d_pack_type& size_factor, view_1d_pack_type& fmode_dist_tail_fac,
     view_1d_pack_type& volume2num_lo_relaxed,
     view_1d_pack_type& volume2num_hi_relaxed,
