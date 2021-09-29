@@ -30,16 +30,21 @@ class Atmosphere final {
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              Real pblh);
 
+  /// Default constructor and copy constructor is needed to define Views
+  /// of Atmosphere classes and then copy data into the views.
+  Atmosphere() = default;
+  Atmosphere(const Atmosphere &) = default;
+
   /// Destructor.
   KOKKOS_FUNCTION
   ~Atmosphere() {}
 
   // Views.
-  const ColumnView temperature;
-  const ColumnView pressure;
-  const ColumnView vapor_mixing_ratio;
-  const ColumnView height;
-  const ColumnView hydrostatic_dp;
+  ColumnView temperature;
+  ColumnView pressure;
+  ColumnView vapor_mixing_ratio;
+  ColumnView height;
+  ColumnView hydrostatic_dp;
 
   // Planetary boundary height.
   Real planetary_boundary_height;
@@ -56,7 +61,7 @@ class Atmosphere final {
 
  private:
   // Number of vertical levels.
-  const int num_levels_;
+  int num_levels_;
 };
 
 }  // namespace haero
