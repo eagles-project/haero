@@ -8,7 +8,7 @@ add_library(chem_standalone read_chem_input.cpp
 add_dependencies(chem_standalone haero yaml_cpp)
 
 add_executable(chem_driver main.cpp)
-target_link_libraries(chem_driver toy_problem;chem_standalone;yaml_cpp;${HAERO_LIBRARIES})
+target_link_libraries(chem_driver chem_standalone;yaml_cpp;${HAERO_LIBRARIES})
 
 install(TARGETS chem_driver DESTINATION bin)
 install(TARGETS chem_standalone DESTINATION lib)

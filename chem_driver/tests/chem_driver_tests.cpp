@@ -1,53 +1,58 @@
-#include "toy_problem.hpp"
+#include "util/read_solver_params.hpp"
 
 #include "catch2/catch.hpp"
 #include "chem_driver/chem_driver.hpp"
-#include "chem_driver/read_chem_input.hpp"
+// #include "chem_driver/read_chem_input.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
 
 using namespace haero;
-// using namespace haero::chem_driver;
+using namespace haero::chem_driver;
 
-// TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
-//   /// create the SimulationInput object by parsing the yaml file
-//   std::string input_file = HAERO_TEST_DATA_DIR;
-//   input_file += "/toy_problem_input.yml";
-//   SimulationInput sim_input = read_chem_input(input_file);
+TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
+  /// create the SimulationInput object by parsing the yaml file
+  // std::string input_file = HAERO_TEST_DATA_DIR;
+  // input_file += "/toy_problem_input.yml";
+  // SimulationInput sim_input = read_chem_input(input_file);
 
-//   // this function creates the toy-problem-specific (chemkin?) input file for
-//   // TChem
-//   // FIXME: learn more about this and whether they've switched to the yaml input
-//   // spec
-//   create_chem_files();
+  // this function creates the toy-problem-specific (chemkin?) input file for
+  // TChem
+  // FIXME: learn more about this and whether they've switched to the yaml input
+  // spec
+  // create_chem_files();
 
-//   SECTION("light side of terminator") {
-//     // create the ChemSolver object
-//     ChemSolver chem_solver(sim_input);
+  SECTION("simple arrhenius") {
 
-//     // run the problem on device
-//     real_type_2d_view results = chem_solver.get_tendencies();
+    std::cout << "***test***" << "\n";
+    std::string input_file = HAERO_TEST_DATA_DIR;
+    input_file += "/config_arrhenius.yaml";
+    // SolverParams params(input_file);
+    ChemSolver chem_solver(input_file);
+    chem_solver.time_integrate();
 
-//     // create mirror view and deep copy to host
-//     auto results_host = Kokkos::create_mirror_view(results);
-//     Kokkos::deep_copy(results_host, results);
+    // // run the problem on device
+    // real_type_2d_view results = chem_solver.get_tendencies();
 
-//     // eq (4) tendency should be positive, eq (5) negative
-//     const Real val00 = results_host(0, 0);
-//     const Real val01 = results_host(0, 1);
-//     REQUIRE(FloatingPoint<Real>::in_bounds(val00, 0.0, 1.0e14,
-//                                            FloatingPoint<Real>::zero_tol));
-//     REQUIRE(FloatingPoint<Real>::in_bounds(val01, -1.0e14, 0.0,
-//                                            FloatingPoint<Real>::zero_tol));
-//     // we ran for two batches, so be sure that the same inputs give the same
-//     // outputs for different batches
-//     const Real val10 = results_host(1, 0);
-//     const Real val11 = results_host(1, 1);
-//     REQUIRE(FloatingPoint<Real>::zero(val00 - val10,
-//                                       FloatingPoint<Real>::zero_tol));
-//     REQUIRE(FloatingPoint<Real>::zero(val01 - val11,
-//                                       FloatingPoint<Real>::zero_tol));
-//   }
+    // // create mirror view and deep copy to host
+    // auto results_host = Kokkos::create_mirror_view(results);
+    // Kokkos::deep_copy(results_host, results);
+
+    // // eq (4) tendency should be positive, eq (5) negative
+    // const Real val00 = results_host(0, 0);
+    // const Real val01 = results_host(0, 1);
+    // REQUIRE(FloatingPoint<Real>::in_bounds(val00, 0.0, 1.0e14,
+    //                                        FloatingPoint<Real>::zero_tol));
+    // REQUIRE(FloatingPoint<Real>::in_bounds(val01, -1.0e14, 0.0,
+    //                                        FloatingPoint<Real>::zero_tol));
+    // // we ran for two batches, so be sure that the same inputs give the same
+    // // outputs for different batches
+    // const Real val10 = results_host(1, 0);
+    // const Real val11 = results_host(1, 1);
+    // REQUIRE(FloatingPoint<Real>::zero(val00 - val10,
+    //                                   FloatingPoint<Real>::zero_tol));
+    // REQUIRE(FloatingPoint<Real>::zero(val01 - val11,
+    //                                   FloatingPoint<Real>::zero_tol));
+  }
 
 //   SECTION("zero tendencies") {
 //     // calculate initial X2 concentration such that tendencies will be zero
@@ -112,4 +117,4 @@ using namespace haero;
 //                                         FloatingPoint<Real>::zero_tol));
 //     }
 //   }
-// }
+}

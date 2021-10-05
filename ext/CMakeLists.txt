@@ -414,7 +414,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
                        -DTCHEM_ENABLE_TEST=OFF
-                       -DTCHEM_ENABLE_EXAMPLE=OFF
+                       -DTCHEM_ENABLE_EXAMPLE=ON
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DTINES_INSTALL_PATH=${TINES_INSTALL_PATH}
                        # FIXME(mjs): this is only used for a chem_driver unit test,
