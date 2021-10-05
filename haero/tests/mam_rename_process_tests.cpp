@@ -61,7 +61,7 @@ TEST_CASE("mam_rename_run", "") {
   auto atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
 
   SECTION("rename_run") {
-    auto process = new MAMRenameProcess();
+    auto* process = new MAMRenameProcess();
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs = model->create_prognostics(
