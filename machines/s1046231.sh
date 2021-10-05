@@ -20,9 +20,9 @@ export OPENBLAS_INCLUDE_DIR=/usr/local/opt/openblas/include
 export OPENBLAS_LIBRARY_DIR=/usr/local/opt/openblas/lib
 export OPENBLAS_LIBRARY=libopenblas.a
 
-export TINES_INCLUDE_DIR=$HOME/Tines/build/install/include/tines
-export TINES_LIBRARY_DIR=$HOME/Tines/build/install/lib
-export TINES_LIBRARY=libtines.a
+# export TINES_INCLUDE_DIR=$HOME/Tines/build/install/include/tines
+# export TINES_LIBRARY_DIR=$HOME/Tines/build/install/lib
+# export TINES_LIBRARY=libtines.a
 
 export FC=mpifort
 export CC=mpicc

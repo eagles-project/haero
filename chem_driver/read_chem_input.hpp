@@ -3,32 +3,32 @@
 
 #include "chem_driver.hpp"
 
-namespace haero {
-namespace chem_driver {
+// namespace haero {
+// namespace chem_driver {
 
-/// This exception class stores information about errors encountered in reading
-/// data from a YAML file.
-class YamlException : public std::exception {
- public:
-  /// Constructs an exception containing the given descriptive message.
-  YamlException(const std::string& message) : _message(message) {}
+// /// This exception class stores information about errors encountered in reading
+// /// data from a YAML file.
+// class YamlException : public std::exception {
+//  public:
+//   /// Constructs an exception containing the given descriptive message.
+//   YamlException(const std::string& message) : _message(message) {}
 
-  /// Constructs an exception containing the given formatting string and
-  /// C-style variadic arguments (a la printf).
-  YamlException(const char* fmt, ...);
+//   /// Constructs an exception containing the given formatting string and
+//   /// C-style variadic arguments (a la printf).
+//   YamlException(const char* fmt, ...);
 
-  const char* what() const throw() { return _message.c_str(); }
+//   const char* what() const throw() { return _message.c_str(); }
 
- private:
-  std::string _message;
-};
+//  private:
+//   std::string _message;
+// };
 
-/// This function reads simulation input from a YAML input file. If an error
-/// is encountered, this throws a YamlException.
-/// \param [in] filename The name of the file to be read.
-/// \returns SimulationInput object that is meant to be passed to ChemSolver
-SimulationInput read_chem_input(const std::string& filename);
+// /// This function reads simulation input from a YAML input file. If an error
+// /// is encountered, this throws a YamlException.
+// /// \param [in] filename The name of the file to be read.
+// /// \returns SimulationInput object that is meant to be passed to ChemSolver
+// SimulationInput read_chem_input(const std::string& filename);
 
-}  // end namespace chem_driver
-}  // end namespace haero
+// }  // end namespace chem_driver
+// }  // end namespace haero
 #endif

@@ -1,0 +1,5 @@
+add_library(read_solver_params read_solver_params.cpp)
+
+add_dependencies(read_solver_params chem_standalone yaml_cpp)
+
+target_link_libraries(read_solver_params chem_standalone;yaml_cpp)
