@@ -42,14 +42,6 @@ KOKKOS_INLINE_FUNCTION static void reduce(const int N, FunctorType&& f,
   for (int i = 0; i < N; i++) f(i, accumulator);
 }
 
-template <typename T, typename SourceRangeType, typename FunctorType>
-KOKKOS_INLINE_FUNCTION static void reduce_sum(const int N,
-                                              const SourceRangeType& src,
-                                              T& accumulator) {
-  reduce(
-      N, KOKKOS_LAMBDA(const int i, T& acc) { acc += src[i]; });
-}
-
 }  // namespace device_kernels
 
 namespace {

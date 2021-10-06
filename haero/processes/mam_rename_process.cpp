@@ -147,8 +147,12 @@ void MAMRenameProcess::find_renaming_pairs_(
   {
     auto mapping_host = Kokkos::create_mirror_view(dest_mode_of_mode_mapping);
     Kokkos::deep_copy(mapping_host, dest_mode_of_mode_mapping);
-    for (int i = 0; i < N; i++)
-      num_pairs += static_cast<int>(mapping_host(i) > 0);
+    device_kernels::reduce(
+        N,
+        KOKKOS_LAMBDA(const int i, std::size_t& acc) {
+          acc += static_cast<std::size_t>(mapping_host(i) > 0);
+        },
+        num_pairs);
   }
 
   if (num_pairs == 0) return;
