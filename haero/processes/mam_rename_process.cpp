@@ -40,13 +40,10 @@ void initialize_dest_mode_of_mode_mapping(
     const ModalAerosolConfig& model) {
   (void)model;
   Kokkos::resize(dest_mode_of_mode_mapping, 4);
-  Kokkos::parallel_for(
-      "delete", 4, KOKKOS_LAMBDA(const int i) {
-        if (i == 1)
-          dest_mode_of_mode_mapping[i] = 1;
-        else
-          dest_mode_of_mode_mapping[i] = 0;
-      });
+  auto mapping_h = Kokkos::create_mirror_view(dest_mode_of_mode_mapping);
+  for (int i = 0; i < 4; i++) mapping_h[i] = 0;
+  mapping_h[1] = 1;
+  Kokkos::deep_copy(dest_mode_of_mode_mapping, mapping_h);
 }
 
 template <typename PackType>
@@ -147,7 +144,7 @@ void MAMRenameProcess::find_renaming_pairs_(
   {
     auto mapping_host = Kokkos::create_mirror_view(dest_mode_of_mode_mapping);
     Kokkos::deep_copy(mapping_host, dest_mode_of_mode_mapping);
-    for(int i=0; i<N; i++)
+    for (int i = 0; i < N; i++)
       num_pairs += static_cast<std::size_t>(mapping_host(i) > 0);
   }
 
