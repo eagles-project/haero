@@ -70,7 +70,7 @@ ModalAerosolConfig create_simple_test_config() {
   const int nmodes = 2;
   const std::vector<std::string> mode_names = {"test_mode0", "test_mode1"};
   // Mode's minimum, nominal and maximum diameters [m]
-  const std::vector<std::tuple<Real, Real, Real>> mode_diams = {
+  const auto mode_diams = std::vector<std::tuple<Real, Real, Real>>{
       std::make_tuple(1e-7, 5e-7, 1e-6), std::make_tuple(1e-6, 4e-6, 1e-5)};
   const std::vector<Real> mode_sigmas = {1, 1.5};
   const Real rh_deliq = 0.8;
