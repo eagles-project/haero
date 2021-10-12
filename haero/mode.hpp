@@ -57,13 +57,13 @@ struct Mode final {
   }
   /// Creates a new aerosol particle mode.
   /// @param [in] name A unique name for this mode.
-  /// @param [in] min_diameter The minimum diameter for particles that belong
-  ///                          to this mode [m].
-  /// @param [in] nom_diameter The nominal diameter for particles that belong
-  ///                          to this mode [m].
-  /// @param [in] max_diameter The maximum diameter for particles that belong
-  ///                          to this mode [m].
-  /// @param [in] mean_std_dev The geometric standard deviation for this mode.
+  /// @param [in] min_diam The minimum diameter for particles that belong
+  ///                      to this mode [m].
+  /// @param [in] nom_diam The nominal diameter for particles that belong
+  ///                      to this mode [m].
+  /// @param [in] max_diam The maximum diameter for particles that belong
+  ///                      to this mode [m].
+  /// @param [in] sigma    The geometric standard deviation for this mode.
   /// @param [in] crystal_pt The crystallization point of the mode
   /// @param [in] deliq_pt The deliquescence point of the mode
   Mode(const std::string &name, Real min_diam, Real nom_diam, Real max_diam,
