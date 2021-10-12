@@ -2,24 +2,28 @@
 modes:
   aitken:
     D_min: 0.0087
+    D_nom: 0.026
     D_max: 0.052
     sigma: 1.6
     rhcrystal: 0.35
     rhdeliq: 0.8
   accumulation:
     D_min: 0.0535
+    D_nom: 0.11
     D_max: 0.44
     sigma: 1.8
     rhcrystal: 0.35
     rhdeliq: 0.8
   coarse:
     D_min: 1
+    D_nom: 2
     D_max: 4
     sigma: 1.8
     rhcrystal: 0.35
     rhdeliq: 0.8
   primary_carbon:
     D_min: 0.01
+    D_nom: 0.05
     D_max: 0.1
     sigma: 1.6
     rhcrystal: 0.35

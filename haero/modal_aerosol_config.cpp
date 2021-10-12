@@ -69,8 +69,9 @@ std::string ModalAerosolConfig::info_string(const int tab_level) const {
 ModalAerosolConfig create_simple_test_config() {
   const int nmodes = 2;
   const std::vector<std::string> mode_names = {"test_mode0", "test_mode1"};
-  const std::vector<std::pair<Real, Real>> mode_min_max_diams = {
-      std::make_pair(1e-7, 1e-6), std::make_pair(1e-6, 1e-5)};
+  // Mode's minimum, nominal and maximum diameters [m]
+  const auto mode_diams = std::vector<std::tuple<Real, Real, Real>>{
+      std::make_tuple(1e-7, 5e-7, 1e-6), std::make_tuple(1e-6, 4e-6, 1e-5)};
   const std::vector<Real> mode_sigmas = {1, 1.5};
   const Real rh_deliq = 0.8;
   const Real rh_cryst = 0.35;
@@ -78,9 +79,9 @@ ModalAerosolConfig create_simple_test_config() {
   std::map<std::string, std::vector<std::string>> mode_spec_map;
   std::vector<Mode> test_modes(nmodes);
   for (int m = 0; m < nmodes; ++m) {
-    test_modes[m] =
-        Mode(mode_names[m], mode_min_max_diams[m].first,
-             mode_min_max_diams[m].second, mode_sigmas[m], rh_cryst, rh_deliq);
+    test_modes[m] = Mode(mode_names[m], std::get<0>(mode_diams[m]),
+                         std::get<1>(mode_diams[m]), std::get<2>(mode_diams[m]),
+                         mode_sigmas[m], rh_cryst, rh_deliq);
     mode_spec_map.emplace(mode_names[m], std::vector<std::string>());
   }
 

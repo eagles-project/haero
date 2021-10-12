@@ -28,6 +28,9 @@ namespace haero {
 /// number redistribution elsewhere in the code; they signify the bounds beyond
 /// which particles are considered to better belong in a different mode.
 ///
+/// Variable nom_diameter is the nominal geometeric mean diameter [m]
+/// of particles in a mode
+///
 /// Crystalization and deliquesence refer to the non-cloud water uptake process,
 /// by which liquid water condenses into aerosol droplets.  They are relative
 /// humidity values.  When the environmental relative humidity lies below the
@@ -45,6 +48,7 @@ struct Mode final {
   KOKKOS_INLINE_FUNCTION
   Mode()
       : min_diameter(0),
+        nom_diameter(0),
         max_diameter(0),
         mean_std_dev(1),
         crystallization_pt(0),
@@ -53,21 +57,26 @@ struct Mode final {
   }
   /// Creates a new aerosol particle mode.
   /// @param [in] name A unique name for this mode.
-  /// @param [in] min_diameter The minimum diameter for particles that belong
-  ///                          to this mode [m].
-  /// @param [in] max_diameter The maximum diameter for particles that belong
-  ///                          to this mode [m].
-  /// @param [in] mean_std_dev The geometric standard deviation for this mode.
+  /// @param [in] min_diam The minimum diameter for particles that belong
+  ///                      to this mode [m].
+  /// @param [in] nom_diam The nominal diameter for particles that belong
+  ///                      to this mode [m].
+  /// @param [in] max_diam The maximum diameter for particles that belong
+  ///                      to this mode [m].
+  /// @param [in] sigma    The geometric standard deviation for this mode.
   /// @param [in] crystal_pt The crystallization point of the mode
   /// @param [in] deliq_pt The deliquescence point of the mode
-  Mode(const std::string &name, Real min_diam, Real max_diam, Real sigma,
-       Real crystal_pt, Real deliq_pt)
+  Mode(const std::string &name, Real min_diam, Real nom_diam, Real max_diam,
+       Real sigma, Real crystal_pt, Real deliq_pt)
       : min_diameter(min_diam),
+        nom_diameter(nom_diam),
         max_diameter(max_diam),
         mean_std_dev(sigma),
         crystallization_pt(crystal_pt),
         deliquescence_pt(deliq_pt) {
     EKAT_ASSERT(max_diam > min_diam);
+    EKAT_ASSERT(nom_diam > min_diam);
+    EKAT_ASSERT(max_diam > nom_diam);
     EKAT_ASSERT(deliq_pt > crystal_pt);
     EKAT_ASSERT(sigma >= 1);
     EKAT_ASSERT(name.size() < NAME_LEN);
@@ -77,6 +86,7 @@ struct Mode final {
   KOKKOS_INLINE_FUNCTION
   Mode(const Mode &m)
       : min_diameter(m.min_diameter),
+        nom_diameter(m.nom_diameter),
         max_diameter(m.max_diameter),
         mean_std_dev(m.mean_std_dev),
         crystallization_pt(m.crystallization_pt),
@@ -87,6 +97,7 @@ struct Mode final {
   KOKKOS_INLINE_FUNCTION
   Mode &operator=(const Mode &m) {
     min_diameter = m.min_diameter;
+    nom_diameter = m.nom_diameter;
     max_diameter = m.max_diameter;
     mean_std_dev = m.mean_std_dev;
     crystallization_pt = m.crystallization_pt;
@@ -104,6 +115,9 @@ struct Mode final {
 
   /// The minimum diameter for particles that belong to this mode.
   Real min_diameter;
+
+  /// The nominal diameter for particles that belong to this mode.
+  Real nom_diameter;
 
   /// The maximum diameter for particles that belong to this mode.
   Real max_diameter;
@@ -187,12 +201,13 @@ inline std::vector<Mode> create_mam4_modes() {
   const std::vector<std::string> mode_names = {"accumulation", "aitken",
                                                "coarse", "primary_carbon"};
   const std::vector<Real> mode_min_diam = {5.35e-8, 8.7e-9, 1e-6, 1e-8};
+  const std::vector<Real> mode_nom_diam = {1.1e-07, 2.6e-08, 2e-06, 5e-08};
   const std::vector<Real> mode_max_diam = {4.4e-7, 5.2e-8, 4e-6, 1e-7};
   const std::vector<Real> mode_std_dev = {1.8, 1.6, 1.8, 1.6};
   std::vector<Mode> result(4);
   for (int i = 0; i < 4; ++i) {
-    result[i] = Mode(mode_names[i], mode_min_diam[i], mode_max_diam[i],
-                     mode_std_dev[i], rh_crystal, rh_deliq);
+    result[i] = Mode(mode_names[i], mode_min_diam[i], mode_nom_diam[i],
+                     mode_max_diam[i], mode_std_dev[i], rh_crystal, rh_deliq);
   }
   return result;
 }

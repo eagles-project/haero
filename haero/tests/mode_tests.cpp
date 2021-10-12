@@ -16,16 +16,18 @@ using namespace haero;
 TEST_CASE("mode_ctor", "") {
   // Set constants
   static constexpr Real min_diameter = 8.7e-9;
+  static constexpr Real nom_diameter = 2.6e-08;
   static constexpr Real max_diameter = 5.2e-8;
   static constexpr Real mean_std_dev = 1.6;
   static constexpr Real crystallization_pt = 0.35;
   static constexpr Real deliquescence_pt = 0.8;
 
   // Create a representation of the Aitken mode.
-  Mode aitken("Aitken", min_diameter, max_diameter, mean_std_dev,
+  Mode aitken("Aitken", min_diameter, nom_diameter, max_diameter, mean_std_dev,
               crystallization_pt, deliquescence_pt);
   REQUIRE(aitken.name() == "Aitken");
   REQUIRE(aitken.min_diameter == Real(min_diameter));
+  REQUIRE(aitken.nom_diameter == Real(nom_diameter));
   REQUIRE(aitken.max_diameter == Real(max_diameter));
   REQUIRE(aitken.mean_std_dev == Real(mean_std_dev));
 
