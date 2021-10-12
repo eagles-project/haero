@@ -30,6 +30,8 @@ std::vector<Mode> read_modes(const YAML::Node& root) {
       auto mnode = iter->second;
       if (not mnode["D_min"]) {
         throw YamlException("mode entry has no minimum diameter (D_min).");
+      } else if (not mnode["D_nom"]) {
+        throw YamlException("mode entry has no nominal diameter (D_nom).");
       } else if (not mnode["D_max"]) {
         throw YamlException("mode entry has no maximum diameter (D_max).");
       } else if (not mnode["sigma"]) {
@@ -42,7 +44,7 @@ std::vector<Mode> read_modes(const YAML::Node& root) {
             "mode entry has no deliquesence relative humidity (rhdeliq)");
       } else {
         modes.push_back(
-            Mode(name, mnode["D_min"].as<Real>(), mnode["D_max"].as<Real>(),
+            Mode(name, mnode["D_min"].as<Real>(), mnode["D_nom"].as<Real>(),mnode["D_max"].as<Real>(),
                  mnode["sigma"].as<Real>(), mnode["rhcrystal"].as<Real>(),
                  mnode["rhdeliq"].as<Real>()));
       }
