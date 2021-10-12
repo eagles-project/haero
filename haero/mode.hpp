@@ -66,8 +66,8 @@ struct Mode final {
   /// @param [in] mean_std_dev The geometric standard deviation for this mode.
   /// @param [in] crystal_pt The crystallization point of the mode
   /// @param [in] deliq_pt The deliquescence point of the mode
-  Mode(const std::string &name, Real min_diam, Real nom_diam, Real max_diam, Real sigma,
-       Real crystal_pt, Real deliq_pt)
+  Mode(const std::string &name, Real min_diam, Real nom_diam, Real max_diam,
+       Real sigma, Real crystal_pt, Real deliq_pt)
       : min_diameter(min_diam),
         nom_diameter(nom_diam),
         max_diameter(max_diam),
@@ -200,14 +200,14 @@ inline std::vector<Mode> create_mam4_modes() {
   static constexpr Real rh_deliq = 0.8;
   const std::vector<std::string> mode_names = {"accumulation", "aitken",
                                                "coarse", "primary_carbon"};
-  const std::vector<Real> mode_min_diam = {5.35e-8, 8.7e-9,  1e-6,  1e-8};
+  const std::vector<Real> mode_min_diam = {5.35e-8, 8.7e-9, 1e-6, 1e-8};
   const std::vector<Real> mode_nom_diam = {1.1e-07, 2.6e-08, 2e-06, 5e-08};
-  const std::vector<Real> mode_max_diam = {4.4e-7,  5.2e-8,  4e-6,  1e-7};
+  const std::vector<Real> mode_max_diam = {4.4e-7, 5.2e-8, 4e-6, 1e-7};
   const std::vector<Real> mode_std_dev = {1.8, 1.6, 1.8, 1.6};
   std::vector<Mode> result(4);
   for (int i = 0; i < 4; ++i) {
-    result[i] = Mode(mode_names[i], mode_min_diam[i], mode_nom_diam[i], mode_max_diam[i],
-                     mode_std_dev[i], rh_crystal, rh_deliq);
+    result[i] = Mode(mode_names[i], mode_min_diam[i], mode_nom_diam[i],
+                     mode_max_diam[i], mode_std_dev[i], rh_crystal, rh_deliq);
   }
   return result;
 }

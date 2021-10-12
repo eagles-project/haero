@@ -44,9 +44,9 @@ std::vector<Mode> read_modes(const YAML::Node& root) {
             "mode entry has no deliquesence relative humidity (rhdeliq)");
       } else {
         modes.push_back(
-            Mode(name, mnode["D_min"].as<Real>(), mnode["D_nom"].as<Real>(),mnode["D_max"].as<Real>(),
-                 mnode["sigma"].as<Real>(), mnode["rhcrystal"].as<Real>(),
-                 mnode["rhdeliq"].as<Real>()));
+            Mode(name, mnode["D_min"].as<Real>(), mnode["D_nom"].as<Real>(),
+                 mnode["D_max"].as<Real>(), mnode["sigma"].as<Real>(),
+                 mnode["rhcrystal"].as<Real>(), mnode["rhdeliq"].as<Real>()));
       }
     }
   } else {
