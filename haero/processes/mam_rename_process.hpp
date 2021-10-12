@@ -19,11 +19,12 @@ void dryvolume_change(const TeamType& team, const int imode,
                       const int start_species_index,
                       const int end_species_index, ColumnView dryvol,
                       ColumnView deldryvol, ColumnView mass_2_vol) {
+  printf("(%d,%d)\n", start_species_index, end_species_index);
   Kokkos::parallel_scan(
       Kokkos::TeamThreadRange(team, start_species_index, end_species_index),
       KOKKOS_LAMBDA(const std::size_t ispec, PackType& update,
                     const bool final_pass) {
-        update += q_del_growth(ispec, imode) * mass_2_vol(ispec);
+        update += q_del_growth(imode, ispec) * mass_2_vol(ispec);
         if (final_pass) {
           deldryvol(ispec) = update;
         }
@@ -32,8 +33,9 @@ void dryvolume_change(const TeamType& team, const int imode,
       Kokkos::TeamThreadRange(team, start_species_index, end_species_index),
       KOKKOS_LAMBDA(const std::size_t ispec, PackType& update,
                     const bool final_pass) {
-        update += q_vmr(ispec, imode) * mass_2_vol(ispec);
+        update += q_vmr(imode, ispec) * mass_2_vol(ispec);
         if (final_pass) {
+          //segfault
           dryvol(ispec) = update - deldryvol(ispec);
         }
       });
@@ -63,9 +65,7 @@ void compute_dryvol_change_in_src_mode(
         // find start and end index of species in this mode in the
         // "population" array The indices are same for interstitial and
         // cloudborne species
-        end_species_for_mode(src_mode) =
-            (src_mode == num_modes) ? num_populations
-                                    : population_offsets(src_mode + 1) - 1;
+        end_species_for_mode(src_mode) = population_offsets(src_mode + 1);
       });
 
   for (int src_mode = 0; src_mode < num_modes; src_mode++) {
@@ -116,8 +116,8 @@ class MAMRenameProcess final : public DeviceAerosolProcess<MAMRenameProcess> {
     Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, max_aer), KOKKOS_LAMBDA(const int i) {
           for (int j = 0; j < num_modes; j++) {
-            qi_del_growth(i, j) = 0;
-            qcld_del_growth(i, j) = 0;
+            qi_del_growth(j, i) = 0;
+            qcld_del_growth(j, i) = 0;
           }
         });
 

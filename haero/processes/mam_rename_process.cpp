@@ -61,17 +61,21 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   max_aer = num_modes;
   num_populations = config.num_aerosol_populations;
 
-  // Reserve memory for private fields
   Kokkos::resize(stencil, num_modes);
   Kokkos::resize(dgnumlo, num_modes);
   Kokkos::resize(dgnumhi, num_modes);
   Kokkos::resize(dgnum, num_modes);
   Kokkos::resize(alnsg, num_modes);
   Kokkos::resize(mass_2_vol, num_modes);
-  Kokkos::resize(population_offsets, num_modes);
 
-  Kokkos::resize(qi_del_growth, max_aer, num_modes);
-  Kokkos::resize(qcld_del_growth, max_aer, num_modes);
+  // Total number of populations is population_offsets[num_modes]
+  Kokkos::resize(population_offsets, num_modes + 1);
+
+  Kokkos::resize(qi_del_growth, num_modes, max_aer);
+  Kokkos::resize(qcld_del_growth, num_modes, max_aer);
+  Kokkos::deep_copy(qi_del_growth, 0.);
+  Kokkos::deep_copy(qcld_del_growth, 0.);
+
   Kokkos::resize(dryvol_a, num_modes);
   Kokkos::resize(dryvol_c, num_modes);
   Kokkos::resize(deldryvol_a, num_modes);
@@ -83,11 +87,14 @@ void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   {
     auto population_offsets_host =
         Kokkos::create_mirror_view(population_offsets);
+    auto start_spec_host = Kokkos::create_mirror_view(start_species_for_mode);
     for (int i = 0; i < num_modes; i++) {
-      population_offsets_host(i) = config.population_index(i, 0);
+      start_spec_host(i) = population_offsets_host(i) =
+          config.population_index(i, 0);
     }
+    Kokkos::deep_copy(start_species_for_mode, start_spec_host);
+    population_offsets_host(num_modes) = num_populations;
     Kokkos::deep_copy(population_offsets, population_offsets_host);
-    Kokkos::deep_copy(start_species_for_mode, population_offsets_host);
   }
 
   {
