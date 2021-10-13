@@ -14,7 +14,7 @@ module haero
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found, &
-            c_to_f_string, f_to_c_string
+            c_to_f_string, f_to_c_string, get_strt_end_spec_ind
 
 
   !> This Fortran type is the equivalent of the C++ Mode struct.
@@ -459,6 +459,27 @@ contains
     end do
     model%num_populations = model%population_offsets(model%num_modes+1) - 1
   end subroutine
+
+  !> Given a population-offset array and a mode number imode, get the starting and ending index
+  !> into the population array for all the species in imode
+  subroutine get_strt_end_spec_ind(p_offsets, imode, s_spec_ind, e_spec_ind)
+
+    !inputs
+    integer, intent(in) :: p_offsets(:) !population offsets array
+    integer, intent(in) :: imode ! mode number
+
+    !outputs
+    integer, intent(out) :: s_spec_ind ! start index
+    integer, intent(out) :: e_spec_ind !end index
+
+    s_spec_ind = p_offsets(imode)       !start index
+    e_spec_ind = p_offsets(imode+1) - 1 !end index of species for all modes expect the last mode
+
+    if(imode.eq.model%num_modes) then ! for the last mode
+       e_spec_ind = model%num_populations !if imode==nmodes, end index is the total number of species
+    endif
+
+  end subroutine get_strt_end_spec_ind
 
   ! This subroutine gets called when the C++ process exits.
   subroutine haerotran_finalize() bind(c)
