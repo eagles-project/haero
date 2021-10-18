@@ -80,17 +80,17 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
     const PackType del_h2so4_gasprod(random());
     const PackType del_h2so4_aeruptk(random());
 
-    view_1d_pack_type qgas_cur("qgas_cur", 4);
-    view_1d_pack_type qgas_avg("qgas_avg", 4);
-    view_1d_pack_type qnum_cur("qnum_cur", 4);
-    view_1d_pack_type qwtr_cur("qwrt_cur", 4);
-    view_2d_pack_type qaer_cur("qaer_cur", 4, 4);
-    for (int i = 0; i < 4; ++i) {
+    view_1d_pack_type qgas_cur("qgas_cur", num_gases);
+    view_1d_pack_type qgas_avg("qgas_avg", num_gases);
+    view_1d_pack_type qnum_cur("qnum_cur", num_gases);
+    view_1d_pack_type qwtr_cur("qwrt_cur", num_gases);
+    view_2d_pack_type qaer_cur("qaer_cur", num_gases, num_gases);
+    for (int i = 0; i < num_gases; ++i) {
       qgas_cur(i) = random();
       qgas_avg(i) = random();
       qnum_cur(i) = random();
       qwtr_cur(i) = random();
-      for (int j = 0; j < 4; ++j) {
+      for (int j = 0; j < num_gases; ++j) {
         qaer_cur(i, j) = random();
       }
     }
