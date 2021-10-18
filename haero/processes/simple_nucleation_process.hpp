@@ -74,6 +74,9 @@ class SimpleNucleationProcess final
   /// Number of aerosol modes.
   int num_modes_;
 
+  /// Index of nucleation mode (into which nucleated particles are placed).
+  int nuc_mode_;
+
   // Species and population indices of SO4 aerosol within aerosol modes
   IntVector iaer_so4_, ipop_so4_;
 
@@ -90,10 +93,10 @@ class SimpleNucleationProcess final
   RealVector d_max_aer_;
 
   // Molecular weights of H2SO4 and NH3 gases.
-  Real mu_h2so4_, mu_nh3_;
+  Real mw_h2so4_, mw_nh3_;
 
   // Molecular weights of SO4 and NH4 aerosols.
-  Real mu_so4_, mu_nh4_;
+  Real mw_so4_, mw_nh4_;
 
  public:
   /// Constructor
@@ -105,7 +108,7 @@ class SimpleNucleationProcess final
 
   /// Copy constructor (for transferring between host and device)
   KOKKOS_INLINE_FUNCTION
-  SimpleNucleationProcess(const SimpleNucleationProcess &rhs)
+  SimpleNucleationProcess(const SimpleNucleationProcess& rhs)
       : DeviceAerosolProcess<SimpleNucleationProcess>(rhs),
         nucleation_rate_factor_(rhs.nucleation_rate_factor_),
         pbl_factor_(rhs.pbl_factor_),
@@ -115,6 +118,7 @@ class SimpleNucleationProcess final
         igas_h2so4_(rhs.igas_h2so4_),
         igas_nh3_(rhs.igas_nh3_),
         num_modes_(rhs.num_modes_),
+        nuc_mode_(rhs.nuc_mode_),
         iaer_so4_(rhs.iaer_so4_),
         ipop_so4_(rhs.ipop_so4_),
         iaer_nh4_(rhs.iaer_nh4_),
@@ -124,10 +128,10 @@ class SimpleNucleationProcess final
         d_max_aer_(rhs.d_max_aer_) {}
 
  private:
-  void init_(const ModalAerosolConfig &config) override;
+  void init_(const ModalAerosolConfig& config) override;
 
   /// Computes the base nucleation rate.
-  /// @param [in] q_h2so4 the mass mixing ratio of H2SO4 gas [kg gas/kg dry air]
+  /// @param [in] c_h2so4 the number concentration of H2SO4 gas [#/cc]
   /// @param [in] q_nh3 the mass mixing ratio of NH3 gas [kg gas/kg dry air]
   /// @param [in] temp atmospheric temperature [K]
   /// @param [in] rel_hum atmospheric relative humidity [-]
@@ -137,47 +141,50 @@ class SimpleNucleationProcess final
   /// @param [out] n_crit_h2so4 the number of H2SO4 gas molecules in the cluster
   /// @param [out] n_crit_nh3 the number of NH3 gas molecules in the cluster
   KOKKOS_INLINE_FUNCTION
-  void compute_nucleation_rate_(const PackType& q_h2so4, const PackType& q_nh3,
+  void compute_nucleation_rate_(const PackType& c_h2so4, const PackType& q_nh3,
                                 const PackType& temp, const PackType& rel_hum,
-                                const PackType& rho_d,
-                                PackType& J, PackType& r_crit,
-                                PackType& n_crit_h2so4, PackType& n_crit_nh3) {
-    auto c_h2so4 =
-        1e6 * conversions::number_conc_from_mmr(q_h2so4, mu_h2so4_, rho_d);
+                                const PackType& rho_d, PackType& J,
+                                PackType& r_crit, PackType& n_crit_h2so4,
+                                PackType& n_crit_nh3) const {
     if (nucleation_method_ == binary_nucleation) {
       auto x_crit =
-        vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp, rel_hum);
+          vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp, rel_hum);
       J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
-      auto n_crit = vehkamaki2002::num_critical_molecules(c_h2so4, temp,
-          rel_hum, x_crit);
+      auto n_crit =
+          vehkamaki2002::num_critical_molecules(c_h2so4, temp, rel_hum, x_crit);
       n_crit_h2so4 = n_crit;
       n_crit_nh3 = 0;
       r_crit = vehkamaki2002::critical_radius(x_crit, n_crit);
     } else {
       EKAT_KERNEL_ASSERT(nucleation_method_ == ternary_nucleation);
       // Compute the molar/volume mixing ratio of NH3 gas [ppt].
-      auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mu_nh3_);
+      auto xi_nh3 = 1e12 * conversions::vmr_from_mmr(q_nh3, mw_nh3_);
 
       auto log_J =
-        merikanto2007::log_nucleation_rate(temp, rel_hum, c_h2so4, xi_nh3);
+          merikanto2007::log_nucleation_rate(temp, rel_hum, c_h2so4, xi_nh3);
       J = exp(log_J);
       n_crit_h2so4 =
-        merikanto2007::num_h2so4_molecules(log_J, temp, c_h2so4, xi_nh3);
+          merikanto2007::num_h2so4_molecules(log_J, temp, c_h2so4, xi_nh3);
       n_crit_nh3 =
-        merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
+          merikanto2007::num_nh3_molecules(log_J, temp, c_h2so4, xi_nh3);
       r_crit = merikanto2007::critical_radius(log_J, temp, c_h2so4, xi_nh3);
     }
   }
 
-  // Applies a planetary boundary layer correction to the nucleation rate J,
-  // the critical cluster radius r_crit, and the critical number concentrations
-  // of H2SO4 and NH3 gases.
+  /// Applies a planetary boundary layer correction to the nucleation rate J,
+  /// the critical cluster radius r_crit, and the critical number concentrations
+  /// of H2SO4 and NH3 gases.
+  /// @param [in] c_h2so4 the number concentration of H2SO4 gas [#/cc]
+  /// @param [in] h the height of the given cell(s) [m]
+  /// @param [in] pblh the planetary boundary layer height [m]
   KOKKOS_INLINE_FUNCTION
-  void apply_pbl_correction_(PackType& J, PackType& r_crit,
-                             PackType& n_crit_h2so4, PackType& n_crit_nh3) {
+  void apply_pbl_correction_(const PackType& c_h2so4, const PackType& h,
+                             const PackType& pblh, PackType& J,
+                             PackType& r_crit, PackType& n_crit_h2so4,
+                             PackType& n_crit_nh3) const {
     if (pbl_method_ != no_pbl_correction) {
       PackType J_pbl(0);
-      const auto within_pbl = (h <= atmosphere.planetary_boundary_height);
+      const auto within_pbl = (h <= pblh);
       if (pbl_method_ == first_order_pbl_correction) {
         J_pbl.set(within_pbl,
                   wang2008::first_order_pbl_nucleation_rate(c_h2so4));
@@ -203,13 +210,12 @@ class SimpleNucleationProcess final
       auto m_crit = rho_h2so4 * V_crit;       // mass [g]
       n_crit_h2so4 = m_crit / mw_h2so4 * Na;
       n_crit_nh3 = 0;
-      n_crit = n_crit_h2so4;
     }
   }
 
   KOKKOS_INLINE_FUNCTION
-  void apply_growth_correction_(const PackType& c_h2so4, const PackType& temp,
-                                PackType& J) {
+  void apply_growth_correction_(const PackType& c_h2so4, const PackType& c_so4,
+                                const PackType& temp, PackType& J) const {
     // Determine the mode(s) into which we place the nucleated particles.
     // Each particle large enough to fit into a mode directly is placed
     // into this mode--others are grown until they fit into the mode with
@@ -219,21 +225,16 @@ class SimpleNucleationProcess final
     Real final_nuc_diam = 3;    // final, grown nucleus diameter [nm]
     // TODO
 
-    int nuc_mode = 0;  // TODO: Need to decide which mode to use for this
-    Real mean_modal_diam = d_mean_aer_(nuc_mode);
+    Real mean_modal_diam = d_mean_aer_(nuc_mode_);
 
     // Apply the correction of Kerminen and Kulmala (2002) to the
     // nucleation rate based on their growth.
     PackType rho_nuc;              // TODO
     Real gamma_h2so4 = 5.0 / 3.0;  // TODO: can we do better?
     PackType speed_h2so4 =
-        gas_kinetics::molecular_speed(temp, mu_h2so4_, gamma_h2so4);
+        gas_kinetics::molecular_speed(temp, mw_h2so4_, gamma_h2so4);
     PackType nuc_growth_rate = kerminen2002::nucleation_growth_rate(
-        rho_nuc, c_h2so4, speed_h2so4, mu_h2so4_);
-    const auto q_so4 =
-        prognostics.interstitial_aerosols(ipop_so4_(nuc_mode), k);
-    auto c_so4 =
-        1e6 * conversions::number_conc_from_mmr(q_so4, mu_so4_, rho_d);
+        rho_nuc, c_h2so4, speed_h2so4, mw_h2so4_);
     static constexpr Real h2so4_accom_coeff = 0.65;
     auto apparent_J_factor = kerminen2002::apparent_nucleation_factor(
         c_so4, mean_modal_diam, h2so4_accom_coeff, temp, nuc_growth_rate,
@@ -245,10 +246,10 @@ class SimpleNucleationProcess final
   }
 
   KOKKOS_INLINE_FUNCTION
-  void run_(const TeamType &team, Real t, Real dt,
-            const Prognostics &prognostics, const Atmosphere &atmosphere,
-            const Diagnostics &diagnostics,
-            const Tendencies &tendencies) const override {
+  void run_(const TeamType& team, Real t, Real dt,
+            const Prognostics& prognostics, const Atmosphere& atmosphere,
+            const Diagnostics& diagnostics,
+            const Tendencies& tendencies) const override {
     // Do we have any gas from which to nucleate new aerosol particles?
     if ((igas_h2so4_ == -1) or
         ((nucleation_method_ == ternary_nucleation) and (igas_nh3_ == -1))) {
@@ -272,40 +273,61 @@ class SimpleNucleationProcess final
       const auto press = atmosphere.pressure(k);
       const auto qv = atmosphere.vapor_mixing_ratio(k);
       const auto h = atmosphere.height(k);
+      const Real pblh = atmosphere.planetary_boundary_height;
       const auto rho_d = gas_kinetics::air_mass_density(press, temp, qv);
       auto rel_hum = conversions::relative_humidity_from_vapor_mixing_ratio(
           qv, press, temp);
       // Mass mixing ratios (mmr, [kg gas/kg dry air]) for H2SO4 and NH3 gas.
       const auto q_h2so4 = prognostics.gases(igas_h2so4_, k);
-      auto q_nh3 = 0;
-      if (igas_nh3_ >= 0) {
-        q_nh3 = prognostics.gases(igas_nh3_, k);
-      }
+      const PackType q_nh3 =
+          (igas_nh3_ >= 0) ? prognostics.gases(igas_nh3_, k) : 0;
+
+      // Find the number concentration for H2SO4, which is used by our
+      // parameterizations.
+      auto c_h2so4 =
+          1e6 * conversions::number_conc_from_mmr(q_h2so4, mw_h2so4_, rho_d);
 
       // Compute the base rate of nucleation using our selected method.
-      PackType J;       // nucleation rate [#/cc]
-      PackType r_crit;  // radius of critical cluster [nm]
-      PackType n_crit_h2so4, n_crit_nh3; // # gas molecules in the cluser [#]
-      compute_nucleation_rate_(q_h2so4, q_nh3, temp, rel_hum, rho_d,
-                               J, r_crit, n_crit_h2so4, n_crit_nh3);
+      PackType J;                         // nucleation rate [#/cc]
+      PackType r_crit;                    // radius of critical cluster [nm]
+      PackType n_crit_h2so4, n_crit_nh3;  // # gas molecules in the cluser [#]
+      compute_nucleation_rate_(c_h2so4, q_nh3, temp, rel_hum, rho_d, J, r_crit,
+                               n_crit_h2so4, n_crit_nh3);
 
       // Apply a correction for the planetary boundary layer if requested.
-      apply_pbl_correction_(J, r_crit, n_crit_h2so4, n_crit_nh3);
+      apply_pbl_correction_(c_h2so4, h, pblh, J, r_crit, n_crit_h2so4,
+                            n_crit_nh3);
       auto n_crit = n_crit_h2so4 + n_crit_nh3;
 
       // Grow the nucleated particles, applying the growth factor to J.
-      //apply_growth_correction_(?);
+      int p_so4 = ipop_so4_(nuc_mode_);  // population index for nucleated SO4.
+      const auto q_so4 =
+          prognostics.interstitial_aerosols(ipop_so4_(nuc_mode_), k);
+      auto c_so4 =
+          1e6 * conversions::number_conc_from_mmr(q_so4, mw_so4_, rho_d);
+      apply_growth_correction_(c_h2so4, c_so4, temp, J);
 
-      // Determine the mode(s) into which the nucleated particles are placed.
-      //auto destModes = determine_particle_modes_(q_h2so4, q_nh3, rel_hum, ?);
+      // Compute tendencies. All nucleated particles are placed into the
+      // selected nucleation mode.
 
-      // Compute tendencies.
+      // First, compute the SO4 mass mixing ratio tendency.
+      const auto mw_dry_air = Constants::molec_weight_dry_air;
+      const auto xi_air =
+          rho_d * mw_dry_air;              // air molar concentration [kmol/m3]
+      const auto dqdt = 1e6 * J / xi_air;  // SO4 mass mixing ratio tendency
+      tendencies.interstitial_aerosols(p_so4, k) = dqdt;
+
+      // Now compute the corresponding number mixing ratio tendency.
+      const auto vol_d = 1.0;            // TODO: dry volume of aerosol cluster
+      const auto m_so4 = rho_d * vol_d;  // mass of dry air
+      auto dndt = dqdt * (m_so4 / mw_so4_);  // SO4 number mixing ratio tendency
+      tendencies.interstitial_num_mix_ratios(nuc_mode_, k) = dndt;
     });
   }
 
   using AerosolProcess::set_param_;
-  void set_param_(const std::string &name, Real value) override;
-  void set_param_(const std::string &name, int value) override;
+  void set_param_(const std::string& name, Real value) override;
+  void set_param_(const std::string& name, int value) override;
 };
 
 }  // namespace haero

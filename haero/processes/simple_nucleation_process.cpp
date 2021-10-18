@@ -18,6 +18,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       igas_h2so4_(-1),
       igas_nh3_(-1),
       num_modes_(),
+      nuc_mode_(-1),
       iaer_so4_(),
       ipop_so4_(),
       iaer_nh4_(),
@@ -28,6 +29,10 @@ SimpleNucleationProcess::SimpleNucleationProcess()
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   num_modes_ = config.num_modes();
+
+  // Find the Aitken mode, into which we place nucleated particles.
+  nuc_mode_ = config.aerosol_mode_index("aitken", false);
+  EKAT_REQUIRE_MSG(nuc_mode_ >= 0, "Aitken mode not found in aerosol config!");
 
   // Set indices for species and gases.
   Kokkos::resize(iaer_so4_, num_modes_);
@@ -73,7 +78,7 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     for (int g = 0; g < config.num_gases(); ++g) {
       const auto &species = config.gas_species[g];
       if (species.symbol() == "H2SO4") {
-        mu_h2so4_ = species.molecular_weight;
+        mw_h2so4_ = species.molecular_weight;
         break;
       }
     }
@@ -82,7 +87,7 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     for (int g = 0; g < config.num_gases(); ++g) {
       const auto &species = config.gas_species[g];
       if (species.symbol() == "NH3") {
-        mu_nh3_ = species.molecular_weight;
+        mw_nh3_ = species.molecular_weight;
         break;
       }
     }
@@ -94,14 +99,14 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
                    [&](auto species) { return species.symbol() == "SO4"; });
   if (iter != config.aerosol_species.end()) {
     const AerosolSpecies &species = *iter;
-    mu_so4_ = species.molecular_weight;
+    mw_so4_ = species.molecular_weight;
   }
   iter =
       std::find_if(config.aerosol_species.begin(), config.aerosol_species.end(),
                    [&](auto species) { return species.symbol() == "NH4"; });
   if (iter != config.aerosol_species.end()) {
     const AerosolSpecies &species = *iter;
-    mu_nh4_ = species.molecular_weight;
+    mw_nh4_ = species.molecular_weight;
   }
 
   // Set our region of validity based on our nucleation parameterization.
@@ -126,9 +131,9 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     if (igas_nh3_ != -1) {
       auto xi_nh3_range = merikanto2007::valid_xi_nh3_range();  // [ppt]
       Real c_nh3_min =
-          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.first, mu_nh3_);
+          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.first, mw_nh3_);
       Real c_nh3_max =
-          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.second, mu_nh3_);
+          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.second, mw_nh3_);
       rov.set_gas_bounds(igas_nh3_, c_nh3_min, c_nh3_max);
     }
   }
