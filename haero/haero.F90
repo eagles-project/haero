@@ -14,7 +14,7 @@ module haero
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, model, var_not_found, &
-            c_to_f_string, f_to_c_string
+            c_to_f_string, f_to_c_string, get_strt_end_spec_ind
 
 
   !> This Fortran type is the equivalent of the C++ Mode struct.
@@ -23,6 +23,8 @@ module haero
     character(len=:), allocatable :: name
     !> Minimum particle diameter
     real(wp) :: min_diameter
+    !> Nominal particle diameter
+    real(wp) :: nom_diameter
     !> Maximum particle diameter
     real(wp) :: max_diameter
     !> Geometric mean standard deviation
@@ -37,6 +39,8 @@ module haero
     contains
       !> Given the max diameter, min_vol_to_num_ratio computes minimum volume to number ratio for a mode
       procedure :: min_vol_to_num_ratio => m_min_vol_to_num_ratio
+      !> Given the nom diameter, nom_vol_to_num_ratio computes nominal volume to number ratio for a mode
+      procedure :: nom_vol_to_num_ratio => m_nom_vol_to_num_ratio
       !> Given the min diameter, max_vol_to_num_ratio computes maximum volume to number ratio for a mode
       procedure :: max_vol_to_num_ratio => m_max_vol_to_num_ratio
    end type mode_t
@@ -370,13 +374,14 @@ contains
     allocate(model%aero_species(size(model%modes), max_num_species))
   end subroutine
 
-  subroutine haerotran_set_mode(mode, name, min_d, max_d, std_dev, rhdeliq, rhcrystal) bind(c)
+  subroutine haerotran_set_mode(mode, name, min_d, nom_d, max_d, std_dev, rhdeliq, rhcrystal) bind(c)
     use iso_c_binding, only: c_int, c_ptr, c_real
     implicit none
 
     integer(c_int), value, intent(in) :: mode
     type(c_ptr), value, intent(in) :: name
     real(c_real), value, intent(in) :: min_d
+    real(c_real), value, intent(in) :: nom_d
     real(c_real), value, intent(in) :: max_d
     real(c_real), value, intent(in) :: std_dev
     real(c_real), value, intent(in) :: rhdeliq
@@ -384,6 +389,7 @@ contains
 
     model%modes(mode)%name = c_to_f_string(name)
     model%modes(mode)%min_diameter = min_d
+    model%modes(mode)%nom_diameter = nom_d
     model%modes(mode)%max_diameter = max_d
     model%modes(mode)%mean_std_dev = std_dev
     model%modes(mode)%log_sigma = log(std_dev)
@@ -459,6 +465,27 @@ contains
     end do
     model%num_populations = model%population_offsets(model%num_modes+1) - 1
   end subroutine
+
+  !> Given a population-offset array and a mode number imode, get the starting and ending index
+  !> into the population array for all the species in imode
+  subroutine get_strt_end_spec_ind(p_offsets, imode, s_spec_ind, e_spec_ind)
+
+    !inputs
+    integer, intent(in) :: p_offsets(:) !population offsets array
+    integer, intent(in) :: imode ! mode number
+
+    !outputs
+    integer, intent(out) :: s_spec_ind ! start index
+    integer, intent(out) :: e_spec_ind !end index
+
+    s_spec_ind = p_offsets(imode)       !start index
+    e_spec_ind = p_offsets(imode+1) - 1 !end index of species for all modes expect the last mode
+
+    if(imode.eq.model%num_modes) then ! for the last mode
+       e_spec_ind = model%num_populations !if imode==nmodes, end index is the total number of species
+    endif
+
+  end subroutine get_strt_end_spec_ind
 
   ! This subroutine gets called when the C++ process exits.
   subroutine haerotran_finalize() bind(c)
@@ -609,6 +636,17 @@ contains
     min_vol2num = 1.0_wp/(pi_sixth*(imode%max_diameter**3.0_wp)*exp(4.5_wp*(log(imode%mean_std_dev))**2.0_wp))
 
   end function m_min_vol_to_num_ratio
+
+  !> For a given mode, computes nominal value of volume to number ratio
+  function m_nom_vol_to_num_ratio(imode) result(nom_vol2num)
+
+    implicit none
+    class(mode_t),   intent(in) :: imode
+
+    real(wp) :: nom_vol2num
+    nom_vol2num = 1.0_wp/(pi_sixth*(imode%nom_diameter**3.0_wp)*exp(4.5_wp*(log(imode%mean_std_dev))**2.0_wp))
+
+  end function m_nom_vol_to_num_ratio
 
   !> For a given mode, computes maximum value of volume to number ratio
   !> Since it is propotional to negative power 3 of the diameter,
