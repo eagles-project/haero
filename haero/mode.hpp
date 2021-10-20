@@ -169,7 +169,7 @@ struct Mode final {
      again
   */
   template <typename T>
-  KOKKOS_INLINE_FUNCTION T min_vol_to_num_ratio() {
+  KOKKOS_INLINE_FUNCTION T min_vol_to_num_ratio() const {
     return 1 / mean_particle_volume_from_diameter(max_diameter);
   }
 
@@ -181,7 +181,7 @@ struct Mode final {
      again
   */
   template <typename T>
-  KOKKOS_INLINE_FUNCTION T max_vol_to_num_ratio() {
+  KOKKOS_INLINE_FUNCTION T max_vol_to_num_ratio() const {
     return 1 / mean_particle_volume_from_diameter(min_diameter);
   }
 

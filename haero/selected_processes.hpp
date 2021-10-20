@@ -117,6 +117,8 @@ struct SelectedProcesses final {
     /// MAM legacy Fortran calcsize process
     MAMFCalcsize,
 #endif
+    /// Host-only C++ version of calcsize process
+    MAMCalcsizeHostCXX,
     /// No calcsize process
     NoCalcsize
   };

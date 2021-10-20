@@ -42,6 +42,11 @@ CreateUnitTest(mam_rename_process_tests mam_rename_process_tests.cpp)
 CreateUnitTest(multi_column_process_tests multi_column_process_tests.cpp)
 CreateUnitTest(mam_nucleation_packed_tests mam_nucleation_packed_tests.cpp)
 
+if(HAERO_DEVICE STREQUAL CPU)
+  EkatCreateUnitTest(mam_calcsize_hostcxx_process_tests mam_calcsize_hostcxx_process_tests.cpp
+                     LIBS ${HAERO_LIBRARIES})
+endif()
+
 if (HAERO_FORTRAN)
   # Fortran process stub tests -- checks that data can be passed between C++ and
   # Fortran
