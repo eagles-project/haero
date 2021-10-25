@@ -204,6 +204,11 @@ Diagnostics::Token HostDiagnostics::get_string_to_token_modal(
 // See haero.F90 for details on how these functions are used.
 extern "C" {
 
+int d_num_levels_c(void* d) {
+  auto* diags = static_cast<HostDiagnostics*>(d);
+  return diags->num_levels();
+}
+
 Diagnostics::Token d_find_var_c(void* d, const char* name) {
   auto* diags = static_cast<HostDiagnostics*>(d);
   return diags->find_var(name);

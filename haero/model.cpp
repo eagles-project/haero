@@ -18,7 +18,6 @@ void haerotran_set_aero_species(int, int, const char*, const char*, Real, Real,
                                 Real);
 void haerotran_set_num_gas_species(int);
 void haerotran_set_gas_species(int, const char*, const char*, Real);
-void haerotran_set_num_levels(int);
 void haerotran_end_init();
 void haerotran_finalize();
 }
@@ -213,7 +212,6 @@ void Model::init_fortran() {
   }
 
   // Set dimensions.
-  haerotran_set_num_levels(num_levels_);
   haerotran_end_init();
 
   // Okay, the Fortran module is initialized.

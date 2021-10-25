@@ -107,7 +107,7 @@ class Prognostics final {
   /// Returns the number of gas species in the system.
   int num_gases() const;
 
-  /// Returns the number of vertical levels per column in the system.
+  /// Returns the number of vertical levels in the column.
   int num_levels() const;
 
   // --------------------------------------------------------------------------

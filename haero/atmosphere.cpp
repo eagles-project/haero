@@ -46,6 +46,11 @@ Atmosphere::Atmosphere(int num_levels, const ColumnView temp,
 // See haero.F90 for details on how these functions are used.
 extern "C" {
 
+int a_num_levels_c(void* a) {
+  auto* atm = static_cast<Atmosphere*>(a);
+  return atm->num_levels();
+}
+
 void* a_temperature_c(void* a) {
   auto* atm = static_cast<Atmosphere*>(a);
   auto& T = atm->temperature;

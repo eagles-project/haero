@@ -7,9 +7,9 @@ namespace haero {
 
 Tendencies::Tendencies(const Prognostics& prognostics) {
   int num_aerosol_populations = prognostics.num_aerosol_populations();
-  int num_levels = prognostics.num_levels();
-  int num_vert_packs = num_levels / HAERO_PACK_SIZE;
-  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
+  num_levels_ = prognostics.num_levels();
+  int num_vert_packs = num_levels_ / HAERO_PACK_SIZE;
+  if (num_vert_packs * HAERO_PACK_SIZE < num_levels_) {
     num_vert_packs++;
   }
   auto int_view_name = std::string("d/dt[") +
@@ -44,8 +44,7 @@ Tendencies::Tendencies(const Prognostics& prognostics) {
 
 const Tendencies& Tendencies::scale(Real factor) const {
   int num_populations = interstitial_aerosols.extent(0);
-  int num_levels = interstitial_aerosols.extent(1);
-  int num_vert_packs = PackInfo::num_packs(num_levels);
+  int num_vert_packs = PackInfo::num_packs(num_levels_);
   int num_gases = gases.extent(0);
   int num_modes = interstitial_num_mix_ratios.extent(0);
 
@@ -91,8 +90,7 @@ const Tendencies& Tendencies::scale(Real factor) const {
 
 void Tendencies::accumulate(const Tendencies& tendencies) {
   int num_populations = interstitial_aerosols.extent(0);
-  int num_levels = interstitial_aerosols.extent(1);
-  int num_vert_packs = PackInfo::num_packs(num_levels);
+  int num_vert_packs = PackInfo::num_packs(num_levels_);
   int num_gases = gases.extent(0);
   int num_modes = interstitial_num_mix_ratios.extent(0);
 
@@ -139,32 +137,37 @@ void Tendencies::accumulate(const Tendencies& tendencies) {
 // See haero.F90 for details on how these functions are used.
 extern "C" {
 
+int t_num_levels_c(void* t) {
+  auto* tends = static_cast<Tendencies*>(t);
+  return tends->num_levels();
+}
+
 void* t_int_aero_mix_frac_c(void* t) {
-  Tendencies* tends = (Tendencies*)t;
+  auto* tends = static_cast<Tendencies*>(t);
   auto mix_fracs = tends->interstitial_aerosols;
   return (void*)mix_fracs.data();
 }
 
 void* t_cld_aero_mix_frac_c(void* t) {
-  Tendencies* tends = (Tendencies*)t;
+  auto* tends = static_cast<Tendencies*>(t);
   auto mix_fracs = tends->cloud_aerosols;
   return (void*)mix_fracs.data();
 }
 
 void* t_gases_c(void* t) {
-  Tendencies* tends = (Tendencies*)t;
+  auto* tends = static_cast<Tendencies*>(t);
   auto mix_fracs = tends->gases;
   return (void*)mix_fracs.data();
 }
 
 void* t_interstitial_num_mix_ratios_c(void* t) {
-  Tendencies* tends = (Tendencies*)t;
+  auto* tends = static_cast<Tendencies*>(t);
   auto num_mix_ratios = tends->interstitial_num_mix_ratios;
   return (void*)num_mix_ratios.data();
 }
 
 void* t_cloud_num_mix_ratios_c(void* t) {
-  Tendencies* tends = (Tendencies*)t;
+  auto* tends = static_cast<Tendencies*>(t);
   auto num_mix_ratios = tends->cloud_num_mix_ratios;
   return (void*)num_mix_ratios.data();
 }

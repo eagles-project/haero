@@ -17,11 +17,11 @@ contains
 
 ! Initializes the prognostic process.
 subroutine @F90_MODULE_NAME@_init() bind(c)
-  use haero, only: model
+  use haero, only: modal_aero_config
   use @F90_MODULE_NAME@, only: init
   implicit none
 
-  call init(model)
+  call init(modal_aero_config)
 end subroutine
 
 ! Runs the prognostic process, computing tendencies

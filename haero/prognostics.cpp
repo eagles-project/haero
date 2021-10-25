@@ -122,6 +122,11 @@ void Prognostics::scale_and_add(Real scale_factor,
 // See haero.F90 for details on how these functions are used.
 extern "C" {
 
+int p_num_levels_c(void* p) {
+  auto* progs = static_cast<Prognostics*>(p);
+  return progs->num_levels();
+}
+
 void* p_int_aero_mix_frac_c(void* p) {
   auto* progs = static_cast<Prognostics*>(p);
   auto mix_fracs = progs->interstitial_aerosols;

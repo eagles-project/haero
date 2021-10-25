@@ -45,6 +45,9 @@ class Tendencies final {
   /// Cloudborne number mixing ratio tendencies per mode.
   ModeColumnView cloud_num_mix_ratios;
 
+  /// Returns the number of vertical levels in the column.
+  inline int num_levels() const { return num_levels_; }
+
   // --------------------------------------------------------------------------
   //                         Mathematical Operations
   // --------------------------------------------------------------------------
@@ -62,6 +65,8 @@ class Tendencies final {
   void accumulate(const Tendencies& tendencies);
 
  private:
+  // Number of vertical levels.
+  int num_levels_;
 };
 
 }  // namespace haero
