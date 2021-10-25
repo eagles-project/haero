@@ -3,7 +3,7 @@
 module mam_nucleation
 
   use haero_precision, only: wp
-  use haero, only: model_t, aerosol_species_t, gas_species_t, &
+  use haero, only: modal_aerosol_config_t, aerosol_species_t, gas_species_t, &
                    prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
                    var_not_found
   use haero_constants, only: pi, R_gas, Avogadro
@@ -93,9 +93,6 @@ module mam_nucleation
   !> Array that maps a population to a species
   integer, dimension(:), allocatable :: species_for_pop
 
-  !> Number of vertical levels in a column
-  integer :: num_levels
-
   !> The index of the Aitken mode
   integer :: nait
 
@@ -164,28 +161,26 @@ module mam_nucleation
 
 contains
 
-subroutine init(model)
+subroutine init(config)
 
   implicit none
 
   ! Arguments
-  type(model_t), intent(in) :: model
+  type(modal_aerosol_config_t), intent(in) :: config
 
   type(aerosol_species_t) so4, nh4
   integer :: m, p
 
   ! Write down some things.
-  num_modes = model%num_modes
-  num_populations = model%num_populations
+  num_modes = config%num_modes
+  num_populations = config%num_populations
   if (.not. allocated(mode_for_pop)) then
     allocate(mode_for_pop(num_populations))
     allocate(species_for_pop(num_populations))
     do p = 1,num_populations
-      call model%get_mode_and_species(p, mode_for_pop(p), species_for_pop(p))
+      call config%get_mode_and_species(p, mode_for_pop(p), species_for_pop(p))
     end do
   end if
-
-  num_levels = model%num_levels
 
   ! Make this multiply callable.  No check
   ! is done that the lengths have not changed.
@@ -199,40 +194,40 @@ subroutine init(model)
     allocate(dgnumhi_aer(num_modes))
 
     do m = 1,num_modes
-      dgnum_aer(m) = model%modes(m)%mean_std_dev
-      dgnumlo_aer(m) = model%modes(m)%min_diameter
-      dgnumhi_aer(m) = model%modes(m)%max_diameter
+      dgnum_aer(m) = config%modes(m)%mean_std_dev
+      dgnumlo_aer(m) = config%modes(m)%min_diameter
+      dgnumhi_aer(m) = config%modes(m)%max_diameter
     end do
 
     ! Allocate gas and aerosol state buffers.
-    allocate(qgas_cur(model%num_gases))
-    allocate(qgas_avg(model%num_gases))
+    allocate(qgas_cur(config%num_gases))
+    allocate(qgas_avg(config%num_gases))
     allocate(qnum_cur(num_modes))
-    allocate(qaer_cur(maxval(model%num_mode_species), num_modes))
+    allocate(qaer_cur(maxval(config%num_mode_species), num_modes))
     allocate(qwtr_cur(num_modes))
 
     ! Record the aitken mode index.
-    nait = model%mode_index("aitken")
+    nait = config%mode_index("aitken")
 
     ! Record the index for SO4 aerosol within the Aitken mode and fetch some
     ! properties.
-    iaer_so4 = model%aerosol_index(nait, "SO4")
+    iaer_so4 = config%aerosol_index(nait, "SO4")
     if (iaer_so4 > 0) then
-      so4 = model%aero_species(nait, iaer_so4)
+      so4 = config%aero_species(nait, iaer_so4)
       mw_so4a_host = so4%molecular_wt
     end if
 
     ! Record the index for NH4 aerosol within the Aitken mode and fetch some
     ! properties.
-    iaer_nh4 = model%aerosol_index(nait, "NH4")
+    iaer_nh4 = config%aerosol_index(nait, "NH4")
     if (iaer_nh4 > 0) then
-      nh4 = model%aero_species(nait, iaer_nh4)
+      nh4 = config%aero_species(nait, iaer_nh4)
       mw_nh4a_host = nh4%molecular_wt
     end if
 
     ! Record the index for H2SO4 gas (source of new nuclei).
-    igas_h2so4 = model%gas_index("H2SO4")
-    igas_nh3   = model%gas_index("NH3")
+    igas_h2so4 = config%gas_index("H2SO4")
+    igas_nh3   = config%gas_index("NH3")
 
     ! Set some defaults
     h2so4_uptake_opt = 2
@@ -253,7 +248,7 @@ subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
   type(tendencies_t), intent(inout) :: tendencies
 
   ! Other local variables.
-  integer :: k, p, m, s, token
+  integer :: num_levels, k, p, m, s, token
   real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios
   real(wp), pointer, dimension(:,:) :: q_g    ! gas mix ratios
   real(wp), pointer, dimension(:,:) :: n      ! modal number concentrations
@@ -298,6 +293,8 @@ subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
   if ((iaer_so4 == 0) .and. (iaer_nh4 == 0)) then
     return
   end if
+
+  num_levels = prognostics%num_levels
 
   ! Gas mole fraction tendencies
   q_g => prognostics%gases()

@@ -76,10 +76,9 @@ AerosolProcess* select_aerosol_process(AerosolProcessType type,
     case CalcsizeProcess:
       if (selections.calcsize == SelectedProcesses::MAMCalcsize) {
         process = new MAMCalcsizeProcess();
-#if HAERO_FORTRAN
-      } else if (selections.calcsize == SelectedProcesses::MAMFCalcsize) {
-        process = new MAMCalcsizeFProcess();
-#endif
+        /*#if HAERO_FORTRAN
+              } else if (selections.calcsize == SelectedProcesses::MAMFCalcsize)
+        { process = new MAMCalcsizeFProcess(); #endif*/
       } else if (selections.calcsize == SelectedProcesses::NoCalcsize) {
         process = new NullAerosolProcess(type);
       }

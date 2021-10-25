@@ -2,7 +2,7 @@
 module mam_rename
 
   use haero_precision, only: wp
-  use haero, only: model_t, aerosol_species_t, gas_species_t, &
+  use haero, only: modal_aerosol_config_t, aerosol_species_t, gas_species_t, &
        prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
 
   implicit none
@@ -29,25 +29,25 @@ module mam_rename
 
 contains
 
-  subroutine init(model)
+  subroutine init(config)
 
     implicit none
 
     ! Arguments
-    type(model_t), intent(in) :: model
+    type(modal_aerosol_config_t), intent(in) :: config
 
     ! Locals
     integer :: ierr
 
-    num_modes = model%num_modes
-    num_populations = model%num_populations
+    num_modes = config%num_modes
+    num_populations = config%num_populations
 
     allocate(population_offsets(num_modes), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate population_offsets with length ', num_modes
       stop 1
     endif
-    population_offsets(:) = model%population_offsets(:)
+    population_offsets(:) = config%population_offsets(:)
 
     ! FIXME: naer is the total number of species in a mode, it is hardwired here
     ! FIXME: but it should be computed based on the mode number in a mode loop
@@ -55,11 +55,11 @@ contains
 
     ! FIXME: max_aer is number of species in the mode with most species, it
     ! FIXME: should be computed dynamically using population_offsets
-    max_aer = model%num_modes
+    max_aer = config%num_modes
 
-    call initialize_diameters(model)
+    call initialize_diameters(config)
 
-    call initialize_ln_of_std_dev(model)
+    call initialize_ln_of_std_dev(config)
 
   end subroutine init
 
@@ -266,11 +266,11 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
 
   end subroutine dryvolume_change
 
-  subroutine initialize_diameters(model)
+  subroutine initialize_diameters(config)
 
     implicit none
 
-    type(model_t), intent(in)    :: model
+    type(modal_aerosol_config_t), intent(in) :: config
 
     ! Holds most recent error code
     integer :: ierr
@@ -296,8 +296,8 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     endif
 
     ! Initialize min and max diameters
-    dgnumlo_aer(:) = model%modes(:)%min_diameter
-    dgnumhi_aer(:) = model%modes(:)%max_diameter
+    dgnumlo_aer(:) = config%modes(:)%min_diameter
+    dgnumhi_aer(:) = config%modes(:)%max_diameter
 
     ! Initialize this to the minimum diameter for now.
     ! TODO: this will be updated with the correct calculation later.
@@ -339,11 +339,11 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
 
   end subroutine finalize_diameters
 
-  subroutine initialize_ln_of_std_dev(model)
+  subroutine initialize_ln_of_std_dev(config)
     implicit none
 
     ! Parameters
-    type(model_t), intent(in)     :: model
+    type(modal_aerosol_config_t), intent(in) :: config
 
     integer :: ierr
 
@@ -355,7 +355,7 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
       stop 1
     endif
 
-    alnsg(:) = log(model%modes(:)%mean_std_dev)
+    alnsg(:) = log(config%modes(:)%mean_std_dev)
 
   end subroutine initialize_ln_of_std_dev
 

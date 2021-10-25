@@ -12,10 +12,10 @@ module mam_nucleation_test_bridge
 contains
 
 subroutine nucleation_init_bridge()  bind(c)
-  use haero, only: model
+  use haero, only: modal_aero_config
   use mam_nucleation, only: init
   implicit none
-  call init(model)
+  call init(modal_aero_config)
 end subroutine
 
 subroutine compute_tendencies_bridge( &
@@ -42,7 +42,7 @@ subroutine compute_tendencies_bridge( &
   dnh4dt_ait, &
   dnclusterdt) bind(c)
 
-  use haero, only: model
+  use haero, only: modal_aero_config
   use haero_precision, only: wp
   use mam_nucleation, only: compute_tendencies
   use mam_nucleation, only: set_real_param
@@ -61,11 +61,11 @@ subroutine compute_tendencies_bridge( &
   real(wp), intent(in) :: uptkrate_h2so4
   real(wp), intent(in) :: del_h2so4_gasprod
   real(wp), intent(in) :: del_h2so4_aeruptk
-  real(wp), intent(in), dimension(model%num_gases) :: qgas_cur
-  real(wp), intent(in), dimension(model%num_gases) :: qgas_avg
-  real(wp), intent(in), dimension(model%num_modes) :: qnum_cur
-  real(wp), dimension(maxval(model%num_mode_species), model%num_modes) :: qaer_cur
-  real(wp), intent(in), dimension(model%num_modes) :: qwtr_cur
+  real(wp), intent(in), dimension(modal_aero_config%num_gases) :: qgas_cur
+  real(wp), intent(in), dimension(modal_aero_config%num_gases) :: qgas_avg
+  real(wp), intent(in), dimension(modal_aero_config%num_modes) :: qnum_cur
+  real(wp), dimension(maxval(modal_aero_config%num_mode_species), modal_aero_config%num_modes) :: qaer_cur
+  real(wp), intent(in), dimension(modal_aero_config%num_modes) :: qwtr_cur
   real(wp), intent(out) :: dndt_ait
   real(wp), intent(out) :: dmdt_ait
   real(wp), intent(out) :: dnh4dt_ait
