@@ -28,7 +28,7 @@ module mam_gasaerexch
 !   Separated from modal_aero_amicphys.F90 in EAMv1 and refactored by Hui Wan, 2020-2021
 !-----------------------------------------------------------------------------------------
    use haero_precision,   only: wp
-   use haero,             only: model_t, aerosol_species_t, &
+   use haero,             only: modal_aerosol_config_t, aerosol_species_t, &
                                 prognostics_t, atmosphere_t, diagnostics_t, tendencies_t
    use haero_constants,   only: pi, pstd => pressure_stp, &
                                 r_universal => r_gas, &
@@ -97,13 +97,13 @@ module mam_gasaerexch
    !> The molecular weight of h2so4 aerosol as assumed by the host atm model
    real(wp) :: vol_molar_h2so4
 
-   !> save off model%num_modes for use in subroutines
+   !> save off config%num_modes for use in subroutines
    integer ::  max_mode
 
-   !> Save off model%num_gases
+   !> Save off config%num_gases
    integer :: max_gas
 
-   !> Save off maxval(model%num_mode_species)
+   !> Save off maxval(config%num_mode_species)
    integer :: max_aer
 
    !> accomodation coefficient for h2so4 condensation
@@ -163,34 +163,34 @@ module mam_gasaerexch
 
 contains
 
-  subroutine init( model)
-   type(model_t), intent(in) :: model
+  subroutine init(config)
+   type(modal_aerosol_config_t), intent(in) :: config
 
    ! local variables
    integer :: igas, iaer
 
    type(aerosol_species_t) h2so4
 
-   max_mode= model%num_modes
-   max_gas = model%num_gases
+   max_mode= config%num_modes
+   max_gas = config%num_gases
    ngas    = max_gas
-   max_aer = maxval(model%num_mode_species)
+   max_aer = maxval(config%num_mode_species)
 
-   allocate(l_mode_can_contain_species(maxval(model%num_mode_species), model%num_modes))
-   allocate(l_gas_condense_to_mode(model%num_gases, model%num_modes))
-   allocate(l_mode_can_age(maxval(model%num_mode_species)))
-   allocate(idx_gas_to_aer(model%num_gases))
-   allocate(eqn_and_numerics_category(model%num_gases))
-   allocate(uptk_rate_factor(model%num_gases))
+   allocate(l_mode_can_contain_species(maxval(config%num_mode_species), config%num_modes))
+   allocate(l_gas_condense_to_mode(config%num_gases, config%num_modes))
+   allocate(l_mode_can_age(maxval(config%num_mode_species)))
+   allocate(idx_gas_to_aer(config%num_gases))
+   allocate(eqn_and_numerics_category(config%num_gases))
+   allocate(uptk_rate_factor(config%num_gases))
 
-   allocate(qgas_cur(model%num_gases))
-   allocate(qgas_avg(model%num_gases))
-   allocate(qgas_netprod_otrproc(model%num_gases))
+   allocate(qgas_cur(config%num_gases))
+   allocate(qgas_avg(config%num_gases))
+   allocate(qgas_netprod_otrproc(config%num_gases))
 
-   allocate(uptkaer(model%num_gases,model%num_modes))      ! gas to aerosol mass transfer rate (1/s)
+   allocate(uptkaer(config%num_gases,config%num_modes))      ! gas to aerosol mass transfer rate (1/s)
 
-   allocate(alnsg_aer(model%num_modes))
-   allocate(mode_aging_optaa(model%num_modes))
+   allocate(alnsg_aer(config%num_modes))
+   allocate(mode_aging_optaa(config%num_modes))
 
    !------------------------------------------------------------------
    ! MAM currently assumes that the uptake rate of other gases
@@ -201,7 +201,7 @@ contains
    ! Set default to 0, meaning no uptake
    uptk_rate_factor(:) = 0._wp
 
-   igas_h2so4 = model%gas_index("H2SO4")
+   igas_h2so4 = config%gas_index("H2SO4")
    ! H2SO4 is the ref species, so the ratio is 1
    uptk_rate_factor(igas_h2so4) = 1._wp
 
@@ -217,14 +217,14 @@ contains
 
    ! Record the index for h2so4 aerosol within the Aitken mode and fetch some
    ! properties.
-   iaer_h2so4 = model%aerosol_index(nait, "H2SO4")
+   iaer_h2so4 = config%aerosol_index(nait, "H2SO4")
    if (iaer_h2so4 > 0) then
-     h2so4 = model%aero_species(nait, iaer_h2so4)
+     h2so4 = config%aero_species(nait, iaer_h2so4)
      mw_h2so4 = h2so4%molecular_wt
    end if
 
-   nsoa = model%aerosol_index(nait, "SOA")
-   npoa = model%aerosol_index(nait, "POA")
+   nsoa = config%aerosol_index(nait, "SOA")
+   npoa = config%aerosol_index(nait, "POA")
 
    !-------------------------------------------------------------------
    ! MAM currently uses a splitting method to deal with gas-aerosol

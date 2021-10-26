@@ -11,7 +11,7 @@ module faerosol_process_stub
 
   use iso_c_binding, only: c_ptr
   use haero_precision, only: wp
-  use haero, only: model, prognostics_t, atmosphere_t, diagnostics_t, &
+  use haero, only: modal_aero_config, prognostics_t, atmosphere_t, diagnostics_t, &
                    tendencies_t, prognostics_from_c_ptr, atmosphere_from_c_ptr,&
                    diagnostics_from_c_ptr, tendencies_from_c_ptr
 
@@ -81,15 +81,15 @@ subroutine process_stub_run(t, dt, progs, atm, diags, tends) bind(c)
   tendencies = tendencies_from_c_ptr(tends)
 
   ! Iterate over modes and compute aerosol mix fraction tendencies.
-  num_modes = size(model%modes)
+  num_modes = size(modal_aero_config%modes)
   q_c => prognostics%cloud_aerosols()
   q_i => prognostics%interstitial_aerosols()
   dqdt_c => tendencies%cloud_aerosols()
   dqdt_i => tendencies%interstitial_aerosols()
 
   ! Cloudborne aerosols decay exponentially into interstitial aerosols.
-  do p=1,model%num_populations
-    do k=1,model%num_levels
+  do p=1,modal_aero_config%num_populations
+    do k=1,prognostics%num_levels
       dqdt_c(k, p) =  decay_rate * q_c(k, p)
       dqdt_i(k, p) = -dqdt_c(k, p)
     end do

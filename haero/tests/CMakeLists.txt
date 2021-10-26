@@ -64,8 +64,10 @@ if (HAERO_FORTRAN)
     EkatCreateUnitTest(mam_nucleation_fprocess_tests mam_nucleation_fprocess_tests.cpp
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
 
-    EkatCreateUnitTest(mam_calcsize_fprocess_tests mam_calcsize_fprocess_tests.cpp
-                       LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
+
+    # TODO: Temporarily disabled for Fortran modal_aero_config refactor -JNJ
+    #EkatCreateUnitTest(mam_calcsize_fprocess_tests mam_calcsize_fprocess_tests.cpp
+    #                   LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
 
     EkatCreateUnitTest(mam_rename_fprocess_tests mam_rename_fprocess_tests.cpp
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})

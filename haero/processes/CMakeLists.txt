@@ -33,7 +33,8 @@ if (HAERO_FORTRAN)
   #   mam_nucleation.F90, within this directory.
   faerosol_process(MAMGasAerosolExchangeFProcess GasAerosolExchangeProcess mam_gasaerexch)
   faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
-  faerosol_process(MAMCalcsizeFProcess CalcsizeProcess mam_calcsize)
+  # TODO: Temporarily disabled for Fortran modal_aero_config refactor -JNJ
+  #faerosol_process(MAMCalcsizeFProcess CalcsizeProcess mam_calcsize)
   faerosol_process(MAMRenameFProcess RenameProcess mam_rename)
 
 endif()
