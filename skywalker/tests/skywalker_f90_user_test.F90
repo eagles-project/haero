@@ -64,7 +64,7 @@ program skywalker_f90_test
   assert(ensemble%num_gases == 0)
 
   ! ensemble information
-  assert(ensemble%size == 341)
+  assert(ensemble%size == 245520)
   do i = 1, ensemble%size
     input = ensemble%inputs(i)
 
@@ -80,13 +80,27 @@ program skywalker_f90_test
     assert(approx_equal(input%planetary_boundary_layer_height, 0._wp))
 
     ! User parameters
+
+    ! Fixed parameters
     assert(approx_equal(input%user_param("p1"), 1.0_wp))
     assert(approx_equal(input%user_param("p2"), 2.0_wp))
     assert(approx_equal(input%user_param("p3"), 3.0_wp))
+
+    ! Ensemble parameters
     assert(input%user_param("tick") >= 0.0_wp)
     assert(input%user_param("tick") <= 10.0_wp)
     assert(input%user_param("tock") >= 1e1_wp)
     assert(input%user_param("tock") <= 1e4_wp)
+    assert(input%user_param("pair") >= 1)
+    assert(input%user_param("pair") <= 2)
+    assert(input%user_param("triple") >= 1)
+    assert(input%user_param("triple") <= 3)
+    assert(input%user_param("quartet") >= 1)
+    assert(input%user_param("quartet") <= 4)
+    assert(input%user_param("quintet") >= 1)
+    assert(input%user_param("quintet") <= 5)
+    assert(input%user_param("sextet") >= 1)
+    assert(input%user_param("sextet") <= 6)
   end do
 
   ! Process input to get output! To keep things simple, we just copy our input
