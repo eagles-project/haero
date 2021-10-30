@@ -6,6 +6,7 @@ haero:
   nucleation_method: 2
 
 ensemble:
+  type: lattice
   user:
     log10(c_h2so4): [6, 9, 0.1]
 

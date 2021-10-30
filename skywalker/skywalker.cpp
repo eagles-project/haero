@@ -224,6 +224,15 @@ Real OutputData::operator[](const std::string& param_name) const {
 
 std::vector<InputData> ParameterWalk::gather_inputs(
     const std::set<std::string>& excluded_params) const {
+  if (ensemble_type == "lattice") {
+    return build_lattice_ensemble();
+  } else { // "enumerated"
+    return build_enumerated_ensemble();
+  }
+}
+
+std::vector<InputData> ParameterWalk::build_lattice_ensemble(
+    const std::set<std::string>& excluded_params) const {
   // Count up the number of inputs defined by the parameter walk thingy,
   // excluding those parameters specified.
   size_t num_inputs = 1, num_params = 0;
@@ -431,6 +440,40 @@ std::vector<InputData> ParameterWalk::gather_inputs(
       inputs[l][name5] = vals5[j5];
       inputs[l][name6] = vals6[j6];
       inputs[l][name7] = vals7[j7];
+    }
+  }
+
+  return inputs;
+}
+
+std::vector<InputData> ParameterWalk::build_enumerated_ensemble() const {
+
+  std::string first_name;
+  size_t num_inputs = 0;
+  for (auto param : ensemble) {
+    if (num_inputs == 0) {
+      num_inputs = param.second.size();  // set of parameter values
+      first_name = param.first;
+    } else if (num_inputs != param.second.size()) {
+      throw YamlException(std::string("Invalid enumeration: Parameter ") +
+                          param.first +
+                          std::string(" has a different number of values than ") +
+                          first_name +
+                          std::string(" (must match)"));
+    }
+  }
+
+  if (num_inputs == 0) {
+    throw YamlException("No ensemble members!");
+  }
+
+  // Trudge through all the ensemble parameters as defined.
+  std::vector<InputData> inputs(num_inputs, ref_input);
+  for (size_t l = 0; l < num_inputs; ++l) {
+    for (auto iter = ensemble.begin(); iter != ensemble.end(); ++iter) {
+      auto name = iter->first;
+      const auto& vals = iter->second;
+      inputs[l][name] = vals[l];
     }
   }
 

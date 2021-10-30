@@ -4,6 +4,7 @@ haero:
   nucleation_method: 3
 
 ensemble:
+  type: lattice
   user:
     temperature: [235.15, 273.15]
     c_h2so4: [1e7, 1e8, 1e9]

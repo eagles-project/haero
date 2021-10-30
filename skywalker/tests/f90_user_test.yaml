@@ -8,6 +8,7 @@ user_program:
   param3: 3.14159265357
 
 ensemble:
+  type: lattice
   user:
     tick:        [0, 10, 1]         # linear spacing
     log10(tock): [1, 4, 0.1]        # logarithmic spacing

@@ -4,6 +4,7 @@ haero:
   nucleation_method: 2
 
 ensemble:
+  type: lattice
   user:
     relative_humidity: [0.2, 1.0, 0.05]
     c_h2so4: [7.5e9, 3.5e10, 1e8]
