@@ -147,7 +147,7 @@ contains
     real(wp) :: dryvol_a(nlevs), dryvol_c(nlevs) !dry volume of a particle[m3/kg(of air)]
     real(wp) :: init_num_a, init_num_c !initial number mixing ratios entering this process [#/kg(of air)]
     real(wp) :: interstitial_tend, cloudborne_tend ![#/kg(of air)/s]
-    real(wp):: density(max_nspec) !specie density array for each mode [kg/m3]
+    real(wp) :: density(max_nspec) !specie density array for each mode [kg/m3]
 
     real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios [kg/kg(of air)]]
     real(wp), pointer, dimension(:,:) :: q_c    ! cldborne aerosol mix ratios [kg/kg(of air)]

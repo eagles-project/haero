@@ -10,6 +10,11 @@ set(CXX_PROCESS_SOURCES
     simple_nucleation_process.cpp
 )
 
+# This is a transitional process used for debugging on the host
+if(HAERO_DEVICE STREQUAL CPU)
+  list(APPEND CXX_PROCESS_SOURCES mam_calcsize_hostcxx_process.cpp)
+endif()
+
 # Prepend processes/ to each source file and transmit HAERO_PROCESSES upward.
 foreach(p_src ${CXX_PROCESS_SOURCES})
   list(APPEND HAERO_PROCESSES processes/${p_src})
