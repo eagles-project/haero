@@ -199,7 +199,7 @@ void parse_ensemble_section(const YAML::Node& ensemble,
     auto group = eiter.second;
     if (group_name == "type") {
       pw.ensemble_type = eiter.second.as<std::string>();
-      if (pw.ensemble_type != "lattice" and pw.ensemble_type != "enumerated") {
+      if (pw.ensemble_type != "lattice" and pw.ensemble_type != "enumeration") {
         throw YamlException(std::string("Invalid ensemble type: ") +
                             pw.ensemble_type +
                             std::string(" (must be lattice or enumeration)"));
