@@ -84,10 +84,6 @@ class MAMCalcsizeHostCXXProcess final
  public:
   static constexpr int top_level = 0;
 
-  // The final Kokkos implementation will use view semantics, so all of these
-  // variables don't really have to be const even though the run method requires
-  // it. The run method only requires the views to be const.
-  mutable int nlevels;
   int nmodes;
   int max_nspec;
   int num_populations;

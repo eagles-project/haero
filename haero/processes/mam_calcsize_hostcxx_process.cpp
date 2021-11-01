@@ -158,7 +158,7 @@ void MAMCalcsizeHostCXXProcess::run_(const TeamType &team, Real t, Real dt,
                                      const Tendencies &tendencies) const {
   logger->debug("entering run_");
 
-  nlevels = prognostics.num_levels();
+  const int nlevels = prognostics.num_levels();
 
   std::size_t num_vert_packs = nlevels / HAERO_PACK_SIZE;
   if (num_vert_packs * HAERO_PACK_SIZE < nlevels) {
