@@ -226,7 +226,7 @@ std::vector<InputData> ParameterWalk::gather_inputs(
     const std::set<std::string>& excluded_params) const {
   if (ensemble_type == "lattice") {
     return build_lattice_ensemble();
-  } else { // "enumerated"
+  } else {  // "enumerated"
     return build_enumerated_ensemble();
   }
 }
@@ -447,7 +447,6 @@ std::vector<InputData> ParameterWalk::build_lattice_ensemble(
 }
 
 std::vector<InputData> ParameterWalk::build_enumerated_ensemble() const {
-
   std::string first_name;
   size_t num_inputs = 0;
   for (auto param : ensemble) {
@@ -455,11 +454,10 @@ std::vector<InputData> ParameterWalk::build_enumerated_ensemble() const {
       num_inputs = param.second.size();  // set of parameter values
       first_name = param.first;
     } else if (num_inputs != param.second.size()) {
-      throw YamlException(std::string("Invalid enumeration: Parameter ") +
-                          param.first +
-                          std::string(" has a different number of values than ") +
-                          first_name +
-                          std::string(" (must match)"));
+      throw YamlException(
+          std::string("Invalid enumeration: Parameter ") + param.first +
+          std::string(" has a different number of values than ") + first_name +
+          std::string(" (must match)"));
     }
   }
 
