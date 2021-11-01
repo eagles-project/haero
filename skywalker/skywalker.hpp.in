@@ -56,7 +56,8 @@ struct InputData {
 };
 
 // Data structure that stores parameter walking information.
-struct ParameterWalk {
+class ParameterWalk {
+ public:
   /// Constructor
   /// @param aero_config The modal aerosol configuration describing the system
   ///                    to be walked in this parameter study
@@ -81,6 +82,12 @@ struct ParameterWalk {
   // reference input data
   InputData ref_input;
 
+  // ensemble type:
+  // * "lattice" is a crude, expensive "cartesian product" of all parameters
+  // * "enumerated" is an ensemble whose members are created by walking all
+  //   parameter values in lockstep.
+  std::string ensemble_type;
+
   // ensemble: parameters to walk (name -> vector of values)
   std::map<std::string, std::vector<Real>> ensemble;
 
@@ -90,6 +97,19 @@ struct ParameterWalk {
   ///                        the "parameter walk" if present. These parameters
   ///                        are set to their reference values.
   std::vector<InputData> gather_inputs(const std::set<std::string>& excluded_params = {}) const;
+
+ private:
+  /// Performs a lattice walk of the parameter space, gathering all input for
+  /// this parameter walk into a vector of InputData, using the parameters
+  /// stored in the ensemble member above.
+  /// @param excluded_params a list of names of parameters to exclude from the
+  ///                        the "parameter walk" if present. These parameters
+  ///                        are set to their reference values.
+  std::vector<InputData> build_lattice_ensemble(const std::set<std::string>& excluded_params = {}) const;
+
+  /// Constructs an ensemble by reading the enumerated values of each ensemble
+  /// member.
+  std::vector<InputData> build_enumerated_ensemble() const;
 };
 
 // Here's a container that associates input parameters with output data.

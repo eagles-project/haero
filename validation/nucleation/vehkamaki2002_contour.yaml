@@ -6,6 +6,7 @@ haero:
   pbl_method: 0
 
 ensemble:
+  type: lattice
   user:
     relative_humidity: [0.01, 1.00, 0.01]
     temperature: [230.15, 300.15, 1]

@@ -4,6 +4,7 @@ haero:
   nucleation_method: 3
 
 ensemble:
+  type: lattice
   user:
     temperature: [235.15, 273.15]
     xi_nh3: [0.1, 10, 1000]

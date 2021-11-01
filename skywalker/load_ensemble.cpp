@@ -191,12 +191,20 @@ void parse_ensemble_section(const YAML::Node& ensemble,
                             ParameterWalk& pw) {
   for (auto eiter : ensemble) {
     auto group_name = eiter.first.as<std::string>();
-    if ((group_name != "atmosphere") and (group_name != "gases") and
-        (group_name != "aerosols") and (group_name != "user")) {
+    if ((group_name != "type") and (group_name != "atmosphere") and
+        (group_name != "gases") and (group_name != "aerosols") and
+        (group_name != "user")) {
       continue;
     }
     auto group = eiter.second;
-    if (group_name == "atmosphere") {
+    if (group_name == "type") {
+      pw.ensemble_type = eiter.second.as<std::string>();
+      if (pw.ensemble_type != "lattice" and pw.ensemble_type != "enumeration") {
+        throw YamlException(std::string("Invalid ensemble type: ") +
+                            pw.ensemble_type +
+                            std::string(" (must be lattice or enumeration)"));
+      }
+    } else if (group_name == "atmosphere") {
       parse_atm_ensemble_params(group, pw.ensemble);
     } else if (group_name == "gases") {
       parse_gas_ensemble_params(aerosol_config, group, pw.ensemble);
@@ -207,6 +215,9 @@ void parse_ensemble_section(const YAML::Node& ensemble,
     } else {
       throw YamlException("Unrecognized subsection found in ensemble section!");
     }
+  }
+  if (pw.ensemble_type == "") {
+    throw YamlException("Invalid ensemble section: no type!");
   }
 }
 

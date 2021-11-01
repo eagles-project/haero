@@ -4,6 +4,7 @@ haero:
   nucleation_method: 2
 
 ensemble:
+  type: lattice
   user:
     temperature: [190.15, 290.15, 5]
     relative_humidity: [0.05, 1, 0.01]

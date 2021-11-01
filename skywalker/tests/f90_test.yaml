@@ -14,6 +14,7 @@ timestepping: # [s]
   total_time: 1
 
 ensemble:
+  type: lattice
   atmosphere:
     temperature: [230.15, 300.15, 5]
     relative_humidity: [0.1, 1, 0.1]
