@@ -2,7 +2,7 @@ NCAR-version: v1.0
 # TChem-specific inputs
 tchem:
   # whether to print verbose output to screen
-  verbose: true
+  verbose: false
   print_qoi: false
   # number of chemistry batches (all currently run the exact same chem problem)
   nbatch: 1
@@ -15,8 +15,8 @@ solver_parameters:
   tend: 100.0
   # Number of time iterations per interval to store qoi
   num_time_iterations_per_interval: 10
-  max_time_iterations: 1000
-  max_newton_iterations: 20
+  max_time_iterations: 15
+  max_newton_iterations: 4
   atol_newton: 1.0e-18
   rtol_newton: 1.0e-8
   atol_time: 1.0e-12

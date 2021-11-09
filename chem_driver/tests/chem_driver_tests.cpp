@@ -1,8 +1,6 @@
-#include "util/read_solver_params.hpp"
-
 #include "catch2/catch.hpp"
 #include "chem_driver/chem_driver.hpp"
-// #include "chem_driver/read_chem_input.hpp"
+#include "util/read_solver_params.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
 
@@ -10,111 +8,202 @@ using namespace haero;
 using namespace haero::chem_driver;
 
 TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
-  /// create the SimulationInput object by parsing the yaml file
-  // std::string input_file = HAERO_TEST_DATA_DIR;
-  // input_file += "/toy_problem_input.yml";
-  // SimulationInput sim_input = read_chem_input(input_file);
-
-  // this function creates the toy-problem-specific (chemkin?) input file for
-  // TChem
-  // FIXME: learn more about this and whether they've switched to the yaml input
-  // spec
-  // create_chem_files();
 
   SECTION("simple arrhenius") {
-
-    std::cout << "***test***" << "\n";
-    std::string input_file = HAERO_TEST_DATA_DIR;
+    std::string prefix = HAERO_TEST_DATA_DIR;
+    std::string input_file = prefix;
     input_file += "/config_arrhenius.yaml";
-    // SolverParams params(input_file);
+    std::string refsol_file = prefix;
+    refsol_file += "/camp_arrhenius.yaml";
+
+    Real tbeg = 0.0;
+    Real tend = 100.0;
+    Real dt = 1.0;
+    Real cur_time = tbeg;
+    ordinal_type nsteps = 101;
+    ordinal_type nspec = 4;
+
+    auto refsol = Real_2d_view_host("refsol", nspec, nsteps);
+    std::vector<std::string> specs = {"A", "B", "C", "D"};
+
+    auto root = YAML::LoadFile(refsol_file);
+    for (int i = 0; i < nspec; ++i) {
+      auto node = root[specs[i]];
+      int j = 0;
+      for (auto iter : node) {
+        refsol(i, j) = iter.as<Real>();
+        ++j;
+      }
+    }
+
+    auto solution = Real_2d_view_host("solution", nspec, nsteps);
+    auto hsolution = Kokkos::create_mirror_view(solution);
+
     ChemSolver chem_solver(input_file);
-    chem_solver.time_integrate();
 
-    // // run the problem on device
-    // real_type_2d_view results = chem_solver.get_tendencies();
+    auto cur_sol = chem_solver.get_state();
 
-    // // create mirror view and deep copy to host
-    // auto results_host = Kokkos::create_mirror_view(results);
-    // Kokkos::deep_copy(results_host, results);
+    Kokkos::parallel_for(
+        "copy_sol", nspec,
+        KOKKOS_LAMBDA(const int& i) { solution(i, 0) = cur_sol(0, i + 3); });
 
-    // // eq (4) tendency should be positive, eq (5) negative
-    // const Real val00 = results_host(0, 0);
-    // const Real val01 = results_host(0, 1);
-    // REQUIRE(FloatingPoint<Real>::in_bounds(val00, 0.0, 1.0e14,
-    //                                        FloatingPoint<Real>::zero_tol));
-    // REQUIRE(FloatingPoint<Real>::in_bounds(val01, -1.0e14, 0.0,
-    //                                        FloatingPoint<Real>::zero_tol));
-    // // we ran for two batches, so be sure that the same inputs give the same
-    // // outputs for different batches
-    // const Real val10 = results_host(1, 0);
-    // const Real val11 = results_host(1, 1);
-    // REQUIRE(FloatingPoint<Real>::zero(val00 - val10,
-    //                                   FloatingPoint<Real>::zero_tol));
-    // REQUIRE(FloatingPoint<Real>::zero(val01 - val11,
-    //                                   FloatingPoint<Real>::zero_tol));
+    for (int i = 1; i < nsteps; ++i) {
+      chem_solver.time_integrate(cur_time, cur_time + dt);
+      cur_sol = chem_solver.get_state();
+      cur_time += dt;
+      Kokkos::parallel_for(
+          "copy_sol", nspec,
+          KOKKOS_LAMBDA(const int& j) { solution(j, i) = cur_sol(0, j + 3); });
+    }
+    Kokkos::deep_copy(hsolution, solution);
+
+    Real tol = 1e-5;
+    auto error = Real_1d_view_host("error", nspec);
+    for (int i = 0; i < nspec; ++i) {
+      error(i) = 0.0;
+      for (int j = 0; j < nsteps; ++j) {
+        error(i) += pow(hsolution(i, j) - refsol(i, j), 2);
+      }
+      error(i) = sqrt(error(i));
+      REQUIRE(FloatingPoint<Real>::zero(error(i), tol));
+    }
+
+    tol = 1e-8;
+    for (int i = 0; i < nspec; ++i)
+    {
+      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+    }
   }
 
-//   SECTION("zero tendencies") {
-//     // calculate initial X2 concentration such that tendencies will be zero
-//     Real initX = sim_input.species[0].initial_value;
-//     Real k1 = sim_input.reactions[0].rate_coefficients["A"];
-//     Real k2 = sim_input.reactions[1].rate_coefficients["A"];
-//     sim_input.species[1].initial_value = (k2 / k1) * pow(initX, 2);
+  SECTION("simple troe") {
+    std::string prefix = HAERO_TEST_DATA_DIR;
+    std::string input_file = prefix;
+    input_file += "/config_troe.yaml";
+    std::string refsol_file = prefix;
+    refsol_file += "/camp_troe.yaml";
 
-//     // create the ChemSolver object
-//     ChemSolver chem_solver(sim_input);
+    Real tbeg = 0.0;
+    Real tend = 100.0;
+    Real dt = 1.0;
+    Real cur_time = tbeg;
+    ordinal_type nsteps = 101;
+    ordinal_type nspec = 3;
 
-//     // run the problem on device
-//     real_type_2d_view results = chem_solver.get_tendencies();
+    auto refsol = Real_2d_view_host("refsol", nspec, nsteps);
+    std::vector<std::string> specs = {"A", "B", "C"};
 
-//     // create mirror view and deep copy to host
-//     auto results_host = Kokkos::create_mirror_view(results);
-//     Kokkos::deep_copy(results_host, results);
+    auto root = YAML::LoadFile(refsol_file);
+    for (int i = 0; i < nspec; ++i) {
+      auto node = root[specs[i]];
+      int j = 0;
+      for (auto iter : node) {
+        refsol(i, j) = iter.as<Real>();
+        ++j;
+      }
+    }
 
-//     // eq (4) tendency should be positive, eq (5) negative
-//     const Real val00 = results_host(0, 0);
-//     const Real val01 = results_host(0, 1);
-//     REQUIRE(FloatingPoint<Real>::zero(val00, FloatingPoint<Real>::zero_tol));
-//     REQUIRE(FloatingPoint<Real>::zero(val01, FloatingPoint<Real>::zero_tol));
+    auto solution = Real_2d_view_host("solution", nspec, nsteps);
+    auto hsolution = Kokkos::create_mirror_view(solution);
 
-//     // we ran for two batches, so be sure that the same inputs give the same
-//     // outputs for different batches
-//     const Real val10 = results_host(1, 0);
-//     const Real val11 = results_host(1, 1);
-//     REQUIRE(FloatingPoint<Real>::zero(val00 - val10,
-//                                       FloatingPoint<Real>::zero_tol));
-//     REQUIRE(FloatingPoint<Real>::zero(val01 - val11,
-//                                       FloatingPoint<Real>::zero_tol));
-//   }
+    ChemSolver chem_solver(input_file);
 
-//   SECTION("dark side of terminator") {
-//     // change the k1 reaction rate to zero, corresponding to column on dark side
-//     sim_input.reactions[0].rate_coefficients["A"] = 0.0;
-//     {
-//       ChemSolver chem_solver(sim_input);
+    auto cur_sol = chem_solver.get_state();
 
-//       // run the problem on device
-//       real_type_2d_view results = chem_solver.get_tendencies();
+    Kokkos::parallel_for(
+        "copy_sol", nspec,
+        KOKKOS_LAMBDA(const int& i) { solution(i, 0) = cur_sol(0, i + 3); });
 
-//       // create mirror view and deep copy to host
-//       auto results_host = Kokkos::create_mirror_view(results);
-//       Kokkos::deep_copy(results_host, results);
+    for (int i = 1; i < nsteps; ++i) {
+      chem_solver.time_integrate(cur_time, cur_time + dt);
+      cur_sol = chem_solver.get_state();
+      cur_time += dt;
+      Kokkos::parallel_for(
+          "copy_sol", nspec,
+          KOKKOS_LAMBDA(const int& j) { solution(j, i) = cur_sol(0, j + 3); });
+    }
+    Kokkos::deep_copy(hsolution, solution);
 
-//       // eq (4) tendency should be positive, eq (5) negative
-//       const Real val00 = results_host(0, 0);
-//       const Real val01 = results_host(0, 1);
-//       REQUIRE(FloatingPoint<Real>::in_bounds(val00, -1.0e14, 0.0,
-//                                              FloatingPoint<Real>::zero_tol));
-//       REQUIRE(FloatingPoint<Real>::in_bounds(val01, 0.0, 1.0e14,
-//                                              FloatingPoint<Real>::zero_tol));
-//       // we ran for two batches, so be sure that the same inputs give the same
-//       // outputs for different batches
-//       const Real val10 = results_host(1, 0);
-//       const Real val11 = results_host(1, 1);
-//       REQUIRE(FloatingPoint<Real>::zero(val00 - val10,
-//                                         FloatingPoint<Real>::zero_tol));
-//       REQUIRE(FloatingPoint<Real>::zero(val01 - val11,
-//                                         FloatingPoint<Real>::zero_tol));
-//     }
-//   }
+    Real tol = 1e-5;
+    auto error = Real_1d_view_host("error", nspec);
+    for (int i = 0; i < nspec; ++i) {
+      error(i) = 0.0;
+      for (int j = 0; j < nsteps; ++j) {
+        error(i) += pow(hsolution(i, j) - refsol(i, j), 2);
+      }
+      error(i) = sqrt(error(i));
+      REQUIRE(FloatingPoint<Real>::zero(error(i), tol));
+    }
+
+    tol = 1e-7;
+    for (int i = 0; i < nspec; ++i)
+    {
+      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+    }
+  }
+
+  SECTION("simple photolysis") {
+    std::string prefix = HAERO_TEST_DATA_DIR;
+    std::string input_file = prefix;
+    input_file += "/config_photolysis.yaml";
+    std::string refsol_file = prefix;
+    refsol_file += "/camp_photolysis.yaml";
+
+    Real tbeg = 0.0;
+    Real tend = 100.0;
+    Real dt = 1.0;
+    Real cur_time = tbeg;
+    ordinal_type nsteps = 101;
+    ordinal_type nspec = 3;
+
+    auto refsol = Real_2d_view_host("refsol", nspec, nsteps);
+    std::vector<std::string> specs = {"A", "B", "C"};
+
+    auto root = YAML::LoadFile(refsol_file);
+    for (int i = 0; i < nspec; ++i) {
+      auto node = root[specs[i]];
+      int j = 0;
+      for (auto iter : node) {
+        refsol(i, j) = iter.as<Real>();
+        ++j;
+      }
+    }
+
+    auto solution = Real_2d_view_host("solution", nspec, nsteps);
+    auto hsolution = Kokkos::create_mirror_view(solution);
+
+    ChemSolver chem_solver(input_file);
+
+    auto cur_sol = chem_solver.get_state();
+
+    Kokkos::parallel_for(
+        "copy_sol", nspec,
+        KOKKOS_LAMBDA(const int& i) { solution(i, 0) = cur_sol(0, i + 3); });
+
+    for (int i = 1; i < nsteps; ++i) {
+      chem_solver.time_integrate(cur_time, cur_time + dt);
+      cur_sol = chem_solver.get_state();
+      cur_time += dt;
+      Kokkos::parallel_for(
+          "copy_sol", nspec,
+          KOKKOS_LAMBDA(const int& j) { solution(j, i) = cur_sol(0, j + 3); });
+    }
+    Kokkos::deep_copy(hsolution, solution);
+
+    Real tol = 1e-5;
+    auto error = Real_1d_view_host("error", nspec);
+    for (int i = 0; i < nspec; ++i) {
+      error(i) = 0.0;
+      for (int j = 0; j < nsteps; ++j) {
+        error(i) += pow(hsolution(i, j) - refsol(i, j), 2);
+      }
+      error(i) = sqrt(error(i));
+      REQUIRE(FloatingPoint<Real>::zero(error(i), tol));
+    }
+
+    tol = 1e-9;
+    for (int i = 0; i < nspec; ++i)
+    {
+      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+    }
+  }
 }
