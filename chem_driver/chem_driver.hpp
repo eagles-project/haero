@@ -17,7 +17,6 @@ namespace chem_driver {
 
 // some aliases
 using ordinal_type = TChem::ordinal_type;
-using Real = haero::Real;
 using real_type_1d_view = TChem::real_type_1d_view;
 using real_type_2d_view = TChem::real_type_2d_view;
 using policy_type = typename TChem::UseThisTeamPolicy<TChem::exec_space>::type;
@@ -157,7 +156,7 @@ class ChemSolver {
 // implementation of the toy problem
 namespace from_tchem {
 
-using Real = haero::Real;
+using Real = double;
 
 struct SourceTermToyProblem {
   template <typename KineticModelConstDataType>
