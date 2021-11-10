@@ -316,12 +316,6 @@ endif()
 # Validation tools (currently offered only for CPU builds with pack size 1,
 # because we're using it with Fortran.)
 if(NOT HAERO_USE_CUDA AND HAERO_PACK_SIZE EQUAL 1)
-
-  # Skywalker--a tool for exploring aerosol processes in low-dimensional
-  # parameter spaces.
-  message(STATUS "Building skywalker validation tool/library...")
-  add_subdirectory(skywalker)
-
   # Aerosol cross-validation materials
   message(STATUS "Building validation programs...")
   add_subdirectory(validation)
