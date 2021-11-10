@@ -445,6 +445,27 @@ endif()
 list(APPEND HAERO_EXT_INCDIRS ${TCHEM_INCLUDE_DIR})
 set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 
+#----------------------------------------------------------------------------
+# Skywalker parameter study library
+#----------------------------------------------------------------------------
+set(SW_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                  -DCMAKE_Fortran=${CMAKE_Fortran_COMPILER}
+                  -DSKYWALKER_PRECISION=${HAERO_PRECISION})
+ExternalProject_Add(skywalker_proj
+                    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/skywalker
+                    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/skywalker
+                    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/skywalker
+                    INSTALL_DIR ${PROJECT_BINARY_DIR}
+                    CMAKE_ARGS ${SW_CMAKE_OPTS}
+                    LOG_CONFIGURE TRUE
+                    BUILD_COMMAND ${MAKE} -j
+                    LOG_BUILD TRUE
+                    INSTALL_COMMAND ${MAKE} install
+                    LOG_INSTALL TRUE)
+
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
 list(REMOVE_DUPLICATES HAERO_EXT_INCDIRS)
