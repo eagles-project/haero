@@ -1,8 +1,6 @@
 #include <haero/processes/vehkamaki2002.hpp>
-
-#include <skywalker.hpp>
-
 #include <iostream>
+#include <skywalker.hpp>
 
 // This driver computes the threshold concentration of H2SO4 for binary
 // nucleation.
@@ -16,11 +14,9 @@ void usage(const std::string& prog_name) {
 using namespace skywalker;
 using namespace haero;
 
-void run(Ensemble* ensemble, int pbl_method) {
-}
+void run(Ensemble* ensemble, int pbl_method) {}
 
-int main(int argc, char **argv) {
-
+int main(int argc, char** argv) {
   if (argc == 1) {
     usage((const char*)argv[0]);
   }
@@ -66,7 +62,8 @@ int main(int argc, char **argv) {
 
       // Compute the mole fraction of H2SO4 in a critical cluster, and from it
       // the nucleation rate.
-      PackType c_thresh = vehkamaki2002::h2so4_nucleation_threshold(temp, rel_hum);
+      PackType c_thresh =
+          vehkamaki2002::h2so4_nucleation_threshold(temp, rel_hum);
 
       // Write the computed nucleation rate.
       output.set("nucleation_threshold", c_thresh[0]);

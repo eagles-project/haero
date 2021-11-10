@@ -1,10 +1,8 @@
 #include <haero/processes/merikanto2007.hpp>
 #include <haero/processes/vehkamaki2002.hpp>
 #include <haero/processes/wang2008.hpp>
-
-#include <skywalker.hpp>
-
 #include <iostream>
+#include <skywalker.hpp>
 
 // This driver computes the binary or ternary nucleation rate for the given
 // input.
@@ -27,8 +25,8 @@ void run_vehkamaki2002(Ensemble* ensemble, int pbl_method) {
 
     // Compute the mole fraction of H2SO4 in a critical cluster, and from it
     // the nucleation rate.
-    PackType x_crit = vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp,
-        rel_hum);
+    PackType x_crit =
+        vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp, rel_hum);
     PackType J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
 
     // Write the computed nucleation rate.
@@ -45,8 +43,8 @@ void run_merikanto2007(Ensemble* ensemble, int pbl_method) {
     PackType temp = input.get("temperature");
 
     // Compute the nucleation rate.
-    PackType log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
-        c_h2so4, xi_nh3);
+    PackType log_J =
+        merikanto2007::log_nucleation_rate(temp, rel_hum, c_h2so4, xi_nh3);
     PackType J = exp(log_J);
 
     // Write the computed nucleation rate.
@@ -54,8 +52,7 @@ void run_merikanto2007(Ensemble* ensemble, int pbl_method) {
   });
 }
 
-int main(int argc, char **argv) {
-
+int main(int argc, char** argv) {
   if (argc == 1) {
     usage((const char*)argv[0]);
   }
@@ -90,7 +87,7 @@ int main(int argc, char **argv) {
     exit(0);
   }
 
-  int pbl_method = 0; // no PBL correction by default.
+  int pbl_method = 0;  // no PBL correction by default.
   if (settings.has("pbl_method")) {
     pbl_method = std::stoi(settings.get("pbl_method"));
   }
@@ -102,9 +99,9 @@ int main(int argc, char **argv) {
 
   // Run the ensemble.
   try {
-    if (nuc_method == 2) { // binary nucleation
+    if (nuc_method == 2) {  // binary nucleation
       run_vehkamaki2002(ensemble, pbl_method);
-    } else { // ternary nucleation
+    } else {  // ternary nucleation
       run_merikanto2007(ensemble, pbl_method);
     }
   } catch (Exception& e) {
