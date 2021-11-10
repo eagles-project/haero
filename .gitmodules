@@ -23,6 +23,3 @@
 [submodule "ext/skywalker"]
 	path = ext/skywalker
 	url = https://github.com/eagles-project/skywalker
-[submodule "mam_x_validation"]
-	path = mam_x_validation
-	url = https://github.com/eagles-project/mam_x_validation
