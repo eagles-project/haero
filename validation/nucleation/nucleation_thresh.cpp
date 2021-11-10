@@ -42,8 +42,6 @@ int main(int argc, char** argv) {
   // Load the ensemble. Any error encountered is fatal.
   Ensemble* ensemble = skywalker::load_ensemble(input_file, "settings");
 
-  // Figure out settings for binary/ternary nucleation and planetary boundary
-  // layer treatment
   Settings settings = ensemble->settings();
   if (settings.has("nucleation_method")) {
     int nuc_method = std::stoi(settings.get("nucleation_method"));
