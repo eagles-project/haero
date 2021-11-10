@@ -79,8 +79,9 @@ static inline auto zero_vec_2d(std::size_t s0, std::size_t s1) {
 namespace haero {
 
 MAMCalcsizeHostCXXProcess::MAMCalcsizeHostCXXProcess()
-    : DeviceAerosolProcess<MAMCalcsizeHostCXXProcess>(
-          CalcsizeProcess, "MAMCalcsizeHostCXXProcess") {
+    : DeviceAerosolProcess<MAMCalcsizeHostCXXProcess>(CalcsizeProcess,
+                                                      "MAMCalcsizeHostCXXProces"
+                                                      "s") {
   logger->set_pattern("MAMCalcsizeHostCXXProcess[%^%l%$]: %v");
 }
 //------------------------------------------------------------------------
@@ -130,7 +131,7 @@ void MAMCalcsizeHostCXXProcess::init_(
   v2nmax_nmodes = zero_vec(nmodes);
   dgnmin_nmodes = zero_vec(nmodes);
   dgnmax_nmodes = zero_vec(nmodes);
-  common_factor = zero_vec(nmodes);
+  common_factor_nmodes = zero_vec(nmodes);
 
   for (int i = 0; i < nmodes; i++) {
     logger->debug("setting volume/num ratios and diameters mode={}", i);
@@ -140,7 +141,7 @@ void MAMCalcsizeHostCXXProcess::init_(
     v2nmax_nmodes[i] = mode.max_vol_to_num_ratio<T>();
     dgnmin_nmodes[i] = mode.min_diameter;
     dgnmax_nmodes[i] = mode.max_diameter;
-    common_factor[i] =
+    common_factor_nmodes[i] =
         std::exp(4.5 * std::log(std::pow(mode.mean_std_dev, 2.0))) *
         Constants::pi_sixth;
   }
@@ -171,6 +172,7 @@ void MAMCalcsizeHostCXXProcess::run_(const TeamType &team, Real t, Real dt,
   const auto q_i = view_to_vector_2d(prognostics.interstitial_aerosols);
   logger->debug("prognostics.interstitial_aerosols.size={}", q_i.size());
   const auto n_i = view_to_vector_2d(prognostics.interstitial_num_mix_ratios);
+
   logger->debug("prognostics.interstitial_num_mix_ratios.size={}", n_i.size());
 
   // cloud-borne mass and number mixing ratios
@@ -225,13 +227,118 @@ void MAMCalcsizeHostCXXProcess::run_(const TeamType &team, Real t, Real dt,
                 std::numeric_limits<decltype(density)::value_type>::max());
     std::copy_n(spec_density.begin() + population_offsets[imode], nspec,
                 density.begin());
-    // logger->debug("densities for species in mode={}",
-    // fmt_vec_1d(density.begin(), density.begin() + nspec));
 
     compute_dry_volume(imode, top_level, nlevels, start_spec_idx, end_spec_idx,
                        density, q_i, q_c, dryvol_a, dryvol_c, num_vert_packs);
+
+    // compute upper and lower limits for volume to num (v2n) ratios and
+    // diameters (dgn)
+    auto v2nmin = v2nmin_nmodes[imode];
+    auto v2nmax = v2nmax_nmodes[imode];
+    const auto dgnmin = dgnmin_nmodes[imode];
+    const auto dgnmax = dgnmax_nmodes[imode];
+    const auto common_factor = common_factor_nmodes[imode];
+
+    Real v2nminrl, v2nmaxrl;
+
+    get_relaxed_v2n_limits(do_aitacc_transfer, imode == aitken_idx,
+                           imode == accum_idx, v2nmin, v2nmax, v2nminrl,
+                           v2nmaxrl);
+
+    for (int pack_idx = 0; pack_idx < num_vert_packs; pack_idx++) {
+      // Interstitial aerosols
+      // dryvolume pack for this pack of levels
+      auto dryvol_a_lvl = dryvol_a[pack_idx];
+
+      // initial value of num interstitial for this pack and mode
+      auto init_num_a = n_i[imode][pack_idx];
+
+      // `adjust_num_sizes` will use the initial value, but other calculations
+      // require this to be nonzero.
+      auto num_a = PackType(init_num_a < 0, PackType(0.0), init_num_a);
+
+      // Same calculations as above, but for cloudborne aerosols
+      auto dryvol_c_lvl = dryvol_c[pack_idx];
+      auto init_num_c = n_c[imode][pack_idx];
+      auto num_c = PackType(init_num_c < 0, PackType(0.0), init_num_c);
+
+      if (do_adjust) {
+        /*------------------------------------------------------------------
+         *  Do number adjustment for interstitial and activated particles
+         *------------------------------------------------------------------
+         * Adjustments that are applied over time-scale deltat
+         * (model time step in seconds):
+         *
+         *   1. make numbers non-negative or
+         *   2. make numbers zero when volume is zero
+         *
+         *
+         * Adjustments that are applied over time-scale of a day (in seconds)
+         *   3. bring numbers to within specified bounds
+         *
+         * (Adjustment details are explained in the process)
+         *------------------------------------------------------------------*/
+
+        // number tendencies to be updated by adjust_num_sizes subroutine
+        auto interstitial_tend = dnidt[imode][pack_idx];
+        auto cloudborne_tend = dncdt[imode][pack_idx];
+
+        adjust_num_sizes(dryvol_a_lvl, dryvol_c_lvl, init_num_a, init_num_c, dt,
+                         v2nmin, v2nmax, v2nminrl, v2nmaxrl, num_a, num_c,
+                         interstitial_tend, cloudborne_tend);
+
+        logger->debug(
+            "performing number "
+            "adjustment:interstitial_tend={},cloudborne_tend={}",
+            interstitial_tend, cloudborne_tend);
+      }
+    }
   }
   logger->debug("leaving run_");
+}
+
+void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
+    const PackType &drv_a, const PackType &drv_c, const PackType &init_num_a,
+    const PackType &init_num_c, const Real &dt, const Real &v2nmin,
+    const Real &v2nmax, const Real &v2nminrl, const Real &v2nmaxrl,
+    PackType &num_a, PackType &num_c, PackType &dqdt, PackType &dqqcwdt) const {
+  logger->debug("enter adjust_num_sizes");
+  logger->debug("exit adjust_num_sizes");
+}
+
+void MAMCalcsizeHostCXXProcess::get_relaxed_v2n_limits(
+    const bool do_aitacc_transfer, const bool is_aitken_mode,
+    const bool is_accum_mode, Real &v2nmin, Real &v2nmax, Real &v2nminrl,
+    Real &v2nmaxrl) const {
+  logger->debug(
+      "get_relaxed_v2n_limits:do_aitacc_transfer={},is_aitken_mode={},is_accum_"
+      "mode={}",
+      do_aitacc_transfer, is_aitken_mode, is_accum_mode);
+
+  /*
+   * Relaxation factor is currently assumed to be a factor of 3 in diameter
+   * which makes it 3**3=27 for volume.  i.e. dgnumlo_relaxed = dgnumlo/3 and
+   * dgnumhi_relaxed = dgnumhi*3; therefore we use 3**3=27 as a relaxation
+   * factor for volume.
+   *
+   * \see get_relaxed_v2n_limits
+   */
+  static constexpr Real relax_factor = 27.0;
+
+  // factor to artifically inflate or deflate v2nmin and v2nmax
+  static constexpr Real szadj_block_fac = 1.0e6;
+
+  if (do_aitacc_transfer) {
+    if (is_aitken_mode) v2nmin /= szadj_block_fac;
+
+    if (is_accum_mode) v2nmax *= szadj_block_fac;
+  }
+
+  v2nminrl = v2nmin / relax_factor;
+  v2nmaxrl = v2nmax * relax_factor;
+
+  logger->debug("exit get_relaxed_v2n_limits:v2nminrl={},v2nmaxrl={}", v2nminrl,
+                v2nmaxrl);
 }
 
 void MAMCalcsizeHostCXXProcess::set_initial_sz_and_volumes_(

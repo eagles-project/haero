@@ -57,6 +57,7 @@ class MAMCalcsizeHostCXXProcess final
             const Tendencies &tendencies) const override;
 
  public:
+
   /**
    * \brief Set initial defaults for the dry diameter, volume to num and dry
    * volume.
@@ -81,8 +82,48 @@ class MAMCalcsizeHostCXXProcess final
                           std::vector<PackType> &dryvol_c,
                           const std::size_t num_vert_packs) const;
 
+  /*
+   * \brief Get relaxed limits for volume_to_num (we use relaxed limits for
+   * aerosol number "adjustment" calculations via "adjust_num_sizes" subroutine.
+   * Note: The relaxed limits will be artifically inflated (or deflated) for the
+   * aitken and accumulation modes if "do_aitacc_transfer" flag is true to
+   * effectively shut-off aerosol number "adjustment" calculations for these
+   * modes because we do the explicit transfer (via "aitken_accum_exchange"
+   * subroutine) from one mode to another instead of adjustments for these
+   * modes).
+   *
+   * \note v2nmin and v2nmax are only updated for aitken and accumulation modes.
+   */
+  void get_relaxed_v2n_limits(const bool, const bool, const bool, Real &,
+                              Real &, Real &, Real &) const;
+
+  /* clang-format off
+   *
+   * We accomplish number adjustments in 3 steps:
+   *
+   *   1. Ensure that number mixing ratios are either zero or positive to begin
+   *      with. If both of them are zero (or less), we make them zero and update
+   *      tendencies accordingly (logic in the first "if" block")
+   *   2. In this step, we use "relaxed" bounds for bringing number mixing
+   *      ratios in their bounds. This is accomplished in three sub-steps [(a),
+   *      (b) and (c)] described in "Step 2" below.
+   *   3. In this step, we use the actual bounds for bringing number mixing
+   *      ratios in their bounds. This is also accomplished in three sub-steps
+   *      [(a), (b) and (c)] described in "Step 3" below.
+   *
+   * clang-format on
+   */
+  void adjust_num_sizes(const PackType &drv_a, const PackType &drv_c,
+                        const PackType &init_num_a, const PackType &init_num_c,
+                        const Real &dt, const Real &v2nmin, const Real &v2nmax,
+                        const Real &v2nminrl, const Real &v2nmaxrl,
+                        PackType &num_a, PackType &num_c, PackType &dqdt,
+                        PackType &dqqcwdt) const;
+
  public:
   static constexpr int top_level = 0;
+  static constexpr bool do_adjust = true;
+  static constexpr bool do_aitacc_transfer = true;
 
   int nmodes;
   int max_nspec;
@@ -105,7 +146,7 @@ class MAMCalcsizeHostCXXProcess final
   // There is a common factor calculated over and over in the core loop of this
   // process. This factor has been pulled out so the calculation only has to be
   // performed once.
-  std::vector<Real> common_factor;
+  std::vector<Real> common_factor_nmodes;
 
  private:
   std::shared_ptr<ekat::logger::Log::logger> logger =
