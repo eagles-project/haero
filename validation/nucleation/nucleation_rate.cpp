@@ -1,6 +1,6 @@
-#include <haero/merikanto2007.hpp>
-#include <haero/vehkamaki2002.hpp>
-#include <haero/wang2008.hpp>
+#include <haero/processes/merikanto2007.hpp>
+#include <haero/processes/vehkamaki2002.hpp>
+#include <haero/processes/wang2008.hpp>
 
 #include <skywalker.hpp>
 
@@ -16,23 +16,42 @@ void usage(const std::string& prog_name) {
 }
 
 using namespace skywalker;
+using namespace haero;
 
 void run_vehkamaki2002(Ensemble* ensemble, int pbl_method) {
-  // Ensemble data
   ensemble->process([](const Input& input, Output& output) {
     // Ensemble parameters
-    Real c_h2so4 = input.get("c_h2so4");
-    Real rel_hum = input.get("relative_humidity");
-    Real temp = input.get("temperature");
+    PackType c_h2so4 = input.get("c_h2so4");
+    PackType rel_hum = input.get("relative_humidity");
+    PackType temp = input.get("temperature");
 
-    Real J = 0.0;
+    // Compute the mole fraction of H2SO4 in a critical cluster, and from it
+    // the nucleation rate.
+    PackType x_crit = vehkamaki2002::h2so4_critical_mole_fraction(c_h2so4, temp,
+        rel_hum);
+    PackType J = vehkamaki2002::nucleation_rate(c_h2so4, temp, rel_hum, x_crit);
 
     // Write the computed nucleation rate.
-    output.set("nucleation_rate", J);
+    output.set("nucleation_rate", J[0]);
   });
 }
 
 void run_merikanto2007(Ensemble* ensemble, int pbl_method) {
+  ensemble->process([](const Input& input, Output& output) {
+    // Ensemble parameters
+    PackType c_h2so4 = input.get("c_h2so4");
+    PackType xi_nh3 = input.get("xi_nh3");
+    PackType rel_hum = input.get("relative_humidity");
+    PackType temp = input.get("temperature");
+
+    // Compute the nucleation rate.
+    PackType log_J = merikanto2007::log_nucleation_rate(temp, rel_hum,
+        c_h2so4, xi_nh3);
+    PackType J = exp(log_J);
+
+    // Write the computed nucleation rate.
+    output.set("nucleation_rate", J[0]);
+  });
 }
 
 int main(int argc, char **argv) {

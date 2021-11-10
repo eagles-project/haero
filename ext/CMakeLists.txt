@@ -465,6 +465,9 @@ ExternalProject_Add(skywalker_proj
                     LOG_BUILD TRUE
                     INSTALL_COMMAND ${MAKE} install
                     LOG_INSTALL TRUE)
+add_library(skywalker STATIC IMPORTED GLOBAL)
+set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libskywalker_${HAERO_PRECISION}.a)
+add_dependencies(skywalker skywalker_proj)
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
