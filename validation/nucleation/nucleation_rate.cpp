@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
     output_file = std::string("haero_") + input_file.substr(slash, dot) +
                   std::string(".py");
   }
+  std::cout << argv[0] << ": reading " << input_file << std::endl;
 
   // Load the ensemble. Any error encountered is fatal.
   Ensemble* ensemble = skywalker::load_ensemble(input_file, "settings");
@@ -89,7 +90,10 @@ int main(int argc, char **argv) {
     exit(0);
   }
 
-  int pbl_method = std::stoi(settings.get("pbl_method"));
+  int pbl_method = 0; // no PBL correction by default.
+  if (settings.has("pbl_method")) {
+    pbl_method = std::stoi(settings.get("pbl_method"));
+  }
   if ((pbl_method < 0) or (pbl_method > 2)) {
     std::cerr << "Invalid planetary boundary layer method: " << pbl_method
               << std::endl;
@@ -97,13 +101,18 @@ int main(int argc, char **argv) {
   }
 
   // Run the ensemble.
-  if (nuc_method == 2) { // binary nucleation
-    run_vehkamaki2002(ensemble, pbl_method);
-  } else { // ternary nucleation
-    run_merikanto2007(ensemble, pbl_method);
+  try {
+    if (nuc_method == 2) { // binary nucleation
+      run_vehkamaki2002(ensemble, pbl_method);
+    } else { // ternary nucleation
+      run_merikanto2007(ensemble, pbl_method);
+    }
+  } catch (Exception& e) {
+    std::cerr << argv[0] << ": Error: " << e.what() << std::endl;
   }
 
   // Write out a Python module.
+  std::cout << argv[0] << ": writing " << output_file << std::endl;
   ensemble->write(output_file);
 
   // Clean up.
