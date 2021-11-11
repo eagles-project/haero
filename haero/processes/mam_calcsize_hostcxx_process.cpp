@@ -363,31 +363,35 @@ void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
    * (or less) adjust numbers(num_a and num_c respectively) for both of them to
    * be zero for this mode and level
    */
-  const auto do_cond1 = drva_le_zero && drvc_le_zero;
-  dqdt.set(do_cond1,
+  const auto drv_a_c_le_zero = drva_le_zero && drvc_le_zero;
+  dqdt.set(drv_a_c_le_zero,
            update_number_mixing_ratio_tendencies(num_a, init_num_a, dtinv));
-  dqqcwdt.set(do_cond1,
+  dqqcwdt.set(drv_a_c_le_zero,
               update_number_mixing_ratio_tendencies(num_c, init_num_c, dtinv));
 
   /* if cloud borne dry volume (drv_c) is zero(or less), the interstitial
    * number/volume == total/combined apply step 1 and 3, but skip the relaxed
    * adjustment (step 2, see below)
    */
-  const auto do_cond2 = !drva_le_zero && drvc_le_zero;
+  const auto only_drvc_le_zero = !drva_le_zero && drvc_le_zero;
   {
     const auto numbnd = min_max_bounded(drv_a, v2nmin, v2nmax, num_a);
-    num_a.set(do_cond2, num_a + (numbnd - num_a) * frac_adj_in_dt);
+    num_a.set(only_drvc_le_zero, num_a + (numbnd - num_a) * frac_adj_in_dt);
   }
 
   /* interstitial volume is zero, treat similar to above */
-  const auto do_cond3 = !drvc_le_zero && drva_le_zero;
+  const auto only_drva_le_zero = !drvc_le_zero && drva_le_zero;
   {
     const auto numbnd = min_max_bounded(drv_c, v2nmin, v2nmax, num_c);
-    num_c.set(do_cond3, num_c + (numbnd - num_c) * frac_adj_in_dt);
+    num_c.set(only_drva_le_zero, num_c + (numbnd - num_c) * frac_adj_in_dt);
   }
 
-  const auto do_cond4 = !drvc_le_zero && !drva_le_zero;
-  if (do_cond4.any()) {
+  /* Note that anything in this scope that touches a pack outside this scope, it
+   * must also refer to `drv_a_c_gt_zero`. eg
+   * `pk.set(drv_a_c_gt_zero && some_other_cond, val);`
+   */
+  const auto drv_a_c_gt_zero = !drvc_le_zero && !drva_le_zero;
+  if (drv_a_c_gt_zero.any()) {
     /*
      * The number adjustment is done in 3 steps:
      *
@@ -527,8 +531,8 @@ void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
     }
 
     // Update num_a/c
-    num_a.set(do_cond4, num_a_stp2 + delnum_a_stp3);
-    num_c.set(do_cond4, num_c_stp2 + delnum_c_stp3);
+    num_a.set(drv_a_c_gt_zero, num_a_stp2 + delnum_a_stp3);
+    num_c.set(drv_a_c_gt_zero, num_c_stp2 + delnum_c_stp3);
   }
 
   // Update tendencies
