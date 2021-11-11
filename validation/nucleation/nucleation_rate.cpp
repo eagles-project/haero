@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
   std::cout << argv[0] << ": reading " << input_file << std::endl;
 
   // Load the ensemble. Any error encountered is fatal.
-  Ensemble* ensemble = skywalker::load_ensemble(input_file, "settings");
+  Ensemble* ensemble = skywalker::load_ensemble(input_file, "haero");
 
   // Figure out settings for binary/ternary nucleation and planetary boundary
   // layer treatment
