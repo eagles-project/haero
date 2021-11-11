@@ -303,6 +303,239 @@ void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
     const Real &v2nmax, const Real &v2nminrl, const Real &v2nmaxrl,
     PackType &num_a, PackType &num_c, PackType &dqdt, PackType &dqqcwdt) const {
   logger->debug("enter adjust_num_sizes");
+
+  static constexpr Real close_to_one = 1.0 + 1.0e-15;
+  static constexpr Real seconds_in_a_day = 86400.0;
+
+  /*
+   *
+   * The logic behind the number adjustment is described in detail in the "else"
+   * section of the following "if" condition.
+   *
+   * We accomplish number adjustments in 3 steps:
+   *
+   *   1. Ensure that number mixing ratios are either zero or positive to begin
+   *      with. If both of them are zero (or less), we make them zero and update
+   *      tendencies accordingly (logic in the first "if" block")
+   *   2. In this step, we use "relaxed" bounds for bringing number mixing
+   *      ratios in their bounds. This is accomplished in three sub-steps [(a),
+   *      (b) and (c)] described in "Step 2" below.
+   *   3. In this step, we use the actual bounds for bringing number mixing
+   *      ratios in their bounds. This is also accomplished in three sub-steps
+   *      [(a), (b) and (c)] described in "Step 3" below.
+   *
+   * If the number mixing ratio in a mode is out of mode's min/max range, we
+   * re-balance interstitial and cloud borne aerosols such that the number
+   * mixing ratio comes within the range. Time step for such an operation is
+   * assumed to be one day (in seconds). That is, it is assumed that number
+   * mixing ratios will be within range in a day. "adj_tscale" represents that
+   * time scale
+   *
+   */
+
+  // time scale for number adjustment
+  const auto adj_tscale = std::max(seconds_in_a_day, dt);
+
+  // inverse of the adjustment time scale
+  const auto adj_tscale_inv = 1.0 / (adj_tscale * close_to_one);
+
+  // fraction of adj_tscale covered in the current time step "dt"
+  const auto frac_adj_in_dt = std::max(0.0, std::min(1.0, dt * adj_tscale_inv));
+
+  // inverse of time step
+  const auto dtinv = 1.0 / (dt * close_to_one);
+
+  logger->debug("adj_tscale={},adj_tscale_inv={},frac_adj_in_dt={},dtinv={}",
+                adj_tscale, adj_tscale_inv, frac_adj_in_dt, dtinv);
+
+  /*
+   * The masks below represent four if-else conditions in the original fortran
+   * code. The masks represent whether a given branch should be traversed for a
+   * given element of the pack, and this pack is passed to the function
+   * invokations.
+   */
+  const auto drva_lt_zero = drv_a <= 0.0;
+  num_a.set(drva_lt_zero, 0.0);
+
+  const auto drvc_lt_zero = drv_c <= 0.0;
+  num_c.set(drvc_lt_zero, 0.0);
+
+  /* If both interstitial (drv_a) and cloud borne (drv_c) dry volumes are zero
+   * (or less) adjust numbers(num_a and num_c respectively) for both of them to
+   * be zero for this mode and level
+   */
+  const auto do_cond1 = drva_lt_zero && drvc_lt_zero;
+  dqdt.set(do_cond1,
+           update_number_mixing_ratio_tendencies(num_a, init_num_a, dtinv));
+  dqqcwdt.set(do_cond1,
+              update_number_mixing_ratio_tendencies(num_c, init_num_c, dtinv));
+
+  /* if cloud borne dry volume (drv_c) is zero(or less), the interstitial
+   * number/volume == total/combined apply step 1 and 3, but skip the relaxed
+   * adjustment (step 2, see below)
+   */
+  const auto do_cond2 = !drva_lt_zero && drvc_lt_zero;
+  {
+    const auto numbnd = min_max_bounded(drv_a, v2nmin, v2nmax, num_a);
+    num_a.set(do_cond2, num_a + (numbnd - num_a) * frac_adj_in_dt);
+  }
+
+  /* interstitial volume is zero, treat similar to above */
+  const auto do_cond3 = !drvc_lt_zero && drva_lt_zero;
+  {
+    const auto numbnd = min_max_bounded(drv_c, v2nmin, v2nmax, num_c);
+    num_c.set(do_cond3, num_c + (numbnd - num_c) * frac_adj_in_dt);
+  }
+
+  const auto do_cond4 = !drvc_lt_zero && !drva_lt_zero;
+  if (do_cond4.any()) {
+    /*
+     * The number adjustment is done in 3 steps:
+     *
+     * Step 1: assumes that num_a and num_c are non-negative (nothing to be done
+     * here)
+     */
+    const auto num_a_stp1 = num_a;
+    const auto num_c_stp1 = num_c;
+
+    /*
+     * Step 2 [Apply relaxed bounds] has 3 parts (a), (b) and (c)
+     *
+     * Step 2: (a) Apply relaxed bounds to bound num_a and num_c within
+     * "relaxed" bounds.
+     */
+    auto numbnd = min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a_stp1);
+
+    /*
+     * 2(b) Ideally, num_* should be in range. If they are not, we assume
+     * that they will reach their maximum (or minimum)for this mode
+     * within a day (time scale). We then compute how much num_* will
+     * change in a time step by multiplying the difference between num_*
+     * and its maximum(or minimum) with "frac_adj_in_dt".
+     */
+    const auto delnum_a_stp2 = (numbnd - num_a_stp1) * frac_adj_in_dt;
+
+    // change in num_a in one time step
+    auto num_a_stp2 = num_a_stp1 + delnum_a_stp2;
+
+    // bounded to relaxed min and max
+    numbnd = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c_stp1);
+    const auto delnum_c_stp2 = (numbnd - num_c_stp1) * frac_adj_in_dt;
+
+    // change in num_a in one time step
+    auto num_c_stp2 = num_c_stp1 + delnum_c_stp2;
+
+    /*
+     * 2(c) We now also need to balance num_* incase only one among the
+     * interstitial or cloud- borne is changing. If interstitial stayed the same
+     * (i.e. it is within range) but cloud-borne is predicted to reach its
+     * maximum(or minimum), we modify interstitial number (num_a), so as to
+     * accomodate change in the cloud-borne aerosols (and vice-versa). We try to
+     * balance these by moving the num_* in the opposite direction as much as
+     * possible to conserve num_a + num_c (such that num_a+num_c stays close to
+     * its original value)
+     */
+    const auto delnum_a_stp2_eq0 = delnum_a_stp2 == 0.0;
+    const auto delnum_c_stp2_eq0 = delnum_c_stp2 == 0.0;
+
+    num_a_stp2.set(
+        delnum_a_stp2_eq0 && !delnum_c_stp2_eq0,
+        min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a_stp1 - delnum_c_stp2));
+
+    num_c_stp2.set(
+        delnum_c_stp2_eq0 && !delnum_a_stp2_eq0,
+        min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c_stp1 - delnum_a_stp2));
+
+    /*
+     * Step3[apply stricter bounds] has 3 parts (a), (b) and (c)
+     * Step 3:(a) compute combined total of num_a and num_c
+     */
+    const auto total_drv = drv_a + drv_c;
+    const auto total_num = num_a_stp2 + num_c_stp2;
+
+    /*
+     * 3(b) We now compute amount of num_* to change if total_num
+     *     is out of range. If total_num is within range, we don't do anything
+     * (i.e. delnuma3 and delnum_c_stp3 remain zero)
+     */
+    auto delnum_a_stp3 = PackType(0.0);
+    auto delnum_c_stp3 = PackType(0.0);
+
+    /*
+     * "total_drv*v2nmin" represents minimum number for this mode, and
+     * "total_drv*v2nmxn" represents maximum number for this mode
+     */
+    const auto min_number_bound = total_drv * v2nmin;
+    const auto max_number_bound = total_drv * v2nmax;
+
+    const auto total_lt_lowerbound = total_num < min_number_bound;
+    {
+      // change in total_num in one time step
+      const auto delnum_t3 = (min_number_bound - total_num) * frac_adj_in_dt;
+
+      /*
+       * Now we need to decide how to distribute "delnum" (change in number) for
+       * num_a and num_c.
+       *
+       * if both num_a and num_c are less than the lower bound distribute
+       * "delnum" using weighted ratios
+       */
+      const auto do_dist_delnum =
+          (num_a_stp2 < drv_a * v2nmin) && (num_c_stp2 < drv_c * v2nmin);
+
+      delnum_a_stp3.set(total_lt_lowerbound && do_dist_delnum,
+                        delnum_t3 * (num_a_stp2 / total_num));
+
+      delnum_c_stp3.set(total_lt_lowerbound && do_dist_delnum,
+                        delnum_t3 * (num_c_stp2 / total_num));
+
+      // if only num_c is less than lower bound, assign total change to num_c
+      delnum_c_stp3.set(total_lt_lowerbound && (num_c_stp2 < drv_c * v2nmin),
+                        delnum_t3);
+
+      // if only num_a is less than lower bound, assign total change to num_a
+      delnum_a_stp3.set(total_lt_lowerbound && (num_a_stp2 < drv_a * v2nmin),
+                        delnum_t3);
+    }
+
+    const auto total_gt_upperbound = total_num > max_number_bound;
+    {
+      // change in total_num in one time step
+      const auto delnum_t3 = (max_number_bound - total_num) * frac_adj_in_dt;
+
+      // decide how to distribute "delnum"(change in number) for num_a and num_c
+      const auto do_dist_delnum =
+          (num_a_stp2 > drv_a * v2nmax) && (num_c_stp2 > drv_c * v2nmax);
+
+      /*
+       * if both num_a and num_c are more than the upper bound distribute
+       * "delnum" using weighted ratios
+       */
+      delnum_a_stp3.set(total_gt_upperbound && do_dist_delnum,
+                        delnum_t3 * (num_a_stp2 / total_num));
+      delnum_c_stp3.set(total_gt_upperbound && do_dist_delnum,
+                        delnum_t3 * (num_c_stp2 / total_num));
+
+      // if only num_c is more than the upper bound, assign total change to
+      // num_c
+      delnum_c_stp3.set(total_gt_upperbound && (num_c_stp2 > drv_c * v2nmax),
+                        delnum_t3);
+
+      // if only num_a is more than the upper bound, assign total change to
+      // num_a
+      delnum_a_stp3.set(total_gt_upperbound && (num_a_stp2 > drv_a * v2nmax),
+                        delnum_t3);
+    }
+
+    // Update num_a/c
+    num_a.set(do_cond4, num_a_stp2 + delnum_a_stp3);
+    num_c.set(do_cond4, num_c_stp2 + delnum_c_stp3);
+  }
+
+  // Update tendencies
+  dqdt = update_number_mixing_ratio_tendencies(num_a, init_num_a, dtinv);
+  dqqcwdt = update_number_mixing_ratio_tendencies(num_c, init_num_c, dtinv);
+
   logger->debug("exit adjust_num_sizes");
 }
 

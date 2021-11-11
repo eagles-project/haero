@@ -57,7 +57,6 @@ class MAMCalcsizeHostCXXProcess final
             const Tendencies &tendencies) const override;
 
  public:
-
   /**
    * \brief Set initial defaults for the dry diameter, volume to num and dry
    * volume.
@@ -97,21 +96,21 @@ class MAMCalcsizeHostCXXProcess final
   void get_relaxed_v2n_limits(const bool, const bool, const bool, Real &,
                               Real &, Real &, Real &) const;
 
-  /* clang-format off
-   *
-   * We accomplish number adjustments in 3 steps:
-   *
-   *   1. Ensure that number mixing ratios are either zero or positive to begin
-   *      with. If both of them are zero (or less), we make them zero and update
-   *      tendencies accordingly (logic in the first "if" block")
-   *   2. In this step, we use "relaxed" bounds for bringing number mixing
-   *      ratios in their bounds. This is accomplished in three sub-steps [(a),
-   *      (b) and (c)] described in "Step 2" below.
-   *   3. In this step, we use the actual bounds for bringing number mixing
-   *      ratios in their bounds. This is also accomplished in three sub-steps
-   *      [(a), (b) and (c)] described in "Step 3" below.
-   *
-   * clang-format on
+  static inline PackType update_number_mixing_ratio_tendencies(
+      const PackType &num, const PackType &num0, const PackType &dt_inverse) {
+    return (num - num0) * dt_inverse;
+  }
+
+  static inline PackType min_max_bounded(const PackType &drv,
+                                         const PackType &v2nmin,
+                                         const PackType &v2nmax,
+                                         const PackType &num) {
+    return ekat::max(drv * v2nmin, ekat::min(drv * v2nmax, num));
+  }
+
+  /*
+   * \brief number adjustment routine. See the implementation for more detailed
+   * comments.
    */
   void adjust_num_sizes(const PackType &drv_a, const PackType &drv_c,
                         const PackType &init_num_a, const PackType &init_num_c,
