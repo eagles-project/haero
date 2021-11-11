@@ -93,8 +93,11 @@ class MAMCalcsizeHostCXXProcess final
    *
    * \note v2nmin and v2nmax are only updated for aitken and accumulation modes.
    */
-  void get_relaxed_v2n_limits(const bool, const bool, const bool, Real &,
-                              Real &, Real &, Real &) const;
+  void get_relaxed_v2n_limits(const bool do_aitacc_transfer,
+                              const bool is_aitken_mode,
+                              const bool is_accum_mode, Real &v2nmin,
+                              Real &v2nmax, Real &v2nminrl,
+                              Real &v2nmaxrl) const;
 
   static inline PackType update_number_mixing_ratio_tendencies(
       const PackType &num, const PackType &num0, const PackType &dt_inverse) {
