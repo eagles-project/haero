@@ -416,17 +416,17 @@ void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
      * change in a time step by multiplying the difference between num_*
      * and its maximum(or minimum) with "frac_adj_in_dt".
      */
-    const auto delnum_a_stp2 = (numbnd - num_a_stp1) * frac_adj_in_dt;
+    const auto delta_num_a_stp2 = (numbnd - num_a_stp1) * frac_adj_in_dt;
 
     // change in num_a in one time step
-    auto num_a_stp2 = num_a_stp1 + delnum_a_stp2;
+    auto num_a_stp2 = num_a_stp1 + delta_num_a_stp2;
 
     // bounded to relaxed min and max
     numbnd = min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c_stp1);
-    const auto delnum_c_stp2 = (numbnd - num_c_stp1) * frac_adj_in_dt;
+    const auto delta_num_c_stp2 = (numbnd - num_c_stp1) * frac_adj_in_dt;
 
     // change in num_a in one time step
-    auto num_c_stp2 = num_c_stp1 + delnum_c_stp2;
+    auto num_c_stp2 = num_c_stp1 + delta_num_c_stp2;
 
     /*
      * 2(c) We now also need to balance num_* incase only one among the
@@ -438,16 +438,16 @@ void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
      * possible to conserve num_a + num_c (such that num_a+num_c stays close to
      * its original value)
      */
-    const auto delnum_a_stp2_eq0 = delnum_a_stp2 == 0.0;
-    const auto delnum_c_stp2_eq0 = delnum_c_stp2 == 0.0;
+    const auto delta_num_a_stp2_eq0 = delta_num_a_stp2 == 0.0;
+    const auto delta_num_c_stp2_eq0 = delta_num_c_stp2 == 0.0;
 
-    num_a_stp2.set(
-        delnum_a_stp2_eq0 && !delnum_c_stp2_eq0,
-        min_max_bounded(drv_a, v2nminrl, v2nmaxrl, num_a_stp1 - delnum_c_stp2));
+    num_a_stp2.set(delta_num_a_stp2_eq0 && !delta_num_c_stp2_eq0,
+                   min_max_bounded(drv_a, v2nminrl, v2nmaxrl,
+                                   num_a_stp1 - delta_num_c_stp2));
 
-    num_c_stp2.set(
-        delnum_c_stp2_eq0 && !delnum_a_stp2_eq0,
-        min_max_bounded(drv_c, v2nminrl, v2nmaxrl, num_c_stp1 - delnum_a_stp2));
+    num_c_stp2.set(delta_num_c_stp2_eq0 && !delta_num_a_stp2_eq0,
+                   min_max_bounded(drv_c, v2nminrl, v2nmaxrl,
+                                   num_c_stp1 - delta_num_a_stp2));
 
     /*
      * Step3[apply stricter bounds] has 3 parts (a), (b) and (c)
@@ -459,10 +459,10 @@ void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
     /*
      * 3(b) We now compute amount of num_* to change if total_num
      *     is out of range. If total_num is within range, we don't do anything
-     * (i.e. delnuma3 and delnum_c_stp3 remain zero)
+     * (i.e. delta_numa3 and delta_num_c_stp3 remain zero)
      */
-    auto delnum_a_stp3 = PackType(0.0);
-    auto delnum_c_stp3 = PackType(0.0);
+    auto delta_num_a_stp3 = PackType(0.0);
+    auto delta_num_c_stp3 = PackType(0.0);
 
     /*
      * "total_drv*v2nmin" represents minimum number for this mode, and
@@ -474,65 +474,66 @@ void MAMCalcsizeHostCXXProcess::adjust_num_sizes(
     const auto total_lt_lowerbound = total_num < min_number_bound;
     {
       // change in total_num in one time step
-      const auto delnum_t3 = (min_number_bound - total_num) * frac_adj_in_dt;
+      const auto delta_num_t3 = (min_number_bound - total_num) * frac_adj_in_dt;
 
       /*
-       * Now we need to decide how to distribute "delnum" (change in number) for
-       * num_a and num_c.
+       * Now we need to decide how to distribute "delta_num" (change in number)
+       * for num_a and num_c.
        *
        * if both num_a and num_c are less than the lower bound distribute
-       * "delnum" using weighted ratios
+       * "delta_num" using weighted ratios
        */
-      const auto do_dist_delnum =
+      const auto do_dist_delta_num =
           (num_a_stp2 < drv_a * v2nmin) && (num_c_stp2 < drv_c * v2nmin);
 
-      delnum_a_stp3.set(total_lt_lowerbound && do_dist_delnum,
-                        delnum_t3 * (num_a_stp2 / total_num));
+      delta_num_a_stp3.set(total_lt_lowerbound && do_dist_delta_num,
+                           delta_num_t3 * (num_a_stp2 / total_num));
 
-      delnum_c_stp3.set(total_lt_lowerbound && do_dist_delnum,
-                        delnum_t3 * (num_c_stp2 / total_num));
+      delta_num_c_stp3.set(total_lt_lowerbound && do_dist_delta_num,
+                           delta_num_t3 * (num_c_stp2 / total_num));
 
       // if only num_c is less than lower bound, assign total change to num_c
-      delnum_c_stp3.set(total_lt_lowerbound && (num_c_stp2 < drv_c * v2nmin),
-                        delnum_t3);
+      delta_num_c_stp3.set(total_lt_lowerbound && (num_c_stp2 < drv_c * v2nmin),
+                           delta_num_t3);
 
       // if only num_a is less than lower bound, assign total change to num_a
-      delnum_a_stp3.set(total_lt_lowerbound && (num_a_stp2 < drv_a * v2nmin),
-                        delnum_t3);
+      delta_num_a_stp3.set(total_lt_lowerbound && (num_a_stp2 < drv_a * v2nmin),
+                           delta_num_t3);
     }
 
     const auto total_gt_upperbound = total_num > max_number_bound;
     {
       // change in total_num in one time step
-      const auto delnum_t3 = (max_number_bound - total_num) * frac_adj_in_dt;
+      const auto delta_num_t3 = (max_number_bound - total_num) * frac_adj_in_dt;
 
-      // decide how to distribute "delnum"(change in number) for num_a and num_c
-      const auto do_dist_delnum =
+      // decide how to distribute "delta_num"(change in number) for num_a and
+      // num_c
+      const auto do_dist_delta_num =
           (num_a_stp2 > drv_a * v2nmax) && (num_c_stp2 > drv_c * v2nmax);
 
       /*
        * if both num_a and num_c are more than the upper bound distribute
-       * "delnum" using weighted ratios
+       * "delta_num" using weighted ratios
        */
-      delnum_a_stp3.set(total_gt_upperbound && do_dist_delnum,
-                        delnum_t3 * (num_a_stp2 / total_num));
-      delnum_c_stp3.set(total_gt_upperbound && do_dist_delnum,
-                        delnum_t3 * (num_c_stp2 / total_num));
+      delta_num_a_stp3.set(total_gt_upperbound && do_dist_delta_num,
+                           delta_num_t3 * (num_a_stp2 / total_num));
+      delta_num_c_stp3.set(total_gt_upperbound && do_dist_delta_num,
+                           delta_num_t3 * (num_c_stp2 / total_num));
 
       // if only num_c is more than the upper bound, assign total change to
       // num_c
-      delnum_c_stp3.set(total_gt_upperbound && (num_c_stp2 > drv_c * v2nmax),
-                        delnum_t3);
+      delta_num_c_stp3.set(total_gt_upperbound && (num_c_stp2 > drv_c * v2nmax),
+                           delta_num_t3);
 
       // if only num_a is more than the upper bound, assign total change to
       // num_a
-      delnum_a_stp3.set(total_gt_upperbound && (num_a_stp2 > drv_a * v2nmax),
-                        delnum_t3);
+      delta_num_a_stp3.set(total_gt_upperbound && (num_a_stp2 > drv_a * v2nmax),
+                           delta_num_t3);
     }
 
     // Update num_a/c
-    num_a.set(drv_a_c_gt_zero, num_a_stp2 + delnum_a_stp3);
-    num_c.set(drv_a_c_gt_zero, num_c_stp2 + delnum_c_stp3);
+    num_a.set(drv_a_c_gt_zero, num_a_stp2 + delta_num_a_stp3);
+    num_c.set(drv_a_c_gt_zero, num_c_stp2 + delta_num_c_stp3);
   }
 
   // Update tendencies
