@@ -108,11 +108,11 @@ ChemSolver::ChemSolver(std::string input_file) {
                                              state_host, nbatch);
   state = Real_2d_view("StateVector Devices", nbatch, stateVecDim);
 
-  Kokkos::Impl::Timer timer;
+  // Kokkos::Impl::Timer timer;
 
-  timer.reset();
+  // timer.reset();
   Kokkos::deep_copy(state, state_host);
-  const double t_deepcopy = timer.seconds();
+  // const double t_deepcopy = timer.seconds();
 
   const auto exec_space_instance = TChem::exec_space();
 
@@ -141,8 +141,8 @@ void ChemSolver::time_integrate() {
   Real_1d_view dt("delta time", nbatch);
   Kokkos::deep_copy(dt, solver_params.dtmax);
 
-  Kokkos::Impl::Timer timer;
-  timer.reset();
+  // Kokkos::Impl::Timer timer;
+  // timer.reset();
 
   // not sure if this is strictly necessary
   const double zero(0);
@@ -268,13 +268,13 @@ void ChemSolver::time_integrate() {
     tsum /= nbatch;
   } // end for
   Kokkos::fence();  /// timing purpose
-  const double t_device_batch = timer.seconds();
+  // const double t_device_batch = timer.seconds();
 
-  if (verbose)
-  {
-    printf("Time integration time stepping  %e [sec] %e [sec/sample]\n", t_device_batch,
-         t_device_batch / double(nbatch));
-  }
+  // if (verbose)
+  // {
+  //   printf("Time integration time stepping  %e [sec] %e [sec/sample]\n", t_device_batch,
+  //        t_device_batch / double(nbatch));
+  // }
 
   if (print_qoi) {
     Kokkos::parallel_for(
@@ -296,8 +296,8 @@ void ChemSolver::time_integrate(const double& tbeg, const double& tend) {
   Real_1d_view dt("delta time", nbatch);
   Kokkos::deep_copy(dt, solver_params.dtmax);
 
-  Kokkos::Impl::Timer timer;
-  timer.reset();
+  // Kokkos::Impl::Timer timer;
+  // timer.reset();
 
   // not sure if this is strictly necessary
   const double zero(0);
@@ -424,13 +424,13 @@ void ChemSolver::time_integrate(const double& tbeg, const double& tend) {
     tsum /= nbatch;
   } // end for
   Kokkos::fence();  /// timing purpose
-  const double t_device_batch = timer.seconds();
+  // const double t_device_batch = timer.seconds();
 
-  if (verbose)
-  {
-    printf("Time integration time stepping  %e [sec] %e [sec/sample]\n", t_device_batch,
-         t_device_batch / double(nbatch));
-  }
+  // if (verbose)
+  // {
+  //   printf("Time integration time stepping  %e [sec] %e [sec/sample]\n", t_device_batch,
+  //        t_device_batch / double(nbatch));
+  // }
 
   if (print_qoi) {
     Kokkos::parallel_for(

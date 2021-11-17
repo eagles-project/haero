@@ -57,7 +57,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
     Kokkos::deep_copy(hsolution, solution);
 
-    Real tol = 1e-5;
+    Real tol = 1e-4;
     auto error = Real_1d_view_host("error", nspec);
     for (int i = 0; i < nspec; ++i) {
       error(i) = 0.0;
@@ -123,7 +123,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
     Kokkos::deep_copy(hsolution, solution);
 
-    Real tol = 1e-5;
+    Real tol = 1e-4;
     auto error = Real_1d_view_host("error", nspec);
     for (int i = 0; i < nspec; ++i) {
       error(i) = 0.0;
@@ -189,7 +189,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
     Kokkos::deep_copy(hsolution, solution);
 
-    Real tol = 1e-5;
+    Real tol = 1e-4;
     auto error = Real_1d_view_host("error", nspec);
     for (int i = 0; i < nspec; ++i) {
       error(i) = 0.0;
