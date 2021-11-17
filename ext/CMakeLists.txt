@@ -417,6 +417,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DTCHEM_ENABLE_EXAMPLE=ON
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DTINES_INSTALL_PATH=${TINES_INSTALL_PATH}
+                       -DTCHEM_ENABLE_TPL_YAML_CPP=ON
                        # FIXME(mjs): this is only used for a chem_driver unit test,
                        # since we only compute tendencies for haero, so perhaps
                        # include logic to only turn this on when building tests

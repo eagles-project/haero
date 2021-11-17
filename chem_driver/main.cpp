@@ -4,16 +4,16 @@
 
 #include <cstdio>
 
-#include "chem_driver.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_session.hpp"
-#include "haero/haero.hpp"
-#include "haero/constants.hpp"
-#include "read_chem_input.hpp"
-#include "tests/toy-problem/toy_problem.hpp"
+// #include "chem_driver.hpp"
+// #include "ekat/ekat_parameter_list.hpp"
+// #include "ekat/ekat_session.hpp"
+// #include "haero/haero.hpp"
+// #include "haero/physical_constants.hpp"
+// #include "read_chem_input.hpp"
+// #include "tests/toy-problem/toy_problem.hpp"
 
-using namespace std;
-using namespace haero;
+// using namespace std;
+// using namespace haero;
 // using namespace haero::chem_driver;
 
 // namespace {
