@@ -38,8 +38,9 @@ endif()
 #----------------------------------------------------------------------------
 # libz compression library
 #----------------------------------------------------------------------------
-find_library(Z_LIBRARY libz.a libz${CMAKE_SHARED_LIBRARY_SUFFIX})
-if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
+find_package(ZLIB REQUIRED)
+message(STATUS "***zlib loc = ${ZLIB_LIBRARIES}")
+if(NOT ZLIB_FOUND)
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
   update_submodules()
@@ -58,14 +59,14 @@ if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
                       LOG_BUILD TRUE
                       INSTALL_COMMAND ${MAKE} install
                       LOG_INSTALL TRUE)
-  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
+  set(ZLIB_LIBRARIES ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
   set(HDF5_DEPS zlib_proj)
 else()
-  message(STATUS "Found libz: ${Z_LIBRARY}")
+  message(STATUS "Found libz: ${ZLIB_LIBRARIES}")
 endif()
 
 add_library(z STATIC IMPORTED GLOBAL)
-set_target_properties(z PROPERTIES IMPORTED_LOCATION ${Z_LIBRARY})
+set_target_properties(z PROPERTIES IMPORTED_LOCATION ${ZLIB_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # HDF5 parallel I/O library
@@ -88,7 +89,7 @@ if (NOT EXISTS ${HDF5_LIBRARY})
                         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DZLIB_INCLUDE_DIRS=${PROJECT_BINARY_DIR}/include
-                        -DZLIB_LIBARIES=${Z_LIBRARY} -DZLIB_USE_EXTERNAL=OFF
+                        -DZLIB_LIBARIES=${ZLIB} -DZLIB_USE_EXTERNAL=OFF
                         -DHDF5_INSTALL_LIB_DIR=${CMAKE_INSTALL_LIBDIR}
                         -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
                         -DHDF5_ENABLE_PARALLEL=${HAVE_MPI}
@@ -140,7 +141,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                         -DHDF5_C_LIBRARIES=${HDF5_LIBRARY}
                         -DHDF5_HL_LIBRARIES=${HDF5_HL_LIBRARY}
                         -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
-                        -DZLIB_LIBRARY=${Z_LIBRARY}
+                        -DZLIB_LIBRARY=${ZLIB_LIBRARIES}
                         -DHAVE_LIBDL=ON
                         -DLIBDL=${DL_LIBRARY}
                         -DENABLE_PARALLEL=${HAVE_MPI}
@@ -497,8 +498,8 @@ set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
 install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include)
 
-if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
-  install(FILES ${Z_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+if (${ZLIB_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
+  install(FILES ${ZLIB} DESTINATION lib)
 endif()
 if (${HDF5_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
   install(FILES ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
