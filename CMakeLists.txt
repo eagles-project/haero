@@ -316,12 +316,6 @@ endif()
 # Validation tools (currently offered only for CPU builds with pack size 1,
 # because we're using it with Fortran.)
 if(NOT HAERO_USE_CUDA AND HAERO_PACK_SIZE EQUAL 1)
-
-  # Skywalker--a tool for exploring aerosol processes in low-dimensional
-  # parameter spaces.
-  message(STATUS "Building skywalker validation tool/library...")
-  add_subdirectory(skywalker)
-
   # Aerosol cross-validation materials
   message(STATUS "Building validation programs...")
   add_subdirectory(validation)
@@ -341,14 +335,12 @@ if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
   add_custom_target(format
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/skywalker -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     VERBATIM
     COMMENT "Auto-formatting C++ code...")
   add_custom_target(format-check
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/skywalker -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     VERBATIM
     COMMENT "Checking C++ formatting...")
