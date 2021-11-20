@@ -134,9 +134,9 @@ specific_humidity_from_vapor_mixing_ratio(const Scalar& qv) {
 /// @param [in] T temperature [K]
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar
-vapor_saturation_pressure_tetens(const Scalar& T) {
+vapor_saturation_pressure_tetens(const Scalar& T, const Scalar& p) {
   static constexpr Real half15ln10 = 17.269388197455342630;
-  static constexpr Real tetens_coeff = 380.042;
+  static constexpr Real tetens_coeff = 380.042 / p;
   return tetens_coeff * exp(Scalar(half15ln10) * (T - 273) / (T - 36));
 }
 
