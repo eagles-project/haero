@@ -136,8 +136,8 @@ template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar
 vapor_saturation_pressure_tetens(const Scalar& T, const Scalar& p) {
   static constexpr Real half15ln10 = 17.269388197455342630;
-  static constexpr Real tetens_coeff = 380.042 / p;
-  return tetens_coeff * exp(Scalar(half15ln10) * (T - 273) / (T - 36));
+  static constexpr Real tetens_coeff = 380.042;
+  return tetens_coeff * exp(Scalar(half15ln10) * (T - 273) / (T - 36)) / p;
 }
 
 /// Computes the relative humidity from the water vapor mixing ratio and the
@@ -152,8 +152,8 @@ vapor_saturation_pressure_tetens(const Scalar& T, const Scalar& p) {
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar relative_humidity_from_vapor_mixing_ratio(
     const Scalar& qv, const Scalar& p, const Scalar& T,
-    Scalar (*vsp)(const Scalar&) = vapor_saturation_pressure_tetens<Scalar>) {
-  auto es = vsp(T);
+    Scalar (*vsp)(const Scalar&, const Scalar&) = vapor_saturation_pressure_tetens<Scalar>) {
+  auto es = vsp(T,p);
   return qv / (es / p);
 }
 
@@ -169,8 +169,8 @@ KOKKOS_INLINE_FUNCTION Scalar relative_humidity_from_vapor_mixing_ratio(
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar vapor_mixing_ratio_from_relative_humidity(
     const Scalar& rel_hum, const Scalar& p, const Scalar& T,
-    Scalar (*vsp)(const Scalar&) = vapor_saturation_pressure_tetens<Scalar>) {
-  auto es = vsp(T);
+    Scalar (*vsp)(const Scalar&, const Scalar&) = vapor_saturation_pressure_tetens<Scalar>) {
+  auto es = vsp(T,p);
   return rel_hum * es / p;
 }
 
