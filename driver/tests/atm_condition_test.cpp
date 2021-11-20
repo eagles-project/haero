@@ -4,6 +4,7 @@
 #include "driver/host_params.hpp"
 #include "haero/constants.hpp"
 #include "haero/conversions.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 
 using namespace haero;
 using namespace haero::conversions;
@@ -14,10 +15,18 @@ struct InitialThicknessTest {
   int nerrp;
   InitialThicknessTest() : nerrz(0), nerrp(0) {}
   void run_test(const AtmosphericConditions& ac,
-                const Real tol = FloatingPoint<Real>::zero_tol);
+                const Real tol,
+                ekat::logger::Logger<>& logger);
 };
 
 TEST_CASE("atmosphere_conditions", "") {
+
+  ekat::Comm comm;
+
+  ekat::logger::Logger<> logger("atm_cond_test", ekat::logger::Log::level::debug, comm);
+
+  const Real tol = (std::is_same<Real, double>::value ? 2.25e-12 : 2.25e-8);
+
   InitialThicknessTest ittest;
   SECTION("dynamics") {
     const Real T0 = 300;
@@ -43,25 +52,26 @@ TEST_CASE("atmosphere_conditions", "") {
     const Real p1000 = hydrostatic_pressure_at_height(z1000, conds);
     const Real zp1000 = height_at_pressure(p1000, conds);
 
-    std::cout << "qv1000 = " << qv1000 << "\n";
-    std::cout << "Tv1000 = " << Tv1000 << "\n";
-    std::cout << "T1000  = " << T1000 << "\n";
-    std::cout << "p1000  = " << p1000 << "\n";
-    std::cout << "zp1000 = " << zp1000 << "\n";
+    logger.info("qv1000 = {}", qv1000);
+    logger.info("Tv1000 = {}", Tv1000);
+    logger.info("T1000 = {}", T1000);
+    logger.info("p1000 = {}", p1000);
+    logger.info("zp1000 = {}", zp1000);
 
-    std::cout << "abs(zp1000 - z1000) = " << std::abs(z1000 - zp1000) << "\n";
+    logger.info("abs(zp1000 - z1000) = {}", abs(z1000 - zp1000));
 
     REQUIRE(FloatingPoint<Real>::equiv(z1000, zp1000,
-                                       z1000 * FloatingPoint<Real>::zero_tol));
+                                       3e4 * FloatingPoint<Real>::zero_tol));
 
-    ittest.run_test(conds);
+    ittest.run_test(conds, tol, logger);
     REQUIRE(ittest.nerrz == 0);
     REQUIRE(ittest.nerrp == 0);
   }
 }
 
 void InitialThicknessTest::run_test(const AtmosphericConditions& ac,
-                                    const Real tol) {
+                                    const Real tol,
+                                    ekat::logger::Logger<>& logger) {
   nerrz = 0;
   nerrp = 0;
   const int nlev = 100;
@@ -84,17 +94,14 @@ void InitialThicknessTest::run_test(const AtmosphericConditions& ac,
                                     (Constants::r_gas_dry_air * ac.Gammav));
         if (!FloatingPoint<Real>::equiv(pratio, rhs, tol)) {
           ++errct;
-          printf("ztest: at index k = %d: pratio = %f rhs = %f; |diff| = %f\n",
-                 k, pratio, rhs, std::abs(pratio - rhs));
         }
       },
       nerrz);
 
   if (nerrz == 0) {
-    std::cout << "uniform z thickness test passed with tolerance = " << tol
-              << "\n";
+    logger.info("uniform z thickness test passed with tolerance = {}", tol);
   } else {
-    std::cout << "uniform z thickness test failed.\n";
+    logger.error("uniform z thickness test failed with tolerance = {}", tol);
   }
 
   const Real dp = (AtmosphericConditions::pref - ac.ptop) / nlev;
@@ -114,16 +121,13 @@ void InitialThicknessTest::run_test(const AtmosphericConditions& ac,
                                     (Constants::r_gas_dry_air * ac.Gammav));
         if (!FloatingPoint<Real>::equiv(pratio, rhs, tol)) {
           ++errct;
-          printf("ptest: at index k = %d: pratio = %f rhs = %f; |diff| = %f\n",
-                 k, pratio, rhs, std::abs(pratio - rhs));
         }
       },
       nerrp);
 
   if (nerrz == 0) {
-    std::cout << "uniform p thickness test passed with tolerance = " << tol
-              << "\n";
+    logger.info("uniform p thickness test passed with tolerance = {}", tol);
   } else {
-    std::cout << "uniform p thickness test failed.\n";
+    logger.error("uniform p thickness test failed with tolerance = {}", tol);
   }
 }
