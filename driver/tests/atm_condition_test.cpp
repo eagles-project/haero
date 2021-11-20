@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "catch2/catch.hpp"
-#include "driver/host_params.hpp"
+#include "driver/host_atm_conds.hpp"
 #include "haero/constants.hpp"
 #include "haero/conversions.hpp"
 #include "ekat/logging/ekat_logger.hpp"

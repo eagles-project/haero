@@ -8,7 +8,7 @@
 #include "haero/atmosphere.hpp"
 #include "haero/haero.hpp"
 #include "haero/math.hpp"
-#include "host_params.hpp"
+#include "host_atm_conds.hpp"
 #include "ncwriter.hpp"
 
 namespace haero {

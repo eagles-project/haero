@@ -3,7 +3,7 @@
 
 #include "haero/haero.hpp"
 #include "host_dynamics.hpp"
-#include "host_params.hpp"
+#include "host_atm_conds.hpp"
 
 namespace haero {
 namespace driver {

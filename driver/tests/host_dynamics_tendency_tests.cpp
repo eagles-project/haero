@@ -3,7 +3,7 @@
 #include "catch2/catch.hpp"
 #include "driver/host_dynamics.hpp"
 #include "driver/host_dynamics_tends.hpp"
-#include "driver/host_params.hpp"
+#include "driver/host_atm_conds.hpp"
 #include "haero/atmosphere.hpp"
 
 using namespace haero;
