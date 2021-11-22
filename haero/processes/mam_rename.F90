@@ -42,7 +42,7 @@ contains
     num_modes = config%num_modes
     num_populations = config%num_populations
 
-    allocate(population_offsets(num_modes), stat=ierr)
+    allocate(population_offsets(num_modes+1), stat=ierr)
     if (ierr .ne. 0) then
       print *, 'Could not allocate population_offsets with length ', num_modes
       stop 1
