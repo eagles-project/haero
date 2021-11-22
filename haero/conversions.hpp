@@ -128,16 +128,32 @@ specific_humidity_from_vapor_mixing_ratio(const Scalar& qv) {
   return qv / (qv + 1);
 }
 
-/// Computes the water vapor saturation pressure from a temperature using the
-/// Tetens formula from Soong-Ogura 1973 equation (A1) or Klemp-Wilhelmson 1978
-/// eqn. (2.11).
-/// @param [in] T temperature [K]
+/// Computes the saturation vapor pressure of water as a function
+/// of temperature.
+///
+/// The formula is the improved Magnus formula from
+///
+///  O. A. Alduchov and R. E. Eskridge, Improved Magnus form approximation
+///  of saturation vapor pressure, Journal of Applied Meteorology 35:601--609.
+///
+///  See eq. (21) from that paper, which improves the original formula's
+///  accuracy over the temperature range [-40, 50] C expected of
+///  atmospheric conditions throughout an entire vertical column.
+///  The paper uses temperature in Celsius and returns
+///  pressure in hPa. We have changed to SI units in this implementation.
+///
+///  See also Lamb & Verlinde section 3.3.
+///
+///  @param [in] T temperature [K]
+///  @return es(T) saturation vapor pressure of water vapor [Pa]
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar
-vapor_saturation_pressure_tetens(const Scalar& T) {
-  static constexpr Real half15ln10 = 17.269388197455342630;
-  static constexpr Real tetens_coeff = 380.042;
-  return tetens_coeff * exp(Scalar(half15ln10) * (T - 273) / (T - 36));
+vapor_saturation_pressure_magnus(const Scalar& T) {
+  static constexpr Real e0 = 610.94; // Pa
+  static constexpr Real exp_num = 17.625; // nondimensional
+  static constexpr Real exp_den = 234.04; // deg C
+  const auto celsius_temp = T - Constants::freezing_pt_h2o;
+  return e0 * exp(exp_num * celsius_temp / (exp_den + celsius_temp));
 }
 
 /// Computes the relative humidity from the water vapor mixing ratio and the
@@ -148,11 +164,11 @@ vapor_saturation_pressure_tetens(const Scalar& T) {
 /// @param [in] T temperature [K]
 /// @param [in] vsp A function that computes the vapor saturation pressure from
 ///                 the temperature. If not supplied,
-///                 @ref vapor_saturation_pressure_tetens is used.
+///                 @ref vapor_saturation_pressure_magnus is used.
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar relative_humidity_from_vapor_mixing_ratio(
     const Scalar& qv, const Scalar& p, const Scalar& T,
-    Scalar (*vsp)(const Scalar&) = vapor_saturation_pressure_tetens<Scalar>) {
+    Scalar (*vsp)(const Scalar&) = vapor_saturation_pressure_magnus<Scalar>) {
   auto es = vsp(T);
   return qv / (es / p);
 }
@@ -165,11 +181,11 @@ KOKKOS_INLINE_FUNCTION Scalar relative_humidity_from_vapor_mixing_ratio(
 /// @param [in] T temperature [K]
 /// @param [in] vsp A function that computes the vapor saturation pressure from
 ///                 the temperature. If not supplied,
-///                 @ref vapor_saturation_pressure_tetens is used.
+///                 @ref vapor_saturation_pressure_magnus is used.
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar vapor_mixing_ratio_from_relative_humidity(
     const Scalar& rel_hum, const Scalar& p, const Scalar& T,
-    Scalar (*vsp)(const Scalar&) = vapor_saturation_pressure_tetens<Scalar>) {
+    Scalar (*vsp)(const Scalar&) = vapor_saturation_pressure_magnus<Scalar>) {
   auto es = vsp(T);
   return rel_hum * es / p;
 }
