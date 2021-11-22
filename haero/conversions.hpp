@@ -133,7 +133,7 @@ specific_humidity_from_vapor_mixing_ratio(const Scalar& qv) {
 ///
 /// The formula is the improved Magnus formula from
 ///
-///  O. A. Alduchov and R. E. Eskridge, Improved Magnus form approximation
+///  O. A. Alduchov and R. E. Eskridge, 1996, Improved Magnus form approximation
 ///  of saturation vapor pressure, Journal of Applied Meteorology 35:601--609.
 ///
 ///  See eq. (21) from that paper, which improves the original formula's
