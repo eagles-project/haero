@@ -277,16 +277,11 @@ if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
   if (NOT EXISTS ${OPENBLAS_LIBRARY})
     update_submodules()
-    set(OPENBLAS_OPTS libs CC=${CMAKE_C_COMPILER}
-                      FC=${CMAKE_Fortran_COMPILER}
-                      NO_SHARED=1 PREFIX=${PROJECT_BINARY_DIR})
+    set(OPENBLAS_OPTS libs netlib shared
+                      CC=${CMAKE_C_COMPILER}
+                      FC=${CMAKE_Fortran_COMPILER})
     if (NOT APPLE)
       set(OPENBLAS_OPTS ${OPENBLAS_OPTS} -j)
-    endif()
-    if (HAERO_DOUBLE_PRECISION)
-      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_DOUBLE=1)
-    else()
-      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_SINGLE=1)
     endif()
     ExternalProject_Add(openblas_proj
                         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
@@ -296,7 +291,7 @@ if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
                         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         BUILD_COMMAND ${MAKE} ${OPENBLAS_OPTS}
                         LOG_BUILD TRUE
-                        INSTALL_COMMAND ${MAKE} ${OPENBLAS_OPTS} install
+                        INSTALL_COMMAND ${MAKE} PREFIX=${PROJECT_BINARY_DIR} install
                         LOG_INSTALL TRUE)
 
     # Because the OpenBLAS people feel that life isn't complicated enough, they
