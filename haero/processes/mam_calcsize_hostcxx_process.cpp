@@ -291,9 +291,29 @@ void MAMCalcsizeHostCXXProcess::run_(const TeamType &team, Real t, Real dt,
             "adjustment:interstitial_tend={},cloudborne_tend={}",
             interstitial_tend, cloudborne_tend);
       }
+
+      update_diameter_and_vol2num(klev, imode, dryvol_a_lvl, num_a, v2nmin, v2nmax,
+                                  dgnmin, dgnmax, cmn_factor, dgncur_a,
+                                  v2ncur_a);
+      /*
+      !update diameters and volume to num ratios for interstitial aerosols
+      call update_diameter_and_vol2num(klev, imode, drv_a, num_a, &
+           v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
+           dgncur_a, v2ncur_a)
+
+      !update diameters and volume to num ratios for cloudborne aerosols
+      call update_diameter_and_vol2num(klev, imode, drv_c, num_c, &
+           v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor, &
+           dgncur_c, v2ncur_c)
+           */
     }
   }
   logger->debug("leaving run_");
+}
+void MAMCalcsizeHostCXXProcess::update_diameter_and_vol2num(
+    klev, imode, drv_a, num_a, v2nmin, v2nmax, dgnmin, dgnmax, cmn_factor,
+    dgncur_a, v2ncur_a) const {
+  //
 }
 
 void MAMCalcsizeHostCXXProcess::adjust_num_sizes(

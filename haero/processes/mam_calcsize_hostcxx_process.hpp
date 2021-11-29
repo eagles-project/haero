@@ -122,6 +122,14 @@ class MAMCalcsizeHostCXXProcess final
                         PackType &num_a, PackType &num_c, PackType &dqdt,
                         PackType &dqqcwdt) const;
 
+  /*
+   * Compute particle diameter and volume to number ratios using dry bulk
+   * volume (drv).
+   */
+  void update_diameter_and_vol2num(klev, imode, drv, num,
+       const Real& v2nmin, const Real& v2nmax, const Real& dgnmin, const Real& dgnmax, const Real& cmn_factor,
+       dgncur, v2ncur) const;
+
  public:
   static constexpr int top_level = 0;
   static constexpr bool do_adjust = true;
