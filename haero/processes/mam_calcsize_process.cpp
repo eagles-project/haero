@@ -119,7 +119,7 @@ void MAMCalcsizeProcess::run_(const TeamType &team, Real t, Real dt,
   SpeciesColumnView v2ncur_a("v2ncur_a", nmodes, num_vert_packs);
   SpeciesColumnView v2ncur_c("v2ncur_c", nmodes, num_vert_packs);
 
-  ColumnView density("density", max_nspec);
+  DeviceType::view_1d<Real> density("density", max_nspec);
   for (int imode = 0; imode < nmodes; imode++) {
     set_initial_sz_and_volumes_(imode, top_level, nlevels, dgncur_a, v2ncur_a,
                                 dryvol_a, num_vert_packs);
@@ -145,7 +145,28 @@ void MAMCalcsizeProcess::run_(const TeamType &team, Real t, Real dt,
         nspec, KOKKOS_LAMBDA(int i) {
           density(i) = spec_density(population_offsets(imode) + i);
         });
+
+    compute_dry_volume(imode, top_level, nlevels, start_spec_idx, end_spec_idx,
+                       density, q_i, q_c, dryvol_a, dryvol_c, num_vert_packs);
   }
+}
+
+void MAMCalcsizeProcess::compute_dry_volume(
+    const int imode, const int top_lev, const int nlevs, const int s_spec_ind,
+    const int e_spec_ind, const DeviceType::view_1d<Real> &density,
+    const SpeciesColumnView q_i, const SpeciesColumnView q_c,
+    ColumnView dryvol_a, ColumnView dryvol_c,
+    const std::size_t num_vert_packs) const {
+  using namespace ekat;
+  EKAT_REQUIRE_MSG(top_lev == 0, "top level must be zero");
+  Kokkos::parallel_for(e_spec_ind, KOKKOS_LAMBDA(int ispec) {
+        const auto density_ind = ispec - s_spec_ind;
+        const PackType::scalar inv_density = 1.0 / density[density_ind];
+        for (int pack_idx = 0; pack_idx < num_vert_packs; pack_idx++) {
+          dryvol_a(pack_idx) += max(0.0, q_i(ispec, pack_idx)) * inv_density;
+          dryvol_c(pack_idx) += max(0.0, q_i(ispec, pack_idx)) * inv_density;
+        }
+      });
 }
 
 void MAMCalcsizeProcess::set_initial_sz_and_volumes_(

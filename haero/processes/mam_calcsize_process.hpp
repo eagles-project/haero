@@ -46,11 +46,26 @@ class MAMCalcsizeProcess final
    * \brief Set initial defaults for the dry diameter, volume to num and dry
    * volume.
    */
+  KOKKOS_FUNCTION
   void set_initial_sz_and_volumes_(const int imode, const int top_lev,
                                    const int nlevs, SpeciesColumnView dgncur,
                                    SpeciesColumnView v2ncur, ColumnView dryvol,
                                    const std::size_t num_vert_packs) const;
 
+
+  /**
+   * \brief Compute initial dry volume based on bulk mass mixing ratio (mmr) and
+   * specie density volume = mmr/density
+   */
+  KOKKOS_FUNCTION
+  void compute_dry_volume(const int imode, const int top_lev, const int nlevs,
+                          const int s_spec_ind, const int e_spec_ind,
+                          const DeviceType::view_1d<Real> &density,
+                          const SpeciesColumnView q_i,
+                          const SpeciesColumnView q_c,
+                          ColumnView dryvol_a,
+                          ColumnView dryvol_c,
+                          const std::size_t num_vert_packs) const;
  private:
   static constexpr int top_level = 0;
   static constexpr bool do_adjust = true;
