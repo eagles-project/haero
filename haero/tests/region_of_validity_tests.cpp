@@ -30,12 +30,7 @@ TEST_CASE("region_of_validity", "") {
   ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
                                     num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
-  std::vector<int> num_species_per_mode(num_modes);
-  for (int m = 0; m < num_modes; ++m) {
-    auto species_for_mode = config.aerosol_species_for_mode(m);
-    num_species_per_mode[m] = species_for_mode.size();
-  }
-  Prognostics progs(num_modes, num_species_per_mode, num_gases, num_levels,
+  Prognostics progs(config, num_levels,
                     int_aerosols, cld_aerosols, int_num_mix_ratios,
                     cld_num_mix_ratios, gases);
 

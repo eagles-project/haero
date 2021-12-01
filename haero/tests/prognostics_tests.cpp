@@ -14,10 +14,7 @@ TEST_CASE("prognostics_ctor", "") {
     // Create a set of prognostics and add some modes and species to it.
     using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
     int num_levels = 72;
-    int num_vert_packs = num_levels / HAERO_PACK_SIZE;
-    if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
-      num_vert_packs++;
-    }
+    int num_vert_packs = PackInfo::num_packs(num_levels);
     kokkos_device_type::view_2d<PackType> int_aerosols("interstitial aerosols",
                                                        1, num_vert_packs);
     kokkos_device_type::view_2d<PackType> cld_aerosols("cloudborne aerosols", 1,

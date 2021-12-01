@@ -83,9 +83,7 @@ add_library(haero
             conversions.cpp
             diagnostics.cpp
             modal_aerosol_config.cpp
-            model.cpp
             prognostics.cpp
-            selected_processes.cpp
             tendencies.cpp
             utils.cpp
             view_pack_helpers.cpp
@@ -103,8 +101,6 @@ install(FILES haero.hpp
               diagnostics.hpp
               floating_point.hpp
               mode.hpp
-              model.hpp
-              selected_processes.hpp
               constants.hpp
               prognostics.hpp
               aerosol_species.hpp

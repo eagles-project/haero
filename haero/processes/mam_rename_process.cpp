@@ -74,8 +74,7 @@ static inline Real compute_relaxed_volume_to_num_ratio(
 }  // namespace
 
 MAMRenameProcess::MAMRenameProcess()
-    : DeviceAerosolProcess<MAMRenameProcess>(RenameProcess,
-                                             "MAMRenameProcess") {}
+    : DeviceAerosolProcess<MAMRenameProcess>("MAMRenameProcess") {}
 
 void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
   const auto& num_modes = config.num_modes();

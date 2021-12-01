@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "haero/haero.hpp"
+#include "haero/modal_aerosol_config.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "kokkos/Kokkos_Core.hpp"
 
@@ -158,16 +159,10 @@ class Diagnostics {
 class HostDiagnostics final : public Diagnostics {
  public:
   /// Creates an empty HostDiagnostics to which data can be added.
-  /// @param [in] num_aerosol_modes The number of aerosol modes in the system
-  /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
-  ///                                 ith entry is the number of aerosol species
-  ///                                 in the ith mode
-  /// @param [in] num_gases The number of gas species in the atmosphere
+  /// @param [in] aero_config The relevant aerosol/gas configuration
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
-  HostDiagnostics(int num_aerosol_modes,
-                  const std::vector<int> &num_aerosol_species, int num_gases,
-                  int num_levels);
+  HostDiagnostics(const ModalAerosolConfig& aero_config, int num_levels);
 
   /// Destructor.
   ~HostDiagnostics();

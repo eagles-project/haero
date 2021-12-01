@@ -11,24 +11,6 @@
 
 namespace haero {
 
-/// @enum AerosolProcessType
-/// This enumerated type lists all relevant physical aerosol processes.
-enum AerosolProcessType {
-  ActivationProcess,
-  CloudBorneWetRemovalProcess,
-  CoagulationProcess,
-  CondensationProcess,
-  DryDepositionProcess,
-  EmissionsProcess,
-  InterstitialWetRemovalProcess,
-  NucleationProcess,
-  GasAerosolExchangeProcess,
-  CalcsizeProcess,
-  RenameProcess,
-  ResuspensionProcess,
-  Terminator  // This isn't a real process type--it only terminates the enum!
-};
-
 /// @class AerosolProcess
 /// This type is an interface (base class) to an aerosol process quantified by
 /// a parametrization that computes a set of tendencies for prognostic variables
@@ -36,8 +18,9 @@ enum AerosolProcessType {
 /// **implementation** of a specific **parametrization** for a particular
 /// **process**.
 ///
-/// To make these ideas more complete, consider the following examples of
-/// important **physical processes** in the ProcessType above.
+/// To make these ideas more complete, consider some following examples of
+/// important **physical processes** like "surface emissions" or "cloud
+/// nucleation".
 ///
 /// Each of these processes has one or more **parametrizations**--mathematical
 /// models that quantify the outcomes of these processes in specific
@@ -57,11 +40,10 @@ enum AerosolProcessType {
 class AerosolProcess {
  public:
   /// Constructor, called by all AerosolProcess subclasses.
-  /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
-  AerosolProcess(AerosolProcessType type, const std::string& name)
-      : type_(type), name_(name), validity_region_() {}
+  explicit AerosolProcess(const std::string& name)
+      : name_(name), validity_region_() {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
@@ -73,8 +55,7 @@ class AerosolProcess {
   /// Copy constructor, for use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   AerosolProcess(const AerosolProcess& pp)
-      : type_(pp.type_),
-        name_(pp.name_),
+      : name_(pp.name_),
         validity_region_(pp.validity_region_) {}
 
   /// AerosolProcess objects are not assignable.
@@ -83,9 +64,6 @@ class AerosolProcess {
   //------------------------------------------------------------------------
   //                                Accessors
   //------------------------------------------------------------------------
-
-  /// Returns the type of physical process modeled by this process.
-  AerosolProcessType type() const { return type_; }
 
   /// Returns the name of this process/parametrization/realization.
   std::string name() const { return name_.label(); }
@@ -194,8 +172,7 @@ class AerosolProcess {
 
   /// On host: returns a vector of strings containing the names of diagnostic
   /// variables required by this aerosol process in order to compute its
-  /// tendencies. The Model that runs this aerosol process checks that these
-  /// diagnostics variables are present before executing the process.
+  /// tendencies.
   std::vector<std::string> required_diagnostics() const {
     // This method must be called on the host.
     return required_diagnostics_();
@@ -263,7 +240,6 @@ class AerosolProcess {
   virtual AerosolProcess* copy_to_device_() const = 0;
 
  private:
-  const AerosolProcessType type_;
   // Use View as a struct to store a string and allows copy to device.
   // Since std::string can not be used, it was either this or a char *
   const Kokkos::View<int> name_;
@@ -280,11 +256,10 @@ template <typename Subclass>
 class DeviceAerosolProcess : public AerosolProcess {
  public:
   /// Constructor, called by all DeviceAerosolProcess subclasses.
-  /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
-  DeviceAerosolProcess(AerosolProcessType type, const std::string& name)
-      : AerosolProcess(type, name), on_device_(false) {}
+  explicit DeviceAerosolProcess(const std::string& name)
+      : AerosolProcess(name), on_device_(false) {}
 
   /// Copy constructor, called by subclasses.
   KOKKOS_INLINE_FUNCTION
@@ -323,26 +298,6 @@ class DeviceAerosolProcess : public AerosolProcess {
   bool on_device_;
 };
 
-/// @class NullAerosolProcess
-/// This AerosolProcess represents a null process in which no tendencies
-/// are computed. It can be used for all prognostic processes that have been
-/// disabled.
-class NullAerosolProcess : public DeviceAerosolProcess<NullAerosolProcess> {
- public:
-  /// Constructor: constructs a null aerosol process of the given type.
-  /// @param [in] type The type of aerosol process.
-  explicit NullAerosolProcess(AerosolProcessType type)
-      : DeviceAerosolProcess<NullAerosolProcess>(
-            type, "Null prognostic aerosol process") {}
-
-  // Overrides
-  KOKKOS_FUNCTION
-  void run_(const TeamType& team, Real t, Real dt,
-            const Prognostics& prognostics, const Atmosphere& atmosphere,
-            const Diagnostics& diagnostics,
-            const Tendencies& tendencies) const override {}
-};
-
 #if HAERO_FORTRAN
 
 /// @class FAerosolProcess
@@ -371,7 +326,6 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
   typedef void (*SetRealParamSubroutine)(const char* name, Real value);
 
   /// Constructor.
-  /// @param [in] type The type of aerosol process modeled by the subclass.
   /// @param [in] name A descriptive name that captures the aerosol process,
   ///                  its underlying parametrization, and its implementation.
   /// @param [in] init_process A pointer to an interoperable Fortran subroutine
@@ -391,14 +345,14 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
   /// @param [in] set_real_param A pointer to an interoperable Fortran
   ///                            subroutine that sets a real-valued parameter
   ///                            for the Fortran-backed process.
-  FAerosolProcess(AerosolProcessType type, const std::string& name,
+  FAerosolProcess(const std::string& name,
                   InitProcessSubroutine init_process,
                   RunProcessSubroutine run_process,
                   FinalizeProcessSubroutine finalize_process,
                   SetIntegerParamSubroutine set_integer_param,
                   SetLogicalParamSubroutine set_logical_param,
                   SetRealParamSubroutine set_real_param)
-      : DeviceAerosolProcess<FAerosolProcess>(type, name),
+      : DeviceAerosolProcess<FAerosolProcess>(name),
         init_process_(init_process),
         run_process_(run_process),
         finalize_process_(finalize_process),

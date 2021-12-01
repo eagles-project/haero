@@ -13,9 +13,9 @@ class MAMCalcsizeProcess final
  public:
   MAMCalcsizeProcess();
 
-  MAMCalcsizeProcess(const AerosolProcessType type, const std::string &name,
+  MAMCalcsizeProcess(const std::string &name,
                      const ModalAerosolConfig &config)
-      : DeviceAerosolProcess<MAMCalcsizeProcess>(type, name) {}
+      : DeviceAerosolProcess<MAMCalcsizeProcess>(name) {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION

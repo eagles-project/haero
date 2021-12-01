@@ -16,9 +16,9 @@ namespace haero {
 /// @class ModalAerosolConfig
 /// This type represents the configuration of mode-based aerosols and gas
 /// species that define a physical system of aerosols in the atmosphere. It's
-/// used to convey information to aerosol processes that run within a
-/// \ref Model instance. Objects of this type can only be created on the host--
-/// no ModalAerosolConfig object may be created on the device.
+/// used to convey information to aerosol processes. Objects of this type can
+/// only be created on the host--no ModalAerosolConfig object may be created on
+/// the device.
 class ModalAerosolConfig final {
  public:
   /// Default constructor -- use with caution.

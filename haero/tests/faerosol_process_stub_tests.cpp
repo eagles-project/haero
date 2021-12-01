@@ -22,29 +22,19 @@ TEST_CASE("faerosol_process_stub", "") {
   int num_levels = 72;
   ModalAerosolConfig aero_config(modes, aero_species, mode_species,
                                  gas_species);
-  auto* model = Model::ForUnitTests(aero_config, num_levels);
 
-  // Set up some prognosics aerosol data views‥
-  int num_aero_populations = model->num_aerosol_populations();
-  Kokkos::View<PackType**> int_aerosols("interstitial aerosols",
-                                        num_aero_populations, num_levels);
-  Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols",
-                                        num_aero_populations, num_levels);
+  int num_aero_populations = aero_config.num_aerosol_populations;
   int num_gases = gas_species.size();
-  Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
   int num_modes = modes.size();
-  Kokkos::View<PackType**> int_num_mix_ratios("interstitial number mix ratios",
-                                              num_modes, num_levels);
-  Kokkos::View<PackType**> cld_num_mix_ratios("cloud borne number mix ratios",
-                                              num_modes, num_levels);
+  int num_packs = PackInfo::num_packs(num_levels);
 
   // Set up atmospheric data and populate it with some views. It's not
   // important for this data to be valid, since it's unused by these stubs.
-  Kokkos::View<PackType*> temp("temperature", num_levels);
-  Kokkos::View<PackType*> press("pressure", num_levels);
-  Kokkos::View<PackType*> qv("vapor mixing ratio", num_levels);
-  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);
-  Kokkos::View<PackType*> ht("height", num_levels + 1);
+  Kokkos::View<PackType*> temp("temperature", num_packs);
+  Kokkos::View<PackType*> press("pressure", num_packs);
+  Kokkos::View<PackType*> qv("vapor mixing ratio", num_packs);
+  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_packs);
+  Kokkos::View<PackType*> ht("height", PackInfo::num_packs(num_levels + 1));
   Real pblh = 100.0;
   auto* atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
 
@@ -64,7 +54,7 @@ TEST_CASE("faerosol_process_stub", "") {
   SECTION("init_process") {
     auto* stub = new FAerosolProcessStub();
     stub->set_param("decay_rate", decay_rate);
-    stub->init(model->modal_aerosol_config());
+    stub->init(aerosol_config);
     delete stub;
   }
 
@@ -72,13 +62,11 @@ TEST_CASE("faerosol_process_stub", "") {
   SECTION("tendencies") {
     auto* stub = new FAerosolProcessStub();
     stub->set_param("decay_rate", decay_rate);
-    stub->init(model->modal_aerosol_config());
+    stub->init(aerosol_config);
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                            int_num_mix_ratios,
-                                            cld_num_mix_ratios, gases);
+    auto* progs = new Prognostics(aerosol_config, num_levels);
     auto* diags = model->create_diagnostics();
     auto* tends = new Tendencies(*progs);
 
@@ -88,8 +76,8 @@ TEST_CASE("faerosol_process_stub", "") {
     // for simplicity.
     for (int p = 0; p < num_aero_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
-        cld_aerosols(p, k) = 1.0 / num_aero_populations;
-        int_aerosols(p, k) = 0.0;
+        progs->cloud_aerosols(p, k) = 1.0 / num_aero_populations;
+        progs->interstitial_aerosols(p, k) = 0.0;
       }
     }
 
@@ -97,14 +85,14 @@ TEST_CASE("faerosol_process_stub", "") {
     Real n0 = 1e6;
     for (int m = 0; m < num_modes; ++m) {
       for (int k = 0; k < num_levels; ++k) {
-        int_num_mix_ratios(m, k) = n0;
+        progs->interstitial_num_mix_ratios(m, k) = n0;
       }
     }
 
     // Set gas mass mixing rations.
     for (int g = 0; g < num_gases; ++g) {
       for (int k = 0; k < num_levels; ++k) {
-        gases(g, k) = 1.0 / num_gases;
+        progs->gases(g, k) = 1.0 / num_gases;
       }
     }
 
