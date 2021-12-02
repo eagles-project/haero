@@ -148,7 +148,7 @@ specific_humidity_from_vapor_mixing_ratio(const Scalar& qv) {
 ///  @return es(T) saturation vapor pressure of water vapor [Pa]
 template <typename Scalar>
 KOKKOS_INLINE_FUNCTION Scalar
-vapor_saturation_pressure_magnus(const Scalar& T) {
+vapor_saturation_pressure_magnus(const Scalar &T) {
   static constexpr Real e0 = 610.94;       // Pa
   static constexpr Real exp_num = 17.625;  // nondimensional
   static constexpr Real exp_den = 234.04;  // deg C
