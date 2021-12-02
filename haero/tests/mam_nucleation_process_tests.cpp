@@ -422,8 +422,8 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   ColumnView temp("temperature", num_vert_packs);
   ColumnView press("pressure", num_vert_packs);
   ColumnView qv("vapor mixing ratio", num_vert_packs);
-  ColumnView ht("height", num_iface_packs);
   ColumnView pdel("hydrostatic_dp", num_vert_packs);
+  ColumnView ht("height", num_iface_packs);
   Real pblh = 100.0;
 
   auto* atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);

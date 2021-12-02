@@ -43,23 +43,27 @@ TEST_CASE("mam_calcsize_hostcxx_run", "") {
   const size_t num_modes = aero_config.aerosol_modes.size();  // number of modes
 
   // Set up some prognostics aerosol data views
-  const int num_aero_populations{
-      model->num_aerosol_populations()};  // total number of aerosol species
-  Kokkos::View<PackType**> int_aerosols(
-      "interstitial aerosols", num_aero_populations,
-      num_vert_packs);  // interstitial aerosols mmr [kg/kg(of air)]
-  Kokkos::View<PackType**> cld_aerosols(
-      "cloudborne aerosols", num_aero_populations,
-      num_vert_packs);  // cloud borne aerosols mmr [kg/kg(of air)]
+
+  // total number of aerosol species
+  const int num_aero_populations{model->num_aerosol_populations()};
+
+  // interstitial aerosols mmr [kg/kg(of air)]
+  Kokkos::View<PackType**> int_aerosols("interstitial aerosols",
+                                        num_aero_populations, num_vert_packs);
+
+  // cloud borne aerosols mmr [kg/kg(of air)]
+  Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols",
+                                        num_aero_populations, num_vert_packs);
+
   Kokkos::View<PackType**> gases("gases", num_gases, num_vert_packs);
-  Kokkos::View<PackType**> int_num_mix_ratios(
-      "interstitial number mix ratios", num_modes,
-      num_vert_packs);  // interstitial aerosols number mixing ratios [#/kg(of
-                        // air)]
-  Kokkos::View<PackType**> cld_num_mix_ratios(
-      "cloud borne number mix ratios", num_modes,
-      num_vert_packs);  // cloud borne aerosols number mixing ratios [#/kg(of
-                        // air)]
+
+  // interstitial aerosols number mixing ratios [#/kg(of air)]
+  Kokkos::View<PackType**> int_num_mix_ratios("interstitial number mix ratios",
+                                              num_modes, num_vert_packs);
+
+  // cloud borne aerosols number mixing ratios [#/kg(of air)]
+  Kokkos::View<PackType**> cld_num_mix_ratios("cloud borne number mix ratios",
+                                              num_modes, num_vert_packs);
 
   // Set up atmospheric data and populate it with some views.
   Kokkos::View<PackType*> temp("temperature", num_vert_packs);  //[K]
@@ -70,7 +74,7 @@ TEST_CASE("mam_calcsize_hostcxx_run", "") {
   Real pblh{100.0};  // planetary BL height [m]
   auto atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
 
-  // This will drive the "run" method of calcsize_hostcxx
+  // This will drive the "run" method of calcsize
   SECTION("calcsize_hostcxx_run") {
     auto process = new MAMCalcsizeProcess();
 
