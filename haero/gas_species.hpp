@@ -70,6 +70,17 @@ struct GasSpecies final {
   /// Molecular weight [kg/mol]
   Real molecular_weight;
 
+  // Comparison operators.
+  bool operator==(const GasSpecies& other) const {
+    return (!strcmp(name_view, other.name_view) and
+            !strcmp(symbol_view, other.symbol_view) and
+            !strcmp(desc_view, other.desc_view) and
+            (molecular_weight == other.molecular_weight));
+  }
+  bool operator!=(const GasSpecies& other) const {
+    return !(*this == other);
+  }
+
  private:
   char name_view[NAME_LEN];
   char symbol_view[NAME_LEN];

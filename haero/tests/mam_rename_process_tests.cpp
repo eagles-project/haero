@@ -9,13 +9,10 @@ using namespace haero;
 TEST_CASE("mam_rename_run", "") {
   using View1D = Kokkos::View<PackType*>;
 
-  auto aero_config = create_mam4_modal_aerosol_config();
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
   std::size_t num_levels = 72;  // number of levels
   std::size_t num_vert_packs = PackInfo::num_packs(num_levels);
-  std::size_t num_iface_packs = PackInfo::num_packs(num_levels+1);
 
-  const std::size_t num_gases =
-      aero_config.gas_species.size();  // number of gases
   const std::size_t num_modes =
       aero_config.aerosol_modes.size();  // number of modes
 

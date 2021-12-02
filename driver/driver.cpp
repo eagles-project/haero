@@ -1,6 +1,6 @@
 #include "driver.hpp"
 
-#include "haero/model.hpp"
+#include "haero/aerosol_process.hpp"
 
 namespace haero {
 namespace driver {

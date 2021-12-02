@@ -22,7 +22,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
     This ModalAerosolConfig is simple enough to compute modal averages by hand,
     which we use for verification.
   */
-  const auto config = create_simple_test_config();
+  const auto config = ModalAerosolConfig::create_simple_test_config();
   std::cout << config.info_string();
 
   /// Tests for create_simple_test_config();

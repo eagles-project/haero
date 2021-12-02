@@ -5,7 +5,6 @@
 
 #include "catch2/catch.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/model.hpp"
 #include "haero/processes/mam_nucleation_process.hpp"
 
 using namespace haero;

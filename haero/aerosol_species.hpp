@@ -84,6 +84,19 @@ struct AerosolSpecies final {
   /// Hygroscopicity
   Real hygroscopicity;
 
+  // Comparison operators.
+  bool operator==(const AerosolSpecies& other) const {
+    return (!strcmp(name_view, other.name_view) and
+            !strcmp(symbol_view, other.symbol_view) and
+            !strcmp(desc_view, other.desc_view) and
+            (molecular_weight == other.molecular_weight) and
+            (density == other.density) and
+            (hygroscopicity == other.hygroscopicity));
+  }
+  bool operator!=(const AerosolSpecies& other) const {
+    return !(*this == other);
+  }
+
  private:
   char name_view[NAME_LEN];
   char symbol_view[NAME_LEN];

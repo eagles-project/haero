@@ -5,7 +5,6 @@
 #include "faerosol_process_stub.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/model.hpp"
 
 using namespace haero;
 
@@ -15,26 +14,21 @@ TEST_CASE("faerosol_process_stub", "") {
                 "Fortran not supported for HAERO_PACK_SIZE != 1.");
 
   // We create a phony model to be used for these tests.
-  auto modes = create_mam4_modes();
-  auto aero_species = create_mam4_aerosol_species();
-  auto gas_species = create_mam4_gas_species();
-  auto mode_species = create_mam4_mode_species();
-  int num_levels = 72;
-  ModalAerosolConfig aero_config(modes, aero_species, mode_species,
-                                 gas_species);
-
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
+  int num_gases = aero_config.num_gases();
+  int num_modes = aero_config.num_modes();
   int num_aero_populations = aero_config.num_aerosol_populations;
-  int num_gases = gas_species.size();
-  int num_modes = modes.size();
-  int num_packs = PackInfo::num_packs(num_levels);
+  int num_levels = 72;
+  int num_vert_packs = PackInfo::num_packs(num_levels);
+  int num_iface_packs = PackInfo::num_packs(num_levels+1);
 
   // Set up atmospheric data and populate it with some views. It's not
   // important for this data to be valid, since it's unused by these stubs.
-  Kokkos::View<PackType*> temp("temperature", num_packs);
-  Kokkos::View<PackType*> press("pressure", num_packs);
-  Kokkos::View<PackType*> qv("vapor mixing ratio", num_packs);
-  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_packs);
-  Kokkos::View<PackType*> ht("height", PackInfo::num_packs(num_levels + 1));
+  Kokkos::View<PackType*> temp("temperature", num_vert_packs);
+  Kokkos::View<PackType*> press("pressure", num_vert_packs);
+  Kokkos::View<PackType*> qv("vapor mixing ratio", num_vert_packs);
+  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_vert_packs);
+  Kokkos::View<PackType*> ht("height", num_iface_packs);
   Real pblh = 100.0;
   auto* atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
 
@@ -45,7 +39,6 @@ TEST_CASE("faerosol_process_stub", "") {
   SECTION("construct") {
     auto* stub = new FAerosolProcessStub();
     stub->set_param("decay_rate", decay_rate);
-    REQUIRE(stub->type() == haero::ActivationProcess);
     REQUIRE(stub->name() == "Aerosol process stub (Fortran)");
     delete stub;
   }
@@ -54,7 +47,7 @@ TEST_CASE("faerosol_process_stub", "") {
   SECTION("init_process") {
     auto* stub = new FAerosolProcessStub();
     stub->set_param("decay_rate", decay_rate);
-    stub->init(aerosol_config);
+    stub->init(aero_config);
     delete stub;
   }
 
@@ -62,12 +55,12 @@ TEST_CASE("faerosol_process_stub", "") {
   SECTION("tendencies") {
     auto* stub = new FAerosolProcessStub();
     stub->set_param("decay_rate", decay_rate);
-    stub->init(aerosol_config);
+    stub->init(aero_config);
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = new Prognostics(aerosol_config, num_levels);
-    auto* diags = model->create_diagnostics();
+    auto* progs = new Prognostics(aero_config, num_levels);
+    auto* diags = new HostDiagnostics(aero_config, num_levels);
     auto* tends = new Tendencies(*progs);
 
     // Set initial conditions.
@@ -151,5 +144,4 @@ TEST_CASE("faerosol_process_stub", "") {
   }
 
   delete atm;
-  delete model;
 }

@@ -1,19 +1,20 @@
-#include <cmath>
-#include <iostream>
+#include "haero/aerosol_process.hpp"
 
 #include "catch2/catch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "haero/model.hpp"
+
+#include <cmath>
+#include <iostream>
 
 using namespace haero;
 
 class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
  public:
-  MyAerosolProcess(AerosolProcessType type, const std::string &name,
-                   const int num_lev, const Diagnostics::Token aer_0,
+  MyAerosolProcess(const std::string &name, const int num_lev,
+                   const Diagnostics::Token aer_0,
                    const Diagnostics::Token aer_1,
                    const Diagnostics::Token gen_0)
-      : DeviceAerosolProcess<MyAerosolProcess>(type, name),
+      : DeviceAerosolProcess<MyAerosolProcess>(name),
         num_levels(num_lev),
         aersol_0(aer_0),
         aersol_1(aer_1),
@@ -105,12 +106,6 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
   const Diagnostics::Token generic_0;
 };
 
-Model *get_model_for_unit_tests(const ModalAerosolConfig &aero_config,
-                                const std::size_t num_levels) {
-  static Model *model(Model::ForUnitTests(aero_config, num_levels));
-  return model;
-}
-
 TEST_CASE("aerosol_process_multi_column_run", "") {
   // Define an arbitrary number of columns for this rank to
   // process.  This would be out of the total number of
@@ -123,25 +118,15 @@ TEST_CASE("aerosol_process_multi_column_run", "") {
 
   // Create a default aerosol configuration for testing
   // purposes only.
-  ModalAerosolConfig aero_config = create_mam4_modal_aerosol_config();
-  static constexpr std::size_t num_levels{72};  // number of levels
-  std::size_t num_vert_packs = num_levels / HAERO_PACK_SIZE;
-  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
-    num_vert_packs++;
-  }
-  std::size_t num_iface_packs = (num_levels + 1) / HAERO_PACK_SIZE;
-  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels + 1)) {
-    num_iface_packs++;
-  }
-
-  Model *model = get_model_for_unit_tests(aero_config, num_levels);
-  const std::size_t num_gases{
-      aero_config.gas_species.size()};  // number of gases
-  const std::size_t num_modes{
-      aero_config.aerosol_modes.size()};  // number of modes
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
+  int num_levels = 72;  // number of levels
+  int num_vert_packs = PackInfo::num_packs(num_levels);
+  int num_iface_packs = PackInfo::num_packs(num_levels+1);
+  int num_gases = aero_config.num_gases();
+  int num_modes = aero_config.num_modes();
 
   // Set up some prognostics aerosol data views
-  const int num_aero_populations = model->num_aerosol_populations();
+  const int num_aero_populations = aero_config.num_aerosol_populations;
 
   // Define a pseudo-random number generator [0,1) based on a few primes.
   static constexpr unsigned p0{987659};
@@ -273,9 +258,9 @@ TEST_CASE("aerosol_process_multi_column_run", "") {
     // define and hold their own Kokkos Views.  In an acutal
     // application these two classes would be checked on
     // the host to make sure the correct Views are defined.
-    const Prognostics &progs = *model->create_prognostics(
-        int_aerosols, cld_aerosols, int_num_nmrs, cld_num_nmrs, gases);
-    HostDiagnostics &diags = *model->create_diagnostics();
+    Prognostics progs(aero_config, num_levels, int_aerosols, cld_aerosols,
+        int_num_nmrs, cld_num_nmrs, gases);
+    HostDiagnostics diags(aero_config, num_levels);
 
     const auto t0 = diags.create_aerosol_var("First Aerosol");
     const auto t1 = diags.create_aerosol_var("Second Aerosol");
@@ -320,15 +305,12 @@ TEST_CASE("aerosol_process_multi_column_run", "") {
           mult_col_prognostics(column) = progs;
           mult_col_diagnostics(column) = dev_diags;
         });
-    delete &diags;
-    delete &progs;
   }
 
   SECTION("my_aerosol_process_multi_column_run") {
     // Create and initialize our process.
-    AerosolProcessType type = CloudBorneWetRemovalProcess;
     const std::string name = "CloudProcess";
-    auto process = new MyAerosolProcess(type, name, num_levels, aersol_0,
+    auto process = new MyAerosolProcess(name, num_levels, aersol_0,
                                         aersol_1, generic_0);
     process->init(aero_config);
     auto d_process = process->copy_to_device();

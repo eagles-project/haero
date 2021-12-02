@@ -239,7 +239,14 @@ class AerosolProcess {
   /// This gets overridden by the DeviceAerosolProcess middleware class.
   virtual AerosolProcess* copy_to_device_() const = 0;
 
+#if HAERO_FORTRAN
+  // This function initializes Haero's Fortran subsystem with the given
+  // aerosol configuration.
+  static void init_fortran_(const ModalAerosolConfig& config);
+#endif
+
  private:
+
   // Use View as a struct to store a string and allows copy to device.
   // Since std::string can not be used, it was either this or a char *
   const Kokkos::View<int> name_;
@@ -381,8 +388,9 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
   }
 
  protected:
-  void init_(const ModalAerosolConfig& modal_aerosol_config) override {
+  void init_(const ModalAerosolConfig& config) override {
     if (not initialized_) {
+      init_fortran_(config); // fire up the Fortran subsystem if needed
       init_process_();
       initialized_ = true;
     }

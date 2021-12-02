@@ -18,7 +18,7 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
 
 HostDiagnostics::HostDiagnostics(const ModalAerosolConfig& aero_config,
                                  int num_levels)
-    : Diagnostics(aero_config.num_modes(), std::vector<int>(),
+    : Diagnostics(aero_config.num_modes(), std::vector<int>(aero_config.num_modes()),
                   aero_config.num_gases(), num_levels) {
   std::vector<int> num_aero_species(aero_config.num_modes());
   for (std::size_t m = 0; m < aero_config.num_modes(); ++m) {

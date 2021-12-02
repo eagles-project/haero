@@ -2,28 +2,19 @@
 #include <iostream>
 
 #include "catch2/catch.hpp"
-#include "haero/model.hpp"
 #include "haero/processes/mam_rename_fprocess.hpp"
 #include "haero/processes/mam_rename_process.hpp"
 
 using namespace haero;
 
-Model* get_model_for_unit_tests(const ModalAerosolConfig& aero_config,
-                                const std::size_t num_levels) {
-  static Model* model(Model::ForUnitTests(aero_config, num_levels));
-  return model;
-}
-
 TEST_CASE("mam_rename_run", "") {
-  auto aero_config = create_mam4_modal_aerosol_config();
-  static constexpr std::size_t num_levels{72};  // number of levels
-  auto* model = get_model_for_unit_tests(aero_config, num_levels);
-  auto num_gases = aero_config.gas_species.size();    // number of gases
-  auto num_modes = aero_config.aerosol_modes.size();  // number of modes
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
+  int num_gases = aero_config.num_gases();
+  int num_modes = aero_config.num_modes();
+  int num_aero_populations = aero_config.num_aerosol_populations;
+  int num_levels = 72;
 
   // Set up some prognostics aerosol data views
-  const int num_aero_populations = model->num_aerosol_populations();
-
   Kokkos::View<PackType**> int_aerosols(
       "interstitial aerosols", num_aero_populations,
       num_levels);  // interstitial aerosols mmr [kg/kg(of air)]
@@ -51,10 +42,10 @@ TEST_CASE("mam_rename_run", "") {
     auto* process = new MAMRenameFProcess();
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                            int_num_mix_ratios,
-                                            cld_num_mix_ratios, gases);
-    auto* diags = model->create_diagnostics();
+    auto* progs = new Prognostics(aero_config, num_levels, int_aerosols,
+                                  cld_aerosols, int_num_mix_ratios,
+                                  cld_num_mix_ratios, gases);
+    auto* diags = new HostDiagnostics(aero_config, num_levels);
     auto* tends = new Tendencies(*progs);
 
     // Define a pseudo-random generator [0-1) that is consistent across
