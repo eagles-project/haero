@@ -27,9 +27,8 @@ TEST_CASE("region_of_validity", "") {
   ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
                                     num_vert_packs);
   SpeciesColumnView gases("gases", num_gases, num_vert_packs);
-  Prognostics progs(config, num_levels,
-                    int_aerosols, cld_aerosols, int_num_mix_ratios,
-                    cld_num_mix_ratios, gases);
+  Prognostics progs(config, num_levels, int_aerosols, cld_aerosols,
+                    int_num_mix_ratios, cld_num_mix_ratios, gases);
 
   ColumnView temp("temperature", num_vert_packs),
       press("pressure", num_vert_packs),

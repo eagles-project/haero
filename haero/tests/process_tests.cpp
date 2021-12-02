@@ -123,7 +123,8 @@ TEST_CASE("process_tests", "aerosol_process") {
     Kokkos::deep_copy(dev_int_aerosols, host_int_aerosols);
   }
 
-  SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", num_pops, num_vert_packs);
+  SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", num_pops,
+                                     num_vert_packs);
   ModeColumnView dev_int_num_mix_ratios("interstitial number mix ratios",
                                         num_modes, num_vert_packs);
   ModeColumnView dev_cld_num_mix_ratios("cloud borne number mix ratios",
@@ -146,9 +147,8 @@ TEST_CASE("process_tests", "aerosol_process") {
   Kokkos::deep_copy(dev_int_num_mix_ratios, host_int_num_mix_ratios);
   Kokkos::deep_copy(dev_cld_num_mix_ratios, host_cld_num_mix_ratios);
 
-  Prognostics progs(aero_config, num_levels, dev_int_aerosols,
-                    dev_cld_aerosols, dev_int_num_mix_ratios,
-                    dev_cld_num_mix_ratios, dev_gases);
+  Prognostics progs(aero_config, num_levels, dev_int_aerosols, dev_cld_aerosols,
+                    dev_int_num_mix_ratios, dev_cld_num_mix_ratios, dev_gases);
 
   Kokkos::View<PackType *> temp("temperature", num_vert_packs);
   Kokkos::View<PackType *> press("pressure", num_vert_packs);
@@ -189,8 +189,8 @@ TEST_CASE("process_tests", "aerosol_process") {
 
   // Create and initialize our process.
   const std::string name = "CloudProcess";
-  auto pp = new MyAerosolProcess(name, num_levels, aersol_0, aersol_1,
-                                 generic_0);
+  auto pp =
+      new MyAerosolProcess(name, num_levels, aersol_0, aersol_1, generic_0);
   pp->init(aero_config);
 
   // Move the process to the device and run it.

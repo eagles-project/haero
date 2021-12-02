@@ -18,13 +18,15 @@ Diagnostics::Diagnostics(int num_aerosol_modes,
 
 HostDiagnostics::HostDiagnostics(const ModalAerosolConfig& aero_config,
                                  int num_levels)
-    : Diagnostics(aero_config.num_modes(), std::vector<int>(aero_config.num_modes()),
+    : Diagnostics(aero_config.num_modes(),
+                  std::vector<int>(aero_config.num_modes()),
                   aero_config.num_gases(), num_levels) {
   std::vector<int> num_aero_species(aero_config.num_modes());
   for (std::size_t m = 0; m < aero_config.num_modes(); ++m) {
     num_aero_species[m] = aero_config.aerosol_species_for_mode(m).size();
   }
-  num_aero_species_ = vector_to_basic_1dview(num_aero_species,"Diagnostics::num_aerosol_species");
+  num_aero_species_ = vector_to_basic_1dview(
+      num_aero_species, "Diagnostics::num_aerosol_species");
 }
 
 HostDiagnostics::~HostDiagnostics() {}

@@ -13,8 +13,7 @@ class MAMCalcsizeProcess final
  public:
   MAMCalcsizeProcess();
 
-  MAMCalcsizeProcess(const std::string &name,
-                     const ModalAerosolConfig &config)
+  MAMCalcsizeProcess(const std::string &name, const ModalAerosolConfig &config)
       : DeviceAerosolProcess<MAMCalcsizeProcess>(name) {}
 
   /// Destructor.

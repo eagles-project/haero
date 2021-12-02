@@ -41,9 +41,10 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
 
   HostDiagnostics diagnostics(aero_config, num_levels);
   MAMGasAerosolExchangeFProcess mam_gasaerexch_fprocess;
-  mam_gasaerexch_fprocess.init(aero_config); // this sets up Fortran stuff
-  //MAMGasAerosolExchangeProcess mam_gasaerexch_process;("gasaerexch Test",
-//                                                        aero_config, diagnostics);
+  mam_gasaerexch_fprocess.init(aero_config);  // this sets up Fortran stuff
+  // MAMGasAerosolExchangeProcess mam_gasaerexch_process;("gasaerexch Test",
+  //                                                        aero_config,
+  //                                                        diagnostics);
 
   const int lund = 93;
   const Real dt = 1.0000000000000000;

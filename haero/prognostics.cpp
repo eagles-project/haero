@@ -5,27 +5,36 @@
 namespace haero {
 
 Prognostics::Prognostics(const ModalAerosolConfig& config, int num_levels)
-    : interstitial_aerosols("interstitial aerosols", config.num_aerosol_populations, PackInfo::num_packs(num_levels)),
-      cloud_aerosols("cloudborne aerosols", config.num_aerosol_populations, PackInfo::num_packs(num_levels)),
-      interstitial_num_mix_ratios("interstitial aerosol number mix ratios", config.num_modes(), PackInfo::num_packs(num_levels)),
-      cloud_num_mix_ratios("cloudborne aerosol number mix ratios", config.num_modes(), PackInfo::num_packs(num_levels)),
+    : interstitial_aerosols("interstitial aerosols",
+                            config.num_aerosol_populations,
+                            PackInfo::num_packs(num_levels)),
+      cloud_aerosols("cloudborne aerosols", config.num_aerosol_populations,
+                     PackInfo::num_packs(num_levels)),
+      interstitial_num_mix_ratios("interstitial aerosol number mix ratios",
+                                  config.num_modes(),
+                                  PackInfo::num_packs(num_levels)),
+      cloud_num_mix_ratios("cloudborne aerosol number mix ratios",
+                           config.num_modes(), PackInfo::num_packs(num_levels)),
       gases("gases", config.num_gases(), PackInfo::num_packs(num_levels)),
-      num_aero_species_("Prognostics::num_aerosol_species", config.aerosol_species.size()),
+      num_aero_species_("Prognostics::num_aerosol_species",
+                        config.aerosol_species.size()),
       num_aero_populations_(config.num_aerosol_populations),
       num_gases_(config.num_gases()),
-      num_levels_(num_levels) {
-}
+      num_levels_(num_levels) {}
 
 Prognostics::Prognostics(const ModalAerosolConfig& config, int num_levels,
-    SpeciesColumnView int_aerosols, SpeciesColumnView cld_aerosols,
-    ModeColumnView int_mode_num_mix_ratios_,
-    ModeColumnView cld_mode_num_mix_ratios_, SpeciesColumnView gases_)
+                         SpeciesColumnView int_aerosols,
+                         SpeciesColumnView cld_aerosols,
+                         ModeColumnView int_mode_num_mix_ratios_,
+                         ModeColumnView cld_mode_num_mix_ratios_,
+                         SpeciesColumnView gases_)
     : interstitial_aerosols(int_aerosols),
       cloud_aerosols(cld_aerosols),
       interstitial_num_mix_ratios(int_mode_num_mix_ratios_),
       cloud_num_mix_ratios(cld_mode_num_mix_ratios_),
       gases(gases_),
-      num_aero_species_("Prognostics::num_aerosol_species", config.aerosol_species.size()),
+      num_aero_species_("Prognostics::num_aerosol_species",
+                        config.aerosol_species.size()),
       num_aero_populations_(config.num_aerosol_populations),
       num_gases_(config.num_gases()),
       num_levels_(num_levels) {

@@ -1,10 +1,9 @@
-#include "haero/aerosol_process.hpp"
+#include <cmath>
+#include <iostream>
 
 #include "catch2/catch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-
-#include <cmath>
-#include <iostream>
+#include "haero/aerosol_process.hpp"
 
 using namespace haero;
 
@@ -121,7 +120,7 @@ TEST_CASE("aerosol_process_multi_column_run", "") {
   auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_levels = 72;  // number of levels
   int num_vert_packs = PackInfo::num_packs(num_levels);
-  int num_iface_packs = PackInfo::num_packs(num_levels+1);
+  int num_iface_packs = PackInfo::num_packs(num_levels + 1);
   int num_gases = aero_config.num_gases();
   int num_modes = aero_config.num_modes();
 
@@ -259,7 +258,7 @@ TEST_CASE("aerosol_process_multi_column_run", "") {
     // application these two classes would be checked on
     // the host to make sure the correct Views are defined.
     Prognostics progs(aero_config, num_levels, int_aerosols, cld_aerosols,
-        int_num_nmrs, cld_num_nmrs, gases);
+                      int_num_nmrs, cld_num_nmrs, gases);
     HostDiagnostics diags(aero_config, num_levels);
 
     const auto t0 = diags.create_aerosol_var("First Aerosol");
@@ -310,8 +309,8 @@ TEST_CASE("aerosol_process_multi_column_run", "") {
   SECTION("my_aerosol_process_multi_column_run") {
     // Create and initialize our process.
     const std::string name = "CloudProcess";
-    auto process = new MyAerosolProcess(name, num_levels, aersol_0,
-                                        aersol_1, generic_0);
+    auto process =
+        new MyAerosolProcess(name, num_levels, aersol_0, aersol_1, generic_0);
     process->init(aero_config);
     auto d_process = process->copy_to_device();
     typedef ekat::ExeSpaceUtils<>::TeamPolicy::member_type TeamHandleType;

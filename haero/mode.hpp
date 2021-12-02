@@ -186,7 +186,7 @@ struct Mode final {
   }
 
   // Comparison operators.
-  bool operator==(const Mode& other) const {
+  bool operator==(const Mode &other) const {
     return (!strcmp(name_view, other.name_view) and
             (min_diameter == other.min_diameter) and
             (max_diameter == other.max_diameter) and
@@ -194,9 +194,7 @@ struct Mode final {
             (crystallization_pt == other.crystallization_pt) and
             (deliquescence_pt == other.deliquescence_pt));
   }
-  bool operator!=(const Mode& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const Mode &other) const { return !(*this == other); }
 
  private:
   char name_view[NAME_LEN];

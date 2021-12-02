@@ -208,9 +208,9 @@ class ModalAerosolConfig final {
   // These are helper functions for quickly creating commonly used
   // configurations.
   static inline ModalAerosolConfig create_mam4_config() {
-    return ModalAerosolConfig(create_mam4_modes(), create_mam4_aerosol_species(),
-                              create_mam4_mode_species(),
-                              create_mam4_gas_species());
+    return ModalAerosolConfig(
+        create_mam4_modes(), create_mam4_aerosol_species(),
+        create_mam4_mode_species(), create_mam4_gas_species());
   }
 
   static ModalAerosolConfig create_simple_test_config();

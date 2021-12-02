@@ -55,8 +55,7 @@ class AerosolProcess {
   /// Copy constructor, for use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   AerosolProcess(const AerosolProcess& pp)
-      : name_(pp.name_),
-        validity_region_(pp.validity_region_) {}
+      : name_(pp.name_), validity_region_(pp.validity_region_) {}
 
   /// AerosolProcess objects are not assignable.
   AerosolProcess& operator=(const AerosolProcess&) = delete;
@@ -246,7 +245,6 @@ class AerosolProcess {
 #endif
 
  private:
-
   // Use View as a struct to store a string and allows copy to device.
   // Since std::string can not be used, it was either this or a char *
   const Kokkos::View<int> name_;
@@ -352,8 +350,7 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
   /// @param [in] set_real_param A pointer to an interoperable Fortran
   ///                            subroutine that sets a real-valued parameter
   ///                            for the Fortran-backed process.
-  FAerosolProcess(const std::string& name,
-                  InitProcessSubroutine init_process,
+  FAerosolProcess(const std::string& name, InitProcessSubroutine init_process,
                   RunProcessSubroutine run_process,
                   FinalizeProcessSubroutine finalize_process,
                   SetIntegerParamSubroutine set_integer_param,
@@ -390,7 +387,7 @@ class FAerosolProcess : public DeviceAerosolProcess<FAerosolProcess> {
  protected:
   void init_(const ModalAerosolConfig& config) override {
     if (not initialized_) {
-      init_fortran_(config); // fire up the Fortran subsystem if needed
+      init_fortran_(config);  // fire up the Fortran subsystem if needed
       init_process_();
       initialized_ = true;
     }

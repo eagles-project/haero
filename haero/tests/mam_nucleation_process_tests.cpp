@@ -402,7 +402,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_levels = 72;
   int num_vert_packs = PackInfo::num_packs(num_levels);
-  int num_iface_packs = PackInfo::num_packs(num_levels+1);
+  int num_iface_packs = PackInfo::num_packs(num_levels + 1);
   int num_gases = aero_config.num_gases();
   int num_modes = aero_config.num_modes();
   int num_aero_populations = aero_config.num_aerosol_populations;
@@ -448,9 +448,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs = new Prognostics(aero_config, num_levels, int_aerosols,
-                                         cld_aerosols, int_num_mix_ratios,
-                                         cld_num_mix_ratios, gases);
+    Prognostics* progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
     HostDiagnostics* diags = new HostDiagnostics(aero_config, num_levels);
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");
@@ -563,9 +563,9 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   SECTION("nucleate_with_existing_aerosols") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs = new Prognostics(aero_config, num_levels, int_aerosols,
-                                         cld_aerosols, int_num_mix_ratios,
-                                         cld_num_mix_ratios, gases);
+    Prognostics* progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
     HostDiagnostics* diags = new HostDiagnostics(aero_config, num_levels);
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");

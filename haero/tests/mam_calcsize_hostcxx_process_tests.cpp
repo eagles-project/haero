@@ -57,9 +57,9 @@ TEST_CASE("mam_calcsize_hostcxx_run", "") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto progs = new Prognostics(aero_config, num_levels, int_aerosols,
-                                 cld_aerosols, int_num_mix_ratios,
-                                 cld_num_mix_ratios, gases);
+    auto progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
     auto diags = new HostDiagnostics(aero_config, num_levels);
     auto tends = new Tendencies(*progs);
 

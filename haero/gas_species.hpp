@@ -77,9 +77,7 @@ struct GasSpecies final {
             !strcmp(desc_view, other.desc_view) and
             (molecular_weight == other.molecular_weight));
   }
-  bool operator!=(const GasSpecies& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const GasSpecies& other) const { return !(*this == other); }
 
  private:
   char name_view[NAME_LEN];

@@ -20,7 +20,7 @@ TEST_CASE("faerosol_process_stub", "") {
   int num_aero_populations = aero_config.num_aerosol_populations;
   int num_levels = 72;
   int num_vert_packs = PackInfo::num_packs(num_levels);
-  int num_iface_packs = PackInfo::num_packs(num_levels+1);
+  int num_iface_packs = PackInfo::num_packs(num_levels + 1);
 
   // Set up atmospheric data and populate it with some views. It's not
   // important for this data to be valid, since it's unused by these stubs.

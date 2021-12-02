@@ -162,7 +162,7 @@ class HostDiagnostics final : public Diagnostics {
   /// @param [in] aero_config The relevant aerosol/gas configuration
   /// @param [in] num_levels The number of vertical levels per column stored by
   ///                        the state
-  HostDiagnostics(const ModalAerosolConfig& aero_config, int num_levels);
+  HostDiagnostics(const ModalAerosolConfig &aero_config, int num_levels);
 
   /// Destructor.
   ~HostDiagnostics();

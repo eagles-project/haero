@@ -73,9 +73,8 @@ class Prognostics final {
   ///                     are gas mass mixing ratios [kg gas/kg dry air] for a
   ///                     number of adjacent vertical levels equal to
   ///                     HAERO_PACK_SIZE (possibly padded)
-  Prognostics(const ModalAerosolConfig& config,
-              int num_levels, SpeciesColumnView int_aerosols,
-              SpeciesColumnView cld_aerosols,
+  Prognostics(const ModalAerosolConfig& config, int num_levels,
+              SpeciesColumnView int_aerosols, SpeciesColumnView cld_aerosols,
               ModeColumnView int_mode_num_mix_ratios,
               ModeColumnView cld_mode_num_mix_ratios, SpeciesColumnView gases);
 

@@ -1,7 +1,8 @@
 #include "haero/aerosol_process.hpp"
-#include "haero/utils.hpp"
 
 #include <set>
+
+#include "haero/utils.hpp"
 
 namespace {
 
@@ -57,7 +58,7 @@ const char* new_c_string(char* f_str_ptr, int f_str_len) {
 
 // This function frees all resources associated with the Fortran subsystem.
 void finalize_fortran() {
-   // If we initialized the Haero Fortran module, we must finalize it.
+  // If we initialized the Haero Fortran module, we must finalize it.
   if (initialized_fortran_) {
     haerotran_finalize();
     delete config_;
@@ -72,11 +73,11 @@ void finalize_fortran() {
   }
 }
 
-} // extern "C"
+}  // extern "C"
 
 #endif  // HAERO_FORTRAN
 
-} // anonymous namespace
+}  // anonymous namespace
 
 namespace haero {
 
@@ -84,7 +85,8 @@ namespace haero {
 void AerosolProcess::init_fortran_(const ModalAerosolConfig& config) {
   if (initialized_fortran_) {
     // Check to make sure our aerosol configurations are compatible!
-    EKAT_REQUIRE_MSG(config == *config_,
+    EKAT_REQUIRE_MSG(
+        config == *config_,
         "Two incompatible Fortran aerosol processes have been created!\n"
         "All Fortran aerosol processes must use the same configuration.");
     return;

@@ -42,9 +42,9 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
   HostDiagnostics diagnostics(aero_config, num_levels);
 
   MAMNucleationFProcess mam_nucleation_fprocess;
-  mam_nucleation_fprocess.init(aero_config); // this sets up Fortran stuff
-  MAMNucleationProcess mam_nucleation_process("Nucleation Test",
-                                              aero_config, diagnostics);
+  mam_nucleation_fprocess.init(aero_config);  // this sets up Fortran stuff
+  MAMNucleationProcess mam_nucleation_process("Nucleation Test", aero_config,
+                                              diagnostics);
 
   for (int i = 0; i < 100; ++i) {
     const Real deltat(random());
@@ -474,9 +474,9 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = new Prognostics(aero_config, num_levels, int_aerosols,
-                                  cld_aerosols, int_num_mix_ratios,
-                                  cld_num_mix_ratios, gases);
+    auto* progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
     auto* diags = new HostDiagnostics(aero_config, num_levels);
     auto* tends = new Tendencies(*progs);
 
