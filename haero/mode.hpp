@@ -185,6 +185,17 @@ struct Mode final {
     return 1 / mean_particle_volume_from_diameter(min_diameter);
   }
 
+  // Comparison operators.
+  bool operator==(const Mode &other) const {
+    return (!strcmp(name_view, other.name_view) and
+            (min_diameter == other.min_diameter) and
+            (max_diameter == other.max_diameter) and
+            (mean_std_dev == other.mean_std_dev) and
+            (crystallization_pt == other.crystallization_pt) and
+            (deliquescence_pt == other.deliquescence_pt));
+  }
+  bool operator!=(const Mode &other) const { return !(*this == other); }
+
  private:
   char name_view[NAME_LEN];
 };

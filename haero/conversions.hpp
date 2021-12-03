@@ -152,7 +152,8 @@ vapor_saturation_pressure_magnus(const Scalar& T) {
   static constexpr Real e0 = 610.94;       // Pa
   static constexpr Real exp_num = 17.625;  // nondimensional
   static constexpr Real exp_den = 234.04;  // deg C
-  const auto celsius_temp = T - Constants::freezing_pt_h2o;
+  const auto Tf = Constants::freezing_pt_h2o;
+  const auto celsius_temp = T - Tf;
   return e0 * exp(exp_num * celsius_temp / (exp_den + celsius_temp));
 }
 

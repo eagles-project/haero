@@ -16,9 +16,9 @@ namespace haero {
 /// @class ModalAerosolConfig
 /// This type represents the configuration of mode-based aerosols and gas
 /// species that define a physical system of aerosols in the atmosphere. It's
-/// used to convey information to aerosol processes that run within a
-/// \ref Model instance. Objects of this type can only be created on the host--
-/// no ModalAerosolConfig object may be created on the device.
+/// used to convey information to aerosol processes. Objects of this type can
+/// only be created on the host--no ModalAerosolConfig object may be created on
+/// the device.
 class ModalAerosolConfig final {
  public:
   /// Default constructor -- use with caution.
@@ -70,6 +70,12 @@ class ModalAerosolConfig final {
 
   /// Assignment operator.
   ModalAerosolConfig& operator=(const ModalAerosolConfig&) = default;
+
+  /// Comparison operators.
+  bool operator==(const ModalAerosolConfig& other) const;
+  inline bool operator!=(const ModalAerosolConfig& other) const {
+    return (!(*this == other));
+  }
 
   /// The list of aerosol modes associated with this aerosol model.
   std::vector<Mode> aerosol_modes;
@@ -199,6 +205,16 @@ class ModalAerosolConfig final {
 
   std::string info_string(const int tab_level = 0) const;
 
+  // These are helper functions for quickly creating commonly used
+  // configurations.
+  static inline ModalAerosolConfig create_mam4_config() {
+    return ModalAerosolConfig(
+        create_mam4_modes(), create_mam4_aerosol_species(),
+        create_mam4_mode_species(), create_mam4_gas_species());
+  }
+
+  static ModalAerosolConfig create_simple_test_config();
+
  private:
   // The association of aerosol species with modes.
   // species_for_mode_[mode_index] = vector of species indices
@@ -209,14 +225,6 @@ class ModalAerosolConfig final {
   void index_mode_species(
       const std::map<std::string, std::vector<std::string>>& mode_species);
 };
-
-inline ModalAerosolConfig create_mam4_modal_aerosol_config() {
-  return ModalAerosolConfig(create_mam4_modes(), create_mam4_aerosol_species(),
-                            create_mam4_mode_species(),
-                            create_mam4_gas_species());
-}
-
-ModalAerosolConfig create_simple_test_config();
 
 }  // namespace haero
 

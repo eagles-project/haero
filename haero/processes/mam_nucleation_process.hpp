@@ -146,10 +146,10 @@ class MAMNucleationProcess final
  public:
   MAMNucleationProcess();
 
-  MAMNucleationProcess(const AerosolProcessType type, const std::string &name,
+  MAMNucleationProcess(const std::string &name,
                        const ModalAerosolConfig &config,
                        const HostDiagnostics &diagnostics)
-      : DeviceAerosolProcess<MAMNucleationProcess>(type, name),
+      : DeviceAerosolProcess<MAMNucleationProcess>(name),
         iaer_h2so4(config.gas_index("H2SO4")),
         iaer_nh3(config.gas_index("NH3")),
         iaer_nh4(config.gas_index("nh4")),

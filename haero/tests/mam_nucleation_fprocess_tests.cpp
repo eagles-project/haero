@@ -5,18 +5,11 @@
 #include "catch2/catch.hpp"
 #include "haero/conversions.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/model.hpp"
 #include "haero/processes/mam_nucleation_fprocess.hpp"
 #include "haero/processes/mam_nucleation_process.hpp"
 #include "mam_nucleation_test_bridge.hpp"
 
 using namespace haero;
-
-Model* get_model_for_unit_tests(ModalAerosolConfig& aero_config) {
-  const int num_levels = 72;
-  static Model* model(Model::ForUnitTests(aero_config, num_levels));
-  return model;
-}
 
 TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
   using fp_helper = FloatingPoint<Real>;
@@ -42,29 +35,16 @@ TEST_CASE("compute_tendencies", "mam_nucleation_fprocess") {
     return Real(seed) / p0;
   };
 
-  const auto aero_species = create_mam4_aerosol_species();
-  auto aero_config = create_mam4_modal_aerosol_config();
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
   const int num_levels = 72;
-  const int num_modes = aero_config.aerosol_modes.size();
   const int num_gases = aero_config.gas_species.size();
 
-  std::vector<int> num_aero_species(num_modes);
-  std::vector<Mode> modes = create_mam4_modes();
-  std::map<std::string, std::vector<std::string>> mode_species =
-      create_mam4_mode_species();
-  for (int m = 0; m < num_modes; ++m) {
-    num_aero_species[m] = mode_species[modes[m].name()].size();
-  }
+  HostDiagnostics diagnostics(aero_config, num_levels);
 
-  HostDiagnostics diagnostics(num_modes, num_aero_species, num_gases,
-                              num_levels);
-
-  get_model_for_unit_tests(aero_config);
-  AerosolProcessType type = CloudBorneWetRemovalProcess;
-  MAMNucleationProcess mam_nucleation_process(type, "Nucleation Test",
-                                              aero_config, diagnostics);
-
-  nucleation_init_bridge();
+  MAMNucleationFProcess mam_nucleation_fprocess;
+  mam_nucleation_fprocess.init(aero_config);  // this sets up Fortran stuff
+  MAMNucleationProcess mam_nucleation_process("Nucleation Test", aero_config,
+                                              diagnostics);
 
   for (int i = 0; i < 100; ++i) {
     const Real deltat(random());
@@ -446,14 +426,13 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_fprocess") {
 // These tests exercise our transplant of the MAM nucleation process.
 TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   // We create a phony model to be used for these tests.
-  auto aero_config = create_mam4_modal_aerosol_config();
-  Model* model = get_model_for_unit_tests(aero_config);
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
+  int num_gases = aero_config.num_gases();
+  int num_modes = aero_config.num_modes();
+  int num_aero_populations = aero_config.num_aerosol_populations;
   int num_levels = 72;
-  int num_gases = aero_config.gas_species.size();
-  int num_modes = aero_config.aerosol_modes.size();
 
   // Set up some prognosics aerosol data views‥
-  int num_aero_populations = model->num_aerosol_populations();
   Kokkos::View<PackType**> int_aerosols("interstitial aerosols",
                                         num_aero_populations, num_levels);
   Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols",
@@ -476,7 +455,6 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   // Test basic construction.
   SECTION("construct") {
     auto* process = new MAMNucleationFProcess();
-    REQUIRE(process->type() == haero::NucleationProcess);
     REQUIRE(process->name() ==
             "MAMNucleationFProcess (Fortran NucleationProcess)");
     delete process;
@@ -496,10 +474,10 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                            int_num_mix_ratios,
-                                            cld_num_mix_ratios, gases);
-    auto* diags = model->create_diagnostics();
+    auto* progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    auto* diags = new HostDiagnostics(aero_config, num_levels);
     auto* tends = new Tendencies(*progs);
 
     // Set initial conditions.

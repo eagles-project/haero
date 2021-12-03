@@ -1,6 +1,6 @@
 #include "faerosol_process_stub.hpp"
 
-#include "haero/model.hpp"
+#include "haero/aerosol_process.hpp"
 
 using haero::Real;
 
@@ -21,9 +21,8 @@ namespace haero {
 
 FAerosolProcessStub::FAerosolProcessStub()
     : FAerosolProcess(
-          haero::ActivationProcess, "Aerosol process stub (Fortran)",
-          process_stub_init, process_stub_run, process_stub_finalize,
-          process_stub_set_integer_param, process_stub_set_logical_param,
-          process_stub_set_real_param) {}
+          "Aerosol process stub (Fortran)", process_stub_init, process_stub_run,
+          process_stub_finalize, process_stub_set_integer_param,
+          process_stub_set_logical_param, process_stub_set_real_param) {}
 
 }  // namespace haero

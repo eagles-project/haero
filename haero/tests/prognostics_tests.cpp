@@ -13,30 +13,15 @@ TEST_CASE("prognostics_ctor", "") {
   SECTION("single_mode_single_species") {
     // Create a set of prognostics and add some modes and species to it.
     using kokkos_device_type = ekat::KokkosTypes<ekat::DefaultDevice>;
+    // Create a test configuration and create prognostics for it.
+    auto test_config = ModalAerosolConfig::create_simple_test_config();
     int num_levels = 72;
-    int num_vert_packs = num_levels / HAERO_PACK_SIZE;
-    if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
-      num_vert_packs++;
-    }
-    kokkos_device_type::view_2d<PackType> int_aerosols("interstitial aerosols",
-                                                       1, num_vert_packs);
-    kokkos_device_type::view_2d<PackType> cld_aerosols("cloudborne aerosols", 1,
-                                                       num_vert_packs);
-    int num_gases = 1;
-    kokkos_device_type::view_2d<PackType> gases("gases", num_gases,
-                                                num_vert_packs);
-    int num_modes = 1;
-    kokkos_device_type::view_2d<PackType> int_num_mix_ratios(
-        "interstitial number mix ratios", num_modes, num_vert_packs);
-    kokkos_device_type::view_2d<PackType> cld_num_mix_ratios(
-        "cloudborne number mix ratios", num_modes, num_vert_packs);
+    Prognostics progs(test_config, num_levels);
 
-    Prognostics progs(num_modes, {1}, num_gases, num_levels, int_aerosols,
-                      cld_aerosols, gases, int_num_mix_ratios,
-                      cld_num_mix_ratios);
-    REQUIRE(progs.num_aerosol_modes() == num_modes);
-    REQUIRE(progs.num_gases() == num_gases);
+    REQUIRE(progs.num_aerosol_modes() == test_config.num_modes());
+    REQUIRE(progs.num_gases() == test_config.num_gases());
+    REQUIRE(progs.num_aerosol_populations() ==
+            test_config.num_aerosol_populations);
     REQUIRE(progs.num_levels() == num_levels);
-    REQUIRE(progs.num_aerosol_populations() == 1);
   }
 }

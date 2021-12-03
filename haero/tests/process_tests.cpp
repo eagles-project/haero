@@ -7,7 +7,6 @@
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/model.hpp"
 #include "haero/prognostics.hpp"
 #include "haero/view_pack_helpers.hpp"
 #include "kokkos/Kokkos_Core.hpp"
@@ -16,11 +15,11 @@ using namespace haero;
 
 class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
  public:
-  MyAerosolProcess(AerosolProcessType type, const std::string &name,
-                   const int num_lev, const Diagnostics::Token aer_0,
+  MyAerosolProcess(const std::string &name, const int num_lev,
+                   const Diagnostics::Token aer_0,
                    const Diagnostics::Token aer_1,
                    const Diagnostics::Token gen_0)
-      : DeviceAerosolProcess<MyAerosolProcess>(type, name),
+      : DeviceAerosolProcess<MyAerosolProcess>(name),
         num_levels(num_lev),
         aersol_0(aer_0),
         aersol_1(aer_1),
@@ -91,15 +90,14 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
 };
 
 TEST_CASE("process_tests", "aerosol_process") {
-  const int num_levels = 72;
-  const int num_gases = 1;
-  const int num_modes = 1;
-  const Real t = 2.3;
-  const Real dt = 0.15;
-  int num_vert_packs = num_levels / HAERO_PACK_SIZE;
-  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
-    num_vert_packs++;
-  }
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
+  int num_gases = aero_config.num_gases();
+  int num_modes = aero_config.num_modes();
+  int num_pops = aero_config.num_aerosol_populations;
+  int num_levels = 72;
+  Real t = 2.3;
+  Real dt = 0.15;
+  int num_vert_packs = PackInfo::num_packs(num_levels);
 
   SpeciesColumnView dev_gases;
   {
@@ -114,7 +112,7 @@ TEST_CASE("process_tests", "aerosol_process") {
     dev_gases = vectors_to_row_packed_2dview(host_gases, "gases");
   }
 
-  SpeciesColumnView dev_int_aerosols("interstitial aerosols", 1,
+  SpeciesColumnView dev_int_aerosols("interstitial aerosols", num_pops,
                                      num_vert_packs);
   {
     // example of filling a device view from a host view
@@ -125,7 +123,8 @@ TEST_CASE("process_tests", "aerosol_process") {
     Kokkos::deep_copy(dev_int_aerosols, host_int_aerosols);
   }
 
-  SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", 1, num_vert_packs);
+  SpeciesColumnView dev_cld_aerosols("cloudborne aerosols", num_pops,
+                                     num_vert_packs);
   ModeColumnView dev_int_num_mix_ratios("interstitial number mix ratios",
                                         num_modes, num_vert_packs);
   ModeColumnView dev_cld_num_mix_ratios("cloud borne number mix ratios",
@@ -148,9 +147,8 @@ TEST_CASE("process_tests", "aerosol_process") {
   Kokkos::deep_copy(dev_int_num_mix_ratios, host_int_num_mix_ratios);
   Kokkos::deep_copy(dev_cld_num_mix_ratios, host_cld_num_mix_ratios);
 
-  Prognostics progs(num_modes, {1}, num_gases, num_levels, dev_int_aerosols,
-                    dev_cld_aerosols, dev_int_num_mix_ratios,
-                    dev_cld_num_mix_ratios, dev_gases);
+  Prognostics progs(aero_config, num_levels, dev_int_aerosols, dev_cld_aerosols,
+                    dev_int_num_mix_ratios, dev_cld_num_mix_ratios, dev_gases);
 
   Kokkos::View<PackType *> temp("temperature", num_vert_packs);
   Kokkos::View<PackType *> press("pressure", num_vert_packs);
@@ -170,17 +168,7 @@ TEST_CASE("process_tests", "aerosol_process") {
   }
   Real pblh = 100.0;
   Atmosphere atmos(num_levels, temp, press, qv, ht, pdel, pblh);
-
-  std::vector<int> num_aero_species(num_modes);
-  std::vector<Mode> modes = create_mam4_modes();
-  std::map<std::string, std::vector<std::string>> mode_species =
-      create_mam4_mode_species();
-  for (int m = 0; m < num_modes; ++m) {
-    num_aero_species[m] = mode_species[modes[m].name()].size();
-  }
-
-  HostDiagnostics host_diags(num_modes, num_aero_species, num_gases,
-                             num_levels);
+  HostDiagnostics host_diags(aero_config, num_levels);
   auto aersol_0 = host_diags.create_aerosol_var("First Aerosol");
   auto aersol_1 = host_diags.create_aerosol_var("Second Aerosol");
   auto generic_0 = host_diags.create_var("Generic Aerosol");
@@ -200,14 +188,9 @@ TEST_CASE("process_tests", "aerosol_process") {
   }
 
   // Create and initialize our process.
-  AerosolProcessType type = CloudBorneWetRemovalProcess;
   const std::string name = "CloudProcess";
-  auto pp = new MyAerosolProcess(type, name, num_levels, aersol_0, aersol_1,
-                                 generic_0);
-  std::vector<AerosolSpecies> aero_species = create_mam4_aerosol_species();
-  std::vector<GasSpecies> gas_species = create_mam4_gas_species();
-  ModalAerosolConfig aero_config(modes, aero_species, mode_species,
-                                 gas_species);
+  auto pp =
+      new MyAerosolProcess(name, num_levels, aersol_0, aersol_1, generic_0);
   pp->init(aero_config);
 
   // Move the process to the device and run it.

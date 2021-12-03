@@ -4,10 +4,7 @@
 #include <map>
 #include <vector>
 
-#include "haero/aerosol_species.hpp"
-#include "haero/haero.hpp"
-#include "haero/mode.hpp"
-#include "haero/view_pack_helpers.hpp"
+#include "haero/modal_aerosol_config.hpp"
 
 namespace haero {
 
@@ -23,15 +20,18 @@ class Tendencies;
 /// * mass mixing ratios for gas species
 class Prognostics final {
  public:
-  /// Creates a Prognostics object that can store aerosol data.
-  /// This constructor accepts a number of Kokkos View objects, managed by the
-  /// host model, that store aerosol data. The Prognostics object
-  /// creates its own views for these views.
-  /// @param [in] num_aerosol_modes The number of aerosol modes in the system
-  /// @param [in] num_aerosol_species A vector of length num_aerosol_modes whose
-  ///                                 ith entry is the number of aerosol species
-  ///                                 in the ith mode
-  /// @param [in] num_gases The number of gas species present in the column
+  /// Creates a Prognostics object associated with the given configuration for a
+  /// column with the given number of vertical levels.
+  /// @param [in] config A modal aerosol configuration that defines the aerosol
+  ///                    gas species and modes present in the system of interest
+  /// @param [in] num_levels the number of vertical levels per column stored by
+  ///                        the state
+  Prognostics(const ModalAerosolConfig& config, int num_levels);
+
+  /// Creates a Prognostics object that maintains the aerosol data in the given
+  /// set of Kokkos Views (which are managed by a host model).
+  /// @param [in] config A modal aerosol configuration that defines the aerosol
+  ///                    gas species and modes present in the system of interest
   /// @param [in] num_levels the number of vertical levels per column stored by
   ///                        the state
   /// @param [in] int_aerosols A rank-2 Kokkos View:
@@ -73,10 +73,8 @@ class Prognostics final {
   ///                     are gas mass mixing ratios [kg gas/kg dry air] for a
   ///                     number of adjacent vertical levels equal to
   ///                     HAERO_PACK_SIZE (possibly padded)
-  Prognostics(int num_aerosol_modes,
-              const std::vector<int>& num_aerosol_species, int num_gases,
-              int num_levels, SpeciesColumnView int_aerosols,
-              SpeciesColumnView cld_aerosols,
+  Prognostics(const ModalAerosolConfig& config, int num_levels,
+              SpeciesColumnView int_aerosols, SpeciesColumnView cld_aerosols,
               ModeColumnView int_mode_num_mix_ratios,
               ModeColumnView cld_mode_num_mix_ratios, SpeciesColumnView gases);
 

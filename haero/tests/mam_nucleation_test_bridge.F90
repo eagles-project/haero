@@ -4,19 +4,11 @@ module mam_nucleation_test_bridge
   private
 
   ! Module functions
-  public :: nucleation_init_bridge
   public :: compute_tendencies_bridge
   public :: ternary_nuc_merik2007_bridge
   public :: binary_nuc_vehk2002_bridge
 
 contains
-
-subroutine nucleation_init_bridge()  bind(c)
-  use haero, only: modal_aero_config
-  use mam_nucleation, only: init
-  implicit none
-  call init(modal_aero_config)
-end subroutine
 
 subroutine compute_tendencies_bridge( &
   factor_bin_tern_ratenucl, &

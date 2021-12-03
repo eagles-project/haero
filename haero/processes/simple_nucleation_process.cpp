@@ -9,8 +9,7 @@
 namespace haero {
 
 SimpleNucleationProcess::SimpleNucleationProcess()
-    : DeviceAerosolProcess<SimpleNucleationProcess>(NucleationProcess,
-                                                    "SimpleNucleationProcess"),
+    : DeviceAerosolProcess<SimpleNucleationProcess>("SimpleNucleationProcess"),
       nucleation_rate_factor_(1),
       pbl_factor_(1),
       tendency_factor_(1),

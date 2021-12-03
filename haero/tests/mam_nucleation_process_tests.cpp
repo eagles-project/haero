@@ -6,7 +6,6 @@
 #include "catch2/catch.hpp"
 #include "haero/conversions.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/model.hpp"
 #include "haero/processes/mam_nucleation_process.hpp"
 
 using namespace haero;
@@ -400,22 +399,15 @@ TEST_CASE("mer07_veh02_nuc_mosaic_1box", "mam_nucleation_process") {
 // These tests exercise our transplant of the MAM nucleation process.
 TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   // We create a phony model to be used for these tests.
-  auto aero_config = create_mam4_modal_aerosol_config();
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_levels = 72;
-  int num_vert_packs = num_levels / HAERO_PACK_SIZE;
-  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
-    num_vert_packs++;
-  }
-  int num_iface_packs = (num_levels + 1) / HAERO_PACK_SIZE;
-  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels + 1)) {
-    num_iface_packs++;
-  }
-  Model* model = Model::ForUnitTests(aero_config, num_levels);
-  int num_gases = aero_config.gas_species.size();
-  int num_modes = aero_config.aerosol_modes.size();
+  int num_vert_packs = PackInfo::num_packs(num_levels);
+  int num_iface_packs = PackInfo::num_packs(num_levels + 1);
+  int num_gases = aero_config.num_gases();
+  int num_modes = aero_config.num_modes();
+  int num_aero_populations = aero_config.num_aerosol_populations;
 
   // Set up some prognosics aerosol data views‥
-  int num_aero_populations = model->num_aerosol_populations();
   SpeciesColumnView int_aerosols("interstitial aerosols", num_aero_populations,
                                  num_vert_packs);
   SpeciesColumnView cld_aerosols("cloudborne aerosols", num_aero_populations,
@@ -439,7 +431,6 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   // Test basic construction.
   SECTION("construct") {
     auto* process = new MAMNucleationProcess();
-    REQUIRE(process->type() == haero::NucleationProcess);
     REQUIRE(process->name() == "MAMNucleationProcess");
     delete process;
   }
@@ -453,23 +444,22 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
   // Test process tendencies.
   SECTION("nucleate_without_existing_aerosols") {
-    ModalAerosolConfig aero_config = create_mam4_modal_aerosol_config();
+    ModalAerosolConfig aero_config = ModalAerosolConfig::create_mam4_config();
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                                   int_num_mix_ratios,
-                                                   cld_num_mix_ratios, gases);
-    HostDiagnostics* diags = model->create_diagnostics();
+    Prognostics* progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    HostDiagnostics* diags = new HostDiagnostics(aero_config, num_levels);
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");
     diags->create_var("del_h2so4_gasprod");
     diags->create_var("del_h2so4_aeruptk");
     Tendencies* tends = new Tendencies(*progs);
 
-    AerosolProcessType type = CloudBorneWetRemovalProcess;
     auto* process = new MAMNucleationProcess(
-        type, "Nucleation Test Without Existing Aerosols", aero_config, *diags);
+        "Nucleation Test Without Existing Aerosols", aero_config, *diags);
     process->init(aero_config);
 
     // Set initial conditions.
@@ -573,19 +563,18 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   SECTION("nucleate_with_existing_aerosols") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                                   int_num_mix_ratios,
-                                                   cld_num_mix_ratios, gases);
-    HostDiagnostics* diags = model->create_diagnostics();
+    Prognostics* progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    HostDiagnostics* diags = new HostDiagnostics(aero_config, num_levels);
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");
     diags->create_var("del_h2so4_gasprod");
     diags->create_var("del_h2so4_aeruptk");
     Tendencies* tends = new Tendencies(*progs);
 
-    AerosolProcessType type = CloudBorneWetRemovalProcess;
     auto* process = new MAMNucleationProcess(
-        type, "Nucleation Test With Existing Aerosols", aero_config, *diags);
+        "Nucleation Test With Existing Aerosols", aero_config, *diags);
     process->init(aero_config);
 
     // Set initial conditions.
@@ -683,5 +672,4 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     delete tends;
     delete process;
   }
-  delete model;
 }

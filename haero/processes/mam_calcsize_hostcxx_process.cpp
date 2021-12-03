@@ -80,7 +80,7 @@ namespace haero {
 
 MAMCalcsizeHostCXXProcess::MAMCalcsizeHostCXXProcess()
     : DeviceAerosolProcess<MAMCalcsizeHostCXXProcess>(
-          CalcsizeProcess, "MAMCalcsizeHostCXXProcess") {
+          "MAMCalcsizeHostCXXProcess") {
   logger->set_pattern("MAMCalcsizeHostCXXProcess[%^%l%$]: %v");
 }
 //------------------------------------------------------------------------

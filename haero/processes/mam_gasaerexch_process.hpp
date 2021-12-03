@@ -12,11 +12,10 @@ class MAMGasAerosolExchangeProcess
  public:
   MAMGasAerosolExchangeProcess();
 
-  MAMGasAerosolExchangeProcess(const AerosolProcessType type,
-                               const std::string &name,
+  MAMGasAerosolExchangeProcess(const std::string &name,
                                const ModalAerosolConfig &config,
                                const HostDiagnostics &diagnostics)
-      : DeviceAerosolProcess(type, name) {}
+      : DeviceAerosolProcess(name) {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION

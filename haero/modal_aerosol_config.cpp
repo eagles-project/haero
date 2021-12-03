@@ -7,6 +7,13 @@
 
 namespace haero {
 
+bool ModalAerosolConfig::operator==(const ModalAerosolConfig& other) const {
+  return ((aerosol_modes == other.aerosol_modes) and
+          (aerosol_species == other.aerosol_species) and
+          (gas_species == other.gas_species) and
+          (species_for_mode_ == other.species_for_mode_));
+}
+
 // This sets mode->species indexing. Throws an exception if the mode_species
 // mapping produces an inconsistent configuration.
 void ModalAerosolConfig::index_mode_species(
@@ -66,7 +73,7 @@ std::string ModalAerosolConfig::info_string(const int tab_level) const {
   return ss.str();
 }
 
-ModalAerosolConfig create_simple_test_config() {
+ModalAerosolConfig ModalAerosolConfig::create_simple_test_config() {
   const int nmodes = 2;
   const std::vector<std::string> mode_names = {"test_mode0", "test_mode1"};
   // Mode's minimum, nominal and maximum diameters [m]

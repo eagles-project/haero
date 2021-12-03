@@ -9,6 +9,14 @@ namespace haero {
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
  public:
+  /// Creates an Atmosphere that stores a column of data with the given number
+  /// of vertical levels and the given planetary boundary height.
+  /// @param [in] num_levels the number of vertical levels per column stored by
+  ///                        the state
+  /// @param [in] pblh The column-specific planetary boundary height [m],
+  ///                  computed by the host model
+  Atmosphere(int num_levels, Real pblh);
+
   /// Creates an Atmosphere that stores unmanaged views of atmospheric column
   /// data owned and managed by the atmosphere host model.
   /// @param [in] num_levels the number of vertical levels per column stored by

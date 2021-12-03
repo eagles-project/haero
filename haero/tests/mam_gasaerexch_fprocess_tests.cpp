@@ -5,18 +5,11 @@
 #include "catch2/catch.hpp"
 #include "haero/conversions.hpp"
 #include "haero/floating_point.hpp"
-#include "haero/model.hpp"
 #include "haero/processes/mam_gasaerexch_fprocess.hpp"
 #include "haero/processes/mam_gasaerexch_process.hpp"
 #include "mam_gasaerexch_test_bridge.hpp"
 
 using namespace haero;
-
-Model* get_model_for_unit_tests(ModalAerosolConfig& aero_config) {
-  const int num_levels = 72;
-  static Model* model(Model::ForUnitTests(aero_config, num_levels));
-  return model;
-}
 
 TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
           "mam_gasaerexch_fprocess") {
@@ -43,28 +36,15 @@ TEST_CASE("mam_gasaerexch_1subarea_1gas_nonvolatile",
   //  return Real(seed) / p0;
   //};
 
-  const auto aero_species = create_mam4_aerosol_species();
-  auto aero_config = create_mam4_modal_aerosol_config();
+  auto aero_config = ModalAerosolConfig::create_mam4_config();
   const int num_levels = 72;
-  const int num_modes = aero_config.aerosol_modes.size();
-  const int num_gases = aero_config.gas_species.size();
 
-  std::vector<int> num_aero_species(num_modes);
-  std::vector<Mode> modes = create_mam4_modes();
-  std::map<std::string, std::vector<std::string>> mode_species =
-      create_mam4_mode_species();
-  for (int m = 0; m < num_modes; ++m) {
-    num_aero_species[m] = mode_species[modes[m].name()].size();
-  }
-
-  HostDiagnostics diagnostics(num_modes, num_aero_species, num_gases,
-                              num_levels);
-
-  get_model_for_unit_tests(aero_config);
-  AerosolProcessType type = CloudBorneWetRemovalProcess;
-  MAMGasAerosolExchangeProcess mam_gasaerexch_process(type, "gasaerexch Test",
-                                                      aero_config, diagnostics);
-  gasaerexch_init_bridge();
+  HostDiagnostics diagnostics(aero_config, num_levels);
+  MAMGasAerosolExchangeFProcess mam_gasaerexch_fprocess;
+  mam_gasaerexch_fprocess.init(aero_config);  // this sets up Fortran stuff
+  // MAMGasAerosolExchangeProcess mam_gasaerexch_process;("gasaerexch Test",
+  //                                                        aero_config,
+  //                                                        diagnostics);
 
   const int lund = 93;
   const Real dt = 1.0000000000000000;

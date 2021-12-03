@@ -26,10 +26,9 @@ class MAMCalcsizeHostCXXProcess final
 
   MAMCalcsizeHostCXXProcess();
 
-  MAMCalcsizeHostCXXProcess(const AerosolProcessType type,
-                            const std::string &name,
+  MAMCalcsizeHostCXXProcess(const std::string &name,
                             const ModalAerosolConfig &config)
-      : DeviceAerosolProcess<MAMCalcsizeHostCXXProcess>(type, name) {}
+      : DeviceAerosolProcess<MAMCalcsizeHostCXXProcess>(name) {}
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION
