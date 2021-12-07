@@ -43,7 +43,7 @@ class MAMCalcsizeProcess final
             const Prognostics &prognostics, const Atmosphere &atmosphere,
             const Diagnostics &diagnostics,
             const Tendencies &tendencies) const override {
-    const int nlevels = prognostics.num_levels();
+    const int nlevels = diagnostics.num_levels();
 
     std::size_t num_vert_packs = nlevels / HAERO_PACK_SIZE;
     if (num_vert_packs * HAERO_PACK_SIZE < nlevels) {
