@@ -75,7 +75,7 @@ class SimpleNucleationProcess final
   int num_modes_;
 
   /// Index of nucleation mode (into which nucleated particles are placed).
-  int nuc_mode_;
+  int inuc_mode_;
 
   // Species and population indices of SO4 aerosol within aerosol modes
   IntVector iaer_so4_, ipop_so4_;
@@ -118,7 +118,7 @@ class SimpleNucleationProcess final
         igas_h2so4_(rhs.igas_h2so4_),
         igas_nh3_(rhs.igas_nh3_),
         num_modes_(rhs.num_modes_),
-        nuc_mode_(rhs.nuc_mode_),
+        inuc_mode_(rhs.inuc_mode_),
         iaer_so4_(rhs.iaer_so4_),
         ipop_so4_(rhs.ipop_so4_),
         iaer_nh4_(rhs.iaer_nh4_),
@@ -213,36 +213,28 @@ class SimpleNucleationProcess final
     }
   }
 
+  // Given a nucleation rate and information about a critical cluster (CC) and
+  // its composition, grows particles over a time change dt to produce changes
+  // in mixing ratios (MR).
   KOKKOS_INLINE_FUNCTION
-  void apply_growth_correction_(const PackType& c_h2so4, const PackType& c_so4,
-                                const PackType& temp, PackType& J) const {
-    // Determine the mode(s) into which we place the nucleated particles.
-    // Each particle large enough to fit into a mode directly is placed
-    // into this mode--others are grown until they fit into the mode with
-    // the smallest minimum diameter.
-
-    Real initial_nuc_diam = 1;  // initial nucleus diameter [nm]
-    Real final_nuc_diam = 3;    // final, grown nucleus diameter [nm]
-    // TODO
-
-    Real mean_modal_diam = d_mean_aer_(nuc_mode_);
-
-    // Apply the correction of Kerminen and Kulmala (2002) to the
-    // nucleation rate based on their growth.
-    PackType rho_nuc;              // TODO
-    Real gamma_h2so4 = 5.0 / 3.0;  // TODO: can we do better?
-    PackType speed_h2so4 =
-        gas_kinetics::molecular_speed(temp, mw_h2so4_, gamma_h2so4);
-    PackType nuc_growth_rate = kerminen2002::nucleation_growth_rate(
-        rho_nuc, c_h2so4, speed_h2so4, mw_h2so4_);
-    static constexpr Real h2so4_accom_coeff = 0.65;
-    auto apparent_J_factor = kerminen2002::apparent_nucleation_factor(
-        c_so4, mean_modal_diam, h2so4_accom_coeff, temp, nuc_growth_rate,
-        rho_nuc, initial_nuc_diam, final_nuc_diam);
-    J *= apparent_J_factor;
-
-    // Grow nucleated particles so they can fit into the desired mode.
-    // TODO
+  void grow_particles_(const PackType& J, // nucleation rate
+                       const PackType& n_crit_h2so4, // # H2SO4 particles in CC
+                       const PackType& n_crit_nh3, // # NH3 particles in CC
+                       const PackType& r_crit, // radius of CC
+                       const Real dt, // growth period
+                       const PackType& temp, // temperature
+                       const PackType& rel_hum, // relative humidity
+                       const PackType& c_air, // air density(?!?!?!)
+                       const PackType& accom_coeff_h2so4, // accom coefficient
+                       const PackType& q_h2so4, // H2SO4 gas MR
+                       const PackType& q_nh3, // NH3 gas MR
+                       const PackType& c_so4, // SO4 number concentration
+                       PackType& dq_h2so4, // change in H2SO4 gas MR
+                       PackType& dq_nh3, // change in NH3 gas MR
+                       PackType& dq_so4, // change in SO4 aerosol MR
+                       PackType& dq_nh4, // change in NH4 aerosol MR
+                       PackType& dq_n // change in modal number MR
+                       ) const {
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -265,6 +257,9 @@ class SimpleNucleationProcess final
       }
     }
     if (not have_nucleated_aerosols) return;
+
+    // Below this logarithmic nucleation rate threshold, no nucleation occurs.
+    const Real log_J_cutoff = -13.82;
 
     // Calculate tendencies for aerosols/gases at each vertical level k.
     const int nk = atmosphere.temperature.extent(0);
@@ -297,31 +292,63 @@ class SimpleNucleationProcess final
       // Apply a correction for the planetary boundary layer if requested.
       apply_pbl_correction_(c_h2so4, h, pblh, J, r_crit, n_crit_h2so4,
                             n_crit_nh3);
-      auto n_crit = n_crit_h2so4 + n_crit_nh3;
+      // Apply the cutoff threshold to J.
+      J.set((log(J) <= log_J_cutoff), 0);
 
       // Grow the nucleated particles, applying the growth factor to J.
-      int p_so4 = ipop_so4_(nuc_mode_);  // population index for nucleated SO4.
-      const auto q_so4 =
-          prognostics.interstitial_aerosols(ipop_so4_(nuc_mode_), k);
+      int p_so4 = ipop_so4_(inuc_mode_);  // population index for nucleated SO4.
+      const auto q_so4 = prognostics.interstitial_aerosols(p_so4, k);
       auto c_so4 =
           1e6 * conversions::number_conc_from_mmr(q_so4, mw_so4_, rho_d);
-      apply_growth_correction_(c_h2so4, c_so4, temp, J);
+      PackType dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n; // mixing ratio changes
+      grow_particles_(J, n_crit_h2so4, n_crit_nh3, r_crit, dt, temp, rel_hum,
+          c_air, accom_coeff_h2so4, q_h2so4, q_nh3, c_h2so4, c_so4,
+          dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n);
 
       // Compute tendencies. All nucleated particles are placed into the
       // selected nucleation mode.
 
-      // First, compute the SO4 mass mixing ratio tendency.
-      const auto mw_dry_air = Constants::molec_weight_dry_air;
-      const auto xi_air =
-          rho_d * mw_dry_air;              // air molar concentration [kmol/m3]
-      const auto dqdt = 1e6 * J / xi_air;  // SO4 mass mixing ratio tendency
-      tendencies.interstitial_aerosols(p_so4, k) = dqdt;
+      // Number mixing ratio tendency for nucleation mode.
+      dq_n *= 1e3; // convert number MR from #/mol-air to #/kmol-air
+      auto dq_n_dt = dq_n / dt;
+      tendencies.interstitial_num_mix_ratios(inuc_mode_, k) = dq_n_dt;
 
-      // Now compute the corresponding number mixing ratio tendency.
-      const auto vol_d = 1.0;            // TODO: dry volume of aerosol cluster
-      const auto m_so4 = rho_d * vol_d;  // mass of dry air
-      auto dndt = dqdt * (m_so4 / mw_so4_);  // SO4 number mixing ratio tendency
-      tendencies.interstitial_num_mix_ratios(nuc_mode_, k) = dndt;
+      // Compute the mass mixing ratio tendencies.
+      auto mass_so4 = dq_so4 * mw_so4_; // mass xferred to SO4
+      auto mass_nh4 = dq_nh4 * mw_nh4_; // mass xferred to NH4
+      auto nuc_mass = mass_so4 + mass_nh4; // total nucleated mass
+      // fraction of mass xferred to SO4
+      auto mass_frac_so4 = max(mass_so4, 1e-35) / max(nuc_mass, 1e-35);
+      auto dm_dt = max(0, nuc_mass/dt); // nucleated mass rate
+
+      // =====================================================
+      // "Various adjustments to keep the solution reasonable"
+      // =====================================================
+
+      // Apply particle size constraints to nucleated particles.
+      static const Real pi = Constants::pi;
+      Real M = rho_so4 * pi / 6;
+      auto mass1p_lo = M * cube(d_min_aer_(inuc_mode_));
+      auto mass1p_hi = M * cube(d_max_aer_(inuc_mode_));
+      auto mass1p = dm_dt / dq_n_dt;
+      dq_n_dt.set((mass1p < mass1p_lo), dm_dt/mass1p_lo);
+      dm_dt.set((mass1p > mass1p_hi), dq_n_dt*mass1p_hi);
+
+      // "apply adjustment factor to avoid unrealistically high aitken number
+      //  concentrations in mid and upper troposphere"
+      // The adjustment factors look like they're unity at the moment, so let's
+      // skip this step.
+
+      // Zero out rates too small to consider.
+      auto dq_n_dt_lt_100 = (dq_n_dt < 100);
+      dq_n_dt.set(dq_n_dt_lt_100, 0);
+      dm_dt.set(dq_n_dt_lt_100, 0);
+
+      // Finally, diagnose the aerosol tendencies.
+      tendencies.interstitial_aerosols(p_so4, k) =
+        dm_dt * mass_frac_so4 / mw_so4_;
+      tendencies.interstitial_aerosols(p_so4, k) =
+        dm_dt * (1.0 - mass_frac_so4) / mw_so4_;
     });
   }
 

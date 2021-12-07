@@ -18,7 +18,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       igas_h2so4_(-1),
       igas_nh3_(-1),
       num_modes_(),
-      nuc_mode_(-1),
+      inuc_mode_(-1),
       iaer_so4_(),
       ipop_so4_(),
       iaer_nh4_(),
@@ -31,8 +31,8 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   num_modes_ = config.num_modes();
 
   // Find the Aitken mode, into which we place nucleated particles.
-  nuc_mode_ = config.aerosol_mode_index("aitken", false);
-  EKAT_REQUIRE_MSG(nuc_mode_ >= 0, "Aitken mode not found in aerosol config!");
+  inuc_mode_ = config.aerosol_mode_index("aitken", false);
+  EKAT_REQUIRE_MSG(inuc_mode_ >= 0, "Aitken mode not found in aerosol config!");
 
   // Set indices for species and gases.
   Kokkos::resize(iaer_so4_, num_modes_);
