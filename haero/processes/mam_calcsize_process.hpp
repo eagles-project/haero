@@ -66,7 +66,6 @@ class MAMCalcsizeProcess final
 
     for (int k_pack = 0; k_pack < num_vert_packs; k_pack++) {
       for (int imode = 0; imode < nmodes; imode++) {
-
         // species starting index in the population (q_i and q_c) arrays for a
         // mode
         const auto s_spec_idx = population_offsets(imode);
@@ -489,10 +488,8 @@ class MAMCalcsizeProcess final
   }
 
   KOKKOS_INLINE_FUNCTION
-  static PackType min_max_bounded(const PackType &drv,
-                                         const PackType &v2nmin,
-                                         const PackType &v2nmax,
-                                         const PackType &num) {
+  static PackType min_max_bounded(const PackType &drv, const PackType &v2nmin,
+                                  const PackType &v2nmax, const PackType &num) {
     return ekat::max(drv * v2nmin, ekat::min(drv * v2nmax, num));
   }
 
