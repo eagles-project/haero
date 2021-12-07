@@ -58,6 +58,18 @@ class SimpleNucleationProcess final
   /// Planetary boundary layer (PBL) method selection (default: none)
   int pbl_method_;
 
+  /// Accommodation coefficient for H2SO4 gas
+  Real accom_coeff_h2so4_;
+
+  /// Dry mass density of SO4 aerosol.
+  Real density_so4_;
+
+  // Molecular weights of H2SO4 and NH3 gases.
+  Real mw_h2so4_, mw_nh3_;
+
+  // Molecular weights of SO4 and NH4 aerosols.
+  Real mw_so4_, mw_nh4_;
+
   //----------------------------------------------------------
   //                       Bookkeeping
   //----------------------------------------------------------
@@ -92,12 +104,6 @@ class SimpleNucleationProcess final
   /// The maximum particle diameters for all aerosol modes
   RealVector d_max_aer_;
 
-  // Molecular weights of H2SO4 and NH3 gases.
-  Real mw_h2so4_, mw_nh3_;
-
-  // Molecular weights of SO4 and NH4 aerosols.
-  Real mw_so4_, mw_nh4_;
-
  public:
   /// Constructor
   SimpleNucleationProcess();
@@ -115,6 +121,12 @@ class SimpleNucleationProcess final
         tendency_factor_(rhs.tendency_factor_),
         nucleation_method_(rhs.nucleation_method_),
         pbl_method_(rhs.pbl_method_),
+        accom_coeff_h2so4_(rhs.accom_coeff_h2so4_),
+        density_so4_(rhs.density_so4_),
+        mw_h2so4_(rhs.mw_h2so4_),
+        mw_nh3_(rhs.mw_nh3_),
+        mw_so4_(rhs.mw_so4_),
+        mw_nh4_(rhs.mw_nh4_),
         igas_h2so4_(rhs.igas_h2so4_),
         igas_nh3_(rhs.igas_nh3_),
         num_modes_(rhs.num_modes_),
@@ -224,8 +236,7 @@ class SimpleNucleationProcess final
                        const Real dt, // growth period
                        const PackType& temp, // temperature
                        const PackType& rel_hum, // relative humidity
-                       const PackType& c_air, // air density(?!?!?!)
-                       const PackType& accom_coeff_h2so4, // accom coefficient
+                       const PackType& rho_air, // air density
                        const PackType& q_h2so4, // H2SO4 gas MR
                        const PackType& q_nh3, // NH3 gas MR
                        const PackType& c_so4, // SO4 number concentration
@@ -300,10 +311,12 @@ class SimpleNucleationProcess final
       const auto q_so4 = prognostics.interstitial_aerosols(p_so4, k);
       auto c_so4 =
           1e6 * conversions::number_conc_from_mmr(q_so4, mw_so4_, rho_d);
+      static const Real r_gas = Constants::r_gas;
+      auto rho_air = press/(temp * r_gas);
       PackType dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n; // mixing ratio changes
       grow_particles_(J, n_crit_h2so4, n_crit_nh3, r_crit, dt, temp, rel_hum,
-          c_air, accom_coeff_h2so4, q_h2so4, q_nh3, c_h2so4, c_so4,
-          dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n);
+          rho_air, q_h2so4, q_nh3, c_so4, dq_h2so4, dq_nh3, dq_so4, dq_nh4,
+          dq_n);
 
       // Compute tendencies. All nucleated particles are placed into the
       // selected nucleation mode.
@@ -327,7 +340,7 @@ class SimpleNucleationProcess final
 
       // Apply particle size constraints to nucleated particles.
       static const Real pi = Constants::pi;
-      Real M = rho_so4 * pi / 6;
+      Real M = density_so4_ * pi / 6;
       auto mass1p_lo = M * cube(d_min_aer_(inuc_mode_));
       auto mass1p_hi = M * cube(d_max_aer_(inuc_mode_));
       auto mass1p = dm_dt / dq_n_dt;

@@ -15,6 +15,12 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       tendency_factor_(1),
       nucleation_method_(2),
       pbl_method_(0),
+      accom_coeff_h2so4_(0.65),
+      density_so4_(1770.0), // TODO: verify dry mass density
+      mw_h2so4_(Constants::molec_weight_h2so4),
+      mw_nh3_(Constants::molec_weight_nh3),
+      mw_so4_(Constants::molec_weight_so4),
+      mw_nh4_(Constants::molec_weight_nh4),
       igas_h2so4_(-1),
       igas_nh3_(-1),
       num_modes_(),
@@ -155,6 +161,36 @@ void SimpleNucleationProcess::set_param_(const std::string &name, Real value) {
   } else if ("tendency_factor" == name) {
     if (value > 0) {
       tendency_factor_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("accom_coeff_h2so4" == name) {
+    if (value > 0) {
+      accom_coeff_h2so4_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_h2so4" == name) {
+    if (value > 0) {
+      mw_h2so4_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_nh3" == name) {
+    if (value > 0) {
+      mw_nh3_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_so4" == name) {
+    if (value > 0) {
+      mw_so4_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_nh4" == name) {
+    if (value > 0) {
+      mw_nh4_ = value;
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
     }
