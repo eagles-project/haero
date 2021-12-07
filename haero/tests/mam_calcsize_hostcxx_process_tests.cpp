@@ -3,16 +3,9 @@
 #include <memory>
 
 #include "catch2/catch.hpp"
-#include "haero/model.hpp"
 #include "haero/processes/mam_calcsize_hostcxx_process.hpp"
 
 using namespace haero;
-
-Model* get_model_for_unit_tests(const ModalAerosolConfig& aero_config,
-                                const int num_levels) {
-  static Model* model(Model::ForUnitTests(aero_config, num_levels));
-  return model;
-}
 
 // ADD COMMENTS
 TEST_CASE("mam_calcsize_hostcxx_run", "") {
@@ -23,28 +16,16 @@ TEST_CASE("mam_calcsize_hostcxx_run", "") {
    -----------------------------------------------------------------------------*/
 
   auto aero_config =
-      create_mam4_modal_aerosol_config();  // create MAM4 configuration
+      ModalAerosolConfig::create_mam4_config();  // create MAM4 configuration
 
-  static constexpr int num_levels{72};  // number of levels
-
-  std::size_t num_vert_packs = num_levels / HAERO_PACK_SIZE;
-  if (num_vert_packs * HAERO_PACK_SIZE < num_levels) {
-    num_vert_packs++;
-  }
-  std::size_t num_iface_packs = (num_levels + 1) / HAERO_PACK_SIZE;
-  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels + 1)) {
-    num_iface_packs++;
-  }
-
-  auto* model = get_model_for_unit_tests(
-      aero_config, num_levels);  // get an instance of "model"
-
-  const size_t num_gases = aero_config.gas_species.size();    // number of gases
-  const size_t num_modes = aero_config.aerosol_modes.size();  // number of modes
+  int num_gases = aero_config.num_gases();
+  int num_modes = aero_config.num_modes();
+  int num_aero_populations = aero_config.num_aerosol_populations;
+  int num_levels = 72;
+  int num_vert_packs = PackInfo::num_packs(num_levels);
+  int num_iface_packs = PackInfo::num_packs(num_levels + 1);
 
   // Set up some prognostics aerosol data views
-  const int num_aero_populations{
-      model->num_aerosol_populations()};  // total number of aerosol species
   Kokkos::View<PackType**> int_aerosols(
       "interstitial aerosols", num_aero_populations,
       num_vert_packs);  // interstitial aerosols mmr [kg/kg(of air)]
@@ -76,10 +57,10 @@ TEST_CASE("mam_calcsize_hostcxx_run", "") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto progs = model->create_prognostics(int_aerosols, cld_aerosols,
-                                           int_num_mix_ratios,
-                                           cld_num_mix_ratios, gases);
-    auto diags = model->create_diagnostics();
+    auto progs =
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    auto diags = new HostDiagnostics(aero_config, num_levels);
     auto tends = new Tendencies(*progs);
 
     // Define a pseudo-random generator [0-1) that is consistent across
