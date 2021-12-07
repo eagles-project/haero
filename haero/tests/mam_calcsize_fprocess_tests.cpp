@@ -1,7 +1,6 @@
 #include <memory>
 
 #include "catch2/catch.hpp"
-#include "haero/model.hpp"
 #include "haero/processes/mam_calcsize_fprocess.hpp"
 #include "haero/processes/mam_calcsize_process.hpp"
 

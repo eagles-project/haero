@@ -26,7 +26,21 @@ class MAMCalcsizeProcess final
   /// Default copy constructor. For use in moving host instance to device.
   KOKKOS_INLINE_FUNCTION
   MAMCalcsizeProcess(const MAMCalcsizeProcess &pp)
-      : DeviceAerosolProcess<MAMCalcsizeProcess>(pp) {}
+      : DeviceAerosolProcess<MAMCalcsizeProcess>(pp),
+        nmodes{pp.nmodes},
+        max_nspec{pp.max_nspec},
+        num_populations{pp.num_populations},
+        aitken_idx{pp.aitken_idx},
+        accum_idx{pp.accum_idx},
+        population_offsets{pp.population_offsets},
+        num_mode_species{pp.num_mode_species},
+        spec_density{pp.spec_density},
+        v2nmin_nmodes{pp.v2nmin_nmodes},
+        v2nmax_nmodes{pp.v2nmax_nmodes},
+        dgnmin_nmodes{pp.dgnmin_nmodes},
+        dgnmax_nmodes{pp.dgnmax_nmodes},
+        common_factor_nmodes{pp.common_factor_nmodes},
+        density{pp.density} {}
 
   /// MAMCalcsizeProcess objects are not assignable.
   AerosolProcess &operator=(const MAMCalcsizeProcess &) = delete;
