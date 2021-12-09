@@ -1,9 +1,9 @@
 #ifndef HAERO_MAM_CALCSIZE_PROCESS_HPP
 #define HAERO_MAM_CALCSIZE_PROCESS_HPP
 
+#include <ekat/ekat.hpp>
 #include <iomanip>
 
-#include <ekat/ekat.hpp>
 #include "haero/aerosol_process.hpp"
 
 namespace haero {
@@ -314,10 +314,8 @@ class MAMCalcsizeProcess final
      * to be zero for this mode and level
      */
     const auto drv_a_c_le_zero = drva_le_zero && drvc_le_zero;
-    dqdt.set(drv_a_c_le_zero,
-             compute_tendency(num_a, init_num_a, dtinv));
-    dqqcwdt.set(drv_a_c_le_zero, compute_tendency(
-                                     num_c, init_num_c, dtinv));
+    dqdt.set(drv_a_c_le_zero, compute_tendency(num_a, init_num_a, dtinv));
+    dqqcwdt.set(drv_a_c_le_zero, compute_tendency(num_c, init_num_c, dtinv));
 
     /* if cloud borne dry volume (drv_c) is zero(or less), the interstitial
      * number/volume == total/combined apply step 1 and 3, but skip the relaxed
@@ -494,8 +492,8 @@ class MAMCalcsizeProcess final
   }
 
   KOKKOS_INLINE_FUNCTION
-  static PackType compute_tendency(
-      const PackType &num, const PackType &num0, const PackType &dt_inverse) {
+  static PackType compute_tendency(const PackType &num, const PackType &num0,
+                                   const PackType &dt_inverse) {
     return (num - num0) * dt_inverse;
   }
 
