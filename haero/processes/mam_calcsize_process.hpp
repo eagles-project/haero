@@ -2,6 +2,7 @@
 #define HAERO_MAM_CALCSIZE_PROCESS_HPP
 
 #include <ekat/ekat.hpp>
+#include <ekat/ekat_pack.hpp>
 #include <iomanip>
 
 #include "haero/aerosol_process.hpp"
@@ -90,10 +91,8 @@ class MAMCalcsizeProcess final
         const auto nspec = num_mode_species(imode);
 
         for (int i = 0; i < max_nspec; i++)
-          density(i) =
-              std::numeric_limits<decltype(density)::value_type>::max();
-        for (int i = 0; i < nspec; i++)
-          density(i) = spec_density(population_offsets(imode) + i);
+          density(i) = i < nspec ? spec_density(population_offsets(imode) + i)
+                                 : max_real;
         auto v2nmin = v2nmin_nmodes(imode);
         auto v2nmax = v2nmax_nmodes(imode);
         const auto dgnmin = dgnmin_nmodes(imode);
@@ -285,14 +284,13 @@ class MAMCalcsizeProcess final
      */
 
     // time scale for number adjustment
-    const auto adj_tscale = std::max(seconds_in_a_day, dt);
+    const auto adj_tscale = max(seconds_in_a_day, dt);
 
     // inverse of the adjustment time scale
     const auto adj_tscale_inv = 1.0 / (adj_tscale * close_to_one);
 
     // fraction of adj_tscale covered in the current time step "dt"
-    const auto frac_adj_in_dt =
-        std::max(0.0, std::min(1.0, dt * adj_tscale_inv));
+    const auto frac_adj_in_dt = max(0.0, min(1.0, dt * adj_tscale_inv));
 
     // inverse of time step
     const auto dtinv = 1.0 / (dt * close_to_one);
@@ -500,13 +498,14 @@ class MAMCalcsizeProcess final
   KOKKOS_INLINE_FUNCTION
   static PackType min_max_bounded(const PackType &drv, const PackType &v2nmin,
                                   const PackType &v2nmax, const PackType &num) {
-    return ekat::max(drv * v2nmin, ekat::min(drv * v2nmax, num));
+    return max(drv * v2nmin, min(drv * v2nmax, num));
   }
 
  private:
   static constexpr int top_level = 0;
   static constexpr bool do_adjust = true;
   static constexpr bool do_aitacc_transfer = true;
+  static constexpr auto max_real = std::numeric_limits<Real>::max();
 
   std::size_t nmodes;
   std::size_t max_nspec;
@@ -519,7 +518,7 @@ class MAMCalcsizeProcess final
 
   // NOTE: this has been flattened just like the aero species/modes held in
   // the modal_aerosol_config.
-  IntView spec_density;
+  RealView spec_density;
 
   RealView v2nmin_nmodes;
   RealView v2nmax_nmodes;
