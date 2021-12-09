@@ -15,9 +15,16 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       tendency_factor_(1),
       nucleation_method_(2),
       pbl_method_(0),
+      accom_coeff_h2so4_(0.65),
+      density_so4_(1770.0),  // TODO: verify dry mass density
+      mw_h2so4_(Constants::molec_weight_h2so4),
+      mw_nh3_(Constants::molec_weight_nh3),
+      mw_so4_(Constants::molec_weight_so4),
+      mw_nh4_(Constants::molec_weight_nh4),
       igas_h2so4_(-1),
       igas_nh3_(-1),
       num_modes_(),
+      inuc_mode_(-1),
       iaer_so4_(),
       ipop_so4_(),
       iaer_nh4_(),
@@ -28,6 +35,10 @@ SimpleNucleationProcess::SimpleNucleationProcess()
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
   num_modes_ = config.num_modes();
+
+  // Find the Aitken mode, into which we place nucleated particles.
+  inuc_mode_ = config.aerosol_mode_index("aitken", false);
+  EKAT_REQUIRE_MSG(inuc_mode_ >= 0, "Aitken mode not found in aerosol config!");
 
   // Set indices for species and gases.
   Kokkos::resize(iaer_so4_, num_modes_);
@@ -73,7 +84,7 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     for (int g = 0; g < config.num_gases(); ++g) {
       const auto &species = config.gas_species[g];
       if (species.symbol() == "H2SO4") {
-        mu_h2so4_ = species.molecular_weight;
+        mw_h2so4_ = species.molecular_weight;
         break;
       }
     }
@@ -82,7 +93,7 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     for (int g = 0; g < config.num_gases(); ++g) {
       const auto &species = config.gas_species[g];
       if (species.symbol() == "NH3") {
-        mu_nh3_ = species.molecular_weight;
+        mw_nh3_ = species.molecular_weight;
         break;
       }
     }
@@ -94,14 +105,14 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
                    [&](auto species) { return species.symbol() == "SO4"; });
   if (iter != config.aerosol_species.end()) {
     const AerosolSpecies &species = *iter;
-    mu_so4_ = species.molecular_weight;
+    mw_so4_ = species.molecular_weight;
   }
   iter =
       std::find_if(config.aerosol_species.begin(), config.aerosol_species.end(),
                    [&](auto species) { return species.symbol() == "NH4"; });
   if (iter != config.aerosol_species.end()) {
     const AerosolSpecies &species = *iter;
-    mu_nh4_ = species.molecular_weight;
+    mw_nh4_ = species.molecular_weight;
   }
 
   // Set our region of validity based on our nucleation parameterization.
@@ -126,9 +137,9 @@ void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
     if (igas_nh3_ != -1) {
       auto xi_nh3_range = merikanto2007::valid_xi_nh3_range();  // [ppt]
       Real c_nh3_min =
-          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.first, mu_nh3_);
+          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.first, mw_nh3_);
       Real c_nh3_max =
-          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.second, mu_nh3_);
+          1e-12 * conversions::mmr_from_vmr(xi_nh3_range.second, mw_nh3_);
       rov.set_gas_bounds(igas_nh3_, c_nh3_min, c_nh3_max);
     }
   }
@@ -150,6 +161,36 @@ void SimpleNucleationProcess::set_param_(const std::string &name, Real value) {
   } else if ("tendency_factor" == name) {
     if (value > 0) {
       tendency_factor_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("accom_coeff_h2so4" == name) {
+    if (value > 0) {
+      accom_coeff_h2so4_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_h2so4" == name) {
+    if (value > 0) {
+      mw_h2so4_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_nh3" == name) {
+    if (value > 0) {
+      mw_nh3_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_so4" == name) {
+    if (value > 0) {
+      mw_so4_ = value;
+    } else {
+      EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
+    }
+  } else if ("mw_nh4" == name) {
+    if (value > 0) {
+      mw_nh4_ = value;
     } else {
       EKAT_REQUIRE_MSG(false, "Invalid " << name << ": " << value);
     }

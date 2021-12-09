@@ -29,8 +29,9 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 /// Are we building with Fortran support?
 #define HAERO_FORTRAN @HAERO_FORTRAN@
 
-/// Pack data structure for SIMD
+/// Pack data structures for SIMD
 using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
+using IntPackType = ekat::Pack<int, HAERO_PACK_SIZE>;
 using MaskType = ekat::Mask<HAERO_PACK_SIZE>;
 
 /// Device and host types
