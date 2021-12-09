@@ -229,27 +229,27 @@ class SimpleNucleationProcess final
   // its composition, grows particles over a time change dt to produce changes
   // in mixing ratios (MR).
   KOKKOS_INLINE_FUNCTION
-  void grow_particles_(const PackType& J, // nucleation rate
-                       const PackType& n_crit_h2so4, // # H2SO4 particles in CC
-                       const PackType& n_crit_nh3, // # NH3 particles in CC
-                       const PackType& r_crit, // radius of CC
-                       const Real dt, // growth period
-                       const PackType& temp, // temperature
-                       const PackType& rel_hum, // relative humidity
-                       const PackType& rho_air, // air density
-                       const PackType& q_h2so4, // H2SO4 gas MR
-                       const PackType& c_h2so4, // H2SO4 gas num concentration
-                       const PackType& q_nh3, // NH3 gas MR
-                       const PackType& c_nh3, // NH3 gas num concentration
-                       const PackType& c_so4, // SO4 number concentration
-                       const PackType& c_nh4, // NH4 number concentration
-                       PackType& rho_aero, // dry density of aerosol mass
-                       PackType& dq_h2so4, // change in H2SO4 gas MR
-                       PackType& dq_nh3, // change in NH3 gas MR
-                       PackType& dq_so4, // change in SO4 aerosol MR
-                       PackType& dq_nh4, // change in NH4 aerosol MR
-                       PackType& dq_n // change in modal number MR
-                       ) const {
+  void grow_particles_(const PackType& J,             // nucleation rate
+                       const PackType& n_crit_h2so4,  // # H2SO4 particles in CC
+                       const PackType& n_crit_nh3,    // # NH3 particles in CC
+                       const PackType& r_crit,        // radius of CC
+                       const Real dt,                 // growth period
+                       const PackType& temp,          // temperature
+                       const PackType& rel_hum,       // relative humidity
+                       const PackType& rho_air,       // air density
+                       const PackType& q_h2so4,       // H2SO4 gas MR
+                       const PackType& c_h2so4,  // H2SO4 gas num concentration
+                       const PackType& q_nh3,    // NH3 gas MR
+                       const PackType& c_nh3,    // NH3 gas num concentration
+                       const PackType& c_so4,    // SO4 number concentration
+                       const PackType& c_nh4,    // NH4 number concentration
+                       PackType& rho_aero,       // dry density of aerosol mass
+                       PackType& dq_h2so4,       // change in H2SO4 gas MR
+                       PackType& dq_nh3,         // change in NH3 gas MR
+                       PackType& dq_so4,         // change in SO4 aerosol MR
+                       PackType& dq_nh4,         // change in NH4 aerosol MR
+                       PackType& dq_n            // change in modal number MR
+  ) const {
     // Constants used in this growth parameterization (can be different than
     // those supplied by the host model!).
     // dry mass densities
@@ -265,14 +265,14 @@ class SimpleNucleationProcess final
     // Compute the wet/dry volume ratio using the simple Kohler approximation
     // for ammonium sulfate and bisulfate.
     const auto bounded_rel_hum = max(0.10, min(0.95, rel_hum));
-    const auto wet_dry_vol_ratio = 1.0 - 0.56/log(bounded_rel_hum);
+    const auto wet_dry_vol_ratio = 1.0 - 0.56 / log(bounded_rel_hum);
 
     // Determine the dry volume for the critical cluster.
     const Real mw_so4 = Constants::molec_weight_so4;
     const Real mw_so4_host = mw_so4_;
     const Real mw_nh4 = Constants::molec_weight_nh4;
-    auto V_dry_cluster = (max(c_h2so4,1.0)*mw_so4 + c_nh3*mw_nh4) /
-        (1000.0 * density_h2so4*avogadro);
+    auto V_dry_cluster = (max(c_h2so4, 1.0) * mw_so4 + c_nh3 * mw_nh4) /
+                         (1000.0 * density_h2so4 * avogadro);
 
     // Correct the dry cluster volume in the case that the host model uses
     // a different molecular weight for "sulfate".
@@ -280,7 +280,7 @@ class SimpleNucleationProcess final
     const Real pi = Constants::pi;
 
     // Compute the diameter of a particle in the critical cluster.
-    const auto d_dry_cluster = pow(6*V_dry_cluster/pi, 1.0/3.0);
+    const auto d_dry_cluster = pow(6 * V_dry_cluster / pi, 1.0 / 3.0);
 
     // Do we need to grow particles, or are they already big enough to fit into
     // the nucleation mode?
@@ -290,7 +290,7 @@ class SimpleNucleationProcess final
     d_dry_part.set(too_big, d_max_aer_(inuc_mode_));
     // TODO: We don't allow nucleated particles to be placed into other modes.
     // TODO: Technically, this differs from the box model.
-    const auto V_dry_part = (pi/6.0) * cube(d_dry_part);
+    const auto V_dry_part = (pi / 6.0) * cube(d_dry_part);
 
     // Determine the composition and density of the "grown particles." They are
     // assumed to be liquid (since critical clusters contain water) so any
@@ -298,32 +298,34 @@ class SimpleNucleationProcess final
     // grown particles have [NH4]/[SO4] = min(2, [NH3]/[H2SO4]).
     PackType n1 = 0, n2 = 0, n3 = 1;
     const auto q_nh3_le_q_h2so4 = (q_nh3 >= q_h2so4);
-    n1.set(q_nh3_le_q_h2so4, max(0, min(1, q_nh3/q_h2so4 - 1)));
+    n1.set(q_nh3_le_q_h2so4, max(0, min(1, q_nh3 / q_h2so4 - 1)));
     n2.set(q_nh3_le_q_h2so4, 1.0 - n1);
     n3.set(q_nh3_le_q_h2so4, 0);
     const auto more_h2so4 = (too_small and not q_nh3_le_q_h2so4);
     n1.set(more_h2so4, 0);
-    n2.set(more_h2so4, max(0, min(1, q_nh3/q_h2so4)));
+    n2.set(more_h2so4, max(0, min(1, q_nh3 / q_h2so4)));
     n3.set(more_h2so4, 1.0 - n2);
 
     PackType m1 = n1 * mw_ammsulf;
     PackType m2 = n2 * mw_ammbisulf;
     PackType m3 = n3 * mw_h2so4;
-    PackType rho_part = (m1 + m2 + m3) /
-      (m1/density_ammsulf + m2/density_ammbisulf + m3/density_h2so4);
+    PackType rho_part =
+        (m1 + m2 + m3) /
+        (m1 / density_ammsulf + m2 / density_ammbisulf + m3 / density_h2so4);
     rho_aero = rho_part;
     PackType m_part = rho_part * V_dry_part;
 
     // Compute the mass of aerosol produced for each mole of sulfate.
-    const PackType kg_aero_per_mol_so4 = 1e-3 * (m1 + m2 + m3) *
-        (mw_so4_host / mw_so4);
+    const PackType kg_aero_per_mol_so4 =
+        1e-3 * (m1 + m2 + m3) * (mw_so4_host / mw_so4);
 
     // Compute the [NH4]/[SO4] (molar) ratio
-    PackType nh4_to_so4_molar_ratio = 2.0*n1 + n2;
+    PackType nh4_to_so4_molar_ratio = 2.0 * n1 + n2;
 
     // Compute the fraction of the wet volume due to SO4 aerosol.
-    PackType V_frac_wet_so4 = 1.0 / (wet_dry_vol_ratio *
-        (1.0 + nh4_to_so4_molar_ratio*17.0/98.0));
+    PackType V_frac_wet_so4 =
+        1.0 /
+        (wet_dry_vol_ratio * (1.0 + nh4_to_so4_molar_ratio * 17.0 / 98.0));
 
     // Compute the correction factor for the "apparent" nucleation rate given in
     // Kerminen and Kulmala (2002) [KK2002].
@@ -331,26 +333,25 @@ class SimpleNucleationProcess final
     if (too_small.any()) {
       // Compute the condensation growth rate gr [nm/h] of new particles from
       // KK2002 eq 21 for H2SO4 uptake and correct for NH3/H2O uptake.
-      PackType speed = 14.7 * sqrt(temp); // molecular speed [m/s]
-      PackType gr = 3.0e-9 * speed * mw_h2so4 * c_so4 /
-          (rho_part * V_frac_wet_so4);
+      PackType speed = 14.7 * sqrt(temp);  // molecular speed [m/s]
+      PackType gr =
+          3.0e-9 * speed * mw_h2so4 * c_so4 / (rho_part * V_frac_wet_so4);
 
       //--------------------------------------------
       // Compute gamma from KK2002 eq 22 [nm2/m2/h]
       //--------------------------------------------
 
       // Wet diameter [nm] of grown particles with dry diameter d_dry_part.
-      PackType d_wet_grown = 1e9 * d_dry_part * pow(wet_dry_vol_ratio, 1.0/3.0);
+      PackType d_wet_grown =
+          1e9 * d_dry_part * pow(wet_dry_vol_ratio, 1.0 / 3.0);
 
       // Wet diameter [nm] of critical cluster.
-      PackType d_wet_crit = max(2.0*r_crit, 1.0);
+      PackType d_wet_crit = max(2.0 * r_crit, 1.0);
 
       // Compute gamma, neglecting the (d_mean/150)^0.048 factor.
-      PackType gamma = 0.23 *
-                       pow(d_wet_crit, 0.2) *
-                       pow(d_wet_grown/3.0, 0.075) *
-                       pow(1e-3*rho_part, -0.33) *
-                       pow(temp/293.0, -0.75);
+      PackType gamma = 0.23 * pow(d_wet_crit, 0.2) *
+                       pow(d_wet_grown / 3.0, 0.075) *
+                       pow(1e-3 * rho_part, -0.33) * pow(temp / 293.0, -0.75);
 
       // Compute the condensation sink CS' from KK2002 eqs 3-4. For the purposes
       // of this calculation, we use alpha == 1 and we use the mean free path of
@@ -359,7 +360,7 @@ class SimpleNucleationProcess final
       // NOTE: this differs from the MAM4 calculation, which uses an H2SO4
       // NOTE: uptake rate that assumes a process ordering, which we're no
       // NOTE: longer allowed to do.
-      const Real alpha = 1; // accommodation coefficient
+      const Real alpha = 1;  // accommodation coefficient
 
       // The Knudsen number for the nucleated particles is Kn = 2 * lambda / d,
       // where lambda is the mean free path of air, and d is the grown particle
@@ -375,8 +376,8 @@ class SimpleNucleationProcess final
 
       // Compute the transitional correction for the condensational mass flux
       // (Fuchs and Sutugin, 1971, or KK2002 eq 4).
-      const auto beta = (1.0 + Kn) /
-          (1.0 + 0.377*Kn + 1.33*Kn*(1 + Kn)/alpha);
+      const auto beta =
+          (1.0 + Kn) / (1.0 + 0.377 * Kn + 1.33 * Kn * (1 + Kn) / alpha);
 
       // Compute the condensation sink for the nucleated particles from KK2002
       // eq 3.
@@ -385,7 +386,7 @@ class SimpleNucleationProcess final
       // Compute eta [nm] using KK2002 eq 11.
       PackType eta = gamma * cond_sink / gr;
 
-      kk_factor = exp(eta/d_wet_grown - eta/d_wet_crit);
+      kk_factor = exp(eta / d_wet_grown - eta / d_wet_crit);
     }
 
     // The "apparent" rate of nucleation is our base rate with the correction
@@ -393,8 +394,8 @@ class SimpleNucleationProcess final
     const PackType J_apparent = kk_factor * J;
 
     // Compute the maximum possible change in the sulfate mixing ratio.
-    const PackType dq_so4_max = max(0, J_apparent*dt*m_part) /
-        (kg_aero_per_mol_so4 * rho_air);
+    const PackType dq_so4_max =
+        max(0, J_apparent * dt * m_part) / (kg_aero_per_mol_so4 * rho_air);
 
     // Check available gas vapor and compute a "reduction factor" for the
     // nucleation rate if there's not enough gas to support it.
@@ -402,15 +403,15 @@ class SimpleNucleationProcess final
     const auto not_enough_h2so4 = (dq_so4_max > q_h2so4);
     reduction_factor.set(not_enough_h2so4, q_h2so4 / dq_so4_max);
     const PackType dq_nh4_max = dq_so4_max * nh4_to_so4_molar_ratio;
-    const auto not_enough_nh4 = ((nh4_to_so4_molar_ratio >= 1e-10) and
-        (dq_nh4_max > q_nh3));
-    reduction_factor.set(not_enough_nh4, q_nh3/dq_nh4_max);
+    const auto not_enough_nh4 =
+        ((nh4_to_so4_molar_ratio >= 1e-10) and (dq_nh4_max > q_nh3));
+    reduction_factor.set(not_enough_nh4, q_nh3 / dq_nh4_max);
 
     // Compute the reduced apparent nucleation rate and the changes to the
     // gas and aerosol mixing ratios from it. Nucleation rates below a minimum
     // threshold produce no changes.
     PackType J_reduced = reduction_factor * J_apparent;
-    const Real J_min = 1e-12; // 1e-12/m3/s ~= 0.1/cc/day
+    const Real J_min = 1e-12;  // 1e-12/m3/s ~= 0.1/cc/day
     const auto J_too_low = (J_reduced <= J_min);
     dq_h2so4.set(J_too_low, 0);
     dq_nh3.set(J_too_low, 0);
@@ -427,11 +428,11 @@ class SimpleNucleationProcess final
       // One can do additional calculations to realize this case, but these
       // refinements might not be worth it, given how crude our "growth"
       // approximation is.
-      const Real clip = 0.9999; // this is cheesy
+      const Real clip = 0.9999;  // this is cheesy
       dq_h2so4.set(J_sufficient,
-                   -min(clip*q_h2so4, reduction_factor*dq_so4_max));
+                   -min(clip * q_h2so4, reduction_factor * dq_so4_max));
       dq_nh3.set(J_sufficient,
-                 -min(clip*q_nh3, dq_h2so4*nh4_to_so4_molar_ratio));
+                 -min(clip * q_nh3, dq_h2so4 * nh4_to_so4_molar_ratio));
 
       // The aerosols grow in proportion to the depleted gases.
       dq_so4.set(J_sufficient, -dq_h2so4);
@@ -440,7 +441,7 @@ class SimpleNucleationProcess final
       // Compute the change in aerosol number mixing ratio within the
       // nucleation mode.
       dq_n.set(J_sufficient,
-          1e-3*(dq_so4*mw_so4 + dq_nh4*mw_nh4)/m_part);
+               1e-3 * (dq_so4 * mw_so4 + dq_nh4 * mw_nh4) / m_part);
     }
   }
 
@@ -514,30 +515,30 @@ class SimpleNucleationProcess final
         c_nh4 = 1e6 * conversions::number_conc_from_mmr(q_nh4, mw_nh4_, rho_d);
       }
       static const Real r_gas = Constants::r_gas;
-      auto rho_air = press/(temp * r_gas);
+      auto rho_air = press / (temp * r_gas);
       auto c_nh3 =
           1e6 * conversions::number_conc_from_mmr(q_nh3, mw_nh3_, rho_d);
-      PackType dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n; // mixing ratio changes
-      PackType rho_aero; // dry density of the NH4-SO4 aerosol mass
+      PackType dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n;  // mixing ratio changes
+      PackType rho_aero;  // dry density of the NH4-SO4 aerosol mass
       grow_particles_(J, n_crit_h2so4, n_crit_nh3, r_crit, dt, temp, rel_hum,
-          rho_air, q_h2so4, c_h2so4, q_nh3, c_nh3, c_so4, c_nh4, rho_aero,
-          dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n);
+                      rho_air, q_h2so4, c_h2so4, q_nh3, c_nh3, c_so4, c_nh4,
+                      rho_aero, dq_h2so4, dq_nh3, dq_so4, dq_nh4, dq_n);
 
       // Compute tendencies. All nucleated particles are placed into the
       // selected nucleation mode.
 
       // Number mixing ratio tendency for nucleation mode.
-      dq_n *= 1e3; // convert number MR from #/mol-air to #/kmol-air
+      dq_n *= 1e3;  // convert number MR from #/mol-air to #/kmol-air
       auto dq_n_dt = dq_n / dt;
       tendencies.interstitial_num_mix_ratios(inuc_mode_, k) = dq_n_dt;
 
       // Compute the mass mixing ratio tendencies.
-      auto mass_so4 = dq_so4 * mw_so4_; // mass xferred to SO4
-      auto mass_nh4 = dq_nh4 * mw_nh4_; // mass xferred to NH4
-      auto nuc_mass = mass_so4 + mass_nh4; // total nucleated mass
+      auto mass_so4 = dq_so4 * mw_so4_;     // mass xferred to SO4
+      auto mass_nh4 = dq_nh4 * mw_nh4_;     // mass xferred to NH4
+      auto nuc_mass = mass_so4 + mass_nh4;  // total nucleated mass
       // fraction of mass xferred to SO4
       auto mass_frac_so4 = max(mass_so4, 1e-35) / max(nuc_mass, 1e-35);
-      auto dm_dt = max(0, nuc_mass/dt); // nucleated mass rate
+      auto dm_dt = max(0, nuc_mass / dt);  // nucleated mass rate
 
       // =====================================================
       // "Various adjustments to keep the solution reasonable"
@@ -549,8 +550,8 @@ class SimpleNucleationProcess final
       auto mass1p_lo = M * cube(d_min_aer_(inuc_mode_));
       auto mass1p_hi = M * cube(d_max_aer_(inuc_mode_));
       auto mass1p = dm_dt / dq_n_dt;
-      dq_n_dt.set((mass1p < mass1p_lo), dm_dt/mass1p_lo);
-      dm_dt.set((mass1p > mass1p_hi), dq_n_dt*mass1p_hi);
+      dq_n_dt.set((mass1p < mass1p_lo), dm_dt / mass1p_lo);
+      dm_dt.set((mass1p > mass1p_hi), dq_n_dt * mass1p_hi);
 
       // "apply adjustment factor to avoid unrealistically high aitken number
       //  concentrations in mid and upper troposphere"
@@ -564,9 +565,9 @@ class SimpleNucleationProcess final
 
       // Finally, diagnose the aerosol tendencies.
       tendencies.interstitial_aerosols(p_so4, k) =
-        dm_dt * mass_frac_so4 / mw_so4_;
+          dm_dt * mass_frac_so4 / mw_so4_;
       tendencies.interstitial_aerosols(p_so4, k) =
-        dm_dt * (1.0 - mass_frac_so4) / mw_so4_;
+          dm_dt * (1.0 - mass_frac_so4) / mw_so4_;
     });
   }
 

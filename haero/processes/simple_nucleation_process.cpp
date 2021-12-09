@@ -16,7 +16,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       nucleation_method_(2),
       pbl_method_(0),
       accom_coeff_h2so4_(0.65),
-      density_so4_(1770.0), // TODO: verify dry mass density
+      density_so4_(1770.0),  // TODO: verify dry mass density
       mw_h2so4_(Constants::molec_weight_h2so4),
       mw_nh3_(Constants::molec_weight_nh3),
       mw_so4_(Constants::molec_weight_so4),
