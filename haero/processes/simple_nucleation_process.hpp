@@ -6,7 +6,6 @@
 #include "haero/aerosol_process.hpp"
 #include "haero/constants.hpp"
 #include "haero/conversions.hpp"
-#include "haero/processes/kerminen2002.hpp"
 #include "haero/processes/merikanto2007.hpp"
 #include "haero/processes/vehkamaki2002.hpp"
 #include "haero/processes/wang2008.hpp"
@@ -386,23 +385,23 @@ class SimpleNucleationProcess final
       // Compute eta [nm] using KK2002 eq 11.
       PackType eta = gamma * cond_sink / gr;
 
-      kk_factor = exp(eta / d_wet_grown - eta / d_wet_crit);
+      kk_factor.set(too_small, exp(eta / d_wet_grown - eta / d_wet_crit));
     }
 
     // The "apparent" rate of nucleation is our base rate with the correction
     // factor applied.
     const PackType J_apparent = kk_factor * J;
 
-    // Compute the maximum possible change in the sulfate mixing ratio.
+    // Compute the maximum possible change in the aerosol mixing ratios.
     const PackType dq_so4_max =
         max(0, J_apparent * dt * m_part) / (kg_aero_per_mol_so4 * rho_air);
+    const PackType dq_nh4_max = dq_so4_max * nh4_to_so4_molar_ratio;
 
     // Check available gas vapor and compute a "reduction factor" for the
     // nucleation rate if there's not enough gas to support it.
     PackType reduction_factor = 1.0;
     const auto not_enough_h2so4 = (dq_so4_max > q_h2so4);
     reduction_factor.set(not_enough_h2so4, q_h2so4 / dq_so4_max);
-    const PackType dq_nh4_max = dq_so4_max * nh4_to_so4_molar_ratio;
     const auto not_enough_nh4 =
         ((nh4_to_so4_molar_ratio >= 1e-10) and (dq_nh4_max > q_nh3));
     reduction_factor.set(not_enough_nh4, q_nh3 / dq_nh4_max);
@@ -508,7 +507,7 @@ class SimpleNucleationProcess final
       const auto q_so4 = prognostics.interstitial_aerosols(p_so4, k);
       auto c_so4 =
           1e6 * conversions::number_conc_from_mmr(q_so4, mw_so4_, rho_d);
-      int p_nh4 = ipop_so4_(inuc_mode_);  // population index for nucleated NH4.
+      int p_nh4 = ipop_nh4_(inuc_mode_);  // population index for nucleated NH4.
       PackType q_nh4 = 0, c_nh4 = 0;
       if (p_nh4 != -1) {
         q_nh4 = prognostics.interstitial_aerosols(p_nh4, k);
@@ -563,11 +562,14 @@ class SimpleNucleationProcess final
       dq_n_dt.set(dq_n_dt_lt_100, 0);
       dm_dt.set(dq_n_dt_lt_100, 0);
 
-      // Finally, diagnose the aerosol tendencies.
-      tendencies.interstitial_aerosols(p_so4, k) =
-          dm_dt * mass_frac_so4 / mw_so4_;
-      tendencies.interstitial_aerosols(p_so4, k) =
-          dm_dt * (1.0 - mass_frac_so4) / mw_so4_;
+      // Finally, diagnose the aerosol and gas tendencies.
+      const auto dq_so4_dt = dm_dt * mass_frac_so4 / mw_so4_;
+      tendencies.interstitial_aerosols(p_so4, k) = dq_so4_dt;
+      tendencies.gases(igas_h2so4_, k) = -dq_so4_dt;
+
+      const auto dq_nh4_dt = dm_dt * (1.0 - mass_frac_so4) / mw_so4_;
+      tendencies.interstitial_aerosols(p_nh4, k) = dq_nh4_dt;
+      tendencies.gases(igas_nh3_, k) = -dq_nh4_dt;
     });
   }
 
