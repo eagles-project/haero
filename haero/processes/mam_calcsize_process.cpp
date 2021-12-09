@@ -37,6 +37,7 @@ void MAMCalcsizeProcess::init_(const ModalAerosolConfig &modal_aerosol_config) {
     const auto all_species = modal_aerosol_config.aerosol_species;
     for (int i = 0; i < all_species.size(); i++)
       h_spec_density(i) = all_species[i].density;
+    Kokkos::deep_copy(spec_density, h_spec_density);
   }
 
   Kokkos::resize(population_offsets, nmodes);

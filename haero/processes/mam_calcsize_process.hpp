@@ -3,6 +3,7 @@
 
 #include <iomanip>
 
+#include <ekat/ekat.hpp>
 #include "haero/aerosol_process.hpp"
 
 namespace haero {
@@ -59,10 +60,7 @@ class MAMCalcsizeProcess final
             const Tendencies &tendencies) const override {
     const int nlevels = diagnostics.num_levels();
 
-    std::size_t num_vert_packs = nlevels / HAERO_PACK_SIZE;
-    if (num_vert_packs * HAERO_PACK_SIZE < nlevels) {
-      num_vert_packs++;
-    }
+    const auto num_vert_packs = PackInfo::num_packs(nlevels);
 
     // interstitial mass and number mixing ratios
     const auto q_i = prognostics.interstitial_aerosols;
@@ -317,8 +315,8 @@ class MAMCalcsizeProcess final
      */
     const auto drv_a_c_le_zero = drva_le_zero && drvc_le_zero;
     dqdt.set(drv_a_c_le_zero,
-             update_number_mixing_ratio_tendencies(num_a, init_num_a, dtinv));
-    dqqcwdt.set(drv_a_c_le_zero, update_number_mixing_ratio_tendencies(
+             compute_tendency(num_a, init_num_a, dtinv));
+    dqqcwdt.set(drv_a_c_le_zero, compute_tendency(
                                      num_c, init_num_c, dtinv));
 
     /* if cloud borne dry volume (drv_c) is zero(or less), the interstitial
@@ -491,12 +489,12 @@ class MAMCalcsizeProcess final
     }
 
     // Update tendencies
-    dqdt = update_number_mixing_ratio_tendencies(num_a, init_num_a, dtinv);
-    dqqcwdt = update_number_mixing_ratio_tendencies(num_c, init_num_c, dtinv);
+    dqdt = compute_tendency(num_a, init_num_a, dtinv);
+    dqqcwdt = compute_tendency(num_c, init_num_c, dtinv);
   }
 
   KOKKOS_INLINE_FUNCTION
-  static PackType update_number_mixing_ratio_tendencies(
+  static PackType compute_tendency(
       const PackType &num, const PackType &num0, const PackType &dt_inverse) {
     return (num - num0) * dt_inverse;
   }
@@ -521,7 +519,7 @@ class MAMCalcsizeProcess final
   IntView population_offsets;
   IntView num_mode_species;
 
-  // NOTE: this has been linearized just like the aero species/modes held in
+  // NOTE: this has been flattened just like the aero species/modes held in
   // the modal_aerosol_config.
   IntView spec_density;
 
