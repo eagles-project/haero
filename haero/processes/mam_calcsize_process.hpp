@@ -1,6 +1,7 @@
 #ifndef HAERO_MAM_CALCSIZE_PROCESS_HPP
 #define HAERO_MAM_CALCSIZE_PROCESS_HPP
 
+#include <cmath>
 #include <ekat/ekat.hpp>
 #include <ekat/ekat_pack.hpp>
 #include <iomanip>
@@ -183,8 +184,8 @@ class MAMCalcsizeProcess final
       const auto density_idx = ispec - s_spec_idx;
       const PackType::scalar inv_density = 1.0 / density[density_idx];
       for (int k_pack = 0; k_pack < num_vert_packs; k_pack++) {
-        dryvol_a(k_pack) += max(0.0, q_i(ispec, k_pack)) * inv_density;
-        dryvol_c(k_pack) += max(0.0, q_i(ispec, k_pack)) * inv_density;
+        dryvol_a(k_pack) += ekat::max(0.0, q_i(ispec, k_pack)) * inv_density;
+        dryvol_c(k_pack) += ekat::max(0.0, q_i(ispec, k_pack)) * inv_density;
       }
     }
   }
@@ -198,7 +199,7 @@ class MAMCalcsizeProcess final
     for (int ispec = s_spec_idx; ispec < e_spec_idx; ispec++) {
       const auto density_idx = ispec - s_spec_idx;
       const PackType::scalar inv_density = 1.0 / density[density_idx];
-      dryvol += max(0.0, q_k) * inv_density;
+      dryvol += ekat::max(0.0, q_k) * inv_density;
     }
     return dryvol;
   }
@@ -284,13 +285,13 @@ class MAMCalcsizeProcess final
      */
 
     // time scale for number adjustment
-    const auto adj_tscale = max(seconds_in_a_day, dt);
+    const auto adj_tscale = fmax(seconds_in_a_day, dt);
 
     // inverse of the adjustment time scale
     const auto adj_tscale_inv = 1.0 / (adj_tscale * close_to_one);
 
     // fraction of adj_tscale covered in the current time step "dt"
-    const auto frac_adj_in_dt = max(0.0, min(1.0, dt * adj_tscale_inv));
+    const auto frac_adj_in_dt = fmax(0.0, fmin(1.0, dt * adj_tscale_inv));
 
     // inverse of time step
     const auto dtinv = 1.0 / (dt * close_to_one);
@@ -498,7 +499,7 @@ class MAMCalcsizeProcess final
   KOKKOS_INLINE_FUNCTION
   static PackType min_max_bounded(const PackType &drv, const PackType &v2nmin,
                                   const PackType &v2nmax, const PackType &num) {
-    return max(drv * v2nmin, min(drv * v2nmax, num));
+    return ekat::max(drv * v2nmin, ekat::min(drv * v2nmax, num));
   }
 
  private:
