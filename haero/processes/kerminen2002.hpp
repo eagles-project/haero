@@ -18,6 +18,61 @@ namespace haero {
 
 namespace kerminen2002 {
 
+/// This function computes the growth rate @f$GR@f$ [nm/h] for particles with
+/// the given number concentration, mass density, and molecular weight at the
+/// given temperature, using KK2002 eq 21.
+/// @param [in] c The number concentration density of nucleated particles
+/// [kg/m3]
+/// @param [in] rho The mass density of nucleated particles [kg/m3]
+/// @param [in] mw The molecular weight of the nucleated particle species
+/// [kg/mol]
+/// @param [in] temp The atmospheric temperature [K]
+KOKKOS_INLINE_FUNCTION
+PackType growth_rate(const PackType c, const PackType& rho, const Real mw,
+                     const PackType& temp) {
+  PackType speed = 14.7 * sqrt(temp);  // molecular speed [m/s]
+  return 3.0e-9 * speed * mw * c / rho;
+}
+
+/// This function computes the condensation sink @f$CS'@f$ parameter [m-2] used
+/// to compute the @f$\eta@f$ parameter for the nucleated particle growth
+/// parameterization.
+/// @param [in] rho_air The mass density of dry air [kg/m3]
+/// @param [in] d_wet_grown The wet diameter of grown particles [nm]
+/// @param [in] c_tot The total number concentration of aerosol particles [#/cc]
+KOKKOS_INLINE_FUNCTION
+PackType condensation_sink(const PackType& rho_air, const PackType& d_wet_grown,
+                           const PackType& c_tot) {
+  // For the purposes of this calculation, we use alpha == 1 and we use the mean
+  // free path of air as computed from the air density in the calculation of the
+  // Knudsen number for the nucleation mode.
+  // NOTE: this differs from the MAM4 calculation, which uses an H2SO4
+  // NOTE: uptake rate that assumes a process ordering, which we're no
+  // NOTE: longer allowed to do.
+  const Real alpha = 1;  // accommodation coefficient
+
+  // The Knudsen number for the nucleated particles is Kn = 2 * lambda / d,
+  // where lambda is the mean free path of air, and d is the grown particle
+  // diameter. The mean free path is 1/(n * sigma), where n = rho_air/mw_air
+  // is the number density of air, and sigma = pi*d^2 is the cross section
+  // of a grown particle. Putting everything togther, we have
+  //      2 * mw_air
+  // Kn = --------------- 3
+  //      pi * rho_air * d
+  // TODO: should we attempt to estimate the wet number density?
+  static const Real mw_air = Constants::molec_weight_dry_air;
+  static const Real pi = Constants::pi;
+  const PackType Kn = 2 * mw_air / (pi * rho_air * cube(d_wet_grown));
+
+  // Compute the transitional correction for the condensational mass flux
+  // (Fuchs and Sutugin, 1971, or KK2002 eq 4).
+  const auto beta =
+      (1.0 + Kn) / (1.0 + 0.377 * Kn + 1.33 * Kn * (1 + Kn) / alpha);
+
+  // Compute the condensation sink from KK2002 eq 3.
+  return 0.5 * d_wet_grown * beta * c_tot;
+}
+
 /// This function computes the @f$\eta@f$ parameter [nm] used in the conversion
 /// from the "real" (base) nucleation rate to the "apparent" nucleation rate:
 /// @f$J_{app} = J_{real} \exp\left[\frac{\eta}{d_f} -
@@ -47,15 +102,16 @@ PackType eta_parameter(const PackType& c_so4, const PackType& c_nh4,
   const auto bounded_rel_hum = max(0.10, min(0.95, rel_hum));
   const auto wet_dry_vol_ratio = 1.0 - 0.56 / log(bounded_rel_hum);
 
+  // Compute the growth rate [nm/h] of new particles.
+
   // Compute the fraction of the wet volume due to SO4 aerosol.
   PackType V_frac_wet_so4 =
       1.0 / (wet_dry_vol_ratio * (1.0 + nh4_to_so4_molar_ratio * 17.0 / 98.0));
 
   // Compute the condensation growth rate gr [nm/h] of new particles from
   // KK2002 eq 21 for H2SO4 uptake and correct for NH3/H2O uptake.
-  PackType speed = 14.7 * sqrt(temp);  // molecular speed [m/s]
-  PackType gr =
-      3.0e-9 * speed * mw_h2so4 * c_so4 / (rho_grown * V_frac_wet_so4);
+  PackType gr = growth_rate(c_so4, rho_grown, mw_h2so4, temp);
+  gr /= V_frac_wet_so4;
 
   //--------------------------------------------
   // Compute gamma from KK2002 eq 22 [nm2/m2/h]
@@ -68,35 +124,8 @@ PackType eta_parameter(const PackType& c_so4, const PackType& c_nh4,
   PackType gamma = 0.23 * pow(d_wet_crit, 0.2) * pow(d_wet_grown / 3.0, 0.075) *
                    pow(1e-3 * rho_grown, -0.33) * pow(temp / 293.0, -0.75);
 
-  // Compute the condensation sink CS' from KK2002 eqs 3-4. For the purposes
-  // of this calculation, we use alpha == 1 and we use the mean free path of
-  // air as computed from the air density in the calculation of the Knudsen
-  // number for the nucleation mode.
-  // NOTE: this differs from the MAM4 calculation, which uses an H2SO4
-  // NOTE: uptake rate that assumes a process ordering, which we're no
-  // NOTE: longer allowed to do.
-  const Real alpha = 1;  // accommodation coefficient
-
-  // The Knudsen number for the nucleated particles is Kn = 2 * lambda / d,
-  // where lambda is the mean free path of air, and d is the grown particle
-  // diameter. The mean free path is 1/(n * sigma), where n = rho_air/mw_air
-  // is the number density of air, and sigma = pi*d^2 is the cross section
-  // of a grown particle. Putting everything togther, we have
-  //      2 * mw_air
-  // Kn = --------------- 3
-  //      pi * rho_air * d
-  // TODO: should we attempt to estimate the wet number density?
-  static const Real mw_air = Constants::molec_weight_dry_air;
-  static const Real pi = Constants::pi;
-  const PackType Kn = 2 * mw_air / (pi * rho_air * cube(d_wet_grown));
-
-  // Compute the transitional correction for the condensational mass flux
-  // (Fuchs and Sutugin, 1971, or KK2002 eq 4).
-  const auto beta =
-      (1.0 + Kn) / (1.0 + 0.377 * Kn + 1.33 * Kn * (1 + Kn) / alpha);
-
-  // Compute the condensation sink for the nucleated particles from KK2002 eq 3.
-  const auto cond_sink = 0.5 * d_wet_grown * beta * (c_so4 + c_nh4);
+  // Compute the condensation sink CS' from KK2002 eqs 3-4.
+  PackType cond_sink = condensation_sink(rho_air, d_wet_grown, c_so4 + c_nh4);
 
   // Compute eta [nm] using KK2002 eq 11.
   return gamma * cond_sink / gr;
