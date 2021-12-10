@@ -267,7 +267,7 @@ class SimpleNucleationProcess final
     const Real mw_so4_host = mw_so4_;
     const Real mw_nh4 = Constants::molec_weight_nh4;
     auto V_dry_crit = (max(c_h2so4, 1.0) * mw_so4 + c_nh3 * mw_nh4) /
-                         (1000.0 * density_h2so4 * avogadro);
+                      (1000.0 * density_h2so4 * avogadro);
 
     // Correct the dry cluster volume in the case that the host model uses
     // a different molecular weight for "sulfate".
@@ -326,9 +326,9 @@ class SimpleNucleationProcess final
 
       // Compute the correction factor for the "apparent" nucleation rate
       // given in Kerminen and Kulmala (2002) [KK2002].
-      PackType kk_factor = kerminen2002::apparent_nucleation_factor(c_so4,
-        c_nh4, nh4_to_so4_molar_ratio, temp, rel_hum, d_dry_crit, d_wet_crit,
-        d_dry_grown, rho_grown, rho_air, mw_h2so4);
+      PackType kk_factor = kerminen2002::apparent_nucleation_factor(
+          c_so4, c_nh4, nh4_to_so4_molar_ratio, temp, rel_hum, d_dry_crit,
+          d_wet_crit, d_dry_grown, rho_grown, rho_air, mw_h2so4);
       J_apparent.set(too_small, kk_factor * J);
     }
 
@@ -349,7 +349,7 @@ class SimpleNucleationProcess final
     // Compute the reduced apparent nucleation rate and the changes to the
     // gas and aerosol mixing ratios from it. Nucleation rates below a minimum
     // threshold produce no changes.
-    PackType J_reduced = reduction_factor * J_apparent;
+    const PackType J_reduced = reduction_factor * J_apparent;
     const Real J_min = 1e-12;  // 1e-12/m3/s ~= 0.1/cc/day
     const auto J_too_low = (J_reduced <= J_min);
     dq_h2so4.set(J_too_low, 0);

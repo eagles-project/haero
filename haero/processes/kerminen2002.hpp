@@ -12,13 +12,18 @@ namespace haero {
 /// Kerminen and Kulmala, Analytical formulae connecting the “real” and the
 /// “apparent” nucleation rate and the nuclei number concentration for
 /// atmospheric nucleation events, Aerosol Science 33 (2002).
+///
+/// The parameterization has been adapted for systems whose aerosol particles
+/// are nucleated from H2SO4 and NH3 gases.
 
 namespace kerminen2002 {
 
-/// Computes a factor that transforms the "real" (base) nucleation rate J to
-/// an "apparent" nucleation rate that accounts for the growth of nucleated
-/// particles in critical clusters (CC) needed to place them into an
-/// appropriate nucleation mode.
+/// This function computes the @f$\eta@f$ parameter [nm] used in the conversion
+/// from the "real" (base) nucleation rate to the "apparent" nucleation rate:
+/// @f$J_{app} = J_{real} \exp\left[\frac{\eta}{d_f} -
+///                                 \frac{\eta}{d_i}\right],@f$
+/// where @f$d_i@f$ and @f$d_f@f$ are the initial (nucleated) and final (grown)
+/// wet diameters of the particles in question.
 /// @param [in] c_so4 The number concentration of SO4 aerosol [#/cc]
 /// @param [in] c_nh4 The number concentration of NH4 aerosol [#/cc]
 /// @param [in] nh4_to_so4_molar_ratio The molar ratio of NH4 to SO4 [-]
@@ -31,30 +36,26 @@ namespace kerminen2002 {
 /// @param [in] rho_air The mass density of dry air [kg/m3]
 /// @param [in] mw_h2so4 The molecular weight of H2SO4 gas [kg/mol]
 KOKKOS_INLINE_FUNCTION
-PackType apparent_nucleation_factor(const PackType& c_so4,
-                                    const PackType& c_nh4,
-                                    const PackType& nh4_to_so4_molar_ratio,
-                                    const PackType& temp,
-                                    const PackType& rel_hum,
-                                    const PackType& d_dry_crit,
-                                    const PackType& d_wet_crit,
-                                    const PackType& d_dry_grown,
-                                    const PackType& rho_grown,
-                                    const PackType& rho_air,
-                                    Real mw_h2so4) {
+PackType eta_parameter(const PackType& c_so4, const PackType& c_nh4,
+                       const PackType& nh4_to_so4_molar_ratio,
+                       const PackType& temp, const PackType& rel_hum,
+                       const PackType& d_dry_crit, const PackType& d_wet_crit,
+                       const PackType& d_dry_grown, const PackType& rho_grown,
+                       const PackType& rho_air, Real mw_h2so4) {
   // Compute the wet/dry volume ratio using the simple Kohler approximation
   // for ammonium sulfate and bisulfate.
   const auto bounded_rel_hum = max(0.10, min(0.95, rel_hum));
   const auto wet_dry_vol_ratio = 1.0 - 0.56 / log(bounded_rel_hum);
 
-    // Compute the fraction of the wet volume due to SO4 aerosol.
-  PackType V_frac_wet_so4 = 1.0 /
-      (wet_dry_vol_ratio * (1.0 + nh4_to_so4_molar_ratio * 17.0 / 98.0));
+  // Compute the fraction of the wet volume due to SO4 aerosol.
+  PackType V_frac_wet_so4 =
+      1.0 / (wet_dry_vol_ratio * (1.0 + nh4_to_so4_molar_ratio * 17.0 / 98.0));
 
   // Compute the condensation growth rate gr [nm/h] of new particles from
   // KK2002 eq 21 for H2SO4 uptake and correct for NH3/H2O uptake.
   PackType speed = 14.7 * sqrt(temp);  // molecular speed [m/s]
-  PackType gr = 3.0e-9 * speed * mw_h2so4 * c_so4 / (rho_grown * V_frac_wet_so4);
+  PackType gr =
+      3.0e-9 * speed * mw_h2so4 * c_so4 / (rho_grown * V_frac_wet_so4);
 
   //--------------------------------------------
   // Compute gamma from KK2002 eq 22 [nm2/m2/h]
@@ -63,9 +64,8 @@ PackType apparent_nucleation_factor(const PackType& c_so4,
   // Wet diameter [nm] of grown particles with dry diameter d_dry_grown.
   PackType d_wet_grown = 1e9 * d_dry_grown * pow(wet_dry_vol_ratio, 1.0 / 3.0);
 
-    // Compute gamma, neglecting the (d_mean/150)^0.048 factor.
-  PackType gamma = 0.23 * pow(d_wet_crit, 0.2) *
-                   pow(d_wet_grown / 3.0, 0.075) *
+  // Compute gamma, neglecting the (d_mean/150)^0.048 factor.
+  PackType gamma = 0.23 * pow(d_wet_crit, 0.2) * pow(d_wet_grown / 3.0, 0.075) *
                    pow(1e-3 * rho_grown, -0.33) * pow(temp / 293.0, -0.75);
 
   // Compute the condensation sink CS' from KK2002 eqs 3-4. For the purposes
@@ -99,7 +99,49 @@ PackType apparent_nucleation_factor(const PackType& c_so4,
   const auto cond_sink = 0.5 * d_wet_grown * beta * (c_so4 + c_nh4);
 
   // Compute eta [nm] using KK2002 eq 11.
-  PackType eta = gamma * cond_sink / gr;
+  return gamma * cond_sink / gr;
+}
+
+/// Computes a conversion factor that transforms the "real" (base) nucleation
+/// rate @f$J@f$ to an "apparent" nucleation rate that accounts for the growth
+/// of nucleated particles in critical clusters (CC) needed to place them into
+/// an appropriate nucleation mode. The converstion from the "real" to
+/// "apparent" nucleation rate is
+/// @f$J_{app} = J_{real} \exp\left[\frac{\eta}{d_f} -
+///                                 \frac{\eta}{d_i}\right],@f$
+/// where @f$\eta@f$ [nm]is a growth parameter computed by the parameterization,
+/// and @f$d_i@f$ and @f$d_f@f$ [nm] are the initial (nucleated) and final
+/// (grown) wet diameters of the particles in question.
+/// @param [in] c_so4 The number concentration of SO4 aerosol [#/cc]
+/// @param [in] c_nh4 The number concentration of NH4 aerosol [#/cc]
+/// @param [in] nh4_to_so4_molar_ratio The molar ratio of NH4 to SO4 [-]
+/// @param [in] temp The atmospheric temperature [K]
+/// @param [in] rel_hum The atmospheric relative humidity [-]
+/// @param [in] d_dry_crit The dry diameter of particles in a CC [nm]
+/// @param [in] d_wet_crit The wet diameter of particles in a CC [nm]
+/// @param [in] d_dry_grown The dry diameter of grown particles [nm]
+/// @param [in] rho_grown The mass density of grown particles [kg/m3]
+/// @param [in] rho_air The mass density of dry air [kg/m3]
+/// @param [in] mw_h2so4 The molecular weight of H2SO4 gas [kg/mol]
+KOKKOS_INLINE_FUNCTION
+PackType apparent_nucleation_factor(
+    const PackType& c_so4, const PackType& c_nh4,
+    const PackType& nh4_to_so4_molar_ratio, const PackType& temp,
+    const PackType& rel_hum, const PackType& d_dry_crit,
+    const PackType& d_wet_crit, const PackType& d_dry_grown,
+    const PackType& rho_grown, const PackType& rho_air, Real mw_h2so4) {
+  // Compute the wet/dry volume ratio using the simple Kohler approximation
+  // for ammonium sulfate and bisulfate.
+  const auto bounded_rel_hum = max(0.10, min(0.95, rel_hum));
+  const auto wet_dry_vol_ratio = 1.0 - 0.56 / log(bounded_rel_hum);
+
+  // Wet diameter [nm] of grown particles with dry diameter d_dry_grown.
+  PackType d_wet_grown = 1e9 * d_dry_grown * pow(wet_dry_vol_ratio, 1.0 / 3.0);
+
+  // Growth parameter eta.
+  PackType eta = eta_parameter(c_so4, c_nh4, nh4_to_so4_molar_ratio, temp,
+                               rel_hum, d_dry_crit, d_wet_crit, d_dry_grown,
+                               rho_grown, rho_air, mw_h2so4);
 
   return exp(eta / d_wet_grown - eta / d_wet_crit);
 }
