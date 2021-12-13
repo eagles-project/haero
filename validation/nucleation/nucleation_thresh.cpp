@@ -1,9 +1,7 @@
 #include <haero/processes/vehkamaki2002.hpp>
-
+#include <iostream>
 #include <skywalker.hpp>
 #include <validation.hpp>
-
-#include <iostream>
 
 // This driver computes the threshold concentration of H2SO4 for binary
 // nucleation.

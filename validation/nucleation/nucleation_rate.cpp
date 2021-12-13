@@ -1,11 +1,9 @@
 #include <haero/processes/merikanto2007.hpp>
 #include <haero/processes/vehkamaki2002.hpp>
 #include <haero/processes/wang2008.hpp>
-
-#include <validation.hpp>
-#include <skywalker.hpp>
-
 #include <iostream>
+#include <skywalker.hpp>
+#include <validation.hpp>
 
 // This driver computes the binary or ternary nucleation rate for the given
 // input.

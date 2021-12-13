@@ -73,6 +73,33 @@ PackType condensation_sink(const PackType& rho_air, const PackType& d_wet_grown,
   return 0.5 * d_wet_grown * beta * c_tot;
 }
 
+/// This function computes the growth parameter @f$\eta@f$ [nm] in terms of a
+/// given condensation growth rate GR and a given condensity sink CS'.
+/// @param [in] temp The atmospheric temperature [K]
+/// @param [in] d_dry_crit The dry diameter of particles in a CC [nm]
+/// @param [in] d_wet_crit The wet diameter of particles in a CC [nm]
+/// @param [in] d_dry_grown The dry diameter of grown particles [nm]
+/// @param [in] d_wet_grown The wet diameter of grown particles [nm]
+/// @param [in] rho_grown The mass density of grown particles [kg/m3]
+/// @param [in] cond_growth_rate The condensation growth rate GR [m/s]
+/// @param [in] cond_sink The condensation sink CS' [1/m2]
+KOKKOS_INLINE_FUNCTION
+PackType growth_parameter(const PackType& temp, const PackType& d_dry_crit,
+                          const PackType& d_wet_crit,
+                          const PackType& d_dry_grown,
+                          const PackType& d_wet_grown,
+                          const PackType& rho_grown,
+                          const PackType& cond_growth_rate,
+                          const PackType& cond_sink) {
+  // Compute gamma from KK2002 eq 22 [nm2/m2/h], neglecting the
+  // (d_mean/150)^0.048 factor.
+  PackType gamma = 0.23 * pow(d_wet_crit, 0.2) * pow(d_wet_grown / 3.0, 0.075) *
+                   pow(1e-3 * rho_grown, -0.33) * pow(temp / 293.0, -0.75);
+
+  // Compute eta [nm] using KK2002 eq 11.
+  return gamma * cond_sink / cond_growth_rate;
+}
+
 /// This function computes the growth parameter @f$\eta@f$ [nm] used in the
 /// conversion from the "real" (base) nucleation rate to the "apparent"
 /// nucleation rate:
@@ -95,9 +122,11 @@ KOKKOS_INLINE_FUNCTION
 PackType growth_parameter(const PackType& c_so4, const PackType& c_nh4,
                           const PackType& nh4_to_so4_molar_ratio,
                           const PackType& temp, const PackType& rel_hum,
-                          const PackType& d_dry_crit, const PackType& d_wet_crit,
-                          const PackType& d_dry_grown, const PackType& rho_grown,
-                          const PackType& rho_air, Real mw_h2so4) {
+                          const PackType& d_dry_crit,
+                          const PackType& d_wet_crit,
+                          const PackType& d_dry_grown,
+                          const PackType& rho_grown, const PackType& rho_air,
+                          Real mw_h2so4) {
   // Compute the wet/dry volume ratio using the simple Kohler approximation
   // for ammonium sulfate and bisulfate.
   const auto bounded_rel_hum = max(0.10, min(0.95, rel_hum));
@@ -111,25 +140,35 @@ PackType growth_parameter(const PackType& c_so4, const PackType& c_nh4,
 
   // Compute the condensation growth rate gr [nm/h] of new particles from
   // KK2002 eq 21 for H2SO4 uptake and correct for NH3/H2O uptake.
-  PackType gr = growth_rate(c_so4, rho_grown, mw_h2so4, temp);
-  gr /= V_frac_wet_so4;
-
-  //--------------------------------------------
-  // Compute gamma from KK2002 eq 22 [nm2/m2/h]
-  //--------------------------------------------
+  PackType cond_growth_rate = growth_rate(c_so4, rho_grown, mw_h2so4, temp);
+  cond_growth_rate /= V_frac_wet_so4;
 
   // Wet diameter [nm] of grown particles with dry diameter d_dry_grown.
   PackType d_wet_grown = 1e9 * d_dry_grown * pow(wet_dry_vol_ratio, 1.0 / 3.0);
-
-  // Compute gamma, neglecting the (d_mean/150)^0.048 factor.
-  PackType gamma = 0.23 * pow(d_wet_crit, 0.2) * pow(d_wet_grown / 3.0, 0.075) *
-                   pow(1e-3 * rho_grown, -0.33) * pow(temp / 293.0, -0.75);
 
   // Compute the condensation sink CS' from KK2002 eqs 3-4.
   PackType cond_sink = condensation_sink(rho_air, d_wet_grown, c_so4 + c_nh4);
 
   // Compute eta [nm] using KK2002 eq 11.
-  return gamma * cond_sink / gr;
+  return growth_parameter(temp, d_dry_crit, d_wet_crit, d_dry_grown,
+                          d_wet_grown, rho_grown, cond_growth_rate, cond_sink);
+}
+
+/// Computes the conversion factor connecting the "real" (base) nucleation rate
+/// @f$J@f$ to the "apparent" nucleation rate using the given growth parameter
+/// @f$\eta@f$ and the initial and final wet particle diameters:
+/// @f$J_{app} = J_{real} \exp\left[\frac{\eta}{d_f} -
+///                                 \frac{\eta}{d_i}\right],@f$
+/// where and @f$d_i@f$ and @f$d_f@f$ [nm] are the initial (nucleated) and final
+/// (grown) wet diameters of the particles in question.
+/// @param [in] eta The growth parameter @f$\eta@f$ [nm]
+/// @param [in] d_wet_crit The wet diameter of particles in a CC [nm]
+/// @param [in] d_wet_grown The wet diameter of grown particles [nm]
+KOKKOS_INLINE_FUNCTION
+PackType apparent_nucleation_factor(const PackType& eta,
+                                    const PackType& d_wet_crit,
+                                    const PackType& d_wet_grown) {
+  return exp(eta / d_wet_grown - eta / d_wet_crit);
 }
 
 /// Computes a conversion factor that transforms the "real" (base) nucleation
@@ -173,7 +212,7 @@ PackType apparent_nucleation_factor(
                                   rel_hum, d_dry_crit, d_wet_crit, d_dry_grown,
                                   rho_grown, rho_air, mw_h2so4);
 
-  return exp(eta / d_wet_grown - eta / d_wet_crit);
+  return apparent_nucleation_factor(eta, d_wet_crit, d_wet_grown);
 }
 
 }  // namespace kerminen2002

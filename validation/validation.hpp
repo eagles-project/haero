@@ -11,7 +11,7 @@ namespace validation {
 /// @param [in] input_file The name of the Skywalker input YAML file.
 std::string output_name(const std::string& input_file);
 
-} // namespace validation
-} // namespace haero
+}  // namespace validation
+}  // namespace haero
 
 #endif

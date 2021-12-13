@@ -17,8 +17,8 @@ std::string output_name(const std::string& input_file) {
     dot -= slash;
   }
   return std::string("haero_") + input_file.substr(slash, dot) +
-      std::string(".py");
+         std::string(".py");
 }
 
-} // namespace validation
-} // namespace haero
+}  // namespace validation
+}  // namespace haero
