@@ -32,18 +32,18 @@ place square brackets indicating units after the description of a quantity
 \subsection{Aerosol Systems}
 \labelsubsection{lib:systems}
 
-Haero's representation of aerosols relies on a set of elementary data structures
+Haero's representation of aerosols relies on a set of simple data structures
 that define the assumptions underlying a specific modal aerosol system. These
 elements are:
 
 \begin{itemize}
-  \item An {\bf Aerosol Model}: the definition of a specific modal aerosol
-        system to be simulated
   \item {\bf Modes}: statistical representations of aerosol particle populations
         organized by particle size
   \item {\bf Species}: aerosol and gas molecules of interest. Each aerosol
         species belongs to a single aerosol mode and is tracked by mass and
         number.
+  \item An {\bf Aerosol Configuration}: the collection of modes and species of
+        interested within a specific modal aerosol system to be simulated
 \end{itemize}
 
 These entities define the aerosol system of interest in Haero, and provide
@@ -131,192 +131,21 @@ each of these aspects.
 To model a specific aerosol system in Haero, we must answer some questions:
 
 \begin{itemize}
-  \item What modes are required to accurately characterize the distribution of
-        interesting particle sizes?
-  \item What species are present in the system, and in what modes are they
-        allowed to appear?
+  \item How are aerosol particle sizes represented?
+  \item What species are present in the system, and how are their sizes
+        reflected in the particle size distribution?
+  \item How is the state of an aerosol system represented mathematically?
   \item How many vertical levels are needed to resolve the profile of aerosols
         in the system?
-  \item Which physical processes are relevant to a simulation of interest?
-        Should any processes be excluded, to answer a specific question about
-        how the processes interact with each other, or because they are not
-        signficant for the system?
+  \item What are the relevent physical processes that describe the evolution
+        of the aerosol system?
 \end{itemize}
 
-Each of these decisions greatly affects the nature of the model---systems with
-different answers to these questions will have very different behavior. When we
-define a Haero simulation, we encode the answers to these decisions in an
-{\bf aerosol model} variable.
+Each of these decisions greatly affects the nature of the system---systems with
+different answers to these questions can have very different behavior. Haero
+attempts to answer these questions with a few basic data structures.
 
-\subsection{The Modal Aerosol Configuration Type}
-\labelsubsection{lib:modal_aerosol_config}
-
-Before we discuss an aerosol model itself, we have to define a representation
-for the aerosol system of interest. We distinguish between the aerosol system
-and the model in order to make more clear our assumptions about the composition
-of aerosol systems, versus our assumptions about the underlying processes that
-affect them.
-
-In the past, aerosol models have often elected to fix the modes and aerosol/gas
-species that they treat, in order to simplify code development. Haero instead
-allows a researcher to select these modes and species at runtime, allowing a
-far greater family of aerosol models to be represented.
-
-\lstset{language=[11]{c++}}
-\begin{lstlisting}
-class ModalAerosolConfig final {
-  public:
-  // Constructor -- creates a new modal aerosol configuration given all relevant
-  // data.
-  ModalAerosolConfig(const std::vector<Mode>& aerosol_modes,
-                     const std::vector<Species>& aerosol_species,
-                     const std::map<std::string, std::vector<std::string> >& mode_species,
-                     const std::vector<Species>& gas_species);
-
-  // The list of aerosol modes.
-  std::vector<Mode> aerosol_modes;
-
-  // The list of aerosol species.
-  std::vector<Species> aerosol_species;
-
-  // The list of gas species.
-  std::vector<Species> gas_species;
-
-  // The total number of distinct aerosol species populations in the
-  // model, counting appearances of one species in different modes separately.
-  int num_aerosol_populations;
-
-  // Returns the list of aerosol species associated with the model with the
-  // given mode index.
-  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
-};
-\end{lstlisting}
-
-\subsection{The Model Type}
-\labelsubsection{lib:model}
-
-In Haero, an aerosol model is defined by the \texttt{Model} type, defined within
-the \texttt{haero} namespace. Interfaces to this type are provided in both C++ and
-Fortran.
-
-What do we mean by an ``aerosol model'', exactly? One can think about it in a
-few different ways.
-
-\begin{itemize}
-  \item An aerosol model specifies the physics (or the approximations to the
-        physics, if you like) represented by an aerosol simulation.
-  \item An aerosol model stores a set of ``global variables'' that govern the
-        behavior for the simulation of a single aerosol system.
-  \item Every aerosol system is described by exactly one aerosol model.
-  \item The aerosol model encodes the assumptions made about an aerosol system's
-        representation. It does not define the state of that system at any given
-        time. In this sense, all of its information is ``timeless''.
-\end{itemize}
-
-Below is an abbreviated look at the \texttt{Model} C++ class. The source code for
-this class can be found in the \texttt{haero/model.hpp} and
-\texttt{haero/model.cpp} files within the repository. Reading through this class,
-you'll see references to various other data structures. We describe these data
-structures in subsequent sections.
-
-\lstset{language=[11]{c++}}
-\begin{lstlisting}
-class Model final {
-  public:
-
-  // Constructor -- creates a new model given a modal aerosol configuration,
-  // a set of selected processes, and a number of vertical levels per column.
-  Model(const ModalAerosolConfig& modal_aerosol_config,
-        const SelectedProcesses& selected_processes,
-        int num_levels);
-
-  // Creates a new Prognostics object that can be used with this Model, given
-  // a set of views representing aerosol data managed by a host model.
-  Prognostics* create_prognostics(Kokkos::View<PackType**>& int_aerosols,
-                                  Kokkos::View<PackType**>& cld_aerosols,
-                                  Kokkos::View<PackType**>& gases,
-                                  Kokkos::View<PackType**>& modal_num_concs) const;
-
-  // Creates a set of diagnostic variables for use with this model.
-  Diagnostics* create_diagnostics() const;
-
-  // Runs the (prognostic) aerosol process of the given type, computing any
-  // relevant tendencies.
-  void run_process(ProcessType type,
-                   Real t, Real dt,
-                   const Prognostics& prognostics,
-                   const Atmosphere& atmosphere,
-                   const Diagnostics& diagnostics,
-                   Tendencies& tendencies);
-
-  // Runs the (diagnostic) aerosol process of the given type, updating all
-  // relevant diagnostic variables in place.
-  void update_diagnostics(ProcessType type, Real t,
-                          const Prognostics& prognostics,
-                          const Atmosphere& atmosphere,
-                          Diagnostics& diagnostics);
-
-  // Returns the selected set of processes associated with this aerosol model.
-  const SelectedProcesses& selected_processes() const;
-
-  // Returns the modal aerosol configuration associated with this aerosol model.
-  const ModalAerosolConfig& modal_aerosol_config() const;
-
-  // Returns the total number of distinct aerosol species populations in the
-  // model, counting appearances of one species in different modes separately.
-  int num_aerosol_populations() const;
-
-  // Returns the number of vertical levels (cells) in each atmospheric column.
-  int num_levels() const;
-};
-\end{lstlisting}
-
-In C++, you can create as many \texttt{Model} variables as you like, though
-there's usually no reason to do so, unless you're running an ensemble of
-simulations whose underlying assumptions differ beyond their initial states.
-
-Haero's Fortran interface provides a \texttt{model\_t} derived type with a subset
-of the information available to the C++ \texttt{Model} type. The Fortran
-interface doesn't have ``feature parity'' with its C++ counterpart. In fact,
-it really only provides information equivalent to that in the
-\texttt{ModalAerosolConfig} C++ class. Nevertheless, we argue that it provides
-ample information for implementing aerosol processes in Fortran.
-
-\lstset{language=[03]{fortran}}
-\begin{lstlisting}
-type :: model_t
-  ! The aerosol modes in the model, in indexed order.
-  type(mode_t), dimension(:), allocatable :: modes
-  ! The number of modes in the model. Equal to size(modes).
-  integer :: num_modes
-  ! The number of actual species that exist within each mode.
-  integer, dimension(:), allocatable :: num_mode_species
-  ! population index offsets for modes.
-  integer, dimension(:), allocatable :: population_offsets
-  ! The total number of distinct aerosol populations.
-  integer :: num_populations
-  ! The aerosol species within each mode. Indexed as (mode, species).
-  type(species_t), dimension(:,:), allocatable :: aero_species
-  ! The gas species in the model.
-  type(species_t), dimension(:), allocatable :: gas_species
-  ! The number of vertical levels in each column.
-  integer :: num_levels
-contains
-  ! Given a population index, compute mode and species indices
-  procedure :: get_mode_and_species => m_get_mode_and_species
-end type
-\end{lstlisting}
-
-In Fortran, a single global \texttt{model\_t} variable, \texttt{model}, is provided
-within the \texttt{haero} module. This variable is automatically populated with
-data by Haero before any work is done, so there's no need to create it or
-modify it yourself. {\em Do not attempt to change any data within
-this global variable}.
-
-Because the model definition is provided as a global variable, only one instance
-of an aerosol model is available to Fortran implementations of aerosol processes.
-
-\subsection{The Mode Type}
+\subsection{Particle Sizes: the Mode Type}
 \labelsubsection{lib:modes}
 
 We've seen how the dynamics of aerosols can be represented mathematically
@@ -370,12 +199,11 @@ The \texttt{min\_diameter} and \texttt{max\_diameter} member variables should th
 Instead they represent the boundaries beyond which particles are better described by a different mode.  
 These minimum and maximum sizes are used to trigger redistribution of particles' mass and number mixing ratios between modes.
 
-
 In principle, a Haero calculation can support any number of modes, but care
 must be taken to ensure that the modal assumptions remain valid, and that
 the parametrizations selected can accommodate the given modes.
 
-\subsection{The Species Type}
+\subsection{Aerosol Species: the Species Type}
 \labelsubsection{lib:species}
 
 Each aerosol mode consists of one or more particle species. Additionally,
@@ -423,13 +251,61 @@ type :: species_t
 end type
 \end{lstlisting}
 
-\section{State Variables in Haero}
+\subsection{Species and Their Sizes: the Modal Aerosol Configuration Type}
+\labelsubsection{lib:modal_aerosol_config}
+
+We have data types that express particle sizes and particle species. Now we
+need something that relates these two pieces of information. In other words,
+we need a way to express how particles of a specific aerosol species are allowed
+to grow and shrink, and how that activity is reflected in our representation
+of particle sizes.
+
+In the past, aerosol models have often elected to fix the modes and aerosol/gas
+species that they treat, in order to simplify code development. Haero instead
+allows a researcher to select these modes and species at runtime, allowing a
+far greater family of aerosol models to be represented.
+
+\lstset{language=[11]{c++}}
+\begin{lstlisting}
+class ModalAerosolConfig final {
+  public:
+  // Constructor -- creates a new modal aerosol configuration given all relevant
+  // data.
+  ModalAerosolConfig(const std::vector<Mode>& aerosol_modes,
+                     const std::vector<Species>& aerosol_species,
+                     const std::map<std::string, std::vector<std::string> >& mode_species,
+                     const std::vector<Species>& gas_species);
+
+  // The list of aerosol modes.
+  std::vector<Mode> aerosol_modes;
+
+  // The list of aerosol species.
+  std::vector<Species> aerosol_species;
+
+  // The list of gas species.
+  std::vector<Species> gas_species;
+
+  // The total number of distinct aerosol species populations in the
+  // system, counting appearances of one species in different modes separately.
+  int num_aerosol_populations;
+
+  // Returns the list of aerosol species associated with the system with the
+  // given mode index.
+  std::vector<Species> aerosol_species_for_mode(int mode_index) const;
+};
+\end{lstlisting}
+
+Once you have a modal aerosol configuration, you can answer the first two
+questions at the beginning of this section. Next, we look at how the state of
+an aerosol system is represented mathematically.
+
+\subsection{Aerosol and Atmospheric State: Container Types}
 \labelsection{lib:state}
 
-Once a model variable has been created that defines an aerosol system, you can
-create state variables for that system. The state of an aerosol system is
-defined by the following prognostic variables within the \texttt{Prognostics} data
-structure:
+Once you've described the constituents of your aerosol system with a modal
+aerosol configuration, you can create state variables for that system. The state
+of an aerosol system is defined by the following prognostic variables within the
+\texttt{Prognostics} data structure:
 
 \begin{itemize}
   \item {\bf aerosol modal mass mix fraction} $q_{m,s}$ [kg aerosol species $s$ /kg dry air]:
@@ -446,39 +322,16 @@ like pressure and temperature) greatly affects the behavior of aerosols, so
 this atmosphere state information is made available in the \texttt{Atmosphere} data
 structure.
 
-Finally, the model possesses a set of diagnostic variables, stored in the
-\texttt{Diagnostics} data structure, that depend on its selected aerosol processes
+Finally, the system can use a set of diagnostic variables, stored in the
+\texttt{Diagnostics} data structure, that depend on a set of aerosol processes
 (which are discussed in a later section).
 
-How does one create a set of state variables given a model variable? Recall that
-the \texttt{Model} C++ class provides the following two functions, which you can
-call directly yourself, given a pointer to a C++ variable called \texttt{model}:
+The \texttt{Prognostics}, \texttt{Atmosphere}, and \texttt{Diagnostics}
+containers store state data in multidimensional arrays allocated in C++ but made
+available to both C++ and Fortran. The data for each array is stored within a
+Kokkos \texttt{View}.
 
-\begin{itemize}
-  \item \texttt{model->create\_prognostics(...)}: returns a pointer to a new C++
-    \texttt{Prognostics} container, given views that store aerosol prognostics
-  \item \texttt{model->create\_diagnostics()}: returns a pointer to a new C++
-    \texttt{Diagnostics} container
-\end{itemize}
-
-These functions don't take any parameters---they just use the information within
-the model variable. A host model is responsible for creating its own
-\texttt{Atmosphere} objects, because it manages the memory within the underlying
-views.
-
-By the way, you don't always have to call these functions yourself. State
-variables are automatically created if you're using the Haero driver or
-implementing a parameterization in C++ or Fortran. However, if you're using
-Haero within your own host model, or if you're writing a unit test for your
-parameterization, you must call these functions to obtain containers for your
-aerosol model's state data.
-
-The \texttt{Prognostics}, \texttt{Atmosphere}, and \texttt{Diagnostics} containers
-store state data in multidimensional arrays allocated in C++ but made available
-to both C++ and Fortran. The data for each array is stored within a Kokkos
-\texttt{View}.
-
-\subsection*{Kokkos Views}
+\subsection*{Digression: Kokkos Views as Multidimensional Arrays}
 \labelsubsection{lib:views}
 
 The C++ programming language has lots of features, but remarkably it includes no
@@ -494,7 +347,7 @@ column-major indexing. So for a rank-3 view \texttt{f} that you access in C++
 as \texttt{f(i,j,k)}, you would access the corresponding array in Fortran as
 \texttt{f(k,j,i)}.
 
-\subsubsection*{Digression: Packs and Vectorization}
+\subsubsection*{Packs and Vectorization}
 \labelsubsubsection{lib:packs}
 
 Haero uses Views that consist of \texttt{Pack} objects instead of floating
@@ -549,8 +402,8 @@ described below make use of these named types.
 \subsection{Prognostics Type}
 \labelsubsection{lib:prognostics}
 
-The \texttt{Prognostics} C++ class provides access to the prognostic variables
-that define aerosols in a modal description. Here's the C++ class interface
+The \texttt{Prognostics} C++ class provides access to prognostic variables
+that describe aerosols in a modal description. Here's the C++ class interface
 (abbreviated for brevity---see the full interface in \texttt{haero/prognostics.hpp}):
 
 \lstset{language=[11]{c++}}
@@ -632,118 +485,113 @@ is managed by the host model.
 {\em This data structure is new, so we'll be adding and changing these state
 variables a bit in the near future.}
 
-%\subsection{Diagnostics Functions}
-%\labelsubsection{lib:diagnostics}
-%
-%The \texttt{Diagnostics} C++ class stores a dynamically-determined set of
-%diagnostic variables that correspond to the specific parameterizations available
-%to the aerosol model that created it. The variables are identified by unique
-%tokens that can be retrieved by name.
-%
-%\lstset{language=[11]c++}
-%\begin{lstlisting}
-%class Diagnostics final {
-%  public:
-%  // Returns the number of aerosol modes in the system.
-%  int num_aerosol_modes() const;
-%
-%  // Returns the number of aerosol species in the mode with the given index.
-%  int num_aerosol_species(int mode_index) const;
-%
-%  // Returns the number of gas species in the system.
-%  int num_gas_species() const;
-%
-%  // Returns the number of vertical levels in the system.
-%  int num_levels() const;
-%
-%  // Returns a unique token that identifies the given (non-modal) variable
-%  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-%  Token find_var(const std::string& name) const;
-%
-%  // Returns the view storing the diagnostic variable with a name corresponding
-%  // to the given token. If such a variable does not exist, this throws an
-%  // exception.
-%  ColumnView& var(const Token token);
-%
-%  // Returns a unique token that identifies the given modal aerosol variable
-%  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-%  Token find_aerosol_var(const std::string& name) const;
-%
-%  // Returns the view storing the modal aerosol diagnostic variable with a name
-%  // corresponding to the given token. If such a variable does not exist, this
-%  // throws an exception.
-%  SpeciesColumnView& aerosol_var(const Token token);
-%
-%  // Returns a unique token that identifies the given gas variable within this
-%  // object. Returns VAR_NOT_FOUND if this variable does not exist.
-%  Token find_gas_var(const std::string& name) const;
-%
-%  // Returns the view storing the gas diagnostic variable with a name
-%  // corresponding to the given token. If such a variable does not exist, this
-%  // throws an exception.
-%  SpeciesColumnView& gas_var(const Token token);
-%
-%  // Returns a unique token that identifies the given modal variable within
-%  // this object. Returns VAR_NOT_FOUND if this variable does not exist.
-%  Token find_modal_var(const std::string& name) const;
-%
-%  // Returns the view storing the mode-specific diagnostic variable with a name
-%  // corresponding to the given token. If such a variable does not exist, this
-%  // throws an exception.
-%  ModeColumnView& modal_var(const Token token);
-%};
-%\end{lstlisting}
-%
-%The Fortran version of \texttt{Diagnostics}, like its \texttt{Prognostics} counterpart,
-%uses bound procedures to provide access to its array data. Each one of these
-%bound procedures accepts a single dummy argument: the name of the desired
-%diagnostic variable. This Fortran pseudocode illustrates the interface for the
-%\texttt{Diagnostics} derived-type \texttt{diagnostics\_t}.
-%
-%\lstset{language=[03]{fortran}}
-%\begin{lstlisting}
-%  type :: diagnostics_t
-%  contains
-%    ! Returns a token that can be used to retrieve a variable with the given
-%    ! name from a diagnostics object, or var_not_found (-1) if no such variable
-%    ! exists.
-%    procedure :: find_var(name) -> token
-%    ! Provides access to the given (non-modal) variable in the given
-%    ! diagnostics object, given its token
-%    procedure :: var(token) -> array pointer
-%    ! Returns a token that can be used to retrieve an aerosol variable with the
-%    ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
-%    ! variable exists.
-%    procedure :: find_aerosol_var(name) -> token
-%    ! Provides access to the given (non-modal) variable in the given
-%    ! diagnostics object, given its token.
-%    procedure :: aerosol_var(token) -> array pointer
-%    ! Returns a token that can be used to retrieve a gas variable with the
-%    ! given name from a diagnostics object, or var_not_found (-1) if no such
-%    ! variable exists.
-%    procedure :: find_gas_var(name) -> token
-%    ! Provides access to the given gas variable in the given diagnostics object,
-%    ! given its token.
-%    procedure :: gas_var(token) -> array pointer
-%    ! Returns a token that can be used to retrieve a modal variable with the
-%    ! given name from a diagnostics object, or var_not_found (-1) if no such
-%    ! variable exists.
-%    procedure :: has_modal_var(name) -> token
-%    ! Provides access to the given modal variable in the given
-%    ! diagnostics object, given its token.
-%    procedure :: modal_var(token) -> array pointer
-%  end type
-%\end{lstlisting}
-%
-%At this point, you might wonder how a \texttt{Diagnostics} variable knows which
-%variables it needs. In fact, the \texttt{Diagnostics} class provides functions for
-%creating variables that it needs. The C++ \texttt{Model} variable used to create
-%a \texttt{Diagnostics} variable knows this information, and automatically calls
-%these functions for you.
-%
-%For examples of how the \texttt{Prognostics}, \texttt{Atmosphere}, and
-%\texttt{Diagnostics} types are used in practice, take a look at one of the
-%existing aerosol process implementations.
+The \texttt{Diagnostics} C++ class stores a dynamically-determined set of
+diagnostic variables that correspond to the specific parameterizations available
+to a specific aerosol system. The variables are identified by unique tokens that
+can be retrieved by name.
+
+\lstset{language=[11]c++}
+\begin{lstlisting}
+class Diagnostics final {
+  public:
+  // Returns the number of aerosol modes in the system.
+  int num_aerosol_modes() const;
+
+  // Returns the number of aerosol species in the mode with the given index.
+  int num_aerosol_species(int mode_index) const;
+
+  // Returns the number of gas species in the system.
+  int num_gas_species() const;
+
+  // Returns the number of vertical levels in the system.
+  int num_levels() const;
+
+  // Returns a unique token that identifies the given (non-modal) variable
+  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_var(const std::string& name) const;
+
+  // Returns the view storing the diagnostic variable with a name corresponding
+  // to the given token. If such a variable does not exist, this throws an
+  // exception.
+  ColumnView& var(const Token token);
+
+  // Returns a unique token that identifies the given modal aerosol variable
+  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_aerosol_var(const std::string& name) const;
+
+  // Returns the view storing the modal aerosol diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
+  // throws an exception.
+  SpeciesColumnView& aerosol_var(const Token token);
+
+  // Returns a unique token that identifies the given gas variable within this
+  // object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_gas_var(const std::string& name) const;
+
+  // Returns the view storing the gas diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
+  // throws an exception.
+  SpeciesColumnView& gas_var(const Token token);
+
+  // Returns a unique token that identifies the given modal variable within
+  // this object. Returns VAR_NOT_FOUND if this variable does not exist.
+  Token find_modal_var(const std::string& name) const;
+
+  // Returns the view storing the mode-specific diagnostic variable with a name
+  // corresponding to the given token. If such a variable does not exist, this
+  // throws an exception.
+  ModeColumnView& modal_var(const Token token);
+};
+\end{lstlisting}
+
+The Fortran version of \texttt{Diagnostics}, like its \texttt{Prognostics} counterpart,
+uses bound procedures to provide access to its array data. Each one of these
+bound procedures accepts a single dummy argument: the name of the desired
+diagnostic variable. This Fortran pseudocode illustrates the interface for the
+\texttt{Diagnostics} derived-type \texttt{diagnostics\_t}.
+
+\lstset{language=[03]{fortran}}
+\begin{lstlisting}
+  type :: diagnostics_t
+  contains
+    ! Returns a token that can be used to retrieve a variable with the given
+    ! name from a diagnostics object, or var_not_found (-1) if no such variable
+    ! exists.
+    procedure :: find_var(name) -> token
+    ! Provides access to the given (non-modal) variable in the given
+    ! diagnostics object, given its token
+    procedure :: var(token) -> array pointer
+    ! Returns a token that can be used to retrieve an aerosol variable with the
+    ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: find_aerosol_var(name) -> token
+    ! Provides access to the given (non-modal) variable in the given
+    ! diagnostics object, given its token.
+    procedure :: aerosol_var(token) -> array pointer
+    ! Returns a token that can be used to retrieve a gas variable with the
+    ! given name from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: find_gas_var(name) -> token
+    ! Provides access to the given gas variable in the given diagnostics object,
+    ! given its token.
+    procedure :: gas_var(token) -> array pointer
+    ! Returns a token that can be used to retrieve a modal variable with the
+    ! given name from a diagnostics object, or var_not_found (-1) if no such
+    ! variable exists.
+    procedure :: has_modal_var(name) -> token
+    ! Provides access to the given modal variable in the given
+    ! diagnostics object, given its token.
+    procedure :: modal_var(token) -> array pointer
+  end type
+\end{lstlisting}
+
+At this point, you might wonder how a \texttt{Diagnostics} variable knows which
+variables it needs. In fact, the \texttt{Diagnostics} class provides functions
+for creating variables that it needs when it needs them.
+
+For examples of how the \texttt{Prognostics}, \texttt{Atmosphere}, and
+\texttt{Diagnostics} types are used in practice, take a look at one of the
+existing aerosol process implementations.
 
 \section{Aerosol Processes in Haero}
 \labelsection{lib:processes}
@@ -822,14 +670,14 @@ class AerosolProcess {
  public:
 
   // Constructor, called by all AerosolProcess subclasses.
-  AerosolProcess(AerosolProcessType type, const std::string& name):
-    type_(type), name_(name) {}
+  explicit AerosolProcess(const std::string& name):
+    name_(name) {}
 
   // Destructor.
   virtual ~AerosolProcess() {}
 
   // Initializes the process with the aerosol configuration.
-  void init(const ModalAerosolConfig& modal_aerosol_config);
+  void init(const ModalAerosolConfig& config);
 
   // Runs the process at the given time with the given aerosol data.
   void run(Real t, Real dt, const Prognostics& prognostics,
@@ -844,8 +692,8 @@ class AerosolProcess {
  protected:
 
   // Override this method if your aerosol process needs to be initialized
-  // with information about the model. The default implementation does nothing.
-  virtual void init_(const ModalAerosolConfig& modal_aerosol_config) {}
+  // with information about the system. The default implementation does nothing.
+  virtual void init_(const ModalAerosolConfig& config) {}
 
   // Override this method to implement the aerosol process using the specific
   // parameterization for the subclass.
@@ -871,24 +719,8 @@ Additionally, one or more of the \texttt{set\_param\_} methods can be overridden
 to support process-specific parameters. These parameters should be documented
 with the process.
 
-The constructor accepts a process type that indicates what stage of the aerosol
-life cycle it represents. An \texttt{AerosolProcessType} data structure is an
-``enumerated type'' that enumerates the various stages:
-
-\begin{lstlisting}
-// This enumerated type lists all relevant physical aerosol processes.
-enum AerosolProcessType {
-  ActivationProcess,
-  CloudBorneWetRemovalProcess,
-  CoagulationProcess,
-  CondensationProcess,
-  DryDepositionProcess,
-  EmissionsProcess,
-  InterstitialWetRemovalProcess,
-  NucleationProcess,
-  ResuspensionProcess
-};
-\end{lstlisting}
+The constructor accepts a single argument: a string containing the name of the
+aerosol process. This can be helpful for debugging.
 
 Let's explore how we might implement an aerosol process in C++ and in Fortran.
 Here we describe only the steps needed to implement the process itself. You must
@@ -920,8 +752,6 @@ To create a C++ implemention for an aerosol process:
         destructor, the \texttt{init} function, and the \texttt{run} function for
         your subclass. This lives alongside the header file you just created.
         See \texttt{haero/processes/MAMNucleationProcess.cpp} for an example.
-        In particular, select the \texttt{AerosolProcessType} value that
-        reflects the proper stage of the aerosol lifecycle for your process.
   \item Add your source file to the set of source files in the
         \texttt{PROCESS\_SOURCES} variable in \texttt{haero/processes/CMakeLists.txt}.
   \item Write one or more tests for your new aerosol process.
@@ -937,7 +767,7 @@ implement the same functionality as their C++ counterparts:
 
 \begin{lstlisting}
 module <module_name>
-  use haero, only: wp, model_t, prognostics_t, atmosphere_t, &
+  use haero, only: wp, modal_aerosol_config_t, prognostics_t, atmosphere_t, &
                    diagnostics_t, tendencies_t
   ...
   implicit none
@@ -958,20 +788,19 @@ module <module_name>
 
 contains
 
-subroutine init(model)
+subroutine init(config)
   implicit none
 
   ! Arguments
-  type(model_t), intent(in) :: model
+  type(modal_aerosol_config_t), intent(in) :: config
 
   ...
 end subroutine
 
-subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
+subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
   implicit none
 
   ! Arguments
-  type(model_t), intent(in)         :: model
   real(wp), value, intent(in)       :: t
   real(wp), value, intent(in)       :: dt
   type(prognostics_t), intent(in)   :: prognostics
@@ -982,11 +811,8 @@ subroutine run(model, t, dt, prognostics, atmosphere, diagnostics, tendencies)
   ...
 end subroutine
 
-subroutine finalize(model)
+subroutine finalize()
   implicit none
-
-  ! Arguments
-  type(model_t), intent(in) :: model
 
   ...
 end subroutine
@@ -1068,28 +894,6 @@ The declaration takes three arguments:
 The build system automatically generates a C++ class for the Fortran module that
 allows the process to be used in a Haero simulation. The name of this C++ class
 is important for exposing it to the Haero library.
-
-\subsubsection{Making your aerosol process available to Haero}
-
-So you've implemented your aerosol process in C++ or Fortran. How do you
-make it available to the Haero library? There are a few more things you need to
-do before Haero can construct a model that includes your new process type:
-
-\begin{enumerate}
-  \item Edit the \texttt{SelectedProcesses} struct in
-        \texttt{haero/selected\_processes.hpp}, and add a field to the enumerated
-        type that corresponds to the \texttt{ProcessType} value you selected in
-        Step 2 of your implementation procedure above.
-  \item Edit the \texttt{select\_aerosol\_process} function in
-        \texttt{haero/selected\_processes.cpp} to create a new pointer to the C++
-        class that implements or wraps your process type. You don't have to
-        \texttt{\#include} the C++ header file for your process--it should be
-        included for you in the generated file \texttt{available\_processes.hpp}.
-  \item Update the driver YAML input parser to add an option for a user
-        to select your new process.
-  \item Update this document with a description of your process in the
-        appropriate section of \refchapter{processes}.
-\end{enumerate}
 
 Once you've done these things and rebuilt Haero, your new aerosol process
 implementation is available for use.
