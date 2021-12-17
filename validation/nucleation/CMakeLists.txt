@@ -29,9 +29,9 @@ foreach (input vehkamaki2002_fig7)
 endforeach()
 
 # Nucleation growth
-foreach (input nuc_growth_case1 nuc_growth_case2 nuc_growth_case3)
-  add_test(gen_${input} nucleation_thresh ${NUC_VALIDATION_DIR}/${input}.yaml)
-endforeach()
+#foreach (input nuc_growth_case1 nuc_growth_case2 nuc_growth_case3)
+#  add_test(gen_${input} nucleation_thresh ${NUC_VALIDATION_DIR}/${input}.yaml)
+#endforeach()
 
 # Copy generate_plots.py to our binary directory for ease of use.
 configure_file(
