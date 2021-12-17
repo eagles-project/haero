@@ -62,13 +62,13 @@ int main(int argc, char** argv) {
       PackType d_wet_grown =
           1e9 * d_dry_grown * pow(wet_dry_vol_ratio, 1.0 / 3.0);
       PackType CS1 = 0;
-      if (input.has("h2so4_uptake_rate")) {
+      if (input.has("uptake_rate_h2so4")) {
+        PackType h2so4_uptake_rate = input.get("uptake_rate_h2so4");
         Real alpha = 1.0;
-        if (input.has("h2so4_accommodation_coefficient")) {
-          alpha = input.get("h2so4_accommodation_coefficient");
+        if (input.has("alpha_h2so4")) {
+          alpha = input.get("alpha_h2so4");
         }
         static const Real pi = Constants::pi;
-        PackType h2so4_uptake_rate = input.get("h2so4_uptake_rate");
         PackType h2so4_diffusivity = 6.7037e-6 * pow(temp, 0.75) / rho_air;
         CS1 =
             max(h2so4_uptake_rate, 0) / (4.0 * pi * h2so4_diffusivity * alpha);
