@@ -3,6 +3,7 @@
 #include <haero/processes/wang2008.hpp>
 #include <iostream>
 #include <skywalker.hpp>
+#include <validation.hpp>
 
 // This driver computes the binary or ternary nucleation rate for the given
 // input.
@@ -57,22 +58,7 @@ int main(int argc, char** argv) {
     usage((const char*)argv[0]);
   }
   std::string input_file = argv[1];
-  std::string output_file;
-  {
-    size_t slash = input_file.find_last_of('/');
-    size_t dot = input_file.find_last_of('.');
-    if ((dot == std::string::npos) and (slash == std::string::npos)) {
-      dot = input_file.length();
-    }
-    if (slash == std::string::npos) {
-      slash = 0;
-    } else {
-      slash += 1;
-      dot -= slash;
-    }
-    output_file = std::string("haero_") + input_file.substr(slash, dot) +
-                  std::string(".py");
-  }
+  std::string output_file = validation::output_name(input_file);
   std::cout << argv[0] << ": reading " << input_file << std::endl;
 
   // Load the ensemble. Any error encountered is fatal.
