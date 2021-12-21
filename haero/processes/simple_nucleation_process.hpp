@@ -281,8 +281,9 @@ class SimpleNucleationProcess final
     // the nucleation mode?
     const auto too_small = (d_dry_crit <= d_min_aer_(inuc_mode_));
     const auto too_big = (d_dry_crit >= d_max_aer_(inuc_mode_));
-    PackType d_dry_grown = d_min_aer_(inuc_mode_);
-    d_dry_grown.set(too_big, d_max_aer_(inuc_mode_));
+    PackType d_dry_grown(too_big,
+                         d_max_aer_(inuc_mode_), // too big
+                         d_min_aer_(inuc_mode_); // not too big
     // TODO: We don't allow nucleated particles to be placed into other modes.
     // TODO: Technically, this differs from the box model.
     const auto V_dry_grown = (pi / 6.0) * cube(d_dry_grown);
