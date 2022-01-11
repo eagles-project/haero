@@ -44,8 +44,7 @@ int main(int argc, char** argv) {
       PackType rel_hum = input.get("relative_humidity");
       PackType temp = input.get("temperature");
 
-      // Compute the mole fraction of H2SO4 in a critical cluster, and from it
-      // the nucleation rate.
+      // Compute the threshold of H2SO4 above which nucleation occurs.
       PackType c_thresh =
           vehkamaki2002::h2so4_nucleation_threshold(temp, rel_hum);
 

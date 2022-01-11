@@ -13,6 +13,8 @@ target_link_libraries(nucleation_rate_f90 skywalker_f90;validation_f90;${HAERO_L
 # for nucleation to occur.
 add_executable(nucleation_thresh nucleation_thresh.cpp)
 target_link_libraries(nucleation_thresh skywalker;validation;${HAERO_LIBRARIES})
+add_executable(nucleation_thresh_f90 nucleation_thresh.F90)
+target_link_libraries(nucleation_thresh_f90 skywalker_f90;validation_f90;${HAERO_LIBRARIES})
 
 # This driver computes the growth SO4 and NH4 aerosol particeles from
 # H2SO4 and NH3 gas at given T and RH.
@@ -32,6 +34,7 @@ endforeach()
 # Nucleation threshold
 foreach (input vehkamaki2002_fig7)
   add_test(gen_${input} nucleation_thresh ${NUC_VALIDATION_DIR}/${input}.yaml)
+  add_test(gen_${input}_f90 nucleation_thresh_f90 ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
 
 # Nucleation growth
