@@ -2,6 +2,7 @@ set(NUC_VALIDATION_DIR ${MAM_X_VALIDATION_DIR}/nucleation)
 
 # Include directory for .mod files.
 include_directories(${PROJECT_BINARY_DIR}/haero)
+include_directories(${PROJECT_BINARY_DIR}/validation)
 
 # These skywalker drivers compute binary and ternary nucleation rates.
 add_executable(nucleation_rate nucleation_rate.cpp)
