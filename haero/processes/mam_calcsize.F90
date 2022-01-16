@@ -101,8 +101,8 @@ module mam_calcsize
   integer, save :: modetoo_csizxf(0:maxpair_csizxf)
   integer, save :: ait_mode_inter(0:maxpair_csizxf),  acc_mode_inter(0:maxpair_csizxf)
   integer, save :: ait_mode_cldbrn(0:maxpair_csizxf), acc_mode_cldbrn(0:maxpair_csizxf)
-  integer, save :: pop_ind_ait_inter(0:maxpair_csizxf,10), pop_ind_acc_inter(0:maxpair_csizxf,10) !FIXME: Make these array allocatable and allocate  using max_nspec instead of 10
-  integer, save :: pop_ind_ait_cldbrn(0:maxpair_csizxf,10), pop_ind_acc_cldbrn(0:maxpair_csizxf,10) !FIXME: Make these array allocatable and allocate  using max_nspec instead of 10
+  integer, save :: ait_spec_in_acc_inter(0:maxpair_csizxf,10), acc_spec_in_ait_inter(0:maxpair_csizxf,10) !FIXME: Make these array allocatable and allocate  using max_nspec instead of 10
+  integer, save :: ait_spec_in_acc_cldbrn(0:maxpair_csizxf,10), acc_spec_in_ait_cldbrn(0:maxpair_csizxf,10) !FIXME: Make these array allocatable and allocate  using max_nspec instead of 10
   integer, save :: nspec_common(maxpair_csizxf) !number of species found common between aitken and accumulation modes
 
 
@@ -297,6 +297,12 @@ contains
             !find number of species in the accumulation mode of this list
             nspec_acc = total_species_num(imode_acc)
 
+            !initialize to -1
+            ait_spec_in_acc_inter(:,:)  = -1
+            acc_spec_in_ait_inter(:,:)  = -1
+            ait_spec_in_acc_cldbrn(:,:) = -1
+            acc_spec_in_ait_cldbrn(:,:) = -1
+
             icnt = 0
             do ispec_ait = 1, nspec_ait
                !find specie symbol in the "from" mode
@@ -308,20 +314,18 @@ contains
                do ispec_acc = 1, nspec_acc
                   !find species name
                   spec_name_acc = model%aero_species(imode_acc, ispec_acc)%symbol
-                  print*,trim(spec_name_acc),'-', trim(spec_name_ait)
+                  !print*,trim(spec_name_acc),'-', trim(spec_name_ait)
                   !find if specie in acc mode is same as ait or not
                   if(trim(spec_name_acc) == trim(spec_name_ait)) then
                      !if there is a match, find indices of species in cnst array
                      !call cnst_get_ind(spec_name_ait, ind_ait)
                      !call cnst_get_ind(spec_name_acc, ind_acc)
-                     print*,trim(spec_name_acc),'-', trim(spec_name_ait),' MATCHED'
+                     !print*,trim(spec_name_acc),'-', trim(spec_name_ait),' MATCHED'
                      icnt = icnt + 1
-                     pop_ind_ait_inter(ilist, icnt)  = m_population_index(model, nait, ispec_ait)
-                     pop_ind_acc_inter(ilist, icnt)  = m_population_index(model, nacc, ispec_acc)
-                     pop_ind_ait_cldbrn(ilist, icnt) = m_population_index(model, nait, ispec_ait)
-                     pop_ind_acc_cldbrn(ilist, icnt) = m_population_index(model, nacc, ispec_acc)
-                     !lspecfrma_csizxf(icnt,ilist) = ind_ait
-                     !lspectooa_csizxf(icnt,ilist) = ind_acc
+                     ait_spec_in_acc_inter(ilist, icnt)  = m_population_index(model, nait, ispec_ait)
+                     acc_spec_in_ait_inter(ilist, icnt)  = m_population_index(model, nacc, ispec_acc)
+                     ait_spec_in_acc_cldbrn(ilist, icnt) = m_population_index(model, nait, ispec_ait)
+                     acc_spec_in_ait_cldbrn(ilist, icnt) = m_population_index(model, nacc, ispec_acc)
                   endif
                enddo
             enddo
@@ -967,7 +971,7 @@ contains
        drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv,     &
        drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,      &
        dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, &
-       dqdt, dqqcwdt, dnidt, dncdt )
+       didt, dcdt, dnidt, dncdt )
 
     !-----------------------------------------------------------------------------
     !Purpose: Exchange aerosols between aitken and accumulation modes based on new
@@ -1000,12 +1004,12 @@ contains
     real(wp), intent(inout) :: dgncur_c(:,:)
     real(wp), intent(inout) :: v2ncur_a(:,:)
     real(wp), intent(inout) :: v2ncur_c(:,:)
-    real(wp), intent(inout) :: dqdt(:,:), dqqcwdt(:,:)
+    real(wp), intent(inout) :: didt(:,:), dcdt(:,:)
     real(wp), intent(inout) :: dnidt(:,:), dncdt(:,:)
 
     !local
     integer  :: iait, iacc
-    integer  :: klev
+    integer  :: klev, icnt
     integer  :: s_spec_ind, e_spec_ind ! starting and ending index in population array for a mode
     integer  :: nspec_acc, ixfer_ait2acc, ixfer_acc2ait
     integer  :: imode, jmode, aer_type, jsrflx, iq
@@ -1067,14 +1071,20 @@ contains
     nspec_acc = total_species_num(iacc)
 
 
-    !FIMXME: Following loop will work only when we map species in the init routine
-    do ispec_acc = 1, nspec_acc     !Go through all species within accumulation mode (only species, not number (e.g. num_a1))
-    !   call rad_cnst_get_info(list_idx, iacc, ispec_acc,spec_name=spec_name) !output:spec_name
-    !   call cnst_get_ind(spec_name, idx)
-       do iq = 1, nspec_common(list_idx) !Go through all mapped species (and number) for the accumulation mode
-    !      if (lspectooa_csizxf(iq,list_idx) == idx) then !compare idx with mapped species in the accumulation mode
-    !         no_transfer_acc2ait(ispec_acc) = .false. ! species which can be tranferred
-    !      end if
+    !Go through all the species in the accumulation mode and
+    !find out species which exists in both accumulation and
+    !aitken modes. Set "no_transfer_acc2ait" to .false. for those
+    !species as we can tranfer those species as they exist in both
+    !the modes
+    do ispec_acc = 1, nspec_acc !Go through all species within accumulation mode (only species, not number)
+       do iq = 1, nspec_common(list_idx) !Go through all mapped species
+
+          ! if a specie in the accumulation mode also exists in the
+          ! aitken mode, set "no_transfer" to false, allowing transfer of
+          ! species between accumulation and aitken modes
+          if(acc_spec_in_ait_inter(list_idx,iq) ==  ispec_acc) then
+             no_transfer_acc2ait(ispec_acc) = .false. ! species which can be tranferred
+          endif
        end do
     end do
 
@@ -1106,8 +1116,8 @@ contains
        !
        ! accum may have some species (seasalt, dust, poa etc.) that are
        !    not in aitken mode
-       ! so first divide the accum drv & num into not-transferred (noxf) species
-       !    and transferred species, and use the transferred-species
+       ! so first divide the accum dry volume & number into not-transferred (using no_transfer_acc2ait)
+       ! species and transferred species, and use the transferred-species
        !    portion in what follows
        !----------------------------------------------------------------------------------------
 
@@ -1168,43 +1178,32 @@ contains
           !------------------------------------------------------------------
           ! compute tendency amounts for aitken <--> accum transfer
           !------------------------------------------------------------------
-#if 0
-          !ASSUMPTION: "update_mmr" will only be true for the prognostic radiation list(i.e. list_idx=0, "radiation_climate")
-          !If list_idx=0, it is okay to get specie mmr from state_q array. Therefore, state_q is used in update_tends_flx calls
-          !below
-          if(update_mmr) then
-             ! jmode=1 does aitken-->accum
+          ! jmode=1 does aitken-->accum
+          if(ixfer_ait2acc > 0) then
+             jmode = 1
 
-             ait_mode_inter
-             acc_mode_inter
+             !Since jmode=1, source mode = aitken and destination mode =accumulation
+             call update_tends_flx( klev, jmode, ait_mode_inter, acc_mode_inter, ait_mode_cldbrn, acc_mode_cldbrn, &
+                  ait_spec_in_acc_inter, acc_spec_in_ait_inter, ait_spec_in_acc_cldbrn, acc_spec_in_ait_cldbrn, xfertend_num,       &
+                  xfercoef_vol_ait2acc, q_i, q_c, didt, dnidt, dcdt, dncdt)
+          endif
 
-             if(ixfer_ait2acc > 0) then
-                jmode = 1
-
-                !Since jmode=1, source mode = aitken and destination mode =accumulation
-                call update_tends_flx( klev, jmode, ait_mode_inter, acc_mode_inter, ait_mode_cldbrn, acc_mode_cldbrn, &
-                     pop_ind_ait_inter, pop_ind_acc_inter, pop_ind_ait_cldbrn, pop_ind_acc_cldbrn, xfertend_num,       &
-                     xfercoef_vol_ait2acc, q_i, q_c, didt, dnidt, dcdt, dncdt)
-             endif
-
-             !jmode=2 does accum-->aitken
-             if(ixfer_acc2ait > 0) then
-                jmode = 2
-                !Same suboutine  as above (update_tends_flx) is called but source and destination has been
-                !swapped so that transfer happens from accumulation to aitken mode
-                !xfercoef_vol_acc2ait is  used instead xfercoef_vol_ait2acc in this call as we are
-                !doing accum->aitken transfer
-                call update_tends_flx( klev, jmode, acc_mode_inter, ait_mode_inter, acc_mode_cldbrn, ait_mode_cldbrn, &
-                     pop_ind_acc_inter, pop_ind_ait_inter, pop_ind_acc_cldbrn, pop_ind_ait_cldbrn, xfertend_num,       &
-                     xfercoef_vol_acc2ait,, q_i, q_c, didt, dnidt, dcdt, dncdt)
-             endif
-          endif !update_mmr
-#endif
+          !jmode=2 does accum-->aitken
+          if(ixfer_acc2ait > 0) then
+             jmode = 2
+             !Same suboutine  as above (update_tends_flx) is called but source and destination has been
+             !swapped so that transfer happens from accumulation to aitken mode
+             !xfercoef_vol_acc2ait is  used instead xfercoef_vol_ait2acc in this call as we are
+             !doing accum->aitken transfer
+             call update_tends_flx( klev, jmode, acc_mode_inter, ait_mode_inter, acc_mode_cldbrn, ait_mode_cldbrn, &
+                  acc_spec_in_ait_inter, ait_spec_in_acc_inter, acc_spec_in_ait_cldbrn, ait_spec_in_acc_cldbrn, xfertend_num,       &
+                  xfercoef_vol_acc2ait, q_i, q_c, didt, dnidt, dcdt, dncdt)
+          endif
        end if !ixfer_ait2acc+ixfer_acc2ait > 0
     end do !klev
 
-    return
-  end subroutine aitken_accum_exchange
+ return
+end subroutine aitken_accum_exchange
 
 
   !---------------------------------------------------------------------------------------------
@@ -1420,8 +1419,13 @@ contains
 
   !------------------------------------------------------------------------------------------------
   subroutine update_tends_flx(klev, jmode, src_num_mode_inter, dest_num_mode_inter, src_num_mode_cldbrn, dest_num_mode_cldbrn, &
-       pop_ind_src_inter, pop_ind_dest_inter,pop_ind_src_cldbrn, pop_ind_dest_cldbrn, xfertend_num, xfercoef, q_i, &
+       src_inter, dest_inter,src_cldbrn, dest_cldbrn, xfertend_num, xfercoef, q_i, &
        q_c, didt, dnidt, dcdt, dncdt)
+
+
+!klev, jmode, ait_mode_inter, acc_mode_inter, ait_mode_cldbrn, acc_mode_cldbrn, &
+!                  ait_spec_in_acc_inter, acc_spec_in_ait_inter, ait_spec_in_acc_cldbrn, acc_spec_in_ait_cldbrn, xfertend_num,       &
+!                  xfercoef_vol_ait2acc, q_i, q_c, didt, dnidt, dcdt, dncdt)
 
     implicit none
 
@@ -1429,8 +1433,8 @@ contains
     integer,  intent(in) :: klev, jmode
     integer,  intent(in) :: src_num_mode_inter(0:maxpair_csizxf), dest_num_mode_inter(0:maxpair_csizxf)
     integer,  intent(in) :: src_num_mode_cldbrn(0:maxpair_csizxf), dest_num_mode_cldbrn(0:maxpair_csizxf)
-    integer,  intent(in) :: pop_ind_src_inter(max_nspec, 0:maxpair_csizxf), pop_ind_dest_inter(max_nspec, 0:maxpair_csizxf)
-    integer,  intent(in) :: pop_ind_src_cldbrn(max_nspec, 0:maxpair_csizxf), pop_ind_dest_cldbrn(max_nspec, 0:maxpair_csizxf)
+    integer,  intent(in) :: src_inter(max_nspec, 0:maxpair_csizxf), dest_inter(max_nspec, 0:maxpair_csizxf)
+    integer,  intent(in) :: src_cldbrn(max_nspec, 0:maxpair_csizxf), dest_cldbrn(max_nspec, 0:maxpair_csizxf)
 
     real(wp), intent(in) :: xfertend_num(2,2)
     real(wp), intent(in) :: xfercoef
@@ -1460,8 +1464,8 @@ contains
     endif
 
     do iq = 1,nspec_common(list_idx)
-       lsfrm = pop_ind_src_inter(iq,list_idx)
-       lstoo = pop_ind_dest_inter(iq,list_idx)
+       lsfrm = src_inter(iq,list_idx)
+       lstoo = dest_inter(iq,list_idx)
        if((lsfrm > 0) .and. (lstoo > 0)) then
           xfertend = max(0.0_wp,q_i(klev,lsfrm))*xfercoef
           didt(klev,lsfrm) = didt(klev,lsfrm) - xfertend
@@ -1479,8 +1483,8 @@ contains
 
     !mass species
     do iq = 1, nspec_common(list_idx)
-       lsfrm = pop_ind_src_cldbrn(iq,list_idx)
-       lstoo = pop_ind_dest_cldbrn(iq,list_idx)
+       lsfrm = src_cldbrn(iq,list_idx)
+       lstoo = dest_cldbrn(iq,list_idx)
        if((lsfrm > 0) .and. (lstoo > 0)) then
           xfertend = max(0.0_wp,q_c(klev,lsfrm))*xfercoef
           dcdt(klev,lsfrm) = dcdt(klev,lsfrm) - xfertend

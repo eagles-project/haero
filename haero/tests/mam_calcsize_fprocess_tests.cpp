@@ -1,5 +1,5 @@
 #include <memory>
-
+#include <yaml-cpp/yaml.h>
 #include "catch2/catch.hpp"
 #include "haero/model.hpp"
 #include "haero/processes/mam_calcsize_fprocess.hpp"
@@ -85,6 +85,9 @@ TEST_CASE("mam_calcsize_run", "") {
 
     // Set initial conditions
     // aerosols mass mixing ratios
+    std::cout<<"BALLI:"<<num_aero_populations<<std::endl;
+
+    std::cout<<"BALLI:"<<aero_config.aerosol_species_for_mode(1)[0].symbol()<<std::endl;
     for (int p = 0; p < num_aero_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
         int_aerosols(p, k) = random() * 10e-10;
@@ -100,22 +103,58 @@ TEST_CASE("mam_calcsize_run", "") {
       }
     }
 
-    // Initialize the process
-    process->init(aero_config);
 
-    // Now compute the tendencies by running the process.
-    Real t = 0.0, dt = 30.0;
-    auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
-    auto d_process = process->copy_to_device();
-    const auto& p = *progs;
-    const auto& a = *atm;
-    const auto& d = *diags;
-    auto& te = *tends;
-    Kokkos::parallel_for(
+    //open and read calcsize data from a file
+    auto calcsize_data = YAML::LoadFile("calcsize_input.yaml");
+    for(YAML::const_iterator it=calcsize_data.begin(); it!=calcsize_data.end(); ++it){
+
+      //read input collection
+      const std::string &key=it->first.as<std::string>();
+      //read all attributes
+      auto attributes = it->second;
+      //read contents of each attribute
+      auto intermmr      = attributes["interstitial"];
+      auto intermmr_num  = attributes["interstitial_num"];
+      auto cldbrnmmr     = attributes["cldbrn"];
+      auto cldbrnmmr_num = attributes["cldbrn_num"];
+
+      // mmrs
+      for (int p = 0; p < num_aero_populations; ++p) {
+        for (int k = 0; k < num_levels; ++k) {
+          int_aerosols(p, k) = intermmr[p].as<float>();
+          cld_aerosols(p, k) = cldbrnmmr[p].as<float>();
+        }
+      }
+
+      // number mmrs
+      for (int imode = 0; imode < num_modes; ++imode) {
+        for (int k = 0; k < num_levels; ++k) {
+          int_num_mix_ratios(imode, k) = intermmr_num[imode].as<float>();
+          cld_num_mix_ratios(imode, k) = cldbrnmmr_num[imode].as<float>();
+        }
+      }
+
+      // Initialize the process
+      process->init(aero_config);
+
+      // Now compute the tendencies by running the process.
+      Real t = 0.0, dt = 30.0;
+      auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
+      auto d_process = process->copy_to_device();
+      const auto& p = *progs;
+      const auto& a = *atm;
+      const auto& d = *diags;
+      auto& te = *tends;
+      Kokkos::parallel_for(
         team_policy, KOKKOS_LAMBDA(const TeamType& team) {
           d_process->run(team, t, dt, p, a, d, te);
         });
-    AerosolProcess::delete_on_device(d_process);
+      AerosolProcess::delete_on_device(d_process);
+
+      for(int i=0; i<num_aero_populations; ++i){
+        std::cout<<"BALLI ["<<i<<"]"<<intermmr[i].as<float>()<<std::endl;
+      }
+    }
 
     // Clean up.
     delete tends;
