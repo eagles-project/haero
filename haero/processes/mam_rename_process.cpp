@@ -77,7 +77,7 @@ MAMRenameProcess::MAMRenameProcess()
     : DeviceAerosolProcess<MAMRenameProcess>("MAMRenameProcess") {}
 
 void MAMRenameProcess::init_(const ModalAerosolConfig& config) {
-  const auto& num_modes = config.num_modes();
+  const auto& num_modes = config.num_aerosol_modes();
 
   // Reserve memory for private fields
   dgnumlo.reserve(num_modes);

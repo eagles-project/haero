@@ -91,9 +91,9 @@ void MAMCalcsizeHostCXXProcess::init_(
     const ModalAerosolConfig &modal_aerosol_config) {
   logger->debug("entering init_");
 
-  nmodes = modal_aerosol_config.num_modes();
+  nmodes = modal_aerosol_config.num_aerosol_modes();
   logger->debug("nmodes=modal_aerosol_config.num_modes={}",
-                modal_aerosol_config.num_modes());
+                modal_aerosol_config.num_aerosol_modes());
 
   num_populations = modal_aerosol_config.num_aerosol_populations;
   logger->debug(

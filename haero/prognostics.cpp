@@ -11,10 +11,11 @@ Prognostics::Prognostics(const ModalAerosolConfig& config, int num_levels)
       cloud_aerosols("cloudborne aerosols", config.num_aerosol_populations,
                      PackInfo::num_packs(num_levels)),
       interstitial_num_mix_ratios("interstitial aerosol number mix ratios",
-                                  config.num_modes(),
+                                  config.num_aerosol_modes(),
                                   PackInfo::num_packs(num_levels)),
       cloud_num_mix_ratios("cloudborne aerosol number mix ratios",
-                           config.num_modes(), PackInfo::num_packs(num_levels)),
+                           config.num_aerosol_modes(),
+                           PackInfo::num_packs(num_levels)),
       gases("gases", config.num_gases(), PackInfo::num_packs(num_levels)),
       num_aero_species_("Prognostics::num_aerosol_species",
                         config.aerosol_species.size()),
@@ -38,7 +39,7 @@ Prognostics::Prognostics(const ModalAerosolConfig& config, int num_levels,
       num_aero_populations_(config.num_aerosol_populations),
       num_gases_(config.num_gases()),
       num_levels_(num_levels) {
-  int num_aerosol_modes = config.num_modes();
+  int num_aerosol_modes = config.num_aerosol_modes();
   int num_vert_packs = PackInfo::num_packs(num_levels_);
   const int int_aerosols_extent_0 = int_aerosols.extent(0);
   const int int_aerosols_extent_1 = int_aerosols.extent(1);

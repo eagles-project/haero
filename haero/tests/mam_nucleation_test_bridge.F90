@@ -55,9 +55,9 @@ subroutine compute_tendencies_bridge( &
   real(wp), intent(in) :: del_h2so4_aeruptk
   real(wp), intent(in), dimension(modal_aero_config%num_gases) :: qgas_cur
   real(wp), intent(in), dimension(modal_aero_config%num_gases) :: qgas_avg
-  real(wp), intent(in), dimension(modal_aero_config%num_modes) :: qnum_cur
-  real(wp), dimension(maxval(modal_aero_config%num_mode_species), modal_aero_config%num_modes) :: qaer_cur
-  real(wp), intent(in), dimension(modal_aero_config%num_modes) :: qwtr_cur
+  real(wp), intent(in), dimension(modal_aero_config%num_aerosol_modes) :: qnum_cur
+  real(wp), dimension(maxval(modal_aero_config%num_mode_species), modal_aero_config%num_aerosol_modes) :: qaer_cur
+  real(wp), intent(in), dimension(modal_aero_config%num_aerosol_modes) :: qwtr_cur
   real(wp), intent(out) :: dndt_ait
   real(wp), intent(out) :: dmdt_ait
   real(wp), intent(out) :: dnh4dt_ait

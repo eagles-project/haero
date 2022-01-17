@@ -92,7 +92,7 @@ class MyAerosolProcess final : public DeviceAerosolProcess<MyAerosolProcess> {
 TEST_CASE("process_tests", "aerosol_process") {
   auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_modes();
+  int num_modes = aero_config.num_aerosol_modes();
   int num_pops = aero_config.num_aerosol_populations;
   int num_levels = 72;
   Real t = 2.3;

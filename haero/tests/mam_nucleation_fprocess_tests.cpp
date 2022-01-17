@@ -428,7 +428,7 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   // We create a phony model to be used for these tests.
   auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_modes();
+  int num_modes = aero_config.num_aerosol_modes();
   int num_aero_populations = aero_config.num_aerosol_populations;
   int num_levels = 72;
 

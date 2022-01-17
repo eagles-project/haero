@@ -14,7 +14,7 @@ TEST_CASE("region_of_validity", "") {
   int num_vert_packs = PackInfo::num_packs(num_levels);
 
   ModalAerosolConfig config = ModalAerosolConfig::create_simple_test_config();
-  int num_modes = config.num_modes();
+  int num_modes = config.num_aerosol_modes();
   int num_gases = config.num_gases();
   int num_pops = config.num_aerosol_populations;
 

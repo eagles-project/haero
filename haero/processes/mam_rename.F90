@@ -39,8 +39,8 @@ contains
     ! Locals
     integer :: ierr
 
-    num_modes = config%num_modes
-    num_populations = config%num_populations
+    num_modes = config%num_aerosol_modes
+    num_populations = config%num_aerosol_populations
 
     allocate(population_offsets(num_modes+1), stat=ierr)
     if (ierr .ne. 0) then
@@ -55,7 +55,7 @@ contains
 
     ! FIXME: max_aer is number of species in the mode with most species, it
     ! FIXME: should be computed dynamically using population_offsets
-    max_aer = config%num_modes
+    max_aer = config%num_aerosol_modes
 
     call initialize_diameters(config)
 
@@ -296,8 +296,8 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
     endif
 
     ! Initialize min and max diameters
-    dgnumlo_aer(:) = config%modes(:)%min_diameter
-    dgnumhi_aer(:) = config%modes(:)%max_diameter
+    dgnumlo_aer(:) = config%aerosol_modes(:)%min_diameter
+    dgnumhi_aer(:) = config%aerosol_modes(:)%max_diameter
 
     ! Initialize this to the minimum diameter for now.
     ! TODO: this will be updated with the correct calculation later.
@@ -355,7 +355,7 @@ subroutine compute_dryvol_change_in_src_mode(num_modes, dest_mode_of_mode, &
       stop 1
     endif
 
-    alnsg(:) = log(config%modes(:)%mean_std_dev)
+    alnsg(:) = log(config%aerosol_modes(:)%mean_std_dev)
 
   end subroutine initialize_ln_of_std_dev
 

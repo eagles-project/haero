@@ -91,14 +91,16 @@ class ModalAerosolConfig final {
   int num_aerosol_populations;
 
   /// The number of modes in this aerosol configuration.
-  int num_modes() const { return static_cast<int>(aerosol_modes.size()); }
+  int num_aerosol_modes() const {
+    return static_cast<int>(aerosol_modes.size());
+  }
 
   /// The number of gases in this aerosol configuration.
   int num_gases() const { return static_cast<int>(gas_species.size()); }
 
   inline int max_species_per_mode() const {
     int result = 0;
-    for (int m = 0; m < num_modes(); ++m) {
+    for (int m = 0; m < num_aerosol_modes(); ++m) {
       const auto mode_species = aerosol_species_for_mode(m);
       result = std::max(result, int(mode_species.size()));
     }
@@ -108,7 +110,7 @@ class ModalAerosolConfig final {
   /// Returns the list of aerosol species associated with the model with the
   /// given mode index.
   /// @param [in] mode_index An integer index identifying the mode in question.
-  ///                        This index goes from 0 to num_modes-1.
+  ///                        This index goes from 0 to num_aerosol_modes()-1.
   std::vector<AerosolSpecies> aerosol_species_for_mode(
       const int mode_index) const {
     EKAT_ASSERT(mode_index >= 0);

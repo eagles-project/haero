@@ -46,11 +46,11 @@ subroutine mam_soaexch_1subarea_bridge( &
   real(wp), value, intent(in) :: aircon           ! air molar concentration (kmol/m3)
 
   real(wp), intent(inout), dimension( modal_aero_config%num_gases ) :: qgas_cur, qgas_avg
-  real(wp), intent(inout), dimension( maxval(modal_aero_config%num_mode_species), modal_aero_config%num_modes ) :: qaer_cur
-  real(wp), intent(inout), dimension( modal_aero_config%num_modes ) :: qnum_cur
-  real(wp), intent(in   ), dimension( modal_aero_config%num_gases, modal_aero_config%num_modes ) :: uptkaer
-  integer(c_int),  intent(in   ), dimension( modal_aero_config%num_modes) ::  mode_aging_optaa
-  integer(c_int),  intent(in   ), dimension( modal_aero_config%num_modes, *) ::  lptr2_soa_a_amode
+  real(wp), intent(inout), dimension( maxval(modal_aero_config%num_mode_species), modal_aero_config%num_aerosol_modes ) :: qaer_cur
+  real(wp), intent(inout), dimension( modal_aero_config%num_aerosol_modes ) :: qnum_cur
+  real(wp), intent(in   ), dimension( modal_aero_config%num_gases, modal_aero_config%num_aerosol_modes ) :: uptkaer
+  integer(c_int),  intent(in   ), dimension( modal_aero_config%num_aerosol_modes) ::  mode_aging_optaa
+  integer(c_int),  intent(in   ), dimension( modal_aero_config%num_aerosol_modes, *) ::  lptr2_soa_a_amode
 
   ! Call the actual subroutine.
   call  mam_soaexch_1subarea( &

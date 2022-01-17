@@ -26,8 +26,8 @@ TEST_CASE("wet_radius_diagnostic", "") {
   std::cout << config.info_string();
 
   /// Tests for create_simple_test_config();
-  REQUIRE(config.num_modes() == 2);
-  const int nmodes = config.num_modes();
+  REQUIRE(config.num_aerosol_modes() == 2);
+  const int nmodes = config.num_aerosol_modes();
   REQUIRE(config.num_gases() == 1);
   REQUIRE(config.max_species_per_mode() == 2);
   REQUIRE(config.num_aerosol_populations == 3);
@@ -39,7 +39,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
   REQUIRE(config.aerosol_species_index(1, "TS1") == 1);
 
   /// Write population indices to console
-  for (int m = 0; m < config.num_modes(); ++m) {
+  for (int m = 0; m < config.num_aerosol_modes(); ++m) {
     for (int s = 0; s < config.max_species_per_mode(); ++s) {
       std::cout << "config.population_index(" << m << ", " << s
                 << ") = " << config.population_index(m, s) << "\n";
@@ -90,7 +90,7 @@ TEST_CASE("wet_radius_diagnostic", "") {
 
   // define mode number mixing ratios for input data
   ModeColumnView num_ratios("aerosol_mode_number_mixing_ratios",
-                            config.num_modes(), npacks);
+                            config.num_aerosol_modes(), npacks);
   auto h_num_ratios = Kokkos::create_mirror_view(num_ratios);
   for (int m = 0; m < nmodes; ++m) {
     for (int k = 0; k < nlev; ++k) {

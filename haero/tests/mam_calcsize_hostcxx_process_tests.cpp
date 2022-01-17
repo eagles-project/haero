@@ -19,7 +19,7 @@ TEST_CASE("mam_calcsize_hostcxx_run", "") {
       ModalAerosolConfig::create_mam4_config();  // create MAM4 configuration
 
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_modes();
+  int num_modes = aero_config.num_aerosol_modes();
   int num_aero_populations = aero_config.num_aerosol_populations;
   int num_levels = 72;
   int num_vert_packs = PackInfo::num_packs(num_levels);

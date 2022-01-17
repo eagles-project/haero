@@ -27,11 +27,11 @@ using haero::Real;
 // Interoperable C functions for providing data to Fortran.
 // See haero.F90 for details on how these functions are used.
 void haerotran_begin_init();
-void haerotran_set_num_modes(int);
+void haerotran_set_num_aerosol_modes(int);
 void haerotran_set_max_mode_species(int);
-void haerotran_set_mode(int, const char*, Real, Real, Real, Real, Real);
-void haerotran_set_aero_species(int, int, const char*, const char*, Real, Real,
-                                Real);
+void haerotran_set_aerosol_mode(int, const char*, Real, Real, Real, Real, Real);
+void haerotran_set_aerosol_species(int, int, const char*, const char*, Real,
+                                   Real, Real);
 void haerotran_set_num_gas_species(int);
 void haerotran_set_gas_species(int, const char*, const char*, Real);
 void haerotran_end_init();
@@ -96,7 +96,7 @@ void AerosolProcess::init_fortran_(const ModalAerosolConfig& config) {
   config_ = new ModalAerosolConfig(config);
   haerotran_begin_init();
   int num_modes = config_->aerosol_modes.size();
-  haerotran_set_num_modes(num_modes);
+  haerotran_set_num_aerosol_modes(num_modes);
   size_t max_species = 0;
   for (int m = 0; m < num_modes; ++m) {
     const auto mode_species = config_->aerosol_species_for_mode(m);
@@ -108,15 +108,15 @@ void AerosolProcess::init_fortran_(const ModalAerosolConfig& config) {
 
     // Set the properties of mode i+1 (as indexed in Fortran).
     const auto& mode = config_->aerosol_modes[m];
-    haerotran_set_mode(m + 1, mode.name().c_str(), mode.min_diameter,
-                       mode.max_diameter, mode.mean_std_dev,
-                       mode.deliquescence_pt, mode.crystallization_pt);
+    haerotran_set_aerosol_mode(m + 1, mode.name().c_str(), mode.min_diameter,
+                               mode.max_diameter, mode.mean_std_dev,
+                               mode.deliquescence_pt, mode.crystallization_pt);
 
     // Set up aerosol species for this mode.
     int num_species = mode_species.size();
     for (int s = 0; s < num_species; ++s) {
       const auto species = config_->aerosol_species[s];
-      haerotran_set_aero_species(
+      haerotran_set_aerosol_species(
           m + 1, s + 1, species.name().c_str(), species.symbol().c_str(),
           species.molecular_weight, species.density, species.hygroscopicity);
     }

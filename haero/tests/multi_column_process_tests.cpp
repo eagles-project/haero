@@ -122,7 +122,7 @@ TEST_CASE("aerosol_process_multi_column_run", "") {
   int num_vert_packs = PackInfo::num_packs(num_levels);
   int num_iface_packs = PackInfo::num_packs(num_levels + 1);
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_modes();
+  int num_modes = aero_config.num_aerosol_modes();
 
   // Set up some prognostics aerosol data views
   const int num_aero_populations = aero_config.num_aerosol_populations;

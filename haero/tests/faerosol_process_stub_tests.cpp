@@ -16,7 +16,7 @@ TEST_CASE("faerosol_process_stub", "") {
   // We create a phony model to be used for these tests.
   auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_modes();
+  int num_modes = aero_config.num_aerosol_modes();
   int num_aero_populations = aero_config.num_aerosol_populations;
   int num_levels = 72;
   int num_vert_packs = PackInfo::num_packs(num_levels);
