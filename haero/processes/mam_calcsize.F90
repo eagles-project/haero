@@ -439,8 +439,9 @@ contains
     dncdt => tendencies%cloud_num_mix_ratios()
 
     !Loop through each mode and find particle diameter
+    print*,'------------------------'
     do imode = 1, nmodes
-
+       print*,'Mode:', imode
        !Initialize diameter(dgnum), volume to number ratios(v2ncur) and dry volume (dryvol) for both
        !interstitial and cloudborne aerosols
 
@@ -474,6 +475,7 @@ contains
        !FIXME:Density needs to be fixed, the values are not right as they are all for the coarse mode currently, probably for simplification!
 
        call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
+       print*,'Final dryvol:',dryvol_a(1),dryvol_c(1)
 
        !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
        v2nmin = v2nmin_nmodes(imode)
@@ -656,6 +658,7 @@ contains
 
     do ispec = s_spec_ind, e_spec_ind
        density_ind = ispec - s_spec_ind + 1 !density array index goes from 1 to nspec
+       print*,'density:',density(density_ind)
 
        inv_density = 1.0_wp / density(density_ind) !inverse of density
 
@@ -663,6 +666,7 @@ contains
        do klev = top_lev, nlevs
           ! volume is mass*inv_density = [kg/kg(of air)] * [1/(kg/m3)] = [m3/kg(of air)]
           dryvol_a(klev) = dryvol_a(klev) + max(0.0_wp,q_i(klev,ispec))*inv_density
+          !if(klev==1 .and. imode == 3)print*,'compute:',dryvol_a(klev),q_i(klev,ispec),inv_density,ispec
           dryvol_c(klev) = dryvol_c(klev) + max(0.0_wp,q_c(klev,ispec))*inv_density
        end do
     end do

@@ -85,9 +85,9 @@ TEST_CASE("mam_calcsize_run", "") {
 
     // Set initial conditions
     // aerosols mass mixing ratios
-    std::cout<<"BALLI:"<<num_aero_populations<<std::endl;
+    //std::cout<<"BALLI:"<<num_aero_populations<<std::endl;
 
-    std::cout<<"BALLI:"<<aero_config.aerosol_species_for_mode(1)[0].symbol()<<std::endl;
+    //std::cout<<"BALLI:"<<aero_config.aerosol_species_for_mode(1)[0].symbol()<<std::endl;
     for (int p = 0; p < num_aero_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
         int_aerosols(p, k) = random() * 10e-10;
@@ -103,6 +103,8 @@ TEST_CASE("mam_calcsize_run", "") {
       }
     }
 
+    // Initialize the process
+    process->init(aero_config);
 
     //open and read calcsize data from a file
     auto calcsize_data = YAML::LoadFile("calcsize_input.yaml");
@@ -134,9 +136,6 @@ TEST_CASE("mam_calcsize_run", "") {
         }
       }
 
-      // Initialize the process
-      process->init(aero_config);
-
       // Now compute the tendencies by running the process.
       Real t = 0.0, dt = 30.0;
       auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
@@ -150,10 +149,6 @@ TEST_CASE("mam_calcsize_run", "") {
           d_process->run(team, t, dt, p, a, d, te);
         });
       AerosolProcess::delete_on_device(d_process);
-
-      for(int i=0; i<num_aero_populations; ++i){
-        std::cout<<"BALLI ["<<i<<"]"<<intermmr[i].as<float>()<<std::endl;
-      }
     }
 
     // Clean up.

@@ -196,6 +196,7 @@ void Model::init_fortran() {
     int num_species = mode_species.size();
     for (int s = 0; s < num_species; ++s) {
       const auto species = config_.aerosol_species[s];
+      std::cout<<m + 1<<";"<< s + 1<<";"<< species.symbol()<<std::endl;
       haerotran_set_aero_species(
           m + 1, s + 1, species.name().c_str(), species.symbol().c_str(),
           species.molecular_weight, species.density, species.hygroscopicity);
