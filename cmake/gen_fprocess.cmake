@@ -2,14 +2,12 @@
 # Haero's C++ interface and a Fortran module implementing a prognostic
 # process. Inputs:
 # * CXX_CLASS_NAME, the name of a C++ class that will expose this process
-# * PROCESS_ENUM_TYPE, a C++ enumerated type that defines the prognostic
-#   process's role in the aerosol lifecycle
 # * F90_MODULE_NAME, the name of a Fortran module that implements a prognostic
 #   process
 # Relevant source files are generated and/or appended to HAERO_PROCESSES, which
 # is referenced in haero/processes/CMakeLists.txt. This macro must be called
 # only within that file.
-function(faerosol_process CXX_CLASS_NAME PROCESS_ENUM_TYPE F90_MODULE_NAME)
+function(faerosol_process CXX_CLASS_NAME F90_MODULE_NAME)
   list(APPEND HAERO_PROCESSES ${CMAKE_CURRENT_SOURCE_DIR}/${F90_MODULE_NAME}.F90)
   set(CXX_HEADER ${CMAKE_CURRENT_BINARY_DIR}/${F90_MODULE_NAME}_fprocess.hpp)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/faerosol_process.hpp.in
