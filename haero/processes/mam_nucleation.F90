@@ -172,7 +172,7 @@ subroutine init(config)
   integer :: m, p
 
   ! Write down some things.
-  num_modes = config%num_modes
+  num_modes = config%num_aerosol_modes
   num_populations = config%num_aerosol_populations
   if (.not. allocated(mode_for_pop)) then
     allocate(mode_for_pop(num_populations))

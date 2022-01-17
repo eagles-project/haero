@@ -34,7 +34,7 @@ SimpleNucleationProcess::SimpleNucleationProcess()
       d_max_aer_() {}
 
 void SimpleNucleationProcess::init_(const ModalAerosolConfig &config) {
-  num_modes_ = config.num_modes();
+  num_modes_ = config.num_aerosol_modes();
 
   // Find the Aitken mode, into which we place nucleated particles.
   inuc_mode_ = config.aerosol_mode_index("aitken", false);

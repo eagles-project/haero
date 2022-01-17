@@ -39,7 +39,7 @@ contains
     ! Locals
     integer :: ierr
 
-    num_modes = config%num_modes
+    num_modes = config%num_aerosol_modes
     num_populations = config%num_aerosol_populations
 
     allocate(population_offsets(num_modes+1), stat=ierr)
@@ -55,7 +55,7 @@ contains
 
     ! FIXME: max_aer is number of species in the mode with most species, it
     ! FIXME: should be computed dynamically using population_offsets
-    max_aer = config%num_modes
+    max_aer = config%num_aerosol_modes
 
     call initialize_diameters(config)
 

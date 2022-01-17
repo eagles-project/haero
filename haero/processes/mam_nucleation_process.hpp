@@ -153,28 +153,28 @@ class MAMNucleationProcess final
         iaer_h2so4(config.gas_index("H2SO4")),
         iaer_nh3(config.gas_index("NH3")),
         iaer_nh4(config.gas_index("nh4")),
-        dgnum_aer("mean particle diameters", config.num_modes()),
-        dgnumlo_aer("minimum particle diameters", config.num_modes()),
-        dgnumhi_aer("maximum particle diameters", config.num_modes()),
+        dgnum_aer("mean particle diameters", config.num_aerosol_modes()),
+        dgnumlo_aer("minimum particle diameters", config.num_aerosol_modes()),
+        dgnumhi_aer("maximum particle diameters", config.num_aerosol_modes()),
         qgas_averaged_token(diagnostics.find_gas_var("qgas_averaged")),
         uptkrate_h2so4_token(diagnostics.find_var("uptkrate_h2so4")),
         del_h2so4_gasprod_token(diagnostics.find_var("del_h2so4_gasprod")),
         del_h2so4_aeruptk_token(diagnostics.find_var("del_h2so4_aeruptk")) {
     {
       auto dgum = Kokkos::create_mirror_view(dgnum_aer);
-      for (int m = 0; m < config.num_modes(); ++m)
+      for (int m = 0; m < config.num_aerosol_modes(); ++m)
         dgum(m) = config.aerosol_modes[m].mean_std_dev;
       Kokkos::deep_copy(dgnum_aer, dgum);
     }
     {
       auto dgumlo = Kokkos::create_mirror_view(dgnumlo_aer);
-      for (int m = 0; m < config.num_modes(); ++m)
+      for (int m = 0; m < config.num_aerosol_modes(); ++m)
         dgumlo(m) = config.aerosol_modes[m].min_diameter;
       Kokkos::deep_copy(dgnumlo_aer, dgumlo);
     }
     {
       auto dgumhi = Kokkos::create_mirror_view(dgnumhi_aer);
-      for (int m = 0; m < config.num_modes(); ++m)
+      for (int m = 0; m < config.num_aerosol_modes(); ++m)
         dgumhi(m) = config.aerosol_modes[m].max_diameter;
       Kokkos::deep_copy(dgnumhi_aer, dgumhi);
     }

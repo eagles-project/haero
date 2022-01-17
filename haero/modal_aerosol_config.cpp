@@ -60,7 +60,7 @@ std::string ModalAerosolConfig::info_string(const int tab_level) const {
      << "nspec  "
      << "species"
      << "\n";
-  for (int m = 0; m < num_modes(); ++m) {
+  for (int m = 0; m < num_aerosol_modes(); ++m) {
     ss << std::setw(20) << aerosol_modes[m].name() << std::setw(7)
        << species_for_mode_[m].size() << "  ";
     const auto species_for_mode = aerosol_species_for_mode(m);

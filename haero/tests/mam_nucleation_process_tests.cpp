@@ -404,7 +404,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   int num_vert_packs = PackInfo::num_packs(num_levels);
   int num_iface_packs = PackInfo::num_packs(num_levels + 1);
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_modes();
+  int num_modes = aero_config.num_aerosol_modes();
   int num_aero_populations = aero_config.num_aerosol_populations;
 
   // Set up some prognosics aerosol data views‥

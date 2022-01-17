@@ -63,7 +63,7 @@ class RegionOfValidity final {
   /// metadata.
   void init(const ModalAerosolConfig& config) {
     // Gather information from the config.
-    num_modes_ = config.num_modes();
+    num_modes_ = config.num_aerosol_modes();
     Kokkos::resize(num_aero_species_in_mode_, num_modes_);
     auto h_num_aero_species_in_mode =
         Kokkos::create_mirror_view(num_aero_species_in_mode_);

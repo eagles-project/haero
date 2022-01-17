@@ -97,7 +97,7 @@ module mam_gasaerexch
    !> The molecular weight of h2so4 aerosol as assumed by the host atm model
    real(wp) :: vol_molar_h2so4
 
-   !> save off config%num_modes for use in subroutines
+   !> save off config%num_aerosol_modes for use in subroutines
    integer ::  max_mode
 
    !> Save off config%num_gases
@@ -171,13 +171,13 @@ contains
 
    type(aerosol_species_t) h2so4
 
-   max_mode= config%num_modes
+   max_mode= config%num_aerosol_modes
    max_gas = config%num_gases
    ngas    = max_gas
    max_aer = maxval(config%num_mode_species)
 
-   allocate(l_mode_can_contain_species(maxval(config%num_mode_species), config%num_modes))
-   allocate(l_gas_condense_to_mode(config%num_gases, config%num_modes))
+   allocate(l_mode_can_contain_species(maxval(config%num_mode_species), max_mode))
+   allocate(l_gas_condense_to_mode(config%num_gases, max_mode))
    allocate(l_mode_can_age(maxval(config%num_mode_species)))
    allocate(idx_gas_to_aer(config%num_gases))
    allocate(eqn_and_numerics_category(config%num_gases))
@@ -187,10 +187,10 @@ contains
    allocate(qgas_avg(config%num_gases))
    allocate(qgas_netprod_otrproc(config%num_gases))
 
-   allocate(uptkaer(config%num_gases,config%num_modes))      ! gas to aerosol mass transfer rate (1/s)
+   allocate(uptkaer(config%num_gases,max_mode)) ! gas to aerosol mass transfer rate (1/s)
 
-   allocate(alnsg_aer(config%num_modes))
-   allocate(mode_aging_optaa(config%num_modes))
+   allocate(alnsg_aer(max_mode))
+   allocate(mode_aging_optaa(max_mode))
 
    !------------------------------------------------------------------
    ! MAM currently assumes that the uptake rate of other gases

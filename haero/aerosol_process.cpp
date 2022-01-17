@@ -27,7 +27,7 @@ using haero::Real;
 // Interoperable C functions for providing data to Fortran.
 // See haero.F90 for details on how these functions are used.
 void haerotran_begin_init();
-void haerotran_set_num_modes(int);
+void haerotran_set_num_aerosol_modes(int);
 void haerotran_set_max_mode_species(int);
 void haerotran_set_aerosol_mode(int, const char*, Real, Real, Real, Real, Real);
 void haerotran_set_aerosol_species(int, int, const char*, const char*, Real,
@@ -96,7 +96,7 @@ void AerosolProcess::init_fortran_(const ModalAerosolConfig& config) {
   config_ = new ModalAerosolConfig(config);
   haerotran_begin_init();
   int num_modes = config_->aerosol_modes.size();
-  haerotran_set_num_modes(num_modes);
+  haerotran_set_num_aerosol_modes(num_modes);
   size_t max_species = 0;
   for (int m = 0; m < num_modes; ++m) {
     const auto mode_species = config_->aerosol_species_for_mode(m);

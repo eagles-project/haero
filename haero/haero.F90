@@ -71,8 +71,8 @@ module haero
   type :: modal_aerosol_config_t
     !> The aerosol modes in the model, in indexed order.
     type(mode_t), dimension(:), allocatable :: aerosol_modes
-    !> The number of modes in the model. Equal to size(modes).
-    integer :: num_modes
+    !> The number of modes in the model. Equal to size(aerosol_modes).
+    integer :: num_aerosol_modes
     !> The number of actual species that exist within each mode.
     integer, dimension(:), allocatable :: num_mode_species
     !> population index offsets for modes.
@@ -381,13 +381,13 @@ contains
   end subroutine
 
   ! Set the number of modes in the global model.
-  subroutine haerotran_set_num_modes(num_modes) bind(c)
+  subroutine haerotran_set_num_aerosol_modes(num_modes) bind(c)
     use iso_c_binding, only: c_int
     implicit none
 
     integer(c_int), value, intent(in) :: num_modes
 
-    modal_aero_config%num_modes = num_modes
+    modal_aero_config%num_aerosol_modes = num_modes
     allocate(modal_aero_config%aerosol_modes(num_modes))
     allocate(modal_aero_config%num_mode_species(num_modes))
     allocate(modal_aero_config%population_offsets(num_modes+1))
@@ -480,10 +480,10 @@ contains
     integer :: m
 
     modal_aero_config%population_offsets(1) = 1
-    do m=1,modal_aero_config%num_modes
+    do m=1,modal_aero_config%num_aerosol_modes
       modal_aero_config%population_offsets(m+1) = modal_aero_config%population_offsets(m) + modal_aero_config%num_mode_species(m)
     end do
-    modal_aero_config%num_aerosol_populations = modal_aero_config%population_offsets(modal_aero_config%num_modes+1) - 1
+    modal_aero_config%num_aerosol_populations = modal_aero_config%population_offsets(modal_aero_config%num_aerosol_modes+1) - 1
   end subroutine
 
   ! This subroutine gets called when the C++ process exits.
@@ -550,7 +550,7 @@ contains
     integer                                   :: mode_index
 
     ! Find the mode index
-    do mode_index = 1,config%num_modes
+    do mode_index = 1,config%num_aerosol_modes
       if (config%aerosol_modes(mode_index)%name == mode_name) then
         exit
       end if
@@ -999,7 +999,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = t_interstitial_num_mix_ratios_c(t%ptr)
-    call c_f_pointer(v_ptr, retval, shape=[t%num_levels, modal_aero_config%num_modes])
+    call c_f_pointer(v_ptr, retval, shape=[t%num_levels, modal_aero_config%num_aerosol_modes])
   end function
 
   !> Provides access to the cloudborne aerosols number mixing ratios array for
@@ -1012,7 +1012,7 @@ contains
 
     type(c_ptr) :: v_ptr
     v_ptr = t_cloud_num_mix_ratios_c(t%ptr)
-    call c_f_pointer(v_ptr, retval, shape=[t%num_levels, modal_aero_config%num_modes])
+    call c_f_pointer(v_ptr, retval, shape=[t%num_levels, modal_aero_config%num_aerosol_modes])
   end function
 
 end module

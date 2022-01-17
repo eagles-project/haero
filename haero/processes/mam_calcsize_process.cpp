@@ -12,7 +12,7 @@ MAMCalcsizeProcess::MAMCalcsizeProcess()
 //------------------------------------------------------------------------
 
 void MAMCalcsizeProcess::init_(const ModalAerosolConfig &modal_aerosol_config) {
-  nmodes = modal_aerosol_config.num_modes();
+  nmodes = modal_aerosol_config.num_aerosol_modes();
 
   num_populations = modal_aerosol_config.num_aerosol_populations;
 

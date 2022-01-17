@@ -18,7 +18,7 @@ TEST_CASE("prognostics_ctor", "") {
     int num_levels = 72;
     Prognostics progs(test_config, num_levels);
 
-    REQUIRE(progs.num_aerosol_modes() == test_config.num_modes());
+    REQUIRE(progs.num_aerosol_modes() == test_config.num_aerosol_modes());
     REQUIRE(progs.num_gases() == test_config.num_gases());
     REQUIRE(progs.num_aerosol_populations() ==
             test_config.num_aerosol_populations);
