@@ -91,7 +91,9 @@ class ModalAerosolConfig final {
   int num_aerosol_populations;
 
   /// The number of modes in this aerosol configuration.
-  int num_aerosol_modes() const { return static_cast<int>(aerosol_modes.size()); }
+  int num_aerosol_modes() const {
+    return static_cast<int>(aerosol_modes.size());
+  }
 
   /// The number of gases in this aerosol configuration.
   int num_gases() const { return static_cast<int>(gas_species.size()); }
