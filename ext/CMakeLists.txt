@@ -468,6 +468,9 @@ ExternalProject_Add(skywalker_proj
 add_library(skywalker STATIC IMPORTED GLOBAL)
 set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libskywalker_${HAERO_PRECISION}.a)
 add_dependencies(skywalker skywalker_proj)
+add_library(skywalker_f90 STATIC IMPORTED GLOBAL)
+set_target_properties(skywalker_f90 PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libskywalker_f90_${HAERO_PRECISION}.a)
+add_dependencies(skywalker_f90 skywalker_proj)
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)

@@ -1,13 +1,21 @@
 set(NUC_VALIDATION_DIR ${MAM_X_VALIDATION_DIR}/nucleation)
 
-# This skywalker driver computes binary and ternary nucleation rates.
+# Include directory for .mod files.
+include_directories(${PROJECT_BINARY_DIR}/haero)
+include_directories(${PROJECT_BINARY_DIR}/validation)
+
+# These skywalker drivers compute binary and ternary nucleation rates.
 add_executable(nucleation_rate nucleation_rate.cpp)
 target_link_libraries(nucleation_rate skywalker;validation;${HAERO_LIBRARIES})
+add_executable(nucleation_rate_f90 nucleation_rate.F90)
+target_link_libraries(nucleation_rate_f90 skywalker_f90;validation_f90;${HAERO_LIBRARIES})
 
 # This driver computes the threshold concentration of H2SO4 at given T and RH
 # for nucleation to occur.
 add_executable(nucleation_thresh nucleation_thresh.cpp)
 target_link_libraries(nucleation_thresh skywalker;validation;${HAERO_LIBRARIES})
+add_executable(nucleation_thresh_f90 nucleation_thresh.F90)
+target_link_libraries(nucleation_thresh_f90 skywalker_f90;validation_f90;${HAERO_LIBRARIES})
 
 # This driver computes the growth SO4 and NH4 aerosol particeles from
 # H2SO4 and NH3 gas at given T and RH.
@@ -21,11 +29,13 @@ foreach (input vehkamaki2002_contour;vehkamaki2002_fig8;
                vehkamaki2002_fig9;vehkamaki2002_fig10;vehkamaki2002_fig11;
                merikanto2007_fig2;merikanto2007_fig3;merikanto2007_fig4)
   add_test(gen_${input} nucleation_rate ${NUC_VALIDATION_DIR}/${input}.yaml)
+  add_test(gen_${input}_f90 nucleation_rate_f90 ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
 
 # Nucleation threshold
 foreach (input vehkamaki2002_fig7)
   add_test(gen_${input} nucleation_thresh ${NUC_VALIDATION_DIR}/${input}.yaml)
+  add_test(gen_${input}_f90 nucleation_thresh_f90 ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
 
 # Nucleation growth
