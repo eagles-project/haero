@@ -20,7 +20,7 @@ extern void @F90_MODULE_NAME@_set_real_param(const char* name, Real value);
 namespace haero {
 
 @CXX_CLASS_NAME@::@CXX_CLASS_NAME@():
-  haero::FAerosolProcess("@CXX_CLASS_NAME@ (Fortran @PROCESS_ENUM_TYPE@)",
+  haero::FAerosolProcess("@CXX_CLASS_NAME@ (Fortran)",
     @F90_MODULE_NAME@_init,
     @F90_MODULE_NAME@_run,
     @F90_MODULE_NAME@_finalize,

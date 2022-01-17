@@ -455,8 +455,7 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   // Test basic construction.
   SECTION("construct") {
     auto* process = new MAMNucleationFProcess();
-    REQUIRE(process->name() ==
-            "MAMNucleationFProcess (Fortran NucleationProcess)");
+    REQUIRE(process->name() == "MAMNucleationFProcess (Fortran)");
     delete process;
   }
 

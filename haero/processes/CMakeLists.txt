@@ -28,19 +28,16 @@ if (HAERO_FORTRAN)
   # the prognostic_fprocess macro, and a diagnostic process with the
   # diagnostic_fprocess macro. Both macros take the following arguments:
   # * The name of the C++ class to be generated for this process.
-  # * The appropriate enumerated type that defines the role of the process
-  #   within the aerosol life cycle (e.g. NucleationProcess for aerosol
-  #   nucleation). For valid enum types, see ProcessType in haero/process.hpp.
   # * The name of the Fortran module that implements the process (without
   #   the .F90 suffix). The source code for this module must be located in a
   #   file named after the module, with an .F90 suffix. E.g.: mam_nucleation
   #   refers to a Fortran module named mam_nucleation whose source lives in
   #   mam_nucleation.F90, within this directory.
-  faerosol_process(MAMGasAerosolExchangeFProcess GasAerosolExchangeProcess mam_gasaerexch)
-  faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
+  faerosol_process(MAMGasAerosolExchangeFProcess mam_gasaerexch)
+  faerosol_process(MAMNucleationFProcess mam_nucleation)
   # TODO: Temporarily disabled for Fortran modal_aero_config refactor -JNJ
-  #faerosol_process(MAMCalcsizeFProcess CalcsizeProcess mam_calcsize)
-  faerosol_process(MAMRenameFProcess RenameProcess mam_rename)
+  #faerosol_process(MAMCalcsizeFProcess mam_calcsize)
+  faerosol_process(MAMRenameFProcess mam_rename)
 
   # Supporting modules get appended to HAERO_FORTRAN_SOURCES here.
   foreach(f90_src vehkamaki2002.F90 merikanto2007.F90 wang2008.F90
