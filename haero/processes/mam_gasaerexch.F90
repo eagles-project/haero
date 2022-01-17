@@ -217,14 +217,14 @@ contains
 
    ! Record the index for h2so4 aerosol within the Aitken mode and fetch some
    ! properties.
-   iaer_h2so4 = config%aerosol_index(nait, "H2SO4")
+   iaer_h2so4 = config%aerosol_species_index(nait, "H2SO4")
    if (iaer_h2so4 > 0) then
-     h2so4 = config%aero_species(nait, iaer_h2so4)
+     h2so4 = config%aerosol_species(nait, iaer_h2so4)
      mw_h2so4 = h2so4%molecular_wt
    end if
 
-   nsoa = config%aerosol_index(nait, "SOA")
-   npoa = config%aerosol_index(nait, "POA")
+   nsoa = config%aerosol_species_index(nait, "SOA")
+   npoa = config%aerosol_species_index(nait, "POA")
 
    !-------------------------------------------------------------------
    ! MAM currently uses a splitting method to deal with gas-aerosol

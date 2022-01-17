@@ -173,7 +173,7 @@ subroutine init(config)
 
   ! Write down some things.
   num_modes = config%num_modes
-  num_populations = config%num_populations
+  num_populations = config%num_aerosol_populations
   if (.not. allocated(mode_for_pop)) then
     allocate(mode_for_pop(num_populations))
     allocate(species_for_pop(num_populations))
@@ -194,9 +194,9 @@ subroutine init(config)
     allocate(dgnumhi_aer(num_modes))
 
     do m = 1,num_modes
-      dgnum_aer(m) = config%modes(m)%mean_std_dev
-      dgnumlo_aer(m) = config%modes(m)%min_diameter
-      dgnumhi_aer(m) = config%modes(m)%max_diameter
+      dgnum_aer(m) = config%aerosol_modes(m)%mean_std_dev
+      dgnumlo_aer(m) = config%aerosol_modes(m)%min_diameter
+      dgnumhi_aer(m) = config%aerosol_modes(m)%max_diameter
     end do
 
     ! Allocate gas and aerosol state buffers.
@@ -207,21 +207,21 @@ subroutine init(config)
     allocate(qwtr_cur(num_modes))
 
     ! Record the aitken mode index.
-    nait = config%mode_index("aitken")
+    nait = config%aerosol_mode_index("aitken")
 
     ! Record the index for SO4 aerosol within the Aitken mode and fetch some
     ! properties.
-    iaer_so4 = config%aerosol_index(nait, "SO4")
+    iaer_so4 = config%aerosol_species_index(nait, "SO4")
     if (iaer_so4 > 0) then
-      so4 = config%aero_species(nait, iaer_so4)
+      so4 = config%aerosol_species(nait, iaer_so4)
       mw_so4a_host = so4%molecular_wt
     end if
 
     ! Record the index for NH4 aerosol within the Aitken mode and fetch some
     ! properties.
-    iaer_nh4 = config%aerosol_index(nait, "NH4")
+    iaer_nh4 = config%aerosol_species_index(nait, "NH4")
     if (iaer_nh4 > 0) then
-      nh4 = config%aero_species(nait, iaer_nh4)
+      nh4 = config%aerosol_species(nait, iaer_nh4)
       mw_nh4a_host = nh4%molecular_wt
     end if
 
