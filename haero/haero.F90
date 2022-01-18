@@ -425,7 +425,7 @@ contains
 
     modal_aero_config%aerosol_modes(mode)%name = c_to_f_string(name)
     modal_aero_config%aerosol_modes(mode)%min_diameter = min_d
-    modal_aero_config%modes(mode)%nom_diameter = nom_d
+    modal_aero_config%aerosol_modes(mode)%nom_diameter = nom_d
     modal_aero_config%aerosol_modes(mode)%max_diameter = max_d
     modal_aero_config%aerosol_modes(mode)%mean_std_dev = std_dev
     modal_aero_config%aerosol_modes(mode)%log_sigma = log(std_dev)
@@ -508,8 +508,8 @@ contains
     s_spec_ind = p_offsets(imode)       !start index
     e_spec_ind = p_offsets(imode+1) - 1 !end index of species for all modes expect the last mode
 
-    if(imode.eq.model%num_modes) then ! for the last mode
-       e_spec_ind = model%num_populations !if imode==nmodes, end index is the total number of species
+    if(imode.eq.modal_aero_config%num_aerosol_modes) then ! for the last mode
+       e_spec_ind = modal_aero_config%num_aerosol_populations !if imode==nmodes, end index is the total number of species
     endif
 
   end subroutine get_strt_end_spec_ind
@@ -529,7 +529,7 @@ contains
     integer :: e_spec_ind ! end index
 
     !get the starting and ending species index
-    call get_strt_end_spec_ind(model%population_offsets, imode, s_spec_ind, e_spec_ind)
+    call get_strt_end_spec_ind(modal_aero_config%population_offsets, imode, s_spec_ind, e_spec_ind)
 
     !total # of species
     tot_num = e_spec_ind - s_spec_ind + 1
