@@ -113,9 +113,9 @@ void AerosolProcess::init_fortran_(const ModalAerosolConfig& config) {
                                mode.deliquescence_pt, mode.crystallization_pt);
 
     // Set up aerosol species for this mode.
-    int num_species = mode_species.size();
-    for (int s = 0; s < num_species; ++s) {
-      const auto species = config_->aerosol_species[s];
+    int num_aero_species = mode_species.size();
+    for (int s = 0; s < num_aero_species; ++s) {
+      const auto species = mode_species[s];
       haerotran_set_aerosol_species(
           m + 1, s + 1, species.name().c_str(), species.symbol().c_str(),
           species.molecular_weight, species.density, species.hygroscopicity);
