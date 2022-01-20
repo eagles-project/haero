@@ -85,7 +85,6 @@ module mam_calcsize
   !we issue an error message when there is a conflict between "do_aitacc_transfer_allowed" and "do_aitacc_transfer"
   logical, save :: do_aitacc_transfer_allowed(0:npair_csizxf) ! This is an array as it can be different for each radiatio diagnostic call
 
-  integer, save :: nlevs      !number of levels
   integer, save :: nmodes     !number of modes
   integer, save :: max_nspec  !number of species in the mode with the max species
   integer, save :: num_populations !total number of species
@@ -133,8 +132,6 @@ contains
     integer :: ierr !error code
     integer :: imode
 
-    !initialize module-level variables
-    nlevs     = config%num_levels !number of levels
     nmodes    = config%num_aerosol_modes  !number of modes
     num_populations = config%num_aerosol_populations !total number of species
 
@@ -356,7 +353,7 @@ contains
     type(tendencies_t), intent(inout) :: tendencies
 
     !local variables
-    integer  :: imode, nspec
+    integer  :: imode, nspec, nlevs
 
     integer  :: s_spec_ind, e_spec_ind ! species starting and ending index in the population (q_i and q_c) arrays for a mode
     integer  :: ierr, klev
@@ -367,26 +364,26 @@ contains
     real(wp) :: drv_a, drv_c !dry volume [FIXME: unit????]
     real(wp) :: num_a, num_c ![#/kg(of air)]
 
-    real(wp) :: dgncur_a(nlevs, nmodes) !interstitial particle diameter[m](FIXME: This should be diagnostic variable)
-    real(wp) :: dgncur_c(nlevs, nmodes) !cldborne particle diameter [m](FIXME: This should be diagnostic variable)
+    real(wp) :: dgncur_a(prognostics%num_levels, nmodes) !interstitial particle diameter[m](FIXME: This should be diagnostic variable)
+    real(wp) :: dgncur_c(prognostics%num_levels, nmodes) !cldborne particle diameter [m](FIXME: This should be diagnostic variable)
 
-    real(wp) :: v2ncur_a(nlevs, nmodes) !interstitial particle diameter[FIXME: units????]
-    real(wp) :: v2ncur_c(nlevs, nmodes) !cldborne vol2num ratio [FIXME:units???]
+    real(wp) :: v2ncur_a(prognostics%num_levels, nmodes) !interstitial particle diameter[FIXME: units????]
+    real(wp) :: v2ncur_c(prognostics%num_levels, nmodes) !cldborne vol2num ratio [FIXME:units???]
 
-    real(wp) :: dryvol_a(nlevs), dryvol_c(nlevs) !dry volume of a particle[m3/kg(of air)]
+    real(wp) :: dryvol_a(prognostics%num_levels), dryvol_c(prognostics%num_levels) !dry volume of a particle[m3/kg(of air)]
     real(wp) :: init_num_a, init_num_c !initial number mixing ratios entering this process [#/kg(of air)]
     real(wp) :: inter_num_tend, cld_num_tend   ![#/kg(of air)/s]
     real(wp):: density(max_nspec) !specie density array for each mode [kg/m3]
     real(wp) :: adj_tscale, adj_tscale_inv !adjustment time scales in [s] and [1/s] respectively
 
     !Work variables for aitken<-->accumulation transfer sub process
-    real(wp) :: drv_a_aitsv(nlevs), drv_a_accsv(nlevs) !saves aitken and accumulation interstitial modes dryvolume
-    real(wp) :: drv_c_aitsv(nlevs), drv_c_accsv(nlevs) !saves aitken and accumulation cloudborne modes dryvolume
-    real(wp) :: num_a_aitsv(nlevs), num_a_accsv(nlevs) !saves aitken and accumulation interstitial modes num concentrations
-    real(wp) :: num_c_aitsv(nlevs), num_c_accsv(nlevs) !saves aitken and accumulation cloudborne modes num concentrations
+    real(wp) :: drv_a_aitsv(prognostics%num_levels), drv_a_accsv(prognostics%num_levels) !saves aitken and accumulation interstitial modes dryvolume
+    real(wp) :: drv_c_aitsv(prognostics%num_levels), drv_c_accsv(prognostics%num_levels) !saves aitken and accumulation cloudborne modes dryvolume
+    real(wp) :: num_a_aitsv(prognostics%num_levels), num_a_accsv(prognostics%num_levels) !saves aitken and accumulation interstitial modes num concentrations
+    real(wp) :: num_c_aitsv(prognostics%num_levels), num_c_accsv(prognostics%num_levels) !saves aitken and accumulation cloudborne modes num concentrations
 
-    real(wp) :: drv_a_sv(nlevs,nmodes), drv_c_sv(nlevs,nmodes)!saves dryvolume for each mode and level
-    real(wp) :: num_a_sv(nlevs,nmodes), num_c_sv(nlevs,nmodes)!saves num conc. for each mode and level
+    real(wp) :: drv_a_sv(prognostics%num_levels,nmodes), drv_c_sv(prognostics%num_levels,nmodes)!saves dryvolume for each mode and level
+    real(wp) :: num_a_sv(prognostics%num_levels,nmodes), num_c_sv(prognostics%num_levels,nmodes)!saves num conc. for each mode and level
 
 
     real(wp), pointer, dimension(:,:) :: q_i    ! interstitial aerosol mix ratios [kg/kg(of air)]]
@@ -417,6 +414,9 @@ contains
     !------------------------------
     !Extract relevant data
     !------------------------------
+
+    !number of levels
+    nlevs = prognostics%num_levels
 
     !interstitial mass and number mixing ratios
     q_i => prognostics%interstitial_aerosols()
@@ -475,7 +475,7 @@ contains
        !FIXME:Density needs to be fixed, the values are not right as they are all for the coarse mode currently, probably for simplification!
 
        call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
-       print*,'Final dryvol:',dryvol_a(1),dryvol_c(1)
+       print*,'Final dryvol:',dryvol_a(1:3),dryvol_c(1)
 
        !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
        v2nmin = v2nmin_nmodes(imode)
@@ -658,7 +658,7 @@ contains
 
     do ispec = s_spec_ind, e_spec_ind
        density_ind = ispec - s_spec_ind + 1 !density array index goes from 1 to nspec
-       print*,'density:',density(density_ind)
+       print*,'density:',density(density_ind), top_lev, nlevs
 
        inv_density = 1.0_wp / density(density_ind) !inverse of density
 
@@ -666,7 +666,7 @@ contains
        do klev = top_lev, nlevs
           ! volume is mass*inv_density = [kg/kg(of air)] * [1/(kg/m3)] = [m3/kg(of air)]
           dryvol_a(klev) = dryvol_a(klev) + max(0.0_wp,q_i(klev,ispec))*inv_density
-          !if(klev==1 .and. imode == 3)print*,'compute:',dryvol_a(klev),q_i(klev,ispec),inv_density,ispec
+          if(klev==1 .and. imode == 3)print*,'compute:',dryvol_a(klev),q_i(klev,ispec),inv_density,ispec
           dryvol_c(klev) = dryvol_c(klev) + max(0.0_wp,q_c(klev,ispec))*inv_density
        end do
     end do
