@@ -1,21 +1,12 @@
 module mam_calcsize
   !TODO:
-  !1. do_adjust, do_aitacc_transfer, N_DIAG, list_idx and update_mmr should be set somewhere else and should be an input to this process
+  !1. do_adjust, do_aitacc_transfer, N_DIAG, list_idx and update_mmr 
+  !   should be set somewhere else and should be an input to this process
   !2. We might need to revist "close_to_one" variable for single precision???
   !3. "top_lev" is asumed to be 1 in this code. It can be different from 1
-  !4. Form arrays to pair " to and from modes" in the init routine
-  !5. E3SM has "dotend" logicals which are assigned in the interface, do we need those?
+  !4. E3SM has "dotend" logicals which are assigned in the interface, do we need those?
   !   If yes, we need to add that capability.
-  !6. We need nominal dgnumsso that the code can compute geometric mean for ait<-->accum transfer
-  !7. We need state%pdel for computing surface fluxes(qsrflx) but we are skipping it for now.
-  !8. Define noxf_acc2ait and do we need its length to be equalt to population array?
-  !9  Remove unused variables
-  !10. improve var names....remove dum, add units and dimensions
-  !11. deallocate everything which ia allocated
-  !12. NDIAG should be set to max number of radiation diagnostics the code is allowed to handle
-  !13. Check if do_adjust and do_adjust_allowed are in sync, otherwise die
-  !14. Check if do_aitacc_transfer and do_aitacc_transfer_allowed are in sync, otherwise die
-
+  !5. deallocate everything which ia allocated
 
 
   use haero_precision, only: wp
@@ -33,12 +24,15 @@ module mam_calcsize
             set_logical_param, &
             set_real_param
 
-  !FIXME: The following parameters should set somewhere else
+  !------------------------------------------------------------------------------------------
+  !FIXME: The following parameters should be input for this process
+  !and may differ for each radiation diagostic lists
   !Switch to perform number adjustment after dry diameter calculations
   logical, parameter :: do_adjust = .true.
 
   !Switch to perform aitken<->accumulation species transfer after number adjustment calculations
   logical, parameter :: do_aitacc_transfer = .true.
+  !------------------------------------------------------------------------------------------
 
   !Switch to know whether to compute tendencies for mass mixing ratios (mmr) or not
   logical, parameter :: update_mmr = .true.
@@ -49,7 +43,6 @@ module mam_calcsize
   !"list_idx=0" is reservered for the prognostic call
   !FIXME: We are currently supporting only list_idx=0, generalize and test the code with other list_idx values
   integer, parameter :: list_idx = 0
-
 
   !Mimic enumerators for aerosol types
   integer, parameter:: inter_aero   = 1 !interstitial aerosols
@@ -78,7 +71,7 @@ module mam_calcsize
   !------------------------------------------------------------------------------------------
 
   !Switch which decides whether we are allowed to perform number adjustment after dry diameter calculations
-  !we issue an error message when there is a conflict between "do_adjust_allowed" and "do_allowed"
+  !we issue an error message when there is a conflict between "do_adjust_allowed" and "do_adjust"
   logical, save :: do_adjust_allowed
 
   !Switch which decides whether we are allowed to perform aitken<->accumulation species transfer after number adjustment calculations
@@ -91,13 +84,13 @@ module mam_calcsize
   integer, save :: aitken_idx !index of aitken mode
   integer, save :: accum_idx  !index of accumulation mode
 
-  !"modefrm_csizxf" stores mode number "from" which species will be moved
-  !to a mode stored in "modetoo_csizxf".
-  ![E.g. if modefrm_csizxf(3)=2 and modetoo_csizxf(3)=1, for rad_diag_3 (notice that
+  !"srcmode_csizxf" stores source mode number from  which species will be moved
+  !to a mode stored in "destmode_csizxf".
+  ![E.g. if srcmode_csizxf(3)=2 and destmode_csizxf(3)=1, for rad_diag_3 (notice that
   !these arrays are indexed "3" as rad_diag is rad_diag_3), species will be moved
   !from 2nd mode to the 1st mode.]
-  integer, save :: modefrm_csizxf(0:maxpair_csizxf)
-  integer, save :: modetoo_csizxf(0:maxpair_csizxf)
+  integer, save :: srcmode_csizxf(0:maxpair_csizxf)
+  integer, save :: destmode_csizxf(0:maxpair_csizxf)
   integer, save :: ait_mode_inter(0:maxpair_csizxf),  acc_mode_inter(0:maxpair_csizxf)
   integer, save :: ait_mode_cldbrn(0:maxpair_csizxf), acc_mode_cldbrn(0:maxpair_csizxf)
   integer, save :: ait_spec_in_acc_inter(0:maxpair_csizxf,10), acc_spec_in_ait_inter(0:maxpair_csizxf,10) !FIXME: Make these array allocatable and allocate  using max_nspec instead of 10
@@ -105,11 +98,10 @@ module mam_calcsize
   integer, save :: nspec_common(maxpair_csizxf) !number of species found common between aitken and accumulation modes
 
 
-  integer, save, allocatable :: lspecfrma_csizxf(:), lspectooa_csizxf(:), lspecfrmc_csizxf(:), lspectooc_csizxf(:)
   integer, save, allocatable :: population_offsets(:) ! start and end indices of species in a mode innpopulation arrays
   integer, save, allocatable :: num_mode_species(:)   ! number of species in a mode
-  integer, save, allocatable :: spec_density(:,:)     ! density of species
 
+  real(wp), save, allocatable :: spec_density(:,:)!density of species [kg/m3]
   real(wp), save, allocatable :: v2nmin_nmodes(:) !Minimum value of volume to number for each mode
   real(wp), save, allocatable :: v2nnom_nmodes(:) !Nominal value of volume to number for each mode
   real(wp), save, allocatable :: v2nmax_nmodes(:) !Maximum value of volume to number for each mode
@@ -141,7 +133,7 @@ contains
       stop 1
     endif
 
-    !An array that stores species' start and end indices in a specie spopulation index
+    !An array that stores species' start and end indices in a specie population index
     population_offsets(1:nmodes) = config%population_offsets(1:nmodes)
 
     allocate(num_mode_species(nmodes), stat=ierr)
@@ -159,7 +151,7 @@ contains
        stop 1
     endif
 
-    spec_density(1:nmodes,1:max_nspec) = config%aerosol_species(1:nmodes,1:max_nspec)%density !specie density TODO: units
+    spec_density(1:nmodes,1:max_nspec) = config%aerosol_species(1:nmodes,1:max_nspec)%density !specie density [kg/m3]
 
     allocate(v2nmin_nmodes(nmodes), v2nnom_nmodes(nmodes), v2nmax_nmodes(nmodes), dgnmin_nmodes(nmodes), dgnnom_nmodes(nmodes), &
          dgnmax_nmodes(nmodes), cmn_factor_nmodes(nmodes), stat=ierr)
@@ -171,7 +163,7 @@ contains
 
     do imode = 1, nmodes
        v2nmin_nmodes(imode)     = config%aerosol_modes(imode)%min_vol_to_num_ratio()!Minimum value of volume to number for each mode
-       v2nnom_nmodes(imode)     = config%aerosol_modes(imode)%nom_vol_to_num_ratio()!Maximum value of volume to number for each mode
+       v2nnom_nmodes(imode)     = config%aerosol_modes(imode)%nom_vol_to_num_ratio()!Nominal value of volume to number for each mode
        v2nmax_nmodes(imode)     = config%aerosol_modes(imode)%max_vol_to_num_ratio()!Maximum value of volume to number for each mode
        dgnmin_nmodes(imode)     = config%aerosol_modes(imode)%min_diameter          !Minimum diameter value for each mode
        dgnnom_nmodes(imode)     = config%aerosol_modes(imode)%nom_diameter          !Nominal diameter value for each mode
@@ -183,7 +175,7 @@ contains
     accum_idx  = config%aerosol_mode_index("accumulation")
 
     !Find mapping between the species of two different modes
-    !NOTE: Global variables will be updated to store the mapping
+    !NOTE: Global variables declared at modeul level will be updated to store the mapping
     !generated by the following call
     call find_species_mapping(config, aitken_idx, accum_idx)
 
@@ -209,11 +201,11 @@ contains
     character(len = 100) :: spec_name_ait, spec_name_acc
 
     !Initialize by assigning a non-existent mode (-1) to
-    !mode "from" and mode "to" for each diagnostic list
+    !source and destination modes for each diagnostic list
     !NOTE: "0" is reserved for the prognostic call
     do ilist = 0, npair_csizxf
-      modefrm_csizxf(ilist) = -1
-      modetoo_csizxf(ilist) = -1
+      srcmode_csizxf(ilist) = -1
+      destmode_csizxf(ilist) = -1
    enddo
 
    !do_adjust_allowed allows aerosol size  adjustment to be turned on/off
@@ -228,7 +220,6 @@ contains
    !------------------------------------------------------------------------------------------
 
    !find out mode index for accum and aitken modes in the prognostic radiation list (rad_climate)
-   !These are used to get strings stored for these modes in modename_amode array
    nait = aitken_idx !mode number of aitken mode
    nacc = accum_idx  !mode number of accumulation mode
 
@@ -247,11 +238,11 @@ contains
       aitken_exists = ( iait > 0)
 
       do_aitacc_transfer_allowed(ilist)=.false. !False by default
-      !if both aitken and accumulation modes exist, make it True and assign mode "from" and mode "to" variables
+      !if both aitken and accumulation modes exist, make it True and assign source and destination mode variables
       if(accum_exists .and. aitken_exists .and. iacc .ne. iait) then
          do_aitacc_transfer_allowed(ilist)=.true.
-         modefrm_csizxf(ilist) = iait
-         modetoo_csizxf(ilist) = iacc
+         srcmode_csizxf(ilist) = iait
+         destmode_csizxf(ilist) = iacc
       endif
    enddo
 
@@ -259,7 +250,7 @@ contains
    !-------------------------------------------------------------------------------
    !Find mapping between the corresponding species of aitken and accumulation nodes
    !
-   ! For example, soa may exist in accumulation and aitken modes. Here were are
+   ! For example, soa may exist in accumulation and aitken modes. Here we are
    ! finding mapping between their indices so that if we need to move soa from
    ! accumulation to aitken, we can do that using this mapping
    !-------------------------------------------------------------------------------
@@ -271,8 +262,8 @@ contains
       do ilist = 0, npair_csizxf
          if(do_aitacc_transfer_allowed(ilist)) then
             icnt = 0
-            imode_ait = modefrm_csizxf(ilist) !aitken  mode of this list
-            imode_acc = modetoo_csizxf(ilist) !accumulation mode of this list
+            imode_ait = srcmode_csizxf(ilist) !aitken  mode of this list
+            imode_acc = destmode_csizxf(ilist) !accumulation mode of this list
 
             !----------------------------------------------------------------------------------------
             !Aerosol *number* indices mapping between aitken and accumulation modes in this list
@@ -302,12 +293,12 @@ contains
 
             icnt = 0
             do ispec_ait = 1, nspec_ait
-               !find specie symbol in the "from" mode
+               !find specie symbol in the source mode
                spec_name_ait = config%aerosol_species(imode_ait, ispec_ait)%symbol
 
-               !Now find this specie index in the "to" mode
+               !Now find this specie index in the destination mode
 
-               !loop through speices of the "to" mode
+               !loop through speices of the destination mode
                do ispec_acc = 1, nspec_acc
                   !find species name
                   spec_name_acc = config%aerosol_species(imode_acc, ispec_acc)%symbol
@@ -315,8 +306,6 @@ contains
                   !find if specie in acc mode is same as ait or not
                   if(trim(spec_name_acc) == trim(spec_name_ait)) then
                      !if there is a match, find indices of species in cnst array
-                     !call cnst_get_ind(spec_name_ait, ind_ait)
-                     !call cnst_get_ind(spec_name_acc, ind_acc)
                      !print*,trim(spec_name_acc),'-', trim(spec_name_ait),' MATCHED'
                      icnt = icnt + 1
                      ait_spec_in_acc_inter(ilist, icnt)  = m_population_index(config, nait, ispec_ait)
@@ -330,10 +319,6 @@ contains
          endif
       enddo
    endif
-   print*,'Common:',nspec_common(0)
-   !#endif
-
-
   end subroutine find_species_mapping
 
 
@@ -367,7 +352,7 @@ contains
     real(wp) :: dgncur_a(prognostics%num_levels, nmodes) !interstitial particle diameter[m](FIXME: This should be diagnostic variable)
     real(wp) :: dgncur_c(prognostics%num_levels, nmodes) !cldborne particle diameter [m](FIXME: This should be diagnostic variable)
 
-    real(wp) :: v2ncur_a(prognostics%num_levels, nmodes) !interstitial particle diameter[FIXME: units????]
+    real(wp) :: v2ncur_a(prognostics%num_levels, nmodes) !interstitial vol2num ratio [FIXME: units????]
     real(wp) :: v2ncur_c(prognostics%num_levels, nmodes) !cldborne vol2num ratio [FIXME:units???]
 
     real(wp) :: dryvol_a(prognostics%num_levels), dryvol_c(prognostics%num_levels) !dry volume of a particle[m3/kg(of air)]
@@ -445,10 +430,6 @@ contains
        !Initialize diameter(dgnum), volume to number ratios(v2ncur) and dry volume (dryvol) for both
        !interstitial and cloudborne aerosols
 
-       !NOTE: In Haero we do not carry default dgnum, so we initialize dgncur_* and v2ncur_* to zero
-       !That is why, we do not need to send "list_idx" as an argument. This call can be removed
-       !as there is no need to initialize these fields to zero, they will be updated eventually
-       !with the valid values
        call set_initial_sz_and_volumes (imode, top_lev, nlevs, dgncur_a, v2ncur_a, dryvol_a) !for interstitial aerosols
        call set_initial_sz_and_volumes (imode, top_lev, nlevs, dgncur_c, v2ncur_c, dryvol_c) !for cloud-borne aerosols
 
@@ -472,10 +453,8 @@ contains
        density(1:max_nspec) = huge(density) !initialize the whole array to a huge value [FIXME: NaN would be better than huge]
        density(1:nspec) = spec_density(imode, 1:nspec) !assign density till nspec (as nspec can be different for each mode)
 
-       !FIXME:Density needs to be fixed, the values are not right as they are all for the coarse mode currently, probably for simplification!
-
        call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
-       print*,'Final dryvol:',dryvol_a(1:3),dryvol_c(1)
+       print*,'Final dryvol:',dryvol_a(1),dryvol_c(1)
 
        !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
        v2nmin = v2nmin_nmodes(imode)
@@ -531,6 +510,8 @@ contains
              cld_num_tend   = dncdt(klev,imode)
 
              !NOTE: Only number tendencies (NOT mass mixing ratios) are updated in adjust_num_sizes
+             !Effect of these adjustment will be reflected in the particle diameters (via
+             !"update_diameter_and_vol2num" subroutine call below)
              call adjust_num_sizes (drv_a, drv_c, init_num_a, init_num_c, dt, adj_tscale_inv, & !input
                   v2nmin, v2nmax, v2nminrl, v2nmaxrl, &       !input
                   num_a, num_c, inter_num_tend, cld_num_tend )!output
@@ -538,6 +519,7 @@ contains
 
 
           endif !do_adjust
+          if(klev==1)print*,'Tends:',dnidt(1,imode),dncdt(1,imode)
 
           !FIXME: in (or better done after) the following update_diameter_and_vol2num calls, we need to update mmr as well
           !but we are currently skipping that update. That update will require additional arguments
@@ -592,7 +574,7 @@ contains
             dt, q_i, q_c, n_i, n_c,&
             drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv,     &
             drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,      &
-            dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, &!, dotend, dotendqqcw &
+            dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, &
             didt, dcdt, dnidt, dncdt )
     end if
 
@@ -622,8 +604,8 @@ contains
     integer  :: klev
 
     do klev = top_lev, nlevs
-       dgncur(klev,imode) = 0.0_wp !diameter
-       v2ncur(klev,imode) = 0.0_wp !volume to number
+       dgncur(klev,imode) = dgnnom_nmodes(imode) !diameter
+       v2ncur(klev,imode) = v2nnom_nmodes(imode) !volume to number
        dryvol(klev)       = 0.0_wp !initialize dry vol
     end do
 
@@ -658,7 +640,7 @@ contains
 
     do ispec = s_spec_ind, e_spec_ind
        density_ind = ispec - s_spec_ind + 1 !density array index goes from 1 to nspec
-       print*,'density:',density(density_ind), top_lev, nlevs
+       !print*,'density:',density(density_ind), top_lev, nlevs
 
        inv_density = 1.0_wp / density(density_ind) !inverse of density
 
@@ -666,7 +648,6 @@ contains
        do klev = top_lev, nlevs
           ! volume is mass*inv_density = [kg/kg(of air)] * [1/(kg/m3)] = [m3/kg(of air)]
           dryvol_a(klev) = dryvol_a(klev) + max(0.0_wp,q_i(klev,ispec))*inv_density
-          if(klev==1 .and. imode == 3)print*,'compute:',dryvol_a(klev),q_i(klev,ispec),inv_density,ispec
           dryvol_c(klev) = dryvol_c(klev) + max(0.0_wp,q_c(klev,ispec))*inv_density
        end do
     end do
@@ -994,86 +975,86 @@ contains
     !inputs
     integer, intent(in) :: top_lev, nlevs         !for model level loop
     integer, intent(in) :: aitken_idx,  accum_idx !mode number for aitken and accumulation modes
-    real(wp), intent(in) :: adj_tscale_inv
-    real(wp), intent(in) :: q_i(:,:), q_c(:,:)     !interstitial and cldborne mix ratios [kg/kg(of air)]
-    real(wp), intent(in) :: n_i(:,:), n_c(:,:)     !interstitial and cldborne mix ratios [kg/kg(of air)]
-    real(wp), intent(in) :: drv_a_aitsv(:), num_a_aitsv(:)
-    real(wp), intent(in) :: drv_a_accsv(:), num_a_accsv(:)
-    real(wp), intent(in) :: drv_c_aitsv(:), num_c_aitsv(:)
-    real(wp), intent(in) :: drv_c_accsv(:), num_c_accsv(:)
-    real(wp), intent(in) :: dt
+    real(wp), intent(in) :: adj_tscale_inv        !inverse of "adjustment" time scale [1/s]
+    real(wp), intent(in) :: q_i(:,:), q_c(:,:)    !interstitial and cldborne mix ratios [kg/kg(of air)]
+    real(wp), intent(in) :: n_i(:,:), n_c(:,:)    !interstitial and cldborne mix ratios [kg/kg(of air)]
+    real(wp), intent(in) :: drv_a_aitsv(:), num_a_aitsv(:)!saved dry volume and number conc. for the aitken mode(inter)
+    real(wp), intent(in) :: drv_a_accsv(:), num_a_accsv(:)!saved dry volume and number conc. for the accumulation mode(inter)
+    real(wp), intent(in) :: drv_c_aitsv(:), num_c_aitsv(:)!saved dry volume and number conc. for the aitken mode(cldbrn)
+    real(wp), intent(in) :: drv_c_accsv(:), num_c_accsv(:)!saved dry volume and number conc. for the accumulation mode(cldbrn)
+    real(wp), intent(in) :: dt !time step [s]
 
     !outputs
-    real(wp), intent(inout) :: dgncur_a(:,:) !TODO: Add comments here!
-    real(wp), intent(inout) :: dgncur_c(:,:)
-    real(wp), intent(inout) :: v2ncur_a(:,:)
-    real(wp), intent(inout) :: v2ncur_c(:,:)
-    real(wp), intent(inout) :: didt(:,:), dcdt(:,:)
-    real(wp), intent(inout) :: dnidt(:,:), dncdt(:,:)
+    real(wp), intent(inout) :: dgncur_a(:,:)!interstitial particle diameter[m]
+    real(wp), intent(inout) :: dgncur_c(:,:)!cldborne particle diameter [m]
+    real(wp), intent(inout) :: v2ncur_a(:,:)!interstitial vol2num ratio
+    real(wp), intent(inout) :: v2ncur_c(:,:)!cldborne vol2num ratio
+    real(wp), intent(inout) :: didt(:,:), dcdt(:,:)!interstitial aerosol mass mixing ratios tendency [kg/kg(of air)/s]
+    real(wp), intent(inout) :: dnidt(:,:), dncdt(:,:)!cldborne   aerosol mass mixing ratios tendency [kg/kg(of air)/s]
 
     !local
-    integer  :: iait, iacc
-    integer  :: klev, icnt
-    integer  :: s_spec_ind, e_spec_ind ! starting and ending index in population array for a mode
-    integer  :: nspec_acc, ixfer_ait2acc, ixfer_acc2ait
-    integer  :: imode, jmode, aer_type, jsrflx, iq
-    integer  :: lsfrm, lstoo, ispec_acc, idx
+    integer  :: iait, iacc !index for aitken and accumulation modes
+    integer  :: klev, icnt !indices for level and a counter
+    integer  :: nspec_acc  !total number of accumulation species
+    integer  :: aer_type   !aerosol type(interstitial or cloudborne)
+    integer  :: ait2acc_index, acc2_ait_index !indices for transfer between modes
+    integer  :: imode, jmode, imap, ispec_acc
 
+    !local work variables for number and volume for aitken and accum modes
     real(wp) :: num_a, drv_a, num_c, drv_c
     real(wp) :: num_a_acc, num_c_acc
     real(wp) :: drv_a_acc, drv_c_acc
     real(wp) :: num_t, drv_t
-    real(wp) :: drv_a_noxf, drv_c_noxf, drv_t_noxf, dummwdens
-    real(wp) :: num_t0, num_t_noxf
-    real(wp) :: duma, cmn_factor, dgnum, sigmag
-    real(wp) :: voltonumb_ait, voltonumb_acc, v2n_geomean
-    real(wp) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
-    real(wp) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
-    real(wp) :: xfertend_num(2,2)
-#if 0
-    real(wp) :: xfercoef
-    real(wp) :: xfertend
-#endif
-    logical  :: no_transfer_acc2ait(max_nspec)
-    character(len=32)  :: spec_name
+
+    !variables capturing number and volume which can't be tranffered between modes (noxf)
+    real(wp) :: drv_a_noxf, drv_c_noxf, drv_t_noxf !"noxf" stands for "no transfer"
+    real(wp) :: num_t_noxf
+
+    real(wp) :: num_diff, vol_diff, cmn_factor, dgnum, sigmag
+    real(wp) :: voltonum_ait, voltonum_acc, v2n_geomean
+    real(wp) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc !volume and number transfer coefficients (ait->acc)
+    real(wp) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait !volume and number transfer coefficients (acc->ait)
+    real(wp) :: xfertend_num(2,2) !tendency for number transfer
+
+    logical  :: no_transfer_acc2ait(max_nspec) !species which can't be transferred
+
     character(len=800) :: err_msg
 
     !find out accumulation and aitken modes
     iacc = accum_idx
     iait = aitken_idx
 
-    if(iacc <= 0  .or. iait <=0) then
+    if(iacc <= 0  .or. iait <=0) then !if either mode doesn't exists, stop
        write(*,*)'Accumulation or the Aitken mode do not exist,', &
             ' Accu mode:',iacc,', Aitken mode:',iait,', a negative or zero mode is', &
             ' a non-existent mode'
        stop 1
     endif
 
-    !FIXME: The following will become active once we create pairs in the init routine
-    if (modefrm_csizxf(list_idx) .ne. iait .or.modetoo_csizxf(list_idx) .ne. iacc) then
-       write(err_msg,*)'modefrm/too_csizxf are wrong for radiation list:',list_idx
+    !check if src and destination modes are same as iacc iait
+    if (srcmode_csizxf(list_idx) .ne. iait .or.destmode_csizxf(list_idx) .ne. iacc) then
+       write(err_msg,*)'srcmode/too_csizxf are wrong for radiation list:',list_idx
        print(err_msg)
        stop 1
     endif
 
 
     !------------------------------------------------------------------------
-    ! Identify accum species cannot be transferred to aitken mode
+    ! Identify accum species that cannot be transferred to the aitken mode
     !
-    ! Accumulation mode have more species than Aitken mode. Therefore, there
+    ! Accumulation mode have more species than the aitken mode. Therefore, there
     ! will be some species which cannot be transferred from accumulation to
-    ! Aitken mode as they don't exist in the Aitken mode
+    ! aitken mode as they don't exist in the aitken mode
     !------------------------------------------------------------------------
 
     no_transfer_acc2ait(:) = .true. ! let us assume we are not going to move any species
 
+    !-------------------------------------------
     !Now compute species which can be transfered
-    !Get # of species in accumulation mode
-    call get_strt_end_spec_ind(population_offsets, iacc, s_spec_ind, e_spec_ind)
+    !-------------------------------------------
 
     !find number of species in the accumulation mode of this list
     nspec_acc = total_species_num(iacc)
-
 
     !Go through all the species in the accumulation mode and
     !find out species which exists in both accumulation and
@@ -1081,12 +1062,12 @@ contains
     !species as we can tranfer those species as they exist in both
     !the modes
     do ispec_acc = 1, nspec_acc !Go through all species within accumulation mode (only species, not number)
-       do iq = 1, nspec_common(list_idx) !Go through all mapped species
+       do imap = 1, nspec_common(list_idx) !Go through all mapped species
 
           ! if a specie in the accumulation mode also exists in the
           ! aitken mode, set "no_transfer" to false, allowing transfer of
           ! species between accumulation and aitken modes
-          if(acc_spec_in_ait_inter(list_idx,iq) ==  ispec_acc) then
+          if(acc_spec_in_ait_inter(list_idx,imap) ==  ispec_acc) then
              no_transfer_acc2ait(ispec_acc) = .false. ! species which can be tranferred
           endif
        end do
@@ -1098,12 +1079,12 @@ contains
     ! transfered between these modes
     !------------------------------------------------------------------------
 
-    voltonumb_ait   = v2nnom_nmodes(iait) !volume to number for aitken mode
-    voltonumb_acc   = v2nnom_nmodes(iacc) !volume to number for aitken mode
+    voltonum_ait   = v2nnom_nmodes(iait) !volume to number for aitken mode
+    voltonum_acc   = v2nnom_nmodes(iacc) !volume to number for accumulation mode
 
-    ! v2n_geomean is voltonumb at the "geometrically-defined" mid-point
+    ! v2n_geomean is voltonum at the "geometrically-defined" mid-point
     ! between the aitken and accum modes
-    v2n_geomean = sqrt(voltonumb_ait*voltonumb_acc) !
+    v2n_geomean = sqrt(voltonum_ait*voltonum_acc) !
 
 
     ! loop over columns and levels
@@ -1111,8 +1092,8 @@ contains
 
        !Compute aitken->accumulation transfer
        call compute_coef_ait_acc_transfer(iacc, v2n_geomean, adj_tscale_inv, drv_a_aitsv(klev), & !input
-            drv_c_aitsv (klev), num_a_aitsv(klev), num_c_aitsv(klev), voltonumb_acc,            & !input
-            ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)              !output
+            drv_c_aitsv (klev), num_a_aitsv(klev), num_c_aitsv(klev), voltonum_acc,             & !input
+            ait2acc_index, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)              !output
 
 
        !----------------------------------------------------------------------------------------
@@ -1127,36 +1108,35 @@ contains
 
        call compute_coef_acc_ait_transfer(iacc, klev, &
             v2n_geomean, adj_tscale_inv, q_i, q_c, drv_a_accsv(klev), drv_c_accsv(klev), num_a_accsv(klev),      &
-            num_c_accsv(klev), no_transfer_acc2ait, voltonumb_ait,                                &
-            drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait, &
+            num_c_accsv(klev), no_transfer_acc2ait, voltonum_ait,                                &
+            drv_a_noxf, drv_c_noxf, acc2_ait_index, xfercoef_num_acc2ait, &
             xfercoef_vol_acc2ait, xfertend_num)
 
        ! jump to end-of-loop if no transfer is needed at current klev
-       if (ixfer_ait2acc+ixfer_acc2ait > 0) then
+       if (ait2acc_index+acc2_ait_index > 0) then
           !
           ! compute new dgncur & v2ncur for aitken & accum modes
           !
-          ! currently inactive (??? BSINGH: Not sure what this comment refers to...)
 
           !interstitial species
-          duma = (xfertend_num(1,1) - xfertend_num(2,1))*dt    !diff in num from  ait->accum and accum->ait transfer
-          num_a     = max( 0.0_wp, num_a_aitsv(klev) - duma ) !num removed/added from aitken mode
-          num_a_acc = max( 0.0_wp, num_a_accsv(klev) + duma ) !num added/removed to accumulation mode
+          num_diff = (xfertend_num(1,1) - xfertend_num(2,1))*dt   !diff in num from  ait->accum and accum->ait transfer
+          num_a     = max( 0.0_wp, num_a_aitsv(klev) - num_diff ) !num removed/added from aitken mode
+          num_a_acc = max( 0.0_wp, num_a_accsv(klev) + num_diff ) !num added/removed to accumulation mode
 
-          duma = (drv_a_aitsv(klev)*xfercoef_vol_ait2acc -   &
+          vol_diff = (drv_a_aitsv(klev)*xfercoef_vol_ait2acc -   &
                (drv_a_accsv(klev)-drv_a_noxf)*xfercoef_vol_acc2ait)*dt ! diff in volume transfer fomr ait->accum and accum->ait transfer
-          drv_a     = max( 0.0_wp, drv_a_aitsv(klev) - duma ) !drv removed/added from aitken mode
-          drv_a_acc = max( 0.0_wp, drv_a_accsv(klev) + duma ) !drv added/removed to accumulation mode
+          drv_a     = max( 0.0_wp, drv_a_aitsv(klev) - vol_diff ) !drv removed/added from aitken mode
+          drv_a_acc = max( 0.0_wp, drv_a_accsv(klev) + vol_diff ) !drv added/removed to accumulation mode
 
           !cloud borne species
-          duma = (xfertend_num(1,2) - xfertend_num(2,2))*dt    !same as above for cloud borne aerosols
+          num_diff = (xfertend_num(1,2) - xfertend_num(2,2))*dt    !same as above for cloud borne aerosols
 
-          num_c     = max( 0.0_wp, num_c_aitsv(klev) - duma )
-          num_c_acc = max( 0.0_wp, num_c_accsv(klev) + duma )
-          duma = (drv_c_aitsv(klev)*xfercoef_vol_ait2acc -   &
+          num_c     = max( 0.0_wp, num_c_aitsv(klev) - num_diff )
+          num_c_acc = max( 0.0_wp, num_c_accsv(klev) + num_diff )
+          vol_diff = (drv_c_aitsv(klev)*xfercoef_vol_ait2acc -   &
                (drv_c_accsv(klev)-drv_c_noxf)*xfercoef_vol_acc2ait)*dt
-          drv_c     = max( 0.0_wp, drv_c_aitsv(klev) - duma )
-          drv_c_acc = max( 0.0_wp, drv_c_accsv(klev) + duma )
+          drv_c     = max( 0.0_wp, drv_c_aitsv(klev) - vol_diff )
+          drv_c_acc = max( 0.0_wp, drv_c_accsv(klev) + vol_diff )
 
           !interstitial species (aitken mode)
           call compute_new_sz_after_transfer(iait, drv_a, num_a, &
@@ -1183,7 +1163,7 @@ contains
           ! compute tendency amounts for aitken <--> accum transfer
           !------------------------------------------------------------------
           ! jmode=1 does aitken-->accum
-          if(ixfer_ait2acc > 0) then
+          if(ait2acc_index > 0) then
              jmode = 1
 
              !Since jmode=1, source mode = aitken and destination mode =accumulation
@@ -1193,7 +1173,7 @@ contains
           endif
 
           !jmode=2 does accum-->aitken
-          if(ixfer_acc2ait > 0) then
+          if(acc2_ait_index > 0) then
              jmode = 2
              !Same suboutine  as above (update_tends_flx) is called but source and destination has been
              !swapped so that transfer happens from accumulation to aitken mode
@@ -1203,7 +1183,7 @@ contains
                   acc_spec_in_ait_inter, ait_spec_in_acc_inter, acc_spec_in_ait_cldbrn, ait_spec_in_acc_cldbrn, xfertend_num,       &
                   xfercoef_vol_acc2ait, q_i, q_c, didt, dnidt, dcdt, dncdt)
           endif
-       end if !ixfer_ait2acc+ixfer_acc2ait > 0
+       end if !ait2acc_index+acc2_ait_index > 0
     end do !klev
 
  return
@@ -1213,8 +1193,8 @@ end subroutine aitken_accum_exchange
   !---------------------------------------------------------------------------------------------
 
   subroutine compute_coef_ait_acc_transfer(iacc, v2n_geomean, adj_tscale_inv, drv_a_aitsv, &
-       drv_c_aitsv, num_a_aitsv, num_c_aitsv,  voltonumb_acc, &
-       ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)
+       drv_c_aitsv, num_a_aitsv, num_c_aitsv,  voltonum_acc, &
+       ait2acc_index, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)
 
     !------------------------------------------------------------
     ! Purpose: Computes coefficients for transfer from aitken to accumulation mode
@@ -1224,22 +1204,22 @@ end subroutine aitken_accum_exchange
 
     !intent ins
     integer,  intent(in) :: iacc
-    real(wp), intent(in) :: v2n_geomean
-    real(wp), intent(in) :: adj_tscale_inv
-    real(wp), intent(in) :: drv_a_aitsv, drv_c_aitsv
-    real(wp), intent(in) :: num_a_aitsv, num_c_aitsv, voltonumb_acc
+    real(wp), intent(in) :: v2n_geomean    !geometric mean volume to number ratio
+    real(wp), intent(in) :: adj_tscale_inv !inverse if the time scale [1/s]
+    real(wp), intent(in) :: drv_a_aitsv, drv_c_aitsv !dry volume
+    real(wp), intent(in) :: num_a_aitsv, num_c_aitsv, voltonum_acc
 
     !intent outs
-    integer,  intent(inout) :: ixfer_ait2acc
-    real(wp), intent(inout) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
-    real(wp), intent(inout) :: xfertend_num(2,2)
+    integer,  intent(inout) :: ait2acc_index
+    real(wp), intent(inout) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc! transfer coefficients
+    real(wp), intent(inout) :: xfertend_num(2,2) !transfer tendencies
 
     !local
     real(wp) :: drv_t, num_t
     real(wp) :: xferfrac_num_ait2acc, xferfrac_vol_ait2acc
 
     !initialize
-    ixfer_ait2acc        = 0
+    ait2acc_index        = 0
     xfercoef_num_ait2acc = 0.0_wp
     xfercoef_vol_ait2acc = 0.0_wp
     xfertend_num(:,:)    = 0.0_wp
@@ -1252,15 +1232,15 @@ end subroutine aitken_accum_exchange
        !if num is less than the mean value, we have large particles (keeping volume constant drv_t)
        !which needs to be moved to accumulation mode
        if (num_t < drv_t*v2n_geomean) then
-          ixfer_ait2acc = 1
-          if (num_t < drv_t*voltonumb_acc) then ! move all particles if number is smaller than the acc mean
+          ait2acc_index = 1
+          if (num_t < drv_t*voltonum_acc) then ! move all particles if number is smaller than the acc mean
              xferfrac_num_ait2acc = 1.0_wp
              xferfrac_vol_ait2acc = 1.0_wp
           else !otherwise scale the transfer
              xferfrac_vol_ait2acc = ((num_t/drv_t) - v2n_geomean)/   &
-                  (voltonumb_acc - v2n_geomean)
+                  (voltonum_acc - v2n_geomean)
              xferfrac_num_ait2acc = xferfrac_vol_ait2acc*   &
-                  (drv_t*voltonumb_acc/num_t)
+                  (drv_t*voltonum_acc/num_t)
              !bound the transfer coefficients between 0 and 1
              if ((xferfrac_num_ait2acc <= 0.0_wp) .or.   &
                   (xferfrac_vol_ait2acc <= 0.0_wp)) then
@@ -1286,34 +1266,34 @@ end subroutine aitken_accum_exchange
 
   subroutine compute_coef_acc_ait_transfer( iacc, klev, &
        v2n_geomean, adj_tscale_inv, q_i, q_c, drv_a_accsv, drv_c_accsv, num_a_accsv,      &
-       num_c_accsv, no_transfer_acc2ait, voltonumb_ait,                                &
-       drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait, &
+       num_c_accsv, no_transfer_acc2ait, voltonum_ait,                                &
+       drv_a_noxf, drv_c_noxf, acc2_ait_index, xfercoef_num_acc2ait, &
        xfercoef_vol_acc2ait, xfertend_num)
 
     !intent -ins
     integer,  intent(in) :: iacc, klev
-    real(wp), intent(in) :: v2n_geomean
-    real(wp), intent(in) :: adj_tscale_inv
-    real(wp), intent(in) :: q_i(:,:), q_c(:,:)     !interstitial and cldborne mix ratios [kg/kg(of air)]
-    real(wp), intent(in) :: drv_a_accsv, drv_c_accsv
-    real(wp), intent(in) :: num_a_accsv, num_c_accsv, voltonumb_ait
-    logical,  intent(in) :: no_transfer_acc2ait(:)
+    real(wp), intent(in) :: v2n_geomean        !geometric mean volume to number ratio
+    real(wp), intent(in) :: adj_tscale_inv     !inverse if the time scale [1/s]
+    real(wp), intent(in) :: q_i(:,:), q_c(:,:) !interstitial and cldborne mix ratios [kg/kg(of air)]
+    real(wp), intent(in) :: drv_a_accsv, drv_c_accsv !dry volume
+    real(wp), intent(in) :: num_a_accsv, num_c_accsv, voltonum_ait
+    logical,  intent(in) :: no_transfer_acc2ait(:) !"true" for species which can't be transffered
 
     !intent - outs
-    integer,  intent(inout) :: ixfer_acc2ait
+    integer,  intent(inout) :: acc2_ait_index
     real(wp), intent(inout) :: drv_a_noxf, drv_c_noxf
-    real(wp), intent(inout) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
-    real(wp), intent(inout) :: xfertend_num(2,2)
+    real(wp), intent(inout) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait ! transfer coefficients
+    real(wp), intent(inout) :: xfertend_num(2,2) !transfer tendencies
 
     !local
     integer  :: ipop, ispec, s_spec_ind, e_spec_ind
     real(wp) :: drv_t, num_t, drv_t_noxf, num_t0
     real(wp) :: num_t_noxf
-    real(wp) :: invdens
+    real(wp) :: invdens ! inverse of density
     real(wp) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait
     real(wp), parameter :: zero_div_fac = 1.0e-37_wp
 
-    ixfer_acc2ait = 0
+    acc2_ait_index = 0
     xfercoef_num_acc2ait = 0.0_wp
     xfercoef_vol_acc2ait = 0.0_wp
 
@@ -1351,15 +1331,15 @@ end subroutine aitken_accum_exchange
     if (drv_t > 0.0_wp) then
        !Find out if we need to transfer based on the new num_t
        if (num_t > drv_t*v2n_geomean) then
-          ixfer_acc2ait = 1
-          if (num_t > drv_t*voltonumb_ait) then! if number of larger than the aitken mean, move all particles
+          acc2_ait_index = 1
+          if (num_t > drv_t*voltonum_ait) then! if number of larger than the aitken mean, move all particles
              xferfrac_num_acc2ait = 1.0_wp
              xferfrac_vol_acc2ait = 1.0_wp
           else ! scale the transfer
              xferfrac_vol_acc2ait = ((num_t/drv_t) - v2n_geomean)/   &
-                  (voltonumb_ait - v2n_geomean)
+                  (voltonum_ait - v2n_geomean)
              xferfrac_num_acc2ait = xferfrac_vol_acc2ait*   &
-                  (drv_t*voltonumb_ait/num_t)
+                  (drv_t*voltonum_ait/num_t)
              !bound the transfer coefficients between 0 and 1
              if ((xferfrac_num_acc2ait <= 0.0_wp) .or.   &
                   (xferfrac_vol_acc2ait <= 0.0_wp)) then
@@ -1426,11 +1406,6 @@ end subroutine aitken_accum_exchange
        src_inter, dest_inter,src_cldbrn, dest_cldbrn, xfertend_num, xfercoef, q_i, &
        q_c, didt, dnidt, dcdt, dncdt)
 
-
-!klev, jmode, ait_mode_inter, acc_mode_inter, ait_mode_cldbrn, acc_mode_cldbrn, &
-!                  ait_spec_in_acc_inter, acc_spec_in_ait_inter, ait_spec_in_acc_cldbrn, acc_spec_in_ait_cldbrn, xfertend_num,       &
-!                  xfercoef_vol_ait2acc, q_i, q_c, didt, dnidt, dcdt, dncdt)
-
     implicit none
 
     !intent - ins
@@ -1448,7 +1423,7 @@ end subroutine aitken_accum_exchange
     real(wp), intent(inout) :: didt(:,:), dcdt(:,:), dnidt(:,:), dncdt(:,:)
 
     !local
-    integer  :: iq, lsfrm, lstoo
+    integer  :: imap, isrc, idest
     real(wp) :: xfertend
 
 
@@ -1460,47 +1435,47 @@ end subroutine aitken_accum_exchange
     !xfertend_num(jmode,2) contains how much to transfer for cloudborne aerosols
 
     !interstiatial species
-    lsfrm = src_num_mode_inter(list_idx)
-    lstoo = dest_num_mode_inter(list_idx)
+    isrc = src_num_mode_inter(list_idx)
+    idest = dest_num_mode_inter(list_idx)
 
-    if((lsfrm > 0) .and. (lstoo > 0)) then
-       call update_num_tends( klev, jmode, lsfrm, lstoo, inter_aero, xfertend_num, dnidt)
+    if((isrc > 0) .and. (idest > 0)) then
+       call update_num_tends( klev, jmode, isrc, idest, inter_aero, xfertend_num, dnidt)
     endif
 
-    do iq = 1,nspec_common(list_idx)
-       lsfrm = src_inter(iq,list_idx)
-       lstoo = dest_inter(iq,list_idx)
-       if((lsfrm > 0) .and. (lstoo > 0)) then
-          xfertend = max(0.0_wp,q_i(klev,lsfrm))*xfercoef
-          didt(klev,lsfrm) = didt(klev,lsfrm) - xfertend
-          didt(klev,lstoo) = didt(klev,lstoo) + xfertend
+    do imap = 1,nspec_common(list_idx)
+       isrc = src_inter(imap,list_idx)
+       idest = dest_inter(imap,list_idx)
+       if((isrc > 0) .and. (idest > 0)) then
+          xfertend = max(0.0_wp,q_i(klev,isrc))*xfercoef
+          didt(klev,isrc) = didt(klev,isrc) - xfertend
+          didt(klev,idest) = didt(klev,idest) + xfertend
        endif
     enddo
 
     !cloud borne apecies
-    lsfrm = src_num_mode_cldbrn(list_idx)
-    lstoo = dest_num_mode_cldbrn(list_idx)
+    isrc = src_num_mode_cldbrn(list_idx)
+    idest = dest_num_mode_cldbrn(list_idx)
 
-    if((lsfrm > 0) .and. (lstoo > 0)) then
-       call update_num_tends( klev, jmode, lsfrm, lstoo, cld_brn_aero, xfertend_num, dncdt)
+    if((isrc > 0) .and. (idest > 0)) then
+       call update_num_tends( klev, jmode, isrc, idest, cld_brn_aero, xfertend_num, dncdt)
     endif
 
     !mass species
-    do iq = 1, nspec_common(list_idx)
-       lsfrm = src_cldbrn(iq,list_idx)
-       lstoo = dest_cldbrn(iq,list_idx)
-       if((lsfrm > 0) .and. (lstoo > 0)) then
-          xfertend = max(0.0_wp,q_c(klev,lsfrm))*xfercoef
-          dcdt(klev,lsfrm) = dcdt(klev,lsfrm) - xfertend
-          dcdt(klev,lstoo) = dcdt(klev,lstoo) + xfertend
+    do imap = 1, nspec_common(list_idx)
+       isrc = src_cldbrn(imap,list_idx)
+       idest = dest_cldbrn(imap,list_idx)
+       if((isrc > 0) .and. (idest > 0)) then
+          xfertend = max(0.0_wp,q_c(klev,isrc))*xfercoef
+          dcdt(klev,isrc) = dcdt(klev,isrc) - xfertend
+          dcdt(klev,idest) = dcdt(klev,idest) + xfertend
        end if
     enddo
   end subroutine update_tends_flx
 
   !---------------------------------------------------------------------------------------------------------------------
-  subroutine update_num_tends( klev, jmode, lsfrm, lstoo, aer_type, xfertend_num, dqdt)
+  subroutine update_num_tends( klev, jmode, isrc, idest, aer_type, xfertend_num, dqdt)
     !intent ins
-    integer,  intent(in) :: klev, jmode, lsfrm, lstoo, aer_type
+    integer,  intent(in) :: klev, jmode, isrc, idest, aer_type
     real(wp), intent(in) :: xfertend_num(:,:)
 
     !intent inouts
@@ -1510,12 +1485,10 @@ end subroutine aitken_accum_exchange
     real(wp) :: xfertend
 
     xfertend = xfertend_num(jmode,aer_type)
-    dqdt(klev,lsfrm) = dqdt(klev,lsfrm) - xfertend
-    dqdt(klev,lstoo) = dqdt(klev,lstoo) + xfertend
+    dqdt(klev,isrc) = dqdt(klev,isrc) - xfertend
+    dqdt(klev,idest) = dqdt(klev,idest) + xfertend
 
   end subroutine update_num_tends
-
-
 
   !----------------------------------------------------------------------------------------
   !----------------------------------------------------------------------------------------

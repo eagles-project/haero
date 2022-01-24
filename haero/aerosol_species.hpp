@@ -152,10 +152,10 @@ inline std::vector<AerosolSpecies> create_mam4_aerosol_species() {
 inline std::map<std::string, std::vector<std::string> >
 create_mam4_mode_species() {
   return std::map<std::string, std::vector<std::string> >({
-      {"aitken", {"SO4", "NaCl", "SOA", "MOM"}},
-      {"accumulation", {"SO4", "NaCl", "DST", "BC", "SOA", "POM", "MOM"}},
-      {"coarse", {"SO4", "NaCl", "DST", "BC", "SOA", "POM", "MOM"}},
-      {"primary_carbon", {"BC", "POM", "MOM"}},
+      {"aitken", {"SO4", "SOA", "NaCl", "MOM"}},
+      {"accumulation", {"SO4", "POM", "SOA", "BC", "DST", "NaCl", "MOM"}},
+      {"coarse", {"DST", "NaCl", "SO4", "BC", "POM", "SOA", "MOM"}},
+      {"primary_carbon", {"POM", "BC", "MOM"}},
   });
 }
 
