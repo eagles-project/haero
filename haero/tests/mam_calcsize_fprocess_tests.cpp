@@ -14,7 +14,7 @@ TEST_CASE("mam_calcsize_run", "") {
                 "Fortran not supported for HAERO_PACK_SIZE != 1.");
 
   /*-----------------------------------------------------------------------------
-    We construct a phony model and initialize only the parts which we need to
+    We construct a phony configuration and initialize only the parts which we need to
     drive the test. Some of the fields defined below are created to satisfy the
     arguments needed to create the model and call the "run" method
    -----------------------------------------------------------------------------*/
@@ -45,7 +45,7 @@ TEST_CASE("mam_calcsize_run", "") {
   // Set up atmospheric data and populate it with some views.
   Kokkos::View<PackType*> temp("temperature", num_levels);  //[K]
   Kokkos::View<PackType*> press("pressure", num_levels);    //[Pa]
-  Kokkos::View<PackType*> qv("vapor mixing ratio", num_levels);
+  Kokkos::View<PackType*> qv("vapor mixing ratio", num_levels); //[kg/kg-of-air]
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
   Real pblh{100.0};  // planetary BL height [m]
@@ -54,6 +54,9 @@ TEST_CASE("mam_calcsize_run", "") {
   // This will drive the "run" method of calcsize
   SECTION("calcsize_run") {
     auto process = new MAMCalcsizeFProcess();
+
+    // Initialize the process
+    process->init(aero_config);
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
@@ -64,48 +67,19 @@ TEST_CASE("mam_calcsize_run", "") {
     auto* tends = new Tendencies(*progs);
 
 
-    // Define a pseudo-random generator [0-1) that is consistent across
-    // platforms. Manually checked the first 100,000 values to be unique.
-    static constexpr unsigned p0{987659};
-    static constexpr unsigned p1{12373};
-    long unsigned seed{54319};
-    auto random = [&]() {
-      seed = (seed * p1) % p0;
-      return Real(seed) / p0;
-    };
+    //open and read calcsize data from a YAML file
+    std::string datafile = HAERO_TEST_DATA_DIR;
+    datafile += "/calcsize_input.yaml";
 
-    // Set initial conditions
-    // aerosols mass mixing ratios
-    //std::cout<<"BALLI:"<<num_aero_populations<<std::endl;
-
-    //std::cout<<"BALLI:"<<aero_config.aerosol_species_for_mode(1)[0].symbol()<<std::endl;
-    for (int p = 0; p < num_aero_populations; ++p) {
-      for (int k = 0; k < num_levels; ++k) {
-        int_aerosols(p, k) = random() * 10e-10;
-        cld_aerosols(p, k) = random() * 10e-10;
-      }
-    }
-
-    // aerosols number mixing ratios
-    for (int imode = 0; imode < num_modes; ++imode) {
-      for (int k = 0; k < num_levels; ++k) {
-        int_num_mix_ratios(imode, k) = 1e8 + random();
-        cld_num_mix_ratios(imode, k) = 1e8 + random();
-      }
-    }
-
-    // Initialize the process
-    process->init(aero_config);
-
-    //open and read calcsize data from a file
-    auto calcsize_data = YAML::LoadFile("calcsize_input.yaml");
+    auto calcsize_data = YAML::LoadFile(datafile);
     for(YAML::const_iterator it=calcsize_data.begin(); it!=calcsize_data.end(); ++it){
 
       //read input collection
       const std::string &key=it->first.as<std::string>();
-      //read all attributes
+
+      //--read all its attributes
       auto attributes = it->second;
-      //read contents of each attribute
+      //----read contents of each attribute
       auto intermmr      = attributes["interstitial"];
       auto intermmr_num  = attributes["interstitial_num"];
       auto cldbrnmmr     = attributes["cldbrn"];

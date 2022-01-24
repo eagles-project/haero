@@ -1,12 +1,12 @@
 module mam_calcsize
   !TODO:
-  !1. do_adjust, do_aitacc_transfer, N_DIAG, list_idx and update_mmr 
+  !1. do_adjust, do_aitacc_transfer, N_DIAG, list_idx and update_mmr
   !   should be set somewhere else and should be an input to this process
   !2. We might need to revist "close_to_one" variable for single precision???
   !3. "top_lev" is asumed to be 1 in this code. It can be different from 1
   !4. E3SM has "dotend" logicals which are assigned in the interface, do we need those?
   !   If yes, we need to add that capability.
-  !5. deallocate everything which ia allocated
+  !5. deallocate everything which is allocated
 
 
   use haero_precision, only: wp
