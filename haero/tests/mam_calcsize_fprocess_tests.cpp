@@ -1,11 +1,12 @@
-#include <memory>
 #include <yaml-cpp/yaml.h>
+
+#include <memory>
+
 #include "catch2/catch.hpp"
 #include "haero/processes/mam_calcsize_fprocess.hpp"
 #include "haero/processes/mam_calcsize_process.hpp"
 
 using namespace haero;
-
 
 // ADD COMMENTS
 TEST_CASE("mam_calcsize_run", "") {
@@ -14,12 +15,13 @@ TEST_CASE("mam_calcsize_run", "") {
                 "Fortran not supported for HAERO_PACK_SIZE != 1.");
 
   /*-----------------------------------------------------------------------------
-    We construct a phony configuration and initialize only the parts which we need to
-    drive the test. Some of the fields defined below are created to satisfy the
-    arguments needed to create the model and call the "run" method
+    We construct a phony configuration and initialize only the parts which we
+   need to drive the test. Some of the fields defined below are created to
+   satisfy the arguments needed to create the model and call the "run" method
    -----------------------------------------------------------------------------*/
 
-  auto aero_config = ModalAerosolConfig::create_mam4_config(); // create MAM4 configuration
+  auto aero_config =
+      ModalAerosolConfig::create_mam4_config();  // create MAM4 configuration
 
   static constexpr int num_levels{72};  // number of levels
 
@@ -27,7 +29,8 @@ TEST_CASE("mam_calcsize_run", "") {
   const size_t num_modes = aero_config.aerosol_modes.size();  // number of modes
 
   // Set up some prognostics aerosol data views
-  const int num_aero_populations = aero_config.num_aerosol_populations;  // total number of aerosol species
+  const int num_aero_populations =
+      aero_config.num_aerosol_populations;  // total number of aerosol species
   Kokkos::View<PackType**> int_aerosols(
       "interstitial aerosols", num_aero_populations,
       num_levels);  // interstitial aerosols mmr [kg/kg(of air)]
@@ -45,7 +48,8 @@ TEST_CASE("mam_calcsize_run", "") {
   // Set up atmospheric data and populate it with some views.
   Kokkos::View<PackType*> temp("temperature", num_levels);  //[K]
   Kokkos::View<PackType*> press("pressure", num_levels);    //[Pa]
-  Kokkos::View<PackType*> qv("vapor mixing ratio", num_levels); //[kg/kg-of-air]
+  Kokkos::View<PackType*> qv("vapor mixing ratio",
+                             num_levels);                      //[kg/kg-of-air]
   Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
   Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
   Real pblh{100.0};  // planetary BL height [m]
@@ -61,28 +65,27 @@ TEST_CASE("mam_calcsize_run", "") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
     auto* progs =
-      new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
-                      int_num_mix_ratios, cld_num_mix_ratios, gases);
+        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
+                        int_num_mix_ratios, cld_num_mix_ratios, gases);
     auto* diags = new HostDiagnostics(aero_config, num_levels);
     auto* tends = new Tendencies(*progs);
 
-
-    //open and read calcsize data from a YAML file
+    // open and read calcsize data from a YAML file
     std::string datafile = HAERO_TEST_DATA_DIR;
     datafile += "/calcsize_input.yaml";
 
     auto calcsize_data = YAML::LoadFile(datafile);
-    for(YAML::const_iterator it=calcsize_data.begin(); it!=calcsize_data.end(); ++it){
-
-      //read input collection
-      const std::string &key=it->first.as<std::string>();
+    for (YAML::const_iterator it = calcsize_data.begin();
+         it != calcsize_data.end(); ++it) {
+      // read input collection
+      const std::string& key = it->first.as<std::string>();
 
       //--read all its attributes
       auto attributes = it->second;
       //----read contents of each attribute
-      auto intermmr      = attributes["interstitial"];
-      auto intermmr_num  = attributes["interstitial_num"];
-      auto cldbrnmmr     = attributes["cldbrn"];
+      auto intermmr = attributes["interstitial"];
+      auto intermmr_num = attributes["interstitial_num"];
+      auto cldbrnmmr = attributes["cldbrn"];
       auto cldbrnmmr_num = attributes["cldbrn_num"];
 
       // mmrs
@@ -110,9 +113,9 @@ TEST_CASE("mam_calcsize_run", "") {
       const auto& d = *diags;
       auto& te = *tends;
       Kokkos::parallel_for(
-        team_policy, KOKKOS_LAMBDA(const TeamType& team) {
-          d_process->run(team, t, dt, p, a, d, te);
-        });
+          team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+            d_process->run(team, t, dt, p, a, d, te);
+          });
       AerosolProcess::delete_on_device(d_process);
     }
 
