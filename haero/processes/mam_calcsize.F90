@@ -302,11 +302,9 @@ contains
                do ispec_acc = 1, nspec_acc
                   !find species name
                   spec_name_acc = config%aerosol_species(imode_acc, ispec_acc)%symbol
-                  !print*,trim(spec_name_acc),'-', trim(spec_name_ait)
                   !find if specie in acc mode is same as ait or not
                   if(trim(spec_name_acc) == trim(spec_name_ait)) then
                      !if there is a match, find indices of species in cnst array
-                     !print*,trim(spec_name_acc),'-', trim(spec_name_ait),' MATCHED'
                      icnt = icnt + 1
                      ait_spec_in_acc_inter(ilist, icnt)  = m_population_index(config, nait, ispec_ait)
                      acc_spec_in_ait_inter(ilist, icnt)  = m_population_index(config, nacc, ispec_acc)
@@ -424,9 +422,7 @@ contains
     dncdt => tendencies%cloud_num_mix_ratios()
 
     !Loop through each mode and find particle diameter
-    print*,'------------------------'
     do imode = 1, nmodes
-       print*,'Mode:', imode
        !Initialize diameter(dgnum), volume to number ratios(v2ncur) and dry volume (dryvol) for both
        !interstitial and cloudborne aerosols
 
@@ -454,7 +450,6 @@ contains
        density(1:nspec) = spec_density(imode, 1:nspec) !assign density till nspec (as nspec can be different for each mode)
 
        call compute_dry_volume(imode, top_lev, nlevs, s_spec_ind, e_spec_ind, density, q_i, q_c, dryvol_a, dryvol_c)
-       print*,'Final dryvol:',dryvol_a(1),dryvol_c(1)
 
        !compute upper and lower limits for volume to num (v2n) ratios and diameters (dgn)
        v2nmin = v2nmin_nmodes(imode)
@@ -519,7 +514,6 @@ contains
 
 
           endif !do_adjust
-          if(klev==1)print*,'Tends:',dnidt(1,imode),dncdt(1,imode)
 
           !FIXME: in (or better done after) the following update_diameter_and_vol2num calls, we need to update mmr as well
           !but we are currently skipping that update. That update will require additional arguments
@@ -640,7 +634,6 @@ contains
 
     do ispec = s_spec_ind, e_spec_ind
        density_ind = ispec - s_spec_ind + 1 !density array index goes from 1 to nspec
-       !print*,'density:',density(density_ind), top_lev, nlevs
 
        inv_density = 1.0_wp / density(density_ind) !inverse of density
 
