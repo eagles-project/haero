@@ -36,7 +36,7 @@ if (HAERO_FORTRAN)
   faerosol_process(MAMGasAerosolExchangeFProcess mam_gasaerexch)
   faerosol_process(MAMNucleationFProcess mam_nucleation)
   # TODO: Temporarily disabled for Fortran modal_aero_config refactor -JNJ
-  #faerosol_process(MAMCalcsizeFProcess mam_calcsize)
+  faerosol_process(MAMCalcsizeFProcess mam_calcsize)
   faerosol_process(MAMRenameFProcess mam_rename)
 
   # Supporting modules get appended to HAERO_FORTRAN_SOURCES here.

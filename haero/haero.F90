@@ -14,7 +14,8 @@ module haero
             prognostics_t, atmosphere_t, diagnostics_t, tendencies_t, &
             prognostics_from_c_ptr, atmosphere_from_c_ptr, &
             diagnostics_from_c_ptr, tendencies_from_c_ptr, modal_aero_config, &
-            var_not_found, c_to_f_string, f_to_c_string
+            var_not_found, c_to_f_string, f_to_c_string, get_strt_end_spec_ind, total_species_num, &
+            m_population_index
 
 
   !> This Fortran type is the equivalent of the C++ Mode struct.
@@ -23,6 +24,8 @@ module haero
     character(len=:), allocatable :: name
     !> Minimum particle diameter
     real(wp) :: min_diameter
+    !> Nominal particle diameter
+    real(wp) :: nom_diameter
     !> Maximum particle diameter
     real(wp) :: max_diameter
     !> Geometric mean standard deviation
@@ -37,6 +40,8 @@ module haero
     contains
       !> Given the max diameter, min_vol_to_num_ratio computes minimum volume to number ratio for a mode
       procedure :: min_vol_to_num_ratio => m_min_vol_to_num_ratio
+      !> Given the nom diameter, nom_vol_to_num_ratio computes nominal volume to number ratio for a mode
+      procedure :: nom_vol_to_num_ratio => m_nom_vol_to_num_ratio
       !> Given the min diameter, max_vol_to_num_ratio computes maximum volume to number ratio for a mode
       procedure :: max_vol_to_num_ratio => m_max_vol_to_num_ratio
    end type mode_t
@@ -405,13 +410,14 @@ contains
                                                max_num_species))
   end subroutine
 
-  subroutine haerotran_set_aerosol_mode(mode, name, min_d, max_d, std_dev, rhdeliq, rhcrystal) bind(c)
+  subroutine haerotran_set_aerosol_mode(mode, name, min_d, nom_d, max_d, std_dev, rhdeliq, rhcrystal) bind(c)
     use iso_c_binding, only: c_int, c_ptr, c_real
     implicit none
 
     integer(c_int), value, intent(in) :: mode
     type(c_ptr), value, intent(in) :: name
     real(c_real), value, intent(in) :: min_d
+    real(c_real), value, intent(in) :: nom_d
     real(c_real), value, intent(in) :: max_d
     real(c_real), value, intent(in) :: std_dev
     real(c_real), value, intent(in) :: rhdeliq
@@ -419,6 +425,7 @@ contains
 
     modal_aero_config%aerosol_modes(mode)%name = c_to_f_string(name)
     modal_aero_config%aerosol_modes(mode)%min_diameter = min_d
+    modal_aero_config%aerosol_modes(mode)%nom_diameter = nom_d
     modal_aero_config%aerosol_modes(mode)%max_diameter = max_d
     modal_aero_config%aerosol_modes(mode)%mean_std_dev = std_dev
     modal_aero_config%aerosol_modes(mode)%log_sigma = log(std_dev)
@@ -486,6 +493,49 @@ contains
     modal_aero_config%num_aerosol_populations = modal_aero_config%population_offsets(modal_aero_config%num_aerosol_modes+1) - 1
   end subroutine
 
+  !> Given a population-offset array and a mode number imode, get the starting and ending index
+  !> into the population array for all the species in imode
+  subroutine get_strt_end_spec_ind(p_offsets, imode, s_spec_ind, e_spec_ind)
+
+    !inputs
+    integer, intent(in) :: p_offsets(:) !population offsets array
+    integer, intent(in) :: imode ! mode number
+
+    !outputs
+    integer, intent(out) :: s_spec_ind ! start index
+    integer, intent(out) :: e_spec_ind !end index
+
+    s_spec_ind = p_offsets(imode)       !start index
+    e_spec_ind = p_offsets(imode+1) - 1 !end index of species for all modes expect the last mode
+
+    if(imode.eq.modal_aero_config%num_aerosol_modes) then ! for the last mode
+       e_spec_ind = modal_aero_config%num_aerosol_populations !if imode==nmodes, end index is the total number of species
+    endif
+
+  end subroutine get_strt_end_spec_ind
+
+  !> Given a mode number imode, get the number of species in imode
+  function total_species_num(imode) result(tot_num)
+    implicit none
+
+    !inputs
+    integer, intent(in) :: imode ! mode number
+
+    !return value
+    integer :: tot_num
+
+    !local variables
+    integer :: s_spec_ind ! start index
+    integer :: e_spec_ind ! end index
+
+    !get the starting and ending species index
+    call get_strt_end_spec_ind(modal_aero_config%population_offsets, imode, s_spec_ind, e_spec_ind)
+
+    !total # of species
+    tot_num = e_spec_ind - s_spec_ind + 1
+
+  end function total_species_num
+
   ! This subroutine gets called when the C++ process exits.
   subroutine haerotran_finalize() bind(c)
     if (allocated(modal_aero_config%aerosol_species)) then
@@ -526,8 +576,8 @@ contains
   !> aerosol species indices m and s.
   subroutine m_get_mode_and_species(config, p, m, s)
     class(modal_aerosol_config_t), intent(in) :: config
-    integer, intent(in)                       :: p
-    integer, intent(out)                      :: m, s
+    integer, intent(in)         :: p
+    integer, intent(out)        :: m, s
 
     m = 1
     do while (config%population_offsets(m+1) < p)
@@ -546,8 +596,8 @@ contains
   function m_aerosol_mode_index(config, mode_name) result(mode_index)
     implicit none
     class(modal_aerosol_config_t), intent(in) :: config
-    character(len=*), intent(in)              :: mode_name
-    integer                                   :: mode_index
+    character(len=*), intent(in) :: mode_name
+    integer :: mode_index
 
     ! Find the mode index
     do mode_index = 1,config%num_aerosol_modes
@@ -565,8 +615,8 @@ contains
   function m_aerosol_species_index(config, mode_index, species_symbol) result(a_index)
     implicit none
     class(modal_aerosol_config_t), intent(in) :: config
-    integer, intent(in)                       :: mode_index
-    character(len=*), intent(in)              :: species_symbol
+    integer,          intent(in) :: mode_index
+    character(len=*), intent(in) :: species_symbol
     integer :: a_index, max_mode
 
     ! If our mode index is invalid, return an invalid aerosol index.
@@ -600,8 +650,8 @@ contains
   function m_population_index(config, mode_index, aero_index) result(pop_index)
     implicit none
     class(modal_aerosol_config_t), intent(in) :: config
-    integer, intent(in)                       :: mode_index
-    integer, intent(in)                       :: aero_index
+    integer, intent(in) :: mode_index
+    integer, intent(in) :: aero_index
     integer :: pop_index
 
     if ((mode_index > 0) .and. (aero_index > 0)) then
@@ -618,8 +668,8 @@ contains
   function m_gas_index(config, species_symbol) result(g_index)
     implicit none
     class(modal_aerosol_config_t), intent(in) :: config
-    character(len=*), intent(in)              :: species_symbol
-    integer                                   :: g_index
+    character(len=*), intent(in) :: species_symbol
+    integer :: g_index
 
     do g_index = 1,size(config%gas_species)
       if (config%gas_species(g_index)%symbol == species_symbol) then
@@ -643,6 +693,17 @@ contains
     min_vol2num = 1.0_wp/(pi_sixth*(imode%max_diameter**3.0_wp)*exp(4.5_wp*(log(imode%mean_std_dev))**2.0_wp))
 
   end function m_min_vol_to_num_ratio
+
+  !> For a given mode, computes nominal value of volume to number ratio
+  function m_nom_vol_to_num_ratio(imode) result(nom_vol2num)
+
+    implicit none
+    class(mode_t),   intent(in) :: imode
+
+    real(wp) :: nom_vol2num
+    nom_vol2num = 1.0_wp/(pi_sixth*(imode%nom_diameter**3.0_wp)*exp(4.5_wp*(log(imode%mean_std_dev))**2.0_wp))
+
+  end function m_nom_vol_to_num_ratio
 
   !> For a given mode, computes maximum value of volume to number ratio
   !> Since it is propotional to negative power 3 of the diameter,

@@ -29,7 +29,8 @@ using haero::Real;
 void haerotran_begin_init();
 void haerotran_set_num_aerosol_modes(int);
 void haerotran_set_max_mode_species(int);
-void haerotran_set_aerosol_mode(int, const char*, Real, Real, Real, Real, Real);
+void haerotran_set_aerosol_mode(int, const char*, Real, Real, Real, Real, Real,
+                                Real);
 void haerotran_set_aerosol_species(int, int, const char*, const char*, Real,
                                    Real, Real);
 void haerotran_set_num_gas_species(int);
@@ -109,8 +110,9 @@ void AerosolProcess::init_fortran_(const ModalAerosolConfig& config) {
     // Set the properties of mode i+1 (as indexed in Fortran).
     const auto& mode = config_->aerosol_modes[m];
     haerotran_set_aerosol_mode(m + 1, mode.name().c_str(), mode.min_diameter,
-                               mode.max_diameter, mode.mean_std_dev,
-                               mode.deliquescence_pt, mode.crystallization_pt);
+                               mode.nom_diameter, mode.max_diameter,
+                               mode.mean_std_dev, mode.deliquescence_pt,
+                               mode.crystallization_pt);
 
     // Set up aerosol species for this mode.
     int num_aero_species = mode_species.size();
