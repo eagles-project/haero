@@ -189,7 +189,8 @@ struct Mode final {
   template <typename T>
   KOKKOS_INLINE_FUNCTION T nom_vol_to_num_ratio() const {
     const Real pio6 = Constants::pi_sixth;
-    return 1 / pio6 * cube(nom_diameter) * exp(4.5 * (log(mean_std_dev)));
+    return 1 /
+           (pio6 * cube(nom_diameter) * exp(4.5 * square(log(mean_std_dev))));
   }
 
   // Comparison operators.
