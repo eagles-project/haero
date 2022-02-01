@@ -185,6 +185,14 @@ struct Mode final {
     return 1 / mean_particle_volume_from_diameter(min_diameter);
   }
 
+  /// Returns the nominal particle volume to number ratio.
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T nom_vol_to_num_ratio() const {
+    const Real pio6 = Constants::pi_sixth;
+    return 1 /
+           (pio6 * cube(nom_diameter) * exp(4.5 * square(log(mean_std_dev))));
+  }
+
   // Comparison operators.
   bool operator==(const Mode &other) const {
     return (!strcmp(name_view, other.name_view) and

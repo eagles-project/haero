@@ -61,4 +61,17 @@ TEST_CASE("mode_ctor", "") {
                                      aitken.max_vol_to_num_ratio<Real>(),
                                      5 * std::numeric_limits<Real>::epsilon()));
   }
+
+  // Verify `nom_vol_to_num_ratio` calculation
+  {
+    // compute nom_vol_to_num ratio
+    const Real comp_nom_vol_to_num_ratio =
+        1 / (Constants::pi_sixth * cube(aitken.nom_diameter) *
+             exp(4.5 * square(log(aitken.mean_std_dev))));
+
+    // compute relative difference for nom_vol_to_num_ratio
+    REQUIRE(FloatingPoint<Real>::rel(comp_nom_vol_to_num_ratio,
+                                     aitken.nom_vol_to_num_ratio<Real>(),
+                                     5 * std::numeric_limits<Real>::epsilon()));
+  }
 }
