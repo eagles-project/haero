@@ -9,7 +9,7 @@ add_executable(nucleation_rate nucleation_rate.cpp)
 target_link_libraries(nucleation_rate skywalker;validation;${HAERO_LIBRARIES})
 add_executable(nucleation_rate_f90 nucleation_rate.F90)
 set_target_properties(nucleation_rate_f90 PROPERTIES LINKER_LANGUAGE Fortran)
-target_link_libraries(nucleation_rate_f90 skywalker_f90;validation_f90;${HAERO_LIBRARIES})
+target_link_libraries(nucleation_rate_f90 skywalker_f90;skywalker;validation_f90;${HAERO_LIBRARIES})
 
 # This driver computes the threshold concentration of H2SO4 at given T and RH
 # for nucleation to occur.
@@ -17,7 +17,7 @@ add_executable(nucleation_thresh nucleation_thresh.cpp)
 target_link_libraries(nucleation_thresh skywalker;validation;${HAERO_LIBRARIES})
 add_executable(nucleation_thresh_f90 nucleation_thresh.F90)
 set_target_properties(nucleation_thresh_f90 PROPERTIES LINKER_LANGUAGE Fortran)
-target_link_libraries(nucleation_thresh_f90 skywalker_f90;validation_f90;${HAERO_LIBRARIES})
+target_link_libraries(nucleation_thresh_f90 skywalker_f90;skywalker;validation_f90;${HAERO_LIBRARIES})
 
 # This driver computes the growth SO4 and NH4 aerosol particeles from
 # H2SO4 and NH3 gas at given T and RH.
