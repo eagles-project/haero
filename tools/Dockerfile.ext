@@ -61,7 +61,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   make -j && \
   make install && \
   rm -rf * && \
-  rm -rf /opt/haero/bin && \
   rm -rf /opt/haero/include/haero && \
   rm -f /opt/haero/lib/libhaero*
 

@@ -489,7 +489,10 @@ set(HAERO_INCDIRS ${HAERO_INCDIRS};${HAERO_EXT_INCDIRS} PARENT_SCOPE)
 set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
 set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
+#----------------------
 # Installation targets
+#----------------------
+
 install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include)
 
 if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
@@ -509,6 +512,8 @@ if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
                       ${EKAT_LIBRARY_DIR}/libkokkoscore.a
                       ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
           DESTINATION lib)
+  install(FILES       ${PROJECT_BINARY_DIR}/bin/test-launcher
+          DESTINATION bin)
 endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
   install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
@@ -523,6 +528,10 @@ if (${TINES_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Tines
 endif()
 if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
   install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
+endif()
+if (${SKYWALKER_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Skywalker
+  install(FILES ${SKYWALKER_LIBRARY} DESTINATION lib)
+  install(FILES ${SKYWALKER_F90_LIBRARY} DESTINATION lib)
 endif()
 if (${PROJECT_BINARY_DIR}/share)
   install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION share)
