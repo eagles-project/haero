@@ -1,7 +1,7 @@
 # This builds a Docker image with Haero's third-party libraries pre-built
 # and installed in /opt/haero. It must be run from Haero's top-level source
 # directory.
-FROM ubuntu:20.10
+FROM ubuntu:21.04
 
 # Process build-time arguments.
 ARG BUILD_TYPE=Debug
@@ -13,12 +13,21 @@ WORKDIR /haero
 COPY ext ext
 COPY haero haero
 COPY driver driver
-COPY sw sw
 COPY docs docs
 COPY cmake cmake
 COPY tools tools
+COPY chem_driver chem_driver
+COPY machines machines
+COPY validation validation
 COPY CMakeLists.txt setup ./
 
+# Update packages
+RUN apt-get update
+
+# Configure time-zone data noninteractively
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata
+
+# Get dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
   autoconf \
   clang-format \

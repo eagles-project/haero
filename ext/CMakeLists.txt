@@ -448,29 +448,39 @@ set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 #----------------------------------------------------------------------------
 # Skywalker parameter study library
 #----------------------------------------------------------------------------
-set(SW_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                  -DCMAKE_Fortran=${CMAKE_Fortran_COMPILER}
-                  -DSKYWALKER_PRECISION=${HAERO_PRECISION})
-ExternalProject_Add(skywalker_proj
-                    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/skywalker
-                    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/skywalker
-                    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/skywalker
-                    INSTALL_DIR ${PROJECT_BINARY_DIR}
-                    CMAKE_ARGS ${SW_CMAKE_OPTS}
-                    LOG_CONFIGURE TRUE
-                    BUILD_COMMAND ${MAKE} -j
-                    LOG_BUILD TRUE
-                    INSTALL_COMMAND ${MAKE} install
-                    LOG_INSTALL TRUE)
-add_library(skywalker STATIC IMPORTED GLOBAL)
-set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libskywalker_${HAERO_PRECISION}.a)
-add_dependencies(skywalker skywalker_proj)
-add_library(skywalker_f90 STATIC IMPORTED GLOBAL)
-set_target_properties(skywalker_f90 PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libskywalker_f90_${HAERO_PRECISION}.a)
-add_dependencies(skywalker_f90 skywalker_proj)
+if (SKYWALKER_LIBRARY MATCHES ".a")
+  add_library(skywalker STATIC IMPORTED GLOBAL)
+else()
+  add_library(skywalker SHARED IMPORTED GLOBAL)
+endif()
+if (SKYWALKER_F90_LIBRARY MATCHES ".a")
+  add_library(skywalker_f90 STATIC IMPORTED GLOBAL)
+else()
+  add_library(skywalker_f90 SHARED IMPORTED GLOBAL)
+endif()
+set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION ${SKYWALKER_LIBRARY})
+set_target_properties(skywalker_f90 PROPERTIES IMPORTED_LOCATION ${SKYWALKER_F90_LIBRARY})
+if (NOT EXISTS ${SKYWALKER_LIBRARY})
+  set(SW_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                    -DCMAKE_Fortran=${CMAKE_Fortran_COMPILER}
+                    -DSKYWALKER_PRECISION=${HAERO_PRECISION})
+  ExternalProject_Add(skywalker_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/skywalker
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/skywalker
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/skywalker
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${SW_CMAKE_OPTS}
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND ${MAKE} -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND ${MAKE} install
+                      LOG_INSTALL TRUE)
+  add_dependencies(skywalker skywalker_proj)
+  add_dependencies(skywalker_f90 skywalker_proj)
+endif()
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
