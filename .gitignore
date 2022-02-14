@@ -5,7 +5,6 @@ fort.*
 *.nc
 *.log
 *.out
-*.pdf
 *.aux
 *.bbl
 *.blg

@@ -219,7 +219,7 @@ functions:
 \end{align}
 
 ![Normalized size distributions $n_i$ for each mode in the Haero model
-  with $N_i$ set by the \texttt{num\_aer} variable.](design/figures/pdf_examples.pdf)
+  with $N_i$ set by the \texttt{num\_aer} variable.](images/pdf_examples.png)
 
 The logarithmic form $\hat{n}_i$ is useful because of the relationship
 $ n_i(D_p) = \hat{n}_i(\ln D_p)/D_p$, which allows us to write

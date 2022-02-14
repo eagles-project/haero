@@ -104,7 +104,7 @@ whose solution is
 
 ![Geopotential $\phi(t)$ for $\phi_0 = gz_0$ and $z_0$ values listed in the
   legend, with parameters $w_0=5$, $T_{v0}=300$, $\Gamma_v=0.01$,
-  $z_{top}=20000$, $t_p=900$.]](design/figures/geopotential_plot.png)
+  $z_{top}=20000$, $t_p=900$.]](images/geopotential_plot.pdf)
 
 We use \ref{phi_vel} to find the divergence, which is required by the continuity
 equation \ref{continuity}
@@ -128,7 +128,7 @@ The solution is
 
 ![Density $\rho(\phi(t),t)$ for $\phi_0 = gz_0$ and $z_0$ values listed in the
   legend, with parameters $w_0=5$, $T_{v0}=300$, $\Gamma_v=0.01$,
-  $z_{top}=20000$, $t_p=900$.](design/figures/density_plot.png)
+  $z_{top}=20000$, $t_p=900$.](images/density_plot.pdf)
 
 To find the pressure, we use \ref{density} in \ref{eos}:
 
@@ -139,7 +139,7 @@ To find the pressure, we use \ref{density} in \ref{eos}:
 
 ![Pressure $p(\phi(t),t)$ for $\phi_0 = gz_0$ and $z_0$ values listed in the
   legend, with parameters $w_0=5$, $T_{v0}=300$, $\Gamma_v=0.01$,
-  $z_{top}=20000$, $t_p=900$.](figures/pressure_plot.png)
+  $z_{top}=20000$, $t_p=900$.](images/pressure_plot.pdf)
 
 ### Physical interpretation
 
@@ -263,7 +263,7 @@ figure below:
 
 ![Vertical finite difference verification. Clockwise from top left:
   hydrostatic balance, hypsometric layer thickness, sum of height thicknesses,
-  sum of pressure thicknesses.](design/figures/vconv_plot.png)
+  sum of pressure thicknesses.](images/vconv_plot.pdf)
 
 ### Layer thickness
 
@@ -310,7 +310,7 @@ with constant $\alpha_q = 0.61$.
 
 ![Temperature for the same parameters as in the figures for the geopotential,
   density, and pressure, with the additional parameters $q_{0}=6$E-3,
-  $q_1=2.5$E-3.](design/figures/temperature_plot.png)
+  $q_1=2.5$E-3.](images/temperature_plot.pdf)
 
 We compute relative humidity as $s = q_v/q_{vsat}$, where $q_{vsat}$ is the saturation mixing ratio.
 We use the Tetens equation to find $q_{vsat}$ \cite[eqn. (A1)]{SoongOgura1973},
@@ -320,7 +320,7 @@ We use the Tetens equation to find $q_{vsat}$ \cite[eqn. (A1)]{SoongOgura1973},
 
 ![Temperature for the same parameters as in the figures for the geopotential,
   density, and pressure, with the additional parameters $q_{0}=6$E-3,
-  $q_1=2.5$E-3.](design/figures/relhumidity_plot.png)
+  $q_1=2.5$E-3.](images/relhumidity_plot.pdf)
 
 ## Time Stepping
 

@@ -26,9 +26,6 @@ a single set of source code that leverages the
   used to verify aerosol processes in a simple and self-contained context.
 * In the [Testing](testing.md) guide, we describe in general terms the
   methodology we use to test Haero and its aerosol processes.
-* Finally, the [API](api.md) guide contains a comprehensive set of reference
-  documentation for the library, and is useful for constructing new aerosol
-  processes.
 
 ### Acknowledgements
 
