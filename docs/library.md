@@ -1,3 +1,4 @@
+
 # The Haero Library
 
 ## Overview
@@ -145,7 +146,7 @@ $\sigma_g$. In Haero's C++ interface, we represent an aerosol mode with the
 `Mode` struct, whereas in Fortran we use the `mode_t` derived type:
 
 === "C++"
-    ```
+    ``` c++
     struct Mode {
       std::string name;  // a unique identifier for the mode
       Real min_diameter; // the mode's minimum particle diameter [m]
@@ -154,7 +155,7 @@ $\sigma_g$. In Haero's C++ interface, we represent an aerosol mode with the
     };
     ```
 === "Fortran"
-    ```
+    ``` fortran
     type :: mode_t
       ! Mode name
       character(len=:), allocatable :: name
@@ -203,10 +204,10 @@ particles have physical properties that are described respectively by the
 `AerosolSpecies` and `GasSpecies` types in C++, and the `aerosol_species_t` and
 `gas_species_t` derived types in Fortran.
 
-In C++, we represent this information in the following way:
+In Haero, we represent this information in the following way:
 
 === "C++"
-    ```
+    ``` c++
     struct AerosolSpecies {
       std::string name;          // full species name
       std::string symbol;        // abbreviated symbolic name
@@ -223,7 +224,7 @@ In C++, we represent this information in the following way:
     ```
 
 === "Fortran"
-    ```
+    ``` fortran
     type :: aerosol_species_t
       ! Species name
       character(len=:), allocatable :: name
@@ -261,7 +262,7 @@ allows a researcher to select these modes and species at runtime, allowing a
 far greater family of aerosol models to be represented.
 
 === "C++"
-    ```
+    ``` c++
     class ModalAerosolConfig final {
       public:
       // Constructor -- creates a new modal aerosol configuration given all relevant
@@ -288,6 +289,43 @@ far greater family of aerosol models to be represented.
       // given mode index.
       std::vector<Species> aerosol_species_for_mode(int mode_index) const;
     };
+    ```
+=== "Fortran"
+    ``` fortran
+    type :: modal_aerosol_config_t
+      ! The aerosol modes in the model, in indexed order.
+      type(mode_t), dimension(:), allocatable :: aerosol_modes
+      ! The number of modes in the model. Equal to size(aerosol_modes).
+      integer :: num_aerosol_modes
+      ! The number of actual species that exist within each mode.
+      integer, dimension(:), allocatable :: num_mode_species
+      ! population index offsets for modes.
+      integer, dimension(:), allocatable :: population_offsets
+      ! The total number of distinct aerosol populations.
+      integer :: num_aerosol_populations
+      ! The aerosol species within each mode. Indexed as (mode, species).
+      type(aerosol_species_t), dimension(:,:), allocatable :: aerosol_species
+      ! The gas species in the model.
+      type(gas_species_t), dimension(:), allocatable :: gas_species
+      ! The number of gases in the model. Equal to size(gas_species).
+      integer :: num_gases
+    contains
+      ! Returns the maximum number of aerosol species found in any aerosol mode.
+      procedure :: max_species_per_mode => m_max_species_per_mode
+      ! Given the index of an aerosol population, retrieve its mode and
+      ! (modal) species indices.
+      procedure :: get_mode_and_species => m_get_mode_and_species
+      ! Given the name of a mode, retrieve its index.
+      procedure :: aerosol_mode_index => m_aerosol_mode_index
+      ! Given a mode index and the symbolic name of an aerosol species, retrieve
+      ! its index within that mode
+      procedure :: aerosol_species_index => m_aerosol_species_index
+      ! Given mode and aerosol species indices, retrieve a population index
+      ! that can be used to access aerosol data.
+      procedure :: population_index => m_population_index
+      ! Given the symbolic name of a gas, retrieve its index.
+      procedure :: gas_index => m_gas_index
+    end type
     ```
 
 Once you have a modal aerosol configuration, you can answer the first two
@@ -322,7 +360,7 @@ The `Prognostics`, `Atmosphere`, and `Diagnostics` containers store state data
 in multidimensional arrays allocated in C++ but made available to both C++ and
 Fortran. The data for each array is stored within a Kokkos `View`.
 
-## Digression: Kokkos Views as Multidimensional Arrays
+### Digression: Kokkos Views as Multidimensional Arrays
 
 The C++ programming language has lots of features, but remarkably it includes no
 mechanism for allocating multidimensional arrays at runtime. The Kokkos C++
@@ -342,7 +380,7 @@ So for a rank-3 view `f` that you access in C++ as `f(i,j,k)`, you would access
 the corresponding array element in Fortran as `f(k-1,j-1,i-1)`. Clear as mud?
 Welcome to mixed language development!
 
-### Packs and Vectorization}
+#### Packs and Vectorization}
 
 Haero uses Views that consist of `Pack` objects instead of floating point
 numbers. A `Pack` (or just "pack" is a contiguous array of numbers that allows a
@@ -368,521 +406,539 @@ the number of packs spanning a vertical level. For example, a column of data
 with 72 vertical levels running in a Haero build with a `HAERO_PACK_SIZE`
 of 2 contains $36 = 72 / 2 $ packs in its vertical extent.
 
-### Haero-Specific Views
+#### Haero-Specific Views
 
 Because Haero is concerned with arrays having very specific dimensions, we
 define some named types that correspond to views/arrays that span specific
 spaces:
 
-\begin{table}[htbp]
-\centering
-\caption{Named C++ View Types}
-\label{tab:viewtypes}
-\begin{tabular}{|l|l|p{6cm}|l|l|}
-  \toprule
-  View Name & Rank & Description & C++ & Fortran \\
-  \midrule
-  \texttt{ColumnView} & 1 & Maps a vertical level index $k$ to a pack & \texttt{v(k)} & \texttt{v(k)} \\
-  \texttt{SpeciesColumnView} & 2 & Maps a population index $p$ and a vertical level index $k$ to a pack & \texttt{v(p,k)}  & \texttt{v(k,p)} \\
-  \texttt{ModeColumnView} & 2 & Maps a mode index $m$ and a vertical level index $k$ to a pack & \texttt{v(m,k)}  & \texttt{v(k,m)} \\
-  \bottomrule
-\end{tabular}
-\end{table}
+| View Name           | Rank | Description | C++ | Fortran |
+| ------------------- | ---- | ----------- | --- | ------- |
+| `ColumnView`        |    1 | Maps a vertical level index $k$ to a pack | `v(k)` | `v(k)` |
+| `SpeciesColumnView` |    2 | Maps a population index $p$ and a vertical level index $k$ to a pack | `v(p,k)` | `v(k,p)` |
+| `ModeColumnView`    |    2 | Maps a mode index $m$ and a vertical level index $k$ to a pack | `v(m,k)` | `v(k,m)` |
 
-The \texttt{Prognostics}, \texttt{Atmosphere}, and \texttt{Diagnostics} containers
-described below make use of these named types.
+The `Prognostics`, `Atmosphere`, and `Diagnostics` containers described below
+make use of these named types.
 
-\subsection{Prognostics Type}
-\labelsubsection{lib:prognostics}
+### Prognostics Type
 
-The \texttt{Prognostics} C++ class provides access to prognostic variables
-that describe aerosols in a modal description. Here's the C++ class interface
-(abbreviated for brevity---see the full interface in \texttt{haero/prognostics.hpp}):
+The `Prognostics` type provides access to prognostic variables that
+describe aerosols in a modal description. Here's the essential information for
+the C++ and Fortran interfaces (abbreviated for brevity---see the full
+interfaces in `haero/prognostics.hpp` and `haero/haero.F90`):
 
-\lstset{language=[11]{c++}}
-\begin{lstlisting}
-class Prognostics final {
-  public:
-  // Returns the number of aerosol modes in the system.
-  int num_aerosol_modes() const;
+=== "C++"
+    ``` c++
+    class Prognostics final {
+      public:
+      // Returns the number of aerosol modes in the system.
+      int num_aerosol_modes() const;
 
-  // Returns the number of aerosol species in the mode with the given index.
-  int num_aerosol_species(int mode_index) const;
+      // Returns the number of aerosol species in the mode with the given index.
+      int num_aerosol_species(int mode_index) const;
 
-  // Returns the number of gas species in the system.
-  int num_gas_species() const;
+      // Returns the number of gas species in the system.
+      int num_gas_species() const;
 
-  // Returns the number of vertical levels in the system.
-  int num_levels() const;
+      // Returns the number of vertical levels in the system.
+      int num_levels() const;
 
-  // Returns the view storing interstitial aerosol species mass mixing fraction
-  // data.
-  const SpeciesColumnView& interstitial_aerosols() const;
+      // Returns the view storing interstitial aerosol species mass mixing fraction
+      // data.
+      const SpeciesColumnView& interstitial_aerosols() const;
 
-  // Returns the view storing cloud-borne aerosol species mass mixing fraction
-  // data.
-  const SpeciesColumnView& cloudborne_aerosols() const;
+      // Returns the view storing cloud-borne aerosol species mass mixing fraction
+      // data.
+      const SpeciesColumnView& cloudborne_aerosols() const;
 
-  // Returns the view storing mass mixing fraction data for gas species.
-  const SpeciesColumnView& gases() const;
+      // Returns the view storing mass mixing fraction data for gas species.
+      const SpeciesColumnView& gases() const;
 
-  // Returns the view storing modal number concentrations.
-  const ModeColumnView& modal_num_concs() const;
+      // Returns the view storing modal number concentrations.
+      const ModeColumnView& modal_num_concs() const;
 
-  // Scales the given set of tendencies and adds it into this state, summing
-  // the values of the prognostic variables in place.
-  void scale_and_add(Real scale_factor, const Tendencies& tendencies);
-};
-\end{lstlisting}
+      // Scales the given set of tendencies and adds it into this state, summing
+      // the values of the prognostic variables in place.
+      void scale_and_add(Real scale_factor, const Tendencies& tendencies);
+    };
+    ```
+=== "Fortran"
+    ``` fortran
+    type :: prognostics_t
+    contains
+      ! Access to interstitial aerosol mix fractions array (no dummy arguments)
+      procedure :: interstitial_aerosols => p_int_aero_mix_frac
+      ! Access to cloudborne aerosol mix fractions array (no dummy arguments)
+      procedure :: cloudborne_aerosols => p_cld_aero_mix_frac
+      ! Access to gas mix fractions array (no dummy arguments)
+      procedure :: gases => p_gas_mix_frac
+      ! Access to modal number concentrations array (no dummy arguments)
+      procedure :: modes => p_modal_num_concs
+    end type
+    ```
 
-Typically, you never modify a \texttt{Prognostics} variable directly. Instead, you
-compute a set of tendencies (in a \texttt{Tendencies} variable, which is very
-similar to a \texttt{Prognostics} variable) and accumulate them into your
-\texttt{Prognostics} variable by calling \texttt{scale\_and\_add}.
+Typically, you never modify a `Prognostics` variable directly. Instead, you
+compute a set of tendencies in a `Tendencies` variable and accumulate them into
+your `Prognostics` variable by calling `scale_and_add`.
 
-The Fortran version of the \texttt{Prognostics} type is similar, and offers
-access to Fortran multidimensional arrays instead of C++ views. For cleaner
-syntax, this type uses bound procedures to return pointers to its arrays.
+### Atmosphere Type
 
-\lstset{language=[03]{fortran}}
-\begin{lstlisting}
-  type :: prognostics_t
-  contains
-    ! Access to interstitial aerosol mix fractions array (no dummy arguments)
-    procedure :: interstitial_aerosols => p_int_aero_mix_frac
-    ! Access to cloudborne aerosol mix fractions array (no dummy arguments)
-    procedure :: cloudborne_aerosols => p_cld_aero_mix_frac
-    ! Access to gas mix fractions array (no dummy arguments)
-    procedure :: gases => p_gas_mix_frac
-    ! Access to modal number concentrations array (no dummy arguments)
-    procedure :: modes => p_modal_num_concs
-  end type
-\end{lstlisting}
+The `Atmosphere` type stores a fixed set of state variables that describe the
+atmosphere, such as
 
-\subsection{Atmosphere Type}
-\labelsubsection{lib:atmosphere}
+* temperature [K]
+* pressure [Pa]
+* relative humidity [-]
+* heights at level interfaces [m]
 
-The \texttt{Atmosphere} C++ class stores a fixed set of state variables that
-describe the atmosphere, such as
+Each of these variables are stored in `ColumnView` objects whose memory
+is managed by the host model. Here's how the interfaces look:
 
-\begin{itemize}
-  \item temperature [K]
-  \item pressure [Pa]
-  \item relative humidity [-]
-  \item heights at level interfaces [m]
-\end{itemize}
+=== "C++"
+    ``` c++
+    ```
+=== "Fortran"
+    ``` fortran
+    ```
 
-Each of these variables are stored in \texttt{ColumnView} objects whose memory
-is managed by the host model.
+### Diagnostics Type
 
-{\em This data structure is new, so we'll be adding and changing these state
-variables a bit in the near future.}
-
-The \texttt{Diagnostics} C++ class stores a dynamically-determined set of
-diagnostic variables that correspond to the specific parameterizations available
+The `Diagnostics` type stores a dynamically-determined set of diagnostic
+variables that correspond to the specific parameterizations available
 to a specific aerosol system. The variables are identified by unique tokens that
 can be retrieved by name.
 
-\lstset{language=[11]c++}
-\begin{lstlisting}
-class Diagnostics final {
-  public:
-  // Returns the number of aerosol modes in the system.
-  int num_aerosol_modes() const;
+=== "C++"
+    ``` c++
+    class Diagnostics final {
+      public:
+      // Returns the number of aerosol modes in the system.
+      int num_aerosol_modes() const;
 
-  // Returns the number of aerosol species in the mode with the given index.
-  int num_aerosol_species(int mode_index) const;
+      // Returns the number of aerosol species in the mode with the given index.
+      int num_aerosol_species(int mode_index) const;
 
-  // Returns the number of gas species in the system.
-  int num_gas_species() const;
+      // Returns the number of gas species in the system.
+      int num_gas_species() const;
 
-  // Returns the number of vertical levels in the system.
-  int num_levels() const;
+      // Returns the number of vertical levels in the system.
+      int num_levels() const;
 
-  // Returns a unique token that identifies the given (non-modal) variable
-  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_var(const std::string& name) const;
+      // Returns a unique token that identifies the given (non-modal) variable
+      // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+      Token find_var(const std::string& name) const;
 
-  // Returns the view storing the diagnostic variable with a name corresponding
-  // to the given token. If such a variable does not exist, this throws an
-  // exception.
-  ColumnView& var(const Token token);
+      // Returns the view storing the diagnostic variable with a name corresponding
+      // to the given token. If such a variable does not exist, this throws an
+      // exception.
+      ColumnView& var(const Token token);
 
-  // Returns a unique token that identifies the given modal aerosol variable
-  // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_aerosol_var(const std::string& name) const;
+      // Returns a unique token that identifies the given modal aerosol variable
+      // within this object. Returns VAR_NOT_FOUND if this variable does not exist.
+      Token find_aerosol_var(const std::string& name) const;
 
-  // Returns the view storing the modal aerosol diagnostic variable with a name
-  // corresponding to the given token. If such a variable does not exist, this
-  // throws an exception.
-  SpeciesColumnView& aerosol_var(const Token token);
+      // Returns the view storing the modal aerosol diagnostic variable with a name
+      // corresponding to the given token. If such a variable does not exist, this
+      // throws an exception.
+      SpeciesColumnView& aerosol_var(const Token token);
 
-  // Returns a unique token that identifies the given gas variable within this
-  // object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_gas_var(const std::string& name) const;
+      // Returns a unique token that identifies the given gas variable within this
+      // object. Returns VAR_NOT_FOUND if this variable does not exist.
+      Token find_gas_var(const std::string& name) const;
 
-  // Returns the view storing the gas diagnostic variable with a name
-  // corresponding to the given token. If such a variable does not exist, this
-  // throws an exception.
-  SpeciesColumnView& gas_var(const Token token);
+      // Returns the view storing the gas diagnostic variable with a name
+      // corresponding to the given token. If such a variable does not exist, this
+      // throws an exception.
+      SpeciesColumnView& gas_var(const Token token);
 
-  // Returns a unique token that identifies the given modal variable within
-  // this object. Returns VAR_NOT_FOUND if this variable does not exist.
-  Token find_modal_var(const std::string& name) const;
+      // Returns a unique token that identifies the given modal variable within
+      // this object. Returns VAR_NOT_FOUND if this variable does not exist.
+      Token find_modal_var(const std::string& name) const;
 
-  // Returns the view storing the mode-specific diagnostic variable with a name
-  // corresponding to the given token. If such a variable does not exist, this
-  // throws an exception.
-  ModeColumnView& modal_var(const Token token);
-};
-\end{lstlisting}
+      // Returns the view storing the mode-specific diagnostic variable with a name
+      // corresponding to the given token. If such a variable does not exist, this
+      // throws an exception.
+      ModeColumnView& modal_var(const Token token);
+    };
+    ```
+=== "Fortran"
+    ``` fortran
+    type :: diagnostics_t
+    contains
+      ! Returns a token that can be used to retrieve a variable with the given
+      ! name from a diagnostics object, or var_not_found (-1) if no such variable
+      ! exists.
+      procedure :: find_var(name) -> token
+      ! Provides access to the given (non-modal) variable in the given
+      ! diagnostics object, given its token
+      procedure :: var(token) -> array pointer
+      ! Returns a token that can be used to retrieve an aerosol variable with the
+      ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
+      ! variable exists.
+      procedure :: find_aerosol_var(name) -> token
+      ! Provides access to the given (non-modal) variable in the given
+      ! diagnostics object, given its token.
+      procedure :: aerosol_var(token) -> array pointer
+      ! Returns a token that can be used to retrieve a gas variable with the
+      ! given name from a diagnostics object, or var_not_found (-1) if no such
+      ! variable exists.
+      procedure :: find_gas_var(name) -> token
+      ! Provides access to the given gas variable in the given diagnostics object,
+      ! given its token.
+      procedure :: gas_var(token) -> array pointer
+      ! Returns a token that can be used to retrieve a modal variable with the
+      ! given name from a diagnostics object, or var_not_found (-1) if no such
+      ! variable exists.
+      procedure :: has_modal_var(name) -> token
+      ! Provides access to the given modal variable in the given
+      ! diagnostics object, given its token.
+      procedure :: modal_var(token) -> array pointer
+    end type
+    ```
 
-The Fortran version of \texttt{Diagnostics}, like its \texttt{Prognostics} counterpart,
-uses bound procedures to provide access to its array data. Each one of these
-bound procedures accepts a single dummy argument: the name of the desired
-diagnostic variable. This Fortran pseudocode illustrates the interface for the
-\texttt{Diagnostics} derived-type \texttt{diagnostics\_t}.
-
-\lstset{language=[03]{fortran}}
-\begin{lstlisting}
-  type :: diagnostics_t
-  contains
-    ! Returns a token that can be used to retrieve a variable with the given
-    ! name from a diagnostics object, or var_not_found (-1) if no such variable
-    ! exists.
-    procedure :: find_var(name) -> token
-    ! Provides access to the given (non-modal) variable in the given
-    ! diagnostics object, given its token
-    procedure :: var(token) -> array pointer
-    ! Returns a token that can be used to retrieve an aerosol variable with the
-    ! given name and mode from a diagnostics object, or var_not_found (-1) if no such
-    ! variable exists.
-    procedure :: find_aerosol_var(name) -> token
-    ! Provides access to the given (non-modal) variable in the given
-    ! diagnostics object, given its token.
-    procedure :: aerosol_var(token) -> array pointer
-    ! Returns a token that can be used to retrieve a gas variable with the
-    ! given name from a diagnostics object, or var_not_found (-1) if no such
-    ! variable exists.
-    procedure :: find_gas_var(name) -> token
-    ! Provides access to the given gas variable in the given diagnostics object,
-    ! given its token.
-    procedure :: gas_var(token) -> array pointer
-    ! Returns a token that can be used to retrieve a modal variable with the
-    ! given name from a diagnostics object, or var_not_found (-1) if no such
-    ! variable exists.
-    procedure :: has_modal_var(name) -> token
-    ! Provides access to the given modal variable in the given
-    ! diagnostics object, given its token.
-    procedure :: modal_var(token) -> array pointer
-  end type
-\end{lstlisting}
-
-At this point, you might wonder how a \texttt{Diagnostics} variable knows which
-variables it needs. In fact, the \texttt{Diagnostics} class provides functions
+At this point, you might wonder how a `Diagnostics` variable knows which
+variables it needs. In fact, the `Diagnostics` type provides functions
 for creating variables that it needs when it needs them.
 
-For examples of how the \texttt{Prognostics}, \texttt{Atmosphere}, and
-\texttt{Diagnostics} types are used in practice, take a look at one of the
-existing aerosol process implementations.
+For examples of how the `Prognostics`, `Atmosphere`, and `Diagnostics` types
+are used in practice, take a look at one of the existing aerosol process
+implementations.
 
-\section{Aerosol Processes in Haero}
-\labelsection{lib:processes}
+## Aerosol Processes in Haero
 
 The aerosol life cycle consists of several important and distinct physical
-processes. As we mentioned in \refsubsection{lib:processes}, there are
-{\bf prognostic processes}, which compute tendencies for prognostic variables,
-and there are {\bf diagnostic processes}, which update diagnostic variables
-in place.
-
-Haero offers data structures that make it very easy to implement these two types
-of processes. Because the structure of a given process doesn't depend on the
-details of its implementation, we can define abstract interfaces for these
-processes. These abstract interfaces simplify the development of a process---
-instead of designing a new process from the ground up every time you want to
-add new functionality to Haero, you can simply implement a small number of
-functions (or subroutines) that define the behavior of a process, and let the
-Haero library handle the details of how these processes are created and used.
+processes. Haero offers a data structures that makes it very easy to implement
+such a process. Because the structure of a given process doesn't depend on the
+details of its implementation, we can define an abstract interface to simplify
+its implementation. Instead of designing a new process from the ground up every
+time you want to add new functionality to Haero, you can simply implement a
+small number of functions (or subroutines) that define the behavior of a
+process, and let the Haero library handle the details of how these processes are
+created and used (and where they run).
 
 For detailed descriptions of the specific processes provided by Haero, take a
-look at \refchapter{processes}. You can find examples of source code for
-Haero's processes in the \texttt{haero/processes} subdirectory.
+look at the [Aerosol Processes](processes.md) section. You can find examples of
+source code for Haero's processes in the `haero/processes` subdirectory.
 
-\subsection{The Aerosol Process Interface}
-\labelsubsection{lib:aerosol_process}
+### The Aerosol Process Interface
 
 An aerosol process has three behaviors which must be defined by any
 implementation. Each of these behaviors is implemented in a C++ function or
 a Fortran subroutine.
 
-\begin{enumerate}
-  \item {\bf initialization}: the process must be able to allocate any resources
-        it needs to do its work. These resources include temporary work arrays,
-        look-up tables, and quantities that need to be precomputed. State data
-        is not managed by processes, so it's not included in process
-        initialization. If nothing needs to be done for initialization, its
-        function or subroutine body can be empty.
-  \item {\bf running}: the process must know how to ``run''. In other words, it
-        must define a procedure for computing tendencies for a relevant set of
-        prognostic variables given their current values, and the current values
-        of any diagnostic variables. The function or subroutine that implements
-        this behavior does not apply these tendencies to any prognostic
-        variables---it simply computes the tendencies and returns.
-  \item {\bf finalization}: at the end of a simulation program, when the aerosol
-        system is destroyed, the process must free all resources it allocated
-        in its initialization. If no resources are allocated, the function or
-        subroutine body implementing finalization can be empty.
-\end{enumerate}
+* **initialization**: the process must be able to allocate any resources
+  it needs to do its work. These resources include temporary work arrays,
+  look-up tables, and quantities that need to be precomputed. State data
+  is not managed by processes, so it's not included in process
+  initialization. If nothing needs to be done for initialization, its
+  function or subroutine body can be empty.
+* **running**: the process must know how to "run". In other words, it
+  must define a procedure for computing tendencies for a relevant set of
+  prognostic variables given their current values at a specific simulation time,
+  along with the current values of any diagnostic variables. The function or
+  subroutine that implements this behavior does not apply these tendencies to
+  any prognostic variables---it simply computes the tendencies and returns.
+* **finalization**: at the end of a simulation program, when the aerosol
+  system is destroyed, the process must free all resources it allocated
+  in its initialization. If no resources are allocated, the function or
+  subroutine body implementing finalization can be empty.
 
 In addition, the process may support named parameters that can be set to
 specific values. Some examples of these kinds of parameters are
 
-\begin{itemize}
-  \item Integer-valued parameters that select one of several supported algorithms
-  \item Boolean flags for enabling or disabling features
-  \item Real-valued scale factors for quantities based on tuning or assumptions
-\end{itemize}
+* Integer-valued parameters that select one of several supported algorithms
+* Boolean flags for enabling or disabling features
+* Real-valued scale factors for quantities based on tuning or assumptions
+* String-valued parameters (just in case they're helpful)
 
 Haero provides an object-oriented approach for implementing a process in terms
 of this simple interface. In an object-oriented approach, an abstract interface
-is encoded in a ``base class''---a data type that declares the necessary
+is encoded in a "base class"--a data type that declares the necessary
 functions and subroutines. Then any implementation of this interface is defined
-in a data type ``derived'' from that base class.
+in a *derived class*: a type derived from that base class.
 
 Haero uses the object-oriented features of C++ for process development. All
 aerosol process implementations are derived from a C++ base class called
-\texttt{AerosolProcess}. This is true regardless of whether you implement the
+`AerosolProcess`. This is true regardless of whether you implement the
 process using C++ or Fortran.
 
-The \texttt{AerosolProcess} provides the following interface (see
-\texttt{haero/process.hpp} for more details):
+The `AerosolProcess` provides the following interface (see
+`haero/aerosol_process.hpp` for more details):
 
-\lstset{language=[11]{c++}}
-\begin{lstlisting}
-class AerosolProcess {
- public:
+=== "AerosolProcess"
+    ``` c++
+    class AerosolProcess {
+     public:
 
-  // Constructor, called by all AerosolProcess subclasses.
-  explicit AerosolProcess(const std::string& name):
-    name_(name) {}
+      // Constructor, called by all AerosolProcess subclasses.
+      explicit AerosolProcess(const std::string& name):
+       name_(name) {}
 
-  // Destructor.
-  virtual ~AerosolProcess() {}
+      // Destructor.
+      virtual ~AerosolProcess() {}
 
-  // Initializes the process with the aerosol configuration.
-  void init(const ModalAerosolConfig& config);
+      // Initializes the process with the aerosol configuration.
+      void init(const ModalAerosolConfig& config);
 
-  // Runs the process at the given time with the given aerosol data.
-  void run(Real t, Real dt, const Prognostics& prognostics,
-           const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-           Tendencies& tendencies) const;
+      // Runs the process at the given time with the given aerosol data.
+      void run(Real t, Real dt, const Prognostics& prognostics,
+               const Atmosphere& atmosphere, const Diagnostics& diagnostics,
+               Tendencies& tendencies) const;
 
-  // Set named integer, boolean, and real-valued parameters.
-  void set_param(const std::string& name, int value);
-  void set_param(const std::string& name, bool value);
-  void set_param(const std::string& name, Real value);
+      // Set named integer, boolean, and real-valued parameters.
+      void set_param(const std::string& name, int value);
+      void set_param(const std::string& name, bool value);
+      void set_param(const std::string& name, Real value);
 
- protected:
+      // On host: copies this aerosol process to the device, returning a
+      // pointer to the copy.
+      AerosolProcess* copy_to_device() const;
 
-  // Override this method if your aerosol process needs to be initialized
-  // with information about the system. The default implementation does nothing.
-  virtual void init_(const ModalAerosolConfig& config) {}
+      // On host: call this static method to delete a copy of the process
+      // that has been created on a device.
+      static void delete_on_device(AerosolProcess* device_process);
 
-  // Override this method to implement the aerosol process using the specific
-  // parameterization for the subclass.
-  virtual void run_(Real t, Real dt,
-                    const Prognostics& prognostics,
-                    const Atmosphere& atmosphere,
-                    const Diagnostics& diagnostics,
-                    Tendencies& tendencies) const = 0;
+     protected:
 
-  // Override these methods to set a parameter to a given value based on its
-  // name.
-  virtual void set_param_(const std::string& name, int value) {}
-  virtual void set_param_(const std::string& name, bool value) {}
-  virtual void set_param_(const std::string& name, Real value) {}
-};
-\end{lstlisting}
+      // Override this method if your aerosol process needs to be initialized
+      // with information about the system. The default implementation does nothing.
+      virtual void init_(const ModalAerosolConfig& config) {}
 
-In addition to the ``constructor'' function used to create an instance of a
-\texttt{AerosolProcess}, this interface declares three functions (\texttt{init\_},
-\texttt{run\_}, and the destructor function \texttt{\~AerosolProcess})
-that correspond to the three behaviors described above and must be overridden.
-Additionally, one or more of the \texttt{set\_param\_} methods can be overridden
-to support process-specific parameters. These parameters should be documented
-with the process.
+      // Override this method to implement the aerosol process using the specific
+      // parameterization for the subclass.
+      virtual void run_(Real t, Real dt,
+                        const Prognostics& prognostics,
+                        const Atmosphere& atmosphere,
+                        const Diagnostics& diagnostics,
+                        Tendencies& tendencies) const = 0;
+
+      // Override these methods to set a parameter to a given value based on its
+      // name.
+      virtual void set_param_(const std::string& name, int value) {}
+      virtual void set_param_(const std::string& name, bool value) {}
+      virtual void set_param_(const std::string& name, Real value) {}
+    };
+    ```
+
+In addition to the "constructor" function used to create an instance of a
+`AerosolProcess` and the interface functions for initializing, running, and
+setting parameters, the interface declares `protected` methods with
+underscores after their names. These are the methods you must override in
+order to define the behaviors of the aerosol process. Make sure you document
+any supported parameters (recognized by your `set_param` methods).
 
 The constructor accepts a single argument: a string containing the name of the
 aerosol process. This can be helpful for debugging.
 
+#### Digression: running aerosol processes on a GPU
+
+Haero is designed to allow aerosol physics to be computed on CPUs or GPUs, with
+different levels of parallelism. Running code on a GPU is tricky, because the
+data it uses must be copied to memory allocated on the GPU itself. In fact,
+a process object *itself* must be allocated on the GPU in order for the code
+to run there.
+
+The process of allocating this memory on the GPU is esoteric and
+confusing. Haero solves this problem by inserting an intermediary class between
+your derived class and the `AerosolProcess` class. This intermediary class is
+named `DeviceAerosolProcess`. It uses C++'s [curiously recurring template pattern](https://en.cppreference.com/w/cpp/language/crtp)
+to add all the necessary logic for your class to run on a GPU.
+
+The way it works is this:
+
+* An object for your process class is allocated and initialized (via `init`) on
+  the CPU by an atmospheric host model.
+* The host model calls the `copy_to_device` method to obtain a copy of the
+  object that lives on the GPU. This method uses a copy constructor defined by
+  your process class to copy itself from the CPU to the GPU.
+* The host model invokes your GPU-resident object's `run` method within a
+  Kokkos parallel dispatch as needed.
+* When the calculation is finished, the host model calls the `delete_on_device`
+  static method, passing it the GPU-resident object to deallocate it from the
+  GPU.
+
+The most important thing to remember here is that `init` is called on the CPU,
+whether or not you intend to run your process on the GPU. You must use the
+`init` method to record any information from the `ModalAerosolConfig` object
+that defines your simulation, because `ModalAerosolConfig` variables cannot
+reside on the GPU. Parameters are also set (using `set_param`) on the CPU, not
+the GPU.
+
 Let's explore how we might implement an aerosol process in C++ and in Fortran.
 Here we describe only the steps needed to implement the process itself. You must
 also test your process to make sure it behaves the way you think it does! The
-procedure for testing an aerosol process is described in
-\refchapter{testing}.
+procedure for testing an aerosol process is described in the [Testing](testing.md)
+section.
 
-\subsubsection{C++ aerosol processes}
-\labelsubsubsection{lib:aerosol_process_cxx}
+### C++ aerosol processes
 
 In C++, all you have to do in order to implement an aerosol process is to define
-a class with a specific name, derived from the \texttt{AerosolProcess} base
-class. For example, the MAM4 implementation of the nucleation process, described
-in \refsubsection{nuc:mam4}, is defined in a C++ class named
-\texttt{MAMNucleationProcess}. A C++ class derived from a base class is called a
-{\bf subclass} of that base class, so \texttt{MAMNucleationProcess} is a
-subclass of \texttt{AerosolProcess}.
+a class with a specific name. For concreteness, let's examine a process named
+`SimpleNucleationProcess`, which lives in `haero/processes/simple_nucleation_process.hpp`
+and `haero/processes/simple_nucleation_process.cpp`.
+
+To allow your process to reside on a CPU or GPU, your derive your class from
+the `DeviceAerosolProcess`. This class accepts a single template parameter:
+your class. So in our example, you would derive `SimpleNucleationProcess` from
+`DeviceAerosolProcess<SimpleNucleationProcess>`. This curiously recursive trick,
+in which the type of the intermediary class depends on the type of its
+descendent, gives the Curiously Recurring Template Pattern its name. Let's not
+worry about how it works for now.
+
+Before we go any further, some terminology: a C++ class derived from a base
+class is called a **subclass** of that base class. So `MyProcess` is a
+subclass of `DeviceAerosolProcess<SimpleNucleationProcess>`, which is itself a
+subclass of the base class `AerosolProcess`.
 
 To create a C++ implemention for an aerosol process:
 
-\begin{enumerate}
-  \item Create a header file that declares your subclass of
-        \texttt{AerosolProcess}. This header file must declare a constructor,
-        a destructor, the \texttt{init} function, and the \texttt{run} function.
-        This file lives in the \texttt{haero/processes} subdirectory within the
-        repository. See \texttt{haero/processes/MAMNucleationProcess.hpp} for an
-        example.
-  \item Create a source file containing implementations for the constructor, the
-        destructor, the \texttt{init} function, and the \texttt{run} function for
-        your subclass. This lives alongside the header file you just created.
-        See \texttt{haero/processes/MAMNucleationProcess.cpp} for an example.
-  \item Add your source file to the set of source files in the
-        \texttt{PROCESS\_SOURCES} variable in \texttt{haero/processes/CMakeLists.txt}.
-  \item Write one or more tests for your new aerosol process.
-        \refchapter{testing} provides extensive details about how to do this.
-\end{enumerate}
+1. Create a header file that declares your subclass. This header file must
+   declare a class constructor, a copy constructor, a destructor, and the
+   overridable `init_` and `run_` functions. If you want to support
+   configurable parameters, declare whatever versions of `set_param_` you need. Implement your
+2. Implement your copy constructor, your destructor, and your `run_` method
+   in the header file, declaring each with the `KOKKOS_INLINE_FUNCTION` macro.
+   This allows them to be called on a GPU.
+3. Create a source file containing implementations for the remaining methods
+   (the constructor, the `init_` method, and any `set_param_` methods you need).
+   See `haero/processes/simple_nucleation_process.cpp`, for example.
+4. Add your source file to the set of source files in the `PROCESS_SOURCES`
+   variable in `haero/processes/CMakeLists.txt`.
+5. Write one or more tests for your new aerosol process. The [Testing](testing.md)
+   section provides details about how to do this.
 
-\subsubsection{Fortran aerosol processes}
-\labelsubsubsection{lib:prognostic_f90}
+### Fortran aerosol processes
 
 A Fortran aerosol process implementation consists of a Fortran module that
-contains \texttt{init}, \texttt{run}, and \texttt{finalize} subroutines that
+contains `init`, `run`, and `finalize` subroutines that
 implement the same functionality as their C++ counterparts:
 
-\begin{lstlisting}
-module <module_name>
-  use haero, only: wp, modal_aerosol_config_t, prognostics_t, atmosphere_t, &
-                   diagnostics_t, tendencies_t
-  ...
-  implicit none
+=== "Fortran aerosol module"
+    ``` fortran
+    module MODULE_NAME
+      use haero, only: wp, modal_aerosol_config_t, prognostics_t, atmosphere_t, &
+                       diagnostics_t, tendencies_t
+      ...
+      implicit none
 
-  ! Aerosol process interface subroutines
-  public :: init, run, finalize
+      ! Aerosol process interface subroutines
+      public :: init, run, finalize
 
-  ! Parameter setting subroutines
-  public :: set_integer_param, set_logical_param, set_real_param
+      ! Parameter setting subroutines
+      public :: set_integer_param, set_logical_param, set_real_param
 
-  ! Module variables, including settable parameters
-  integer :: my_option
-  logical :: my_flag
-  real(wp) :: my_scale_factor
+      ! Module variables, including settable parameters
+      integer :: my_option
+      logical :: my_flag
+      real(wp) :: my_scale_factor
 
-  ! SAVE keyword for retaining module variables
-  save
+      ! SAVE keyword for retaining module variables
+      save
 
-contains
+    contains
 
-subroutine init(config)
-  implicit none
+    subroutine init(config)
+      implicit none
 
-  ! Arguments
-  type(modal_aerosol_config_t), intent(in) :: config
+      ! Arguments
+      type(modal_aerosol_config_t), intent(in) :: config
 
-  ...
-end subroutine
+      ...
+    end subroutine
 
-subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
-  implicit none
+    subroutine run(t, dt, prognostics, atmosphere, diagnostics, tendencies)
+      implicit none
 
-  ! Arguments
-  real(wp), value, intent(in)       :: t
-  real(wp), value, intent(in)       :: dt
-  type(prognostics_t), intent(in)   :: prognostics
-  type(atmosphere_t), intent(in)    :: atmosphere
-  type(diagnostics_t), intent(in)   :: diagnostics
-  type(tendencies_t), intent(inout) :: tendencies
+      ! Arguments
+      real(wp), value, intent(in)       :: t
+      real(wp), value, intent(in)       :: dt
+      type(prognostics_t), intent(in)   :: prognostics
+      type(atmosphere_t), intent(in)    :: atmosphere
+      type(diagnostics_t), intent(in)   :: diagnostics
+      type(tendencies_t), intent(inout) :: tendencies
 
-  ...
-end subroutine
+      ...
+    end subroutine
 
-subroutine finalize()
-  implicit none
+    subroutine finalize()
+      implicit none
 
-  ...
-end subroutine
+      ...
+    end subroutine
 
-subroutine set_integer_param(name, val)
-  implicit none
+    subroutine set_integer_param(name, val)
+      implicit none
 
-  ! Arguments
-  character(len=*), intent(in) :: name
-  integer, intent(in)          :: val
+      ! Arguments
+      character(len=*), intent(in) :: name
+      integer, intent(in)          :: val
 
-  if (trim(name) == "my_option") then
-    my_option = val
-  end if
-end subroutine
+      if (trim(name) == "my_option") then
+        my_option = val
+      end if
+    end subroutine
 
-subroutine set_logical_param(name, val)
-  implicit none
+    subroutine set_logical_param(name, val)
+      implicit none
 
-  ! Arguments
-  character(len=*), intent(in) :: name
-  logical, intent(in)          :: val
+      ! Arguments
+      character(len=*), intent(in) :: name
+      logical, intent(in)          :: val
 
-  if (trim(name) == "my_flag") then
-    my_flag = val
-  end if
-end subroutine
+      if (trim(name) == "my_flag") then
+        my_flag = val
+      end if
+    end subroutine
 
-subroutine set_real_param(name, val)
-  implicit none
+    subroutine set_real_param(name, val)
+      implicit none
 
-  ! Arguments
-  character(len=*), intent(in) :: name
-  real(wp), intent(in)         :: val
+      ! Arguments
+      character(len=*), intent(in) :: name
+      real(wp), intent(in)         :: val
 
-  if (trim(name) == "my_scale_factor") then
-    my_scale_factor = val
-  end if
-end subroutine
+      if (trim(name) == "my_scale_factor") then
+        my_scale_factor = val
+      end if
+    end subroutine
 
-...
+    ...
 
-end module
-\end{lstlisting}
+    end module
+    ```
 
-Note that you {\bf must} implement subroutines for \texttt{set\_integer\_param},
-\texttt{set\_logical\_param}, and \texttt{set\_real\_param}, even if your process
+In Fortran, you **must** implement subroutines for `set_integer_param`,
+`set_logical_param`, and `set_real_param`, even if your process
 doesn't support settable parameters.
 
 To implement an aerosol process in Fortran, you create such a module in a
-Fortran source file and then declare it as a \texttt{faerosol\_process} in the
-\texttt{CMakeLists.txt} file within the \texttt{haero/processes} subdirectory.
+Fortran source file and then declare it as a `faerosol_process` in the
+`CMakeLists.txt` file within the `haero/processes` subdirectory.
 There are instructions on how to declare your process in that file.
 
 For example, the Fortran MAM nucleation process is implemented in a Fortran
-module named \texttt{mam\_nucleation}, implemented in the source file
-\texttt{haero/processes/mam\_nucleation.F90}. In
-\texttt{haero/processes/CMakeLists.txt}, it's declared as a Fortran aerosol
+module named `mam_nucleation`, implemented in the source file
+`haero/processes/mam_nucleation.F90`. In
+`haero/processes/CMakeLists.txt`, it's declared as a Fortran aerosol
 process the following way:
 
-\begin{lstlisting}
-if (HAERO_FORTRAN)
-  ...
-  faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
-  ...
-endif()
-\end{lstlisting}
+=== "haero/processes/CMakeLists.txt"
+    ```
+    if (HAERO_FORTRAN)
+      ...
+      faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
+      ...
+    endif()
+    ```
 
 The declaration takes three arguments:
 
-\begin{enumerate}
-  \item The name of a C++ class that will be created that exposes the Fortran
-        implementation of the process
-  \item The C++ enumerated type that identifies what kind of aerosol process
-        is being implemented
-  \item The name of the Fortran module that implements the process.
-\end{enumerate}
+* The name of a C++ class that will be created that exposes the Fortran
+  implementation of the process
+* The C++ enumerated type that identifies what kind of aerosol process
+  is being implemented
+* The name of the Fortran module that implements the process
 
 The build system automatically generates a C++ class for the Fortran module that
 allows the process to be used in a Haero simulation. The name of this C++ class
@@ -891,21 +947,18 @@ is important for exposing it to the Haero library.
 Once you've done these things and rebuilt Haero, your new aerosol process
 implementation is available for use.
 
-\subsection{Diagnostic Functions}
-\labelsubsection{lib:diagnostic_functions}
+### Diagnostic Functions
 
 Aerosol processes compute tendencies for prognostic variables. But how are
 diagnostic variables updated? These variables are quite different in nature from
 their prognostic counterparts:
 
-\begin{enumerate}
-  \item they depend algebraically on prognostic variables and other diagnostic
-        variables
-  \item they are updated in place instead of being evolved in time by
-        differential equations
-  \item they are often shared/needed by several distinct aerosol processes, and
-        at various points in time, depending on a given process ordering
-\end{enumerate}
+* they depend algebraically on prognostic variables and other diagnostic
+  variables
+* they are updated in place instead of being evolved in time by
+  differential equations
+* they are often shared/needed by several distinct aerosol processes, and
+  at various points in time, depending on a given process ordering
 
 Because of these considerations, it's not clear that we can update more than a
 single diagnostic variable at once. To do so implies a knowledge of how the
@@ -913,7 +966,7 @@ aerosol processes are invoked during a time step, and Haero does not make any
 such decision on behalf of a host model. This means we must provide a diagnostic
 variable update mechanism that is flexible but easy to understand. This
 mechanism, which updates a single diagnostic variable, is called a
-{\bf diagnostic function}.
+**diagnostic function**.
 
 Unlike aerosol processes, which have multiple behaviors associated with
 initialization, finalization, and the execution of the process itself, a

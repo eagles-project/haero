@@ -9,7 +9,6 @@ nav:
   - 'processes.md'
   - 'driver.md'
   - 'testing.md'
-  - 'api.md'
 
 edit_uri: ""
 
@@ -35,12 +34,14 @@ theme:
 #    - navigation.tabs
 
 markdown_extensions:
+  - admonition
   - pymdownx.highlight
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - tables
 
 extra_javascript:
   - javascript/mathjax.js

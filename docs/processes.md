@@ -10,9 +10,10 @@ variables are taken directly from the prognostics and diagostics passed
 to the process, and no assumptions are made about how these state variables
 were computed.
 
-\begin{defn}[Aerosol process]
-  Aerosol processes are \emph{prognostic} in the sense that they update a tendency, which provides the right-hand-side for a differential equation solved either by Haero or its model.
-\end{defn}
+!!! info "Aerosol process"
+    An aerosol process computes a *tendency*, which provides the right-hand-side
+    for a differential equation solved either by Haero or its model. In this
+    sense, an aerosol process is *prognostic*.
 
 Processes may need intermediate quantities using the available state data and
 metadata to evaluate their tendencies. These intermediate quantities are
@@ -22,19 +23,20 @@ host model. They are computed by diagnostic functions; storage of these
 quantities depends on their use in various aerosol processes and/or the host
 model.
 
-\begin{defn}[Diagnostic function]
-  A diagnostic function updates any relevant diagnostic variables in place at simulation time $t$.
+!!! info "Diagnostic function"
+    A diagnostic function updates any relevant diagnostic variables in place at
+    simulation time $t$.
 
-  Diagnostic functions are therefore associated with the design of Kokkos kernel \emph{functors}.
-  In Haero, we apply the design priniciple that each diagnostic function updates exactly 1 diagnostic quantity.
-  In software, therefore, diagnostic functions are launched as separate kernels.
-\end{defn}
+    Diagnostic functions are associated with the design of Kokkos kernel
+    *functors*. In Haero, we apply a design priniciple: each diagnostic
+    function updates exactly 1 diagnostic quantity. So each diagnostic function
+    is launched as a separate kernel.
 
-\begin{assume}[Independent aerosol processes]
-  Every aerosol process is independent of other aerosol processes. Specifically:
-  a process takes a set of state variables and diagnostics, and {\em using only
-  these variables}, it computes a set of tendencies for the prognostic state variables at simulation time $t$.
-\end{assume}
+!!! info "Independent aerosol processes"
+    Every aerosol process is independent of other aerosol processes. Specifically:
+    a process takes a set of state variables and diagnostics, and *using only
+    these variables*, it computes a set of tendencies for the prognostic state
+    variables at simulation time $t$.
 
 This process independence is a dramatic departure from prior implementations of
 aerosol physics in MAM. Any sequential coupling of processes must be performed
