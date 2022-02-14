@@ -198,6 +198,7 @@ if (NOT EXISTS ${EKAT_LIBRARY})
   update_submodules()
   set(EKAT_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                      -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
                       -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
                       -DKokkos_ENABLE_DEPRECATED_CODE=OFF
                       -DKokkos_ENABLE_PROFILING=OFF)
