@@ -198,6 +198,7 @@ if (NOT EXISTS ${EKAT_LIBRARY})
   update_submodules()
   set(EKAT_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                      -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
                       -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
                       -DKokkos_ENABLE_DEPRECATED_CODE=OFF
                       -DKokkos_ENABLE_PROFILING=OFF)
@@ -448,29 +449,39 @@ set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 #----------------------------------------------------------------------------
 # Skywalker parameter study library
 #----------------------------------------------------------------------------
-set(SW_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                  -DCMAKE_Fortran=${CMAKE_Fortran_COMPILER}
-                  -DSKYWALKER_PRECISION=${HAERO_PRECISION})
-ExternalProject_Add(skywalker_proj
-                    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/skywalker
-                    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/skywalker
-                    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/skywalker
-                    INSTALL_DIR ${PROJECT_BINARY_DIR}
-                    CMAKE_ARGS ${SW_CMAKE_OPTS}
-                    LOG_CONFIGURE TRUE
-                    BUILD_COMMAND ${MAKE} -j
-                    LOG_BUILD TRUE
-                    INSTALL_COMMAND ${MAKE} install
-                    LOG_INSTALL TRUE)
-add_library(skywalker STATIC IMPORTED GLOBAL)
-set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libskywalker_${HAERO_PRECISION}.a)
-add_dependencies(skywalker skywalker_proj)
-add_library(skywalker_f90 STATIC IMPORTED GLOBAL)
-set_target_properties(skywalker_f90 PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libskywalker_f90_${HAERO_PRECISION}.a)
-add_dependencies(skywalker_f90 skywalker_proj)
+if (SKYWALKER_LIBRARY MATCHES ".a")
+  add_library(skywalker STATIC IMPORTED GLOBAL)
+else()
+  add_library(skywalker SHARED IMPORTED GLOBAL)
+endif()
+if (SKYWALKER_F90_LIBRARY MATCHES ".a")
+  add_library(skywalker_f90 STATIC IMPORTED GLOBAL)
+else()
+  add_library(skywalker_f90 SHARED IMPORTED GLOBAL)
+endif()
+set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION ${SKYWALKER_LIBRARY})
+set_target_properties(skywalker_f90 PROPERTIES IMPORTED_LOCATION ${SKYWALKER_F90_LIBRARY})
+if (NOT EXISTS ${SKYWALKER_LIBRARY})
+  set(SW_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                    -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+                    -DSKYWALKER_PRECISION=${HAERO_PRECISION})
+  ExternalProject_Add(skywalker_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/skywalker
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/skywalker
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/skywalker
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${SW_CMAKE_OPTS}
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND ${MAKE} -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND ${MAKE} install
+                      LOG_INSTALL TRUE)
+  add_dependencies(skywalker skywalker_proj)
+  add_dependencies(skywalker_f90 skywalker_proj)
+endif()
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
@@ -479,17 +490,20 @@ set(HAERO_INCDIRS ${HAERO_INCDIRS};${HAERO_EXT_INCDIRS} PARENT_SCOPE)
 set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
 set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
+#----------------------
 # Installation targets
+#----------------------
+
 install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include)
 
 if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
-  install(FILES ${Z_LIBRARY} DESTINATION lib)
+  install(FILES ${Z_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 if (${HDF5_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
-  install(FILES ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION lib)
+  install(FILES ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
-  install(FILES ${NETCDF_LIBRARY} DESTINATION lib)
+  install(FILES ${NETCDF_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
   install(FILES       ${EKAT_LIBRARY}
@@ -499,20 +513,26 @@ if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
                       ${EKAT_LIBRARY_DIR}/libkokkoscore.a
                       ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
           DESTINATION lib)
+  install(FILES       ${PROJECT_BINARY_DIR}/bin/test-launcher
+          DESTINATION bin)
 endif()
 if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
-  install(FILES ${YAMLCPP_LIBRARY} DESTINATION lib)
+  install(FILES ${YAMLCPP_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 if (HAERO_DEVICE STREQUAL "CPU" AND OPENBLAS_LIBRARY_DIR)
   if (${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
-    install(FILES ${OPENBLAS_LIBRARY} DESTINATION lib)
+    install(FILES ${OPENBLAS_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
   endif()
 endif()
 if (${TINES_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Tines
-  install(FILES ${TINES_LIBRARY} DESTINATION lib)
+  install(FILES ${TINES_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 if (${TCHEM_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built tchem
-  install(FILES ${TCHEM_LIBRARY} DESTINATION lib)
+  install(FILES ${TCHEM_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+if (${SKYWALKER_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built Skywalker
+  install(FILES ${SKYWALKER_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(FILES ${SKYWALKER_F90_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 if (${PROJECT_BINARY_DIR}/share)
   install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION share)

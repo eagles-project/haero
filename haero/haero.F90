@@ -90,8 +90,6 @@ module haero
     type(gas_species_t), dimension(:), allocatable :: gas_species
     !> The number of gases in the model. Equal to size(gas_species).
     integer :: num_gases
-    !> The number of vertical levels in an atmospheric column.
-    integer :: num_levels
   contains
     !> Returns the maximum number of aerosol species found in any aerosol mode.
     procedure :: max_species_per_mode => m_max_species_per_mode
