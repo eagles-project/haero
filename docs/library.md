@@ -681,10 +681,11 @@ The `AerosolProcess` provides the following interface (see
       // Initializes the process with the aerosol configuration.
       void init(const ModalAerosolConfig& config);
 
-      // Runs the process at the given time with the given aerosol data.
-      void run(Real t, Real dt, const Prognostics& prognostics,
-               const Atmosphere& atmosphere, const Diagnostics& diagnostics,
-               Tendencies& tendencies) const;
+      // Runs the process at the given time with the given aerosol data and the
+      // given Kokkos thread team.
+      void run(const TeamType& team, Real t, Real dt,
+               const Prognostics& prognostics, const Atmosphere& atmosphere,
+               const Diagnostics& diagnostics, Tendencies& tendencies) const;
 
       // Set named integer, boolean, and real-valued parameters.
       void set_param(const std::string& name, int value);
@@ -753,7 +754,8 @@ The way it works is this:
   object that lives on the GPU. This method uses a copy constructor defined by
   your process class to copy itself from the CPU to the GPU.
 * The host model invokes your GPU-resident object's `run` method within a
-  Kokkos parallel dispatch as needed.
+  Kokkos parallel dispatch as needed, passing it a [Kokkos thread team](https://github.com/kokkos/kokkos/wiki/HierarchicalParallelism#82-thread-teams)
+  that determines the number of threads available witin the method.
 * When the calculation is finished, the host model calls the `delete_on_device`
   static method, passing it the GPU-resident object to deallocate it from the
   GPU.
