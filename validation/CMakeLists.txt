@@ -7,3 +7,4 @@ add_library(validation_f90 validation.F90)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(nucleation)
+add_subdirectory(gasaerexch)
