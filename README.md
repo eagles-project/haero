@@ -106,20 +106,26 @@ practice, though, it's safest to always build from the top of the build tree.
 
 ## Generating Documentation
 
-Documentation for Haero can be built using [`mkdocs`](https://squidfunk.github.io/mkdocs-material/). In order to build and view the
+Documentation for Haero can be built using
+[`mkdocs`](https://squidfunk.github.io/mkdocs-material/).
+In order to build and view the
 documentation, you must download `mkdocs` and its Material theme:
 
 ```pip3 install mkdocs mkdocs-material```
 
-Then, run `mkdocs serve` from the root directory of your Haero repo, and point your browser to [`http://localhost:8000`](http://localhost:8000).
+Then, run `mkdocs serve` from the root directory of your Haero repo,
+and point your browser to [`http://localhost:8000`](http://localhost:8000).
 
 Haero's documentation includes
 
-* an extensive design document. This document describes the aerosol modeling
-  methodology used by Haero, as well as the library itself, and its various
-  representations of aerosol processes
+* an extensive design document.
+This document describes the aerosol modeling
+methodology used by Haero, as well as the library itself, and its various
+representations of aerosol processes
 
-* documentation for the Haero's C++/Fortran API, found at [`Library/Fortran aerosol processes`](http://localhost:8000/library/#fortran-aerosol-processes).
+* documentation for Haero's C++/Fortran API, found at
+[`Library/Fortran aerosol processes`]
+(http://localhost:8000/library/#fortran-aerosol-processes).
 
 # FAQ
 
