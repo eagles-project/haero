@@ -106,34 +106,22 @@ practice, though, it's safest to always build from the top of the build tree.
 
 ## Generating Documentation
 
-Documentation for Haero can be built using `make docs`. In order to build
-documentation, you must install the following software:
+Documentation for Haero can be built using [`mkdocs`](https://squidfunk.github.io/mkdocs-material/). In order to build and view the
+documentation, you must download `mkdocs` and its Material theme:
 
-* [LaTex](https://www.latex-project.org/help/documentation/), for building
-  Haero's technical documentation
-* [ImageMagick](https://imagemagick.org/index.php), for converting images to
-  the appropriate formats
-* [Doxygen](https://www.doxygen.nl/index.html), for generating the reference
-  API documentation
+```pip3 install mkdocs mkdocs-material```
 
-All of these packages can be installed with a package manager like `apt` or
-`homebrew`. For example, to install them on a Mac using `homebrew`:
-
-```
-brew install mactex imagemagick doxygen
-```
+Then, run `mkdocs serve` from the root directory of your Haero repo, and point your browser to `http://localhost:8000`.
 
 Haero's documentation includes
 
-* an extensive design document, which is built in the `docs/design` directory
-  within your build directory. This document describes the aerosol modeling
+* an extensive design document.
+<!-- , which is built in the `docs/design` directory within your build directory.  -->
+  This document describes the aerosol modeling
   methodology used by Haero, as well as the library itself, and its various
   representations of aerosol processes
 
-* HTML reference documentation for the Haero's C++/Fortran API, generated in
-  the `docs/doxygen/html` directory within your build directory. You can point
-  You can point your browser to `docs/html/index.html` to peruse the reference
-  documentation.
+* documentation for the Haero's C++/Fortran API, found at [`Library/Fortran aerosol processes`](http://localhost:8000/library/#fortran-aerosol-processes).
 
 # FAQ
 
