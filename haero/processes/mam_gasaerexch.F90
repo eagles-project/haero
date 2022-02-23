@@ -153,6 +153,7 @@ module mam_gasaerexch
    integer :: ntot_amode                       ! total # of aerosol modes handled by the parameterization
    integer :: igas_h2so4
    integer :: igas_nh3
+   integer :: iaer_so4
    ! integer :: igas_soag_bgn  Not sure what SOAG is and how these were set in MAMRefactor
    ! integer :: igas_soag_end  but I think for Haero these should be ignored
 
@@ -202,6 +203,7 @@ contains
    uptk_rate_factor(:) = 0._wp
 
    igas_h2so4 = config%gas_index("H2SO4")
+   igas_nh3   = config%gas_index("NH3")
    ! H2SO4 is the ref species, so the ratio is 1
    uptk_rate_factor(igas_h2so4) = 1._wp
 
@@ -218,6 +220,7 @@ contains
    ! Record the index for h2so4 aerosol within the Aitken mode and fetch some
    ! properties.
    iaer_h2so4 = config%aerosol_species_index(nait, "H2SO4")
+   iaer_so4   = config%aerosol_species_index(nait, "SO4")
    if (iaer_h2so4 > 0) then
      h2so4 = config%aerosol_species(nait, iaer_h2so4)
      mw_h2so4 = h2so4%molecular_wt
@@ -333,7 +336,6 @@ contains
       type(diagnostics_t), intent(in)   :: diagnostics
       type(tendencies_t), intent(inout) :: tendencies
 
-      integer   :: igas_h2so4, igas_nh3, iaer_so4
 
       logical   :: l_calc_gas_uptake_coeff
       integer   :: lund        ! logical unit for diagnostic output
