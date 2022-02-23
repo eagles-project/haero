@@ -111,13 +111,11 @@ documentation, you must download `mkdocs` and its Material theme:
 
 ```pip3 install mkdocs mkdocs-material```
 
-Then, run `mkdocs serve` from the root directory of your Haero repo, and point your browser to `http://localhost:8000`.
+Then, run `mkdocs serve` from the root directory of your Haero repo, and point your browser to [`http://localhost:8000`]{http://localhost:8000}.
 
 Haero's documentation includes
 
-* an extensive design document.
-<!-- , which is built in the `docs/design` directory within your build directory.  -->
-  This document describes the aerosol modeling
+* an extensive design document. This document describes the aerosol modeling
   methodology used by Haero, as well as the library itself, and its various
   representations of aerosol processes
 
