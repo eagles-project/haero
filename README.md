@@ -116,16 +116,14 @@ documentation, you must download `mkdocs` and its Material theme:
 Then, run `mkdocs serve` from the root directory of your Haero repo,
 and point your browser to [`http://localhost:8000`](http://localhost:8000).
 
-Haero's documentation includes
+Haero's documentation includes:
 
 * an extensive design document.
-This document describes the aerosol modeling
-methodology used by Haero, as well as the library itself, and its various
-representations of aerosol processes
+This document describes the aerosol modeling methodology used by Haero,
+as well as the library itself, and its various representations of aerosol processes.
 
 * documentation for Haero's C++/Fortran API, found at
-[`Library/Fortran aerosol processes`]
-(http://localhost:8000/library/#fortran-aerosol-processes).
+[`Library/Fortran aerosol processes`](http://localhost:8000/library/#fortran-aerosol-processes).
 
 # FAQ
 
