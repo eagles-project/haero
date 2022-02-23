@@ -321,14 +321,6 @@ if(NOT HAERO_USE_CUDA AND HAERO_PACK_SIZE EQUAL 1)
   add_subdirectory(validation)
 endif()
 
-# Documentation.
-if (HAERO_DOC_INCLUDE_COMMENTS)
-  set(HAERO_INCLUDE_DESIGN_COMMENTS "\\inccommentstrue")
-else()
-  set(HAERO_INCLUDE_DESIGN_COMMENTS "%\\inccommentstrue")
-endif()
-add_subdirectory(docs)
-
 # Formatting and format checking using clang-format.
 find_program(CLANG_FORMAT clang-format)
 if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")

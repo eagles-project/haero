@@ -5,9 +5,7 @@ fort.*
 *.nc
 *.log
 *.out
-*.pdf
 *.aux
 *.bbl
 *.blg
 *.gz
-haero_design_inc.tex
