@@ -1,0 +1,150 @@
+% Haero design document
+\documentclass{book}
+
+\usepackage{amsmath,amssymb,mathrsfs}
+\usepackage{graphicx}
+\usepackage{fullpage,times}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{booktabs,supertabular}
+\usepackage{amsthm,thmtools}
+\usepackage{xspace}
+\usepackage{listings}
+\usepackage{float}
+\usepackage[ruled,lined,linesnumbered]{algorithm2e}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\newtheorem{appx}{Approximation}
+\newtheorem{assume}{Assumption}
+
+
+\theoremstyle{remark}
+\newtheorem*{rem}{Remark}
+
+% Line spacing
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1em}
+
+\usepackage[dvipsnames]{xcolor}
+
+%---------
+% configure-time stuff
+\input{../haero_design_inc.tex}
+
+%---------
+% Draft writing tools
+\newcommand{\todo}[1]{\ifinccomments\textcolor{Red}{\textbf{TODO:\xspace} #1}\fi}
+\newcommand{\pbc}[1]{\ifinccomments\textcolor{MidnightBlue}{\textbf{PB comment:\xspace} #1 }\fi} % Pete
+\newcommand{\jjc}[1]{\ifinccomments\textcolor{Cerulean}{\textbf{JJ comment:\xspace} #1}\fi} % Jeff
+\newcommand{\hwc}[1]{\ifinccomments\textcolor{ForestGreen}{\textbf{HW comment:\xspace} #1}\fi} % Hui
+\newcommand{\bsc}[1]{\ifinccomments\textcolor{BlueViolet}{\textbf{BS comment:\xspace} #1}\fi} % Balwinder
+\newcommand{\msc}[1]{\ifinccomments\textcolor{Plum}{\textbf{MS comment:\xspace} #1}\fi} % Mike
+\newcommand{\jsc}[1]{\ifinccomments\textcolor{Violet}{\textbf{JS comment:\xspace} #1}\fi} % Jian
+
+% Bibliography stuff
+\usepackage[sort, numbers]{natbib}
+\bibliographystyle{acm}
+\setcitestyle{square}
+
+\usepackage{hyperref}
+
+% Hold the serifs, please!
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{helvet}
+
+%\usepackage[inline]{../trackchanges}
+%\addeditor{Kai}
+%\addeditor{Hui}
+
+% We number subsections and paragraphs.
+\setcounter{secnumdepth}{5}
+
+% Labeling and referencing
+\newcommand{\labeleq}[1]{\label{eq:#1}}
+\newcommand{\labelfig}[1]{\label{fig:#1}}
+\newcommand{\labelchapter}[1]{\label{ch:#1}}
+\newcommand{\labelsection}[1]{\label{sec:#1}}
+\newcommand{\labelsubsection}[1]{\label{subsec:#1}}
+\newcommand{\labelsubsubsection}[1]{\label{subsubsec:#1}}
+\newcommand{\labelparagraph}[1]{\label{para:#1}}
+\newcommand{\labelappendix}[1]{\label{app:#1}}
+\newcommand{\labelappendixsection}[1]{\label{app:sec:#1}}
+\newcommand{\labelappendixsubsection}[1]{\label{app:subsec:#1}}
+\newcommand{\refeq}[1]{Equation~\ref{eq:#1}}
+\newcommand{\reffig}[1]{Figure~\ref{fig:#1}}
+\newcommand{\refchapter}[1]{Chapter~\ref{ch:#1}}
+\newcommand{\refsection}[1]{Section~\ref{sec:#1}}
+\newcommand{\refsubsection}[1]{Section~\ref{subsec:#1}}
+\newcommand{\refsubsubsection}[1]{Section~\ref{subsubsec:#1}}
+\newcommand{\refparagraph}[1]{Paragraph~\ref{para:#1}}
+\newcommand{\refappendix}[1]{Appendix~\ref{app:#1}}
+\newcommand{\refappendixsection}[1]{Appendix~\ref{app:sec:#1}}
+\newcommand{\refappendixsubsection}[1]{Appendix~\ref{app:subsec:#1}}
+
+% Annotating assumptions(!)
+%\newcommand{\assume}{{\bf Assumption: }}
+
+% Math stuff
+\renewcommand{\d}[1]{\mathrm{d} #1}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\ddt}[1]{\frac{d #1}{dt}}
+\newcommand{\partialt}[1]{\frac{\partial #1}{\partial t}}
+\renewcommand{\div}[1]{\nabla \cdot #1}
+\newcommand{\dsub}[1]{_{_{#1}}}
+\newcommand{\specidx}{L}
+\newcommand{\amass}[1]{q\dsub{m,#1,i}}
+\newcommand{\aitmass}[1]{q_{_{m,#1,2}}}
+\newcommand{\vmass}[1]{q\dsub{v,#1}}
+\newcommand{\mw}[1]{M\dsub{w,#1}}
+\newcommand{\rsag}{\rm H_{_2}SO_{_4}}
+\newcommand{\rasf}{\rm SO_{_4}}
+\newcommand{\rwater}{\rm H_{_2}O}
+\newcommand{\sag}{H_{_2}SO_{_4}}
+\newcommand{\asf}{SO_{_4}}
+\newcommand{\water}{H_{_2}O}
+\newcommand{\numc}{N_{_{t,i}}}
+\mathchardef\mhyphen="2D % Define a "math hyphen", make the dash shorter
+\newcommand{\pluseq}{\mathrel{+}=}
+\newcommand{\minuseq}{\mathrel{-}=}
+\DeclareMathOperator{\sgn}{sgn}
+
+% Norm and Absolute value
+	\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
+	\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+% derivatives
+	\newcommand{\partd}[2]{\frac{\partial #1 }{\partial #2}}
+	\newcommand{\partdn}[3]{\frac{\partial^#3 #1}{\partial #2 ^#3}}
+	\newcommand{\deriv}[2]{\frac{ d #1}{d #2}}
+	\newcommand{\derivn}[3]{\frac{d^#3 #1}{d #2^#3}}
+	\providecommand{\totd}[1]{\frac{D #1}{Dt}}
+
+\begin{document}
+\title{Haero Aerosol Model Design}
+\author{EAGLES Computation Team}
+%\date
+\maketitle
+
+\tableofcontents
+
+% \include puts page breaks after each section, while \input does not.
+\include{intro}
+\include{physics}
+\include{library}
+\include{testing}
+\include{processes}
+\include{driver}
+
+\appendix
+\include{glossary}
+\include{api}
+\include{process_appendix}
+\include{diagnostics}
+\include{driver_input}
+\chapter{List of assumptions and approximations}
+\renewcommand{\listtheoremname}{}
+\listoftheorems[ignoreall, show={assume,appx}, onlynamed]
+\nocite{*}
+\bibliography{haero_design}
+
+\end{document}

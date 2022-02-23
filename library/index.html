@@ -1,0 +1,1801 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.9">
+    
+    
+      
+        <title>The Haero Library - Haero: A High Performance Aerosol Model Implementation for E3SM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2b4465f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-haero-library" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Haero: A High Performance Aerosol Model Implementation for E3SM" class="md-header__button md-logo" aria-label="Haero: A High Performance Aerosol Model Implementation for E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Haero: A High Performance Aerosol Model Implementation for E3SM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The Haero Library
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="cyan" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/eagles-project/haero" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Haero: A High Performance Aerosol Model Implementation for E3SM" class="md-nav__button md-logo" aria-label="Haero: A High Performance Aerosol Model Implementation for E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    Haero: A High Performance Aerosol Model Implementation for E3SM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/eagles-project/haero" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        Glossary
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/" class="md-nav__link">
+        Aerosol Physics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          The Haero Library
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        The Haero Library
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aerosol-systems" class="md-nav__link">
+    Aerosol Systems
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aerosol-state-data" class="md-nav__link">
+    Aerosol State Data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aerosol-processes" class="md-nav__link">
+    Aerosol Processes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-systems-in-haero" class="md-nav__link">
+    Aerosol Systems in Haero
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#particle-sizes-the-mode-type" class="md-nav__link">
+    Particle Sizes: the Mode Type
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-species-the-species-type" class="md-nav__link">
+    Aerosol Species: the Species Type
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#species-and-their-sizes-the-modal-aerosol-configuration-type" class="md-nav__link">
+    Species and Their Sizes: the Modal Aerosol Configuration Type
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-and-atmospheric-state-container-types" class="md-nav__link">
+    Aerosol and Atmospheric State: Container Types
+  </a>
+  
+    <nav class="md-nav" aria-label="Aerosol and Atmospheric State: Container Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#digression-kokkos-views-as-multidimensional-arrays" class="md-nav__link">
+    Digression: Kokkos Views as Multidimensional Arrays
+  </a>
+  
+    <nav class="md-nav" aria-label="Digression: Kokkos Views as Multidimensional Arrays">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#packs-and-vectorization" class="md-nav__link">
+    Packs and Vectorization}
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#haero-specific-views" class="md-nav__link">
+    Haero-Specific Views
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prognostics-type" class="md-nav__link">
+    Prognostics Type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#atmosphere-type" class="md-nav__link">
+    Atmosphere Type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostics-type" class="md-nav__link">
+    Diagnostics Type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-processes-in-haero" class="md-nav__link">
+    Aerosol Processes in Haero
+  </a>
+  
+    <nav class="md-nav" aria-label="Aerosol Processes in Haero">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-aerosol-process-interface" class="md-nav__link">
+    The Aerosol Process Interface
+  </a>
+  
+    <nav class="md-nav" aria-label="The Aerosol Process Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#digression-running-aerosol-processes-on-a-gpu" class="md-nav__link">
+    Digression: running aerosol processes on a GPU
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-aerosol-processes" class="md-nav__link">
+    C++ aerosol processes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fortran-aerosol-processes" class="md-nav__link">
+    Fortran aerosol processes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostic-functions" class="md-nav__link">
+    Diagnostic Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processes/" class="md-nav__link">
+        Aerosol Processes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../driver/" class="md-nav__link">
+        The Haero Driver
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        Testing Aerosol Processes
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aerosol-systems" class="md-nav__link">
+    Aerosol Systems
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aerosol-state-data" class="md-nav__link">
+    Aerosol State Data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aerosol-processes" class="md-nav__link">
+    Aerosol Processes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-systems-in-haero" class="md-nav__link">
+    Aerosol Systems in Haero
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#particle-sizes-the-mode-type" class="md-nav__link">
+    Particle Sizes: the Mode Type
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-species-the-species-type" class="md-nav__link">
+    Aerosol Species: the Species Type
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#species-and-their-sizes-the-modal-aerosol-configuration-type" class="md-nav__link">
+    Species and Their Sizes: the Modal Aerosol Configuration Type
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-and-atmospheric-state-container-types" class="md-nav__link">
+    Aerosol and Atmospheric State: Container Types
+  </a>
+  
+    <nav class="md-nav" aria-label="Aerosol and Atmospheric State: Container Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#digression-kokkos-views-as-multidimensional-arrays" class="md-nav__link">
+    Digression: Kokkos Views as Multidimensional Arrays
+  </a>
+  
+    <nav class="md-nav" aria-label="Digression: Kokkos Views as Multidimensional Arrays">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#packs-and-vectorization" class="md-nav__link">
+    Packs and Vectorization}
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#haero-specific-views" class="md-nav__link">
+    Haero-Specific Views
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prognostics-type" class="md-nav__link">
+    Prognostics Type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#atmosphere-type" class="md-nav__link">
+    Atmosphere Type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostics-type" class="md-nav__link">
+    Diagnostics Type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aerosol-processes-in-haero" class="md-nav__link">
+    Aerosol Processes in Haero
+  </a>
+  
+    <nav class="md-nav" aria-label="Aerosol Processes in Haero">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-aerosol-process-interface" class="md-nav__link">
+    The Aerosol Process Interface
+  </a>
+  
+    <nav class="md-nav" aria-label="The Aerosol Process Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#digression-running-aerosol-processes-on-a-gpu" class="md-nav__link">
+    Digression: running aerosol processes on a GPU
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-aerosol-processes" class="md-nav__link">
+    C++ aerosol processes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fortran-aerosol-processes" class="md-nav__link">
+    Fortran aerosol processes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnostic-functions" class="md-nav__link">
+    Diagnostic Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="the-haero-library">The Haero Library</h1>
+<h2 id="overview">Overview</h2>
+<p>Haero is designed to provide a modal aerosol capability to an atmospheric model
+written in C++ and/or Fortran. It makes no attempt to describe or evolve any
+atmospheric phenomena outside of aerosols. Instead, Haero evolves the state of
+aerosols within a modal aerosol model as part of a broader atmospheric
+<strong>host model</strong>: a mathematically consistent description of the atmosphere.</p>
+<p>To use Haero in your own host model, you write code to interact to construct
+a modal aerosol system and invoke aerosol processes on that system. Haero gives
+you all the flexibility and control you need to define how the aerosol processes
+couple with and interoperate with the other processes in the host model. In this
+sense, Haero is a set of building blocks you can use to construct the most
+appropriate modal aerosol representation for your host model.</p>
+<p>Haero provides an interface for running aerosol processes to evolve a set of
+state data within a single atmospheric column. You can evolve several columns
+in parallel, as long as state data is provided for each column.</p>
+<p>All quantities in Haero are specified using the International System of Units
+(SI) unless otherwise specified. In both code comments and documentation, we
+place square brackets indicating units after the description of a quantity
+(e.g. simulation time [s]).</p>
+<h3 id="aerosol-systems">Aerosol Systems</h3>
+<p>Haero's representation of aerosols relies on a set of simple data structures
+that define the assumptions underlying a specific modal aerosol system. These
+elements are:</p>
+<ul>
+<li><strong>Modes</strong>: statistical representations of aerosol particle populations
+  organized by particle size</li>
+<li><strong>Species</strong>: aerosol and gas molecules of interest. Each aerosol
+  species belongs to a single aerosol mode and is tracked by mass and
+  number. Gas species are assumed to be small and don't belong to modes.</li>
+<li>An <strong>Aerosol Configuration</strong>: the collection of modes and species of
+  interest within a specific modal aerosol system to be simulated</li>
+</ul>
+<p>These entities define the aerosol system of interest in Haero, and provide
+any related <strong>metadata</strong> needed to make decisions about how an aerosol
+processes does its work.</p>
+<h3 id="aerosol-state-data">Aerosol State Data</h3>
+<p>Haero deals with two distinct types of state variables:</p>
+<ul>
+<li><strong>Prognostic variables</strong>: variables that are evolved in time according
+  to a system of differential equations</li>
+<li><strong>Diagnostic variables</strong>: variables that are algebraically related to
+  other variables, whether those variables are prognostic or diagnostic</li>
+</ul>
+<p>Prognostic variables are quantities that possess an initial state and are
+evolved forward in time by their <strong>tendencies</strong> (time derivatives). It is
+not possible to construct the value of a prognostic variable at time <span class="arithmatex">\(t\)</span> without
+an initial condition at some time <span class="arithmatex">\(t_0\)</span> and a tendency defined over the period
+<span class="arithmatex">\(\left[t_0, t\right]\)</span>.</p>
+<p>The concept of a "diagnostic" variable is more general than its name suggests.
+The word <em>diagnostic</em> suggests that the variable is used only as an indicator
+by a human attempting to "diagnose" some atmospheric condition. In fact, a
+diagnostic variable can be any variable whose state can be constructed at any
+instant in time, using only the relevant prognostic variables. In this sense,
+a diagnostic variable serves as a "shared" variable that can be computed at
+the appropriate time, and used by one or more aerosol processes.</p>
+<p>Haero's aerosol state data lives in multi-dimensional arrays within "smart
+containers":</p>
+<ul>
+<li>The <code>Prognostics</code> container contains prognostic state variables
+  specific to aerosols</li>
+<li>The <code>Atmosphere</code> container contains a thermodynamic description
+  of the atmosphere in which an aerosol system is embedded</li>
+<li>The <code>Diagnostics</code> container contains a registry of diagnostic
+  variables shared amongst various aerosol processes, and made available
+  for output</li>
+</ul>
+<p>The arrays in these data structures are stored in <a href="https://github.com/kokkos/kokkos/wiki/View">Kokkos Views</a>.
+Aerosol state data is allocated in C++, but available for use in Fortran for
+implementing aerosol processes or for using Haero from within a Fortran host
+model. Atmospheric state data is provided by the host model.</p>
+<h3 id="aerosol-processes">Aerosol Processes</h3>
+<p>The aerosol "life cycle" consists of a set of complicated physical processes
+involving many participants, with a wide range of length and time scales. These
+different scales demand a degree of flexibility in how we evaluate changes to
+the state of an aerosol system. For example, we expect to be able to resolve
+processes whose time scale is similar to or larger than the time scale for
+convection in the atmosphere, whereas processes with faster time scales must be
+treated in some special way that accommodates a relaxation or equilibration
+process.</p>
+<p>In Haero, an "aerosol process" accepts a set of completely specified input
+(prognostic and diagnostic variables, an atmospheric state, etc) and calculates
+a set of tendencies for prognostic aerosol and gas variables.</p>
+<p>An aerosol process consists of a set of parameterizations that encode simplifying
+assumptions about a specific stage of the aerosol life cycle into an algorithm
+that computes the relevant quantities of interest. The processes provided by
+Haero, and their various parameterizations, are described in
+<a href="../processes/">processes</a>.</p>
+<p>These processes are the true assets of the Haero library. They can be
+implemented in C++, in Fortran, or in both. This allows aerosol researchers to
+make their latest parameterizations available in the Haero library, while
+providing software engineers with a "future-proof" environment for optimizing
+these and other parameterizations for DOE's Leadership Class Facilities.</p>
+<p>That's an orbit-level view of the Haero library. Now let's take a closer look at
+each of these aspects.</p>
+<h2 id="aerosol-systems-in-haero">Aerosol Systems in Haero</h2>
+<p>To model a specific aerosol system in Haero, we must answer some questions:</p>
+<ul>
+<li>How are aerosol particle sizes represented?</li>
+<li>What species are present in the system, and how are their sizes
+  reflected in the particle size distribution?</li>
+<li>How is the state of an aerosol system represented mathematically?</li>
+<li>How many vertical levels are needed to resolve the profile of aerosols
+  in the system?</li>
+<li>What are the relevent physical processes that describe the evolution
+  of the aerosol system?</li>
+</ul>
+<p>Each of these decisions greatly affects the nature of the system--systems with
+different answers to these questions can have very different behavior. Haero
+attempts to answer these questions with a few basic data structures.</p>
+<h2 id="particle-sizes-the-mode-type">Particle Sizes: the Mode Type</h2>
+<p>We've seen how the dynamics of aerosols can be represented mathematically
+by evolution equations for moments of modal distribution functions. Modes
+simplify the description of aerosol particles in terms of their size: instead of
+representing a population of particles with a distribution function
+<span class="arithmatex">\(n(V_p, \vec{x}, t)\)</span> that varies continuously with the size of the particle, we
+introduced <span class="arithmatex">\(M\)</span> discrete modes and declared that these modes partition the
+population of aerosol particles in the sense of the modal assumption as given
+by \refeq{modal_n}.</p>
+<p>The essential information in a mode is the range of particle sizes it
+encompasses, <span class="arithmatex">\([D_{\min}, D_{\max}]\)</span>, and its geometric standard deviation,
+<span class="arithmatex">\(\sigma_g\)</span>. In Haero's C++ interface, we represent an aerosol mode with the
+<code>Mode</code> struct, whereas in Fortran we use the <code>mode_t</code> derived type:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">C++</label><label for="__tabbed_1_2">Fortran</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">Mode</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">name</span><span class="p">;</span><span class="w">  </span><span class="c1">// a unique identifier for the mode</span>
+<span class="w">  </span><span class="n">Real</span><span class="w"> </span><span class="n">min_diameter</span><span class="p">;</span><span class="w"> </span><span class="c1">// the mode&#39;s minimum particle diameter [m]</span>
+<span class="w">  </span><span class="n">Real</span><span class="w"> </span><span class="n">max_diameter</span><span class="p">;</span><span class="w"> </span><span class="c1">// the mode&#39;s maximum particle diameter [m]</span>
+<span class="w">  </span><span class="n">Real</span><span class="w"> </span><span class="n">mean_std_dev</span><span class="p">;</span><span class="w"> </span><span class="c1">// the geometric mean standard deviation for the mode [m]</span>
+<span class="p">};</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mode_t</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Mode name</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Minimum particle diameter [m]</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">min_diameter</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Maximum particle diameter [m]</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_diameter</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Geometric mean standard deviation [m]</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mean_std_dev</span><span class="w"></span>
+<span class="k">end type</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>The log-normal PDF for each mode is defined by two quantities, the (constant)
+mean standard deviation contained within the <code>Mode</code> class, and the geometric
+mean. The geometric mean is a variable function of the mass mixing ratios of all
+species contained within the mode and the number mixing ratio of the mode
+itself. Since these are time-dependent variables, they are not contained in the
+<code>Mode</code> class, which is for (invariant) metadata only.</p>
+<p>We also note that, mathematically, the log-normal size distributions of each
+mode do not have a maximum or minimum; they are bounded by 0 and <span class="arithmatex">\(\infty\)</span>.
+The <code>min_diameter</code> and <code>max_diameter</code> member variables should therefore not be
+interpreted in the context of the log-normal functions defined by e.g.,
+\eqref{eq:log_normal_pdf_log}. Instead they represent the boundaries beyond
+which particles are better described by a different mode. These minimum and
+maximum sizes are used to trigger redistribution of particle mass and number
+mixing ratios between modes.</p>
+<p>In principle, a Haero calculation can support any number of modes, but care
+must be taken to ensure that the modal assumptions remain valid, and that
+the parametrizations selected can accommodate the given modes.</p>
+<h2 id="aerosol-species-the-species-type">Aerosol Species: the Species Type</h2>
+<p>A particle species is a specifically-identified molecular assembly with
+a number of relevant physical properties. The fundamental description of a
+species includes</p>
+<ul>
+<li>a descriptive name (e.g. <code>sulfate</code>)</li>
+<li>a symbolic name (e.g. <code>SO4</code>, for sulfate)</li>
+<li>information about the chemical properties of the species</li>
+</ul>
+<p>Each aerosol mode consists of one or more particle species. Additionally,
+gas particles also come in different species. Aerosol particles and gas
+particles have physical properties that are described respectively by the
+<code>AerosolSpecies</code> and <code>GasSpecies</code> types in C++, and the <code>aerosol_species_t</code> and
+<code>gas_species_t</code> derived types in Fortran.</p>
+<p>In Haero, we represent this information in the following way:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">C++</label><label for="__tabbed_2_2">Fortran</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">AerosolSpecies</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">name</span><span class="p">;</span><span class="w">          </span><span class="c1">// full species name</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">symbol</span><span class="p">;</span><span class="w">        </span><span class="c1">// abbreviated symbolic name</span>
+<span class="w">  </span><span class="n">Real</span><span class="w"> </span><span class="n">molecular</span><span class="w"> </span><span class="n">weight</span><span class="p">;</span><span class="w">     </span><span class="c1">// molecular weight [g/mol]</span>
+<span class="w">  </span><span class="n">Real</span><span class="w"> </span><span class="n">crystalization_point</span><span class="p">;</span><span class="w"> </span><span class="c1">// crystalization point [?]</span>
+<span class="w">  </span><span class="n">Real</span><span class="w"> </span><span class="n">deliquescence_point</span><span class="p">;</span><span class="w">  </span><span class="c1">// deliquenscence point [?]</span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">GasSpecies</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">name</span><span class="p">;</span><span class="w">          </span><span class="c1">// full species name</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">symbol</span><span class="p">;</span><span class="w">        </span><span class="c1">// abbreviated symbolic name</span>
+<span class="w">  </span><span class="n">Real</span><span class="w"> </span><span class="n">molecular</span><span class="w"> </span><span class="n">weight</span><span class="p">;</span><span class="w">     </span><span class="c1">// molecular weight [g/mol]</span>
+<span class="p">};</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aerosol_species_t</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Species name</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Species symbol (abbreviation)</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symbol</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Molecular weight [g/mol]</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">molecular_wt</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Crystalization point [?]</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">crystal_pt</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Deliquenscence point [?]</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">deliques_pt</span><span class="w"></span>
+<span class="k">end type</span>
+
+<span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gas_species_t</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Species name</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Species symbol (abbreviation)</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symbol</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Molecular weight [g/mol]</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">molecular_wt</span><span class="w"></span>
+<span class="k">end type</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<h2 id="species-and-their-sizes-the-modal-aerosol-configuration-type">Species and Their Sizes: the Modal Aerosol Configuration Type</h2>
+<p>We have data types that express particle sizes and particle species. Now we
+need something that relates these two pieces of information. In other words,
+we need a way to express how particles of a specific aerosol species are allowed
+to grow and shrink, and how that activity is reflected in our representation
+of particle sizes.</p>
+<p>In the past, aerosol models have often elected to fix the modes and aerosol/gas
+species that they treat, in order to simplify code development. Haero instead
+allows a researcher to select these modes and species at runtime, allowing a
+far greater family of aerosol models to be represented.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">C++</label><label for="__tabbed_3_2">Fortran</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ModalAerosolConfig</span><span class="w"> </span><span class="k">final</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Constructor -- creates a new modal aerosol configuration given all relevant</span>
+<span class="w">  </span><span class="c1">// data.</span>
+<span class="w">  </span><span class="n">ModalAerosolConfig</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Mode</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">aerosol_modes</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">AerosolSpecies</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">aerosol_species</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">mode_species</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">AerosolSpecies</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">gas_species</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// The list of aerosol modes.</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Mode</span><span class="o">&gt;</span><span class="w"> </span><span class="n">aerosol_modes</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// The list of aerosol species.</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Species</span><span class="o">&gt;</span><span class="w"> </span><span class="n">aerosol_species</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// The list of gas species.</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Species</span><span class="o">&gt;</span><span class="w"> </span><span class="n">gas_species</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// The total number of distinct aerosol species populations in the</span>
+<span class="w">  </span><span class="c1">// system, counting appearances of one species in different modes separately.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">num_aerosol_populations</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the list of aerosol species associated with the system with the</span>
+<span class="w">  </span><span class="c1">// given mode index.</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Species</span><span class="o">&gt;</span><span class="w"> </span><span class="n">aerosol_species_for_mode</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">mode_index</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">modal_aerosol_config_t</span><span class="w"></span>
+<span class="w">  </span><span class="c">! The aerosol modes in the model, in indexed order.</span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">mode_t</span><span class="p">),</span><span class="w"> </span><span class="k">dimension</span><span class="p">(:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aerosol_modes</span><span class="w"></span>
+<span class="w">  </span><span class="c">! The number of modes in the model. Equal to size(aerosol_modes).</span>
+<span class="w">  </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">num_aerosol_modes</span><span class="w"></span>
+<span class="w">  </span><span class="c">! The number of actual species that exist within each mode.</span>
+<span class="w">  </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">dimension</span><span class="p">(:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">num_mode_species</span><span class="w"></span>
+<span class="w">  </span><span class="c">! population index offsets for modes.</span>
+<span class="w">  </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">dimension</span><span class="p">(:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">population_offsets</span><span class="w"></span>
+<span class="w">  </span><span class="c">! The total number of distinct aerosol populations.</span>
+<span class="w">  </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">num_aerosol_populations</span><span class="w"></span>
+<span class="w">  </span><span class="c">! The aerosol species within each mode. Indexed as (mode, species).</span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">aerosol_species_t</span><span class="p">),</span><span class="w"> </span><span class="k">dimension</span><span class="p">(:,:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aerosol_species</span><span class="w"></span>
+<span class="w">  </span><span class="c">! The gas species in the model.</span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">gas_species_t</span><span class="p">),</span><span class="w"> </span><span class="k">dimension</span><span class="p">(:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gas_species</span><span class="w"></span>
+<span class="w">  </span><span class="c">! The number of gases in the model. Equal to size(gas_species).</span>
+<span class="w">  </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">num_gases</span><span class="w"></span>
+<span class="k">contains</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Returns the maximum number of aerosol species found in any aerosol mode.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_species_per_mode</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m_max_species_per_mode</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Given the index of an aerosol population, retrieve its mode and</span>
+<span class="w">  </span><span class="c">! (modal) species indices.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">get_mode_and_species</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m_get_mode_and_species</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Given the name of a mode, retrieve its index.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aerosol_mode_index</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m_aerosol_mode_index</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Given a mode index and the symbolic name of an aerosol species, retrieve</span>
+<span class="w">  </span><span class="c">! its index within that mode</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aerosol_species_index</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m_aerosol_species_index</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Given mode and aerosol species indices, retrieve a population index</span>
+<span class="w">  </span><span class="c">! that can be used to access aerosol data.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">population_index</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m_population_index</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Given the symbolic name of a gas, retrieve its index.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gas_index</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m_gas_index</span><span class="w"></span>
+<span class="k">end type</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Once you have a modal aerosol configuration, you can answer the first two
+questions at the beginning of this section. Next, we look at how the state of
+an aerosol system is represented mathematically.</p>
+<h2 id="aerosol-and-atmospheric-state-container-types">Aerosol and Atmospheric State: Container Types</h2>
+<p>Once you've described the constituents of your aerosol system with a modal
+aerosol configuration, you can create state variables for that system. The state
+of an aerosol system is defined by the following prognostic variables within the
+<code>Prognostics</code> data structure:</p>
+<ul>
+<li><strong>aerosol modal mass mix fraction</strong> <span class="arithmatex">\(q_{m,s}\)</span>:
+  the ratio of aerosol mass to dry air mass for aerosol species <span class="arithmatex">\(s\)</span>
+  occupying mode <span class="arithmatex">\(m\)</span> <span class="arithmatex">\(q_{m,s}\)</span> [kg aerosol species <span class="arithmatex">\(s\)</span> /kg dry air]</li>
+<li><strong>gas mass mix fraction</strong> <span class="arithmatex">\(q_g\)</span>: the ratio of the mass of gas species <span class="arithmatex">\(g\)</span> to
+  dry air mass [kg gas species <span class="arithmatex">\(g\)</span>/kg dry air]</li>
+<li><strong>modal number concentrations</strong> <span class="arithmatex">\(n_m\)</span>: the total number of particles per unit
+  mass of dry air in the mode <span class="arithmatex">\(m\)</span> [# /kg dry air]</li>
+</ul>
+<p>The state of the atmosphere (expressed in averaged thermodynamic quantities
+like pressure and temperature) greatly affects the behavior of aerosols, so
+this atmosphere state information is made available in the <code>Atmosphere</code> data
+structure.</p>
+<p>Finally, the system can use a set of diagnostic variables, stored in the
+<code>Diagnostics</code> data structure, that depend on a set of aerosol processes
+(which are discussed in a later section).</p>
+<p>The <code>Prognostics</code>, <code>Atmosphere</code>, and <code>Diagnostics</code> containers store state data
+in multidimensional arrays allocated in C++ but made available to both C++ and
+Fortran. The data for each array is stored within a Kokkos <code>View</code>.</p>
+<h3 id="digression-kokkos-views-as-multidimensional-arrays">Digression: Kokkos Views as Multidimensional Arrays</h3>
+<p>The C++ programming language has lots of features, but remarkably it includes no
+mechanism for allocating multidimensional arrays at runtime. The Kokkos C++
+library fills this gap by providing a data structure called a <code>View</code>. A
+<code>View</code> is essentially an interface that allows a C++ programmer to treat a
+chunk of memory like a multidimensional array.</p>
+<p>A <code>View</code> has a rank and a set of dimensions, just like an allocatable
+Fortran array. You access a <code>View</code> in the same way that you'd access a
+Fortran array, except that</p>
+<ol>
+<li>A Kokkos <code>View</code> uses row-major indexing instead of Fortran's column-major
+   indexing</li>
+<li>A Kokkos <code>View</code> uses 0-based indexing instead of Fortran's 1-based indexing</li>
+</ol>
+<p>So for a rank-3 view <code>f</code> that you access in C++ as <code>f(i,j,k)</code>, you would access
+the corresponding array element in Fortran as <code>f(k-1,j-1,i-1)</code>. Clear as mud?
+Welcome to mixed language development!</p>
+<h4 id="packs-and-vectorization">Packs and Vectorization}</h4>
+<p>Haero uses Views that consist of <code>Pack</code> objects instead of floating point
+numbers. A <code>Pack</code> (or just "pack" is a contiguous array of numbers that allows a
+modern CPU or GPU to vectorize calculations using special instructions.</p>
+<p>When executing a vector instruction, a processor performs arithmetic on more
+than one number at a time within a mathematical expression. In many cases,
+vectorizing expressions can produce significantly faster code. The cost of this
+optimization is that a pack represents several numbers, not one. This can make
+it tricky to reason about the physical quantities stored in a pack.</p>
+<p>Haero uses packs with a size (number of contiguously stored numbers) set at
+compile time by the CMake variable <code>HAERO_PACK_SIZE</code>. To simplify the
+process of reasoning about packs, Haero uses these objects one way only:
+in Haero a pack stores data for <code>HAERO_PACK_SIZE</code> vertical levels in
+a column. Thus, a pack contains data for exactly one variable (with the same
+units and physical interpretation) whose values span one or more vertical
+levels.</p>
+<p>This is the easiest way for Haero to support vectorization. It does mean,
+however, that the number of vertical levels in a column differs in general from
+the number of packs spanning a vertical level. For example, a column of data
+with 72 vertical levels running in a Haero build with a <code>HAERO_PACK_SIZE</code>
+of 2 contains $36 = 72 / 2 $ packs in its vertical extent.</p>
+<h4 id="haero-specific-views">Haero-Specific Views</h4>
+<p>Because Haero is concerned with arrays having very specific dimensions, we
+define some named types that correspond to views/arrays that span specific
+spaces:</p>
+<table>
+<thead>
+<tr>
+<th>View Name</th>
+<th>Rank</th>
+<th>Description</th>
+<th>C++</th>
+<th>Fortran</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ColumnView</code></td>
+<td>1</td>
+<td>Maps a vertical level index <span class="arithmatex">\(k\)</span> to a pack</td>
+<td><code>v(k)</code></td>
+<td><code>v(k)</code></td>
+</tr>
+<tr>
+<td><code>SpeciesColumnView</code></td>
+<td>2</td>
+<td>Maps a population index <span class="arithmatex">\(p\)</span> and a vertical level index <span class="arithmatex">\(k\)</span> to a pack</td>
+<td><code>v(p,k)</code></td>
+<td><code>v(k,p)</code></td>
+</tr>
+<tr>
+<td><code>ModeColumnView</code></td>
+<td>2</td>
+<td>Maps a mode index <span class="arithmatex">\(m\)</span> and a vertical level index <span class="arithmatex">\(k\)</span> to a pack</td>
+<td><code>v(m,k)</code></td>
+<td><code>v(k,m)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>Prognostics</code>, <code>Atmosphere</code>, and <code>Diagnostics</code> containers described below
+make use of these named types.</p>
+<h3 id="prognostics-type">Prognostics Type</h3>
+<p>The <code>Prognostics</code> type provides access to prognostic variables that
+describe aerosols in a modal description. Here's the essential information for
+the C++ and Fortran interfaces (abbreviated for brevity---see the full
+interfaces in <code>haero/prognostics.hpp</code> and <code>haero/haero.F90</code>):</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">C++</label><label for="__tabbed_4_2">Fortran</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Prognostics</span><span class="w"> </span><span class="k">final</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Returns the number of aerosol modes in the system.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">num_aerosol_modes</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the number of aerosol species in the mode with the given index.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="nf">num_aerosol_species</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">mode_index</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the number of gas species in the system.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="nf">num_gas_species</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the number of vertical levels in the system.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="nf">num_levels</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing interstitial aerosol species mass mixing fraction</span>
+<span class="w">  </span><span class="c1">// data.</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">SpeciesColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">interstitial_aerosols</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing cloud-borne aerosol species mass mixing fraction</span>
+<span class="w">  </span><span class="c1">// data.</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">SpeciesColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">cloudborne_aerosols</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing mass mixing fraction data for gas species.</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">SpeciesColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">gases</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing modal number concentrations.</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">ModeColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">modal_num_concs</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Scales the given set of tendencies and adds it into this state, summing</span>
+<span class="w">  </span><span class="c1">// the values of the prognostic variables in place.</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">scale_and_add</span><span class="p">(</span><span class="n">Real</span><span class="w"> </span><span class="n">scale_factor</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Tendencies</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tendencies</span><span class="p">);</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">prognostics_t</span><span class="w"></span>
+<span class="k">contains</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Access to interstitial aerosol mix fractions array (no dummy arguments)</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">interstitial_aerosols</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p_int_aero_mix_frac</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Access to cloudborne aerosol mix fractions array (no dummy arguments)</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cloudborne_aerosols</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p_cld_aero_mix_frac</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Access to gas mix fractions array (no dummy arguments)</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gases</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p_gas_mix_frac</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Access to modal number concentrations array (no dummy arguments)</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">modes</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p_modal_num_concs</span><span class="w"></span>
+<span class="k">end type</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Typically, you never modify a <code>Prognostics</code> variable directly. Instead, you
+compute a set of tendencies in a <code>Tendencies</code> variable and accumulate them into
+your <code>Prognostics</code> variable by calling <code>scale_and_add</code>.</p>
+<h3 id="atmosphere-type">Atmosphere Type</h3>
+<p>The <code>Atmosphere</code> type stores a fixed set of state variables that describe the
+atmosphere, such as</p>
+<ul>
+<li>temperature [K]</li>
+<li>pressure [Pa]</li>
+<li>relative humidity [-]</li>
+<li>heights at level interfaces [m]</li>
+</ul>
+<p>Each of these variables are stored in <code>ColumnView</code> objects whose memory
+is managed by the host model. Here's how the interfaces look:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">C++</label><label for="__tabbed_5_2">Fortran</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>
+</code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="diagnostics-type">Diagnostics Type</h3>
+<p>The <code>Diagnostics</code> type stores a dynamically-determined set of diagnostic
+variables that correspond to the specific parameterizations available
+to a specific aerosol system. The variables are identified by unique tokens that
+can be retrieved by name.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">C++</label><label for="__tabbed_6_2">Fortran</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Diagnostics</span><span class="w"> </span><span class="k">final</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Returns the number of aerosol modes in the system.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">num_aerosol_modes</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the number of aerosol species in the mode with the given index.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="nf">num_aerosol_species</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">mode_index</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the number of gas species in the system.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="nf">num_gas_species</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the number of vertical levels in the system.</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="nf">num_levels</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns a unique token that identifies the given (non-modal) variable</span>
+<span class="w">  </span><span class="c1">// within this object. Returns VAR_NOT_FOUND if this variable does not exist.</span>
+<span class="w">  </span><span class="n">Token</span><span class="w"> </span><span class="nf">find_var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing the diagnostic variable with a name corresponding</span>
+<span class="w">  </span><span class="c1">// to the given token. If such a variable does not exist, this throws an</span>
+<span class="w">  </span><span class="c1">// exception.</span>
+<span class="w">  </span><span class="n">ColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Token</span><span class="w"> </span><span class="n">token</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns a unique token that identifies the given modal aerosol variable</span>
+<span class="w">  </span><span class="c1">// within this object. Returns VAR_NOT_FOUND if this variable does not exist.</span>
+<span class="w">  </span><span class="n">Token</span><span class="w"> </span><span class="nf">find_aerosol_var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing the modal aerosol diagnostic variable with a name</span>
+<span class="w">  </span><span class="c1">// corresponding to the given token. If such a variable does not exist, this</span>
+<span class="w">  </span><span class="c1">// throws an exception.</span>
+<span class="w">  </span><span class="n">SpeciesColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">aerosol_var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Token</span><span class="w"> </span><span class="n">token</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns a unique token that identifies the given gas variable within this</span>
+<span class="w">  </span><span class="c1">// object. Returns VAR_NOT_FOUND if this variable does not exist.</span>
+<span class="w">  </span><span class="n">Token</span><span class="w"> </span><span class="nf">find_gas_var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing the gas diagnostic variable with a name</span>
+<span class="w">  </span><span class="c1">// corresponding to the given token. If such a variable does not exist, this</span>
+<span class="w">  </span><span class="c1">// throws an exception.</span>
+<span class="w">  </span><span class="n">SpeciesColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">gas_var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Token</span><span class="w"> </span><span class="n">token</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns a unique token that identifies the given modal variable within</span>
+<span class="w">  </span><span class="c1">// this object. Returns VAR_NOT_FOUND if this variable does not exist.</span>
+<span class="w">  </span><span class="n">Token</span><span class="w"> </span><span class="nf">find_modal_var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Returns the view storing the mode-specific diagnostic variable with a name</span>
+<span class="w">  </span><span class="c1">// corresponding to the given token. If such a variable does not exist, this</span>
+<span class="w">  </span><span class="c1">// throws an exception.</span>
+<span class="w">  </span><span class="n">ModeColumnView</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">modal_var</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Token</span><span class="w"> </span><span class="n">token</span><span class="p">);</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">diagnostics_t</span><span class="w"></span>
+<span class="k">contains</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Returns a token that can be used to retrieve a variable with the given</span>
+<span class="w">  </span><span class="c">! name from a diagnostics object, or var_not_found (-1) if no such variable</span>
+<span class="w">  </span><span class="c">! exists.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">find_var</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">token</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Provides access to the given (non-modal) variable in the given</span>
+<span class="w">  </span><span class="c">! diagnostics object, given its token</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">array pointer</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Returns a token that can be used to retrieve an aerosol variable with the</span>
+<span class="w">  </span><span class="c">! given name and mode from a diagnostics object, or var_not_found (-1) if no such</span>
+<span class="w">  </span><span class="c">! variable exists.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">find_aerosol_var</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">token</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Provides access to the given (non-modal) variable in the given</span>
+<span class="w">  </span><span class="c">! diagnostics object, given its token.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aerosol_var</span><span class="p">(</span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">array pointer</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Returns a token that can be used to retrieve a gas variable with the</span>
+<span class="w">  </span><span class="c">! given name from a diagnostics object, or var_not_found (-1) if no such</span>
+<span class="w">  </span><span class="c">! variable exists.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">find_gas_var</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">token</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Provides access to the given gas variable in the given diagnostics object,</span>
+<span class="w">  </span><span class="c">! given its token.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gas_var</span><span class="p">(</span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">array pointer</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Returns a token that can be used to retrieve a modal variable with the</span>
+<span class="w">  </span><span class="c">! given name from a diagnostics object, or var_not_found (-1) if no such</span>
+<span class="w">  </span><span class="c">! variable exists.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_modal_var</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">token</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Provides access to the given modal variable in the given</span>
+<span class="w">  </span><span class="c">! diagnostics object, given its token.</span>
+<span class="w">  </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">modal_var</span><span class="p">(</span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">array pointer</span>
+<span class="k">end type</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>At this point, you might wonder how a <code>Diagnostics</code> variable knows which
+variables it needs. In fact, the <code>Diagnostics</code> type provides functions
+for creating variables that it needs when it needs them.</p>
+<p>For examples of how the <code>Prognostics</code>, <code>Atmosphere</code>, and <code>Diagnostics</code> types
+are used in practice, take a look at one of the existing aerosol process
+implementations.</p>
+<h2 id="aerosol-processes-in-haero">Aerosol Processes in Haero</h2>
+<p>The aerosol life cycle consists of several important and distinct physical
+processes. Haero offers a data structures that makes it very easy to implement
+such a process. Because the structure of a given process doesn't depend on the
+details of its implementation, we can define an abstract interface to simplify
+its implementation. Instead of designing a new process from the ground up every
+time you want to add new functionality to Haero, you can simply implement a
+small number of functions (or subroutines) that define the behavior of a
+process, and let the Haero library handle the details of how these processes are
+created and used (and where they run).</p>
+<p>For detailed descriptions of the specific processes provided by Haero, take a
+look at the <a href="../processes/">Aerosol Processes</a> section. You can find examples of
+source code for Haero's processes in the <code>haero/processes</code> subdirectory.</p>
+<h3 id="the-aerosol-process-interface">The Aerosol Process Interface</h3>
+<p>An aerosol process has three behaviors which must be defined by any
+implementation. Each of these behaviors is implemented in a C++ function or
+a Fortran subroutine.</p>
+<ul>
+<li><strong>initialization</strong>: the process must be able to allocate any resources
+  it needs to do its work. These resources include temporary work arrays,
+  look-up tables, and quantities that need to be precomputed. State data
+  is not managed by processes, so it's not included in process
+  initialization. If nothing needs to be done for initialization, its
+  function or subroutine body can be empty.</li>
+<li><strong>running</strong>: the process must know how to "run". In other words, it
+  must define a procedure for computing tendencies for a relevant set of
+  prognostic variables given their current values at a specific simulation time,
+  along with the current values of any diagnostic variables. The function or
+  subroutine that implements this behavior does not apply these tendencies to
+  any prognostic variables---it simply computes the tendencies and returns.</li>
+<li><strong>finalization</strong>: at the end of a simulation program, when the aerosol
+  system is destroyed, the process must free all resources it allocated
+  in its initialization. If no resources are allocated, the function or
+  subroutine body implementing finalization can be empty.</li>
+</ul>
+<p>In addition, the process may support named parameters that can be set to
+specific values. Some examples of these kinds of parameters are</p>
+<ul>
+<li>Integer-valued parameters that select one of several supported algorithms</li>
+<li>Boolean flags for enabling or disabling features</li>
+<li>Real-valued scale factors for quantities based on tuning or assumptions</li>
+<li>String-valued parameters (just in case they're helpful)</li>
+</ul>
+<p>Haero provides an object-oriented approach for implementing a process in terms
+of this simple interface. In an object-oriented approach, an abstract interface
+is encoded in a "base class"--a data type that declares the necessary
+functions and subroutines. Then any implementation of this interface is defined
+in a <em>derived class</em>: a type derived from that base class.</p>
+<p>Haero uses the object-oriented features of C++ for process development. All
+aerosol process implementations are derived from a C++ base class called
+<code>AerosolProcess</code>. This is true regardless of whether you implement the
+process using C++ or Fortran.</p>
+<p>The <code>AerosolProcess</code> provides the following interface (see
+<code>haero/aerosol_process.hpp</code> for more details):</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:1"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">AerosolProcess</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AerosolProcess</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Constructor, called by all AerosolProcess subclasses.</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">AerosolProcess</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="o">:</span><span class="w"></span>
+<span class="w">   </span><span class="n">name_</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Destructor.</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">AerosolProcess</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Initializes the process with the aerosol configuration.</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">init</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ModalAerosolConfig</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Runs the process at the given time with the given aerosol data and the</span>
+<span class="w">  </span><span class="c1">// given Kokkos thread team.</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TeamType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">team</span><span class="p">,</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span><span class="w"></span>
+<span class="w">           </span><span class="k">const</span><span class="w"> </span><span class="n">Prognostics</span><span class="o">&amp;</span><span class="w"> </span><span class="n">prognostics</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Atmosphere</span><span class="o">&amp;</span><span class="w"> </span><span class="n">atmosphere</span><span class="p">,</span><span class="w"></span>
+<span class="w">           </span><span class="k">const</span><span class="w"> </span><span class="n">Diagnostics</span><span class="o">&amp;</span><span class="w"> </span><span class="n">diagnostics</span><span class="p">,</span><span class="w"> </span><span class="n">Tendencies</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tendencies</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Set named integer, boolean, and real-valued parameters.</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_param</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_param</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_param</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// On host: copies this aerosol process to the device, returning a</span>
+<span class="w">  </span><span class="c1">// pointer to the copy.</span>
+<span class="w">  </span><span class="n">AerosolProcess</span><span class="o">*</span><span class="w"> </span><span class="nf">copy_to_device</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// On host: call this static method to delete a copy of the process</span>
+<span class="w">  </span><span class="c1">// that has been created on a device.</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">delete_on_device</span><span class="p">(</span><span class="n">AerosolProcess</span><span class="o">*</span><span class="w"> </span><span class="n">device_process</span><span class="p">);</span><span class="w"></span>
+
+<span class="w"> </span><span class="k">protected</span><span class="o">:</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Override this method if your aerosol process needs to be initialized</span>
+<span class="w">  </span><span class="c1">// with information about the system. The default implementation does nothing.</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">init_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ModalAerosolConfig</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Override this method to implement the aerosol process using the specific</span>
+<span class="w">  </span><span class="c1">// parameterization for the subclass.</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">run_</span><span class="p">(</span><span class="n">Real</span><span class="w"> </span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="k">const</span><span class="w"> </span><span class="n">Prognostics</span><span class="o">&amp;</span><span class="w"> </span><span class="n">prognostics</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="k">const</span><span class="w"> </span><span class="n">Atmosphere</span><span class="o">&amp;</span><span class="w"> </span><span class="n">atmosphere</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="k">const</span><span class="w"> </span><span class="n">Diagnostics</span><span class="o">&amp;</span><span class="w"> </span><span class="n">diagnostics</span><span class="p">,</span><span class="w"></span>
+<span class="w">                    </span><span class="n">Tendencies</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tendencies</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Override these methods to set a parameter to a given value based on its</span>
+<span class="w">  </span><span class="c1">// name.</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_param_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_param_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_param_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">Real</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>In addition to the "constructor" function used to create an instance of a
+<code>AerosolProcess</code> and the interface functions for initializing, running, and
+setting parameters, the interface declares <code>protected</code> methods with
+underscores after their names. These are the methods you must override in
+order to define the behaviors of the aerosol process. Make sure you document
+any supported parameters (recognized by your <code>set_param</code> methods).</p>
+<p>The constructor accepts a single argument: a string containing the name of the
+aerosol process. This can be helpful for debugging.</p>
+<h4 id="digression-running-aerosol-processes-on-a-gpu">Digression: running aerosol processes on a GPU</h4>
+<p>Haero is designed to allow aerosol physics to be computed on CPUs or GPUs, with
+different levels of parallelism. Running code on a GPU is tricky, because the
+data it uses must be copied to memory allocated on the GPU itself. In fact,
+a process object <em>itself</em> must be allocated on the GPU in order for the code
+to run there.</p>
+<p>The process of allocating this memory on the GPU is esoteric and
+confusing. Haero solves this problem by inserting an intermediary class between
+your derived class and the <code>AerosolProcess</code> class. This intermediary class is
+named <code>DeviceAerosolProcess</code>. It uses C++'s <a href="https://en.cppreference.com/w/cpp/language/crtp">curiously recurring template pattern</a>
+to add all the necessary logic for your class to run on a GPU.</p>
+<p>The way it works is this:</p>
+<ul>
+<li>An object for your process class is allocated and initialized (via <code>init</code>) on
+  the CPU by an atmospheric host model.</li>
+<li>The host model calls the <code>copy_to_device</code> method to obtain a copy of the
+  object that lives on the GPU. This method uses a copy constructor defined by
+  your process class to copy itself from the CPU to the GPU.</li>
+<li>The host model invokes your GPU-resident object's <code>run</code> method within a
+  Kokkos parallel dispatch as needed, passing it a <a href="https://github.com/kokkos/kokkos/wiki/HierarchicalParallelism#82-thread-teams">Kokkos thread team</a>
+  that determines the number of threads available witin the method.</li>
+<li>When the calculation is finished, the host model calls the <code>delete_on_device</code>
+  static method, passing it the GPU-resident object to deallocate it from the
+  GPU.</li>
+</ul>
+<p>The most important thing to remember here is that <code>init</code> is called on the CPU,
+whether or not you intend to run your process on the GPU. You must use the
+<code>init</code> method to record any information from the <code>ModalAerosolConfig</code> object
+that defines your simulation, because <code>ModalAerosolConfig</code> variables cannot
+reside on the GPU. Parameters are also set (using <code>set_param</code>) on the CPU, not
+the GPU.</p>
+<p>Let's explore how we might implement an aerosol process in C++ and in Fortran.
+Here we describe only the steps needed to implement the process itself. You must
+also test your process to make sure it behaves the way you think it does! The
+procedure for testing an aerosol process is described in the <a href="../testing/">Testing</a>
+section.</p>
+<h3 id="c-aerosol-processes">C++ aerosol processes</h3>
+<p>In C++, all you have to do in order to implement an aerosol process is to define
+a class with a specific name. For concreteness, let's examine a process named
+<code>SimpleNucleationProcess</code>, which lives in <code>haero/processes/simple_nucleation_process.hpp</code>
+and <code>haero/processes/simple_nucleation_process.cpp</code>.</p>
+<p>To allow your process to reside on a CPU or GPU, your derive your class from
+the <code>DeviceAerosolProcess</code>. This class accepts a single template parameter:
+your class. So in our example, you would derive <code>SimpleNucleationProcess</code> from
+<code>DeviceAerosolProcess&lt;SimpleNucleationProcess&gt;</code>. This curiously recursive trick,
+in which the type of the intermediary class depends on the type of its
+descendent, gives the Curiously Recurring Template Pattern its name. Let's not
+worry about how it works for now.</p>
+<p>Before we go any further, some terminology: a C++ class derived from a base
+class is called a <strong>subclass</strong> of that base class. So <code>MyProcess</code> is a
+subclass of <code>DeviceAerosolProcess&lt;SimpleNucleationProcess&gt;</code>, which is itself a
+subclass of the base class <code>AerosolProcess</code>.</p>
+<p>To create a C++ implemention for an aerosol process:</p>
+<ol>
+<li>Create a header file that declares your subclass. This header file must
+   declare a class constructor, a copy constructor, a destructor, and the
+   overridable <code>init_</code> and <code>run_</code> functions. If you want to support
+   configurable parameters, declare whatever versions of <code>set_param_</code> you need. Implement your</li>
+<li>Implement your copy constructor, your destructor, and your <code>run_</code> method
+   in the header file, declaring each with the <code>KOKKOS_INLINE_FUNCTION</code> macro.
+   This allows them to be called on a GPU.</li>
+<li>Create a source file containing implementations for the remaining methods
+   (the constructor, the <code>init_</code> method, and any <code>set_param_</code> methods you need).
+   See <code>haero/processes/simple_nucleation_process.cpp</code>, for example.</li>
+<li>Add your source file to the set of source files in the <code>PROCESS_SOURCES</code>
+   variable in <code>haero/processes/CMakeLists.txt</code>.</li>
+<li>Write one or more tests for your new aerosol process. The <a href="../testing/">Testing</a>
+   section provides details about how to do this.</li>
+</ol>
+<h3 id="fortran-aerosol-processes">Fortran aerosol processes</h3>
+<p>A Fortran aerosol process implementation consists of a Fortran module that
+contains <code>init</code>, <code>run</code>, and <code>finalize</code> subroutines that
+implement the same functionality as their C++ counterparts:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:1"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Fortran aerosol module</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">module </span><span class="n">MODULE_NAME</span><span class="w"></span>
+<span class="w">  </span><span class="k">use </span><span class="n">haero</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">wp</span><span class="p">,</span><span class="w"> </span><span class="n">modal_aerosol_config_t</span><span class="p">,</span><span class="w"> </span><span class="n">prognostics_t</span><span class="p">,</span><span class="w"> </span><span class="n">atmosphere_t</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">                   </span><span class="n">diagnostics_t</span><span class="p">,</span><span class="w"> </span><span class="n">tendencies_t</span><span class="w"></span>
+<span class="w">  </span><span class="p">...</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Aerosol process interface subroutines</span>
+<span class="w">  </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="n">run</span><span class="p">,</span><span class="w"> </span><span class="n">finalize</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Parameter setting subroutines</span>
+<span class="w">  </span><span class="k">public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">set_integer_param</span><span class="p">,</span><span class="w"> </span><span class="n">set_logical_param</span><span class="p">,</span><span class="w"> </span><span class="n">set_real_param</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Module variables, including settable parameters</span>
+<span class="w">  </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">my_option</span><span class="w"></span>
+<span class="w">  </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">my_flag</span><span class="w"></span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">my_scale_factor</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! SAVE keyword for retaining module variables</span>
+<span class="w">  </span><span class="k">save</span>
+
+<span class="k">contains</span>
+
+<span class="k">subroutine </span><span class="n">init</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Arguments</span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">modal_aerosol_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">...</span><span class="w"></span>
+<span class="k">end subroutine</span>
+
+<span class="k">subroutine </span><span class="n">run</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">prognostics</span><span class="p">,</span><span class="w"> </span><span class="n">atmosphere</span><span class="p">,</span><span class="w"> </span><span class="n">diagnostics</span><span class="p">,</span><span class="w"> </span><span class="n">tendencies</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Arguments</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">       </span><span class="kd">::</span><span class="w"> </span><span class="n">t</span><span class="w"></span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">       </span><span class="kd">::</span><span class="w"> </span><span class="n">dt</span><span class="w"></span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">prognostics_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">   </span><span class="kd">::</span><span class="w"> </span><span class="n">prognostics</span><span class="w"></span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">atmosphere_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">    </span><span class="kd">::</span><span class="w"> </span><span class="n">atmosphere</span><span class="w"></span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">diagnostics_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">   </span><span class="kd">::</span><span class="w"> </span><span class="n">diagnostics</span><span class="w"></span>
+<span class="w">  </span><span class="k">type</span><span class="p">(</span><span class="n">tendencies_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tendencies</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">...</span><span class="w"></span>
+<span class="k">end subroutine</span>
+
+<span class="k">subroutine </span><span class="n">finalize</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span><span class="w"></span>
+
+<span class="w">  </span><span class="p">...</span><span class="w"></span>
+<span class="k">end subroutine</span>
+
+<span class="k">subroutine </span><span class="n">set_integer_param</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Arguments</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span><span class="w"></span>
+<span class="w">  </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">val</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;my_option&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">    </span><span class="n">my_option</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="w"></span>
+<span class="w">  </span><span class="k">end if</span>
+<span class="k">end subroutine</span>
+
+<span class="k">subroutine </span><span class="n">set_logical_param</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Arguments</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span><span class="w"></span>
+<span class="w">  </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">val</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;my_flag&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">    </span><span class="n">my_flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="w"></span>
+<span class="w">  </span><span class="k">end if</span>
+<span class="k">end subroutine</span>
+
+<span class="k">subroutine </span><span class="n">set_real_param</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Arguments</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">name</span><span class="w"></span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">         </span><span class="kd">::</span><span class="w"> </span><span class="n">val</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;my_scale_factor&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">    </span><span class="n">my_scale_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="w"></span>
+<span class="w">  </span><span class="k">end if</span>
+<span class="k">end subroutine</span><span class="w"></span>
+
+<span class="p">...</span><span class="w"></span>
+
+<span class="k">end module</span><span class="w"></span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>In Fortran, you <strong>must</strong> implement subroutines for <code>set_integer_param</code>,
+<code>set_logical_param</code>, and <code>set_real_param</code>, even if your process
+doesn't support settable parameters.</p>
+<p>To implement an aerosol process in Fortran, you create such a module in a
+Fortran source file and then declare it as a <code>faerosol_process</code> in the
+<code>CMakeLists.txt</code> file within the <code>haero/processes</code> subdirectory.
+There are instructions on how to declare your process in that file.</p>
+<p>For example, the Fortran MAM nucleation process is implemented in a Fortran
+module named <code>mam_nucleation</code>, implemented in the source file
+<code>haero/processes/mam_nucleation.F90</code>. In
+<code>haero/processes/CMakeLists.txt</code>, it's declared as a Fortran aerosol
+process the following way:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="9:1"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">haero/processes/CMakeLists.txt</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>if (HAERO_FORTRAN)
+  ...
+  faerosol_process(MAMNucleationFProcess NucleationProcess mam_nucleation)
+  ...
+endif()
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>The declaration takes three arguments:</p>
+<ul>
+<li>The name of a C++ class that will be created that exposes the Fortran
+  implementation of the process</li>
+<li>The C++ enumerated type that identifies what kind of aerosol process
+  is being implemented</li>
+<li>The name of the Fortran module that implements the process</li>
+</ul>
+<p>The build system automatically generates a C++ class for the Fortran module that
+allows the process to be used in a Haero simulation. The name of this C++ class
+is important for exposing it to the Haero library.</p>
+<p>Once you've done these things and rebuilt Haero, your new aerosol process
+implementation is available for use.</p>
+<h3 id="diagnostic-functions">Diagnostic Functions</h3>
+<p>Aerosol processes compute tendencies for prognostic variables. But how are
+diagnostic variables updated? These variables are quite different in nature from
+their prognostic counterparts:</p>
+<ul>
+<li>they depend algebraically on prognostic variables and other diagnostic
+  variables</li>
+<li>they are updated in place instead of being evolved in time by
+  differential equations</li>
+<li>they are often shared/needed by several distinct aerosol processes, and
+  at various points in time, depending on a given process ordering</li>
+</ul>
+<p>Because of these considerations, it's not clear that we can update more than a
+single diagnostic variable at once. To do so implies a knowledge of how the
+aerosol processes are invoked during a time step, and Haero does not make any
+such decision on behalf of a host model. This means we must provide a diagnostic
+variable update mechanism that is flexible but easy to understand. This
+mechanism, which updates a single diagnostic variable, is called a
+<strong>diagnostic function</strong>.</p>
+<p>Unlike aerosol processes, which have multiple behaviors associated with
+initialization, finalization, and the execution of the process itself, a
+diagnostic function only ever does one thing: it takes a set of input and
+uses it to update its diagnostic variable. In other words, it has no internal
+state of its own---it's just a function that you can call whenever you need
+to update a particular diagnostic variable.</p>
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../physics/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Aerosol Physics" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Aerosol Physics
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../processes/" class="md-footer__link md-footer__link--next" aria-label="Next: Aerosol Processes" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Aerosol Processes
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indices", "navigation.instant", "navigation.sections", "navigation.top"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.22074ed6.min.js"}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.960e086b.min.js"></script>
+      
+        <script src="../javascript/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

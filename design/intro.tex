@@ -1,0 +1,53 @@
+\chapter{Introduction}
+\labelchapter{intro}
+
+Aerosols and aerosol-cloud interactions remain a great source of uncertainty
+in global climate models. Haero, the modal aerosol model described in this
+document, attempts to help researchers better understand the relevant physical
+processes and their contributions to the global climate.
+
+Any model must define abstractions and make assumptions in order to produce
+quantitative answers to scientific questions. The abstractions and assumptions
+for Haero live in this document. We also describe Haero's software
+components---its data structures and programming interface---which are designed
+to match these abstractions. In particular, we aim to provide an interface that
+allows a scientist to write code that resembles statements made in technical
+conversations. We hope that this close correspondence between code and
+the related scientific discourse can allow people with different areas of
+expertise to contribute to the development of Haero.
+
+In \refchapter{physics}, we very briefly outline the governing equations of
+aerosol dynamics from a mathematical perspective. We begin from basic transport
+equations formulated in terms of aerosol size distribution functions. We also
+describe the assumptions that enter the model at the level of continuous
+mathematics (whose approximation errors are present even in analytic
+solutions!).
+
+\refchapter{library} introduces the Haero library and its various abstractions.
+Because the coupling of aerosol-related processes is still an active area of
+research, Haero's software interface focuses on defining specific physical and
+mathematical entities, providing a set of elementary building blocks from which
+more elaborate models can be constructed.
+
+Next, in \refchapter{testing}, we describe procedures for testing aerosol processes
+individually, to make sure they work properly. This type of testing is sometimes
+called ``unit testing'' by software people, and ``verification testing'' by
+engineers. Either way, it's essential to test your aerosol processes in an
+isolated environment with simple inputs that lead to outputs with predictable
+characteristics. If you don't test your process this way, {\em you have no idea
+what it actually does!}
+
+In \refchapter{processes}, we describe the various processes provided by Haero
+that model the stages of the aerosol lifecycle. Here we explain the basic
+physical assumptions embedded in each process, along with the details of each
+available implementation.
+
+In \refchapter{driver}, we introduce Haero's stand-alone driver program, which
+provides a way to run simple aerosol simulations and test parametrizations.
+The driver provides a dynamics model to allow researchers to study how transport
+and radiative processes affect aerosols.
+
+A comprehensive description of the API appears in \refappendix{api}. The input
+specification for the driver is explained in detail in \refappendix{driver_input}.
+A glossary of terms and definitions is also provided in \refappendix{glossary}.
+

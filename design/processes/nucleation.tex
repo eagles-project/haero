@@ -1,0 +1,516 @@
+\section{Nucleation}
+\labelsection{nucleation}
+
+Aerosol nucleation refers to the formation of new aerosol particles from gas
+molecules. Nucleation is an important source of aerosol particles in the
+atmosphere, and can have a significant effect on other aerosol-related
+processes. As a conversion mechanism, it reduces the population of gas-phase
+species and increases aerosol mass and number concentrations.
+
+Aerosol nucleation can also affect the formation of clouds and fog. The newly
+formed particles that result from nucleation are generally hydrophilic and not
+efficiently scavenged because of their small sizes. These particles can
+grow larger and act as nuclei for cloud condensation.
+
+Haero currently offers one process implementation for nucleation: the legacy
+MAM4 model, written in Fortran.
+
+\subsection{Nucleation Physics}
+\labelsubsection{nuc:physics}
+
+In the atmosphere, gas molecules exist either independently or in small
+polymolecular clusters~\cite{seinfeld-2006-acp}. In general, the concentration
+of independent gas molecules is much higher than that of clusters. Therefore,
+the radius of a cluster is changed mainly due to the collision between an
+independent gas molecule and a cluster. If the radius of a cluster is larger
+than $r^*$, the radius of the so-called ``critical cluster'' or nucleus, this
+cluster tends to grow rapidly and nucleation happens; otherwise, this cluster
+tends to shrink and nucleation does not occur.
+
+Nucleation can occur {\em homogeneously} (in the absence of pre-existing
+particles) or {\em heterogeneously} (with pre-existing particles present).
+In either case, nucleation can involve a single species or more than one species.
+Based on these circumstances, we can classify any nucleation process:
+
+\begin{itemize}
+  \item {\bf Type 1} nucleation is homogeneous and involves a single species.
+  \item {\bf Type 2} nucleation is homogeneous and involves two or more species,
+        e.g. water vapor ($\rwater$) and sulfuric acid gas ($\rsag$).
+  \item {\bf Type 3} nucleation is heterogeneous and involves a single species.
+        A good example is the formation of water droplets in the presence of
+        pre-existing particles.
+  \item {\bf Type 4} nucleation is heterogeneous and involves two or more
+        species.
+\end{itemize}
+
+In all four cases, the nucleation process alters the vapor mixing ratios and
+aerosol mass and number mixing ratios. Their rates of change are
+
+\begin{align}
+  \ddt{q_{m,s}} &= \ddt{q_{n,s}} \cdot \frac{m_{d,s}}{\mu_{s}} \,, \labeleq{nuc:aer}\\
+  \ddt{q_g}     &= -\ddt{q_{m,s}} \,, \labeleq{nuc:gas}
+\end{align}
+
+where
+\begin{itemize}
+  \item $q_{m,s}$ [kmol aerosol species $s$/ kmol dry air] is the aerosol mass
+        mixing ratio of species $s$
+  \item $q_{n,s}$ [\# aerosol species $s$/ kmol dry air] is the aerosol number
+        mixing ratio for species $s$
+  \item $q_g$ [kmol gas species $g$/ kmol dry air] is the mole fraction for gas
+        species $g$
+  \item $m_{d,s}$ [kg] is the dry mass of a nucleus belonging to aerosol species
+        $s$
+  \item $\mu_{s}$ [kg/kmol] is the molecular weight of aerosol species $s$
+\end{itemize}
+
+% key assumptions
+\subsection{MAM4 Nucleation Process}
+\labelsubsection{nuc:mam4}
+
+Although we have mentioned four types of aerosol nucleation, the MAM4 nucleation
+process treats only type 2. MAM4 makes several assumptions on top of the modal
+aerosol assumption to arrive at its governing equations for nucleation:
+
+\begin{assume}[MAM4 Nucleation: Aitken mode]
+  There is no nucleation mode---instead, the Aitken mode is used to capture the
+  smallest nucleated aerosol particles.
+\end{assume}
+
+Previous research~\cite{kerminen-2002-jas} suggests that the typical size
+range of newly formed nuclei are around 1 nm in diameter.
+
+\begin{assume}[MAM4 Nucleation: new nucleus size]
+  Newly formed nuclei have a 1 nm diameter.
+\end{assume}
+
+Particles of this size are too small to be represented directly by MAM4's Aitken
+mode. To reconcile this difficulty with its modal approximation, the MAM4
+process breaks nucleation into two distinct stages.
+
+\begin{assume}[MAM4 Nucleation: separate creation and growth stages]
+  The nucleation process consists of two stages:
+  \begin{enumerate}
+    \item Fresh nuclei are formed from the vapors of gas species.
+    \item These nuclei grow to a predefined size that falls within the range
+      of the Aitken mode. This predefined size is described in
+      \refparagraph{nuc:growth_nuclei}.
+  \end{enumerate}
+  Therefore, nucleation affects only the aerosol number and mass mixing ratios
+  in the Aitken mode.
+\end{assume}
+
+\begin{assume}[MAM4 Nucleation: gas/aerosol density]
+  In the MAM4 nucleation process, the mass densities of aerosol sulfuric acid
+  and sulfate are assumed to be the same: $\rm 1770~kg~m^{-3}$
+\end{assume}
+
+\begin{assume}[MAM4 Nucleation: averaged $\rsag$ number concentration]
+  To calculate the number concentration of $\rsag$ [\# / cc air], we use
+  $c\dsub{n,\sag}$, the average mass mixing ratio of $\rsag$ over the
+  condensation process. We use $c\dsub{n, \sag}$ instead of the mass mixing
+  ratio of $\rsag$ given at the beginning of the nucleation process.
+
+  $$c\dsub{n,\sag} = 10^{-3} \cdot N_A \cdot \bar{q_{\sag}} c\dsub{air}$$
+
+  where $N_A$ is Avogadro's constant and $c\dsub{air}$ [kmol air / m$^3$ air] is
+  the air molar concentration.
+\end{assume}
+
+\begin{assume}[MAM4 Nucleation: homogeneous only]
+  MAM4 treats only the homogeneous nucleation of $\rsag \mhyphen \rwater$
+  (type 2).
+\end{assume}
+
+With these assumptions, the governing equations of MAM4's nucleation process
+are
+
+\begin{align}
+  \frac{dq\dsub{n,i}}{dt} &= \frac{10^6 J\dsub{nuc}}{c\dsub{air}} \,, \text{ i = 2 for Aitken mode} \,, \labeleq{nuc:jnuc} \\
+  \frac{d\amass{\asf}}{dt} &= \frac{dq\dsub{n,i}}{dt} \cdot \frac{m\dsub{d,\asf}}{\mu_{\asf}} \,, \text{ i = 2} \,, \labeleq{nuc:amass} \\
+  \frac{d\vmass{\sag}}{dt} &= -\frac{d\amass{\asf}}{dt} \,, \text{ i = 2} \,, \labeleq{nuc:vmass}
+\end{align}
+
+where $J\dsub{nuc}$ [\# / (cc $\cdot$ s)] is the nucleation rate describing the
+net number of clusters that grow past $r^*$ per unit time per cm$^{3}$ of
+air. $J\dsub{nuc}$ depends on the available amount of gas species, temperature
+and relative humidity.
+
+% parameterization
+\subsubsection{MAM4 nucleation parameterizations} \labelsubsubsection{nuc:paranuc}
+
+In order to solve the above governing equations, one first computes $J\dsub{nuc}$,
+which appears in \refeq{nuc:jnuc}. In principle, $J\dsub{nuc}$ can be calculated
+thermodynamically by classical nucleation theory, which is described in
+Chapter 11 of~\cite{seinfeld-2006-acp}. However, this classical treatment
+carries a heavy computational cost and is not used in the MAM4 model. Instead,
+we devise parameterizations to obtain $J\dsub{nuc}$.
+
+Here we focus on the parameterizations of binary nucleation of
+$\rsag \mhyphen \rwater$ used in MAM4.
+
+The following notation simplifies our presentation:
+\begin{itemize}
+  \item RH: clear-sky relative humidity.
+  %\item $c\dsub{n,\sag}$ [\# / cc air]: number concentration of $\rsag$.
+  \item $n\dsub{\sag}$ [\#]: number of $\rsag$ molecules in a critical cluster.
+  \item $n\dsub{tot}$ [\#]: number of molecules in a critical cluster.
+  \item $J^*$ [\# / (cc $\cdot$ s)]: the {\em intermediate nucleation rate},
+        which is modified by a sequence of parameterizations
+        (\refparagraph{nuc:binary} -~\refparagraph{nuc:growth_nuclei}) to
+        obtain $J\dsub{nuc}$.
+  \item $C\dsub{sum,\sag}$ [s$^{-1}$]: the sum of mass transfer coefficients of
+        $\rsag$ over the $I$ modes during the condensation process. This is a
+        constant for the nucleation process.
+\end{itemize}
+
+With this assumption, the following nucleation parameterizations are evaluated
+in order. First, RH is bounded within [0.01, 0.99] since the nucleation process
+in MAM4 is only considered for clear-sky conditions. In clouds, $\rsag$
+rapidly transfers into cloud droplets, and nucleation is unlikely to occur.
+
+% binary nucleation parameterization by vk2002
+\paragraph{Binary nucleation of $\rsag \mhyphen \rwater$}
+\labelparagraph{nuc:binary}
+
+MAM4 uses the binary parameterization developed by
+Vehkam\"aki et al.~\citep{vehkamaki-2002-jgr}. This parameterization fits $J^*$
+to a polynomial function of $T$, $RH$ and $c\dsub{n,\sag}$. This representation
+is valid under the following conditions:
+
+\begin{itemize}
+  \item $T \in [230.15, 305.15]$;
+  \item $RH \in [0.0001, 1.0]$;
+  \item $c\dsub{n,\sag} \in [10^4, 10^{11}]$;
+  \item $J^* \in [10^{-7}, 10^{10}]$;
+\end{itemize}
+
+Only the \textbf{first three} constraints are actually applied in the MAM4
+process. $T$ and $RH$ are bounded within the given range. If
+$c\dsub{n,\sag} \le 10^4$ or $\vmass{\sag,avg} \le 4 \cdot 10^{-16}$
+(two roughly equivalent conditions), nucleation is assumed to not occur,
+$J\dsub{nuc}$ is set to $0$ in \refeq{nuc:jnuc}, and the calculation
+terminates.
+
+If the above conditions are satisfied, this parameterization computes the
+following quantities in order:
+
+\begin{enumerate}
+  \item The mole fraction of $\rsag$ in a critical cluster (i.e., $x^*$) is
+        given by:
+    \begin{align}
+      x^* &= 0.740997 - 0.00266379 T - 0.00349998 \ln c\dsub{\sag}
+             + 0.0000504022 T \ln c\dsub{\sag} \nonumber \\
+          &+ 0.00201048 \ln RH - 0.000183289 T \ln RH
+             + 0.00157407 (\ln RH)^2 \nonumber \\
+          &- 0.0000179059 T (\ln RH)^2 + 0.000184403 (\ln RH)^3 \nonumber \\
+          &- 1.50345 \cdot 10^{-6} T (\ln RH)^3 \,.
+    \end{align}
+  \item The intermediate nucleation rate (i.e., $J^*$) is calculated from
+        $x^*$:
+        \begin{align}
+          J^* &= \exp \Big[ a(T,x^*) + b(T,x^*) \ln RH +
+                 c(T,x^*) (\ln RH)^2 + d(T,x^*) (\ln RH)^3 \nonumber \\
+              &+ e(T,x^*) \ln c\dsub{\sag} + f(T,x^*) (\ln RH) \ln c\dsub{\sag}
+                 + g(T,x^*) (\ln RH)^2 \ln c\dsub{\sag} \nonumber \\
+              &+ h(T,x^*) (\ln c\dsub{\sag})^2 + i(T,x^*) (\ln RH)
+                (\ln c\dsub{\sag})^2 + j(T,x^*) (\ln c\dsub{\sag})^3 \Big] \,, \labeleq{vk2002_nucrate}
+        \end{align}
+        where the coefficients $a(T,x^*) \dots j(T,x^*)$ are given in
+        \refappendixsubsection{nuc:coeff_nucrate}.
+  \item $N\dsub{tot}$, the total number of molecules in a critical cluster,
+        is calculated from $x^*$:
+        \begin{align}
+          N\dsub{tot} &= \exp \Big[ A(T,x^*) + B(T,x^*) \ln RH
+                         + C(T,x^*) (\ln RH)^2 + D(T,x^*) (\ln RH)^3 \nonumber \\
+                      &+ E(T,x^*) \ln c\dsub{\sag} + F(T,x^*) \ln RH \ln c\dsub{\sag}
+                         + G(T,x^*) (\ln RH)^2 \ln c\dsub{\sag} \nonumber \\
+                      &+ H(T,x^*) (\ln c\dsub{\sag})^2
+                       + I(T,x^*) \ln RH (\ln c\dsub{\sag})^2
+                       + J(T,x^*) (\ln c\dsub{\sag})^3 \Big] \,, \labeleq{vk2002_ntot}
+        \end{align}
+        where the coefficients $A(T,x^*) \dots J(T,x^*)$ are given in
+        \refappendixsubsection{nuc:coeff_ntot}.
+  \item $N\dsub{\sag}$, the total number of $\rsag$ molecules in a critical
+        cluster, is calculated from $x^*$ and $N\dsub{tot}$:
+        \begin{equation}
+          N\dsub{\sag} = N\dsub{tot} x^* \,.
+        \end{equation}
+  \item $r^*$ [nm], the radius of a critical cluster, is calculated from
+        $x^*$ and $N\dsub{tot}$:
+        \begin{equation}
+          r^* = \exp \left[ -1.6524245 + 0.42316402 x^* +
+                0.3346648 \ln N\dsub{tot} \right] \,.
+        \end{equation}
+\end{enumerate}
+
+% binary nucleation parameterization by wang2009
+\paragraph{Nucleation within the planetary boundary layer} \labelparagraph{nuc:pbl}
+
+If nucleation occurs within the planetary boundary layer (PBL) or below a
+a height of 100 meters, $J^*$ is compared with $J\dsub{PBL}$, an additional
+parameterization that uses an empirical first-order estimation
+~\cite{sihto-2006-acp,wang-2009-acp}. Here we make an additional assumption:
+
+\begin{assume}[MAM4 Nucleation: new nucleus composition]
+  New aerosol nuclei consist entirely of $\rsag$.
+\end{assume}
+
+The empirical estimation is
+\begin{equation}
+  J\dsub{PBL} = 10^{-6}~c\dsub{\sag} \,.
+\end{equation}
+
+If $J\dsub{PBL} > J^*$, the following adjustments are made:
+\begin{align}
+  J^* &= J\dsub{PBL} \,, \\
+  r^* &= 0.5~nm \,, \\
+  N\dsub{\sag} &= \frac{\pi N_A (1~{\rm nm})^3
+                  \rho\dsub{\sag}}{6 \mu_{\sag}} \,, \\
+  N\dsub{tot} &= N\dsub{\sag} \,.
+\end{align}
+
+Otherwise, $J^*$, $n\dsub{tot}$ and $n\dsub{\sag}$ remain the same values
+calculated by the first parameterization in \refparagraph{nuc:binary}.
+
+% parameterization of nuclei growth
+\paragraph{Nuclei growth} \labelparagraph{nuc:growth_nuclei}
+
+If $J^* < 10^{-6}$ based on the previous calculations, nucleation does not
+occur.
+
+\begin{assume}[MAM4 Nucleation: nucleation rate cutoff]
+  If $J^*$, the intermediate nucleation rate, is less than $10^{-6}$ molecules
+  per cc per second, based on binary nucleation and PBL effects, then no
+  nucleation occurs.
+\end{assume}
+
+Otherwise, the nucleation calculation proceeds, and the following quantities are
+computed:
+
+\begin{align}
+  RH &\in [0.1, 0.95] \,, \\
+  f\dsub{v} &= 1 - \frac{0.56}{\ln RH} \,, \\
+  V\dsub{d,nuc} &= \frac{n\dsub{\sag} \mu_{\asf}}
+                   {6.023 \cdot 10^{26} \rho\dsub{\sag}} \,, \\
+  D\dsub{d,nuc} &= \left( \frac{6 V\dsub{d,nuc}}{\pi} \right)^{\frac{1}{3}} \,,
+\end{align}
+
+where
+
+\begin{itemize}
+  \item $f\dsub{v}$ is the ratio of wet volume over dry volume of a particle,
+        using a simple K\"ohler approximation for $\rm NH\dsub{4}HSO\dsub{4}$
+  \item $V\dsub{d,nuc}$ [$\rm m^3$] $D\dsub{d,nuc}$ [m] are the dry volume and
+        diameter of a nucleus, estimated from the binary nucleation and PBL
+        parameterizations
+\end{itemize}
+
+The simplified approximation for $f\dsub{v}$ follows the K\"ohler theory used by
+the MAM4 aerosol water uptake, but neglects surface curvature effects. The
+composition is assumed to be pure ammonium bisulfate with hygroscopicity = 0.56.
+
+To decide whether the nuclei have grown large enough to fit within the Aitken
+mode's acceptible range of sizes, we use this mode's predefined min, max, and
+mean particle diameters [m] to calculate two quantities:
+\begin{align}
+  D\dsub{p,lo} &= \exp \left[ 0.67 \ln (8.7 \cdot 10^{-9}) +
+                            0.33 \ln (26 \cdot 10^{-9}) \right] \,, \\   %% about 12.5 nm
+  D\dsub{p,hi} &= 52 \cdot 10^{-9} \,.
+\end{align}
+\textcolor{red}{Jian: Dick said $D\dsub{p,lo}$=8.7 nm might make more sense.}
+
+If $D\dsub{d,nuc} > D\dsub{p,lo}$, $J\dsub{nuc}$ is set to $J^*$. Otherwise,
+the nuclei are too small for the Aitken mode. We use the following
+parameterization to consider the growth of nuclei to a larger size
+\cite{kerminen-2002-jas}. This parameterization makes the following assumptions:
+
+\begin{assume}[MAM4 Nucleation: no self-coagulation]
+  The only significant ``sink'' mechanism for new aerosol nuclei is their
+  coagulation with pre-existing particles. In other words, the MAM4 model
+  ignores the self-coagulation of fresh aerosol nuclei.
+\end{assume}
+
+\begin{assume}[MAM4 Nucleation: growth by constant condensation]
+  The only important source for the growth of nuclei is the condensation
+  of vapors, and this condensation rate is assumed to be constant.
+\end{assume}
+
+\begin{assume}[MAM4 Nucleation: static growth process]
+  The population of pre-existing particles and the concentration of
+  condensible vapors remain unchanged during the growth process for new
+  nuclei.
+\end{assume}
+
+\begin{assume}[MAM4 Nucleation: non-volatile vapors]
+  The condensable vapors responsible for nuclei growth are non-volatile.
+\end{assume}
+
+Using this parameterization, we adjust $J^*$ based on
+
+\begin{itemize}
+  \item the increase of the size of nuclei due to condensation of $\rsag$
+  \item the decrease of the number concentration of nuclei due to
+        coagulation with pre-existing particles
+\end{itemize}
+
+The following quantities are calculated in the following order for the
+adjustment of $J^*$:
+
+\begin{align}
+  v\dsub{\sag} &= 14.7 \sqrt{T} \,, \\
+  \rho\dsub{nuc} &= \frac{\rho\dsub{\sag}}{f\dsub{v}} \,, \\
+  GR &= \frac{3.0 \cdot 10^{-9} v\dsub{\sag} \mu_{\sag} c\dsub{n,\sag}}
+        {\rho\dsub{nuc}} \,, \\
+  D\dsub{nuc,ini} &= \max (2r^*, 1) \,, \\
+  D\dsub{nuc,fin} &= 10^9 D\dsub{p,lo} f\dsub{v}^{\frac{1}{3}} \,, \\
+  \gamma &= 0.23 D\dsub{nuc,int}^{0.2}
+                 (\frac{D\dsub{nuc,fin}}{3})^{0.075}
+                 (\frac{\rho\dsub{nuc}}{1000})^{-0.33}
+                 (\frac{T}{293})^{-0.75} \,, \labeleq{nuc:gamma} \\
+  \mathbb{D}\dsub{g,\sag} &= \frac{6.7037 \cdot 10^{-9} T^{0.75}}
+                             {c\dsub{air}} \,, \\
+  CS^\prime &= \frac{C\dsub{sum,\sag}}
+               {4 \pi \mathbb{D}\dsub{g,\sag} \alpha\dsub{\sag}} \,, \label{eq:cs_prime} \\
+  \eta &= \frac{\gamma CS^\prime}{GR} \,, \\
+  J\dsub{nuc} &= J^* \exp \left( \frac{\eta}{D\dsub{nuc,fin}} -
+                     \frac{\eta}{D\dsub{nuc,ini}} \right) \,,
+\end{align}
+
+where
+\begin{itemize}
+  \item $v\dsub{\sag}$ [m/s] is the approximated mean molecular speed of $\rsag$
+  \item $\rho\dsub{nuc}$ [kg/m$^3$] is the mass density of nuclei after
+        accounting for aerosol water uptake by sulfate
+  \item $GR$ [m/s] is the nuclei growth rate, assumed to be constant
+  \item $D\dsub{nuc,ini}$ [nm] and $D\dsub{nuc,fin}$ [nm] are the wet diameters
+        of nuclei before and after growth
+  \item $\mathbb{D}\dsub{g,\sag}$ [$\rm m^2/s$] is the approximate gas
+        diffusivity of $\rsag$
+  \item $CS^\prime$ is the ``condensation sink'', constant based on the
+        assumption that the population of pre-existing particles does not
+        change
+\end{itemize}
+
+The formula for $CS^\prime$ used in MAM4 comes from the condensation equation of
+$\rsag$ gas and differs from that in~\cite{kerminen-2002-jas}. According to Dick
+Easter, this difference is minor and produces no significant changes in
+nucleation results.
+% and the detailed derivation can be found in the Appendix~\ref{cs_prime}.
+%Note that compared with the Eq. (22) in~\cite{kerminen-2002-jas},
+%Dick also dropped a term in \refeq{nuc:gamma}, which was
+%thought to be close to 1.
+
+\subsubsection{MAM4 nucleation: numerical considerations}
+
+After $J\dsub{nuc}(t\dsub{0})$ is calculated using the parameterizations in
+\refsubsubsection{nuc:paranuc}, $\Delta \aitmass{\asf}$---the increase of
+$\aitmass{\asf}$ due to nucleation---can be calculated:
+%
+\begin{align}
+  \Delta \aitmass{\asf} &= \frac{10^6 J\dsub{nuc}(t\dsub{0}) \Delta t\dsub{nuc} m\dsub{d,\asf}}
+                            {c\dsub{air}\mu_{\asf}} \,, \\
+  m\dsub{d,\asf} &= \begin{cases}
+    \rho\dsub{\sag} \frac{\pi}{6}V\dsub{p,hi}^3 \,, \, \text{if $D\dsub{d,nuc} \ge D\dsub{p,hi}$} \,, \\
+    \rho\dsub{\sag} \frac{\pi}{6}V\dsub{d,nuc}^3 \,, \, \text{if $D\dsub{p,hi} > D\dsub{d,nuc} > D\dsub{p,lo}$} \,, \\
+    \rho\dsub{\sag} \frac{\pi}{6}V\dsub{p,lo}^3 \,, \, \text{otherwise} \,,
+  \end{cases}
+\end{align}
+
+where $\Delta t\dsub{nuc}$ = $t\dsub{1}$ - $t\dsub{0}$ = $\Delta t\dsub{phys}$.
+
+%(See ``MAM\_Basics'' documentation for the value of $\Delta t\dsub{phys}$).
+Since $\Delta \aitmass{\asf}$ cannot exceed the available amount of
+$\vmass{\sag}(t\dsub{0})$, we apply a limiting factor $f^*$, computed
+as the following fraction:
+
+\begin{equation}
+  f^* = \begin{cases}
+        \frac{\vmass{\sag}(t\dsub{0})}{\Delta \aitmass{\asf}}, \, \text{if $\Delta \aitmass{\asf} > \vmass{\sag}(t\dsub{0})$} \,, \\
+        1, \text{otherwise.} \\
+  \end{cases}
+\end{equation}
+
+If $J\dsub{nuc} f^* < 10^{-18}$, $J\dsub{nuc}$ is set to $0$ and no nucleation
+occurs. Otherwise, we make the following adjustments:
+
+\begin{align}
+  \Delta \aitmass{\asf} &= \min ( 0.9999\vmass{\sag}(t\dsub0), f^* \Delta \aitmass{\asf} ) \,, \\
+  \Delta \vmass{\sag} &= - \Delta \aitmass{\asf} \,, \\
+  \Delta q\dsub{n,2} &= \frac{\Delta \aitmass{\asf} \mu_{\asf}}{m\dsub{d,\asf}} \,.
+\end{align}
+
+If $\frac{\Delta q\dsub{n,2}}{\Delta t\dsub{nuc}} < 100$, no nucleation occurs.
+Otherwise we continue with the following adjustments:
+
+\begin{itemize}
+  \item If $\frac{\Delta \aitmass{\asf} \mu_{\asf}}{\Delta q\dsub{n,2}} <
+        \frac{\pi}{6} \rho\dsub{\asf} D\dsub{p,lo}^3$, the nuclei size is
+        increased at the expense of the number concentration:
+        $$\Delta q\dsub{n,2} = \frac{\Delta \aitmass{\asf} \mu_{\asf}}{\frac{\pi}{6} \rho\dsub{\asf} D\dsub{p,lo}^3}$$
+  \item If $\frac{\Delta \aitmass{\asf} \mu_{\asf}}{\Delta q\dsub{n,2}} >
+        \frac{\pi}{6} \rho\dsub{\asf} D\dsub{p,hi}^3$, the nuclei size is
+        decreased, and mass is reduced accordingly:
+        $$\Delta \aitmass{\asf} = \frac{\frac{\pi}{6} \rho\dsub{\asf} D\dsub{p,hi}^3 \Delta q\dsub{n,2}}{\mu_{\asf}}$$
+\end{itemize}
+
+Dick commented that 1) the first ``if'' condition revealed the fact that
+there was not enough $\rsag$ gas for all the nuclei to grow to the size
+$D\dsub{p,lo}$. Thus Dick arbitrarily reduced the number of nuclei to
+increase the size of nuclei; 2) the second ``if'' condition will never
+happen, so it is just a ``sanity check''.
+
+After the adjustment above, we solve the governing equations
+\refeq{nuc:jnuc}-\refeq{nuc:vmass} numerically:
+
+\begin{align}
+  q\dsub{n,2} (t\dsub{1}) &= q\dsub{n,2} (t\dsub{0}) + \Delta q\dsub{n,2} \,, \\
+  \aitmass{\asf} (t\dsub{1}) &= \aitmass{\asf} (t\dsub{0}) + \Delta \aitmass{\asf} \,, \\
+%\Delta q\dsub{\sag} &= \min \left( \Delta \aitmass{\asf}, \vmass{\sag} (t\dsub{0}) \right) \,, \\
+  \Delta q\dsub{\sag} &= -\Delta \aitmass{\asf} \,, \\
+  \vmass{\sag} (t\dsub{1}) &= \vmass{\sag} (t\dsub{0}) + \Delta q\dsub{\sag} \,.
+\end{align}
+
+\subsubsection{Additional MAM4 nucleation diagnostics} \label{output}
+
+The MAM4 nucleation process provides the following diagnostic variables:
+
+\begin{enumerate}
+  \item $J^*$: the nucleation rate after the first and second (if applicable)
+        parameterizations
+  \item $q\dsub{n,2}$: the number mixing ratio of $\rasf$ in the Aitken mode at
+        $t = t\dsub1$
+  \item $\vmass{\sag} (t\dsub1)$: the mass mixing ratio of $\rsag$ at
+        $t = t\dsub1$
+  \item $\aitmass{\asf} (t\dsub1)$: the mass mixing ratio of $\rasf$ in the
+        Aitken mode at $t = t\dsub1$.
+\end{enumerate}
+
+\jjc{Here's an example of a prognostic process that computes diagnostic
+variables ``along the way.'' Should we discuss whether to make these diagnostics
+available to other processes?}
+
+\subsubsection{MAM4 nucleation verification tests} \labelsubsubsection{nuc:nuctests}
+
+The parameterizations we've described above allow us to make some general
+observations about output from the MAM4 process, given valid input:
+
+\begin{itemize}
+  \item All aerosol mix fraction tendencies are zero except those for the Aitken
+        mode, which are zero or positive.
+  \item All modal number density tendencies are zero except those for the Aitken
+        mode, which are zero or positive.
+  \item All gas-phase species tendencies are non-positive. Any positive
+        aerosol tendencies in the Aitken mode are associated with negative
+        tendencies in gas-phase species.
+  \item All newly-formed aerosol nuclei are $\rsag$ and are 1 nm in diameter.
+\end{itemize}
+
+\jjc{Can we say anything about mass conservation between gases and aerosols?}
+
+These conditions hold for any valid input. We can say more about output for
+input with given characteristics:
+
+%\begin{itemize}
+%\end{itemize}
+

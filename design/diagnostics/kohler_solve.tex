@@ -1,0 +1,27 @@
+\section{Kohler equation solver}
+\labelsection{kohler}
+
+In code: \texttt{haero/diagnostics/kohler\_solve.hpp}
+
+\subsection{Input}
+  \begin{itemize}
+    \item Environmental relative humidity, $s$.
+    \item Mode dry particle size $V_m$ (output of Section \ref{sec:mode_dry_vol}.
+    \item Mode hygroscopicity $b_m$ (output of Section \ref{sec:mode_hygro}).
+  \end{itemize}
+  
+\subsection{Methods}
+
+The particle-mean dry radius $r_d$ is computed from the dry particle volume via equation \eqref{eq:mode_particle_diameter}.
+The Kohler polynomial is a quartic polynomial of its variable, wet radius $r_w$,
+\begin{equation}\labeleq{kohler}
+  K(r_w) = (\log(s)r_w - A)r_w^3 + ((B-\log(s))r_w + A)r_d^3.
+\end{equation}  
+It describes the approximate relationship between a curved water droplet in equilibrium with its microenvironment, by balancing approximations of droplet expansion due to curvature with droplet attraction to aerosol particles \cite[\S 3.5.4]{LambVerlinde}, \cite[\S 6.5]{PruppacherKlett}.
+The real, positive root of the polynomial (a solution to $K(r_w) = 0$) corresponds to the wet radius a particle would have, given the input environmental conditions, at that equilibrium.
+
+These equilibria are only valid, physically, for interstitial aerosols.
+
+\subsection{Output}
+
+Particle wet radius, $r_w$, according to Kohler theory.

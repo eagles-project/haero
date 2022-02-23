@@ -1,0 +1,46 @@
+\section{Mode wet radius}
+\labelsection{mode_wet_radius}
+
+In code: \texttt{haero/diagnostics/mode\_wet\_radius.hpp}
+
+This diagnostic function serves the same role as the water uptake module in legacy MAM4.
+
+\subsection{Input}
+  \begin{itemize}
+    \item Environmental relative humidity, $s$.
+    \item Mode dry particle size $V_m$ (output of Section \ref{sec:mode_dry_vol}.
+    \item Mode hygroscopicity $b_m$ (output of Section \ref{sec:mode_hygro}).
+    \item Mode $m$ metadata (for crystallization and deliquescence points).
+  \end{itemize}
+
+\subsection{Methods}
+
+\begin{algorithm}[H]
+\SetKwFunction{Vol}{volumeFromRadius}
+\SetKwFunction{Rad}{radiusFromVolume}
+\SetKwFunction{Koh}{kohlerSolve}
+\DontPrintSemicolon
+$r_d\gets$ \Rad{$V_m$} \tcp*{equation \eqref{eq:mode_particle_diameter}}
+\uIf{ $s < $ cryst or $r_d \le r_{min}$ }{
+  \tcp{Too dry or too small; wet radius is same as dry radius}
+  $r_w \gets r_d$\;
+}
+\Else{
+  $r_w \gets$ \Koh{$r_d, s, b_m$} \tcp*{Section \ref{sec:kohler}}
+  \If{ $s\ge$ cryst and $s < $ deliq} {
+    $V_{dry} =$ \Vol{$r_d$}\;
+    $V_{wet} =$ \Vol{$r_w$}\;
+    $V_{H_2O} = (V_{wet}-V_{dry})\cdot \frac{s - s_{cr}}{s_{del}-s_{cr}}$ \tcp*{hysteresis applied to water volume}
+    $V_{wet} \gets V_{dry} + V_{H_2O}$ \;
+    $r_w \gets $ \Rad{$V_{wet}$}\;
+  }
+}
+\Return{$r_w$}
+\caption{Mode wet radius} 
+\end{algorithm}
+
+
+
+\subsection{Output}
+
+Interstitial aerosol particle wet radius $r_w$.

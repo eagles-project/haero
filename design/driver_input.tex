@@ -1,0 +1,469 @@
+\chapter{Driver Input Specification}
+\labelappendix{driver_input}
+
+Below is the input specification for the Haero driver. The spec uses
+[YAML](https://yaml.org/). Compared to Fortran namelists, YAML offers
+
+\begin{itemize}
+  \item {\bf better readability}: YAML files are flexible, and don't have a lot
+    of "kibble" (braces, tags, and other stuff you see routinely in fancier
+    markup like XML, HTML, and so on). They're very easy to read.
+  \item {\bf better validation}: YAML files have named entries that can be
+    used or ignored, depending on the needs of the particular application.
+    Also, the file format allows for error checking.
+  \item {\bf better language support}: Fortran namelists are so-called because
+    they are only available to Fortran. YAML has libraries that allows it to
+    be used with several programming languages (including Fortran!). This makes
+    it easier for tools and other applications to use similar input files. In
+    particular, this allows workflows to use a single input file to define a
+    workload that can be processed with several tools.
+  \item {\bf support for lists and maps}: YAML offers constructions for
+    dynamically-sized datasets. Haero focuses on runtime configurability,
+    so the ability to add species (and perhaps even modes) to an input file
+    is important.
+  \item {\bf a larger support community}: Fortran remains a niche language,
+    which often instills a sense of pride in scientists. Unfortunately, the
+    downside to belonging to a small community of specialists is that the tools
+    are invariably of lower quality than more commonly-used tools. One needs
+    only to witness the notorious ongoing issues with Fortran compilers to see
+    this phenomenon firsthand.
+\end{itemize}
+
+This specification is for use only with the Haero driver. The library provides
+no input/output interface---it assumes that the model in which it's embedded
+does the work of assembling input data and loading it into the appropriate
+data structures.
+
+The Haero driver is a single-column aerosol dynamics simulator---it doesn not
+model horizontal dynamics. However, depending on how initial conditions are
+specified, it's possible to generate ensembles whose members are individual
+atmospheric columns. Because the columns are independent of one another, these
+ensembles can be run entirely within a single simulation, allowing the driver
+to take advantage of parallelism, and allowing statistics and measures of
+convergence to be generated.
+
+\subsection*{Sections}
+
+A YAML file consists of several named sections. Each of these sections can
+contain data and metadata. Sections are a powerful tool for organizing input
+using simple concepts with human-readable notation.
+
+\subsubsection*{Modes}
+
+The \texttt{modes} section defines the particle size modes available to a Haero
+model. As we discussed in \refsubsection{lib:modes}, a mode has metadata
+specifying its size range and its geometric standard deviation.
+
+\begin{verbatim}
+modes:
+  aitken:
+    D_min: 0.0087
+    D_max: 0.052
+    sigma: 1.6
+  accumulation:
+    D_min: 0.0535
+    D_max: 0.44
+    sigma: 1.8
+  coarse:
+    D_min: 1.0
+    D_max: 4.0
+    sigma: 1.8
+  primary_carbon:
+    D_min: 0.01
+    D_max: 0.1
+    sigma: 1.6
+\end{verbatim}
+
+Particle diameters and $\sigma$ are measured in $\mu\mathrm{m}$.
+
+The \texttt{modes} section is essentially a map whose keys are mode names
+(\texttt{aitken}, \texttt{accumulation}, \texttt{coarse}, and \texttt{primary\_carbon},
+in the example above), and whose values are themselves maps. The map for a given
+mode contains the following fields:
+
+\begin{itemize}
+  \item \texttt{D\_min}: the minimum diameter of particles belonging to the mode
+  \item \texttt{D\_max}: the maximum diameter of particles belonging to the mode
+  \item \texttt{sigma}: the geometric mean standard deviation for the size
+                        distribution for particles belonging to the mode
+\end{itemize}
+
+Everything in a mode must be completely specified---there are no default values.
+
+\subsubsection*{Aerosol Species}
+
+Aerosol species populate each of the defined modes, and are defined in the
+\texttt{aerosols} section. As we discussed in \refsubsection{lib:species}, a
+species is defined by its elemental composition and its electric charge (given
+in units of the electronic charge $|e|$).
+%The \texttt{species} section follows the same format as defined by
+%\href{https://cantera.org/documentation/dev/sphinx/html/yaml/species.html}{Cantera}.
+
+Like the \texttt{modes} section, the \texttt{aerosols} section is a map whose keys
+are {\em symbolic names} of aerosol particle species (e.g. \texttt{SO4} for
+sulfate particles):
+
+\begin{verbatim}
+aerosols:
+  SO4:
+    name: sulfate
+  NH4:
+    name: ammonium
+  POA:
+    name: primary organic aerosol
+  SOA:
+    name: secondary organic aerosol
+  BC:
+    name: black carbon
+  SS:
+    name: sea salt
+  DST:
+    name: dust
+  MOA:
+    name: marine organic aerosol
+\end{verbatim}
+
+An aerosol species has the following fields:
+
+\begin{itemize}
+  \item \texttt{name}: the full name for the species (e.g. \texttt{sulfate} for
+    \texttt{SO4}). You don't need to quote the full name, even if it contains
+    spaces.
+\end{itemize}
+
+\subsubsection*{Gas Species}
+
+Gas species exist in the atmosphere, and aren't associated with modes. These
+species are defined in the \texttt{gases} section.
+
+The \texttt{gases} section is identical in structure to the
+\texttt{aerosols} section:
+
+\begin{verbatim}
+gases:
+  SO2:
+    name: sulfur dioxide
+  H2SO4:
+    name: sulfuric acid
+  SOAG:
+    name: single semi-volatile organic gas-phase species
+  NH3:
+    name: ammonia
+\end{verbatim}
+
+A gas species has the following fields:
+
+\begin{itemize}
+  \item \texttt{name}: the full name for a gas species (e.g.
+    \texttt{sulfur dioxide} for \texttt{SO4}. You don't need to quote the
+                     full name, even if it contains spaces.
+\end{itemize}
+
+\subsubsection*{Physics}
+
+In this section, we tell the Haero driver what physical processes we wish
+to simulate. Every field in this section assumes a \texttt{true} or
+\texttt{false} value, so it's really just a set of ON/OFF switches. Valid fields
+are:
+
+\begin{itemize}
+  \item \texttt{growth}: enables particle growth modeling
+  \item \texttt{gas\_chemistry}: enables the gas chemistry mechanism
+  \item \texttt{cloud\_chemistry}: enables the cloud chemistry mechanism
+  \item \texttt{gas\_aerosol\_exchange}: enables exchange processes that occur
+                                       between gas and aerosol particles
+  \item \texttt{mode\_transfer}: enables the transferring particles between modes
+  \item \texttt{nucleation}: enables aerosol particle formation processes
+  \item \texttt{coagulation}: enables inelastic aerosol collision processes
+\end{itemize}
+
+\subsubsection*{Grid Parameters}
+
+This section contains information about the computational grid used by the
+Haero driver.
+
+\begin{verbatim}
+grid:
+  num_columns: 1
+  num_levels:  72
+\end{verbatim}
+
+There are two required fields:
+
+\begin{itemize}
+  \item \texttt{num\_columns}: the number of independent atmospheric columns
+  \item \texttt{num\_levels}: the numer of vertical cells in each column
+\end{itemize}
+
+\subsubsection*{Atmospheric Conditions}
+
+In each cell within each column, there exist atmospheric conditions that
+provide important parameters---temperature, pressure, relative humidity, etc---
+that govern physical processes. The \texttt{atmosphere} section allows you
+to specify one of a handful of simple models for obtaining those parameters.
+Each model has its own parameters.
+
+First and foremost, you specify a model with the \texttt{model} field within
+the \texttt{atmosphere} section. Supported models are:
+
+\begin{itemize}
+  \item \texttt{uniform}: a simple atmospheric environment in which columns are
+    assumed to be short in comparison to the height of the atmosphere so that
+    all conditions are uniform
+  \item \texttt{hydrostatic}: an atmospheric environment in hydrostatic
+    equilibrium, with the relationship between pressure and temperature defined
+    by an ideal gas law
+\end{itemize}
+
+These models are described in detail in \refchapter{driver}. Here we simply
+list valid fields for each model. These fields are specified alongside the
+\texttt{model} field in the \texttt{atmosphere} section. Tables~\ref{tab:uniform_atm}
+and~\ref{tab:hydrostatic_atm} list fields for the \texttt{uniform} and
+\texttt{hydrostatic} models.
+
+\begin{table}[htbp]
+\caption{Uniform atmosphere parameters}
+\centering
+\label{tab:uniform_atm}
+\begin{tabular}{ccc}
+  \toprule
+  Parameter   & Description                  & Units   \\
+  \midrule
+  \texttt{mu}   & Mean molecular weight of air & kg/mol  \\
+  \texttt{H}    & Scaled atmospheric height    & m       \\
+  \texttt{p0}   & Pressure                     & Pa      \\
+  \texttt{T0}   & Temperature                  & K       \\
+  \texttt{phi0} & Relative humidity            & -       \\
+  \texttt{N0}   & Cloud fraction               & -       \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\caption{Hydrostatic atmosphere parameters}
+\centering
+\label{tab:hydrostatic_atm}
+\begin{tabular}{ccc}
+  \toprule
+  Parameter   & Description                  & Units   \\
+  \midrule
+  \texttt{mu}   & Mean molecular weight of air & kg/mol  \\
+  \texttt{H}    & Scaled atmospheric height    & m       \\
+  \texttt{p0}   & Pressure                     & Pa      \\
+  \texttt{T0}   & Temperature                  & K       \\
+  \texttt{phi0} & Relative humidity            & -       \\
+  \texttt{N0}   & Cloud fraction               & -       \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{Initial Conditions}
+
+The \texttt{initial\_conditions} section defines the initial state of an aerosol
+system. There are subsections for \texttt{aerosols}, for \texttt{gases}, and
+for \texttt{modes} themselves. Alternatively all initial conditions can be read
+automatically from a properly-formatted NetCDF file with the following
+syntax:
+
+\begin{verbatim}
+initial_condition: my_ics_file.nc
+\end{verbatim}
+
+The rest of this section discusses how to specify initial conditions for each
+aerosol species, gas species, and mode.
+
+The initial state for an aerosol species is specified by its modal mass
+fractions, given for every mode occupied by that species. The nodal mass
+fraction of an aerosol species is the fraction of the total mass of the mode's
+particles occupied by that species.
+
+Meanwhile, the initial state for a gas is its mole fraction---the number of
+moles of gas per mole of air.
+
+Finally, an initial mode state is given as a number density: the number of total
+aerosol particles in the mode per cubic meter.
+
+In each case, the initial state is specified for an entire column. There are a
+few ways of specifying input for a quantity within a column:
+
+\begin{enumerate}
+  \item {\bf Specify a uniform quantity with a single number.}
+        \begin{verbatim}
+          <quantity>: value
+        \end{verbatim}
+        This is the easiest option for defining a quantity's initial state: it's
+        the same everywhere, from the top to the bottom of the column. For
+        example, to define a uniform mass fraction of sulfate within a mode:
+        \begin{verbatim}
+          SO4: 0.3
+        \end{verbatim}
+  \item {\bf Use a YAML list to specify a quantity's vertical profile.}
+        \begin{verbatim}
+          <quantity>: [value1, value2, ..., valueN]
+        \end{verbatim}
+        This option allows you to specify a value of an aerosol, a gas, or a mode
+        in each of the cells of a column with a YAML list. For example, if your
+        columns have 10 vertical levels, you can specify the mass fraction of
+        sulfate within a mode using a list like this:
+        \begin{verbatim}
+          SO4: [0.28, 0.285, 0.29, 0.295, 0.3, 0.305, 0.31, 0.315, 0.32, 0.325]
+        \end{verbatim}
+        The size of the list must match the number of vertical levels.
+  \item {\bf Refer to a named field in the \texttt{data} section.}
+        \begin{verbatim}
+          <quantity>: data: <data_field>
+        \end{verbatim}
+        This option is similar to specifying a column profile with a YAML list
+        of values, except that the list is given a symbolic name within the
+        \texttt{data} section (described below), and the initial condition refers
+        to the symbolic name of that list. Suppose you were specifying modal
+        mass fractions for sulfate in the \texttt{accumulation} mode, and the
+        mass fraction data is defined in the \texttt{data} section in the field
+        \texttt{SO4\_accum}. Then your initial condition field would read:
+        \begin{verbatim}
+          SO4: data: SO4_accum
+        \end{verbatim}
+  \item {\bf Refer to a variable in a NetCDF file.}
+        \begin{verbatim}
+          <quantity>: <filename>: <var_name>
+        \end{verbatim}
+        If you have a NetCDF file that defines initial conditions for columns,
+        you can refer directly to any variable within that file, as long as its
+        dimension matches the dimension of the columns in your
+        \texttt{grid} section. For example, to read column mass fractions for
+        sulfate within a mode from the \texttt{SO4\_massfrac} variable within a
+        NetCDF file named \texttt{column\_ics.nc}:
+        \begin{verbatim}
+          SO4: column_ics.nc: SO4_massfrac
+        \end{verbatim}
+\end{enumerate}
+
+Here's an example of a simple set of initial conditions in which all aerosols,
+gases, and modes are given uniform initial states:
+
+\begin{verbatim}
+initial_conditions:
+  aerosols:
+    accumulation:
+      SO4: 0.3
+      POA: 0
+      SOA: 0.3
+      BC: 0
+      DST: 0
+      NCL: 0.4
+    aitken:
+      SO4: 0.3
+      SOA: 0.3
+      NCL: 0.4
+    coarse:
+      DST: 0
+      NCL: 0.4
+      SO4: 0.3
+      BC: 0
+      POA: 0
+      SOA: 0.3
+    primary_carbon:
+      POA: 0
+      BC: 1
+
+  gases:
+    SO2: 1.e-4
+    H2SO4: 1.e-13
+    SOAG:  5.e-10
+
+  modes:
+    accumulation: 1.e8
+    aitken: 1.e9
+    coarse: 1.e5
+    primary_carbon: 5.e8
+\end{verbatim}
+
+In the \texttt{aerosols} subsection, the modal mass fractions of all species
+are defined for each mode. So the \texttt{aerosols} contains mode names as fields.
+Each of these mode names contains one or more symbolic names of aerosol species.
+Every species and mode referenced in this subsection must be defined earlier
+in the file.
+
+In the \texttt{gases} subsection, the initial state of a gas section is simpler,
+since gases don't belong to specific modes. Each of the fields here adopt the
+symbolic names of the gases defined in the \texttt{gases} section of the file.
+
+The \texttt{modes} subsection, the fields are named after the modes defined in
+the \texttt{modes} section.
+
+\subsubsection*{Data Section}
+
+The \texttt{data} section mentioned above contains fields with values that are
+either single numbers or YAML lists. This section is primarily used by fields
+in the \texttt{initial\_conditions} section. Here's an example of some valid
+entries for a simulation with columns having 10 vertical levels, for data
+defined on each of those vertical levels:
+
+\begin{verbatim}
+data:
+  SO4_accum: [0.28, 0.285, 0.29, 0.295, 0.3, 0.305, 0.31, 0.315, 0.32, 0.325]
+  POA_accum: 0
+\end{verbatim}
+
+Lists for data defined on vertical level interfaces must contain one more
+element than those for data defined on vertical levels.
+
+\subsubsection*{Perturbations to Initial Conditions}
+
+TBD
+
+\subsubsection*{Chemistry Model}
+
+The Haero driver implements an extremely simple chemistry model: the uniform
+production of a gas species at a constant rate. The parameters of this model,
+which are the rates at which one or more gas species are uniformly produced
+in all grid cells, are defined in the \texttt{production} subsection of the
+\texttt{chemistry} section, in the following way:
+
+\begin{verbatim}
+chemistry:
+  production:
+    H2S04: 1.0e-16
+\end{verbatim}
+
+Here¸ we specify that \texttt{H2SO4} gas (which must be defined in the
+\texttt{gases} section) gets produced at $ 10^{-16} $ mol gas / mol air / s.
+
+\subsubsection*{Simulation Parameters}
+
+In the \texttt{simulation} section, you define parameters relevant to your
+simulation, as opposed to the system being simulated:
+
+\begin{verbatim}
+simulation:
+  timestep: 1
+  duration: 1800
+  output:
+    directory: .
+    prefix: smoke_test
+    frequency: 1
+\end{verbatim}
+
+This section contains two fields relevant to timestepping:
+
+\begin{itemize}
+  \item \texttt{timestep}: a fixed timestep size used in the simulation (s).
+                         This may also be a list of fixed timesteps, in which
+                         case the driver will run a self-convergence study
+  \item \texttt{duration}: the total duration of the simulation (s)
+\end{itemize}
+
+There's also an \texttt{output} subsection with parameters related to simulation
+output. These parameters are defined by the following fields:
+
+\begin{itemize}
+  \item \texttt{directory}: the directory in which output files are written
+  \item \texttt{prefix}: a prefix for output files for this simulation
+  \item \texttt{frequency}: the number of timesteps to advance between writing
+                          successive simulation output files.
+\end{itemize}
+
+\subsection{Examples}
+
+You can find examples of driver input files in the \texttt{driver/tests} directory
+within the \texttt{haero} GitHub repository.

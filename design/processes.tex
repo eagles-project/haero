@@ -1,0 +1,61 @@
+\chapter{Aerosol Processes}
+\labelchapter{processes}
+
+Haero offers implementations for each of the important stages in the aerosol
+life cycle. Here we describe the physics of each stage, the approximations
+made by the associated parametrizations, and the implementations of the
+underlying prognostic and diagnostic processes.
+
+In each of the processes, we assume the state of an aerosol system is specified
+by the following prognostic variables:
+
+\begin{itemize}
+  \item $ n_m(x_i, y_i, z_k, t)$ [\# /m$^3$]: the {\em number density} of mode $m$,
+        defined within the cell in column $i$ at vertical level $k$
+  \item $ q_{m,s}(x_i, y_i, z_k, t)$ [kg aerosol species $s$/kg air]: the
+        {\em mass mix fraction} of aerosol species $s$ within mode $m$, defined
+        within the cell in column $i$ at vertical level $k$
+  \item $ q_g(x_i, y_i, z_k, t)$ [kmol gas species $g$/mkol air]: the {\em mole
+        fraction} of gas species $g$, defined within the cell in column $i$ at
+        vertical level $k$
+\end{itemize}
+
+Further, each process is independent of all other processes. In other words,
+state variables are taken directly from the prognostics and diagostics passed
+to the process, and no assumptions are made about how these state variables
+were computed.
+
+\begin{defn}[Aerosol process]
+  Aerosol processes are \emph{prognostic} in the sense that they update a tendency, which provides the right-hand-side for a differential equation solved either by Haero or its model.
+\end{defn}
+
+
+  Processes may need intermediate quantities using the available state data and metadata to evaluate their tendencies.  
+  These intermediate quantities are \emph{diagnostic} in the sense they they can be computed, or diagnosed, from the current state variables; they are not evolved in time by either Haero or its host model.
+  They are computed by diagnostic functions; storage of these quantities depends on their use in various aerosol processes and/or the host model.
+\begin{defn}[Diagnostic function]
+  A diagnostic function updates any relevant diagnostic variables in place at simulation time $t$.
+  
+  Diagnostic functions are therefore associated with the design of Kokkos kernel \emph{functors}.
+  In Haero, we apply the design priniciple that each diagnostic function updates exactly 1 diagnostic quantity.
+  In software, therefore, diagnostic functions are launched as separate kernels.
+\end{defn}
+
+\begin{assume}[Independent aerosol processes]
+  Every aerosol process is independent of other aerosol processes. Specifically:
+  a process takes a set of state variables and diagnostics, and {\em using only
+  these variables}, it computes a set of tendencies for the prognostic state variables at simulation time $t$.
+\end{assume}
+
+This process independence is a dramatic departure from prior implementations of
+aerosol physics in MAM. Any sequential coupling of processes must be performed
+by a host model.
+
+With this assumption, it's possible to recover the legacy MAM algorithms by
+constructing a coupling procedure that follows the relevant assumptions. But
+it's also possible to construct more sophisticated coupling processes that take
+advantage of advances in numerical analysis.
+
+The following sections list the available aerosol processes provided by Haero.
+
+\input{processes/nucleation.tex}

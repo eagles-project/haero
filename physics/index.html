@@ -1,0 +1,980 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.9">
+    
+    
+      
+        <title>Aerosol Physics - Haero: A High Performance Aerosol Model Implementation for E3SM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2b4465f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#aerosol-physics" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Haero: A High Performance Aerosol Model Implementation for E3SM" class="md-header__button md-logo" aria-label="Haero: A High Performance Aerosol Model Implementation for E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Haero: A High Performance Aerosol Model Implementation for E3SM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Aerosol Physics
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="cyan" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/eagles-project/haero" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Haero: A High Performance Aerosol Model Implementation for E3SM" class="md-nav__button md-logo" aria-label="Haero: A High Performance Aerosol Model Implementation for E3SM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    Haero: A High Performance Aerosol Model Implementation for E3SM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/eagles-project/haero" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        Glossary
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Aerosol Physics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Aerosol Physics
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-modal-aerosol-approximation" class="md-nav__link">
+    The Modal Aerosol Approximation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#size-matters" class="md-nav__link">
+    Size Matters
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#moment-equations-and-the-closure-problem" class="md-nav__link">
+    Moment Equations and the Closure Problem
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modal-equations" class="md-nav__link">
+    Modal Equations
+  </a>
+  
+    <nav class="md-nav" aria-label="Modal Equations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#log-normal-distribution-functions" class="md-nav__link">
+    Log-Normal Distribution Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mode-definitions-in-mam4" class="md-nav__link">
+    Mode definitions in MAM4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-species-modes" class="md-nav__link">
+    Multi-Species Modes
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../library/" class="md-nav__link">
+        The Haero Library
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processes/" class="md-nav__link">
+        Aerosol Processes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../driver/" class="md-nav__link">
+        The Haero Driver
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        Testing Aerosol Processes
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-modal-aerosol-approximation" class="md-nav__link">
+    The Modal Aerosol Approximation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#size-matters" class="md-nav__link">
+    Size Matters
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#moment-equations-and-the-closure-problem" class="md-nav__link">
+    Moment Equations and the Closure Problem
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modal-equations" class="md-nav__link">
+    Modal Equations
+  </a>
+  
+    <nav class="md-nav" aria-label="Modal Equations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#log-normal-distribution-functions" class="md-nav__link">
+    Log-Normal Distribution Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mode-definitions-in-mam4" class="md-nav__link">
+    Mode definitions in MAM4
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-species-modes" class="md-nav__link">
+    Multi-Species Modes
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="aerosol-physics">Aerosol Physics</h1>
+<div class="arithmatex">\[
+\renewcommand{\d}[1]{\mathrm{d} #1}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\ddt}[1]{\frac{d #1}{dt}}
+\newcommand{\partialt}[1]{\frac{\partial #1}{\partial t}}
+\renewcommand{\div}[1]{\nabla \cdot #1}
+\newcommand{\dsub}[1]{_{_{#1}}}
+\newcommand{\specidx}{L}
+\newcommand{\amass}[1]{q\dsub{m,#1,i}}
+\newcommand{\aitmass}[1]{q_{_{m,#1,2}}}
+\newcommand{\vmass}[1]{q\dsub{v,#1}}
+\newcommand{\mw}[1]{M\dsub{w,#1}}
+\newcommand{\rsag}{\rm H_{_2}SO_{_4}}
+\newcommand{\rasf}{\rm SO_{_4}}
+\newcommand{\rwater}{\rm H_{_2}O}
+\newcommand{\sag}{H_{_2}SO_{_4}}
+\newcommand{\asf}{SO_{_4}}
+\newcommand{\water}{H_{_2}O}
+\newcommand{\numc}{N_{_{t,i}}}
+\newcommand{\pluseq}{\mathrel{+}=}
+\newcommand{\minuseq}{\mathrel{-}=}
+\DeclareMathOperator{\sgn}{sgn}
+\newcommand{\dsub}[1]{_{_{#1}}}
+\newcommand{\specidx}{L}
+\newcommand{\amass}[1]{q\dsub{m,#1,i}}
+\newcommand{\vmass}[1]{q\dsub{v,#1}}
+\newcommand{\mw}[1]{M\dsub{w,#1}}
+\newcommand{\rsag}{\rm H_2SO_4}
+\newcommand{\sag}{H_2SO_4}
+\newcommand{\rasf}{\rm SO_4}
+\newcommand{\asf}{SO_4}
+\]</div>
+<p>Here we describe the physics of aerosols as represented by the modal aerosol
+model. First, we review the modal aerosol approximation, which defines the
+equations and quantites of interest and describes how various aerosol processes
+are parameterized. Then we describe in detail these various parameterized
+aerosol processes, their physical significance, and their mathematical
+represention. Along the way, we take care to highlight any physical,
+statistical, and mathematical assumptions, to make clear the circumstances under
+which Haero's aerosol model is valid.</p>
+<h2 id="the-modal-aerosol-approximation">The Modal Aerosol Approximation</h2>
+<p>Here we offer an extremely abbreviated "fly-over" of the evolution equations
+that quantify the dynamics of aerosols. Here, we emphasize the mathematical
+representation of aerosols. For a more detailed explanation of the underlying
+ideas, we refer the reader to~\cite{Whitby1991} and~\cite{Friedlander1977}.</p>
+<p>All quantities are in SI units unless specifically mentioned. To keep the
+discussion simple and focused, we avoid referencing specific coordinates.</p>
+<p>Many of the assumptions here are inherited from Dick Easter's Modal Aerosol
+Model 4-mode (MAM4) model.</p>
+<h2 id="size-matters">Size Matters</h2>
+<p>The modal approach to modeling aerosols is based on the observations that</p>
+<ul>
+<li>the sizes of aerosol particles greatly influence their dynamical behavior</li>
+<li>these sizes span several orders of magnitude (from 0.001 to 100 microns)</li>
+</ul>
+<p>Here, a "particle" is an individual aerosol molecule with some volume <span class="arithmatex">\(V_p\)</span>.
+Aerosol particles consist of polymers, and a particle consisting of a chain of
+<span class="arithmatex">\(i\)</span> monomers is an <span class="arithmatex">\(i\)</span>-mer.</p>
+<p>How do we represent a set of aerosol particles in space, given the importance
+of their size? In the simplest case (for small <span class="arithmatex">\(i\)</span>-mers), we can denote
+<span class="arithmatex">\(N_i(\vec{x}, t)\)</span> as the number of <span class="arithmatex">\(i\)</span>-mers per cubic meter in the vicinity of
+the point <span class="arithmatex">\(\vec{x}\)</span> at time <span class="arithmatex">\(t\)</span>. In this language, the evolution equation is a
+set of coupled advection-diffusion-reaction (ADR) equations acting under the
+influence of a bulk velocity <span class="arithmatex">\(\vec{v}\)</span>:</p>
+<div class="arithmatex">\[
+\begin{equation}
+  \partialt{N_i} + \nabla\cdot{(N_i\vec{v})} = \mathcal{D}(\nabla N_i) +
+                                        \mathcal{R}(\{N_j\}) +
+                                        \mathcal{S}(N_i, t)
+  \label{small_imer_dNdt}
+\end{equation}
+\]</div>
+<p>Here we represent terms on the right hand side by</p>
+<ul>
+<li><span class="arithmatex">\(\mathcal{D}\)</span>: terms related to {\it diffusion processes} for <span class="arithmatex">\(N_i\)</span></li>
+<li><span class="arithmatex">\(\mathcal{R}\)</span>: terms related to {\it reaction processes}, in which
+  various <span class="arithmatex">\(j\)</span>-mers combine, react, and dissociate to form particles of
+  other types</li>
+<li><span class="arithmatex">\(\mathcal{S}\)</span>: terms related to {\it source and sink processes},
+  including external and prescribed sources of <span class="arithmatex">\(N_i\)</span>.</li>
+</ul>
+<p>We describe the forms of these terms in <a href="../processes/">Processes</a>. The bulk
+velocity <span class="arithmatex">\(\vec{v}\)</span> is supplied by some dynamical atmospheric model.</p>
+<p>For larger <span class="arithmatex">\(i\)</span>-mers (<span class="arithmatex">\(i &gt; 100\)</span>), the above description becomes inadequate, and
+we must adopt a description for particle numbers that admits a continuous
+number distribution in particle size space.</p>
+<p>Let <span class="arithmatex">\(n(V_p, \vec{x}, t)\)</span> be the number of particles of volume <span class="arithmatex">\(V_p\)</span> occupying
+the point <span class="arithmatex">\(\vec{x}\)</span> at time <span class="arithmatex">\(t\)</span>. Then the evolution of all <span class="arithmatex">\(i\)</span>-mers is described
+by a single ADR equation:</p>
+<div class="arithmatex">\[\begin{equation}
+  \partialt{n} + \div{(n\vec{v})} = \mathcal{D}(\nabla n) +
+                                    \mathcal{R}(n) +
+                                    \mathcal{S}(n, t)
+  \label{continuous_dndt}
+\end{equation}\]</div>
+<p>where <span class="arithmatex">\(\mathcal{D}\)</span>, <span class="arithmatex">\(\mathcal{R}\)</span>, and <span class="arithmatex">\(\mathcal{S}\)</span> have been expressed
+in terms of <span class="arithmatex">\(n\)</span> instead of <span class="arithmatex">\(N_i\)</span>. This is a tidy equation, but <span class="arithmatex">\(n\)</span> is a
+number distribution function that introduces a new dimension---the particle volume
+<span class="arithmatex">\(V_p\)</span>---to the solution space. This makes it inconvenient for doing numerical
+calculations. In this description, <span class="arithmatex">\(n\)</span> can assume any shape in particle volume
+space, which raises the question of how to constrain the solution in <span class="arithmatex">\(V_p\)</span>.</p>
+<h2 id="moment-equations-and-the-closure-problem">Moment Equations and the Closure Problem</h2>
+<p>We can reduce the size of our solution space by making a few assumptions:</p>
+<div class="admonition info">
+<p class="admonition-title">Assumption</p>
+<p>The detailed structure of the number distribution function
+<span class="arithmatex">\(n(V_p, \vec{x}, t)\)</span> is unimportant to aerosol dynamics.</p>
+</div>
+<p>If we don't need to obtain the full solution for <span class="arithmatex">\(n\)</span>, we can select a specific
+functional form <span class="arithmatex">\(n(D_p, \vec{x}, t) = n(\vec{x}, t; D_p)\)</span> for it. Then, taking cues from
+methods in particle kinetics and turbulence theory, we can integrate the product
+of \refeq{continuous_dndt} with powers of <span class="arithmatex">\(D_p\)</span> to obtain the {\bf moment
+equations}</p>
+<div class="arithmatex">\[\begin{equation}\label{moments}
+  \partialt{\mathcal{M}_k} + \div{(\mathcal{M}_k\vec{v})} = \int_0^{\infty} D_p^k (\mathcal{D} + \mathcal{R} + \mathcal{S}) \d{D_p}
+\end{equation}\]</div>
+<p>where <span class="arithmatex">\(\mathcal{M}_k(\vec{x}, t) = \int_0^{\infty} D_p^k n(\vec{x}, t; D_p) \d{D_p}\)</span>
+is the ``<span class="arithmatex">\(k\)</span>th moment'' of <span class="arithmatex">\(n\)</span>.</p>
+<p>The moment equations are solved by picking a specific form of <span class="arithmatex">\(n\)</span>'s functional
+dependence on <span class="arithmatex">\(D_p\)</span> and playing tricks to avoid actually evaluating the
+above integrals. However, the moment equations aren't closed---the advection,
+diffusion, reaction, and source terms can all involve <span class="arithmatex">\(n\)</span> and its spatial
+derivatives, and in general, the evolution of <span class="arithmatex">\(\mathcal{M}_k\)</span> is coupled to higher
+moments. To make further progress, we must solve this {\bf closure problem}.</p>
+<h2 id="modal-equations">Modal Equations</h2>
+<p>Having already given up on obtaining a general solution for <span class="arithmatex">\(n(\vec{x}, t)\)</span>,
+we allow ourselves to make another assumption:</p>
+<div class="admonition info">
+<p class="admonition-title">Modal assumption</p>
+<p>The number distribution function <span class="arithmatex">\(n\)</span> is the sum of a set of
+specific number distribution functions <span class="arithmatex">\(n_i\)</span>, each representing a
+{\bf mode} with a specific functional form for a sub-population of
+aerosol particles occupying a certain range in particle size space.</p>
+</div>
+<p>In other words,</p>
+<div class="arithmatex">\[\begin{equation}
+  n(\vec{x}, t; D_p) = \sum_{i=1}^M n_i(\vec{x}, t; D_p)
+  \label{modal_n}
+\end{equation}\]</div>
+<p>where <span class="arithmatex">\(n_i\)</span> represents aerosol particles with sizes falling within the range
+of mode <span class="arithmatex">\(i\)</span> and <span class="arithmatex">\(M\)</span> is the number of modes. Each mode assumes a specific
+functional form for <span class="arithmatex">\(n_i\)</span> in terms of its relevant size as given by <span class="arithmatex">\(D_p\)</span>.
+We include the arguments <span class="arithmatex">\(\vec{x}\)</span> and <span class="arithmatex">\(t\)</span> to emphasize that this equation holds
+at each point in space and at each instant in time for an aerosol system.</p>
+<h3 id="log-normal-distribution-functions">Log-Normal Distribution Functions</h3>
+<p>Haero constructs its multi-modal distribution functions from log-normal
+probability distribution functions (PDFs) for each mode <span class="arithmatex">\(i\)</span>. The PDF for mode
+<span class="arithmatex">\(i\)</span> expresses the fraction of aerosol particles present per unit size interval,
+in terms of a continuous particle diameter <span class="arithmatex">\(D_p\)</span> within that mode. Such PDFs
+have been found to represent measured aerosol size distributions with a level of
+accuracy comparable to that of the relevant measurement
+techniques~\cite{Whitby1991}.</p>
+<div class="admonition info">
+<p class="admonition-title">Log-normal PDF</p>
+<p>The probability distribution function <span class="arithmatex">\(f_i\)</span> used to construct
+the number distribution function <span class="arithmatex">\(n_i\)</span> for mode <span class="arithmatex">\(i\)</span> is a continuous
+function of the particle diameter <span class="arithmatex">\(D_p\)</span>, given as a log-normal distribution,
+\begin{equation}\label{log_normal_pdf}
+  f_i(D_p) = \frac{1}{\sqrt{2\pi} D_p \ln \sigma_{g,i}} \ 
+  \exp \left [-\frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2 \sigma_{g,i}} \right]
+\end{equation}
+where we have introduced the geometric mean <span class="arithmatex">\(D_{g,i}\)</span> and the geometric standard
+deviation <span class="arithmatex">\(\sigma_{g,i}\)</span> of <span class="arithmatex">\(D_p\)</span> within mode <span class="arithmatex">\(i\)</span>.</p>
+</div>
+<p>In general, these two parameters are determined for each mode via moment equations and corresponding time-evolution equations.
+Haero makes an additional simplifying assumption:</p>
+<div class="admonition info">
+<p class="admonition-title">Constant standard deviation</p>
+<p>The geometric standard deviation <span class="arithmatex">\(\sigma_{g,i}&gt;1\)</span> for each mode <span class="arithmatex">\(i\)</span> is constant in time.<br />
+The justification for this assumption in \cite{Easter2004,Wilson2001,Whitby1991} is given in \cite{Whitby1981}.</p>
+</div>
+<p>This PDF can also be expressed in "logarithmic form" in terms of <span class="arithmatex">\(\ln D_p\)</span>
+of <span class="arithmatex">\(D_p\)</span>:</p>
+<div class="arithmatex">\[\begin{equation}\label{log_normal_pdf_log}
+  g_i(\ln D_p) = \frac{1}{\sqrt{2\pi} \ln\sigma_{g,i}} \
+      \exp \left [ -\frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2 \sigma_{g,i}} \right]
+\end{equation}\]</div>
+<p>Here, <span class="arithmatex">\(g_i\)</span> is a normal distribution of <span class="arithmatex">\(\ln D_p\)</span> with a mean of <span class="arithmatex">\(\ln D_{g,i}\)</span>
+and standard deviation of <span class="arithmatex">\(\ln\sigma_{g,i}\)</span>.</p>
+<p>These PDFs are referred to as {\bf normalized size distribution functions} in
+Haero. We can justify this name by multiplying each PDF by the total particle
+number density <span class="arithmatex">\(N_i\)</span> for mode <span class="arithmatex">\(i\)</span> to obtain the equivalent number distribution
+functions:</p>
+<div class="arithmatex">\[\begin{align}\label{log_normal_n}
+  n_i(D_p) = N_i f_i(D_p) &amp;= \frac{N_i}{\sqrt{2\pi} D_p \ln \sigma_{g,i}} \ 
+  \exp \left [ - \frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2\sigma_{g,i}} \right ] \\
+  \hat{n}_{i}(\ln D_p) = N_i g_i(\ln D_p) &amp;= \frac{N_i}{\sqrt{2\pi}\ln \sigma_{g,i}} \ 
+    \exp \left [ - \frac{(\ln D_p - \ln D_{g,i})^2}{2\ln^2\sigma_{g,i}} \right ]
+\end{align}\]</div>
+<p><img alt="Normalized size distributions \(n_i\) for each mode in the Haero model
+  with \(N_i\) set by the \texttt{num_aer} variable." src="../images/pdf_examples.png" /></p>
+<p>The logarithmic form <span class="arithmatex">\(\hat{n}_i\)</span> is useful because of the relationship
+$ n_i(D_p) = \hat{n}_i(\ln D_p)/D_p$, which allows us to write</p>
+<div class="arithmatex">\[\begin{equation} \label{equ_norm_lognorm}
+  n_i(D_p) \d{D_p} = \hat{n}_i(\ln D_p) \d{\ln D_p}
+\end{equation}\]</div>
+<p>to simplify integrands involving number distribution functions.
+The benefit of this log-normal functional form choice is that the moment integrals can be defined analytically, obviating the need for potentially costly numerical quadrature \cite[eqns.~(3.7)]{Whitby1991}.
+The <span class="arithmatex">\(k\)</span>th moment is given in this case by,</p>
+<div class="arithmatex">\[\begin{equation}
+  M_k^{(i)} = N_i D_{g,i}^k \exp\left(\frac{k^2}{2}\log^2\sigma_{g,i}\right).
+\end{equation}\]</div>
+<p>In particular,</p>
+<div class="arithmatex">\[\begin{align}
+  M_0^{(i)} &amp;= \int_0^\infty n_i(D_p)\,d D_p = N_i, \label{eq:zero_moment}\\
+  M_1^{(i)} &amp;= \int_0^\infty D_p n_i(D_p)\,d D_p = N_iD_{g,i}\exp({\frac{1}{2}\log^2\sigma_{g,i}}),\\
+  M_2^{(i)} &amp;= \int_0^\infty D_p^2n_i(D_p)\,d D_p = N_iD_{g,i}^2\exp(2\log^2\sigma_{g,i}),\\
+  M_3^{(i)} &amp;= \int_0^\infty D_p^3n_i(D_p)\,d D_p = N_iD_{g,i}^3\exp(\frac{9}{2}\log^2\sigma_{g,i}) \label{eq:third_moment}
+\end{align}\]</div>
+<div class="admonition info">
+<p class="admonition-title">Particle size</p>
+<p>Particle size <span class="arithmatex">\(\overline{D_i}\)</span> for the <span class="arithmatex">\(i\)</span>th mode is defined by the mean
+diameter associated with the 3rd moment \cite[eqn.~(1)]{Whitby1981},
+\begin{equation}
+  \overline{D_i} = \left(M_3^{(i)}/N_i)\right)^{1/3} = D_{g,i}\exp\left(\frac{3}{2}\log^2\sigma_{g,i}\right)
+\end{equation}</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Particles have spherical shapes</p>
+<p>Aerosol particles are spherical, and their size can be parameterized by
+their diameter <span class="arithmatex">\(\overline{D_i}\)</span>. Corollaries for area and volume follow
+(<span class="arithmatex">\(\overline{A_i} = \pi\overline{D_i}^2\)</span>,
+ <span class="arithmatex">\(\overline{V_i} = \frac{\pi}{6}\overline{D_i}^3\)</span>).</p>
+</div>
+<p>When we adopt the log-normal assumption, we express our solution for particles in
+mode <span class="arithmatex">\(i\)</span> in terms of its zeroth, first, second, and third moments
+<span class="arithmatex">\(\mathcal{M}_k^{(i)}(\vec{x}, t)\)</span>. These are, respectively:</p>
+<ul>
+<li><span class="arithmatex">\(\mathcal{M}_0^{(i)} = N_i\)</span>, the total number of concentration for particles
+  in mode <span class="arithmatex">\(i\)</span></li>
+<li><span class="arithmatex">\(\mathcal{M}_1^{(i)} = N_i\overline{D}_i\)</span>, the number-weighted mean diameter of
+  particles in mode <span class="arithmatex">\(i\)</span></li>
+<li><span class="arithmatex">\(\mathcal{M}_2^{(i)} = \frac{1}{\pi}N_i\overline{A}_i\)</span>, a number-weighted
+  surface area of particles in mode <span class="arithmatex">\(i\)</span></li>
+<li><span class="arithmatex">\(\mathcal{M}_3^{(i)} = \frac{6}{\pi}N_i\overline{V}_i\)</span>, a number-weighted
+  volume of particles in mode <span class="arithmatex">\(i\)</span></li>
+</ul>
+<p>In this language, the aerosol evolution equation for the <span class="arithmatex">\(k\)</span>th moment of the
+<span class="arithmatex">\(i\)</span>th mode is</p>
+<div class="arithmatex">\[\begin{equation}\label{modal_evolution}
+  \partialt{\mathcal{M}_k^{(i)}} = F_k^{(i)}(N_i, \overline{D}_i, \overline{A}_i, \overline{V}_i, T, p, \mathsf{...})
+\end{equation}\]</div>
+<p>where the air temperature <span class="arithmatex">\(T\)</span> and the air pressure <span class="arithmatex">\(p\)</span> enter the moment
+equations, via right hand side terms in \ref{moments}. These are the
+<strong>modal equations</strong>.</p>
+<div class="admonition info">
+<p class="admonition-title">Parmeterization assumption</p>
+<p>The time evolution of a moment <span class="arithmatex">\(\mathcal{M}_k^{(i)}\)</span> can be
+expressed in terms of the quantities <span class="arithmatex">\(N_i\)</span>, <span class="arithmatex">\(\overline{D}_i\)</span>,
+<span class="arithmatex">\(\overline{A}_i\)</span>, <span class="arithmatex">\(\overline{V}_i\)</span>, the air temperature <span class="arithmatex">\(T\)</span>, the pressure <span class="arithmatex">\(p\)</span>, and a few
+selected additional quantities.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">2-moment scheme</p>
+<p>Aerosol dynamics can be represented well by two moments, <span class="arithmatex">\(M_0^{(i)}\)</span> and
+<span class="arithmatex">\(M_3^{(i)}\)</span>. We must find equations that describe the time evolution of
+<span class="arithmatex">\(M_0^{(i)}\)</span> and <span class="arithmatex">\(M_3^{(i)}\)</span> in terms of known E3SM variables.</p>
+<p>Modal number concentrations <span class="arithmatex">\(N_m\)</span> are defined and transported for each
+mode [# / kg air] as prognostic model variables (tracers).
+These are the <span class="arithmatex">\(\mathcal{M}_0\)</span> moments for each mode, \ref{zero_moment}.</p>
+<p>Mass mixing ratios <span class="arithmatex">\(q_{s,m}\)</span> are defined for each species <span class="arithmatex">\(s\)</span> in each mode
+<span class="arithmatex">\(m\)</span> [ kg aerosol / kg air ] as prognostic model variables (tracers).
+Therefore, the third moments <span class="arithmatex">\(\mathcal{M}_3\)</span> of each mode are found using
+the density of each aerosols species.</p>
+<p>Volume mixing ratios are diagnosed by <span class="arithmatex">\(V_{s,m} = q_{s,m}/\rho_{s,m}\)</span>
+[m<span class="arithmatex">\(^3\)</span> aerosol / kg air], where <span class="arithmatex">\(\rho_{s,m}\)</span> is the constant species
+density [kg aerosol / m<span class="arithmatex">\(^3\)</span>].</p>
+</div>
+<h2 id="mode-definitions-in-mam4">Mode definitions in MAM4</h2>
+<p>The choices of size range and width for the modes in MAM are based on
+measurements of tropospheric aerosols (see~\cite{Easter2004} and references
+therein).</p>
+<p>Here are the relevant parameters for MAM4, the 4-mode legacy MAM model.</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Lower bound of <span class="arithmatex">\(D\dsub{gn,d,i}\)</span></th>
+<th>Upper bound of <span class="arithmatex">\(D\dsub{gn,d,i}\)</span></th>
+<th><span class="arithmatex">\(\sigma\dsub{g,i}\)</span></th>
+<th><span class="arithmatex">\(N_i(0)\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aitken</td>
+<td>0.0087</td>
+<td>0.052</td>
+<td>1.6</td>
+<td>7.9031E7</td>
+</tr>
+<tr>
+<td>Accumulation</td>
+<td>0.0535</td>
+<td>0.44</td>
+<td>1.8</td>
+<td>7.9697E7</td>
+</tr>
+<tr>
+<td>Coarse</td>
+<td>1.0</td>
+<td>4.0</td>
+<td>1.8</td>
+<td>8.0361E7</td>
+</tr>
+<tr>
+<td>Primary carbon</td>
+<td>0.01</td>
+<td>0.1</td>
+<td>1.6</td>
+<td>8.1022E7</td>
+</tr>
+</tbody>
+</table>
+<p>Thus, in MAM, all modes have the same mathematical form, but the parameters
+are different for each mode.</p>
+<h2 id="multi-species-modes">Multi-Species Modes</h2>
+<p>We have derived the modal equations assuming that each mode contains a
+population of undifferentiated aerosol particles. We assume that each particle
+is composed of several (potentially different) chemical species:</p>
+<div class="admonition info">
+<p class="admonition-title">Internally mixed</p>
+<p>All aerosol species within a mode are assumed to be carried uniformly by all
+particles represented by the mode's log-normal distribution function, i.e.,
+within each mode, particles are internally mixed.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Additive particle volume</p>
+<p>Quantitatively, the internal mixing assumption implies that the volume of
+each individual particle is the sum of the volumes of its various
+constituents; in this case, the species within the mode.</p>
+</div>
+<p>These assumptions lead to the following modal averages.</p>
+<div class="admonition info">
+<p class="admonition-title">Mode aerosol mass mixing ratio</p>
+<p>The mass mixing ratio of species <span class="arithmatex">\(s\)</span> in mode <span class="arithmatex">\(m\)</span> is denoted by <span class="arithmatex">\(q_{sm}\)</span>.
+The mass mixing ration of the mode [kg aerosol / kg air] is then
+\begin{equation}\label{mode_mixing_ratio}
+  q_{m} = \sum_{s\in m} q_{sm}.
+\end{equation}</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Modally averaged aerosol density</p>
+<p>The density of aerosol species <span class="arithmatex">\(s\)</span> in mode <span class="arithmatex">\(m\)</span> is denoted <span class="arithmatex">\(\rho_{sm}\)</span>.
+The average modal density [kg aerosol / m<span class="arithmatex">\(^3\)</span> aerosol] is
+\begin{equation}\label{mode_density}
+  \rho_m = \sum_{s\in m}q_{sm} \rho_{sm} \left(\sum_{s\in m} q_{sm}\right)^{-1} = \frac{\sum_{s\in m}q_{sm}\rho_{sm}}{q_m}.
+\end{equation}</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Modally averaged hygroscopicity</p>
+<p>The hygroscopicity of species <span class="arithmatex">\(s\)</span> in mode <span class="arithmatex">\(m\)</span> is denoted <span class="arithmatex">\(b_{sm}\)</span>.
+The mode-averaged hygroscopicity [-] is
+\begin{equation}\label{mode_hygro}
+  b_m = \sum_{s\in m} \frac{q_{sm} b_{sm}}{\rho_{sm}}\left(\sum_{s\in m} \frac{q_{sm}}{\rho_{sm}}\right)^{-1}.
+\end{equation}</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Modal mean particle volume</p>
+<p>The per-particle mean volume for each mode <span class="arithmatex">\(m\)</span> [m<span class="arithmatex">\(^3\)</span>/particle] is
+\begin{equation}\label{mode_particle_volume}
+  {V_{m}} = \frac{1}{N_m}\sum_{s\in m} \frac{q_{sm}}{\rho_{sm}}.
+\end{equation}</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Modal geometric mean particle diameter</p>
+<p>The geometric mean diameter of the particles in mode <span class="arithmatex">\(m\)</span> [m] is
+\begin{equation}\label{mode_particle_diameter}
+  {D_{m}} = \sqrt[3]{\frac{\pi}{6}{V_{Pm}}}\exp\left(-\frac{3}{2}\log^2 \sigma_m\right).
+\end{equation}</p>
+</div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../glossary/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Glossary" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Glossary
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../library/" class="md-footer__link md-footer__link--next" aria-label="Next: The Haero Library" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              The Haero Library
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indices", "navigation.instant", "navigation.sections", "navigation.top"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.22074ed6.min.js"}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.960e086b.min.js"></script>
+      
+        <script src="../javascript/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
