@@ -9,42 +9,19 @@ using namespace haero;
 
 TEST_CASE("mam_rename_run", "") {
   auto aero_config = ModalAerosolConfig::create_mam4_config();
-  int num_gases = aero_config.num_gases();
   int num_modes = aero_config.num_aerosol_modes();
   int num_aero_populations = aero_config.num_aerosol_populations;
   int num_levels = 72;
 
-  // Set up some prognostics aerosol data views
-  Kokkos::View<PackType**> int_aerosols(
-      "interstitial aerosols", num_aero_populations,
-      num_levels);  // interstitial aerosols mmr [kg/kg(of air)]
-  Kokkos::View<PackType**> cld_aerosols(
-      "cloudborne aerosols", num_aero_populations,
-      num_levels);  // cloud borne aerosols mmr [kg/kg(of air)]
-  Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
-  Kokkos::View<PackType**> int_num_mix_ratios(
-      "interstitial number mix ratios", num_modes,
-      num_levels);  // interstitial aerosols number mixing ratios [#/kg(of air)]
-  Kokkos::View<PackType**> cld_num_mix_ratios(
-      "cloud borne number mix ratios", num_modes,
-      num_levels);  // cloud borne aerosols number mixing ratios [#/kg(of air)]
-
-  // Set up atmospheric data and populate it with some views.
-  Kokkos::View<PackType*> temp("temperature", num_levels);  //[K]
-  Kokkos::View<PackType*> press("pressure", num_levels);    //[Pa]
-  Kokkos::View<PackType*> rel_hum("relative humidity", num_levels);
-  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);  //[Pa]
-  Kokkos::View<PackType*> ht("height", num_levels + 1);        //[m]
-  Real pblh{100.0};  // planetary BL height [m]
-  auto atm = new Atmosphere(num_levels, temp, press, rel_hum, ht, pdel, pblh);
+  // Set up atmospheric data
+  Real pblh = 100.0;  // planetary BL height [m]
+  auto atm = new Atmosphere(num_levels, pblh);
 
   SECTION("rename_run") {
     auto* process = new MAMRenameFProcess();
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs =
-        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
-                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    auto* progs = new Prognostics(aero_config, num_levels);
     auto* diags = new HostDiagnostics(aero_config, num_levels);
     auto* tends = new Tendencies(*progs);
 
@@ -62,16 +39,16 @@ TEST_CASE("mam_rename_run", "") {
     // aerosols mass mixing ratios
     for (std::size_t p = 0; p < num_aero_populations; ++p) {
       for (std::size_t k = 0; k < num_levels; ++k) {
-        int_aerosols(p, k) = random() * 10e-10;
-        cld_aerosols(p, k) = random() * 10e-10;
+        progs->interstitial_aerosols(p, k) = random() * 10e-10;
+        progs->cloud_aerosols(p, k) = random() * 10e-10;
       }
     }
 
     // aerosols number mixing ratios
     for (std::size_t imode = 0; imode < num_modes; ++imode) {
       for (std::size_t k = 0; k < num_levels; ++k) {
-        int_num_mix_ratios(imode, k) = 1e8 + random();
-        cld_num_mix_ratios(imode, k) = 1e8 + random();
+        progs->interstitial_num_mix_ratios(imode, k) = 1e8 + random();
+        progs->cloud_num_mix_ratios(imode, k) = 1e8 + random();
       }
     }
 
