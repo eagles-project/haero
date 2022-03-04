@@ -401,32 +401,11 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   // We create a phony model to be used for these tests.
   auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_levels = 72;
-  int num_vert_packs = PackInfo::num_packs(num_levels);
-  int num_iface_packs = PackInfo::num_packs(num_levels + 1);
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_aerosol_modes();
-  int num_aero_populations = aero_config.num_aerosol_populations;
 
-  // Set up some prognosics aerosol data views‥
-  SpeciesColumnView int_aerosols("interstitial aerosols", num_aero_populations,
-                                 num_vert_packs);
-  SpeciesColumnView cld_aerosols("cloudborne aerosols", num_aero_populations,
-                                 num_vert_packs);
-  SpeciesColumnView gases("gases", num_gases, num_vert_packs);
-  ModeColumnView int_num_mix_ratios("interstitial number mix ratios", num_modes,
-                                    num_vert_packs);
-  ModeColumnView cld_num_mix_ratios("cloudborne number mix ratios", num_modes,
-                                    num_vert_packs);
-
-  // Set up atmospheric data and populate it with some views.
-  ColumnView temp("temperature", num_vert_packs);
-  ColumnView press("pressure", num_vert_packs);
-  ColumnView qv("vapor mixing ratio", num_vert_packs);
-  ColumnView ht("height", num_iface_packs);
-  ColumnView pdel("hydrostatic_dp", num_vert_packs);
+  // Set up atmospheric data.
   Real pblh = 100.0;
-
-  auto* atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
+  auto* atm = new Atmosphere(num_levels, pblh);
 
   // Test basic construction.
   SECTION("construct") {
@@ -448,9 +427,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs =
-        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
-                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    Prognostics* progs = new Prognostics(aero_config, num_levels);
     HostDiagnostics* diags = new HostDiagnostics(aero_config, num_levels);
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");
@@ -463,13 +440,15 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     process->init(aero_config);
 
     // Set initial conditions.
+    auto int_aerosols = progs->interstitial_aerosols;
+    auto gases = progs->gases;
 
     // atmospheric state
     Real h0 = 3e3, dz = h0 / num_levels, rh0 = 0.95, p0 = 1e5, T0 = 273.0;
-    auto h_temp = Kokkos::create_mirror_view(temp);
-    auto h_press = Kokkos::create_mirror_view(press);
-    auto h_qv = Kokkos::create_mirror_view(qv);
-    auto h_ht = Kokkos::create_mirror_view(ht);
+    auto h_temp = Kokkos::create_mirror_view(atm->temperature);
+    auto h_press = Kokkos::create_mirror_view(atm->pressure);
+    auto h_qv = Kokkos::create_mirror_view(atm->vapor_mixing_ratio);
+    auto h_ht = Kokkos::create_mirror_view(atm->height);
     for (int k = 0; k < num_levels; ++k) {
       h_temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = T0;
       h_press(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = p0;
@@ -479,10 +458,10 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     for (int k = 0; k < num_levels + 1; ++k) {
       h_ht(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = h0 - k * dz;
     }
-    Kokkos::deep_copy(temp, h_temp);
-    Kokkos::deep_copy(press, h_press);
-    Kokkos::deep_copy(qv, h_qv);
-    Kokkos::deep_copy(ht, h_ht);
+    Kokkos::deep_copy(atm->temperature, h_temp);
+    Kokkos::deep_copy(atm->pressure, h_press);
+    Kokkos::deep_copy(atm->vapor_mixing_ratio, h_qv);
+    Kokkos::deep_copy(atm->height, h_ht);
 
     // aerosols (none)
     auto h_int_aerosols = Kokkos::create_mirror_view(int_aerosols);
@@ -563,9 +542,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
   SECTION("nucleate_with_existing_aerosols") {
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    Prognostics* progs =
-        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
-                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    Prognostics* progs = new Prognostics(aero_config, num_levels);
     HostDiagnostics* diags = new HostDiagnostics(aero_config, num_levels);
     diags->create_gas_var("qgas_averaged");
     diags->create_var("uptkrate_h2so4");
@@ -578,12 +555,13 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     process->init(aero_config);
 
     // Set initial conditions.
+
     // atmospheric state
     Real h0 = 3e3, dz = h0 / num_levels;
-    auto h_temp = Kokkos::create_mirror_view(temp);
-    auto h_press = Kokkos::create_mirror_view(press);
-    auto h_qv = Kokkos::create_mirror_view(qv);
-    auto h_ht = Kokkos::create_mirror_view(ht);
+    auto h_temp = Kokkos::create_mirror_view(atm->temperature);
+    auto h_press = Kokkos::create_mirror_view(atm->pressure);
+    auto h_qv = Kokkos::create_mirror_view(atm->vapor_mixing_ratio);
+    auto h_ht = Kokkos::create_mirror_view(atm->height);
     for (int k = 0; k < num_levels; ++k) {
       h_temp(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 273.0;
       h_press(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = 1e5;
@@ -594,12 +572,13 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     for (int k = 0; k < num_levels + 1; ++k) {
       h_ht(pack_info::pack_idx(k))[pack_info::vec_idx(k)] = h0 - k * dz;
     }
-    Kokkos::deep_copy(temp, h_temp);
-    Kokkos::deep_copy(press, h_press);
-    Kokkos::deep_copy(qv, h_qv);
-    Kokkos::deep_copy(ht, h_ht);
+    Kokkos::deep_copy(atm->temperature, h_temp);
+    Kokkos::deep_copy(atm->pressure, h_press);
+    Kokkos::deep_copy(atm->vapor_mixing_ratio, h_qv);
+    Kokkos::deep_copy(atm->height, h_ht);
 
     // aerosols (none)
+    auto int_aerosols = progs->interstitial_aerosols;
     auto h_int_aerosols = Kokkos::create_mirror_view(int_aerosols);
     for (int p = 0; p < aero_config.num_aerosol_populations; ++p) {
       for (int k = 0; k < num_levels; ++k) {
@@ -609,6 +588,7 @@ TEST_CASE("virtual_process_test", "mam_nucleation_process") {
     Kokkos::deep_copy(int_aerosols, h_int_aerosols);
 
     // gases
+    auto gases = progs->gases;
     int h2so4_index = aero_config.gas_index("H2SO4");
     auto h_gases = Kokkos::create_mirror_view(gases);
     for (int k = 0; k < num_levels; ++k) {

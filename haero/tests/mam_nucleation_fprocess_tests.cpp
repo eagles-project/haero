@@ -428,29 +428,11 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
   // We create a phony model to be used for these tests.
   auto aero_config = ModalAerosolConfig::create_mam4_config();
   int num_gases = aero_config.num_gases();
-  int num_modes = aero_config.num_aerosol_modes();
-  int num_aero_populations = aero_config.num_aerosol_populations;
   int num_levels = 72;
 
-  // Set up some prognosics aerosol data views‥
-  Kokkos::View<PackType**> int_aerosols("interstitial aerosols",
-                                        num_aero_populations, num_levels);
-  Kokkos::View<PackType**> cld_aerosols("cloudborne aerosols",
-                                        num_aero_populations, num_levels);
-  Kokkos::View<PackType**> gases("gases", num_gases, num_levels);
-  Kokkos::View<PackType**> int_num_mix_ratios("interstitial number mix ratios",
-                                              num_modes, num_levels);
-  Kokkos::View<PackType**> cld_num_mix_ratios("cloud borne number mix ratios",
-                                              num_modes, num_levels);
-
-  // Set up atmospheric data and populate it with some views.
-  Kokkos::View<PackType*> temp("temperature", num_levels);
-  Kokkos::View<PackType*> press("pressure", num_levels);
-  Kokkos::View<PackType*> qv("vapor mixing ratio", num_levels);
-  Kokkos::View<PackType*> pdel("hydrostatic_dp", num_levels);
-  Kokkos::View<PackType*> ht("height", num_levels + 1);
+  // Set up atmospheric data.
   Real pblh = 100.0;
-  auto* atm = new Atmosphere(num_levels, temp, press, qv, ht, pdel, pblh);
+  auto* atm = new Atmosphere(num_levels, pblh);
 
   // Test basic construction.
   SECTION("construct") {
@@ -473,23 +455,23 @@ TEST_CASE("MAMNucleationFProcess", "mam_nucleation_fprocess") {
 
     // Initialize prognostic and diagnostic variables, and construct a
     // tendencies container.
-    auto* progs =
-        new Prognostics(aero_config, num_levels, int_aerosols, cld_aerosols,
-                        int_num_mix_ratios, cld_num_mix_ratios, gases);
+    auto* progs = new Prognostics(aero_config, num_levels);
     auto* diags = new HostDiagnostics(aero_config, num_levels);
     auto* tends = new Tendencies(*progs);
 
     // Set initial conditions.
+    auto int_aerosols = progs->interstitial_aerosols;
+    auto gases = progs->gases;
 
     // atmospheric state
     Real h0 = 3e3, dz = h0 / num_levels, T0 = 273.0, p0 = 1e5, rh0 = 0.95;
     Real qv0 =
         conversions::vapor_mixing_ratio_from_relative_humidity(rh0, p0, T0);
     for (int k = 0; k < num_levels; ++k) {
-      temp(k) = 273.0;
-      press(k) = 1e5;
-      qv(k) = qv0;
-      ht(k) = h0 - k * dz;
+      atm->temperature(k) = 273.0;
+      atm->pressure(k) = 1e5;
+      atm->vapor_mixing_ratio(k) = qv0;
+      atm->height(k) = h0 - k * dz;
     }
 
     // aerosols (none)
