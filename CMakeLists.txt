@@ -313,6 +313,9 @@ if (HAERO_ENABLE_CHEM_DRIVER)
  add_subdirectory(chem_driver)
 endif()
 
+# Box model for acceptance testing
+add_subdirectory(box)
+
 # Validation tools (currently offered only for CPU builds with pack size 1,
 # because we're using it with Fortran.)
 if(NOT HAERO_USE_CUDA AND HAERO_PACK_SIZE EQUAL 1)
