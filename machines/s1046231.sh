@@ -28,11 +28,6 @@ export OPENBLAS_INCLUDE_DIR=/usr/local/opt/openblas/include
 export OPENBLAS_LIBRARY_DIR=/usr/local/opt/openblas/lib
 export OPENBLAS_LIBRARY=libopenblas.a
 
-# this tines is built against local kokkos
-# export TINES_INCLUDE_DIR=$HOME/Tines/build/install/include
-# export TINES_LIBRARY_DIR=$HOME/Tines/build/install/lib
-# export TINES_LIBRARY=libtines.a
-
 # this tines is built against local ekat kokkos
 export TINES_INCLUDE_DIR=$HOME/Tines/install_ekat/include
 export TINES_LIBRARY_DIR=$HOME/Tines/install_ekat/lib

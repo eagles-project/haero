@@ -308,10 +308,10 @@ if (HAERO_ENABLE_DRIVER)
   add_subdirectory(driver)
 endif()
 
-#if (HAERO_ENABLE_CHEM_DRIVER)
-#  message(STATUS "Building chem_driver.")
-#  add_subdirectory(chem_driver)
-#endif()
+if (HAERO_ENABLE_CHEM_DRIVER)
+ message(STATUS "Building chem_driver.")
+ add_subdirectory(chem_driver)
+endif()
 
 # Validation tools (currently offered only for CPU builds with pack size 1,
 # because we're using it with Fortran.)

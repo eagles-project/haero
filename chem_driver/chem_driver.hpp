@@ -11,9 +11,6 @@
 #include "tchem/TChem_KineticModelData.hpp"
 #include "tchem/TChem_Util.hpp"
 #include "tchem/TChem_AtmosphericChemistry.hpp"
-// #include "tchem/TChem_Impl_RateOfProgress.hpp"
-// #include "tchem/TChem_KineticModelData.hpp"
-// #include "tchem/TChem_Util.hpp"
 
 namespace haero {
 namespace chem_driver {
@@ -55,36 +52,35 @@ struct SolverParams {
 class ChemSolver {
  private:
   /// detail output flag
-  bool verbose;
-  /// flag for printing qoi's for debugging
-  // FIXME: maybe can this when things are working
-  bool print_qoi;
-  FILE* fout;
+  bool verbose_;
+  /// flag for printing qoi's--useful for debugging
+  bool print_qoi_;
+  FILE* fout_;
   /// number of chemical batches/samples that will have the given composition
-  int nbatch;
+  int nbatch_;
   // struct containing parameters that may be passed to the TChem time integrator
-  SolverParams solver_params;
+  SolverParams solver_params_;
   /// 2D views containing chemical state on device and host
-  Real_2d_view state;
-  Real_2d_view_host state_host;
+  Real_2d_view state_;
+  Real_2d_view_host state_host_;
   /// kokkos team policy
-  policy_type policy;
-  int team_size, vector_size;
+  policy_type policy_;
+  int team_size_, vector_size_;
   // /// TChem kinetic model data
-  TChem::KineticModelData kmd;
+  TChem::KineticModelData kmd_;
   // /// a const version of the object that contains the data describing the
   // /// kinetic model
-  TChem::KineticModelNCAR_ConstData<Tines::UseThisDevice<exec_space>::type> kmcd;
+  TChem::KineticModelNCAR_ConstData<Tines::UseThisDevice<exec_space>::type> kmcd_;
   /// parses the yaml file for user-provided inputs required by TChem
-  void parse_tchem_inputs(const std::string& input_file);
+  void parse_tchem_inputs_(const std::string& input_file);
  public:
   /// constructor
-  ChemSolver(std::string input_file);
+  explicit ChemSolver(std::string input_file);
   /// destructor
   ~ChemSolver();
   void time_integrate();
   void time_integrate(const double& tbeg, const double& tend);
-  Real_2d_view& get_state() { return state; };
+  Real_2d_view& get_state() { return state_; };
 };
 
 }  // end namespace chem_driver

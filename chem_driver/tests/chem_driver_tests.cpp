@@ -1,6 +1,7 @@
+#include <yaml-cpp/yaml.h>
+
 #include "catch2/catch.hpp"
 #include "chem_driver/chem_driver.hpp"
-#include "util/read_solver_params.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
 
@@ -71,7 +72,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     tol = 1e-8;
     for (int i = 0; i < nspec; ++i)
     {
-      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -137,7 +138,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     tol = 1e-7;
     for (int i = 0; i < nspec; ++i)
     {
-      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -203,7 +204,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     tol = 1e-9;
     for (int i = 0; i < nspec; ++i)
     {
-      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -269,7 +270,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     tol = 1e-7;
     for (int i = 0; i < nspec; ++i)
     {
-      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -335,7 +336,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     tol = 1e-7;
     for (int i = 0; i < nspec; ++i)
     {
-      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -395,15 +396,13 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
         error(i) += pow(hsolution(i, j) - refsol(i, j), 2);
       }
       error(i) = sqrt(error(i));
-      std::cout << "error(i) = " << error(i) << "\n";
       REQUIRE(FloatingPoint<Real>::zero(error(i), tol));
     }
 
     tol = 1e-10;
     for (int i = 0; i < nspec; ++i)
     {
-      std::cout << "error = " << abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)) << "\n";
-      REQUIRE(FloatingPoint<Real>::zero(abs(hsolution(i, nsteps - 1) - refsol(i, nsteps - 1)), tol));
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
     }
   }
 }

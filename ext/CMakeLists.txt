@@ -39,7 +39,6 @@ endif()
 # libz compression library
 #----------------------------------------------------------------------------
 find_package(ZLIB REQUIRED)
-message(STATUS "***zlib loc = ${ZLIB_LIBRARIES}")
 if(NOT ZLIB_FOUND)
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
@@ -414,9 +413,10 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DTINES_INSTALL_PATH=${TINES_INSTALL_PATH}
                        -DTCHEM_ENABLE_TPL_YAML_CPP=ON
-                       # FIXME(mjs): this is only used for a chem_driver unit test,
-                       # since we only compute tendencies for haero, so perhaps
-                       # include logic to only turn this on when building tests
+                       # Note(mjs): this enables automatic differentiation, and
+                       # is currently only used by the chem_driver unit test.
+                       # Keeping it because it seems to be low-impact to compile
+                       # time and makes the test run fast
                        -DTCHEM_ENABLE_SACADO_JACOBIAN_ATMOSPHERIC_CHEMISTRY=ON
                      )
   if (HAERO_DEVICE STREQUAL "CUDA")
