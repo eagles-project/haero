@@ -15,7 +15,7 @@
 namespace haero {
 namespace chem_driver {
 
-// using Real = haero::Real;
+using Real = haero::Real;
 using ordinal_type = TChem::ordinal_type;
 using time_advance_type = TChem::time_advance_type;
 
@@ -44,7 +44,6 @@ struct SolverParams {
   double atol_time, tol_time;
   int jacobian_interval;
   std::string outputfile;
-  // constructor that accepts the name of the yaml input file
   void set_params(const std::string& filename, const bool& verbose);
   SolverParams() = default;
 };

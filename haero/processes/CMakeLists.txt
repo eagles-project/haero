@@ -8,7 +8,6 @@ set(CXX_PROCESS_SOURCES
     mam_calcsize_process.cpp
     mam_rename_process.cpp
     simple_nucleation_process.cpp
-    chemistry_process.cpp
 )
 
 # This is a transitional process used for debugging on the host
