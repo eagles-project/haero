@@ -3,12 +3,15 @@
 
 #include <haero/haero.hpp>
 #include <haero/diagnostics.hpp>
-#include <haero/prognostics.hpp>
 #include <haero/modal_aerosol_config.hpp>
+#include <haero/prognostics.hpp>
+#include <haero/tendencies.hpp>
 
 #include <string>
 
 namespace Box {
+
+using Real = haero::Real;
 
 class BoxOutput {
   public:
@@ -19,15 +22,31 @@ class BoxOutput {
   // Appends the given prognostic and diagnostic data to that maintained by
   // this BoxOutput.
   void append(const haero::Prognostics& prognostics,
-              const haero::HostDiagnostics& diagnostics);
+              const haero::HostDiagnostics& diagnostics,
+              const haero::Tendencies& tendencies);
 
   // Writes NetCDF data to the file with the given name.
   void write(const std::string& filename) const;
 
   private:
 
-  ModalAerosolConfig& config_;
+  ModalAerosolConfig& config_; // aerosol configuration
 
+  int nstep_; // number of steps written
+
+  // Aerosol data (identical in form to that of the MAM box model)
+  std::vector<Real> num_aer_, so4_aer_, soa_aer_, h2so4_, soag_,
+                    dgn_a_, dgn_awet_;
+
+  // Tendency data (also identical to that of the MAM box model)
+  std::vector<Real> qtend_cond_aging_so4_, qtend_rename_so4_,
+                    qtend_newnuc_so4_, qtend_coag_so4_;
+  std::vector<Real> qtend_cond_aging_soa_, qtend_rename_soa_,
+                    qtend_newnuc_soa_, qtend_coag_soa_;
+  std::vector<Real> qtend_cond_aging_h2so4_, qtend_rename_h2so4_,
+                    qtend_newnuc_h2so4_, qtend_coag_h2so4_;
+  std::vector<Real> qtend_cond_aging_soag_, qtend_rename_soag_,
+                    qtend_newnuc_soag_, qtend_coag_soag_;
 };
 
 } // namespace Box
