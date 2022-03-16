@@ -13,12 +13,21 @@ namespace Box {
 class BoxOutput {
   public:
 
-  BoxOutput(const haero::ModalAerosolConfig& config);
+  // Constructs a BoxOutput for the given aerosol configuration.
+  explicit BoxOutput(const haero::ModalAerosolConfig& config);
 
+  // Appends the given prognostic and diagnostic data to that maintained by
+  // this BoxOutput.
   void append(const haero::Prognostics& prognostics,
               const haero::HostDiagnostics& diagnostics);
 
+  // Writes NetCDF data to the file with the given name.
   void write(const std::string& filename) const;
+
+  private:
+
+  ModalAerosolConfig& config_;
+
 };
 
 } // namespace Box
