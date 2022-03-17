@@ -7,6 +7,7 @@
 #include <haero/prognostics.hpp>
 #include <haero/tendencies.hpp>
 
+#include <map>
 #include <string>
 
 namespace Box {
@@ -20,17 +21,18 @@ class BoxOutput {
   explicit BoxOutput(const haero::ModalAerosolConfig& config);
 
   // Appends the given prognostic and diagnostic data to that maintained by
-  // this BoxOutput.
+  // this BoxOutput. The tendencies are indexed by their process names, since
+  // contributions from different processes are tracked separately.
   void append(const haero::Prognostics& prognostics,
               const haero::HostDiagnostics& diagnostics,
-              const haero::Tendencies& tendencies);
+              const std::map<std::string, haero::Tendencies>& tendencies);
 
   // Writes NetCDF data to the file with the given name.
   void write(const std::string& filename) const;
 
   private:
 
-  ModalAerosolConfig& config_; // aerosol configuration
+  const haero::ModalAerosolConfig& config_; // aerosol configuration
 
   int nstep_; // number of steps written
 

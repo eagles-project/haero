@@ -3,6 +3,7 @@
 
 #include "box_input.hpp"
 #include "box_output.hpp"
+
 #include <haero/aerosol_process.hpp>
 #include <haero/atmosphere.hpp>
 #include <haero/diagnostics.hpp>
@@ -48,20 +49,24 @@ std::vector<AerosolProcess*> create_processes(const ModalAerosolConfig& config,
 }
 
 // Create prognostic variables from input.
-Prognostics* create_prognostics(const ModalAerosolConfig& config,
-                                const BoxInput& input) {
-  return nullptr;
+Prognostics create_prognostics(const ModalAerosolConfig& config,
+                               const BoxInput& input) {
+  Prognostics progs(config, 1);
+  return progs;
 }
 
 // Create atmospheric variables from input.
-Atmosphere* create_atmosphere(const BoxInput& input) {
-  return nullptr;
+Atmosphere create_atmosphere(const BoxInput& input) {
+  static const Real pblh = 1100.0; // from the box model
+  Atmosphere atm(1, pblh);
+  return atm;
 }
 
 // Create diagnostic variables from input.
-HostDiagnostics* create_diagnostics(const ModalAerosolConfig& config,
-                                    const BoxInput& input) {
-  return nullptr;
+HostDiagnostics create_diagnostics(const ModalAerosolConfig& config,
+                                   const BoxInput& input) {
+  HostDiagnostics diags(config, 1);
+  return diags;
 }
 
 // Advance the selected processes using the same sequential splitting approach
@@ -70,7 +75,8 @@ void advance(const BoxInput& input,
              const std::vector<AerosolProcess*>& processes,
              Prognostics& prognostics,
              Atmosphere& atmosphere,
-             HostDiagnostics& diagnostics) {
+             HostDiagnostics& diagnostics,
+             std::map<std::string, Tendencies>& process_tendencies) {
 }
 
 }  // anonymous namespace
@@ -90,17 +96,24 @@ int main(int argc, const char** argv) {
   std::vector<AerosolProcess*> processes = create_processes(config, input);
 
   // Initialize aerosol prognostics and atmospheric conditions with input.
-  Prognostics* prognostics = create_prognostics(config, input);
-  Atmosphere* atmosphere = create_atmosphere(input);
-  HostDiagnostics* diagnostics = create_diagnostics(config, input);
+  Prognostics prognostics = create_prognostics(config, input);
+  Atmosphere atmosphere = create_atmosphere(input);
+  HostDiagnostics diagnostics = create_diagnostics(config, input);
+
+  // Create process-specific tendencies.
+  std::map<std::string, Tendencies> process_tendencies;
+  for (AerosolProcess* process: processes) {
+    process_tendencies.emplace(process->name(), Tendencies(prognostics));
+  }
 
   // Open the output file and define quantities.
   Box::BoxOutput output(config);
 
   for (int n = 0; n < input.mam_nstep; ++n) {
-    advance(input, processes, *prognostics, *atmosphere, *diagnostics);
+    advance(input, processes, prognostics, atmosphere, diagnostics,
+            process_tendencies);
     if ((n % input.mam_output_intvl) == 0) {
-      output.append(*prognostics, *diagnostics);
+      output.append(prognostics, diagnostics, process_tendencies);
     }
   }
 
@@ -108,9 +121,6 @@ int main(int argc, const char** argv) {
   output.write("haero_output.nc");
 
   // Clean up.
-  delete diagnostics;
-  delete atmosphere;
-  delete prognostics;
   for (size_t i = 0; i < processes.size(); ++i) {
     delete processes[i];
   }
