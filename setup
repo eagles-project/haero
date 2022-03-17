@@ -167,7 +167,7 @@ PACK_SIZE=1
 # Change these only if your host model needs to specify the Kokkos view types
 # used by Haero to store aerosol data. These Views are Kokkos types defined via
 # EKAT.  See ekat/src/ekat/kokkos/ekat_kokkos_types.hpp for additional details.
-# You may reference the following types in your type ѕpecifications:
+# You may reference the following types in your type specifications:
 #
 # * DeviceType - the DefaultDevice used for ekat's Kokkos build
 # * PackType - ekat's SIMD-enabled Pack with Haero's floating point data type

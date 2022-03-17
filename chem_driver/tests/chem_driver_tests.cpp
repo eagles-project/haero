@@ -8,8 +8,14 @@
 using namespace haero;
 using namespace haero::chem_driver;
 
-TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
+// these test sections are consider each of the elementary reaction types
+// that TChem is designed to handle
 
+// Future: Carbon Bond 5 (CB05) problem will be included once debugging is done
+
+// NOTE(mjs): all the tests are essentially the same, so only the first is
+// commented significantly
+TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
   SECTION("simple arrhenius") {
     std::string prefix = HAERO_TEST_DATA_DIR;
     std::string input_file = prefix;
@@ -24,7 +30,9 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     ordinal_type nsteps = 101;
     ordinal_type nspec = 4;
 
+    // CAMP reference solution, read from file
     auto refsol = Real_2d_view_host("refsol", nspec, nsteps);
+    // species participating in this test
     std::vector<std::string> specs = {"A", "B", "C", "D"};
 
     auto root = YAML::LoadFile(refsol_file);
@@ -32,7 +40,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       auto node = root[specs[i]];
       int j = 0;
       for (auto iter : node) {
-        refsol(i, j) = iter.as<Real>();
+        refsol(i, j) = (Real)iter.as<double>();
         ++j;
       }
     }
@@ -40,14 +48,15 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     auto solution = Real_2d_view_host("solution", nspec, nsteps);
     auto hsolution = Kokkos::create_mirror_view(solution);
 
+    // create a chemistry solver and get initial state
     ChemSolver chem_solver(input_file);
-
     auto cur_sol = chem_solver.get_state();
 
     Kokkos::parallel_for(
         "copy_sol", nspec,
         KOKKOS_LAMBDA(const int& i) { solution(i, 0) = cur_sol(0, i + 3); });
 
+    // conduct the time integration, step by step
     for (int i = 1; i < nsteps; ++i) {
       chem_solver.time_integrate(cur_time, cur_time + dt);
       cur_sol = chem_solver.get_state();
@@ -58,7 +67,10 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
     Kokkos::deep_copy(hsolution, solution);
 
+    // Note that these tolerances are currently set ad hoc, based on what passes
+    // these unit tests
     Real tol = 1e-4;
+    // compute 2-norm error for each species
     auto error = Real_1d_view_host("error", nspec);
     for (int i = 0; i < nspec; ++i) {
       error(i) = 0.0;
@@ -69,10 +81,19 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       REQUIRE(FloatingPoint<Real>::zero(error(i), tol));
     }
 
+// different tolerances required for float/double
+#if HAERO_DOUBLE_PRECISION
     tol = 1e-8;
-    for (int i = 0; i < nspec; ++i)
-    {
-      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
+#elif HAERO_SINGLE_PRECISION
+    tol = 1e-7;
+#else
+    fprint("How did we get here???");
+    REQUIRE(1 == 42);
+#endif
+    // Compute final time absolute error for each species
+    for (int i = 0; i < nspec; ++i) {
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1),
+                                         refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -98,7 +119,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       auto node = root[specs[i]];
       int j = 0;
       for (auto iter : node) {
-        refsol(i, j) = iter.as<Real>();
+        refsol(i, j) = (Real)iter.as<double>();
         ++j;
       }
     }
@@ -136,9 +157,9 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
 
     tol = 1e-7;
-    for (int i = 0; i < nspec; ++i)
-    {
-      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
+    for (int i = 0; i < nspec; ++i) {
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1),
+                                         refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -164,7 +185,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       auto node = root[specs[i]];
       int j = 0;
       for (auto iter : node) {
-        refsol(i, j) = iter.as<Real>();
+        refsol(i, j) = (Real)iter.as<double>();
         ++j;
       }
     }
@@ -202,9 +223,9 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
 
     tol = 1e-9;
-    for (int i = 0; i < nspec; ++i)
-    {
-      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
+    for (int i = 0; i < nspec; ++i) {
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1),
+                                         refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -230,7 +251,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       auto node = root[specs[i]];
       int j = 0;
       for (auto iter : node) {
-        refsol(i, j) = iter.as<Real>();
+        refsol(i, j) = (Real)iter.as<double>();
         ++j;
       }
     }
@@ -268,9 +289,9 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
 
     tol = 1e-7;
-    for (int i = 0; i < nspec; ++i)
-    {
-      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
+    for (int i = 0; i < nspec; ++i) {
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1),
+                                         refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -296,7 +317,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       auto node = root[specs[i]];
       int j = 0;
       for (auto iter : node) {
-        refsol(i, j) = iter.as<Real>();
+        refsol(i, j) = (Real)iter.as<double>();
         ++j;
       }
     }
@@ -334,9 +355,9 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
 
     tol = 1e-7;
-    for (int i = 0; i < nspec; ++i)
-    {
-      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
+    for (int i = 0; i < nspec; ++i) {
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1),
+                                         refsol(i, nsteps - 1), tol));
     }
   }
 
@@ -362,7 +383,7 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
       auto node = root[specs[i]];
       int j = 0;
       for (auto iter : node) {
-        refsol(i, j) = iter.as<Real>();
+        refsol(i, j) = (Real)iter.as<double>();
         ++j;
       }
     }
@@ -388,7 +409,14 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
     Kokkos::deep_copy(hsolution, solution);
 
+#if HAERO_DOUBLE_PRECISION
     Real tol = 1e-10;
+#elif HAERO_SINGLE_PRECISION
+    Real tol = 1e-4;
+#else
+    fprint("How did we get here???");
+    REQUIRE(1 == 42);
+#endif
     auto error = Real_1d_view_host("error", nspec);
     for (int i = 0; i < nspec; ++i) {
       error(i) = 0.0;
@@ -400,9 +428,9 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     }
 
     tol = 1e-10;
-    for (int i = 0; i < nspec; ++i)
-    {
-      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1), refsol(i, nsteps - 1), tol));
+    for (int i = 0; i < nspec; ++i) {
+      REQUIRE(FloatingPoint<Real>::equiv(hsolution(i, nsteps - 1),
+                                         refsol(i, nsteps - 1), tol));
     }
   }
 }
