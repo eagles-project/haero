@@ -16,7 +16,12 @@ namespace Box {
 
 BoxOutput::BoxOutput(const haero::ModalAerosolConfig& config):
   config_(config),
+  iso4_(config.num_aerosol_modes()),
+  isoa_(config.num_aerosol_modes()),
+  ih2so4_(-1),
+  isoag_(-1),
   nstep_(0) {
+
 }
 
 void BoxOutput::append(const haero::Prognostics& prognostics,
@@ -55,7 +60,17 @@ void BoxOutput::append(const haero::Prognostics& prognostics,
   qtend_coag_soag_.resize(new_gas_size);
 
   // Extract the data.
-
+  for (size_t m = 0; m < num_modes; ++m) {
+    size_t i = num_modes*old_aero_size + m;
+    num_aer_[i] = prognostics.interstitial_num_mix_ratios(m, 0);
+    so4_aer_[i] = prognostics.interstitial_aerosols(iso4_[m], 0);
+    soa_aer_[i] = prognostics.interstitial_aerosols(isoa_[m], 0);
+  }
+  for (auto iter = tendencies.begin(); iter != tendencies.end(); ++iter) {
+    size_t i = num_modes*old_aero_size + m;
+    for (size_t m = 0; m < num_modes; ++m) {
+    }
+  }
 
   ++nstep_;
 }
