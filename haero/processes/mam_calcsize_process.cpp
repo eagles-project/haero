@@ -79,7 +79,7 @@ void MAMCalcsizeProcess::init_(const ModalAerosolConfig &modal_aerosol_config) {
   }
 
   Kokkos::resize(dgncur_a, num_levels_upper_bound, nmodes);
-  Kokkos::resize(dgncur_c, num_levels_upper_bound, nmodes); 
+  Kokkos::resize(dgncur_c, num_levels_upper_bound, nmodes);
   Kokkos::resize(v2ncur_a, num_levels_upper_bound, nmodes);
   Kokkos::resize(v2ncur_c, num_levels_upper_bound, nmodes);
 
@@ -92,14 +92,12 @@ void MAMCalcsizeProcess::init_(const ModalAerosolConfig &modal_aerosol_config) {
   Kokkos::resize(acc_mode_cldbrn, maxpair_csizxf);
   Kokkos::resize(nspec_common, maxpair_csizxf);
 
-  // TODO: 10 is a magic number
   Kokkos::resize(ait_spec_in_acc_inter, maxpair_csizxf, index_mapping_extent_1);
   Kokkos::resize(acc_spec_in_ait_inter, maxpair_csizxf, index_mapping_extent_1);
   Kokkos::resize(ait_spec_in_acc_cldbrn, maxpair_csizxf,
                  index_mapping_extent_1);
   Kokkos::resize(acc_spec_in_ait_cldbrn, maxpair_csizxf,
                  index_mapping_extent_1);
-
 
   {
     const auto h_v2nmin_nmodes = Kokkos::create_mirror_view(v2nmin_nmodes);
@@ -173,7 +171,6 @@ void MAMCalcsizeProcess::find_species_mapping(
   const auto nacc = accum_idx;   // mode number of accumulation mode
 
   for (std::size_t i = 0; i < npair_csizxf; i++) {
-
     // find out accumulation and aitken modes in the radiation list
     // FIXME: This should get aitken and accumulation mode indices for
     // diagnostic lists

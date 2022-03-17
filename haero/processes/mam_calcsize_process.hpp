@@ -95,7 +95,7 @@ class MAMCalcsizeProcess final
             const Tendencies &tendencies) const override {
     const int nlevels = diagnostics.num_levels();
 
-    // See documentation for declaration of num_levels_upper_bound
+    // See declaration of num_levels_upper_bound for its documentation
     EKAT_KERNEL_ASSERT(nlevels <= num_levels_upper_bound);
 
     const auto num_vert_packs = PackInfo::num_packs(nlevels);
@@ -215,10 +215,10 @@ class MAMCalcsizeProcess final
     v2ncur = v2nnom_nmodes(imode);
   }
 
-  //----------------------------------------------------------------------------------------
-  // Compute particle diameter and volume to number ratios using dry bulk volume
-  // (drv)
-  //----------------------------------------------------------------------------------------
+  /*----------------------------------------------------------------------------
+   * Compute particle diameter and volume to number ratios using dry bulk volume
+   * (drv)
+   *--------------------------------------------------------------------------*/
   KOKKOS_INLINE_FUNCTION
   void update_diameter_and_vol2num(std::size_t klev, std::size_t imode,
                                    PackType drv, PackType num, Real v2nmin,
@@ -607,10 +607,10 @@ class MAMCalcsizeProcess final
    *                         └──┤run method│◄─┘
    *                            └──────────┘
    *
-   * To remove this fragile assumption, we will have to be able to pass the
+   * To remove this assumption, we will have to be able to pass the
    * number of levels to the init member function, calculate an upper bound for
    * the number of levels in the init member function, or perform device
-   * allocation from the device in a portable manner.
+   * allocation in a portable manner.
    */
   static constexpr std::size_t num_levels_upper_bound = 128;
 
