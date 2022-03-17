@@ -39,11 +39,12 @@ void static writeState(const ordinal_type iter, const Real_1d_view_host _t,
                        const Real_2d_view_host _state_at_i, FILE* fout_) {
   // loop over batches
   for (size_t sp = 0; sp < _state_at_i.extent(0); sp++) {
-    fprintf(fout_, "%d \t %15.10e \t  %15.10e \t ", iter, _t(sp), _dt(sp));
+    fmt::print(fout_, "{:d} \t {:15.10e} \t  {:15.10e} \t ", iter, _t(sp),
+               _dt(sp));
     // loop over species concs
     for (ordinal_type k = 0, kend = _state_at_i.extent(1); k < kend; ++k)
-      fprintf(fout_, "%15.10e \t", _state_at_i(sp, k));
-    fprintf(fout_, "\n");
+      fmt::print(fout_, "{:15.10e} \t", _state_at_i(sp, k));
+    fmt::print(fout_, "\n");
   }
 };
 
@@ -52,12 +53,12 @@ void static writeState(const ordinal_type iter, const Real_1d_view_host _t,
 // Pressure, Temperature, "concentration(s)" (in the relevant, specified units)
 void static printState(const time_advance_type _tadv, const Real _t,
                        const Real_1d_view_host _state_at_i) {
-  printf("%e %e %e %e %e", _t, _t - _tadv._tbeg, _state_at_i(0), _state_at_i(1),
-         _state_at_i(2));
+  fmt::print(stdout, "{:e} {:e} {:e} {:e} {:e}", _t, _t - _tadv._tbeg,
+             _state_at_i(0), _state_at_i(1), _state_at_i(2));
   // loop over species concs
   for (ordinal_type k = 3, kend = _state_at_i.extent(0); k < kend; ++k)
-    printf(" %e", _state_at_i(k));
-  printf("\n");
+    fmt::print(stdout, " {:e}", _state_at_i(k));
+  fmt::print(stdout, "\n");
 };
 
 // ChemSolver constructor: initializes all the required views on device and
@@ -80,8 +81,8 @@ ChemSolver::ChemSolver(std::string input_file) {
   const ordinal_type stateVecDim = TChem::Impl::getStateVectorSize(kmcd_.nSpec);
 
   if (verbose_) {
-    printf("Number of Species %d \n", kmcd_.nSpec);
-    printf("Number of Reactions %d \n", kmcd_.nReac);
+    fmt::print(stdout, "Number of Species {:d} \n", kmcd_.nSpec);
+    fmt::print(stdout, "Number of Reactions {:d} \n", kmcd_.nReac);
   }
   const auto speciesNamesHost = Kokkos::create_mirror_view(kmcd_.speciesNames);
   Kokkos::deep_copy(speciesNamesHost, kmcd_.speciesNames);
@@ -194,15 +195,15 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
   Kokkos::deep_copy(t_host, t);
 
   // write the initial state information, along with header, to file
-  fprintf(fout_, "%s \t %s \t %s \t ", "iter", "t", "dt");
-  fprintf(fout_, "%s \t %s \t %s \t", "Density[kg/m3]", "Pressure[Pascal]",
-          "Temperature[K]");
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t ", "iter", "t", "dt");
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t", "Density[kg/m3]",
+             "Pressure[Pascal]", "Temperature[K]");
   const auto speciesNamesHost = Kokkos::create_mirror_view(kmcd_.speciesNames);
   Kokkos::deep_copy(speciesNamesHost, kmcd_.speciesNames);
   for (ordinal_type k = 0; k < kmcd_.nSpec; k++) {
-    fprintf(fout_, "%s \t", &speciesNamesHost(k, 0));
+    fmt::print(fout_, "{:s} \t", &speciesNamesHost(k, 0));
   }
-  fprintf(fout_, "\n");
+  fmt::print(fout_, "\n");
   writeState(-1, t_host, dt_host, state_host_, fout_);
 
   Real tsum(0);
@@ -248,11 +249,11 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
     Kokkos::parallel_for(
         Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
         KOKKOS_LAMBDA(const ordinal_type& i) {
-          printf("Devices:: Solution sample No %d\n", i);
+          fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
           auto state_at_i = Kokkos::subview(state_, i, Kokkos::ALL());
           for (ordinal_type k = 0, kend = state_at_i.extent(0); k < kend; ++k)
-            printf(" %e", state_at_i(k));
-          printf("\n");
+            fmt::print(stdout, " {:e}", state_at_i(k));
+          fmt::print(stdout, "\n");
         });
   }
 }
@@ -332,17 +333,17 @@ void ChemSolver::time_integrate() {
   Kokkos::deep_copy(dt_host, dt);
   Kokkos::deep_copy(t_host, t);
 
-  fprintf(fout_, "%s \t %s \t %s \t ", "iter", "t", "dt");
-  fprintf(fout_, "%s \t %s \t %s \t", "Density[kg/m3]", "Pressure[Pascal]",
-          "Temperature[K]");
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t ", "iter", "t", "dt");
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t", "Density[kg/m3]",
+             "Pressure[Pascal]", "Temperature[K]");
 
   const auto speciesNamesHost = Kokkos::create_mirror_view(kmcd_.speciesNames);
   Kokkos::deep_copy(speciesNamesHost, kmcd_.speciesNames);
 
   for (ordinal_type k = 0; k < kmcd_.nSpec; k++) {
-    fprintf(fout_, "%s \t", &speciesNamesHost(k, 0));
+    fmt::print(fout_, "{:s} \t", &speciesNamesHost(k, 0));
   }
-  fprintf(fout_, "\n");
+  fmt::print(fout_, "\n");
 
   writeState(-1, t_host, dt_host, state_host_, fout_);
 
@@ -383,11 +384,11 @@ void ChemSolver::time_integrate() {
     Kokkos::parallel_for(
         Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
         KOKKOS_LAMBDA(const ordinal_type& i) {
-          printf("Devices:: Solution sample No %d\n", i);
+          fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
           auto state_at_i = Kokkos::subview(state_, i, Kokkos::ALL());
           for (ordinal_type k = 0, kend = state_at_i.extent(0); k < kend; ++k)
-            printf(" %e", state_at_i(k));
-          printf("\n");
+            fmt::print(stdout, " {:e}", state_at_i(k));
+          fmt::print(stdout, "\n");
         });
   }
 }
@@ -421,9 +422,9 @@ void ChemSolver::parse_tchem_inputs_(const std::string& input_file) {
       print_qoi_ = node["print_qoi"].as<bool>();
     }
   } else {
-    printf(
-        "No tchem section was found--using default values: verbose = false"
-        ", nbatch_ = 1.\n");
+    fmt::print(stdout,
+               "No tchem section was found--using default values: verbose = "
+               "false, nbatch_ = 1.\n");
     nbatch_ = 1;
     verbose_ = false;
     team_size_ = -1;
@@ -490,7 +491,8 @@ void SolverParams::set_params(const std::string& filename,
     jacobian_interval = 1;
     outputfile = "chem.dat";
     if (verbose_) {
-      printf("No solver_parameters section was found--using defaults\n");
+      fmt::print(stdout,
+                 "No solver_parameters section was found--using defaults\n");
     }
   }
 }
