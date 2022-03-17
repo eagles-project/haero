@@ -34,7 +34,7 @@ YamlException::YamlException(const char* fmt, ...) {
 // write current state to file
 // the fields written to file are: iteration, t, dt, Density, Pressure,
 // Temperature, "concentration(s)" (in the relevant, specified units)
-void static writeState(const ordinal_type iter, const Real_1d_view_host _t,
+void static write_state(const ordinal_type iter, const Real_1d_view_host _t,
                        const Real_1d_view_host _dt,
                        const Real_2d_view_host _state_at_i, FILE* fout_) {
   // loop over batches
@@ -51,7 +51,7 @@ void static writeState(const ordinal_type iter, const Real_1d_view_host _t,
 // print current state to screen
 // the fields printed to screen are: current time, elapsed time, Density,
 // Pressure, Temperature, "concentration(s)" (in the relevant, specified units)
-void static printState(const time_advance_type _tadv, const Real _t,
+void static print_state(const time_advance_type _tadv, const Real _t,
                        const Real_1d_view_host _state_at_i) {
   fmt::print(stdout, "{:e} {:e} {:e} {:e} {:e}", _t, _t - _tadv._tbeg,
              _state_at_i(0), _state_at_i(1), _state_at_i(2));
@@ -71,7 +71,7 @@ ChemSolver::ChemSolver(std::string input_file) {
 
   TChem::exec_space::print_configuration(std::cout, verbose_);
   TChem::host_exec_space::print_configuration(std::cout, verbose_);
-  using device_type = typename Tines::UseThisDevice<exec_space>::type;
+  using device_type = typename Tines::UseThisDevice<ExecutionSpace>::type;
 
   // construct the kinetic model data object and its const version
   kmd_ = TChem::KineticModelData(input_file);
@@ -131,9 +131,9 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
   t_host = Real_1d_view_host("time host", nbatch_);
   dt_host = Real_1d_view_host("dt host", nbatch_);
 
-  ordinal_type number_of_equations(0);
+  ordinal_type number_of_equations = 0;
 
-  using device_type = typename Tines::UseThisDevice<exec_space>::type;
+  using device_type = typename Tines::UseThisDevice<ExecutionSpace>::type;
   using problem_type =
       TChem::Impl::AtmosphericChemistry_Problem<Real, device_type>;
   number_of_equations = problem_type::getNumberOfTimeODEs(kmcd_);
@@ -188,7 +188,7 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
     Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
     Kokkos::deep_copy(t_at_i_host, t_at_i);
     Kokkos::deep_copy(state_at_i_host, state_at_i);
-    printState(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+    print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
   }
 
   Kokkos::deep_copy(dt_host, dt);
@@ -204,9 +204,9 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
     fmt::print(fout_, "{:s} \t", &speciesNamesHost(k, 0));
   }
   fmt::print(fout_, "\n");
-  writeState(-1, t_host, dt_host, state_host_, fout_);
+  write_state(-1, t_host, dt_host, state_host_, fout_);
 
-  Real tsum(0);
+  Real tsum = 0;
   ordinal_type iter = 0;
   // begin time stepping
   // note that this stops according to the tend passed to the function
@@ -221,7 +221,7 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
       Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
       Kokkos::deep_copy(t_at_i_host, t_at_i);
       Kokkos::deep_copy(state_at_i_host, state_at_i);
-      printState(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+      print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
     }
 
     Kokkos::deep_copy(dt_host, dt);
@@ -229,10 +229,10 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
     Kokkos::deep_copy(state_host_, state_);
 
     // write current state info to file
-    writeState(iter, t_host, dt_host, state_host_, fout_);
+    write_state(iter, t_host, dt_host, state_host_, fout_);
 
     // carry over time and dt computed in this step
-    Real tsum(0);
+    Real tsum = 0;
     Kokkos::parallel_reduce(
         Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
         KOKKOS_LAMBDA(const ordinal_type& i, Real& update) {
@@ -246,15 +246,17 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
   }  // end for
 
   if (print_qoi_) {
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
-        KOKKOS_LAMBDA(const ordinal_type& i) {
-          fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
-          auto state_at_i = Kokkos::subview(state_, i, Kokkos::ALL());
-          for (ordinal_type k = 0, kend = state_at_i.extent(0); k < kend; ++k)
-            fmt::print(stdout, " {:e}", state_at_i(k));
-          fmt::print(stdout, "\n");
-        });
+    Kokkos::deep_copy(state_host_, state_);
+    for (int i = 0; i < nbatch_; ++i)
+    {
+      fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
+      auto state_at_i = Kokkos::subview(state_host_, i, Kokkos::ALL());
+      for (int k = 0; k < state_at_i.extent(0) ; ++k)
+      {
+        fmt::print(stdout, " {:e}", state_at_i(k));
+      }
+      fmt::print(stdout, "\n");
+    }
   }
 }
 
@@ -272,9 +274,9 @@ void ChemSolver::time_integrate() {
   t_host = Real_1d_view_host("time host", nbatch_);
   dt_host = Real_1d_view_host("dt host", nbatch_);
 
-  ordinal_type number_of_equations(0);
+  ordinal_type number_of_equations = 0;
 
-  using device_type = typename Tines::UseThisDevice<exec_space>::type;
+  using device_type = typename Tines::UseThisDevice<ExecutionSpace>::type;
   using problem_type =
       TChem::Impl::AtmosphericChemistry_Problem<Real, device_type>;
   number_of_equations = problem_type::getNumberOfTimeODEs(kmcd_);
@@ -327,7 +329,7 @@ void ChemSolver::time_integrate() {
     Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
     Kokkos::deep_copy(t_at_i_host, t_at_i);
     Kokkos::deep_copy(state_at_i_host, state_at_i);
-    printState(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+    print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
   }
 
   Kokkos::deep_copy(dt_host, dt);
@@ -345,9 +347,9 @@ void ChemSolver::time_integrate() {
   }
   fmt::print(fout_, "\n");
 
-  writeState(-1, t_host, dt_host, state_host_, fout_);
+  write_state(-1, t_host, dt_host, state_host_, fout_);
 
-  Real tsum(0);
+  Real tsum = 0;
   for (; iter < solver_params_.max_time_iterations &&
          tsum <= solver_params_.tend * 0.9999;
        ++iter) {
@@ -358,16 +360,16 @@ void ChemSolver::time_integrate() {
       Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
       Kokkos::deep_copy(t_at_i_host, t_at_i);
       Kokkos::deep_copy(state_at_i_host, state_at_i);
-      printState(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+      print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
     }
 
     Kokkos::deep_copy(dt_host, dt);
     Kokkos::deep_copy(t_host, t);
     Kokkos::deep_copy(state_host_, state_);
 
-    writeState(iter, t_host, dt_host, state_host_, fout_);
+    write_state(iter, t_host, dt_host, state_host_, fout_);
 
-    Real tsum(0);
+    Real tsum = 0;
     Kokkos::parallel_reduce(
         Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
         KOKKOS_LAMBDA(const ordinal_type& i, Real& update) {
@@ -381,15 +383,17 @@ void ChemSolver::time_integrate() {
   }  // end for
 
   if (print_qoi_) {
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
-        KOKKOS_LAMBDA(const ordinal_type& i) {
-          fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
-          auto state_at_i = Kokkos::subview(state_, i, Kokkos::ALL());
-          for (ordinal_type k = 0, kend = state_at_i.extent(0); k < kend; ++k)
-            fmt::print(stdout, " {:e}", state_at_i(k));
-          fmt::print(stdout, "\n");
-        });
+    Kokkos::deep_copy(state_host_, state_);
+    for (int i = 0; i < nbatch_; ++i)
+    {
+      fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
+      auto state_at_i = Kokkos::subview(state_host_, i, Kokkos::ALL());
+      for (int k = 0; k < state_at_i.extent(0) ; ++k)
+      {
+        fmt::print(stdout, " {:e}", state_at_i(k));
+      }
+      fmt::print(stdout, "\n");
+    }
   }
 }
 
