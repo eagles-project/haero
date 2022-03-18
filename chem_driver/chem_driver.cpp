@@ -35,8 +35,8 @@ YamlException::YamlException(const char* fmt, ...) {
 // the fields written to file are: iteration, t, dt, Density, Pressure,
 // Temperature, "concentration(s)" (in the relevant, specified units)
 void static write_state(const ordinal_type iter, const Real_1d_view_host _t,
-                       const Real_1d_view_host _dt,
-                       const Real_2d_view_host _state_at_i, FILE* fout_) {
+                        const Real_1d_view_host _dt,
+                        const Real_2d_view_host _state_at_i, FILE* fout_) {
   // loop over batches
   for (size_t sp = 0; sp < _state_at_i.extent(0); sp++) {
     fmt::print(fout_, "{:d} \t {:15.10e} \t  {:15.10e} \t ", iter, _t(sp),
@@ -52,7 +52,7 @@ void static write_state(const ordinal_type iter, const Real_1d_view_host _t,
 // the fields printed to screen are: current time, elapsed time, Density,
 // Pressure, Temperature, "concentration(s)" (in the relevant, specified units)
 void static print_state(const time_advance_type _tadv, const Real _t,
-                       const Real_1d_view_host _state_at_i) {
+                        const Real_1d_view_host _state_at_i) {
   fmt::print(stdout, "{:e} {:e} {:e} {:e} {:e}", _t, _t - _tadv._tbeg,
              _state_at_i(0), _state_at_i(1), _state_at_i(2));
   // loop over species concs
@@ -68,6 +68,10 @@ ChemSolver::ChemSolver(std::string input_file) {
   parse_tchem_inputs_(input_file);
   // read the parameters from file
   solver_params_.set_params(input_file, verbose_);
+
+  // make sure that the execution spaces are the same
+  static_assert(std::is_same<TChem::exec_space(), ExecutionSpace()>::value,
+                "TChem and Haero are using different execution spaces");
 
   TChem::exec_space::print_configuration(std::cout, verbose_);
   TChem::host_exec_space::print_configuration(std::cout, verbose_);
@@ -234,7 +238,7 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
     // carry over time and dt computed in this step
     Real tsum = 0;
     Kokkos::parallel_reduce(
-        Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
+        nbatch_,
         KOKKOS_LAMBDA(const ordinal_type& i, Real& update) {
           tadv(i)._tbeg = t(i);
           tadv(i)._dt = dt(i);
@@ -247,12 +251,10 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
 
   if (print_qoi_) {
     Kokkos::deep_copy(state_host_, state_);
-    for (int i = 0; i < nbatch_; ++i)
-    {
+    for (int i = 0; i < nbatch_; ++i) {
       fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
       auto state_at_i = Kokkos::subview(state_host_, i, Kokkos::ALL());
-      for (int k = 0; k < state_at_i.extent(0) ; ++k)
-      {
+      for (int k = 0; k < state_at_i.extent(0); ++k) {
         fmt::print(stdout, " {:e}", state_at_i(k));
       }
       fmt::print(stdout, "\n");
@@ -371,7 +373,7 @@ void ChemSolver::time_integrate() {
 
     Real tsum = 0;
     Kokkos::parallel_reduce(
-        Kokkos::RangePolicy<TChem::exec_space>(0, nbatch_),
+        nbatch_,
         KOKKOS_LAMBDA(const ordinal_type& i, Real& update) {
           tadv(i)._tbeg = t(i);
           tadv(i)._dt = dt(i);
@@ -384,12 +386,10 @@ void ChemSolver::time_integrate() {
 
   if (print_qoi_) {
     Kokkos::deep_copy(state_host_, state_);
-    for (int i = 0; i < nbatch_; ++i)
-    {
+    for (int i = 0; i < nbatch_; ++i) {
       fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
       auto state_at_i = Kokkos::subview(state_host_, i, Kokkos::ALL());
-      for (int k = 0; k < state_at_i.extent(0) ; ++k)
-      {
+      for (int k = 0; k < state_at_i.extent(0); ++k) {
         fmt::print(stdout, " {:e}", state_at_i(k));
       }
       fmt::print(stdout, "\n");
