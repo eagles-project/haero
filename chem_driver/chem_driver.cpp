@@ -4,26 +4,26 @@ namespace haero {
 namespace chem_driver {
 
 namespace defaults {
-Real tbeg = 0.0;
-Real tend = 1.0;
-Real dt = 1.0e-8;
-Real dtmin = 1.0e-8;
-Real dtmax = 1.0e-1;
-int max_num_newton_iterations = 100;
-int num_time_iterations_per_interval = 10;
-int jacobian_interval = 1;
+static constexpr Real tbeg = 0.0;
+static constexpr Real tend = 1.0;
+static constexpr Real dt = 1.0e-8;
+static constexpr Real dtmin = 1.0e-8;
+static constexpr Real dtmax = 1.0e-1;
+static constexpr int max_num_newton_iterations = 100;
+static constexpr int num_time_iterations_per_interval = 10;
+static constexpr int jacobian_interval = 1;
 
-Real max_time_iterations = 1.0e3;
-Real atol_newton = 1.0e-10;
-Real rtol_newton = 1.0e-6;
-Real atol_time = 1.0e-12;
-Real tol_time = 1.0e-4;
+static constexpr Real max_time_iterations = 1.0e3;
+static constexpr Real atol_newton = 1.0e-10;
+static constexpr Real rtol_newton = 1.0e-6;
+static constexpr Real atol_time = 1.0e-12;
+static constexpr Real tol_time = 1.0e-4;
 
-int nbatch = 1;
-bool verbose = false;
-int team_size = -1;
-int vector_size = -1;
-std::string outputfile = "chem.dat";
+static constexpr int nbatch = 1;
+static constexpr bool verbose = false;
+static constexpr int team_size = -1;
+static constexpr int vector_size = -1;
+static std::string outputfile = "chem.dat";
 }  // namespace defaults
 
 // anonymous namespace to hold this YamlException class
@@ -224,7 +224,8 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
   }
   fmt::print(fout_, "\n");
   // write the initial condition to file (index = -1 => pre-time-stepping)
-  write_state(-1, t_host, dt_host, state_host_, fout_);
+  static constexpr std::size_t init_condition_iteration = -1;
+  write_state(init_condition_iteration, t_host, dt_host, state_host_, fout_);
 
   Real tsum = 0;
   ordinal_type iter = 0;
@@ -353,7 +354,8 @@ void ChemSolver::time_integrate() {
   }
   fmt::print(fout_, "\n");
   // write the initial condition to file (index = -1 => pre-time-stepping)
-  write_state(-1, t_host, dt_host, state_host_, fout_);
+  static constexpr std::size_t init_condition_iteration = -1;
+  write_state(init_condition_iteration, t_host, dt_host, state_host_, fout_);
 
   Real tsum = 0;
   for (; iter < solver_params_.max_time_iterations &&
