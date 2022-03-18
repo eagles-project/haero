@@ -33,16 +33,19 @@ using policy_type = typename TChem::UseThisTeamPolicy<TChem::exec_space>::type;
 
 // these are various parameters that are required by the TChem solver
 struct SolverParams {
-  Real dtmin, dtmax;
-  Real tbeg, tend;
-  int num_time_iterations_per_interval;
-  int max_time_iterations, max_newton_iterations;
+  // Real dtmin, dtmax;
+  // Real tbeg, tend;
+  // int num_time_iterations_per_interval;
+  int max_time_iterations;
+  // int max_newton_iterations;
   Real atol_newton, rtol_newton;
   Real atol_time, tol_time;
-  int jacobian_interval;
+  // int jacobian_interval;
   std::string outputfile;
   void set_params(const std::string& filename, const bool& verbose);
   SolverParams() = default;
+  // tchem's struct for holding time-stepping info
+  time_advance_type tadv_default;
 };
 
 class ChemSolver {

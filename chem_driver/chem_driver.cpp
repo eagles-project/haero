@@ -3,6 +3,29 @@
 namespace haero {
 namespace chem_driver {
 
+namespace defaults {
+Real tbeg = 0.0;
+Real tend = 1.0;
+Real dt = 1.0e-8;
+Real dtmin = 1.0e-8;
+Real dtmax = 1.0e-1;
+int max_num_newton_iterations = 100;
+int num_time_iterations_per_interval = 10;
+int jacobian_interval = 1;
+
+Real max_time_iterations = 1.0e3;
+Real atol_newton = 1.0e-10;
+Real rtol_newton = 1.0e-6;
+Real atol_time = 1.0e-12;
+Real tol_time = 1.0e-4;
+
+int nbatch = 1;
+bool verbose = false;
+int team_size = -1;
+int vector_size = -1;
+std::string outputfile = "chem.dat";
+}  // namespace defaults
+
 // anonymous namespace to hold this YamlException class
 namespace {
 // This exception class stores information about errors encountered in reading
@@ -127,7 +150,7 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
   Real_1d_view t("time", nbatch_);
   Kokkos::deep_copy(t, tbeg);
   Real_1d_view dt("delta time", nbatch_);
-  Kokkos::deep_copy(dt, solver_params_.dtmax);
+  Kokkos::deep_copy(dt, solver_params_.tadv_default._dtmin);
 
   Real_1d_view_host t_host;
   Real_1d_view_host dt_host;
@@ -163,20 +186,12 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
     Kokkos::deep_copy(tol_newton, tol_newton_host);
   }
 
-  // set the time integrator properties and copy to device
-  time_advance_type tadv_default;
-  tadv_default._tbeg = tbeg;
-  tadv_default._tend = tend;
-  tadv_default._dt = solver_params_.dtmin;
-  tadv_default._dtmin = solver_params_.dtmin;
-  tadv_default._dtmax = solver_params_.dtmax;
-  tadv_default._max_num_newton_iterations =
-      solver_params_.max_newton_iterations;
-  tadv_default._num_time_iterations_per_interval =
-      solver_params_.num_time_iterations_per_interval;
-  tadv_default._jacobian_interval = solver_params_.jacobian_interval;
+  // set tbeg and tend in tadv_default from the function arguments, rather than
+  // the ones read from file, then deep copy to device
+  solver_params_.tadv_default._tbeg = tbeg;
+  solver_params_.tadv_default._tend = tend;
   time_advance_type_1d_view tadv("tadv", nbatch_);
-  Kokkos::deep_copy(tadv, tadv_default);
+  Kokkos::deep_copy(tadv, solver_params_.tadv_default);
 
   // setup current timestep subviews and mirrors
   const auto tadv_at_i = Kokkos::subview(tadv, 0);
@@ -208,6 +223,7 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
     fmt::print(fout_, "{:s} \t", &speciesNamesHost(k, 0));
   }
   fmt::print(fout_, "\n");
+  // write the initial condition to file (index = -1 => pre-time-stepping)
   write_state(-1, t_host, dt_host, state_host_, fout_);
 
   Real tsum = 0;
@@ -266,9 +282,9 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
 // solver_params_)
 void ChemSolver::time_integrate() {
   Real_1d_view t("time", nbatch_);
-  Kokkos::deep_copy(t, solver_params_.tbeg);
+  Kokkos::deep_copy(t, solver_params_.tadv_default._tbeg);
   Real_1d_view dt("delta time", nbatch_);
-  Kokkos::deep_copy(dt, solver_params_.dtmax);
+  Kokkos::deep_copy(dt, solver_params_.tadv_default._dtmin);
 
   Real_1d_view_host t_host;
   Real_1d_view_host dt_host;
@@ -303,20 +319,8 @@ void ChemSolver::time_integrate() {
     Kokkos::deep_copy(tol_newton, tol_newton_host);
   }
 
-  time_advance_type tadv_default;
-  tadv_default._tbeg = solver_params_.tbeg;
-  tadv_default._tend = solver_params_.tend;
-  tadv_default._dt = solver_params_.dtmin;
-  tadv_default._dtmin = solver_params_.dtmin;
-  tadv_default._dtmax = solver_params_.dtmax;
-  tadv_default._max_num_newton_iterations =
-      solver_params_.max_newton_iterations;
-  tadv_default._num_time_iterations_per_interval =
-      solver_params_.num_time_iterations_per_interval;
-  tadv_default._jacobian_interval = solver_params_.jacobian_interval;
-
   time_advance_type_1d_view tadv("tadv", nbatch_);
-  Kokkos::deep_copy(tadv, tadv_default);
+  Kokkos::deep_copy(tadv, solver_params_.tadv_default);
 
   const auto tadv_at_i = Kokkos::subview(tadv, 0);
   const auto t_at_i = Kokkos::subview(t, 0);
@@ -348,12 +352,12 @@ void ChemSolver::time_integrate() {
     fmt::print(fout_, "{:s} \t", &speciesNamesHost(k, 0));
   }
   fmt::print(fout_, "\n");
-
+  // write the initial condition to file (index = -1 => pre-time-stepping)
   write_state(-1, t_host, dt_host, state_host_, fout_);
 
   Real tsum = 0;
   for (; iter < solver_params_.max_time_iterations &&
-         tsum <= solver_params_.tend * 0.9999;
+         tsum <= solver_params_.tadv_default._tend * 0.9999;
        ++iter) {
     TChem::AtmosphericChemistry::runDeviceBatch(
         policy_, tol_newton, tol_time, fac, tadv, state_, t, dt, state_, kmcd_);
@@ -429,10 +433,10 @@ void ChemSolver::parse_tchem_inputs_(const std::string& input_file) {
     fmt::print(stdout,
                "No tchem section was found--using default values: verbose = "
                "false, nbatch_ = 1.\n");
-    nbatch_ = 1;
-    verbose_ = false;
-    team_size_ = -1;
-    vector_size_ = -1;
+    nbatch_ = defaults::nbatch;
+    verbose_ = defaults::verbose;
+    team_size_ = defaults::team_size;
+    vector_size_ = defaults::vector_size;
   }
 }
 
@@ -466,34 +470,42 @@ void SolverParams::set_params(const std::string& filename,
         }());
       }
     }
-    dtmin = node["dtmin"].as<Real>();
-    dtmax = node["dtmax"].as<Real>();
-    tbeg = node["tbeg"].as<Real>();
-    tend = node["tend"].as<Real>();
-    num_time_iterations_per_interval =
+    // initialize tchem's tadv struct
+    tadv_default._tbeg = node["tbeg"].as<Real>();
+    tadv_default._tend = node["tend"].as<Real>();
+    tadv_default._dt = node["dtmin"].as<Real>();
+    tadv_default._dtmin = node["dtmin"].as<Real>();
+    tadv_default._dtmax = node["dtmax"].as<Real>();
+    tadv_default._max_num_newton_iterations =
+        node["max_newton_iterations"].as<int>();
+    tadv_default._num_time_iterations_per_interval =
         node["num_time_iterations_per_interval"].as<int>();
+    tadv_default._jacobian_interval = node["jacobian_interval"].as<int>();
+
+    // initialize the other solver params that don't go in the above struct
     max_time_iterations = node["max_time_iterations"].as<int>();
-    max_newton_iterations = node["max_newton_iterations"].as<int>();
     atol_newton = node["atol_newton"].as<Real>();
     rtol_newton = node["rtol_newton"].as<Real>();
     atol_time = node["atol_time"].as<Real>();
     tol_time = node["tol_time"].as<Real>();
-    jacobian_interval = node["jacobian_interval"].as<int>();
+
     outputfile = node["outputfile"].as<std::string>();
   } else {  // defaults
-    dtmin = 1.0e-8;
-    dtmax = 1.0e-1;
-    tend = 0.0;
-    tend = 1.0;
-    num_time_iterations_per_interval = 10;
-    max_time_iterations = 1.0e3;
-    max_newton_iterations = 100;
-    atol_newton = 1.0e-10;
-    rtol_newton = 1.0e-6;
-    atol_time = 1.0e-12;
-    tol_time = 1.0e-4;
-    jacobian_interval = 1;
-    outputfile = "chem.dat";
+    tadv_default._tbeg = defaults::tbeg;
+    tadv_default._tend = defaults::tend;
+    tadv_default._dt = defaults::dt;
+    tadv_default._dtmin = defaults::dtmin;
+    tadv_default._dtmax = defaults::dtmax;
+    tadv_default._max_num_newton_iterations = defaults::max_num_newton_iterations;
+    tadv_default._num_time_iterations_per_interval = defaults::num_time_iterations_per_interval;
+    tadv_default._jacobian_interval = defaults::jacobian_interval;
+
+    max_time_iterations = defaults::max_time_iterations;
+    atol_newton = defaults::atol_newton;
+    rtol_newton = defaults::rtol_newton;
+    atol_time = defaults::atol_time;
+    tol_time = defaults::tol_time;
+    outputfile = defaults::outputfile;
     if (verbose_) {
       fmt::print(stdout,
                  "No solver_parameters section was found--using defaults\n");
