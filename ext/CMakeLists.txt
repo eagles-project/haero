@@ -256,7 +256,7 @@ if (NOT EXISTS ${EKAT_LIBRARY})
   add_dependencies(ekat ekat_proj)
 else()
   # Copy EKAT's test-launcher into place so we can use it for our unit tests.
-  file(COPY ${EKAT_LIBRARY_DIR}/bin/test-launcher DESTINATION bin)
+  file(COPY ${EKAT_INSTALL_ROOT}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
 endif()
 add_library(kokkoscore STATIC IMPORTED GLOBAL)
 set_target_properties(kokkoscore PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscore.a)
