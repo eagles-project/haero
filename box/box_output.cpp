@@ -28,47 +28,44 @@ void BoxOutput::append(const haero::Prognostics& prognostics,
                        const haero::HostDiagnostics& diagnostics,
                        const std::map<std::string, haero::Tendencies>& tendencies) {
   size_t num_modes = static_cast<size_t>(config_.num_aerosol_modes());
-  size_t old_aero_size = num_aer_.size();
-  size_t new_aero_size = old_aero_size + num_modes;
-  size_t old_gas_size = h2so4_.size();
-  size_t new_gas_size = old_gas_size + num_modes;
-
-  // Resize the containers.
-  num_aer_.resize(new_aero_size);
-  so4_aer_.resize(new_aero_size);
-  soa_aer_.resize(new_aero_size);
-  dgn_a_.resize(new_aero_size);
-  dgn_awet_.resize(new_aero_size);
-  h2so4_.resize(new_gas_size);
-  soag_.resize(new_gas_size);
-
-  qtend_cond_aging_so4_.resize(new_aero_size);
-  qtend_rename_so4_.resize(new_aero_size);
-  qtend_newnuc_so4_.resize(new_aero_size);
-  qtend_coag_so4_.resize(new_aero_size);
-  qtend_cond_aging_soa_.resize(new_aero_size);
-  qtend_rename_soa_.resize(new_aero_size);
-  qtend_newnuc_soa_.resize(new_aero_size);
-  qtend_coag_soa_.resize(new_aero_size);
-  qtend_cond_aging_h2so4_.resize(new_gas_size);
-  qtend_rename_h2so4_.resize(new_gas_size);
-  qtend_newnuc_h2so4_.resize(new_gas_size);
-  qtend_coag_h2so4_.resize(new_gas_size);
-  qtend_cond_aging_soag_.resize(new_gas_size);
-  qtend_rename_soag_.resize(new_gas_size);
-  qtend_newnuc_soag_.resize(new_gas_size);
-  qtend_coag_soag_.resize(new_gas_size);
 
   // Extract the data.
   for (size_t m = 0; m < num_modes; ++m) {
-    size_t i = num_modes*old_aero_size + m;
-    num_aer_[i] = prognostics.interstitial_num_mix_ratios(m, 0);
-    so4_aer_[i] = prognostics.interstitial_aerosols(iso4_[m], 0);
-    soa_aer_[i] = prognostics.interstitial_aerosols(isoa_[m], 0);
+    num_aer_.push_back(prognostics.interstitial_num_mix_ratios(m, 0)[0]);
+    so4_aer_.push_back(prognostics.interstitial_aerosols(iso4_[m], 0)[0]);
+    soa_aer_.push_back(prognostics.interstitial_aerosols(isoa_[m], 0)[0]);
   }
   for (auto iter = tendencies.begin(); iter != tendencies.end(); ++iter) {
-    size_t i = num_modes*old_aero_size + m;
-    for (size_t m = 0; m < num_modes; ++m) {
+    const std::string& process_name = iter->first;
+    const haero::Tendencies& tends = iter->second;
+    if (process_name.find("nucleation") != std::string::npos) {
+      for (size_t m = 0; m < num_modes; ++m) {
+        qtend_newnuc_so4_.push_back(tends.interstitial_aerosols(iso4_[m], 0)[0]);
+        qtend_newnuc_soa_.push_back(tends.interstitial_aerosols(isoa_[m], 0)[0]);
+      }
+      qtend_newnuc_h2so4_.push_back(tends.gases(ih2so4_, 0)[0]);
+      qtend_newnuc_soag_.push_back(tends.gases(isoag_, 0)[0]);
+    } else if (process_name.find("aging") != std::string::npos) {
+      for (size_t m = 0; m < num_modes; ++m) {
+        qtend_cond_aging_so4_.push_back(tends.interstitial_aerosols(iso4_[m], 0)[0]);
+        qtend_cond_aging_soa_.push_back(tends.interstitial_aerosols(isoa_[m], 0)[0]);
+      }
+      qtend_cond_aging_h2so4_.push_back(tends.gases(ih2so4_, 0)[0]);
+      qtend_cond_aging_soag_.push_back(tends.gases(isoag_, 0)[0]);
+    } else if (process_name.find("rename") != std::string::npos) {
+      for (size_t m = 0; m < num_modes; ++m) {
+        qtend_rename_so4_.push_back(tends.interstitial_aerosols(iso4_[m], 0)[0]);
+        qtend_rename_soa_.push_back(tends.interstitial_aerosols(isoa_[m], 0)[0]);
+      }
+      qtend_rename_h2so4_.push_back(tends.gases(ih2so4_, 0)[0]);
+      qtend_rename_soag_.push_back(tends.gases(isoag_, 0)[0]);
+    } else if (process_name.find("coagulation") != std::string::npos) {
+      for (size_t m = 0; m < num_modes; ++m) {
+        qtend_coag_so4_.push_back(tends.interstitial_aerosols(iso4_[m], 0)[0]);
+        qtend_coag_soa_.push_back(tends.interstitial_aerosols(isoa_[m], 0)[0]);
+      }
+      qtend_coag_h2so4_.push_back(tends.gases(ih2so4_, 0)[0]);
+      qtend_coag_soag_.push_back(tends.gases(isoag_, 0)[0]);
     }
   }
 

@@ -313,8 +313,10 @@ if (HAERO_ENABLE_CHEM_DRIVER)
  add_subdirectory(chem_driver)
 endif()
 
-# Box model for acceptance testing
-add_subdirectory(box)
+# Box model for acceptance testing (Fortran configs only)
+if (HAERO_FORTRAN)
+  add_subdirectory(box)
+endif()
 
 # Validation tools (currently offered only for CPU builds with pack size 1,
 # because we're using it with Fortran.)

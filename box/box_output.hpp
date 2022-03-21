@@ -34,6 +34,9 @@ class BoxOutput {
 
   const haero::ModalAerosolConfig& config_; // aerosol configuration
 
+  std::vector<int> iso4_, isoa_; // indices for SO4 and SOA within each mode
+  int ih2so4_, isoag_;           // indices for H2SO4 and SOAG gases
+
   int nstep_; // number of steps written
 
   // Aerosol data (identical in form to that of the MAM box model)
