@@ -23,7 +23,7 @@ static constexpr int nbatch = 1;
 static constexpr bool verbose = false;
 static constexpr int team_size = -1;
 static constexpr int vector_size = -1;
-static std::string outputfile = "chem.dat";
+static const std::string outputfile = "chem.dat";
 }  // namespace defaults
 
 // anonymous namespace to hold this YamlException class
@@ -224,7 +224,7 @@ void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
   }
   fmt::print(fout_, "\n");
   // write the initial condition to file (index = -1 => pre-time-stepping)
-  static constexpr std::size_t init_condition_iteration = -1;
+  static constexpr int init_condition_iteration = -1;
   write_state(init_condition_iteration, t_host, dt_host, state_host_, fout_);
 
   Real tsum = 0;
