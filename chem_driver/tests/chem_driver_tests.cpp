@@ -24,7 +24,6 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     refsol_file += "/output_arrhenius.yaml";
 
     Real tbeg = 0.0;
-    Real tend = 100.0;
     Real dt = 1.0;
     Real cur_time = tbeg;
     ordinal_type nsteps = 101;
@@ -105,7 +104,6 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     refsol_file += "/output_troe.yaml";
 
     Real tbeg = 0.0;
-    Real tend = 100.0;
     Real dt = 1.0;
     Real cur_time = tbeg;
     ordinal_type nsteps = 101;
@@ -171,7 +169,6 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     refsol_file += "/output_photolysis.yaml";
 
     Real tbeg = 0.0;
-    Real tend = 100.0;
     Real dt = 1.0;
     Real cur_time = tbeg;
     ordinal_type nsteps = 101;
@@ -237,7 +234,6 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     refsol_file += "/output_CMAQ_H2O2.yaml";
 
     Real tbeg = 0.0;
-    Real tend = 100.0;
     Real dt = 1.0;
     Real cur_time = tbeg;
     ordinal_type nsteps = 101;
@@ -303,7 +299,6 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     refsol_file += "/output_CMAQ_OH_HNO3.yaml";
 
     Real tbeg = 0.0;
-    Real tend = 100.0;
     Real dt = 1.0;
     Real cur_time = tbeg;
     ordinal_type nsteps = 101;
@@ -369,7 +364,6 @@ TEST_CASE("TChem tendency computation tests", "haero_unit_tests") {
     refsol_file += "/output_emission.yaml";
 
     Real tbeg = 0.0;
-    Real tend = 100.0;
     Real dt = 1.0;
     Real cur_time = tbeg;
     ordinal_type nsteps = 101;
