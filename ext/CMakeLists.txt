@@ -351,7 +351,7 @@ if (NOT EXISTS ${TINES_LIBRARY})
   if (HAERO_DEVICE STREQUAL "CUDA")
     # We use EKAT's C++ compiler helper script for CUDA.
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper)
   else()
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
@@ -361,9 +361,11 @@ if (NOT EXISTS ${TINES_LIBRARY})
     else()
       # We need OpenBLAS for non-GPU builds that don't use Intel's compiler.
       #Extract path to openblas install directory from OPENBLAS_LIBRARY_DIR variable for Tines
-      set(OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR}/..)
-      set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+      if (HAERO_DEVICE STREQUAL "CPU")
+        set(OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR}/..)
+        set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                            -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH})
+      endif()
     endif()
   endif()
 
@@ -427,7 +429,7 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
     # toward the kokkos/ subdirectory of our include path in this case (for some
     # reason).
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper)
   else()
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
