@@ -3,6 +3,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <cstdarg>
 #include <map>
 #include <string>
 #include <vector>
