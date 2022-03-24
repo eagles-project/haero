@@ -199,6 +199,24 @@ class MAMCalcsizeProcess final
         update_diameter_and_vol2num(k_pack, imode, dryvol_c_k, num_c_k, v2nmin,
                                     v2nmax, dgnmin, dgnmax, common_factor,
                                     dgncur_c, v2ncur_c);
+
+        if (do_aitacc_transfer) {
+          if (imode == aitken_idx) {
+            drv_a_aitsv(k_pack) = dryvol_a_k;
+            num_a_aitsv(k_pack) = num_a_k;
+            drv_c_aitsv(k_pack) = dryvol_c_k;
+            num_c_aitsv(k_pack) = num_c_k;
+          } else if (imode == accum_idx) {
+            drv_a_accsv(k_pack) = dryvol_a_k;
+            num_a_accsv(k_pack) = num_a_k;
+            drv_c_accsv(k_pack) = dryvol_c_k;
+            num_c_accsv(k_pack) = num_c_k;
+          }
+        }
+        drv_a_sv(k_pack, imode) = dryvol_a_k;
+        num_a_sv(k_pack, imode) = num_a_k;
+        drv_c_sv(k_pack, imode) = dryvol_c_k;
+        num_c_sv(k_pack, imode) = num_c_k;
       }
     }
   }
@@ -681,22 +699,22 @@ class MAMCalcsizeProcess final
   RealView dryvol_c;
 
   // Work variables for aitken<-->accumulation transfer sub process
-  RealView drv_a_aitsv;
+  ColumnView drv_a_aitsv;
 
   // saves aitken and accumulation interstitial modes dryvolume
-  RealView drv_a_accsv;
-  RealView drv_c_aitsv;
+  ColumnView drv_a_accsv;
+  ColumnView drv_c_aitsv;
 
   // saves aitken and accumulation cloudborne modes dryvolume
-  RealView drv_c_accsv;
-  RealView num_a_aitsv;
+  ColumnView drv_c_accsv;
+  ColumnView num_a_aitsv;
 
   // saves aitken and accumulation interstitial modes num concentrations
-  RealView num_a_accsv;
-  RealView num_c_aitsv;
+  ColumnView num_a_accsv;
+  ColumnView num_c_aitsv;
 
   // saves aitken and accumulation cloudborne modes num concentrations
-  RealView num_c_accsv;
+  ColumnView num_c_accsv;
 
   SpeciesColumnView drv_a_sv;
 
