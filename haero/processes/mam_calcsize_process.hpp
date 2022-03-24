@@ -109,10 +109,16 @@ class MAMCalcsizeProcess final
     const auto n_c = prognostics.cloud_num_mix_ratios;
 
     // tendencies for interstitial number mixing ratios
-    const auto dnidt = tendencies.interstitial_num_mix_ratios;
+    const ModeColumnView dnidt = tendencies.interstitial_num_mix_ratios;
 
     // tendencies for cloud-borne number mixing ratios
-    const auto dncdt = tendencies.cloud_num_mix_ratios;
+    const ModeColumnView dncdt = tendencies.cloud_num_mix_ratios;
+
+    // tendencies for interstitial mass mixing ratios
+    const SpeciesColumnView didt = tendencies.interstitial_aerosols;
+
+    // tendencies for cloudborne mass mixing ratios
+    const SpeciesColumnView dcdt = tendencies.cloud_aerosols;
 
     for (int k_pack = 0; k_pack < num_vert_packs; k_pack++) {
       for (int imode = 0; imode < nmodes; imode++) {
@@ -219,6 +225,11 @@ class MAMCalcsizeProcess final
         num_c_sv(k_pack, imode) = num_c_k;
       }
     }
+
+    if (do_aitacc_transfer) {
+      aitken_accum_exchange(nlevels, dt, q_i, q_c, n_i, n_c, didt, dcdt, dnidt,
+                            dncdt);
+    }
   }
 
  private:
@@ -231,6 +242,15 @@ class MAMCalcsizeProcess final
                                    PackType &v2ncur) const {
     dgncur = dgnnom_nmodes(imode);
     v2ncur = v2nnom_nmodes(imode);
+  }
+  KOKKOS_INLINE_FUNCTION
+  void aitken_accum_exchange(
+      const int nlevs, const Real dt, const SpeciesColumnView q_i,
+      const SpeciesColumnView q_c, const SpeciesColumnView n_i,
+      const SpeciesColumnView n_c, const SpeciesColumnView didt,
+      const SpeciesColumnView dcdt, const ModeColumnView dnidt,
+      const ModeColumnView dncdt) const {
+    // foo
   }
 
   /*----------------------------------------------------------------------------
