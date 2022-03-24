@@ -139,7 +139,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                         -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
                         -DZLIB_LIBRARY=${ZLIB_LIBRARIES}
                         -DHAVE_LIBDL=ON
-                        -DLIBDL=${DL_LIBRARY}
+                        -DLIBDL=${CMAKE_DL_LIBS}
                         -DENABLE_PARALLEL=${HAVE_MPI}
                         -DHDF5_IS_PARALLEL=${HAVE_MPI}
                         -DHDF5_IS_PARALLEL_MPIO=${HAVE_MPI}
