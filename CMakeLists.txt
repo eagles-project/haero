@@ -252,7 +252,7 @@ add_subdirectory(ext)
 
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_DEVICE STREQUAL CUDA)
-  set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx")
+  set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
   # Avoid buggy experimental Kokkos CUDA stuff.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_")
@@ -308,10 +308,10 @@ if (HAERO_ENABLE_DRIVER)
   add_subdirectory(driver)
 endif()
 
-#if (HAERO_ENABLE_CHEM_DRIVER)
-#  message(STATUS "Building chem_driver.")
-#  add_subdirectory(chem_driver)
-#endif()
+if (HAERO_ENABLE_CHEM_DRIVER)
+ message(STATUS "Building chem_driver.")
+ add_subdirectory(chem_driver)
+endif()
 
 # Validation tools (currently offered only for CPU builds with pack size 1,
 # because we're using it with Fortran.)

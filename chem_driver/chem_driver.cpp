@@ -1,36 +1,42 @@
 #include "chem_driver.hpp"
 
-#include <cstdarg>
-#include <cstdio>
-
-#include "haero/constants.hpp"
-
 namespace haero {
 namespace chem_driver {
 
-namespace {
-// default reaction rate coefficients
-// Note: these are the default values used by Musica/MusicBox
-const std::map<std::string, Real> default_rxn_coeffs = {
-    {"A", 1.0},      {"Ea", 0.0},     {"B", 0.0},      {"D", 300.0},
-    {"E", 0.0},      {"k0_A", 1.0},   {"k0_B", 0.0},   {"k0_C", 0.0},
-    {"kinf_A", 1.0}, {"kinf_B", 0.0}, {"kinf_C", 0.0}, {"Fc", 0.6},
-    {"N", 1.0}};
-}  // namespace
+namespace defaults {
+static constexpr Real tbeg = 0.0;
+static constexpr Real tend = 1.0;
+static constexpr Real dt = 1.0e-8;
+static constexpr Real dtmin = 1.0e-8;
+static constexpr Real dtmax = 1.0e-1;
+static constexpr int max_num_newton_iterations = 100;
+static constexpr int num_time_iterations_per_interval = 10;
+static constexpr int jacobian_interval = 1;
 
-using namespace from_tchem;
+static constexpr Real max_time_iterations = 1.0e3;
+static constexpr Real atol_newton = 1.0e-10;
+static constexpr Real rtol_newton = 1.0e-6;
+static constexpr Real atol_time = 1.0e-12;
+static constexpr Real tol_time = 1.0e-4;
+
+static constexpr int nbatch = 1;
+static constexpr bool verbose = false;
+static constexpr int team_size = -1;
+static constexpr int vector_size = -1;
+static const std::string outputfile = "chem.dat";
+}  // namespace defaults
 
 // anonymous namespace to hold this YamlException class
 namespace {
-/// This exception class stores information about errors encountered in reading
-/// data from a YAML file.
+// This exception class stores information about errors encountered in reading
+// data from a YAML file.
 class YamlException : public std::exception {
  public:
-  /// Constructs an exception containing the given descriptive message.
+  // Constructs an exception containing the given descriptive message.
   YamlException(const std::string& message) : _message(message) {}
 
-  /// Constructs an exception containing the given formatting string and
-  /// C-style variadic arguments (a la printf).
+  // Constructs an exception containing the given formatting string and
+  // C-style variadic arguments (a la printf).
   YamlException(const char* fmt, ...);
 
   const char* what() const throw() { return _message.c_str(); }
@@ -38,7 +44,6 @@ class YamlException : public std::exception {
  private:
   std::string _message;
 };
-
 YamlException::YamlException(const char* fmt, ...) {
   char ss[256];
   va_list args;
@@ -47,177 +52,360 @@ YamlException::YamlException(const char* fmt, ...) {
   va_end(args);
   _message.assign(ss);
 }
-}  // end anonymous namespace
+};  // end anonymous namespace
 
-/// ChemicalSpecies constructor
-ChemicalSpecies::ChemicalSpecies(const std::string& mname, Real minitial_value,
-                                 const std::string& munits)
-    : name(mname), initial_value(minitial_value), units(munits) {}
-
-/// EnvironmentalConditions constructor
-EnvironmentalConditions::EnvironmentalConditions(Real T0,
-                                                 const std::string& T_units,
-                                                 Real P0,
-                                                 const std::string& P_units)
-    : initial_temp(T0),
-      units_temp(T_units),
-      initial_pressure(P0),
-      units_pressure(P_units) {}
-
-/// Reaction constructor: enumerates the reaction type and sets default rate
-/// coefficients if values are not provided in the yaml input
-// FIXME: currently only have arrhenius and troe, but we'll cross that bridge
-// when we come to it
-Reaction::Reaction(const std::string& mtype_str,
-                   const std::map<std::string, Real>& mreactants,
-                   const std::map<std::string, Real>& mproducts,
-                   const std::map<std::string, Real>& mrate_coefficients)
-    : type_str(mtype_str), reactants(mreactants), products(mproducts) {
-  // convert reaction type string to lowercase
-  transform(type_str.begin(), type_str.end(), type_str.begin(), ::tolower);
-  // use the type string to set the enumerated type for the reaction and assign
-  // the rate coefficients, either based on input or to default values
-  if (type_str.compare("arrhenius") == 0) {
-    // assign the corresponding enum
-    type = arrhenius;
-    // get the rate coefficient from the SimulationInput, otherwise use the
-    // default value
-    get_or_default(mrate_coefficients, "A");
-    get_or_default(mrate_coefficients, "Ea");
-    get_or_default(mrate_coefficients, "B");
-    get_or_default(mrate_coefficients, "D");
-    get_or_default(mrate_coefficients, "E");
-  } else if (type_str.compare("troe") == 0) {
-    type = troe;
-    get_or_default(mrate_coefficients, "k0_A");
-    get_or_default(mrate_coefficients, "k0_B");
-    get_or_default(mrate_coefficients, "k0_C");
-    get_or_default(mrate_coefficients, "kinf_A");
-    get_or_default(mrate_coefficients, "kinf_B");
-    get_or_default(mrate_coefficients, "kinf_C");
-    get_or_default(mrate_coefficients, "Fc");
-    get_or_default(mrate_coefficients, "N");
-  } else {
-    std::cout << "ERROR: reaction type currently unsupported."
-              << "\n";
+// write current state to file
+// the fields written to file are: iteration, t, dt, Density, Pressure,
+// Temperature, "concentration(s)" (in the relevant, specified units)
+void static write_state(const ordinal_type iter, const Real_1d_view_host _t,
+                        const Real_1d_view_host _dt,
+                        const Real_2d_view_host _state_at_i, FILE* fout_) {
+  // loop over batches
+  for (size_t sp = 0; sp < _state_at_i.extent(0); sp++) {
+    fmt::print(fout_, "{:d} \t {:15.10e} \t  {:15.10e} \t ", iter, _t(sp),
+               _dt(sp));
+    // loop over species concs
+    for (ordinal_type k = 0, kend = _state_at_i.extent(1); k < kend; ++k)
+      fmt::print(fout_, "{:15.10e} \t", _state_at_i(sp, k));
+    fmt::print(fout_, "\n");
   }
-}
+};
 
-/// method for either getting the coefficient from SimulationInput
-/// or using defaults
-void Reaction::get_or_default(
-    const std::map<std::string, Real>& mrate_coefficients,
-    const std::string& name) {
-  // determine whether a rate coefficient was provided by the input yaml
-  // if not, assign that coefficient the default value
-  // Note: find() returns vec.end() if it is not found
-  rate_coefficients[name] =
-      (mrate_coefficients.find(name) != mrate_coefficients.end())
-          ? mrate_coefficients.at(name)
-          : default_rxn_coeffs.at(name);
-}
+// print current state to screen
+// the fields printed to screen are: current time, elapsed time, Density,
+// Pressure, Temperature, "concentration(s)" (in the relevant, specified units)
+void static print_state(const time_advance_type _tadv, const Real _t,
+                        const Real_1d_view_host _state_at_i) {
+  fmt::print(stdout, "{:e} {:e} {:e} {:e} {:e}", _t, _t - _tadv._tbeg,
+             _state_at_i(0), _state_at_i(1), _state_at_i(2));
+  // loop over species concs
+  for (ordinal_type k = 3, kend = _state_at_i.extent(0); k < kend; ++k)
+    fmt::print(stdout, " {:e}", _state_at_i(k));
+  fmt::print(stdout, "\n");
+};
 
-/// ChemSolver constructor: initializes all the required views on device and
-/// sets some kokkos-related parameters
-ChemSolver::ChemSolver(SimulationInput& sim_inp)
-    : reactions(sim_inp.reactions) {
+// ChemSolver constructor: initializes all the required views on device and
+// sets some kokkos-related parameters
+ChemSolver::ChemSolver(std::string input_file) {
   // parse the tchem section of the input yaml
-  parse_tchem_inputs(sim_inp);
+  parse_tchem_inputs_(input_file);
+  // read the parameters from file
+  solver_params_.set_params(input_file, verbose_);
 
-  // set the kokkos parallel policy
-  // FIXME: determine whether this lines up with the overall haero goals, as
-  // what's here was copied over from the TChem implementation
-  policy = policy_type(TChem::exec_space(), nbatch, Kokkos::AUTO());
+  // make sure that the execution spaces are the same
+  static_assert(std::is_same<TChem::exec_space(), ExecutionSpace()>::value,
+                "TChem and Haero are using different execution spaces");
 
-  // set the temp and pressure that we got from the simulation input
-  temperature = sim_inp.env_conditions.initial_temp;
-  pressure = sim_inp.env_conditions.initial_pressure;
-  units_temp = sim_inp.env_conditions.units_temp;
-  units_pressure = sim_inp.env_conditions.units_pressure;
+  TChem::exec_space::print_configuration(std::cout, verbose_);
+  TChem::host_exec_space::print_configuration(std::cout, verbose_);
+  using device_type = typename Tines::UseThisDevice<ExecutionSpace>::type;
 
-  // set the initial state, based on input
-  int nSpecies = sim_inp.species.size();
-  state = real_type_2d_view("StateVector", nbatch, nSpecies);
-  auto state_host = Kokkos::create_mirror_view(state);
-  for (int i = 0; i < nbatch; ++i) {
-    for (int j = 0; j < nSpecies; ++j) {
-      state_host(i, j) = sim_inp.species[j].initial_value;
-    }
+  // construct the kinetic model data object and its const version
+  kmd_ = TChem::KineticModelData(input_file);
+  kmcd_ = TChem::createNCAR_KineticModelConstData<device_type>(kmd_);
+
+  // this is the number of species and second dimension in the 2d state view
+  const ordinal_type stateVecDim = TChem::Impl::getStateVectorSize(kmcd_.nSpec);
+
+  if (verbose_) {
+    fmt::print(stdout, "Number of Species {:d} \n", kmcd_.nSpec);
+    fmt::print(stdout, "Number of Reactions {:d} \n", kmcd_.nReac);
   }
-  Kokkos::deep_copy(state, state_host);
+  const auto speciesNamesHost = Kokkos::create_mirror_view(kmcd_.speciesNames);
+  Kokkos::deep_copy(speciesNamesHost, kmcd_.speciesNames);
 
-  // optionally print some configuration info
-  // (note: this doesn't appear to do anything when compiled for serial)
-  if (verbose) {
-    TChem::exec_space::print_configuration(std::cout, verbose);
-    TChem::host_exec_space::print_configuration(std::cout, verbose);
+  fout_ = fopen(solver_params_.outputfile.c_str(), "w");
+  // read initial condition from yaml file
+  TChem::AtmChemistry::setScenarioConditions(input_file, speciesNamesHost,
+                                             kmcd_.nSpec, state_host_, nbatch_);
+  state_ = Real_2d_view("StateVector Devices", nbatch_, stateVecDim);
+
+  Kokkos::deep_copy(state_, state_host_);
+
+  const auto exec_space_instance = TChem::exec_space();
+
+  // kokkos team policy
+  policy_ = policy_type(exec_space_instance, nbatch_, Kokkos::AUTO());
+
+  // fancier version with nonzero vector size
+  if (team_size_ > 0 && vector_size_ > 0) {
+    policy_ =
+        policy_type(exec_space_instance, nbatch_, team_size_, vector_size_);
   }
 
-  // construct the KMD object
-  // create kmd via yaml input?
-  kmd = TChem::KineticModelData(cfiles.chemFile, cfiles.thermFile);
-  std::ofstream output(cfiles.thermFile);
-  // create a const version, as required by TChem/kokkos
-  kmcd = kmd.createConstData<TChem::exec_space>();
-
-  // initialize omega (tendency output)
-  omega = real_type_2d_view("NetProductionRate", nbatch, kmcd.nSpec);
-
-  // FIXME: this bit is a little over my head--should probably consider the
-  // implications of what's happening here
+  // set scratch memory size for kokkos teams
   const ordinal_type level = 1;
-  const ordinal_type per_team_extent = getWorkSpaceSize(kmcd);
+  ordinal_type per_team_extent(0);
+  per_team_extent = TChem::AtmosphericChemistry::getWorkSpaceSize(kmcd_);
   const ordinal_type per_team_scratch =
-      TChem::Scratch<real_type_1d_view>::shmem_size(per_team_extent);
-  policy.set_scratch_size(level, Kokkos::PerTeam(per_team_scratch));
+      TChem::Scratch<Real_1d_view>::shmem_size(per_team_extent);
+  policy_.set_scratch_size(level, Kokkos::PerTeam(per_team_scratch));
 }
 
-/// print summary information about ChemSolver, as it relates to TChem
-void ChemSolver::print_summary(const ChemFiles& cfiles) {
-  printf("---------------------------------------------------\n");
-  printf(
-      "Testing Arguments: \n batch size %d\n chemfile %s\n thermfile %s\n "
-      "outputfile %s\n verbose %s\n",
-      nbatch, cfiles.chemFile.c_str(), cfiles.thermFile.c_str(),
-      // inputFile.c_str(),
-      cfiles.outputFile.c_str(), verbose ? "true" : "false");
-  printf("---------------------------------------------------\n");
-  printf("Time reaction rates %e [sec] %e [sec/sample]\n", t_device_batch,
-         t_device_batch / Real(nbatch));
-}  // end ChemSolver::print_summary
+// time integrator that takes tbeg and tend as arguments--used in the unit tests
+// in order to time step externally
+// Note: this and the following version of this function are nearly identical,
+// and only commented here
+void ChemSolver::time_integrate(const Real& tbeg, const Real& tend) {
+  Real_1d_view t("time", nbatch_);
+  Kokkos::deep_copy(t, tbeg);
+  Real_1d_view dt("delta time", nbatch_);
+  Kokkos::deep_copy(dt, solver_params_.tadv_default._dtmin);
 
-/// get
-real_type_2d_view ChemSolver::get_tendencies() {
-  // reset timer
-  timer.reset();
+  Real_1d_view_host t_host;
+  Real_1d_view_host dt_host;
 
-  // calculate the reaction rates (based on current temp/pressure and the given
-  // rate coefficients)
-  set_reaction_rates();
+  t_host = Real_1d_view_host("time host", nbatch_);
+  dt_host = Real_1d_view_host("dt host", nbatch_);
 
-  // run the model
-  SourceTermToyProblem::runDeviceBatch(policy, kfor, krev, state, omega, kmcd);
-  Kokkos::fence();  /// timing purpose
-  t_device_batch = timer.seconds();
-  /// create a mirror view of omega (output) to export a file
-  if (verbose) {
-    print_summary(cfiles);
-    auto omega_host = Kokkos::create_mirror_view(omega);
-    Kokkos::deep_copy(omega_host, omega);
+  ordinal_type number_of_equations = 0;
 
-    /// print the first (of nbatch) values
-    {
-      auto omega_host_at_0 = Kokkos::subview(omega_host, 0, Kokkos::ALL());
-      TChem::Test::writeReactionRates(cfiles.outputFile, kmcd.nSpec,
-                                      omega_host_at_0);
+  using device_type = typename Tines::UseThisDevice<ExecutionSpace>::type;
+  using problem_type =
+      TChem::Impl::AtmosphericChemistry_Problem<Real, device_type>;
+  number_of_equations = problem_type::getNumberOfTimeODEs(kmcd_);
+
+  Real_2d_view tol_time("tol time", number_of_equations, 2);
+  Real_1d_view tol_newton("tol newton", 2);
+
+  Real_2d_view fac("fac", nbatch_, number_of_equations);
+
+  // copy tolerances to device
+  {
+    auto tol_time_host = Kokkos::create_mirror_view(tol_time);
+    auto tol_newton_host = Kokkos::create_mirror_view(tol_newton);
+
+    for (ordinal_type i = 0, iend = tol_time.extent(0); i < iend; ++i) {
+      tol_time_host(i, 0) = solver_params_.atol_time;
+      tol_time_host(i, 1) = solver_params_.tol_time;
+    }
+    tol_newton_host(0) = solver_params_.atol_newton;
+    tol_newton_host(1) = solver_params_.rtol_newton;
+
+    Kokkos::deep_copy(tol_time, tol_time_host);
+    Kokkos::deep_copy(tol_newton, tol_newton_host);
+  }
+
+  // set tbeg and tend in tadv_default from the function arguments, rather than
+  // the ones read from file, then deep copy to device
+  solver_params_.tadv_default._tbeg = tbeg;
+  solver_params_.tadv_default._tend = tend;
+  time_advance_type_1d_view tadv("tadv", nbatch_);
+  Kokkos::deep_copy(tadv, solver_params_.tadv_default);
+
+  // setup current timestep subviews and mirrors
+  const auto tadv_at_i = Kokkos::subview(tadv, 0);
+  const auto t_at_i = Kokkos::subview(t, 0);
+  const auto state_at_i = Kokkos::subview(state_, 0, Kokkos::ALL());
+
+  auto tadv_at_i_host = Kokkos::create_mirror_view(tadv_at_i);
+  auto t_at_i_host = Kokkos::create_mirror_view(t_at_i);
+  auto state_at_i_host = Kokkos::create_mirror_view(state_at_i);
+
+  // print initial state info to screen, if enabled
+  if (print_qoi_) {
+    Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
+    Kokkos::deep_copy(t_at_i_host, t_at_i);
+    Kokkos::deep_copy(state_at_i_host, state_at_i);
+    print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+  }
+
+  Kokkos::deep_copy(dt_host, dt);
+  Kokkos::deep_copy(t_host, t);
+
+  // write the initial state information, along with header, to file
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t ", "iter", "t", "dt");
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t", "Density[kg/m3]",
+             "Pressure[Pascal]", "Temperature[K]");
+  const auto speciesNamesHost = Kokkos::create_mirror_view(kmcd_.speciesNames);
+  Kokkos::deep_copy(speciesNamesHost, kmcd_.speciesNames);
+  for (ordinal_type k = 0; k < kmcd_.nSpec; k++) {
+    fmt::print(fout_, "{:s} \t", &speciesNamesHost(k, 0));
+  }
+  fmt::print(fout_, "\n");
+  // write the initial condition to file (index = -1 => pre-time-stepping)
+  static constexpr int init_condition_iteration = -1;
+  write_state(init_condition_iteration, t_host, dt_host, state_host_, fout_);
+
+  Real tsum = 0;
+  ordinal_type iter = 0;
+  // begin time stepping
+  // note that this stops according to the tend passed to the function
+  for (; iter < solver_params_.max_time_iterations && tsum <= tend * 0.9999;
+       ++iter) {
+    // this is where the magic happens
+    TChem::AtmosphericChemistry::runDeviceBatch(
+        policy_, tol_newton, tol_time, fac, tadv, state_, t, dt, state_, kmcd_);
+
+    // print current state info to screen, if enabled
+    if (print_qoi_) {
+      Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
+      Kokkos::deep_copy(t_at_i_host, t_at_i);
+      Kokkos::deep_copy(state_at_i_host, state_at_i);
+      print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+    }
+
+    Kokkos::deep_copy(dt_host, dt);
+    Kokkos::deep_copy(t_host, t);
+    Kokkos::deep_copy(state_host_, state_);
+
+    // write current state info to file
+    write_state(iter, t_host, dt_host, state_host_, fout_);
+
+    // carry over time and dt computed in this step
+    Real tsum = 0;
+    Kokkos::parallel_reduce(
+        nbatch_,
+        KOKKOS_LAMBDA(const ordinal_type& i, Real& update) {
+          tadv(i)._tbeg = t(i);
+          tadv(i)._dt = dt(i);
+          update += t(i);
+        },
+        tsum);
+    Kokkos::fence();
+    tsum /= nbatch_;
+  }  // end for
+
+  if (print_qoi_) {
+    Kokkos::deep_copy(state_host_, state_);
+    for (int i = 0; i < nbatch_; ++i) {
+      fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
+      auto state_at_i = Kokkos::subview(state_host_, i, Kokkos::ALL());
+      for (int k = 0; k < state_at_i.extent(0); ++k) {
+        fmt::print(stdout, " {:e}", state_at_i(k));
+      }
+      fmt::print(stdout, "\n");
     }
   }
-  return omega;
-}  // end ChemSolver::get_tendencies
+}
 
-/// get the TChem-specific inputs from the input yaml
-void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
-  auto root = YAML::LoadFile(sim_inp.input_file);
+// time integrator that gets tbeg and tend from yaml input (stored in
+// solver_params_)
+void ChemSolver::time_integrate() {
+  Real_1d_view t("time", nbatch_);
+  Kokkos::deep_copy(t, solver_params_.tadv_default._tbeg);
+  Real_1d_view dt("delta time", nbatch_);
+  Kokkos::deep_copy(dt, solver_params_.tadv_default._dtmin);
+
+  Real_1d_view_host t_host;
+  Real_1d_view_host dt_host;
+
+  t_host = Real_1d_view_host("time host", nbatch_);
+  dt_host = Real_1d_view_host("dt host", nbatch_);
+
+  ordinal_type number_of_equations = 0;
+
+  using device_type = typename Tines::UseThisDevice<ExecutionSpace>::type;
+  using problem_type =
+      TChem::Impl::AtmosphericChemistry_Problem<Real, device_type>;
+  number_of_equations = problem_type::getNumberOfTimeODEs(kmcd_);
+
+  Real_2d_view tol_time("tol time", number_of_equations, 2);
+  Real_1d_view tol_newton("tol newton", 2);
+
+  Real_2d_view fac("fac", nbatch_, number_of_equations);
+
+  {
+    auto tol_time_host = Kokkos::create_mirror_view(tol_time);
+    auto tol_newton_host = Kokkos::create_mirror_view(tol_newton);
+
+    for (ordinal_type i = 0, iend = tol_time.extent(0); i < iend; ++i) {
+      tol_time_host(i, 0) = solver_params_.atol_time;
+      tol_time_host(i, 1) = solver_params_.tol_time;
+    }
+    tol_newton_host(0) = solver_params_.atol_newton;
+    tol_newton_host(1) = solver_params_.rtol_newton;
+
+    Kokkos::deep_copy(tol_time, tol_time_host);
+    Kokkos::deep_copy(tol_newton, tol_newton_host);
+  }
+
+  time_advance_type_1d_view tadv("tadv", nbatch_);
+  Kokkos::deep_copy(tadv, solver_params_.tadv_default);
+
+  const auto tadv_at_i = Kokkos::subview(tadv, 0);
+  const auto t_at_i = Kokkos::subview(t, 0);
+  const auto state_at_i = Kokkos::subview(state_, 0, Kokkos::ALL());
+
+  auto tadv_at_i_host = Kokkos::create_mirror_view(tadv_at_i);
+  auto t_at_i_host = Kokkos::create_mirror_view(t_at_i);
+  auto state_at_i_host = Kokkos::create_mirror_view(state_at_i);
+
+  ordinal_type iter = 0;
+  if (print_qoi_) {
+    Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
+    Kokkos::deep_copy(t_at_i_host, t_at_i);
+    Kokkos::deep_copy(state_at_i_host, state_at_i);
+    print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+  }
+
+  Kokkos::deep_copy(dt_host, dt);
+  Kokkos::deep_copy(t_host, t);
+
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t ", "iter", "t", "dt");
+  fmt::print(fout_, "{:s} \t {:s} \t {:s} \t", "Density[kg/m3]",
+             "Pressure[Pascal]", "Temperature[K]");
+
+  const auto speciesNamesHost = Kokkos::create_mirror_view(kmcd_.speciesNames);
+  Kokkos::deep_copy(speciesNamesHost, kmcd_.speciesNames);
+
+  for (ordinal_type k = 0; k < kmcd_.nSpec; k++) {
+    fmt::print(fout_, "{:s} \t", &speciesNamesHost(k, 0));
+  }
+  fmt::print(fout_, "\n");
+  // write the initial condition to file (index = -1 => pre-time-stepping)
+  static constexpr std::size_t init_condition_iteration = -1;
+  write_state(init_condition_iteration, t_host, dt_host, state_host_, fout_);
+
+  Real tsum = 0;
+  for (; iter < solver_params_.max_time_iterations &&
+         tsum <= solver_params_.tadv_default._tend * 0.9999;
+       ++iter) {
+    TChem::AtmosphericChemistry::runDeviceBatch(
+        policy_, tol_newton, tol_time, fac, tadv, state_, t, dt, state_, kmcd_);
+
+    if (print_qoi_) {
+      Kokkos::deep_copy(tadv_at_i_host, tadv_at_i);
+      Kokkos::deep_copy(t_at_i_host, t_at_i);
+      Kokkos::deep_copy(state_at_i_host, state_at_i);
+      print_state(tadv_at_i_host(), t_at_i_host(), state_at_i_host);
+    }
+
+    Kokkos::deep_copy(dt_host, dt);
+    Kokkos::deep_copy(t_host, t);
+    Kokkos::deep_copy(state_host_, state_);
+
+    write_state(iter, t_host, dt_host, state_host_, fout_);
+
+    Real tsum = 0;
+    Kokkos::parallel_reduce(
+        nbatch_,
+        KOKKOS_LAMBDA(const ordinal_type& i, Real& update) {
+          tadv(i)._tbeg = t(i);
+          tadv(i)._dt = dt(i);
+          update += t(i);
+        },
+        tsum);
+    Kokkos::fence();
+    tsum /= nbatch_;
+  }  // end for
+
+  if (print_qoi_) {
+    Kokkos::deep_copy(state_host_, state_);
+    for (int i = 0; i < nbatch_; ++i) {
+      fmt::print(stdout, "Devices:: Solution sample No {:d}\n", i);
+      auto state_at_i = Kokkos::subview(state_host_, i, Kokkos::ALL());
+      for (int k = 0; k < state_at_i.extent(0); ++k) {
+        fmt::print(stdout, " {:e}", state_at_i(k));
+      }
+      fmt::print(stdout, "\n");
+    }
+  }
+}
+
+// get the TChem-specific inputs from the input yaml or use defaults
+void ChemSolver::parse_tchem_inputs_(const std::string& input_file) {
+  auto root = YAML::LoadFile(input_file);
   if (root["tchem"] and root["tchem"].IsMap()) {
     auto node = root["tchem"];
     if (not node["nbatch"]) {
@@ -227,268 +415,108 @@ void ChemSolver::parse_tchem_inputs(SimulationInput& sim_inp) {
     } else if (not node["verbose"]) {
       throw YamlException(
           "problem specific entry has no verbose boolean (verbose).");
+    } else if (not node["team_size"]) {
+      throw YamlException(
+          "problem specific entry has no team_size entry (team_size).");
+    } else if (not node["vector_size"]) {
+      throw YamlException(
+          "problem specific entry has no vector_size entry (vector_size).");
+    } else if (not node["print_qoi"]) {
+      throw YamlException(
+          "problem specific entry has no print_qoi boolean (verbose).");
     } else {
-      nbatch = node["nbatch"].as<int>();
-      verbose = node["verbose"].as<bool>();
+      nbatch_ = node["nbatch"].as<int>();
+      verbose_ = node["verbose"].as<bool>();
+      team_size_ = node["team_size"].as<int>();
+      vector_size_ = node["vector_size"].as<int>();
+      print_qoi_ = node["print_qoi"].as<bool>();
     }
   } else {
-    printf(
-        "No tchem section was found--using default values: verbose = false"
-        ", nbatch = 1.\n");
-    // FIXME: depending on how we ultimately parallelize, the nbatch default
-    // may have to be set more cleverly
-    nbatch = 1;
-    verbose = false;
+    fmt::print(stdout,
+               "No tchem section was found--using default values: verbose = "
+               "false, nbatch_ = 1.\n");
+    nbatch_ = defaults::nbatch;
+    verbose_ = defaults::verbose;
+    team_size_ = defaults::team_size;
+    vector_size_ = defaults::vector_size;
   }
 }
 
-/// set the reaction rates, given the coefficient from input and the current
-/// temperature and pressure
-// FIXME: currently the ordering here corresponds to the hard-coded input files
-// that are generated in toy_problem.cpp (and consequently the input yaml)
-// --will probably have to be careful when we update the TChem input file
-// handling
-// FIXME: may want to consider doing this in parallel, closer to the tendency
-// calculations, depending on how we intend to parallelize over batches in haero
-// FIXME: make this work for Troe reactions, when the time comes
-void ChemSolver::set_reaction_rates() {
-  int nRxn = reactions.size();
-  std::vector<Real> rxn_rate(nRxn);
-
-  // make the rate calculation for each reaction in the reactions vector
-  for (int i = 0; i < nRxn; ++i) {
-    switch (reactions[i].type) {
-      case arrhenius: {
-        Real A = reactions[i].rate_coefficients["A"];
-        Real Ea = reactions[i].rate_coefficients["Ea"];
-        Real B = reactions[i].rate_coefficients["B"];
-        Real D = reactions[i].rate_coefficients["D"];
-        Real E = reactions[i].rate_coefficients["E"];
-        Real kb = Constants::boltzmann;
-        rxn_rate[i] = A * exp(-Ea / (kb * temperature)) *
-                      pow((temperature / D), B) * (1.0 + E * pressure);
-        break;
-      }
-      // FIXME: WIP
-      case troe: {
-        rxn_rate[i] = 2.5;
-        break;
+// function to read the chemistry input yaml file (or set defaults) and
+// construct a SolverParams struct from what is found there
+void SolverParams::set_params(const std::string& filename,
+                              const bool& verbose_) {
+  auto root = YAML::LoadFile(filename);
+  if (root["solver_parameters"] and root["solver_parameters"].IsMap()) {
+    auto node = root["solver_parameters"];
+    const std::vector<std::string> required_nodes{
+        "dtmin",
+        "dtmax",
+        "tbeg",
+        "tend",
+        "num_time_iterations_per_interval",
+        "max_time_iterations",
+        "max_newton_iterations",
+        "atol_newton",
+        "rtol_newton",
+        "atol_time",
+        "tol_time",
+        "jacobian_interval",
+        "outputfile"};
+    for (const auto& req_node : required_nodes) {
+      if (not node[req_node]) {
+        throw YamlException([&]() -> std::string {
+          std::stringstream ss;
+          ss << "solver_parameters contains no " << req_node << " entry.";
+          return ss.str();
+        }());
       }
     }
-  }
+    // initialize tchem's tadv struct
+    tadv_default._tbeg = node["tbeg"].as<Real>();
+    tadv_default._tend = node["tend"].as<Real>();
+    tadv_default._dt = node["dtmin"].as<Real>();
+    tadv_default._dtmin = node["dtmin"].as<Real>();
+    tadv_default._dtmax = node["dtmax"].as<Real>();
+    tadv_default._max_num_newton_iterations =
+        node["max_newton_iterations"].as<int>();
+    tadv_default._num_time_iterations_per_interval =
+        node["num_time_iterations_per_interval"].as<int>();
+    tadv_default._jacobian_interval = node["jacobian_interval"].as<int>();
 
-  // NOTE: so far, we aren't considering reversible reactions,
-  // so we set those rates to zero--this could change
-  kfor = real_type_2d_view("ForwardRate", nbatch, reactions.size());
-  krev = real_type_2d_view("ReverseRate", nbatch, reactions.size());
+    // initialize the other solver params that don't go in the above struct
+    max_time_iterations = node["max_time_iterations"].as<int>();
+    atol_newton = node["atol_newton"].as<Real>();
+    rtol_newton = node["rtol_newton"].as<Real>();
+    atol_time = node["atol_time"].as<Real>();
+    tol_time = node["tol_time"].as<Real>();
 
-  /// create a mirror view to store input
-  auto kfor_host = Kokkos::create_mirror_view(kfor);
-  auto krev_host = Kokkos::create_mirror_view(krev);
+    outputfile = node["outputfile"].as<std::string>();
+  } else {  // defaults
+    tadv_default._tbeg = defaults::tbeg;
+    tadv_default._tend = defaults::tend;
+    tadv_default._dt = defaults::dt;
+    tadv_default._dtmin = defaults::dtmin;
+    tadv_default._dtmax = defaults::dtmax;
+    tadv_default._max_num_newton_iterations = defaults::max_num_newton_iterations;
+    tadv_default._num_time_iterations_per_interval = defaults::num_time_iterations_per_interval;
+    tadv_default._jacobian_interval = defaults::jacobian_interval;
 
-  // assign the calculated rates to the corresponding mirror view
-  for (int i = 0; i < nbatch; ++i) {
-    for (int j = 0; j < nRxn; ++j) {
-      kfor_host(i, j) = rxn_rate[j];
-      krev_host(i, j) = 0;
+    max_time_iterations = defaults::max_time_iterations;
+    atol_newton = defaults::atol_newton;
+    rtol_newton = defaults::rtol_newton;
+    atol_time = defaults::atol_time;
+    tol_time = defaults::tol_time;
+    outputfile = defaults::outputfile;
+    if (verbose_) {
+      fmt::print(stdout,
+                 "No solver_parameters section was found--using defaults\n");
     }
   }
-
-  // deep copy to device
-  Kokkos::deep_copy(kfor, kfor_host);
-  Kokkos::deep_copy(krev, krev_host);
 }
 
-/// ChemSolver destructor that removes the temporary TChem input files from disk
-ChemSolver::~ChemSolver() {
-  // delete the temporary chem files
-  // NOTE: for now, removing the output file, too
-  remove(cfiles.chemFile.data());
-  remove(cfiles.thermFile.data());
-  remove(cfiles.outputFile.data());
-}
+// ChemSolver destructor
+ChemSolver::~ChemSolver() { fclose(fout_); }
 
 }  // end namespace chem_driver
 }  // end namespace haero
-
-/*
-NOTE: everything in this namespace is copied directly from TChem
-*/
-namespace from_tchem {
-
-template <typename KineticModelConstDataType>
-KOKKOS_INLINE_FUNCTION static ordinal_type getWorkSpaceSize(
-    const KineticModelConstDataType& kmcd) {
-  return 6 * kmcd.nReac;
-}
-
-template <typename MemberType, typename RealType1DViewType,
-          typename OrdinalType1DViewType, typename KineticModelConstDataType>
-KOKKOS_INLINE_FUNCTION static void team_invoke_detail(
-    const MemberType& member,
-    /// input
-    const RealType1DViewType& concX,
-    /// output
-    const RealType1DViewType& omega,  /// (kmcd.nSpec)
-    const RealType1DViewType& kfor, const RealType1DViewType& krev,
-    const RealType1DViewType& ropFor, const RealType1DViewType& ropRev,
-    const OrdinalType1DViewType& iter,
-    /// const input from kinetic model
-    const KineticModelConstDataType& kmcd) {
-  member.team_barrier();
-
-  /// 2. compute rate-of-progress
-  TChem::Impl::RateOfProgress::team_invoke(member, kfor, krev,
-                                           concX,  /// input
-                                           ropFor,
-                                           ropRev,  /// output
-                                           iter,    /// workspace for iterators
-                                           kmcd);
-
-  member.team_barrier();
-
-  /// 3. assemble reaction rates
-  auto rop = ropFor;
-  Kokkos::parallel_for(
-      Kokkos::TeamVectorRange(member, kmcd.nReac), [&](const ordinal_type& i) {
-        rop(i) -= ropRev(i);
-        const Real rop_at_i = rop(i);
-        for (ordinal_type j = 0; j < kmcd.reacNreac(i); ++j) {
-          const ordinal_type kspec = kmcd.reacSidx(i, j);
-          const Real val = kmcd.reacNuki(i, j) * rop_at_i;
-          Kokkos::atomic_fetch_add(&omega(kspec), val);
-        }
-        const ordinal_type joff = kmcd.reacSidx.extent(1) / 2;
-        for (ordinal_type j = 0; j < kmcd.reacNprod(i); ++j) {
-          const ordinal_type kspec = kmcd.reacSidx(i, j + joff);
-          const Real val = kmcd.reacNuki(i, j + joff) * rop_at_i;
-          Kokkos::atomic_fetch_add(&omega(kspec), val);
-        }
-      });
-
-  member.team_barrier();
-
-#if defined(TCHEM_ENABLE_SERIAL_TEST_OUTPUT) && !defined(__CUDA_ARCH__)
-  if (member.league_rank() == 0) {
-    FILE* fs = fopen("SourceTermToyProblem.team_invoke.test.out", "a+");
-    fprintf(fs, ":: SourceTermToyProblem::team_invoke\n");
-    fprintf(fs, ":::: input\n");
-    fprintf(fs, "     nSpec %3d, nReac %3d\n", kmcd.nSpec, kmcd.nReac);
-    //
-    fprintf(fs, ":: concX\n");
-    for (int i = 0; i < int(concX.extent(0)); ++i)
-      fprintf(fs, "     i %3d, kfor %e\n", i, concX(i));
-    fprintf(fs, ":: kfor\n");
-    for (int i = 0; i < int(kfor.extent(0)); ++i)
-      fprintf(fs, "     i %3d, kfor %e\n", i, kfor(i));
-    fprintf(fs, ":: krev\n");
-    for (int i = 0; i < int(krev.extent(0)); ++i)
-      fprintf(fs, "     i %3d, krev %e\n", i, krev(i));
-    //
-    fprintf(fs, ":: ropFor\n");
-    for (int i = 0; i < int(ropFor.extent(0)); ++i)
-      fprintf(fs, "     i %3d, kfor %e\n", i, ropFor(i));
-    fprintf(fs, ":: ropRev\n");
-    for (int i = 0; i < int(ropRev.extent(0)); ++i)
-      fprintf(fs, "     i %3d, krev %e\n", i, ropRev(i));
-    fprintf(fs, "\n");
-    fprintf(fs, ":::: output\n");
-    for (int i = 0; i < int(omega.extent(0)); ++i)
-      fprintf(fs, "     i %3d, omega %e\n", i, omega(i));
-    fprintf(fs, "\n");
-  }
-#endif
-
-  // if (member.league_rank() == 0) {
-  //   FILE *fs = fopen("SourceTermToyProblem.team_invoke.test.out", "a+");
-  //   for (int i=0;i<int(Crnd.extent(0));++i)
-  //     fprintf(fs, " %d %e\n", i , Real(1e-3)*Crnd(i)*kfor(i));
-  // }
-}
-
-template <typename MemberType, typename WorkViewType,
-          typename RealType1DViewType, typename KineticModelConstDataType>
-KOKKOS_FORCEINLINE_FUNCTION static void team_invoke(
-    const MemberType& member,
-    /// input
-    const RealType1DViewType& kfor, const RealType1DViewType& krev,
-    const RealType1DViewType& X,  /// (kmcd.nSpec)
-    /// output
-    const RealType1DViewType& omega,  /// (kmcd.nSpec)
-    /// workspace
-    const WorkViewType& work,
-    /// const input from kinetic model
-    const KineticModelConstDataType& kmcd) {
-  // mjs: keep an eye on this to make sure it's working properly
-  auto w = (Real*)work.data();
-  auto mkfor = RealType1DViewType(w, kmcd.nReac);
-  w += kmcd.nReac;
-  auto mkrev = RealType1DViewType(w, kmcd.nReac);
-  w += kmcd.nReac;
-  auto ropFor = RealType1DViewType(w, kmcd.nReac);
-  w += kmcd.nReac;
-  auto ropRev = RealType1DViewType(w, kmcd.nReac);
-  w += kmcd.nReac;
-  auto iter = Kokkos::View<ordinal_type*, Kokkos::LayoutRight,
-                           typename WorkViewType::memory_space>(
-      (ordinal_type*)w, kmcd.nReac * 2);
-  w += kmcd.nReac * 2;
-
-  team_invoke_detail(member, X, omega, kfor, krev, ropFor, ropRev, iter, kmcd);
-}
-
-template <typename PolicyType, typename RealType2DViewType,
-          typename KineticModelConstType>
-void SourceTermToyProblem_TemplateRun(
-    /// input
-    const std::string& profile_name,
-    /// team size setting
-    const PolicyType& policy, const RealType2DViewType& kfor,
-    const RealType2DViewType& krev, const RealType2DViewType& state,
-    const RealType2DViewType& SourceTermToyProblem,
-    const KineticModelConstType& kmcd) {
-  Kokkos::Profiling::pushRegion(profile_name);
-
-  using policy_type = PolicyType;
-
-  const ordinal_type level = 1;
-  const ordinal_type per_team_extent = getWorkSpaceSize(kmcd);
-
-  Kokkos::parallel_for(
-      profile_name, policy,
-      KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
-        const ordinal_type i = member.league_rank();
-        const real_type_1d_view state_at_i =
-            Kokkos::subview(state, i, Kokkos::ALL());
-        const real_type_1d_view kfor_at_i =
-            Kokkos::subview(kfor, i, Kokkos::ALL());
-        const real_type_1d_view krev_at_i =
-            Kokkos::subview(krev, i, Kokkos::ALL());
-        const real_type_1d_view SourceTermToyProblem_at_i =
-            Kokkos::subview(SourceTermToyProblem, i, Kokkos::ALL());
-
-        Scratch<real_type_1d_view> work(member.team_scratch(level),
-                                        per_team_extent);
-
-        team_invoke(member, kfor_at_i, krev_at_i, state_at_i,
-                    SourceTermToyProblem_at_i, work, kmcd);
-      });
-  Kokkos::Profiling::popRegion();
-}
-
-void SourceTermToyProblem::runDeviceBatch(
-    /// input
-    typename UseThisTeamPolicy<exec_space>::type& policy,
-    const real_type_2d_view& kfor, const real_type_2d_view& krev,
-    const real_type_2d_view& state,
-    /// output
-    const real_type_2d_view& SourceTermToyProblem,
-    /// const data from kinetic model
-    const KineticModelConstDataDevice& kmcd) {
-  SourceTermToyProblem_TemplateRun(  /// input
-      "SourceTermToyProblem::runDeviceBatch",
-      /// team size setting
-      policy, kfor, krev, state, SourceTermToyProblem, kmcd);
-}
-
-}  // end namespace from_tchem

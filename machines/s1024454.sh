@@ -17,6 +17,10 @@ export NETCDFF_INCLUDE_DIR=$NETCDF_ROOT/include
 export NETCDFF_LIBRARY_DIR=$NETCDF_ROOT/lib
 export NETCDFF_LIBRARY=libnetcdff.a
 
+# export OPENBLAS_INCLUDE_DIR=/home/mjschm/OpenBLAS/install/include
+# export OPENBLAS_LIBRARY_DIR=/home/mjschm/OpenBLAS/install/lib
+# export OPENBLAS_LIBRARY=libopenblas.a
+
 export FC=mpifort
 export CC=mpicc
 export CXX=mpicxx

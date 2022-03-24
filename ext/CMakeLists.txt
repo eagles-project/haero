@@ -38,8 +38,8 @@ endif()
 #----------------------------------------------------------------------------
 # libz compression library
 #----------------------------------------------------------------------------
-find_library(Z_LIBRARY libz.a libz${CMAKE_SHARED_LIBRARY_SUFFIX})
-if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
+find_package(ZLIB REQUIRED)
+if(NOT ZLIB_FOUND)
   # Build zlib.
   message(STATUS "libz not found on system. Building locally.")
   update_submodules()
@@ -58,14 +58,14 @@ if (Z_LIBRARY STREQUAL "Z_LIBRARY-NOTFOUND")
                       LOG_BUILD TRUE
                       INSTALL_COMMAND ${MAKE} install
                       LOG_INSTALL TRUE)
-  set(Z_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
+  set(ZLIB_LIBRARIES ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
   set(HDF5_DEPS zlib_proj)
 else()
-  message(STATUS "Found libz: ${Z_LIBRARY}")
+  message(STATUS "Found libz: ${ZLIB_LIBRARIES}")
 endif()
 
 add_library(z STATIC IMPORTED GLOBAL)
-set_target_properties(z PROPERTIES IMPORTED_LOCATION ${Z_LIBRARY})
+set_target_properties(z PROPERTIES IMPORTED_LOCATION ${ZLIB_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # HDF5 parallel I/O library
@@ -88,7 +88,7 @@ if (NOT EXISTS ${HDF5_LIBRARY})
                         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DZLIB_INCLUDE_DIRS=${PROJECT_BINARY_DIR}/include
-                        -DZLIB_LIBARIES=${Z_LIBRARY} -DZLIB_USE_EXTERNAL=OFF
+                        -DZLIB_LIBARIES=${ZLIB} -DZLIB_USE_EXTERNAL=OFF
                         -DHDF5_INSTALL_LIB_DIR=${CMAKE_INSTALL_LIBDIR}
                         -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
                         -DHDF5_ENABLE_PARALLEL=${HAVE_MPI}
@@ -140,7 +140,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                         -DHDF5_C_LIBRARIES=${HDF5_LIBRARY}
                         -DHDF5_HL_LIBRARIES=${HDF5_HL_LIBRARY}
                         -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
-                        -DZLIB_LIBRARY=${Z_LIBRARY}
+                        -DZLIB_LIBRARY=${ZLIB_LIBRARIES}
                         -DHAVE_LIBDL=ON
                         -DLIBDL=${DL_LIBRARY}
                         -DENABLE_PARALLEL=${HAVE_MPI}
@@ -254,6 +254,9 @@ if (NOT EXISTS ${EKAT_LIBRARY})
 
   add_dependencies(yaml_cpp ekat_proj)
   add_dependencies(ekat ekat_proj)
+else()
+  # Copy EKAT's test-launcher into place so we can use it for our unit tests.
+  file(COPY ${EKAT_INSTALL_ROOT}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
 endif()
 add_library(kokkoscore STATIC IMPORTED GLOBAL)
 set_target_properties(kokkoscore PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscore.a)
@@ -277,16 +280,11 @@ if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
   if (NOT EXISTS ${OPENBLAS_LIBRARY})
     update_submodules()
-    set(OPENBLAS_OPTS libs CC=${CMAKE_C_COMPILER}
-                      FC=${CMAKE_Fortran_COMPILER}
-                      NO_SHARED=1 PREFIX=${PROJECT_BINARY_DIR})
+    set(OPENBLAS_OPTS libs netlib shared
+                      CC=${CMAKE_C_COMPILER}
+                      FC=${CMAKE_Fortran_COMPILER})
     if (NOT APPLE)
       set(OPENBLAS_OPTS ${OPENBLAS_OPTS} -j)
-    endif()
-    if (HAERO_DOUBLE_PRECISION)
-      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_DOUBLE=1)
-    else()
-      set(OPENBLAS_OPTS ${OPENBLAS_OPTS} BUILD_SINGLE=1)
     endif()
     ExternalProject_Add(openblas_proj
                         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
@@ -296,7 +294,7 @@ if (HAERO_DEVICE STREQUAL "CPU" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
                         CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/OpenBLAS ${CMAKE_CURRENT_BINARY_DIR}/OpenBLAS
                         BUILD_COMMAND ${MAKE} ${OPENBLAS_OPTS}
                         LOG_BUILD TRUE
-                        INSTALL_COMMAND ${MAKE} ${OPENBLAS_OPTS} install
+                        INSTALL_COMMAND ${MAKE} PREFIX=${PROJECT_BINARY_DIR} install
                         LOG_INSTALL TRUE)
 
     # Because the OpenBLAS people feel that life isn't complicated enough, they
@@ -334,13 +332,14 @@ if (NOT EXISTS ${TINES_LIBRARY})
   set(TINES_CXX_FLAGS "-I${EKAT_LIBRARY_DIR}/../include/kokkos -I${PROJECT_BINARY_DIR}/include")
   set(TINES_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-		       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-		       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-           -DCMAKE_CXX_FLAGS=${TINES_CXX_FLAGS}
+                       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                       -DCMAKE_CXX_FLAGS=${TINES_CXX_FLAGS}
                        -DTINES_ENABLE_VERBOSE=OFF
                        -DTINES_ENABLE_TEST=OFF
                        -DTINES_ENABLE_EXAMPLE=OFF
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
+                       -DYAML_INSTALL_PATH=${EKAT_INSTALL_ROOT}/share
                      )
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
@@ -352,7 +351,7 @@ if (NOT EXISTS ${TINES_LIBRARY})
   if (HAERO_DEVICE STREQUAL "CUDA")
     # We use EKAT's C++ compiler helper script for CUDA.
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper)
   else()
     set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
@@ -362,9 +361,11 @@ if (NOT EXISTS ${TINES_LIBRARY})
     else()
       # We need OpenBLAS for non-GPU builds that don't use Intel's compiler.
       #Extract path to openblas install directory from OPENBLAS_LIBRARY_DIR variable for Tines
-      set(OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR}/..)
-      set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
+      if (HAERO_DEVICE STREQUAL "CPU")
+        set(OPENBLAS_INSTALL_PATH ${OPENBLAS_LIBRARY_DIR}/..)
+        set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                            -DOPENBLAS_INSTALL_PATH=${OPENBLAS_INSTALL_PATH})
+      endif()
     endif()
   endif()
 
@@ -408,21 +409,27 @@ if (NOT EXISTS ${TCHEM_LIBRARY})
   string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" TINES_INSTALL_PATH ${TINES_LIBRARY_DIR})
   set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-		       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                        -DTCHEM_INSTALL_LIB_PATH=${CMAKE_INSTALL_LIBDIR}
                        -DTCHEM_ENABLE_VERBOSE=OFF
                        -DTCHEM_ENABLE_KOKKOS=ON
                        -DTCHEM_ENABLE_TEST=OFF
-                       -DTCHEM_ENABLE_EXAMPLE=OFF
+                       -DTCHEM_ENABLE_EXAMPLE=ON
                        -DKOKKOS_INSTALL_PATH=${KOKKOS_INSTALL_PATH}
                        -DTINES_INSTALL_PATH=${TINES_INSTALL_PATH}
+                       -DTCHEM_ENABLE_TPL_YAML_CPP=ON
+                       # Note(mjs): this enables automatic differentiation, and
+                       # is currently only used by the chem_driver unit test.
+                       # Keeping it because it seems to be low-impact to compile
+                       # time and makes the test run fast
+                       -DTCHEM_ENABLE_SACADO_JACOBIAN_ATMOSPHERIC_CHEMISTRY=ON
                      )
   if (HAERO_DEVICE STREQUAL "CUDA")
     # We use EKAT's C++ compiler helper script. Also, we need to nudge TChem
     # toward the kokkos/ subdirectory of our include path in this case (for some
     # reason).
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
-                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/ekat_mpicxx)
+                         -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper)
   else()
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
                          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
@@ -496,8 +503,8 @@ set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
 
 install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include)
 
-if (${Z_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
-  install(FILES ${Z_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+if (${ZLIB_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built libz
+  install(FILES ${ZLIB} DESTINATION lib)
 endif()
 if (${HDF5_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built HDF5
   install(FILES ${HDF5_LIBRARY} ${HDF5_HL_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})

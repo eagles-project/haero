@@ -211,7 +211,7 @@ class SimpleNucleationProcess final
       // All fresh nuclei within the planetary boundary layer are 1 nm in
       // diameter.
       r_crit.set(within_pbl and not J_pbl_lt_J, 0.5);
-      // Estimate the number of particles in the critical cluѕter from its
+      // Estimate the number of particles in the critical cluster from its
       // mass and radius, assuming H2SO4 only.
       const auto pi_sixth = Constants::pi_sixth;
       const auto Na = Constants::avogadro;
