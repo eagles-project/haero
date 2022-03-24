@@ -16,6 +16,7 @@ class MAMCalcsizeProcess final
  public:
   using RealView = DeviceType::view_1d<Real>;
   using IntView = DeviceType::view_1d<int>;
+  using IntView2D = DeviceType::view_2d<int>;
 
   MAMCalcsizeProcess();
 
@@ -40,10 +41,42 @@ class MAMCalcsizeProcess final
         spec_density{pp.spec_density},
         v2nmin_nmodes{pp.v2nmin_nmodes},
         v2nmax_nmodes{pp.v2nmax_nmodes},
+        v2nnom_nmodes{pp.v2nnom_nmodes},
         dgnmin_nmodes{pp.dgnmin_nmodes},
         dgnmax_nmodes{pp.dgnmax_nmodes},
+        dgnnom_nmodes{pp.dgnnom_nmodes},
         common_factor_nmodes{pp.common_factor_nmodes},
-        density{pp.density} {}
+        density{pp.density},
+        srcmode_csizxf{pp.srcmode_csizxf},
+        destmode_csizxf{pp.destmode_csizxf},
+        ait_mode_inter{pp.ait_mode_inter},
+        acc_mode_inter{pp.acc_mode_inter},
+        ait_mode_cldbrn{pp.ait_mode_cldbrn},
+        acc_mode_cldbrn{pp.acc_mode_cldbrn},
+        do_aitacc_transfer_allowed{pp.do_aitacc_transfer_allowed},
+        ait_spec_in_acc_inter{pp.ait_spec_in_acc_inter},
+        acc_spec_in_ait_inter{pp.acc_spec_in_ait_inter},
+        ait_spec_in_acc_cldbrn{pp.ait_spec_in_acc_cldbrn},
+        acc_spec_in_ait_cldbrn{pp.acc_spec_in_ait_cldbrn},
+        dgncur_a{pp.dgncur_a},
+        dgncur_c{pp.dgncur_c},
+        v2ncur_a{pp.v2ncur_a},
+        v2ncur_c{pp.v2ncur_c},
+        dryvol_a{pp.dryvol_a},
+        dryvol_c{pp.dryvol_c},
+        drv_a_aitsv{pp.drv_a_aitsv},
+        drv_a_accsv{pp.drv_a_accsv},
+        drv_c_aitsv{pp.drv_c_aitsv},
+        drv_c_accsv{pp.drv_c_accsv},
+        num_a_aitsv{pp.num_a_aitsv},
+        num_a_accsv{pp.num_a_accsv},
+        num_c_aitsv{pp.num_c_aitsv},
+        num_c_accsv{pp.num_c_accsv},
+        drv_a_sv{pp.drv_a_sv},
+        drv_c_sv{pp.drv_c_sv},
+        num_a_sv{pp.num_a_sv},
+        num_c_sv{pp.num_c_sv},
+        nspec_common{pp.nspec_common} {}
 
   /// MAMCalcsizeProcess objects are not assignable.
   AerosolProcess &operator=(const MAMCalcsizeProcess &) = delete;
@@ -61,6 +94,9 @@ class MAMCalcsizeProcess final
             const Diagnostics &diagnostics,
             const Tendencies &tendencies) const override {
     const int nlevels = diagnostics.num_levels();
+
+    // See declaration of num_levels_upper_bound for its documentation
+    EKAT_KERNEL_ASSERT(nlevels <= num_levels_upper_bound);
 
     const auto num_vert_packs = PackInfo::num_packs(nlevels);
 
@@ -118,14 +154,14 @@ class MAMCalcsizeProcess final
 
         // `adjust_num_sizes` will use the initial value, but other
         // calculations require this to be nonzero.
-        auto num_a = PackType(init_num_a < 0, PackType(0.0), init_num_a);
+        auto num_a_k = PackType(init_num_a < 0, PackType(0.0), init_num_a);
 
         // Same calculations as above, but for cloudborne aerosols
         auto dryvol_c_k = compute_dry_volume_k(s_spec_idx, e_spec_idx, density,
                                                q_c(imode, k_pack));
 
         auto init_num_c = n_c(imode, k_pack);
-        auto num_c = PackType(init_num_c < 0, PackType(0.0), init_num_c);
+        auto num_c_k = PackType(init_num_c < 0, PackType(0.0), init_num_c);
 
         if (do_adjust) {
           /*------------------------------------------------------------------
@@ -150,9 +186,19 @@ class MAMCalcsizeProcess final
           auto cloudborne_tend = dncdt(imode, k_pack);
 
           adjust_num_sizes(dryvol_a_k, dryvol_c_k, init_num_a, init_num_c, dt,
-                           v2nmin, v2nmax, v2nminrl, v2nmaxrl, num_a, num_c,
+                           v2nmin, v2nmax, v2nminrl, v2nmaxrl, num_a_k, num_c_k,
                            interstitial_tend, cloudborne_tend);
         }
+
+        // update diameters and volume to num ratios for interstitial aerosols
+        update_diameter_and_vol2num(k_pack, imode, dryvol_a_k, num_a_k, v2nmin,
+                                    v2nmax, dgnmin, dgnmax, common_factor,
+                                    dgncur_a, v2ncur_a);
+
+        // update diameters and volume to num ratios for cloudborne aerosols
+        update_diameter_and_vol2num(k_pack, imode, dryvol_c_k, num_c_k, v2nmin,
+                                    v2nmax, dgnmin, dgnmax, common_factor,
+                                    dgncur_c, v2ncur_c);
       }
     }
   }
@@ -163,10 +209,47 @@ class MAMCalcsizeProcess final
    * volume.
    */
   KOKKOS_INLINE_FUNCTION
-  void set_initial_sz_and_volumes_(PackType &dgncur, PackType &v2ncur) const {
-    dgncur = PackType::scalar{0.0};
-    v2ncur = PackType::scalar{0.0};
+  void set_initial_sz_and_volumes_(std::size_t imode, PackType &dgncur,
+                                   PackType &v2ncur) const {
+    dgncur = dgnnom_nmodes(imode);
+    v2ncur = v2nnom_nmodes(imode);
   }
+
+  /*----------------------------------------------------------------------------
+   * Compute particle diameter and volume to number ratios using dry bulk volume
+   * (drv)
+   *--------------------------------------------------------------------------*/
+  KOKKOS_INLINE_FUNCTION
+  void update_diameter_and_vol2num(std::size_t klev, std::size_t imode,
+                                   PackType drv, PackType num, Real v2nmin,
+                                   Real v2nmax, Real dgnmin, Real dgnmax,
+                                   Real cmn_factor, SpeciesColumnView dgncur,
+                                   SpeciesColumnView v2ncur) const {
+    const auto drv_gt_0 = drv > 0.0;
+    if (!drv_gt_0.any()) return;
+
+    const auto drv_mul_v2nmin = drv * v2nmin;
+    const auto drv_mul_v2nmax = drv * v2nmax;
+
+    auto &dgncur_k_i = dgncur(klev, imode);
+    auto &v2ncur_k_i = v2ncur(klev, imode);
+
+    dgncur_k_i.set(num <= drv_mul_v2nmin, dgnmin);
+    dgncur_k_i.set(num >= drv_mul_v2nmax, dgnmax);
+    dgncur_k_i.set(num > drv_mul_v2nmin and num < drv_mul_v2nmax,
+                   pow((drv / (cmn_factor * num)), (1.0 / 3)));
+
+    v2ncur_k_i.set(num <= drv_mul_v2nmin, v2nmin);
+    v2ncur_k_i.set(num >= drv_mul_v2nmax, v2nmax);
+    v2ncur_k_i.set(num > drv_mul_v2nmin and num < drv_mul_v2nmax, num / drv);
+  }
+
+  /*
+   * \brief Find mapping between the species of two different modes
+   * \note Global variables declared at modeul level will be updated to store
+   * the mapping generated by the following call
+   */
+  void find_species_mapping(ModalAerosolConfig const &config);
 
   /**
    * \brief Compute initial dry volume based on bulk mass mixing ratio (mmr) and
@@ -503,10 +586,129 @@ class MAMCalcsizeProcess final
   }
 
  private:
+  /*
+   * num_levels_upper_bound is a naive way of allocating enough memory in work
+   * arrays to operate on data that depends on the number of levels currently
+   * being used.
+   *
+   * For example, dgncur_a has shape (num_levels, num_modes). The number of
+   * levels is not known until the run member function is called. All allocation
+   * must be performed *before* the run method is called to keep the codebase
+   * portable.
+   *
+   * This is a depiction of the circular dependency that necessitates this
+   * assumption about the number of levels:
+   *
+   *                    ┌────────┐      ┌──────────┐
+   *                    │dgncur_a├─────►│num levels│
+   *                    └────────┘      └─────┬────┘
+   *                         ▲                │
+   *                         │  ┌──────────┐  │
+   *                         └──┤run method│◄─┘
+   *                            └──────────┘
+   *
+   * To remove this assumption, we will have to be able to pass the
+   * number of levels to the init member function, calculate an upper bound for
+   * the number of levels in the init member function, or perform device
+   * allocation in a portable manner.
+   */
+  static constexpr std::size_t num_levels_upper_bound = 128;
+
   static constexpr int top_level = 0;
   static constexpr bool do_adjust = true;
   static constexpr bool do_aitacc_transfer = true;
   static constexpr auto max_real = std::numeric_limits<Real>::max();
+
+  // Max number of radiation diagnostics FIXME: it should be set somewhere in
+  // the "init" codes for the model
+  static constexpr std::size_t n_diag = 0;
+
+  // "list_idx=0" is reservered for the prognostic call
+  // FIXME: We are currently supporting only list_idx=0, generalize and test the
+  // code with other list_idx values
+  static constexpr std::size_t list_idx = 0;
+
+  // Maximum number of aitken-accumulation pairs we can have (one for each
+  // diagnostic list). NOTE: "0" is reserved for the prognostic call, so
+  // maxpair_csizxf represents just the diagnostic pairs.
+  static constexpr std::size_t maxpair_csizxf = n_diag;
+
+  // Total number of pairs of aitken-accumulation modes
+  // ---------------------------------------------------------------------------------
+  // Note: For diagnostic calls, users can ask for any diagnostics like
+  // rad_diag_1
+  //       and rad_diag_3 (e.g. skipping rad_diag_2). Therefore the arrays
+  //       should have a length of N_DIAG (unless we define another array which
+  //       maps info such as to include info about the missing diagnostics)
+  // ---------------------------------------------------------------------------------
+
+  // total number of possible diagnostic calls
+  static constexpr std::size_t npair_csizxf = n_diag;
+
+  // Magic number taken from fortran process
+  static constexpr std::size_t index_mapping_extent_1 = 10;
+
+  // "srcmode_csizxf" stores source mode number from  which species will be
+  // moved to a mode stored in "destmode_csizxf". [E.g. if srcmode_csizxf(3)=2
+  // and destmode_csizxf(3)=1, for rad_diag_3 (notice that these arrays are
+  // indexed "3" as rad_diag is rad_diag_3), species will be moved from 2nd mode
+  // to the 1st mode.]
+  IntView srcmode_csizxf;
+  IntView destmode_csizxf;
+  IntView ait_mode_inter;
+  IntView acc_mode_inter;
+  IntView ait_mode_cldbrn;
+  IntView acc_mode_cldbrn;
+  IntView do_aitacc_transfer_allowed;
+
+  IntView2D ait_spec_in_acc_inter;
+  IntView2D acc_spec_in_ait_inter;
+  IntView2D ait_spec_in_acc_cldbrn;
+  IntView2D acc_spec_in_ait_cldbrn;
+
+  // interstitial particle diameter[m](FIXME: This should be diagnostic
+  // variable)
+  SpeciesColumnView dgncur_a;
+  // cldborne particle diameter [m](FIXME: This should be diagnostic variable)
+  SpeciesColumnView dgncur_c;
+  // interstitial vol2num ratio [FIXME: units????]
+  SpeciesColumnView v2ncur_a;
+  // cldborne vol2num ratio [FIXME:units???]
+  SpeciesColumnView v2ncur_c;
+
+  // dry volume of a particle[m3/kg(of air)]
+  RealView dryvol_a;
+  RealView dryvol_c;
+
+  // Work variables for aitken<-->accumulation transfer sub process
+  RealView drv_a_aitsv;
+
+  // saves aitken and accumulation interstitial modes dryvolume
+  RealView drv_a_accsv;
+  RealView drv_c_aitsv;
+
+  // saves aitken and accumulation cloudborne modes dryvolume
+  RealView drv_c_accsv;
+  RealView num_a_aitsv;
+
+  // saves aitken and accumulation interstitial modes num concentrations
+  RealView num_a_accsv;
+  RealView num_c_aitsv;
+
+  // saves aitken and accumulation cloudborne modes num concentrations
+  RealView num_c_accsv;
+
+  SpeciesColumnView drv_a_sv;
+
+  // saves dryvolume for each mode and level
+  SpeciesColumnView drv_c_sv;
+  SpeciesColumnView num_a_sv;
+
+  // saves num conc. for each mode and level
+  SpeciesColumnView num_c_sv;
+
+  // number of species found common between aitken and accumulation modes
+  IntView nspec_common;
 
   std::size_t nmodes;
   std::size_t max_nspec;
@@ -523,8 +725,10 @@ class MAMCalcsizeProcess final
 
   RealView v2nmin_nmodes;
   RealView v2nmax_nmodes;
+  RealView v2nnom_nmodes;
   RealView dgnmin_nmodes;
   RealView dgnmax_nmodes;
+  RealView dgnnom_nmodes;
 
   // There is a common factor calculated over and over in the core loop of this
   // process. This factor has been pulled out so the calculation only has to be
