@@ -76,6 +76,7 @@ class MAMCalcsizeProcess final
         drv_c_sv{pp.drv_c_sv},
         num_a_sv{pp.num_a_sv},
         num_c_sv{pp.num_c_sv},
+        no_transfer_acc2ait{pp.no_transfer_acc2ait},
         nspec_common{pp.nspec_common} {}
 
   /// MAMCalcsizeProcess objects are not assignable.
@@ -243,6 +244,13 @@ class MAMCalcsizeProcess final
     dgncur = dgnnom_nmodes(imode);
     v2ncur = v2nnom_nmodes(imode);
   }
+
+  /*
+   * Exchange aerosols between aitken and accumulation modes based on new sizes
+   *
+   * \author Richard Easter (Refactored by Balwinder Singh, ported to C++ by
+   * Asher Mancinelli)
+   */
   KOKKOS_INLINE_FUNCTION
   void aitken_accum_exchange(
       const int nlevs, const Real dt, const SpeciesColumnView q_i,
@@ -250,7 +258,17 @@ class MAMCalcsizeProcess final
       const SpeciesColumnView n_c, const SpeciesColumnView didt,
       const SpeciesColumnView dcdt, const ModeColumnView dnidt,
       const ModeColumnView dncdt) const {
-    // foo
+    std::size_t iacc = accum_idx;
+    std::size_t iait = aitken_idx;
+
+    // fail if either mode doesn't exist
+    EKAT_KERNEL_ASSERT(iacc > 0 and iait > 0);
+
+    // check if src and destination modes are same as iacc iait
+    const auto z = srcmode_csizxf.extent(0);
+    const auto a = srcmode_csizxf(list_idx);
+    const auto b = destmode_csizxf(list_idx);
+    EKAT_KERNEL_ASSERT(srcmode_csizxf(list_idx) == iait and destmode_csizxf(list_idx) == iacc);
   }
 
   /*----------------------------------------------------------------------------
@@ -756,6 +774,9 @@ class MAMCalcsizeProcess final
 
   IntView population_offsets;
   IntView num_mode_species;
+
+  // Species which can't be transferred. Only used in aitken_accum_exchange.
+  IntView no_transfer_acc2ait;
 
   // NOTE: this has been flattened just like the aero species/modes held in
   // the modal_aerosol_config.

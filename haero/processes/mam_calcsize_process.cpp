@@ -145,6 +145,8 @@ void MAMCalcsizeProcess::init_(const ModalAerosolConfig &modal_aerosol_config) {
   Kokkos::resize(num_a_sv, num_levels_upper_bound, nmodes);
   Kokkos::resize(num_c_sv, num_levels_upper_bound, nmodes);
 
+  Kokkos::resize(no_transfer_acc2ait, max_nspec);
+
   aitken_idx = modal_aerosol_config.aerosol_mode_index("aitken");
   accum_idx = modal_aerosol_config.aerosol_mode_index("accum");
 
