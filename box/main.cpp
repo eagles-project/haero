@@ -71,12 +71,44 @@ HostDiagnostics create_diagnostics(const ModalAerosolConfig& config,
 
 // Advance the selected processes using the same sequential splitting approach
 // used in MAM4.
-void advance(const BoxInput& input,
+void advance(const ModalAerosolConfig& config, Real t, Real dt,
              const std::vector<AerosolProcess*>& processes,
              Prognostics& prognostics,
              Atmosphere& atmosphere,
              HostDiagnostics& diagnostics,
              std::map<std::string, Tendencies>& process_tendencies) {
+  // Call the processes in order, computing their tendencies and integrating
+  // prognostic variables in place. We can do things this way because we happen
+  // to know that the MAM4 processes do sequential updates and then back out the
+  // tendencies using a finite difference.
+  auto team_policy = haero::TeamPolicy(1u, Kokkos::AUTO);
+  for (AerosolProcess *process: processes) {
+    // Compute the tendencies for the prognostic variables.
+    const std::string& name = process->name();
+    Tendencies& tendencies = process_tendencies[name];
+    Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const TeamType& team) {
+        process->run(team, t, dt, prognostics, atmosphere, diagnostics,
+                     tendencies);
+      });
+
+    // Integrate the prognostic variables.
+    for (int m = 0; m < config.num_aerosol_modes(); ++m) {
+      prognostics.interstitial_num_mix_ratios(m, 0) +=
+        dt * tendencies.interstitial_num_mix_ratios(m, 0);
+      prognostics.cloud_num_mix_ratios(m, 0) +=
+        dt * tendencies.cloud_num_mix_ratios(m, 0);
+    }
+    for (int p = 0; p < config.num_aerosol_populations; ++p) {
+      prognostics.interstitial_aerosols(p, 0) +=
+        dt * tendencies.interstitial_aerosols(p, 0);
+      prognostics.cloud_aerosols(p, 0) +=
+        dt * tendencies.cloud_aerosols(p, 0);
+    }
+    for (int g = 0; g < config.num_gases(); ++g) {
+      prognostics.gases(g, 0) += dt * tendencies.gases(g, 0);
+    }
+  }
 }
 
 }  // anonymous namespace
@@ -109,9 +141,12 @@ int main(int argc, const char** argv) {
   // Open the output file and define quantities.
   Box::BoxOutput output(config);
 
+  Real t = 0.0;
   for (int n = 0; n < input.mam_nstep; ++n) {
-    advance(input, processes, prognostics, atmosphere, diagnostics,
+    Real dt = static_cast<Real>(input.mam_dt);
+    advance(config, t, dt, processes, prognostics, atmosphere, diagnostics,
             process_tendencies);
+    t += dt;
     if ((n % input.mam_output_intvl) == 0) {
       output.append(prognostics, diagnostics, process_tendencies);
     }
