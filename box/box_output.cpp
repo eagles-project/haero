@@ -2,7 +2,8 @@
 
 #include <netcdf.h>
 
-#include <time.h>
+#include <sstream>
+#include <ctime>
 
 #if HAERO_DOUBLE_PRECISION
 #define NC_REAL NC_DOUBLE
@@ -157,9 +158,19 @@ void BoxOutput::write(const std::string& filename) const {
   err = nc_put_att_str(ncid, varid[22], "descr", "coagulation tendency");
 
   // Add global attributes.
-  nc_put_att_str(ncid, NC_GLOBAL, "Created_by", "HAERO");
+  std::string version = haero::version();
+  std::string revision = haero::revision();
+  std::ostringstream revision_ss;
+  revision_ss << "HAERO v" << version << " (git revision" << revision;
+  bool has_changes = haero::has_uncommitted_changes();
+  if (has_changes) {
+    revision_ss << ", uncommitted changes)";
+  } else {
+    revision_ss << ")";
+  }
+  nc_put_att_str(ncid, NC_GLOBAL, "Created_by", revision_ss.str().c_str());
   time_t current_time = time(NULL);
-  const char *date = ctime(&current_time);
+  const char *date = std::ctime(&current_time);
   err = nc_put_att_str(ncid, NC_GLOBAL, "Created_date", date);
 
   // End define mode. This tells netCDF we are done defining metadata.
