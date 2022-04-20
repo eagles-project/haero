@@ -12,6 +12,21 @@
 
 namespace Box {
 
+class OutputException: public std::exception {
+ public:
+  /// Constructs an exception containing the given descriptive message.
+  OutputException(const std::string& message) : _message(message) {}
+
+  /// Constructs an exception containing the given formatting string and
+  /// C-style variadic arguments (a la printf).
+  OutputException(const char* fmt, ...);
+
+  const char* what() const throw() { return _message.c_str(); }
+
+ private:
+  std::string _message;
+};
+
 using Real = haero::Real;
 
 class BoxOutput {
