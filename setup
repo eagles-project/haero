@@ -224,12 +224,6 @@ BUILD_CHEM_DRIVER=ON
 #VERBOSE=ON
 
 #-----------------------------------------------------------------------------
-#                               Documentation
-#-----------------------------------------------------------------------------
-# For developers: turn on to include comments in the compiled .tex docs
-#INCLUDE_DESIGN_DOC_COMMENTS=ON
-
-#-----------------------------------------------------------------------------
 #                                   Compilers
 #-----------------------------------------------------------------------------
 
@@ -421,7 +415,6 @@ cmake \
  -DHAERO_COLUMN_VIEW_TYPE="\$HAERO_COLUMN_VIEW_TYPE" \
  -DHAERO_SPECIES_COLUMN_VIEW_TYPE="\$HAERO_SPECIES_COLUMN_VIEW_TYPE" \
  -DHAERO_MODE_COLUMN_VIEW_TYPE="\$HAERO_MODE_COLUMN_VIEW_TYPE" \
- -DHAERO_DOC_INCLUDE_COMMENTS=\$INCLUDE_DESIGN_DOC_COMMENTS \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR
