@@ -10,7 +10,7 @@
 #include "haero/gas_species.hpp"
 #include "haero/haero_config.hpp"
 #include "haero/mode.hpp"
-#include "host_params.hpp"
+#include "atmosphere_state_defs.hpp"
 
 namespace haero {
 namespace driver {

@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "catch2/catch.hpp"
-#include "driver/host_params.hpp"
+#include "driver/atmosphere_state_defs.hpp"
 #include "haero/constants.hpp"
 #include "haero/conversions.hpp"
 

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "catch2/catch.hpp"
-#include "driver/host_params.hpp"
+#include "driver/atmosphere_state_defs.hpp"
 #include "driver/ncwriter.hpp"
 #include "driver/ncwriter_impl.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
