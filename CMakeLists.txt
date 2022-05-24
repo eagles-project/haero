@@ -5,7 +5,22 @@ cmake_minimum_required (VERSION 3.12.0)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/")
 
-set(ENABLE_FORTRAN ON)
+#---------
+# Options
+#---------
+option(ENABLE_BOX       "Enable box model"                 ON)
+option(ENABLE_CHEMISTRY "Enable TChem chemistry solver"    OFF)
+option(ENABLE_DRIVER    "Enable 1D atmospheric driver"     OFF)
+option(ENABLE_FORTRAN   "Enable Fortran aerosol processes" ON)
+option(ENABLE_GPU       "Enable GPU support"               OFF)
+option(ENABLE_MPI       "Enable MPI parallelism"           ON)
+
+# This option is only used in CI, where we have to use special sauce to get the
+# submodules working with SSH. No mortal user should be concerned with this.
+option(DISABLE_SUBMODULE_CHECKS "Skip checks for git submodules" OFF)
+mark_as_advanced(FORCE DISABLE_SUBMODULE_CHECKS)
+
+message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
 
 # Check our pack size
 if (NOT HAERO_PACK_SIZE)
@@ -14,22 +29,20 @@ elseif(HAERO_PACK_SIZE LESS 1)
   message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
 elseif(HAERO_PACK_SIZE GREATER 1)
   set(ENABLE_FORTRAN OFF)
+  if (ENABLE_BOX)
+    message(FATAL_ERROR "Box model cannot be enabled with HAERO_PACK_SIZE > 1!")
+  endif()
 endif()
 message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
 
-# This option is only used in CI, where we have to use special sauce to get the
-# submodules working with SSH. No mortal user should be concerned with this.
-option(HAERO_DISABLE_SUBMODULE_CHECKS "Skip checks for git submodules" OFF)
-mark_as_advanced(FORCE HAERO_DISABLE_SUBMODULE_CHECKS)
+# Configure the requested device (CPU or GPU).
+if (NOT HAERO_DEVICE_ARCH)
+  message(FATAL_ERROR "HAERO_DEVICE_ARCH was not provided!")
+endif()
 
-# Check our device parameters
-if (NOT HAERO_DEVICE)
-  message(FATAL_ERROR "HAERO_DEVICE is not specified! (Must be CPU or CUDA).")
-elseif(NOT HAERO_DEVICE STREQUAL CPU AND NOT HAERO_DEVICE STREQUAL CUDA)
-  message(FATAL_ERROR "Invalid HAERO_DEVICE: ${HAERO_DEVICE} (Must be CPU or CUDA).")
-elseif(HAERO_DEVICE STREQUAL CUDA)
+if(ENABLE_GPU)
+  message(STATUS "Building for GPU (${HAERO_DEVICE_ARCH})")
   set(ENABLE_FORTRAN OFF)
-  set(HAERO_USE_CUDA ON)
 else() #CPU
   # If we're C++ only and not using a Mac, use OpenMP.
   if (NOT APPLE AND NOT ENABLE_FORTRAN)
@@ -37,9 +50,8 @@ else() #CPU
   else()
     set(USE_OPENMP OFF)
   endif()
+  message(STATUS "Building for CPU (${HAERO_DEVICE_ARCH})")
 endif()
-message(STATUS "Configuring for Device: ${HAERO_DEVICE} (${HAERO_DEVICE_ARCH})")
-message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
 
 # Define default Kokkos View types
 if (NOT HAERO_COLUMN_VIEW_TYPE)
@@ -52,20 +64,19 @@ if (NOT HAERO_MODE_COLUMN_VIEW_TYPE)
   set(HAERO_MODE_COLUMN_VIEW_TYPE "DeviceType::view_2d<PackType>")
 endif()
 
-if (NOT ENABLE_FORTRAN)
+enable_language(CXX)
+
+if (ENABLE_FORTRAN)
+  message(STATUS "Enabling Fortran aerosol processes.")
+  set(HAERO_FORTRAN 1)
+  enable_language(Fortran)
+else()
+  set(HAERO_FORTRAN 0)
   message(STATUS "================================================================")
   message(STATUS "  DISABLING FORTRAN PROCESSES: (GPU arch and/or pack size > 1)")
   message(STATUS "================================================================")
 endif()
 
-# We declare the project right away.
-enable_language(CXX)
-if (ENABLE_FORTRAN)
-  set(HAERO_FORTRAN 1)
-  enable_language(Fortran)
-else()
-  set(HAERO_FORTRAN 0)
-endif()
 project (haero)
 
 # Set all installation folders for third-party libraries, and figure out which
@@ -79,7 +90,7 @@ set(CMAKE_CXX_STANDARD 14)
 message(STATUS "Generating project files in build directory: ${PROJECT_BINARY_DIR}")
 message(STATUS "C++ compiler is ${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
 message(STATUS "C compiler is ${CMAKE_C_COMPILER} (${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION})")
-if (HAERO_FORTRAN)
+if (ENABLE_FORTRAN)
   message(STATUS "Fortran compiler is ${CMAKE_Fortran_COMPILER} (${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION})")
 endif()
 
@@ -173,7 +184,7 @@ elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
 endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SYS_FLAGS}")
 
-if (HAERO_FORTRAN)
+if (ENABLE_FORTRAN)
   # Fortran compiler flags
   set(CMAKE_Fortran_FLAGS "-cpp -Dc_real=c_${HAERO_REAL_TYPE}")
   if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
@@ -207,9 +218,8 @@ if (HAERO_EXTRA_LDFLAGS)
 endif()
 
 # Figure out MPI.
-if (HAVE_MPI)
+if (ENABLE_MPI)
   message(STATUS "MPI is enabled")
-  set(HAVE_MPI 1) # Normalize.
 
   # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone.
   set(NO_MPI_CXX_FLAGS "-DMPICH_SKIP_MPICXX -UHAVE_MPI_CPP -DLAM_WANT_MPI2CPP=0 -DLAM_BUILDING=1 -DOMPI_WANT_CXX_BINDINGS=0 -DOMPI_BUILDING=1")
@@ -226,7 +236,6 @@ if (HAVE_MPI)
   endif()
 else()
   message(STATUS "MPI is disabled")
-  set(HAVE_MPI 0) # Normalize.
 endif()
 
 # OpenMP support?
@@ -251,7 +260,7 @@ endif()
 add_subdirectory(ext)
 
 # If we're building on a GPU, set the C++ compiler appropriately.
-if (HAERO_DEVICE STREQUAL CUDA)
+if (ENABLE_GPU)
   set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
   # Avoid buggy experimental Kokkos CUDA stuff.
@@ -267,7 +276,6 @@ set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 # since it's where we place the third-party libraries.
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_BINARY_DIR}/include")
-include_directories("${TINES_INCLUDE_DIR}/tines")
 
 include(GNUInstallDirs)
 link_directories("${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
@@ -303,18 +311,20 @@ enable_testing()
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
-if (HAERO_ENABLE_DRIVER)
+if (ENABLE_DRIVER)
   message(STATUS "Building standalone haero_driver.")
   add_subdirectory(driver)
 endif()
 
-if (HAERO_ENABLE_CHEM_DRIVER)
- message(STATUS "Building chem_driver.")
- add_subdirectory(chem_driver)
+if (ENABLE_CHEMISTRY)
+  message(STATUS "Building chem_driver.")
+  include_directories("${TINES_INCLUDE_DIR}/tines")
+  add_subdirectory(chem_driver)
 endif()
 
 # Box model for acceptance testing (Fortran configs only)
-if (HAERO_FORTRAN)
+if (ENABLE_BOX)
+  message(STATUS "Building box model.")
   add_subdirectory(box)
 endif()
 
