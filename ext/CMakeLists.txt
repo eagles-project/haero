@@ -112,7 +112,6 @@ if (NOT EXISTS ${HDF5_LIBRARY})
     message(FATAL_ERROR "Couldn't find HDF5 library: ${HDF5_LIBRARY}")
   endif()
 else()
-  message(STATUS "Durfin")
   if (NOT ${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # if we didn't build this ourselves...
     # Find libz.
     find_package(ZLIB REQUIRED)
