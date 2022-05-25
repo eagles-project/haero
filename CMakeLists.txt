@@ -73,11 +73,11 @@ if (NOT HAERO_MODE_COLUMN_VIEW_TYPE)
 endif()
 
 enable_language(CXX)
+enable_language(Fortran)
 
 if (ENABLE_FORTRAN)
   message(STATUS "Enabling Fortran aerosol processes.")
   set(HAERO_FORTRAN 1)
-  enable_language(Fortran)
 else()
   set(HAERO_FORTRAN 0)
   message(STATUS "================================================================")
@@ -98,9 +98,7 @@ set(CMAKE_CXX_STANDARD 14)
 message(STATUS "Generating project files in build directory: ${PROJECT_BINARY_DIR}")
 message(STATUS "C++ compiler is ${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
 message(STATUS "C compiler is ${CMAKE_C_COMPILER} (${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION})")
-if (ENABLE_FORTRAN)
-  message(STATUS "Fortran compiler is ${CMAKE_Fortran_COMPILER} (${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION})")
-endif()
+message(STATUS "Fortran compiler is ${CMAKE_Fortran_COMPILER} (${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION})")
 
 # Version numbers.
 set (HAERO_MAJOR_VERSION 0)
