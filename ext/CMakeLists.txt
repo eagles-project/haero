@@ -22,15 +22,13 @@ macro(update_submodules)
   endif()
 endmacro()
 
+# Provide dynamic linking capability (required by kokkoscore).
+if (NOT APPLE)
+  set(HAERO_EXT_LIBRARIES ${CMAKE_DL_LIBS})
+endif()
+
 # Many of our dependencies are only needed only for specific targets.
 if (ENABLE_DRIVER OR ENABLE_BOX)
-
-#----------------------------------------------------------------------------
-# Dynamic loading library
-#----------------------------------------------------------------------------
-if (NOT APPLE)
-  set(HAERO_EXT_LIBRARIES ${CMAKE_DL_LIBS}) # Required by kokkoscore.
-endif()
 
 #----------------------------------------------------------------------------
 # libz compression library
@@ -77,7 +75,6 @@ endif()
 set_target_properties(hdf5 PROPERTIES IMPORTED_LOCATION ${HDF5_LIBRARY})
 set_target_properties(hdf5_hl PROPERTIES IMPORTED_LOCATION ${HDF5_HL_LIBRARY})
 if (NOT EXISTS ${HDF5_LIBRARY})
-  message(STATUS "Hurfin")
   if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
     update_submodules()
 
