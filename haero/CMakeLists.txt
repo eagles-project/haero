@@ -91,6 +91,9 @@ add_library(haero
             ${HAERO_DIAGNOSTICS} # populated by the diagnostics/ subdirectory
             )
 add_dependencies(haero ekat update_version_info)
+if (ENABLE_CHEMISTRY)
+  add_dependencies(haero tchem)
+endif()
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 
