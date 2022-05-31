@@ -22,11 +22,6 @@ macro(update_submodules)
   endif()
 endmacro()
 
-# Provide dynamic linking capability (required by kokkoscore).
-if (NOT APPLE)
-  set(HAERO_EXT_LIBRARIES ${CMAKE_DL_LIBS})
-endif()
-
 # Many of our dependencies are only needed only for specific targets.
 if (ENABLE_DRIVER OR ENABLE_BOX)
 
@@ -53,10 +48,9 @@ if(NOT ZLIB_FOUND)
                       LOG_BUILD TRUE
                       INSTALL_COMMAND ${MAKE} install
                       LOG_INSTALL TRUE)
+  set(ZLIB_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/include)
   set(ZLIB_LIBRARIES ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
   set(HDF5_DEPS zlib_proj)
-else()
-  message(STATUS "Found libz: ${ZLIB_LIBRARIES}")
 endif()
 
 add_library(z STATIC IMPORTED GLOBAL)
@@ -82,11 +76,13 @@ if (NOT EXISTS ${HDF5_LIBRARY})
                         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                        -DZLIB_INCLUDE_DIRS=${PROJECT_BINARY_DIR}/include
-                        -DZLIB_LIBARIES=${ZLIB} -DZLIB_USE_EXTERNAL=OFF
-                        -DHDF5_INSTALL_LIB_DIR=${CMAKE_INSTALL_LIBDIR}
+                        -DZLIB_INCLUDE_DIRS=${ZLIB_INCLUDE_DIRS}
+                        -DZLIB_LIBRARIES=${ZLIB_LIBRARIES}
+                        -DZLIB_USE_EXTERNAL=${ZLIB_FOUND}
+                        -DZLIB_FOUND=${ZLIB_FOUND}
                         -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
                         -DHDF5_ENABLE_PARALLEL=${ENABLE_MPI}
+                        -DHDF5_INSTALL_LIB_DIR=${CMAKE_INSTALL_LIBDIR}
                         -DHDF5_BUILD_CPP_LIB=OFF
                         -DHDF5_BUILD_FORTRAN=OFF
                         -DHDF5_BUILD_JAVA=OFF
@@ -112,7 +108,7 @@ else()
   if (NOT ${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # if we didn't build this ourselves...
     # Find libz.
     find_package(ZLIB REQUIRED)
-    set(HAERO_EXT_DRIVER_LIBRARIES ${ZLIB_LIBRARIES};${HAERO_EXT_DRIVER_LIBRARIES})
+    set(HAERO_EXT_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES};${ZLIB_LIBRARIES})
   endif()
 endif()
 list(APPEND HAERO_EXT_INCDIRS ${HDF5_INCLUDE_DIR})
@@ -486,6 +482,15 @@ if (NOT EXISTS ${SKYWALKER_LIBRARY})
                       LOG_INSTALL TRUE)
   add_dependencies(skywalker skywalker_proj)
   add_dependencies(skywalker_f90 skywalker_proj)
+endif()
+
+# This target can be used as a dependency to ensure all above libraries are
+# built before proceeding.
+add_custom_target(ext_libraries DEPENDS ${HAERO_EXT_LIBRARIES})
+
+# Provide dynamic linking capability (required by kokkoscore).
+if (NOT APPLE)
+  set(HAERO_EXT_LIBRARIES ${HAERO_EXT_LIBRARIES};${CMAKE_DL_LIBS})
 endif()
 
 # Add all the libraries to the build system at large.

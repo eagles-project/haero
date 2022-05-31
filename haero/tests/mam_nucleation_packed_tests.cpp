@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 
+#define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/processes/mam_nucleation_process.hpp"

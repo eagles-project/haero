@@ -90,7 +90,7 @@ add_library(haero
             ${HAERO_PROCESSES} # populated by the processes/ ѕubdirectory
             ${HAERO_DIAGNOSTICS} # populated by the diagnostics/ subdirectory
             )
-add_dependencies(haero ekat update_version_info)
+add_dependencies(haero ext_libraries update_version_info)
 if (ENABLE_CHEMISTRY)
   add_dependencies(haero tchem)
 endif()

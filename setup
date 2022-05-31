@@ -196,15 +196,9 @@ ENABLE_CHEMISTRY=OFF
 #                                   Compilers
 #-----------------------------------------------------------------------------
 
-if [ "\$ENABLE_MPI" = "ON" ]; then
-  CXX=mpic++
-  CC=mpicc
-  FC=mpif90
-else
-  CXX=c++
-  CC=cc
-  FC=gfortran
-fi
+CXX=c++
+CC=cc
+FC=gfortran
 
 # Override compilers here (ONLY if you know what you're doing!).
 

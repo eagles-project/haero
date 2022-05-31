@@ -8,12 +8,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 #---------
 # Options
 #---------
-option(ENABLE_BOX       "Enable box model"                 ON)
-option(ENABLE_CHEMISTRY "Enable TChem chemistry solver"    OFF)
-option(ENABLE_DRIVER    "Enable 1D atmospheric driver"     OFF)
-option(ENABLE_FORTRAN   "Enable Fortran aerosol processes" ON)
-option(ENABLE_GPU       "Enable GPU support"               OFF)
-option(ENABLE_MPI       "Enable MPI parallelism"           ON)
+option(ENABLE_BOX       "Enable box model"                   ON)
+option(ENABLE_CHEMISTRY "Enable TChem chemistry solver"      OFF)
+option(ENABLE_DRIVER    "Enable 1D atmospheric driver"       OFF)
+option(ENABLE_FORTRAN   "Enable Fortran aerosol processes"   ON)
+option(ENABLE_GPU       "Enable GPU support"                 OFF)
+option(ENABLE_MPI       "Enable MPI parallelism"             ON)
+option(ENABLE_OPENMP    "Enable OpenMP threading (CPU only)" OFF)
 
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.
@@ -52,12 +53,6 @@ if(ENABLE_GPU)
     set(ENABLE_FORTRAN OFF)
   endif()
 else() #CPU
-  # If we're C++ only and not using a Mac, use OpenMP.
-  if (NOT APPLE AND NOT ENABLE_FORTRAN)
-    set(USE_OPENMP ON)
-  else()
-    set(USE_OPENMP OFF)
-  endif()
   message(STATUS "Building for CPU (${HAERO_DEVICE_ARCH})")
 endif()
 
@@ -227,9 +222,13 @@ endif()
 if (ENABLE_MPI)
   message(STATUS "MPI is enabled")
 
-  # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone.
-  set(NO_MPI_CXX_FLAGS "-DMPICH_SKIP_MPICXX -UHAVE_MPI_CPP -DLAM_WANT_MPI2CPP=0 -DLAM_BUILDING=1 -DOMPI_WANT_CXX_BINDINGS=0 -DOMPI_BUILDING=1")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NO_MPI_CXX_FLAGS}")
+  find_package(MPI REQUIRED COMPONENTS C)
+  include(EkatMpiUtils)
+  DisableMpiCxxBindings()
+
+  include_directories(${MPI_C_INCLUDE_DIRS})
+  set(HAERO_LIBRARIES ${MPI_C_LIBRARIES};${HAERO_LIBRARIES})
+
   if (HAERO_MPI_EXEC)
     message(STATUS "MPI exec: ${HAERO_MPI_EXEC}")
     if (NOT HAERO_MPI_NP_FLAG)
@@ -245,7 +244,7 @@ else()
 endif()
 
 # OpenMP support?
-if (USE_OPENMP)
+if (ENABLE_OPENMP)
   find_package(OpenMP QUIET)
   if (OPENMP_FOUND)
     message(STATUS "OpenMP is enabled")
@@ -269,9 +268,9 @@ add_subdirectory(ext)
 if (ENABLE_GPU)
   set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-lto")
   # Avoid buggy experimental Kokkos CUDA stuff.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_")
-
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that

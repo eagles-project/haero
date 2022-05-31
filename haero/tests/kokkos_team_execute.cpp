@@ -1,5 +1,6 @@
 #include <cstdio>
 
+#define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "haero/view_pack_helpers.hpp"
