@@ -122,13 +122,14 @@ add_library(netcdf STATIC IMPORTED GLOBAL)
 set_target_properties(netcdf PROPERTIES IMPORTED_LOCATION ${NETCDF_LIBRARY})
 if (NOT EXISTS ${NETCDF_LIBRARY})
   update_submodules()
+
   set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_C_FLAGS=${NETCDF_C_FLAGS}
                         -DUSE_HDF5=ON
                         -DHDF5_C_LIBRARY=${HDF5_LIBRARY}
                         -DHDF5_HL_LIBRARY=${HDF5_HL_LIBRARY}
-                        -DHDF5_C_LIBRARIES=${HDF5_LIBRARY}
+                        -DHDF5_C_LIBRARIES=${HDF5_LIBRARY};
                         -DHDF5_HL_LIBRARIES=${HDF5_HL_LIBRARY}
                         -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
                         -DZLIB_LIBRARY=${ZLIB_LIBRARIES}
@@ -145,7 +146,7 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                         -DFIND_SHARED_LIBS=OFF
                         -DENABLE_DYNAMIC_LOADING=ON
                         -DENABLE_TESTS=OFF
-                        -DBUILD_UTILITIES=ON
+                        -DBUILD_UTILITIES=OFF
                         -DBUILD_EXAMPLES=OFF
                         -DCMAKE_FIND_LIBRARY_SUFFIXES=.a)
   ExternalProject_Add(netcdf_proj
@@ -159,6 +160,27 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
                       LOG_BUILD TRUE
                       BUILD_COMMAND ${MAKE}
                       LOG_INSTALL TRUE)
+
+  if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
+    # We need to convince NetCDF's build system that our own HDF5 library is a
+    # parallel and zlib-enabled installation. Since we don't use MPI compiler
+    # scripts (a la EKAT), we have to plant a fake mpi.h into the folder
+    # containing hdf5.h, and then we remove it after NetCDF is built and
+    # installed.
+
+    # Create links to MPI headers before we try to configure NetCDF.
+    ExternalProject_Add_Step(netcdf_proj create_mpi_header_links
+      COMMAND ${CMAKE_COMMAND} -E create_symlink ${MPI_C_INCLUDE_DIRS}/mpi.h ${HDF5_INCLUDE_DIR}/mpi.h
+      COMMAND ${CMAKE_COMMAND} -E create_symlink ${MPI_C_INCLUDE_DIRS}/mpio.h ${HDF5_INCLUDE_DIR}/mpio.h
+      DEPENDERS configure)
+
+    # End the charade after installing.
+    ExternalProject_Add_Step(netcdf_proj remove_mpi_header_links
+      COMMAND ${CMAKE_COMMAND} -E remove ${HDF5_INCLUDE_DIR}/mpi.h
+      COMMAND ${CMAKE_COMMAND} -E remove ${HDF5_INCLUDE_DIR}/mpio.h
+      DEPENDEES install)
+  endif()
+
   add_dependencies(netcdf netcdf_proj)
 endif()
 list(APPEND HAERO_EXT_INCDIRS ${NETCDF_INCLUDE_DIR})
