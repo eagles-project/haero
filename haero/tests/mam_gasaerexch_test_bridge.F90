@@ -11,6 +11,14 @@ module mam_gasaerexch_test_bridge
 contains
 
 subroutine mam_soaexch_1subarea_bridge( &
+  max_gas,              &
+  max_aer,              &
+  iaer_pom,             &
+  nsoa,                 &
+  npoa,                 &
+  npca,                 &
+  pstd,                 &
+  r_universal,          &
   lund, &
   dt, &
   temp, &
@@ -28,13 +36,20 @@ subroutine mam_soaexch_1subarea_bridge( &
   lptr2_soa_a_amode) bind(c)
 
   use iso_c_binding, only: c_int
-  use haero, only: modal_aero_config
   use haero_precision, only: wp
-  use mam_gasaerexch, only: mam_soaexch_1subarea
+  use mam_soaexch, only: mam_soaexch_1subarea
   implicit none
 
 
 ! arguments
+  integer(c_int),  value, intent(in) :: max_gas
+  integer(c_int),  value, intent(in) :: max_aer
+  integer(c_int),  value, intent(in) :: iaer_pom
+  integer(c_int),  value, intent(in) :: nsoa
+  integer(c_int),  value, intent(in) :: npoa
+  integer(c_int),  value, intent(in) :: npca
+  real(wp), value, intent(in) :: pstd
+  real(wp), value, intent(in) :: r_universal
   integer(c_int), value, intent(in) :: lund                  ! logical unit for diagnostic output
   integer(c_int), value, intent(in) :: n_mode                ! current number of modes (including temporary)
   integer(c_int), value, intent(in) :: ntot_amode
@@ -45,15 +60,23 @@ subroutine mam_soaexch_1subarea_bridge( &
   real(wp), value, intent(in) :: pmid             ! pressure at model levels (Pa)
   real(wp), value, intent(in) :: aircon           ! air molar concentration (kmol/m3)
 
-  real(wp), intent(inout), dimension( modal_aero_config%num_gases ) :: qgas_cur, qgas_avg
-  real(wp), intent(inout), dimension( maxval(modal_aero_config%num_mode_species), modal_aero_config%num_aerosol_modes ) :: qaer_cur
-  real(wp), intent(inout), dimension( modal_aero_config%num_aerosol_modes ) :: qnum_cur
-  real(wp), intent(in   ), dimension( modal_aero_config%num_gases, modal_aero_config%num_aerosol_modes ) :: uptkaer
-  integer(c_int),  intent(in   ), dimension( modal_aero_config%num_aerosol_modes) ::  mode_aging_optaa
-  integer(c_int),  intent(in   ), dimension( modal_aero_config%num_aerosol_modes, *) ::  lptr2_soa_a_amode
+  real(wp), intent(inout), dimension( 1:max_gas ) :: qgas_cur, qgas_avg
+  real(wp), intent(inout), dimension(1:max_aer, 1:max_mode ) :: qaer_cur
+  real(wp), intent(inout), dimension( 1:max_mode ) :: qnum_cur
+  real(wp), intent(in   ), dimension( 1:max_gas, 1:max_mode ) :: uptkaer
+  integer(c_int),  intent(in   ), dimension( 1:max_mode ) ::  mode_aging_optaa
+  integer(c_int),  intent(in   ), dimension( 1:max_mode, 1:nsoa ) ::  lptr2_soa_a_amode
 
   ! Call the actual subroutine.
   call  mam_soaexch_1subarea( &
+  max_gas,              &
+  max_aer,              &
+  iaer_pom,             &
+  nsoa,                 &
+  npoa,                 &
+  npca,                 &
+  pstd,                 &
+  r_universal,          &
   lund, &
   dt, &
   temp, &

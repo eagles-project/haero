@@ -41,7 +41,7 @@ if (HAERO_FORTRAN)
 
   # Supporting modules get appended to HAERO_FORTRAN_SOURCES here.
   foreach(f90_src vehkamaki2002.F90 merikanto2007.F90 wang2008.F90
-          kerminen2002.F90)
+          kerminen2002.F90 mam_soaexch.F90)
     list(APPEND HAERO_FORTRAN_SOURCES processes/${f90_src})
   endforeach()
   set(HAERO_FORTRAN_SOURCES ${HAERO_FORTRAN_SOURCES} PARENT_SCOPE)

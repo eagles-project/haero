@@ -16,6 +16,8 @@ extern void mam_gasaerexch_1subarea_1gas_nonvolatile_bridge(
     const Real *uptkaer, Real &qgas_cur, Real &qgas_avg, Real *qaer_cur);
 
 extern void mam_soaexch_1subarea_bridge(
+    const int max_gas, const int max_aer, const int iaer_pom, const int nsoa,
+    const int npoa, const int npca, const Real pstd, const Real r_universal,
     const int lund, const Real dt, const Real temp, const Real pmid,
     const Real aiircon, const int n_mode, const int ntot_amode,
     const int max_mode, Real *qgas_cur, Real *qgas_avg, Real *qaer_cur,
