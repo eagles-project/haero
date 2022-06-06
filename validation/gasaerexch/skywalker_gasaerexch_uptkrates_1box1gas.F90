@@ -74,11 +74,9 @@ program skywalker_gasaerexch_gas_aer_uptkrates_1box1gas
   real(swp)  :: beta_inp        ! quadrature parameter (--)
 
   integer   :: n_mode          ! number of modes
+  integer   :: nghq            ! number of ghq points for direct ghq
   real(swp)  :: dgncur_awet(ntot_amode) ! mode-median wet diameter of number distribution (m)
   real(swp)  :: lnsg(ntot_amode)        ! ln( sigmag )  (--)
-
-  real(swp)  :: aernum(ntot_amode)   ! aerosol number mixing ratio
-  real(swp)  :: aircon             ! air molar concentration (kmol/m3)
 
   real(swp)  :: uptkaer(ntot_amode)  ! gas-to-aerosol mass transfer rates (1/s)
   real(swp)  :: test_uptkaer(ntot_amode)  ! used in the case the input has a solution 
@@ -137,7 +135,6 @@ program skywalker_gasaerexch_gas_aer_uptkrates_1box1gas
     assert(input%has("temp"))
     assert(input%has_array("dgncur_awet"))
     assert(input%has_array("lnsg"))
-    assert(input%has_array("aernum"))
     has_solution = input%has_array("uptkaer")
   end do
 
@@ -146,9 +143,9 @@ program skywalker_gasaerexch_gas_aer_uptkrates_1box1gas
   !-------------------------------------------------------
   n_mode          =     4
   accom           =     0.65000000000000002
-  aircon          =     4.4055781358372036E-002
   beta_inp        =     0.0000000000000000
   pi              =     3.1415926535897931
+  nghq            =     2
   r_universal     =  8314.4675910000005
   mw_gas          =    98.078400000000002
   mw_air          =    28.966000000000001
@@ -165,8 +162,6 @@ program skywalker_gasaerexch_gas_aer_uptkrates_1box1gas
      dgncur_awet = values%values
      values      = input%get_array_param("lnsg")
      lnsg        = values%values
-     values      = input%get_array_param("aernum")
-     aernum      = values%values
      temp = input%get("temp")
      if (has_solution) then 
        values       = input%get_array_param("uptkaer")
@@ -185,10 +180,9 @@ program skywalker_gasaerexch_gas_aer_uptkrates_1box1gas
                                      pi,                    &
                                      beta_inp,              & 
                                      n_mode,                &
+                                     nghq,                  &
                                      dgncur_awet,           &
                                      lnsg,                  &
-                                     aernum,                &
-                                     aircon,                &
                                      uptkaer )
      ! Process output
      call output%set_array("uptkaer", uptkaer)

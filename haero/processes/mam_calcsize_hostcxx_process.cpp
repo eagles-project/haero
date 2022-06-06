@@ -234,9 +234,6 @@ void MAMCalcsizeHostCXXProcess::run_(const TeamType &team, Real t, Real dt,
     // diameters (dgn)
     auto v2nmin = v2nmin_nmodes[imode];
     auto v2nmax = v2nmax_nmodes[imode];
-    const auto dgnmin = dgnmin_nmodes[imode];
-    const auto dgnmax = dgnmax_nmodes[imode];
-    const auto common_factor = common_factor_nmodes[imode];
 
     Real v2nminrl, v2nmaxrl;
 
