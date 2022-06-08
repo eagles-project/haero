@@ -3,8 +3,9 @@
 
 #include "haero/aerosol_process.hpp"
 #include "haero_config.hpp"
-#include "kokkos/Kokkos_Core.hpp"
-#include "kokkos/Kokkos_Vector.hpp"
+
+#include <Kokkos_Core.hpp>
+#include <Kokkos_Vector.hpp>
 
 namespace haero {
 

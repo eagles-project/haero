@@ -70,7 +70,7 @@ if (HAERO_FORTRAN)
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})
 
     EkatCreateUnitTest(mam_calcsize_fprocess_tests mam_calcsize_fprocess_tests.cpp
-                       LIBS haero_faerosol_process_stubs;yaml_cpp;${HAERO_LIBRARIES})
+                       LIBS haero_faerosol_process_stubs;${YAMLCPP_LIBRARIES};${HAERO_LIBRARIES})
 
     EkatCreateUnitTest(mam_rename_fprocess_tests mam_rename_fprocess_tests.cpp
                        LIBS haero_faerosol_process_stubs;${HAERO_LIBRARIES})

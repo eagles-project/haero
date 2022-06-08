@@ -111,9 +111,9 @@ else()
     set(HAERO_EXT_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES};${ZLIB_LIBRARIES})
   endif()
 endif()
-list(APPEND HAERO_EXT_INCDIRS ${HDF5_INCLUDE_DIR})
+list(APPEND HAERO_EXT_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
 set(HAERO_EXT_DRIVER_LIBRARIES hdf5_hl;hdf5;z;${HAERO_EXT_DRIVER_LIBRARIES})
-set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${HDF5_INCLUDE_DIR})
+set(HAERO_EXT_DRIVER_INCLUDE_DIRS ${HAERO_EXT_DRIVER_INCLUDE_DIRS};${HDF5_INCLUDE_DIR})
 
 #----------------------------------------------------------------------------
 # NetCDF C library.
@@ -183,106 +183,65 @@ if (NOT EXISTS ${NETCDF_LIBRARY})
 
   add_dependencies(netcdf netcdf_proj)
 endif()
-list(APPEND HAERO_EXT_INCDIRS ${NETCDF_INCLUDE_DIR})
+list(APPEND HAERO_EXT_INCLUDE_DIRS ${NETCDF_INCLUDE_DIR})
 set(HAERO_EXT_DRIVER_LIBRARIES netcdf;${HAERO_EXT_DRIVER_LIBRARIES})
-set(HAERO_EXT_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS};${NETCDF_INCLUDE_DIR})
+set(HAERO_EXT_DRIVER_INCLUDE_DIRS ${HAERO_EXT_DRIVER_INCLUDE_DIRS};${NETCDF_INCLUDE_DIR})
 
 endif() # ENABLE_DRIVER or ENABLE_BOX
 
 #----------------------------------------------------------------------------
 # E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
-if (EKAT_LIBRARY MATCHES ".a")
-  add_library(ekat STATIC IMPORTED GLOBAL)
-else()
-  add_library(ekat SHARED IMPORTED GLOBAL)
-endif()
-set_target_properties(ekat PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY})
-if (YAMLCPP_LIBRARY MATCHES ".a")
-  add_library(yaml_cpp STATIC IMPORTED GLOBAL)
-else()
-  add_library(yaml_cpp SHARED IMPORTED GLOBAL)
-endif()
-set_target_properties(yaml_cpp PROPERTIES IMPORTED_LOCATION ${YAMLCPP_LIBRARY})
-
-# Check if we're supposed to build ekat internally
 get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
-if (NOT EXISTS ${EKAT_LIBRARY})
-  update_submodules()
-  set(EKAT_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                      -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-                      -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-                      -DKokkos_ENABLE_DEPRECATED_CODE=OFF
-                      -DKokkos_ENABLE_PROFILING=OFF
-                      -DEKAT_ENABLE_TESTS=OFF)
+if (HAERO_BUILDS_EKAT)
+  list(APPEND CMAKE_MODULE_PATH
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/pkg_build)
+  include(EkatBuildEkat)
+  set (EKAT_ENABLE_TESTS OFF)
   if (CMAKE_BUILD_TYPE STREQUAL Release)
-    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                        -DKokkos_ENABLE_DEBUG=FALSE
-                        -DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=ON)
+    set(Kokkos_ENABLE_DEBUG FALSE)
+    set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION ON)
   else()
-    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                        -DKokkos_ENABLE_DEBUG=TRUE
-                        -DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=OFF)
+    set(Kokkos_ENABLE_DEBUG TRUE)
+    set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF)
   endif()
   if (ENABLE_GPU)
     set(KOKKOS_ARCH_FLAG "Kokkos_ARCH_${HAERO_DEVICE_ARCH}")
-    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                        -DKokkos_ENABLE_SERIAL=ON
-                        -DKokkos_ENABLE_CUDA=ON
-                        -DKokkos_ENABLE_CUDA_LAMBDA=ON
-                        -D${KOKKOS_ARCH_FLAG}:BOOL=ON)
+    set(Kokkos_ENABLE_SERIAL ON)
+    set(Kokkos_ENABLE_CUDA ON)
+    set(Kokkos_ENABLE_CUDA_LAMBDA ON)
+    set(KOKKOS_ARCH_FLAG ON)
   else()
-    set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS} -DKokkos_ENABLE_CUDA=OFF)
+    set(Kokkos_ENABLE_CUDA OFF)
     if (NOT APPLE)
-      set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                          -DKokkos_ENABLE_SERIAL=ON)
+      set(Kokkos_ENABLE_SERIAL ON)
     endif()
     if (HAVE_OPENMP)
-      set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                          -DKokkos_ENABLE_OPENMP=ON)
+      set(Kokkos_ENABLE_OPENMP ON)
     else()
-      set(EKAT_CMAKE_OPTS ${EKAT_CMAKE_OPTS}
-                          -DKokkos_ENABLE_OPENMP=OFF)
+      set(Kokkos_ENABLE_OPENMP OFF)
     endif()
   endif()
-  ExternalProject_Add(ekat_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ekat
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ekat
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${EKAT_CMAKE_OPTS}
-                      LOG_CONFIGURE TRUE
-                      BUILD_COMMAND ${MAKE} -j
-                      LOG_BUILD TRUE
-                      INSTALL_COMMAND ${MAKE} install
-                      LOG_INSTALL TRUE)
-
-  # The above install process leaves a KokkosConfig.cmake file in its build
-  # directory in addition to the installation path, and this confuses subsequent
-  # libraries, so we add a custom step to get rid of it.
-  ExternalProject_Add_Step(ekat_proj delete_bad_kokkos_config
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/ekat/externals/kokkos/KokkosConfig.cmake
-    DEPENDEES install)
-
-  add_dependencies(yaml_cpp ekat_proj)
-  add_dependencies(ekat ekat_proj)
+  BuildEkat(PREFIX "HAERO")
+  list(APPEND EKAT_INCLUDE_DIRS
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/src
+       ${PROJECT_BINARY_DIR}/externals/ekat/src
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/core/src
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/containers/src
+       ${PROJECT_BINARY_DIR}/externals/kokkos
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/spdlog/include
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/yaml-cpp/include)
 else()
   # Copy EKAT's test-launcher into place so we can use it for our unit tests.
   file(COPY ${EKAT_INSTALL_ROOT}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  set(EKAT_INCLUDE_DIRS ${EKAT_INSTALL_ROOT}/include)
 endif()
-add_library(kokkoscore STATIC IMPORTED GLOBAL)
-set_target_properties(kokkoscore PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscore.a)
-add_library(kokkoscontainers STATIC IMPORTED GLOBAL)
-set_target_properties(kokkoscontainers PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a)
-add_library(spdlog STATIC IMPORTED GLOBAL)
-set_target_properties(spdlog PROPERTIES IMPORTED_LOCATION ${EKAT_LIBRARY_DIR}/libspdlog.a)
 set(HAERO_EXT_LIBRARIES ekat;spdlog;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
-set(HAERO_EXT_DRIVER_LIBRARIES yaml_cpp;${HAERO_EXT_DRIVER_LIBRARIES})
-list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR})
-list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/ekat)
-list(APPEND HAERO_EXT_INCDIRS ${EKAT_INCLUDE_DIR}/kokkos)
-list(APPEND HAERO_EXT_INCDIRS ${YAMLCPP_INCLUDE_DIR})
+set(HAERO_EXT_DRIVER_LIBRARIES ${YAMLCPP_LIBRARIES};${HAERO_EXT_DRIVER_LIBRARIES})
+foreach(inc_dir ${EKAT_INCLUDE_DIRS})
+  list(APPEND HAERO_EXT_INCLUDE_DIRS ${inc_dir})
+endforeach()
 
 if (ENABLE_CHEMISTRY)
   #----------------------------------------------------------------------------
@@ -322,7 +281,7 @@ if (ENABLE_CHEMISTRY)
 
       add_dependencies(openblas openblas_proj)
     endif()
-    list(APPEND HAERO_EXT_INCDIRS ${OPENBLAS_INCLUDE_DIR})
+    list(APPEND HAERO_EXT_INCLUDE_DIRS ${OPENBLAS_INCLUDE_DIR})
     if (CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
       set(HAERO_EXT_LIBRARIES ${HAERO_EXT_LIBRARIES};gfortran)
     endif()
@@ -405,7 +364,7 @@ if (ENABLE_CHEMISTRY)
 
     add_dependencies(tines tines_proj)
   endif()
-  list(APPEND HAERO_EXT_INCDIRS ${TINES_INCLUDE_DIR})
+  list(APPEND HAERO_EXT_INCLUDE_DIRS ${TINES_INCLUDE_DIR})
   set(HAERO_EXT_LIBRARIES tines;${HAERO_EXT_LIBRARIES})
 
   #----------------------------------------------------------------------------
@@ -465,7 +424,7 @@ if (ENABLE_CHEMISTRY)
                         LOG_INSTALL TRUE)
     add_dependencies(tchem tchem_proj)
   endif()
-  list(APPEND HAERO_EXT_INCDIRS ${TCHEM_INCLUDE_DIR})
+  list(APPEND HAERO_EXT_INCLUDE_DIRS ${TCHEM_INCLUDE_DIR})
   set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 endif()
 
@@ -517,10 +476,10 @@ endif()
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
-list(REMOVE_DUPLICATES HAERO_EXT_INCDIRS)
-set(HAERO_INCDIRS ${HAERO_INCDIRS};${HAERO_EXT_INCDIRS} PARENT_SCOPE)
+list(REMOVE_DUPLICATES HAERO_EXT_INCLUDE_DIRS)
+set(HAERO_INCLUDE_DIRS ${HAERO_INCLUDE_DIRS};${HAERO_EXT_INCLUDE_DIRS} PARENT_SCOPE)
 set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
-set(HAERO_DRIVER_INCDIRS ${HAERO_EXT_DRIVER_INCDIRS} PARENT_SCOPE)
+set(HAERO_DRIVER_INCLUDE_DIRS ${HAERO_EXT_DRIVER_INCLUDE_DIRS} PARENT_SCOPE)
 
 #----------------------
 # Installation targets
@@ -547,9 +506,6 @@ if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
           DESTINATION lib)
   install(FILES       ${PROJECT_BINARY_DIR}/bin/test-launcher
           DESTINATION bin)
-endif()
-if (${YAMLCPP_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built yaml-cpp
-  install(FILES ${YAMLCPP_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
 if (ENABLE_CHEMISTRY)

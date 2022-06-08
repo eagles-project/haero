@@ -281,10 +281,10 @@ set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 # since it's where we place the third-party libraries.
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_BINARY_DIR}/include")
+include_directories(${HAERO_INCLUDE_DIRS})
 
 include(GNUInstallDirs)
 link_directories("${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
-include_directories(${HAERO_INCDIRS})
 
 # Support for valgrind -- Linux only.
 if (LINUX)
@@ -344,13 +344,13 @@ endif()
 # Formatting and format checking using clang-format.
 find_program(CLANG_FORMAT clang-format)
 if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
-  add_custom_target(format
+  add_custom_target(format-cxx
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     VERBATIM
     COMMENT "Auto-formatting C++ code...")
-  add_custom_target(format-check
+  add_custom_target(format-cxx-check
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;

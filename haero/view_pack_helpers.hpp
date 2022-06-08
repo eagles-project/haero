@@ -1,14 +1,15 @@
 #ifndef HAERO_VIEW_HELPERS_HPP
 #define HAERO_VIEW_HELPERS_HPP
 
+#include "haero/haero.hpp"
+#include "haero/haero_config.hpp"
+
+#include <ekat/ekat_scalar_traits.hpp>
+#include <Kokkos_Core.hpp>
+
 #include <iostream>
 #include <type_traits>
 #include <vector>
-
-#include "ekat/ekat_scalar_traits.hpp"
-#include "haero/haero.hpp"
-#include "haero/haero_config.hpp"
-#include "kokkos/Kokkos_Core.hpp"
 
 namespace haero {
 
