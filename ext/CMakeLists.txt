@@ -207,11 +207,9 @@ if (HAERO_BUILDS_EKAT)
     set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF)
   endif()
   if (ENABLE_GPU)
-    set(KOKKOS_ARCH_FLAG "Kokkos_ARCH_${HAERO_DEVICE_ARCH}")
     set(Kokkos_ENABLE_SERIAL ON)
     set(Kokkos_ENABLE_CUDA ON)
     set(Kokkos_ENABLE_CUDA_LAMBDA ON)
-    set(KOKKOS_ARCH_FLAG ON)
   else()
     set(Kokkos_ENABLE_CUDA OFF)
     if (NOT APPLE)
@@ -232,16 +230,19 @@ if (HAERO_BUILDS_EKAT)
        ${PROJECT_BINARY_DIR}/externals/kokkos
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/spdlog/include
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/yaml-cpp/include)
+  set(EKAT_NVCC_WRAPPER ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/bin/nvcc_wrapper)
 else()
   # Copy EKAT's test-launcher into place so we can use it for our unit tests.
   file(COPY ${EKAT_INSTALL_ROOT}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
   set(EKAT_INCLUDE_DIRS ${EKAT_INSTALL_ROOT}/include)
+  set(EKAT_NVCC_WRAPPER ${EKAT_INSTALL_ROOT}/bin/nvcc_wrapper)
 endif()
 set(HAERO_EXT_LIBRARIES ekat;spdlog;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
 set(HAERO_EXT_DRIVER_LIBRARIES ${YAMLCPP_LIBRARIES};${HAERO_EXT_DRIVER_LIBRARIES})
 foreach(inc_dir ${EKAT_INCLUDE_DIRS})
   list(APPEND HAERO_EXT_INCLUDE_DIRS ${inc_dir})
 endforeach()
+set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
 
 if (ENABLE_CHEMISTRY)
   #----------------------------------------------------------------------------
@@ -327,7 +328,7 @@ if (ENABLE_CHEMISTRY)
     if (ENABLE_GPU)
       # We use EKAT's C++ compiler helper script for CUDA.
       set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
-                           -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper)
+          -DCMAKE_CXX_COMPILER=${EKAT_NVCC_WRAPPER})
     else()
       set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
@@ -403,10 +404,10 @@ if (ENABLE_CHEMISTRY)
       # toward the kokkos/ subdirectory of our include path in this case (for some
       # reason).
       set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
-                           -DCMAKE_CXX_COMPILER=${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper)
+          -DCMAKE_CXX_COMPILER=${EKAT_NVCC_WRAPPER})
     else()
       set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS}
-                           -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
     endif()
 
     set(TCHEM_CMAKE_OPTS ${TCHEM_CMAKE_OPTS} -DCMAKE_CXX_FLAGS=${TCHEM_CXX_FLAGS})
@@ -496,7 +497,7 @@ endif()
 if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
-if (${EKAT_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built ekat
+if (HAERO_BUILDS_EKAT)
   install(FILES       ${EKAT_LIBRARY}
                       ${EKAT_LIBRARY_DIR}/libekat_test_main.a
                       ${EKAT_LIBRARY_DIR}/libekat_test_session.a

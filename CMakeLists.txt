@@ -266,7 +266,7 @@ add_subdirectory(ext)
 
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (ENABLE_GPU)
-  set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper")
+  set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-lto")
   # Avoid buggy experimental Kokkos CUDA stuff.
