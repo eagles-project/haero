@@ -57,11 +57,12 @@ jobs:
           -DCMAKE_CXX_COMPILER=mpicxx \
           -DCMAKE_C_COMPILER=mpicc \
           -DCMAKE_Fortran_COMPILER=mpif90 \
+          -DENABLE_BOX=ON \
+          -DENABLE_CHEMISTRY=ON \
+          -DENABLE_GPU=OFF \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
-          -DHAERO_DEVICE=CPU \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
-          -DHAERO_ENABLE_DRIVER=ON \
           -DEKAT_LIBRARY=/opt/haero/lib/libekat.a \
           -DEKAT_INCLUDE_DIR=/opt/haero/include \
           -DYAMLCPP_LIBRARY=/opt/haero/lib/libyaml-cpp.a \

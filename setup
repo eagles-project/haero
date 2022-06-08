@@ -76,7 +76,7 @@ PREFIX=$PWD/$1
 # Build with MPI for parallel simulations.
 # This is currently needed by the EKAT library. We can get rid of it as
 # a requirement down the line if necessary.
-MPI=ON
+ENABLE_MPI=ON
 
 # The name of the program used to execute MPI programs. Some machines require
 # thіs invocation even for single-process runs.
@@ -94,11 +94,8 @@ MPI_EXTRA_ARGS=
 #                             On-Node Parallelism (Kokkos)
 #-----------------------------------------------------------------------------
 
-# Host = CPU, Device = CPU (with OpenMP on non-Apple machines)
-DEVICE=CPU
-
-# Host = CPU (serial), Device = CUDA GPU
-#DEVICE=CUDA
+# Set this to ON to dispatch aerosol calculations to a GPU.
+ENABLE_GPU=OFF
 
 # Select one of the following device architectures based on the above:
 # (These options are taken from kokkos_arch.cmake)
@@ -140,27 +137,6 @@ DEVICE_ARCH=AMDAVX          # AMD chip (CPU)
 #DEVICE_ARCH=INTEL_GEN       # Intel GPUs Gen9+ (GPU)
 
 #-----------------------------------------------------------------------------
-#                             Floating Point Precision
-#-----------------------------------------------------------------------------
-# Choose one of the following.
-
-# Double precision.
-PRECISION=double
-
-# Single precision.
-#PRECISION=single
-
-#-----------------------------------------------------------------------------
-#                         Pack size for vectorization
-#-----------------------------------------------------------------------------
-
-# This controls how many floating point numbers we can operate on simultaneously
-# using SIMD vector operations. This is mostly for use on CPUs, but some newer
-# GPUs also support vectorization. NOTE: Fortran implementations of aerosol
-# processes are only supported for a PACK_SIZE of 1.
-PACK_SIZE=1
-
-#-----------------------------------------------------------------------------
 #                         Kokkos View Types
 #-----------------------------------------------------------------------------
 
@@ -184,41 +160,34 @@ HAERO_SPECIES_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
 HAERO_MODE_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
 
 #-----------------------------------------------------------------------------
-#                                Build type
+#                         Build features and parameters
 #-----------------------------------------------------------------------------
-# Choose one of the following.
 
-# Debug executable (debugging symbols, no optimization).
+# Set this to
+# * 'Debug' for development (debugging symbols, no optimization)
+# * 'Release' for production (no symbols, optimization).
 BUILD_TYPE=Debug
 
-# Release executable (No symbols, optimization).
-#BUILD_TYPE=Release
+# This controls how many floating point numbers we can operate on simultaneously
+# using SIMD vector operations. This is mostly for use on CPUs, but some newer
+# GPUs also support vectorization. NOTE: Fortran implementations of aerosol
+# processes are only supported for a PACK_SIZE of 1.
+PACK_SIZE=1
 
-#-----------------------------------------------------------------------------
-#                     Build the standalone haero driver?
-#-----------------------------------------------------------------------------
-# Choose one of the following.
+# Set this to
+# * 'double' for double precision
+# * 'single' for single precision
+PRECISION=double
 
-# Build the standalone driver for haero.
-BUILD_DRIVER=ON
+# Set this to ON to enable Fortran aerosol processes. This is overridden if
+# PACK_SIZE > 1.
+ENABLE_FORTRAN=ON
 
-# Skip the standalone driver and its dependencies.
-#BUILD_DRIVER=OFF
+# Set this to ON to enable the standalone 1D haero atmosphere driver
+ENABLE_DRIVER=OFF
 
-#-----------------------------------------------------------------------------
-#                     Build the standalone chem driver?
-#-----------------------------------------------------------------------------
-# Choose one of the following.
-
-# Build the chem driver for haero.
-BUILD_CHEM_DRIVER=ON
-
-# Skip the chem driver and its dependencies.
-#BUILD_CHEM_DRIVER=OFF
-
-#-----------------------------------------------------------------------------
-#                               Verbose builds
-#-----------------------------------------------------------------------------
+# Set this to ON to enable building the chemistry solver and driver.
+ENABLE_CHEMISTRY=OFF
 
 # Uncomment this if you want really verbose builds.
 #VERBOSE=ON
@@ -227,7 +196,7 @@ BUILD_CHEM_DRIVER=ON
 #                                   Compilers
 #-----------------------------------------------------------------------------
 
-if [ "\$MPI" = "ON" ]; then
+if [ "\$ENABLE_MPI" = "ON" ]; then
   CXX=mpic++
   CC=mpicc
   FC=mpif90
@@ -268,8 +237,7 @@ popd >& /dev/null
 GENERATOR="Unix Makefiles"
 
 OPTIONS=""
-if [ "\$MPI" = "ON" ]; then
-  OPTIONS="-DHAVE_MPI=ON"
+if [ "\$ENABLE_MPI" = "ON" ]; then
   if [ ! "\$MPI_EXEC" = "" ]; then
     if [ "\$MPI_NP_FLAG" = "" ]; then
       echo "Error: MPI_NP_FLAG must be set if MPI_EXEC is set."
@@ -406,10 +374,12 @@ cmake \
  -DCMAKE_BUILD_TYPE=\$BUILD_TYPE \
  -DCMAKE_C_COMPILER=\$CC \
  -DCMAKE_CXX_COMPILER=\$CXX \
+ -DENABLE_FORTRAN=\$ENABLE_FORTRAN \
+ -DENABLE_DRIVER=\$ENABLE_DRIVER \
+ -DENABLE_CHEMISTRY=\$ENABLE_CHEMISTRY \
+ -DENABLE_GPU=\$ENABLE_GPU \
+ -DENABLE_MPI=\$ENABLE_MPI \
  -DHAERO_PRECISION=\$PRECISION \
- -DHAERO_ENABLE_DRIVER=\$BUILD_DRIVER \
- -DHAERO_ENABLE_CHEM_DRIVER=\$BUILD_CHEM_DRIVER \
- -DHAERO_DEVICE=\$DEVICE \
  -DHAERO_DEVICE_ARCH=\$DEVICE_ARCH \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \
  -DHAERO_COLUMN_VIEW_TYPE="\$HAERO_COLUMN_VIEW_TYPE" \

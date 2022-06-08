@@ -57,8 +57,8 @@ set(available_processes_hpp ${CMAKE_CURRENT_BINARY_DIR}/available_processes.hpp)
 file(WRITE ${available_processes_hpp} "#ifndef HAERO_AVAILABLE_PROCESSES_HPP\n#define HAERO_AVAILABLE_PROCESSES_HPP\n\n")
 foreach(src ${HAERO_PROCESSES})
   if (${src} MATCHES ".cpp")
-    message(STATUS "Adding Haero Process:" ${src})
     get_filename_component(filename ${src} NAME)
+    message(STATUS "Adding Haero Process:" ${filename})
     string(REPLACE ".cpp" ".hpp" header ${filename})
     if (${header} MATCHES "fprocess")
       file(APPEND ${available_processes_hpp} "#if HAERO_FORTRAN\n")
@@ -90,7 +90,10 @@ add_library(haero
             ${HAERO_PROCESSES} # populated by the processes/ ѕubdirectory
             ${HAERO_DIAGNOSTICS} # populated by the diagnostics/ subdirectory
             )
-add_dependencies(haero ekat update_version_info tchem)
+add_dependencies(haero ekat update_version_info)
+if (ENABLE_CHEMISTRY)
+  add_dependencies(haero tchem)
+endif()
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 
