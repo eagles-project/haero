@@ -83,7 +83,7 @@ jobs:
     - name: Checking code formatting...
       run: |
         cd build
-        make format-check
+        make format-cxx-check
 
     - name: Building haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |

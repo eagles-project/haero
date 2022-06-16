@@ -1,11 +1,11 @@
 #ifndef HAERO_MAM_RENAME_PROCESS_HPP
 #define HAERO_MAM_RENAME_PROCESS_HPP
 
-#include "haero/aerosol_process.hpp"
-#include "haero_config.hpp"
-
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Vector.hpp>
+
+#include "haero/aerosol_process.hpp"
+#include "haero_config.hpp"
 
 namespace haero {
 

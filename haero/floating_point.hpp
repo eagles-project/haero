@@ -1,10 +1,10 @@
 #ifndef HAERO_FLOATING_POINT_UTILS_HPP
 #define HAERO_FLOATING_POINT_UTILS_HPP
 
-#include "haero/haero.hpp"
-
-#include <ekat/ekat_assert.hpp>
 #include <Kokkos_Core.hpp>
+#include <ekat/ekat_assert.hpp>
+
+#include "haero/haero.hpp"
 
 namespace haero {
 

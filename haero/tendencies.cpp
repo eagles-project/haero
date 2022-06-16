@@ -1,7 +1,8 @@
 #include "haero/tendencies.hpp"
-#include "haero/view_pack_helpers.hpp"
 
 #include <Kokkos_Core.hpp>
+
+#include "haero/view_pack_helpers.hpp"
 
 namespace haero {
 
