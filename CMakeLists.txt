@@ -8,13 +8,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 #---------
 # Options
 #---------
-option(ENABLE_BOX       "Enable box model"                   ON)
-option(ENABLE_CHEMISTRY "Enable TChem chemistry solver"      OFF)
-option(ENABLE_DRIVER    "Enable 1D atmospheric driver"       OFF)
-option(ENABLE_FORTRAN   "Enable Fortran aerosol processes"   ON)
-option(ENABLE_GPU       "Enable GPU support"                 OFF)
-option(ENABLE_MPI       "Enable MPI parallelism"             ON)
-option(ENABLE_OPENMP    "Enable OpenMP threading (CPU only)" OFF)
+option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"      OFF)
+option(HAERO_ENABLE_GPU       "Enable GPU support"                 OFF)
+option(HAERO_ENABLE_MPI       "Enable MPI parallelism"             ON)
+option(HAERO_ENABLE_OPENMP    "Enable OpenMP threading (CPU only)" OFF)
 
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.
@@ -30,28 +27,14 @@ elseif(HAERO_PACK_SIZE LESS 1)
   message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
 endif()
 message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
-if(HAERO_PACK_SIZE GREATER 1)
-  if (ENABLE_FORTRAN)
-    message(WARNING "Disabling Fortran")
-    set(ENABLE_FORTRAN OFF)
-  endif()
-  if (ENABLE_BOX)
-    message(WARNING "Disabling box model")
-    set(ENABLE_BOX OFF)
-  endif()
-endif()
 
 # Configure the requested device (CPU or GPU).
 if (NOT HAERO_DEVICE_ARCH)
   message(FATAL_ERROR "HAERO_DEVICE_ARCH was not provided!")
 endif()
 
-if(ENABLE_GPU)
+if(HAERO_ENABLE_GPU)
   message(STATUS "Building for GPU (${HAERO_DEVICE_ARCH})")
-  if (ENABLE_FORTRAN)
-    message(WARNING "Disabling Fortran")
-    set(ENABLE_FORTRAN OFF)
-  endif()
 else() #CPU
   message(STATUS "Building for CPU (${HAERO_DEVICE_ARCH})")
 endif()
@@ -69,16 +52,6 @@ endif()
 
 enable_language(CXX)
 enable_language(Fortran)
-
-if (ENABLE_FORTRAN)
-  message(STATUS "Enabling Fortran aerosol processes.")
-  set(HAERO_FORTRAN 1)
-else()
-  set(HAERO_FORTRAN 0)
-  message(STATUS "================================================================")
-  message(STATUS "  DISABLING FORTRAN PROCESSES: (GPU arch and/or pack size > 1)")
-  message(STATUS "================================================================")
-endif()
 
 project (haero)
 
@@ -185,24 +158,22 @@ elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
 endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SYS_FLAGS}")
 
-if (ENABLE_FORTRAN)
-  # Fortran compiler flags
-  set(CMAKE_Fortran_FLAGS "-cpp -Dc_real=c_${HAERO_REAL_TYPE}")
-  if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")
-    endif()
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -ffree-form -ffree-line-length-none")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-unused-dummy-argument")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Werror=tabs")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-maybe-uninitialized")
-    if (APPLE)
-      # Mac-specific stuff goes here.
-    endif()
-  elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
-    endif()
+# Fortran compiler flags
+set(CMAKE_Fortran_FLAGS "-cpp -Dc_real=c_${HAERO_REAL_TYPE}")
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")
+  endif()
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -ffree-form -ffree-line-length-none")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-unused-dummy-argument")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Werror=tabs")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-maybe-uninitialized")
+  if (APPLE)
+    # Mac-specific stuff goes here.
+  endif()
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
   endif()
 endif()
 
@@ -219,7 +190,7 @@ if (HAERO_EXTRA_LDFLAGS)
 endif()
 
 # Figure out MPI.
-if (ENABLE_MPI)
+if (HAERO_ENABLE_MPI)
   message(STATUS "MPI is enabled")
 
   find_package(MPI REQUIRED COMPONENTS C)
@@ -244,7 +215,7 @@ else()
 endif()
 
 # OpenMP support?
-if (ENABLE_OPENMP)
+if (HAERO_ENABLE_OPENMP)
   find_package(OpenMP QUIET)
   if (OPENMP_FOUND)
     message(STATUS "OpenMP is enabled")
@@ -265,7 +236,7 @@ endif()
 add_subdirectory(ext)
 
 # If we're building on a GPU, set the C++ compiler appropriately.
-if (ENABLE_GPU)
+if (HAERO_ENABLE_GPU)
   set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-lto")
@@ -316,21 +287,10 @@ enable_testing()
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
-if (ENABLE_DRIVER)
-  message(STATUS "Building standalone haero_driver.")
-  add_subdirectory(driver)
-endif()
-
 if (ENABLE_CHEMISTRY)
   message(STATUS "Building chem_driver.")
   include_directories("${TINES_INCLUDE_DIR}/tines")
   add_subdirectory(chem_driver)
-endif()
-
-# Box model for acceptance testing (Fortran configs only)
-if (ENABLE_BOX)
-  message(STATUS "Building box model.")
-  add_subdirectory(box)
 endif()
 
 # Validation tools (currently offered only for CPU builds with pack size 1,

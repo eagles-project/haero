@@ -26,9 +26,6 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 
 #define HAERO_TEST_DATA_DIR "@CMAKE_CURRENT_SOURCE_DIR@/tests/data"
 
-/// Are we building with Fortran support?
-#define HAERO_FORTRAN @HAERO_FORTRAN@
-
 /// Pack data structures for SIMD
 using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
 using IntPackType = ekat::Pack<int, HAERO_PACK_SIZE>;
@@ -51,30 +48,19 @@ using TeamPolicy = typename DeviceType::TeamPolicy;
 /// a team!
 using TeamType = typename DeviceType::MemberType;
 
-/// Views of this type store packs in a vertical column, with
-/// ceil(num_levels/HAERO_PACK_SIZE) packs spanning the column's vertical
-/// levels. If k identifies a vertical level, the corresponding data is
-/// accessible at `view(pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
-/// See Chapter 3 of the design document for an explanation of packs.
-using ColumnView = @HAERO_COLUMN_VIEW_TYPE@;
-using ConstColumnView = ColumnView::const_type;
+/// A TracersView іs a rank 3 Kokkos View with the following indices:
+/// 1. A tracer index identifying an advected quantity
+/// 2. A column index identifying a unique atmospheric column
+/// 3. A level index identifying a unique pack containing a set of data
+///    associated with adjacent vertical levels.
+using TracersView = typename DeviceType::view_3d<PackType>;
 
-/// Views of this type store packs defined for each species population (for
-/// aerosols or gases), with ceil(num_levels/HAERO_PACK_SIZE) packs spanning
-/// the column's vertical levels. If p identifies a species population (aerosol
-/// or gas), and k identifies a vertical level,
-/// the corresponding data is accessible at
-/// `view(p, pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
-/// See Chapter 3 of the design document for an explanation of packs.
-using SpeciesColumnView = @HAERO_SPECIES_COLUMN_VIEW_TYPE@;
-
-/// Views of this type store packs defined for each mode, with
-/// ceil(num_levels/HAERO_PACK_SIZE) packs spanning the column's vertical
-/// levels. If m identifies a mode and k identifies a vertical level,
-/// the corresponding data is accessible at
-/// `view(m, pack_info::pack_idx(k))[pack_info::vec_idx(k)]`.
-/// See Chapter 3 of the design document for an explanation of packs.
-using ModeColumnView = @HAERO_MODE_COLUMN_VIEW_TYPE@;
+/// A DiagnosticsView іs a rank 3 Kokkos View with the following indices:
+/// 1. A diagnostic index identifying a diagnostic quantity
+/// 2. A column index identifying a unique atmospheric column
+/// 3. A level index identifying a unique pack containing a set of data
+///    associated with adjacent vertical levels.
+using DiagnosticsView = typename DeviceType::view_3d<PackType>;
 
 }
 #endif

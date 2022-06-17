@@ -44,19 +44,6 @@ PREFIX=$PWD/$1
 #EKAT_LIBRARY_DIR=/path/to/ekat/library
 #EKAT_LIBRARY=libekat.a
 
-#YAMLCPP_INCLUDE_DIR=/path/to/yaml-cpp/includes
-#YAMLCPP_LIBRARY_DIR=/path/to/yaml-cpp/library
-#YAMLCPP_LIBRARY=libyaml-cpp.a
-
-#HDF5_INCLUDE_DIR=/path/to/hdf5/include
-#HDF5_LIBRARY_DIR=/path/to/hdf5/library
-#HDF5_LIBRARY=libhdf5.a
-#HDF5_HL_LIBRARY=libhdf5_hl.a
-
-#NETCDF_INCLUDE_DIR=/path/to/netcdf-c/includes
-#NETCDF_LIBRARY_DIR=/path/to/netcdf-c/library
-#NETCDF_LIBRARY=libnetcdf.a
-
 #OPENBLAS_INCLUDE_DIR=/path/to/openblas/includes
 #OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
 #OPENBLAS_LIBRARY=libopenblas.a
@@ -137,29 +124,6 @@ DEVICE_ARCH=AMDAVX          # AMD chip (CPU)
 #DEVICE_ARCH=INTEL_GEN       # Intel GPUs Gen9+ (GPU)
 
 #-----------------------------------------------------------------------------
-#                         Kokkos View Types
-#-----------------------------------------------------------------------------
-
-# Change these only if your host model needs to specify the Kokkos view types
-# used by Haero to store aerosol data. These Views are Kokkos types defined via
-# EKAT.  See ekat/src/ekat/kokkos/ekat_kokkos_types.hpp for additional details.
-# You may reference the following types in your type specifications:
-#
-# * DeviceType - the DefaultDevice used for ekat's Kokkos build
-# * PackType - ekat's SIMD-enabled Pack with Haero's floating point data type
-#
-# Remember to use quotes around these C++ types!
-
-# Column view type (maps vertical index k to a datum)
-HAERO_COLUMN_VIEW_TYPE="DeviceType::view_1d<PackType>"
-
-# Species column view type (maps species index s, vertical index k to a datum)
-HAERO_SPECIES_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
-
-# Mode column view type (maps mode index m, vertical index k to a datum)
-HAERO_MODE_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
-
-#-----------------------------------------------------------------------------
 #                         Build features and parameters
 #-----------------------------------------------------------------------------
 
@@ -178,13 +142,6 @@ PACK_SIZE=1
 # * 'double' for double precision
 # * 'single' for single precision
 PRECISION=double
-
-# Set this to ON to enable Fortran aerosol processes. This is overridden if
-# PACK_SIZE > 1.
-ENABLE_FORTRAN=ON
-
-# Set this to ON to enable the standalone 1D haero atmosphere driver
-ENABLE_DRIVER=OFF
 
 # Set this to ON to enable building the chemistry solver and driver.
 ENABLE_CHEMISTRY=OFF
@@ -368,18 +325,13 @@ cmake \
  -DCMAKE_BUILD_TYPE=\$BUILD_TYPE \
  -DCMAKE_C_COMPILER=\$CC \
  -DCMAKE_CXX_COMPILER=\$CXX \
- -DENABLE_FORTRAN=\$ENABLE_FORTRAN \
- -DENABLE_DRIVER=\$ENABLE_DRIVER \
- -DENABLE_CHEMISTRY=\$ENABLE_CHEMISTRY \
- -DENABLE_GPU=\$ENABLE_GPU \
- -DENABLE_MPI=\$ENABLE_MPI \
+ -DHAERO_ENABLE_CHEMISTRY=\$ENABLE_CHEMISTRY \
+ -DHAERO_ENABLE_GPU=\$ENABLE_GPU \
+ -DHAERO_ENABLE_MPI=\$ENABLE_MPI \
  -DHAERO_PRECISION=\$PRECISION \
  -DHAERO_DEVICE_ARCH:STRING=\$DEVICE_ARCH \
  -DKokkos_ARCH_\$DEVICE_ARCH:BOOL=ON \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \
- -DHAERO_COLUMN_VIEW_TYPE="\$HAERO_COLUMN_VIEW_TYPE" \
- -DHAERO_SPECIES_COLUMN_VIEW_TYPE="\$HAERO_SPECIES_COLUMN_VIEW_TYPE" \
- -DHAERO_MODE_COLUMN_VIEW_TYPE="\$HAERO_MODE_COLUMN_VIEW_TYPE" \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR

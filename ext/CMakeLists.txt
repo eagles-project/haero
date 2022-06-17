@@ -22,173 +22,6 @@ macro(update_submodules)
   endif()
 endmacro()
 
-# Many of our dependencies are only needed only for specific targets.
-if (ENABLE_DRIVER OR ENABLE_BOX)
-
-#----------------------------------------------------------------------------
-# libz compression library
-#----------------------------------------------------------------------------
-find_package(ZLIB REQUIRED)
-if(NOT ZLIB_FOUND)
-  # Build zlib.
-  message(STATUS "libz not found on system. Building locally.")
-  update_submodules()
-  set(ZLIB_CONFIG_OPTS
-      --prefix=${PROJECT_BINARY_DIR}
-      --static
-      --libdir=${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
-  ExternalProject_Add(zlib_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/zlib
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/zlib
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CONFIGURE_COMMAND env CC=${CMAKE_C_COMPILER} CFLAGS=${CMAKE_C_FLAGS} ${CMAKE_CURRENT_SOURCE_DIR}/zlib/configure ${ZLIB_CONFIG_OPTS}
-                      LOG_CONFIGURE TRUE
-                      BUILD_COMMAND ${MAKE} -j
-                      LOG_BUILD TRUE
-                      INSTALL_COMMAND ${MAKE} install
-                      LOG_INSTALL TRUE)
-  set(ZLIB_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/include)
-  set(ZLIB_LIBRARIES ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libz.a)
-  set(HDF5_DEPS zlib_proj)
-endif()
-
-add_library(z STATIC IMPORTED GLOBAL)
-set_target_properties(z PROPERTIES IMPORTED_LOCATION ${ZLIB_LIBRARIES})
-
-#----------------------------------------------------------------------------
-# HDF5 parallel I/O library
-#----------------------------------------------------------------------------
-if (HDF5_LIBRARY MATCHES ".so")
-  add_library(hdf5 SHARED IMPORTED GLOBAL)
-  add_library(hdf5_hl SHARED IMPORTED GLOBAL)
-else()
-  add_library(hdf5 STATIC IMPORTED GLOBAL)
-  add_library(hdf5_hl STATIC IMPORTED GLOBAL)
-endif()
-set_target_properties(hdf5 PROPERTIES IMPORTED_LOCATION ${HDF5_LIBRARY})
-set_target_properties(hdf5_hl PROPERTIES IMPORTED_LOCATION ${HDF5_HL_LIBRARY})
-if (NOT EXISTS ${HDF5_LIBRARY})
-  if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
-    update_submodules()
-
-    set(HDF5_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                        -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                        -DZLIB_INCLUDE_DIRS=${ZLIB_INCLUDE_DIRS}
-                        -DZLIB_LIBRARIES=${ZLIB_LIBRARIES}
-                        -DZLIB_USE_EXTERNAL=${ZLIB_FOUND}
-                        -DZLIB_FOUND=${ZLIB_FOUND}
-                        -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
-                        -DHDF5_ENABLE_PARALLEL=${ENABLE_MPI}
-                        -DHDF5_INSTALL_LIB_DIR=${CMAKE_INSTALL_LIBDIR}
-                        -DHDF5_BUILD_CPP_LIB=OFF
-                        -DHDF5_BUILD_FORTRAN=OFF
-                        -DHDF5_BUILD_JAVA=OFF
-                        -DHDF5_BUILD_TOOLS=OFF
-                        -DHDF5_BUILD_UTILS=OFF
-                        -DBUILD_TESTING=OFF
-                        -DHDF5_BUILD_EXAMPLES=OFF)
-    ExternalProject_Add(hdf5_proj
-                        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/hdf5
-                        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hdf5
-                        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/hdf5
-                        INSTALL_DIR ${PROJECT_BINARY_DIR}
-                        CMAKE_ARGS ${HDF5_CMAKE_OPTS}
-                        DEPENDS ${HDF5_DEPS}
-                        LOG_CONFIGURE TRUE
-                        LOG_BUILD TRUE
-                        LOG_INSTALL TRUE)
-    add_dependencies(hdf5 hdf5_proj)
-  else()
-    message(FATAL_ERROR "Couldn't find HDF5 library: ${HDF5_LIBRARY}")
-  endif()
-else()
-  if (NOT ${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR}) # if we didn't build this ourselves...
-    # Find libz.
-    find_package(ZLIB REQUIRED)
-    set(HAERO_EXT_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES};${ZLIB_LIBRARIES})
-  endif()
-endif()
-list(APPEND HAERO_EXT_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
-set(HAERO_EXT_DRIVER_LIBRARIES hdf5_hl;hdf5;z;${HAERO_EXT_DRIVER_LIBRARIES})
-set(HAERO_EXT_DRIVER_INCLUDE_DIRS ${HAERO_EXT_DRIVER_INCLUDE_DIRS};${HDF5_INCLUDE_DIR})
-
-#----------------------------------------------------------------------------
-# NetCDF C library.
-#----------------------------------------------------------------------------
-add_library(netcdf STATIC IMPORTED GLOBAL)
-set_target_properties(netcdf PROPERTIES IMPORTED_LOCATION ${NETCDF_LIBRARY})
-if (NOT EXISTS ${NETCDF_LIBRARY})
-  update_submodules()
-
-  set(NETCDF_CMAKE_OPTS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                        -DCMAKE_C_FLAGS=${NETCDF_C_FLAGS}
-                        -DUSE_HDF5=ON
-                        -DHDF5_C_LIBRARY=${HDF5_LIBRARY}
-                        -DHDF5_HL_LIBRARY=${HDF5_HL_LIBRARY}
-                        -DHDF5_C_LIBRARIES=${HDF5_LIBRARY};
-                        -DHDF5_HL_LIBRARIES=${HDF5_HL_LIBRARY}
-                        -DHDF5_INCLUDE_DIR=${HDF5_INCLUDE_DIR}
-                        -DZLIB_LIBRARY=${ZLIB_LIBRARIES}
-                        -DHAVE_LIBDL=ON
-                        -DLIBDL=${CMAKE_DL_LIBS}
-                        -DENABLE_PARALLEL=${ENABLE_MPI}
-                        -DHDF5_IS_PARALLEL=${ENABLE_MPI}
-                        -DHDF5_IS_PARALLEL_MPIO=${ENABLE_MPI}
-                        -DNC_HAVE_PARALLEL_HDF5=${ENABLE_MPI}
-                        -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                        -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-                        -DENABLE_DAP=OFF
-                        -DBUILD_SHARED_LIBS=OFF
-                        -DFIND_SHARED_LIBS=OFF
-                        -DENABLE_DYNAMIC_LOADING=ON
-                        -DENABLE_TESTS=OFF
-                        -DBUILD_UTILITIES=OFF
-                        -DBUILD_EXAMPLES=OFF
-                        -DCMAKE_FIND_LIBRARY_SUFFIXES=.a)
-  ExternalProject_Add(netcdf_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/netcdf-c
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/netcdf-c
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netcdf-c
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${NETCDF_CMAKE_OPTS}
-                      DEPENDS hdf5
-                      LOG_CONFIGURE TRUE
-                      LOG_BUILD TRUE
-                      BUILD_COMMAND ${MAKE}
-                      LOG_INSTALL TRUE)
-
-  if (${HDF5_LIBRARY} MATCHES ${PROJECT_BINARY_DIR})
-    # We need to convince NetCDF's build system that our own HDF5 library is a
-    # parallel and zlib-enabled installation. Since we don't use MPI compiler
-    # scripts (a la EKAT), we have to plant a fake mpi.h into the folder
-    # containing hdf5.h, and then we remove it after NetCDF is built and
-    # installed.
-
-    # Create links to MPI headers before we try to configure NetCDF.
-    ExternalProject_Add_Step(netcdf_proj create_mpi_header_links
-      COMMAND ${CMAKE_COMMAND} -E create_symlink ${MPI_C_INCLUDE_DIRS}/mpi.h ${HDF5_INCLUDE_DIR}/mpi.h
-      COMMAND ${CMAKE_COMMAND} -E create_symlink ${MPI_C_INCLUDE_DIRS}/mpio.h ${HDF5_INCLUDE_DIR}/mpio.h
-      DEPENDERS configure)
-
-    # End the charade after installing.
-    ExternalProject_Add_Step(netcdf_proj remove_mpi_header_links
-      COMMAND ${CMAKE_COMMAND} -E remove ${HDF5_INCLUDE_DIR}/mpi.h
-      COMMAND ${CMAKE_COMMAND} -E remove ${HDF5_INCLUDE_DIR}/mpio.h
-      DEPENDEES install)
-  endif()
-
-  add_dependencies(netcdf netcdf_proj)
-endif()
-list(APPEND HAERO_EXT_INCLUDE_DIRS ${NETCDF_INCLUDE_DIR})
-set(HAERO_EXT_DRIVER_LIBRARIES netcdf;${HAERO_EXT_DRIVER_LIBRARIES})
-set(HAERO_EXT_DRIVER_INCLUDE_DIRS ${HAERO_EXT_DRIVER_INCLUDE_DIRS};${NETCDF_INCLUDE_DIR})
-
-endif() # ENABLE_DRIVER or ENABLE_BOX
-
 #----------------------------------------------------------------------------
 # E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
@@ -206,7 +39,7 @@ if (HAERO_BUILDS_EKAT)
     set(Kokkos_ENABLE_DEBUG TRUE)
     set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF)
   endif()
-  if (ENABLE_GPU)
+  if (HAERO_ENABLE_GPU)
     set(Kokkos_ENABLE_SERIAL ON)
     set(Kokkos_ENABLE_CUDA ON)
     set(Kokkos_ENABLE_CUDA_LAMBDA ON)
@@ -244,12 +77,12 @@ foreach(inc_dir ${EKAT_INCLUDE_DIRS})
 endforeach()
 set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
 
-if (ENABLE_CHEMISTRY)
+if (HAERO_ENABLE_CHEMISTRY)
   #----------------------------------------------------------------------------
   # OpenBLAS linear algebra library: needed by Tines on CPU builds
   # (We can skip it if we use Intel's compilers, which provide MKL.)
   #----------------------------------------------------------------------------
-  if (NOT ENABLE_GPU AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+  if (NOT HAERO_ENABLE_GPU AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     add_library(openblas STATIC IMPORTED GLOBAL)
     set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
     if (NOT EXISTS ${OPENBLAS_LIBRARY})
@@ -300,7 +133,7 @@ if (ENABLE_CHEMISTRY)
   set_target_properties(tines PROPERTIES IMPORTED_LOCATION ${TINES_LIBRARY})
   if (NOT EXISTS ${TINES_LIBRARY})
     update_submodules()
-    if (NOT ENABLE_GPU AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    if (NOT HAERO_ENABLE_GPU AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
       set(TINES_DEPENDS openblas ekat)
     else()
       set(TINES_DEPENDS ekat)
@@ -325,7 +158,7 @@ if (ENABLE_CHEMISTRY)
       set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
                            -DTINES_ENABLE_DEBUG=OFF)
     endif()
-    if (ENABLE_GPU)
+    if (HAERO_ENABLE_GPU)
       # We use EKAT's C++ compiler helper script for CUDA.
       set(TINES_CMAKE_OPTS ${TINES_CMAKE_OPTS}
           -DCMAKE_CXX_COMPILER=${EKAT_NVCC_WRAPPER})
@@ -399,7 +232,7 @@ if (ENABLE_CHEMISTRY)
                          # time and makes the test run fast
                          -DTCHEM_ENABLE_SACADO_JACOBIAN_ATMOSPHERIC_CHEMISTRY=ON
                        )
-    if (ENABLE_GPU)
+    if (HAERO_ENABLE_GPU)
       # We use EKAT's C++ compiler helper script. Also, we need to nudge TChem
       # toward the kokkos/ subdirectory of our include path in this case (for some
       # reason).
@@ -509,8 +342,8 @@ if (HAERO_BUILDS_EKAT)
           DESTINATION bin)
 endif()
 
-if (ENABLE_CHEMISTRY)
-  if (NOT ENABLE_GPU AND OPENBLAS_LIBRARY_DIR)
+if (HAERO_ENABLE_CHEMISTRY)
+  if (NOT HAERO_ENABLE_GPU AND OPENBLAS_LIBRARY_DIR)
     if (${OPENBLAS_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built OpenBLAS
       install(FILES ${OPENBLAS_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
