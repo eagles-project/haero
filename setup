@@ -204,53 +204,6 @@ if [ "\$VERBOSE" = "ON" ]; then
   OPTIONS="\$OPTIONS -DCMAKE_VERBOSE_MAKEFILE=ON"
 fi
 
-# Configure HDF5 if needed.
-if [ ! "\$HDF5_LIBRARY_DIR" = "" -o ! "\$HDF5_INCLUDE_DIR" = "" -o ! "\$HDF5_LIBRARY" = "" -o ! "\$HDF5_HL_LIBRARY" = "" ]; then
-  if [ "\$HDF5_LIBRARY" = "" ]; then
-    echo "Error: HDF5_LIBRARY must be specified for a custom HDF5 library."
-    exit 1
-  fi
-  if [ "\$HDF5_HL_LIBRARY" = "" ]; then
-    echo "Error: HDF5_HL_LIBRARY must be specified for a custom high-level HDF5 library."
-    exit 1
-  fi
-  if [ "\$HDF5_INCLUDE_DIR" = "" ]; then
-    echo "Error: HDF5_INCLUDE_DIR must be specified for a custom HDF5 library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DHDF5_LIBRARY=\$HDF5_LIBRARY_DIR/\$HDF5_LIBRARY"
-  OPTIONS="\$OPTIONS -DHDF5_HL_LIBRARY=\$HDF5_LIBRARY_DIR/\$HDF5_HL_LIBRARY"
-  OPTIONS="\$OPTIONS -DHDF5_INCLUDE_DIR=\$HDF5_INCLUDE_DIR"
-fi
-
-# Configure NetCDF if needed.
-if [ ! "\$NETCDF_LIBRARY_DIR" = "" -o ! "\$NETCDF_INCLUDE_DIR" = "" -o ! "\$NETCDF_LIBRARY" = "" ]; then
-  if [ "\$NETCDF_LIBRARY" = "" ]; then
-    echo "Error: NETCDF_LIBRARY must be specified for a custom NetCDF library."
-    exit 1
-  fi
-  if [ "\$NETCDF_INCLUDE_DIR" = "" ]; then
-    echo "Error: NETCDF_INCLUDE_DIR must be specified for a custom NetCDF library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DNETCDF_LIBRARY=\$NETCDF_LIBRARY_DIR/\$NETCDF_LIBRARY"
-  OPTIONS="\$OPTIONS -DNETCDF_INCLUDE_DIR=\$NETCDF_INCLUDE_DIR"
-fi
-
-# Configure yaml-cpp if needed.
-if [ ! "\$YAMLCPP_LIBRARY_DIR" = "" -o ! "\$YAMLCPP_INCLUDE_DIR" = "" -o ! "\$YAMLCPP_LIBRARY" = "" ]; then
-  if [ "\$YAMLCPP_LIBRARY" = "" ]; then
-    echo "Error: YAMLCPP_LIBRARY must be specified for a custom yaml-cpp library."
-    exit 1
-  fi
-  if [ "\$YAMLCPP_INCLUDE_DIR" = "" ]; then
-    echo "Error: YAMLCPP_INCLUDE_DIR must be specified for a custom yaml-cpp library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DYAMLCPP_LIBRARY=\$YAMLCPP_LIBRARY_DIR/\$YAMLCPP_LIBRARY"
-  OPTIONS="\$OPTIONS -DYAMLCPP_INCLUDE_DIR=\$YAMLCPP_INCLUDE_DIR"
-fi
-
 # Configure ekat if needed.
 if [ ! "\$EKAT_LIBRARY_DIR" = "" -o ! "\$EKAT_INCLUDE_DIR" = "" -o ! "\$EKAT_LIBRARY" = "" ]; then
   if [ "\$EKAT_LIBRARY" = "" ]; then

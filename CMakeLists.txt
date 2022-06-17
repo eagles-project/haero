@@ -159,7 +159,7 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SYS_FLAGS}")
 
 # Fortran compiler flags
-set(CMAKE_Fortran_FLAGS "-cpp -Dc_real=c_${HAERO_REAL_TYPE}")
+set(CMAKE_Fortran_FLAGS "-cpp")
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")
@@ -287,7 +287,7 @@ enable_testing()
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
-if (ENABLE_CHEMISTRY)
+if (HAERO_ENABLE_CHEMISTRY)
   message(STATUS "Building chem_driver.")
   include_directories("${TINES_INCLUDE_DIR}/tines")
   add_subdirectory(chem_driver)
@@ -295,11 +295,11 @@ endif()
 
 # Validation tools (currently offered only for CPU builds with pack size 1,
 # because we're using it with Fortran.)
-if(NOT HAERO_USE_CUDA AND HAERO_PACK_SIZE EQUAL 1)
-  # Aerosol cross-validation materials
-  message(STATUS "Building validation programs...")
-  add_subdirectory(validation)
-endif()
+#if(NOT HAERO_USE_CUDA AND HAERO_PACK_SIZE EQUAL 1)
+#  # Aerosol cross-validation materials
+#  message(STATUS "Building validation programs...")
+#  add_subdirectory(validation)
+#endif()
 
 # Formatting and format checking using clang-format.
 find_program(CLANG_FORMAT clang-format)

@@ -31,7 +31,6 @@ if (HAERO_BUILDS_EKAT)
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/pkg_build)
   include(EkatBuildEkat)
-  set (EKAT_ENABLE_TESTS OFF)
   if (CMAKE_BUILD_TYPE STREQUAL Release)
     set(Kokkos_ENABLE_DEBUG FALSE)
     set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION ON)
