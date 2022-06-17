@@ -80,10 +80,11 @@ jobs:
           -G "Unix Makefiles" \
           ..
 
-    - name: Checking code formatting...
-      run: |
-        cd build
-        make format-cxx-check
+# TODO: clang-format seems unstable under different versions. Not helpful!
+#    - name: Checking code formatting...
+#      run: |
+#        cd build
+#        make format-cxx-check
 
     - name: Building haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
