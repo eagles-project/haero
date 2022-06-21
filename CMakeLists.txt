@@ -12,6 +12,7 @@ option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"      OFF)
 option(HAERO_ENABLE_GPU       "Enable GPU support"                 OFF)
 option(HAERO_ENABLE_MPI       "Enable MPI parallelism"             ON)
 option(HAERO_ENABLE_OPENMP    "Enable OpenMP threading (CPU only)" OFF)
+option(HAERO_ENABLE_TESTBED   "Enable MAM4 testbed"                ON)
 
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.

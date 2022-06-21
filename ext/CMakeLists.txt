@@ -11,17 +11,6 @@ foreach(dir include;lib;bin;share)
   endif()
 endforeach()
 
-# Keep track of whether we've updated our submodules.
-set(SUBMODULES_UPDATED FALSE)
-macro(update_submodules)
-  if (NOT SUBMODULES_UPDATED OR DISABLE_SUBMODULE_CHECKS)
-    message(STATUS "Updating git submodules recursively...")
-    execute_process(COMMAND ${GIT} submodule update --init --recursive
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-    set(SUBMODULES_UPDATED TRUE)
-  endif()
-endmacro()
-
 #----------------------------------------------------------------------------
 # E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
@@ -85,7 +74,6 @@ if (HAERO_ENABLE_CHEMISTRY)
     add_library(openblas STATIC IMPORTED GLOBAL)
     set_target_properties(openblas PROPERTIES IMPORTED_LOCATION ${OPENBLAS_LIBRARY_DIR}/libopenblas.a)
     if (NOT EXISTS ${OPENBLAS_LIBRARY})
-      update_submodules()
       set(OPENBLAS_OPTS libs netlib shared
                         CC=${CMAKE_C_COMPILER}
                         FC=${CMAKE_Fortran_COMPILER})
@@ -131,7 +119,6 @@ if (HAERO_ENABLE_CHEMISTRY)
   endif()
   set_target_properties(tines PROPERTIES IMPORTED_LOCATION ${TINES_LIBRARY})
   if (NOT EXISTS ${TINES_LIBRARY})
-    update_submodules()
     if (NOT HAERO_ENABLE_GPU AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel")
       set(TINES_DEPENDS openblas ekat)
     else()
@@ -211,7 +198,6 @@ if (HAERO_ENABLE_CHEMISTRY)
   set_target_properties(tchem PROPERTIES IMPORTED_LOCATION ${TCHEM_LIBRARY})
   set(TCHEM_CXX_FLAGS "-I${EKAT_LIBRARY_DIR}/../include/kokkos -I${PROJECT_BINARY_DIR}/include")
   if (NOT EXISTS ${TCHEM_LIBRARY})
-    update_submodules()
     string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" KOKKOS_INSTALL_PATH ${EKAT_LIBRARY_DIR})
     string(REPLACE "${CMAKE_INSTALL_LIBDIR}" "" TINES_INSTALL_PATH ${TINES_LIBRARY_DIR})
     set(TCHEM_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
@@ -296,6 +282,41 @@ if (NOT EXISTS ${SKYWALKER_LIBRARY})
                       LOG_INSTALL TRUE)
   add_dependencies(skywalker skywalker_proj)
   add_dependencies(skywalker_f90 skywalker_proj)
+endif()
+
+#----------------------------------------------------------------------------
+# MAM box model (for testing ported parameterizations)
+#----------------------------------------------------------------------------
+if (HAERO_ENABLE_TESTBED)
+  set(MAMBOX_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                        -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+                        -DMAMBOX_PRECISION=${HAERO_PRECISION}
+                        -DMAMBOX_ENABLE_DRIVER=OFF
+                        -DMAMBOX_NUM_COLUMNS=1
+                        -DMAMBOX_NUM_LEVELS=1
+                        -DMAMBOX_NUM_SPECIES=35
+                        -DMAMBOX_NUM_BLACK_CARBON_TAGS=1
+                        -DMAMBOX_NUM_PRIMARY_ORGANIC_TAGS=1
+                        -DMAMBOX_NUM_SECONDARY_ORGANIC_TAGS=1
+                        -DMAMBOX_NUM_SECONDARY_ORGANIC_GAS_TAGS=1
+                        -DMAMBOX_RAIN_EVAP_TO_COARSE_AERO=1)
+  ExternalProject_Add(mambox_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mam_refactor
+                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mam_refactor
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mam_refactor
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${MAMBOX_CMAKE_OPTS}
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND ${MAKE} -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND ${MAKE} install
+                      LOG_INSTALL TRUE)
+  add_library(mam_core STATIC IMPORTED GLOBAL)
+  set_target_properties(mam_core PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libmam_core.a)
+  add_dependencies(mam_core mambox_proj)
 endif()
 
 # This target can be used as a dependency to ensure all above libraries are

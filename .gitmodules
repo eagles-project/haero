@@ -26,3 +26,6 @@
 [submodule "validation/mam_x_validation"]
 	path = validation/mam_x_validation
 	url = git@github.com:eagles-project/mam_x_validation
+[submodule "ext/mam_refactor"]
+	path = ext/mam_refactor
+	url = git@github.com:eagles-project/mam_refactor.git
