@@ -1,4 +1,3 @@
-# Minimum CMake version -- currently determined by HDF5.
 cmake_minimum_required (VERSION 3.12.0)
 
 # Adjust CMake's module path.
