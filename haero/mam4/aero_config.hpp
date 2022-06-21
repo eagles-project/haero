@@ -1,39 +1,45 @@
-#ifndef HAERO_MAM4_CONFIG_HPP
-#define HAERO_MAM4_CONFIG_HPP
+#ifndef HAERO_MAM4_AERO_CONFIG_HPP
+#define HAERO_MAM4_AERO_CONFIG_HPP
+
+#include "aero_mode.hpp"
+
+#include <haero/aero_species.hpp>
+#include <haero/gas_species.hpp>
+#include <haero/view_pack_helpers.hpp>
 
 #include <algorithm>
 #include <map>
 #include <numeric>
 #include <string>
 
-#include "haero/aero_species.hpp"
-#include "haero/gas_species.hpp"
-#include "haero/view_pack_helpers.hpp"
-
 namespace haero {
 
-/// @class MAM4Config: for use with all MAM4 process implementations
-class MAM4Config final {
+namespace mam4 {
+
+/// @class MAM4::AeroConfig: for use with all MAM4 process implementations
+class AeroConfig final {
  public:
   /// Default constructor.
-  MAM4Config() {}
+  AeroConfig() {}
 
   /// Copy constructor.
-  MAM4Config(const MAM4Config&) = default;
+  AeroConfig(const AeroConfig&) = default;
 
   /// Destructor.
-  ~MAM4Config() = default;
+  ~AeroConfig() = default;
 
   /// Assignment operator.
-  MAM4Config& operator=(const MAM4Config&) = default;
+  AeroConfig& operator=(const AeroConfig&) = default;
 
   /// Comparison operators.
-  bool operator==(const ModalAerosolConfig& other) const;
-  inline bool operator!=(const ModalAerosolConfig& other) const {
+  bool operator==(const AeroConfig& other) const;
+  inline bool operator!=(const AeroConfig& other) const {
     return (!(*this == other));
   }
 
-  /// The list of aerosol modes associated with this aerosol model.
+  /// Given a view of tracers, returns a view containing a column of aerosol
+  /// mixing ratios associated with the given mode and species.
+  static ColumnView aerosol_mmr(const TracersView tracers, 
   std::vector<Mode> aerosol_modes;
 
   /// The list of all aerosol species associated with this aerosol model.

@@ -14,75 +14,38 @@ namespace haero {
 /// This type represents a gas that participates in one or more aerosol
 /// microphysics parameterizations.
 struct GasSpecies final {
-  static const int NAME_LEN = 128;
-  static const int DESC_LEN = 512;
   // Default constructor needed for device
   KOKKOS_INLINE_FUNCTION
   GasSpecies() {
-    name_view[0] = '\0';
-    symbol_view[0] = '\0';
-    desc_view[0] = '\0';
   }
 
   /// Creates a new gas species
-  /// @param [in] name A unique descriptive name for this species
-  /// @param [in] symbol a unique short name or symbol for this species
-  /// @param [in] description A short text description of this species and its
-  /// composition
   /// @param [in] molecular_wt the molecular weight of this species [kg/mol]
-  GasSpecies(const std::string& name, const std::string& symbol,
-             const std::string& description, Real molecular_wt)
+  KOKKOS_INLINE_FUNCTION
+  explicit GasSpecies(Real molecular_wt)
       : molecular_weight(molecular_wt) {
-    EKAT_ASSERT(name.size() < NAME_LEN);
-    EKAT_ASSERT(symbol.size() < NAME_LEN);
-    strncpy(name_view, name.c_str(), NAME_LEN);
-    strncpy(symbol_view, symbol.c_str(), NAME_LEN);
-    strncpy(desc_view, description.c_str(), DESC_LEN);
   }
 
   KOKKOS_INLINE_FUNCTION
   GasSpecies(const GasSpecies& g) : molecular_weight(g.molecular_weight) {
-    for (int i = 0; i < NAME_LEN; ++i) name_view[i] = g.name_view[i];
-    for (int i = 0; i < NAME_LEN; ++i) symbol_view[i] = g.symbol_view[i];
-    for (int i = 0; i < DESC_LEN; ++i) desc_view[i] = g.desc_view[i];
   }
 
   KOKKOS_INLINE_FUNCTION
   GasSpecies& operator=(const GasSpecies& g) {
     if (&g != this) {
       molecular_weight = g.molecular_weight;
-      for (int i = 0; i < NAME_LEN; ++i) name_view[i] = g.name_view[i];
-      for (int i = 0; i < NAME_LEN; ++i) symbol_view[i] = g.symbol_view[i];
-      for (int i = 0; i < DESC_LEN; ++i) desc_view[i] = g.desc_view[i];
     }
     return *this;
   }
-
-  /// full species name
-  std::string name() const { return std::string(name_view); }
-
-  /// abbreviated name
-  std::string symbol() const { return std::string(symbol_view); }
-
-  /// species description
-  std::string description() const { return std::string(desc_view); }
 
   /// Molecular weight [kg/mol]
   Real molecular_weight;
 
   // Comparison operators.
   bool operator==(const GasSpecies& other) const {
-    return (!strcmp(name_view, other.name_view) and
-            !strcmp(symbol_view, other.symbol_view) and
-            !strcmp(desc_view, other.desc_view) and
-            (molecular_weight == other.molecular_weight));
+    return (molecular_weight == other.molecular_weight);
   }
   bool operator!=(const GasSpecies& other) const { return !(*this == other); }
-
- private:
-  char name_view[NAME_LEN];
-  char symbol_view[NAME_LEN];
-  char desc_view[DESC_LEN];
 };
 
 /// This factory function constructs a set of gas species corresponding to

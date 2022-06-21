@@ -1,5 +1,5 @@
-#ifndef HAERO_AEROSOL_PROCESS_HPP
-#define HAERO_AEROSOL_PROCESS_HPP
+#ifndef HAERO_AERO_PROCESS_HPP
+#define HAERO_AERO_PROCESS_HPP
 #include <memory>
 
 #include "haero/atmosphere.hpp"
