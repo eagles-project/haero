@@ -135,12 +135,12 @@ struct Mode final {
   bool operator!=(const Mode &other) const { return !(*this == other); }
 };
 
-/// Mode indices
-enum ModeIndex {
-  AccumulationMode = 0,
-  AitkenMode = 1,
-  CoarseMode = 2,
-  PrimaryCarbonMode = 3
+/// Mode indices in MAM4
+enum class ModeIndex {
+  Accumulation,
+  Aitken,
+  Coarse,
+  PrimaryCarbon,
 };
 
 /// A list of all modes within MAM4.
