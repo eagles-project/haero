@@ -7,11 +7,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 #---------
 # Options
 #---------
-option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"      OFF)
-option(HAERO_ENABLE_GPU       "Enable GPU support"                 OFF)
-option(HAERO_ENABLE_MPI       "Enable MPI parallelism"             ON)
-option(HAERO_ENABLE_OPENMP    "Enable OpenMP threading (CPU only)" OFF)
-option(HAERO_ENABLE_TESTBED   "Enable MAM4 testbed"                ON)
+option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"              OFF)
+option(HAERO_ENABLE_GPU       "Enable GPU support"                         OFF)
+option(HAERO_ENABLE_MPI       "Enable MPI parallelism"                     ON)
+option(HAERO_ENABLE_OPENMP    "Enable OpenMP threading (CPU only)"         OFF)
+option(HAERO_ENABLE_MAM4BOX   "Enable MAM4 box model and related testing"  ON)
 
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.
@@ -245,7 +245,7 @@ if (HAERO_ENABLE_GPU)
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
-# our box model needs. We use this for efficiently linking unit tests.
+# we need. We use this for efficiently linking unit tests.
 set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 
 # Include the binary directory in the header file search path,

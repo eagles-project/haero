@@ -285,9 +285,9 @@ if (NOT EXISTS ${SKYWALKER_LIBRARY})
 endif()
 
 #----------------------------------------------------------------------------
-# MAM box model (for testing ported parameterizations)
+# MAM4 box model (for testing ported parameterizations)
 #----------------------------------------------------------------------------
-if (HAERO_ENABLE_TESTBED)
+if (HAERO_ENABLE_MAM4BOX)
   set(MAMBOX_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -295,6 +295,7 @@ if (HAERO_ENABLE_TESTBED)
                         -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
                         -DMAMBOX_PRECISION=${HAERO_PRECISION}
                         -DMAMBOX_ENABLE_DRIVER=OFF
+                        -DMAMBOX_ENABLE_VALIDATION=OFF
                         -DMAMBOX_NUM_COLUMNS=1
                         -DMAMBOX_NUM_LEVELS=1
                         -DMAMBOX_NUM_SPECIES=35
@@ -303,10 +304,10 @@ if (HAERO_ENABLE_TESTBED)
                         -DMAMBOX_NUM_SECONDARY_ORGANIC_TAGS=1
                         -DMAMBOX_NUM_SECONDARY_ORGANIC_GAS_TAGS=1
                         -DMAMBOX_RAIN_EVAP_TO_COARSE_AERO=1)
-  ExternalProject_Add(mambox_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mam_refactor
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mam_refactor
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mam_refactor
+  ExternalProject_Add(mam4box_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mam4box
+                      SOURCE_DIR ${MAM4BOX_DIR}
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mam4box
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
                       CMAKE_ARGS ${MAMBOX_CMAKE_OPTS}
                       LOG_CONFIGURE TRUE

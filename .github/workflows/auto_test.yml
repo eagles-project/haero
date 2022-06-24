@@ -47,6 +47,14 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         submodules: recursive
 
+    - name: Checking out MAM4 box model (no submodules)
+      uses: actions/checkout@v2
+      with:
+        repository: git@github.com:eagles-project/mam_refactor.git
+        path: mam4-box
+        token: ${{ secrets.MAM4BOX_TOKEN }}
+        submodules: false
+
     - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision, pack size=${{ matrix.pack-size }})
       run: |
         ./setup build
@@ -57,9 +65,10 @@ jobs:
           -DCMAKE_CXX_COMPILER=mpicxx \
           -DCMAKE_C_COMPILER=mpicc \
           -DCMAKE_Fortran_COMPILER=mpif90 \
-          -DENABLE_BOX=ON \
-          -DENABLE_CHEMISTRY=ON \
-          -DENABLE_GPU=OFF \
+          -DHAERO_ENABLE_CHEMISTRY=ON \
+          -DHAERO_ENABLE_GPU=OFF \
+          -DHAERO_ENABLE_MAM4BOX=OFF \
+          -DMAM4BOX_DIR=${GITHUB_WORKSPACE}/mam4-box \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
