@@ -48,42 +48,5 @@ struct GasSpecies final {
   bool operator!=(const GasSpecies& other) const { return !(*this == other); }
 };
 
-/// This factory function constructs a set of gas species corresponding to
-/// the legacy MAM4 model.
-///
-/// These specific species names can be found in an e3sm v1 atm.log file.
-///
-/// for info on data sources, see
-/// https://eagles-project.atlassian.net/wiki/spaces/Computation/pages/1125515265/Aerosol+species+and+mode+data
-inline std::vector<GasSpecies> create_mam4_gas_species() {
-  const std::vector<std::string> gnames = {
-      "ozone",
-      "hydrogen peroxide",
-      "sulfuric acid",
-      "sulfur dioxide",
-      "dimethylsulfide",
-      "secondary organic aerosol precursor",
-      "oxygen",
-      "carbon dioxide",
-      "nitrous oxide",
-      "methane",
-      "trichlorofluoromethane",
-      "dichlorodifluoromethane",
-      "NH3"};
-  const std::vector<std::string> gsymbs = {
-      "O3",  "H2O2", "H2SO4", "SO2",   "DMS",   "SOAG", "O2",
-      "CO2", "N2O",  "CH4",   "CFC11", "CFC12", "NH3"};
-  const std::vector<Real> gmws = {47.9982, 34.0136, 98.0784, 64.0648, 62.1324,
-                                  12.011,  31.988,  44.009,  44.013,  16.04,
-                                  137.37,  120.91,  50.0};
-  static constexpr Real g_to_kg = 0.001;
-  std::vector<GasSpecies> result;
-  for (int i = 0; i < gnames.size(); ++i) {
-    result.push_back(GasSpecies(gnames[i], gsymbs[i], "(No description)",
-                                g_to_kg * gmws[i]));
-  }
-  return result;
-}
-
 }  // namespace haero
 #endif

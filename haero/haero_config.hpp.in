@@ -26,5 +26,6 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 
 #define HAERO_TEST_DATA_DIR "@CMAKE_CURRENT_SOURCE_DIR@/tests/data"
 
-}
+} // namespace haero
+
 #endif

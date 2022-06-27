@@ -1,5 +1,3 @@
-#add_library(haero_mam4 xyz)
-
-# MAM4 unit tests.
-#add_subdirectory(tests)
+# MAM4 process unit tests.
+add_subdirectory(tests)
 

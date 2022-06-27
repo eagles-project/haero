@@ -13,7 +13,6 @@
 #include <vector>
 
 namespace haero {
-
 namespace mam4 {
 
 /// @struct Mode
@@ -125,6 +124,7 @@ struct Mode final {
   Real deliquescence_pt;
 
   // Comparison operators.
+  KOKKOS_INLINE_FUNCTION
   bool operator==(const Mode &other) const {
     return ((min_diameter == other.min_diameter) and
             (max_diameter == other.max_diameter) and
@@ -132,6 +132,7 @@ struct Mode final {
             (crystallization_pt == other.crystallization_pt) and
             (deliquescence_pt == other.deliquescence_pt));
   }
+  KOKKOS_INLINE_FUNCTION
   bool operator!=(const Mode &other) const { return !(*this == other); }
 };
 
@@ -150,7 +151,7 @@ enum class ModeIndex {
 /// NOTE: https://eagles-project.atlassian.net/wiki/spaces/Computation/pages/354877515/Module+verifications
 /// NOTE: These data are found on Anvil in
 /// NOTE: /lcrc/group/acme/ccsm-data/inputdata/atm/cam/physprops/
-static Mode[] modes = {
+static Mode modes[4] = {
   Mode(5.35e-8, 1.1e-7, 4.4e-7, 1.8, 0.35, 0.8), // accumulation
   Mode(8.7e-9, 2.6e-8, 5.2e-8, 1.6, 0.35, 0.8),  // aitken
   Mode(1e-6, 2e-6, 4e-6, 1.8, 0.35, 0.8),        // coarse
@@ -170,7 +171,7 @@ enum class AeroId {
 };
 
 // A list of aerosol species in MAM4.
-static AeroSpecies[] aero_species = {
+static AeroSpecies aero_species[7] = {
   AeroSpecies(96.0, 1770.0, 0.507),   // sulphate
   AeroSpecies(12.011, 1000.0, 1e-10), // primary organic matter
   AeroSpecies(12.011, 1000.0, 0.14),  // secondary organic aerosol
@@ -181,7 +182,7 @@ static AeroSpecies[] aero_species = {
 };
 
 // A list of species within each mode for MAM4.
-static AeroId mode_aero_species[4][] = {
+static AeroId mode_aero_species[4][7] = {
   { // accumulation mode
     AeroId::SO4, AeroId::POM, AeroId::SOA, AeroId::BC, AeroId::DST,
     AeroId::NaCl, AeroId::MOM
@@ -198,7 +199,7 @@ static AeroId mode_aero_species[4][] = {
     AeroId::POM, AeroId::BC, AeroId::MOM, AeroId::None, AeroId::None,
     AeroId::None, AeroId::None
   }
-}
+};
 
 // Identifiers for gas species in MAM4.
 enum class GasId {
@@ -218,7 +219,7 @@ enum class GasId {
 };
 
 // A list of gas species in MAM4.
-static GasSpecies[] gas_species = {
+static GasSpecies gas_species[13] = {
   GasSpecies(47.9982), // ozone
   GasSpecies(34.0136), // hydrogen peroxide
   GasSpecies(98.0784), // sulfuric acid
@@ -235,7 +236,6 @@ static GasSpecies[] gas_species = {
 };
 
 } // namespace mam4
-
 } // namespace haero
 
 #endif

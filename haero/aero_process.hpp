@@ -1,8 +1,10 @@
 #ifndef HAERO_AERO_PROCESS_HPP
 #define HAERO_AERO_PROCESS_HPP
-#include <memory>
 
 #include "haero/atmosphere.hpp"
+
+#include <memory>
+#include <type_traits>
 
 namespace haero {
 
@@ -18,17 +20,21 @@ class AeroProcess final {
   using Config      = AeroConfig;
   using Prognostics = typename AeroConfig::Prognostics;
   using Diagnostics = typename AeroConfig::Diagnostics;
-  using Tendencies  = typename AeroConfig::Prognostics; // look!!
+  using Tendencies  = typename AeroConfig::Tendencies;
   using Impl        = AeroImpl;
+
+  // Tendencies type must be the same as that for Prognostics.
+  static_assert(std::is_same<Tendencies, Prognostics>::value,
+    "Tendencies and Prognostics types must be identical!");
 
   /// Constructs an instance of an aerosol process with the given name,
   /// associated with the given aerosol configuration.
-  /// @param [in] name A descriptive name that uniquely identifies a specific
-  ///                  implementation of a process in the aerosol life cycle.
   /// @param [in] config An instance of a type that defines any metadata needed
   ///                    by this process's implementation.
-  AeroProcess(const std::string& name, const Config& config)
-      : name_(name), config_(config), impl_() {}
+  explicit AeroProcess(const Config& config)
+      : name_(), config_(config), impl_() {
+    name_ = impl_.name();
+  }
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION ~AeroProcess() {}
@@ -44,10 +50,10 @@ class AeroProcess final {
   //                          Accessors (host only)
   //------------------------------------------------------------------------
 
-  /// Returns the name of this process.
-  std::string name() const { return name_.label(); }
+  /// On host: returns the name of this process.
+  std::string name() const { return name_; }
 
-  /// Returns the metadata associated with this process.
+  /// On host: returns the metadata associated with this process.
   const Config& config() const {
     return config_;
   }
@@ -69,13 +75,16 @@ class AeroProcess final {
   /// On host or device: Validates input aerosol and atmosphere data, returning
   /// true if all data is physically consistent (whatever that means), and false
   /// if not.
+  /// @param [in] team The Kokkos team used to run this process in a parallel
+  ///                  dispatch.
   /// @param [in] atmosphere Atmosphere state variables with which to validate.
   /// @param [in] prognostics A collection of aerosol prognostic variables to be
   ///                         validated.
   KOKKOS_INLINE_FUNCTION
-  bool validate(const Atmosphere& atmosphere,
+  bool validate(const TeamType& team,
+                const Atmosphere& atmosphere,
                 const Prognostics& prognostics) const {
-    return impl_.validate(config_, atmosphere, prognostics);
+    return impl_.validate(config_, team, atmosphere, prognostics);
   }
 
   /// On host or device: runs the aerosol process at a given time with the given
@@ -105,9 +114,9 @@ class AeroProcess final {
   }
 
  private:
-  const std::string name_;
-  Config            config_;
-  Impl              impl_;
+  std::string name_;
+  Config      config_;
+  Impl        impl_;
 };
 
 }  // namespace haero
