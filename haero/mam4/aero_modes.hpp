@@ -1,5 +1,5 @@
-#ifndef HAERO_MAM4_AERO_MODE_HPP
-#define HAERO_MAM4_AERO_MODE_HPP
+#ifndef HAERO_MAM4_AERO_MODES_HPP
+#define HAERO_MAM4_AERO_MODES_HPP
 
 #include <haero/aero_species.hpp>
 #include <haero/gas_species.hpp>

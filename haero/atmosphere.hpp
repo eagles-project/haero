@@ -9,6 +9,9 @@ namespace haero {
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
  public:
+  /// No default constructor.
+  Atmosphere() = delete;
+
   /// Creates an Atmosphere that stores a column of data with the given number
   /// of vertical levels and the given planetary boundary height.
   /// @param [in] num_levels the number of vertical levels per column stored by
@@ -38,10 +41,8 @@ class Atmosphere final {
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              Real pblh);
 
-  /// Default constructor and copy constructor is needed to define Views
-  /// of Atmosphere classes and then copy data into the views.
-  Atmosphere() = default;
   Atmosphere(const Atmosphere &) = default;
+  Atmosphere& operator=(const Atmosphere&) = default;
 
   /// Destructor.
   KOKKOS_FUNCTION

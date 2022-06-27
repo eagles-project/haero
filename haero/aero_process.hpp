@@ -33,17 +33,23 @@ class AeroProcess final {
   ///                    by this process's implementation.
   explicit AeroProcess(const Config& config)
       : name_(), config_(config), impl_() {
+    // Set the name of this process.
     name_ = impl_.name();
+    // Pass the configuration data to the implementation to initialize it.
+    impl_.init(config_);
   }
 
   /// Destructor.
   KOKKOS_INLINE_FUNCTION ~AeroProcess() {}
 
+  // Copy construction is required for host -> device dispatches
+  KOKKOS_INLINE_FUNCTION
+  AeroProcess(const AeroProcess&) = default;
+
   /// Default constructor is disabled.
   AeroProcess() = delete;
 
-  // Deep copying is forbidden.
-  AeroProcess(const AeroProcess&) = delete;
+  // Deep copies are not allowed.
   AeroProcess& operator=(const AeroProcess&) = delete;
 
   //------------------------------------------------------------------------
@@ -61,16 +67,6 @@ class AeroProcess final {
   //------------------------------------------------------------------------
   //                            Public Interface
   //------------------------------------------------------------------------
-
-  /// On host: performs any system-specific process initialization.
-  /// Initialization is typically performed after process parameters are set
-  /// with set_param().
-  /// @param [in] config The aerosol configuration describing the aerosol
-  ///                    system to which this process belongs.
-  void init() {
-    // Pass the configuration data to the implementation to initialize it.
-    impl_.init(config_);
-  }
 
   /// On host or device: Validates input aerosol and atmosphere data, returning
   /// true if all data is physically consistent (whatever that means), and false
@@ -107,8 +103,8 @@ class AeroProcess final {
   void compute_tendencies(const TeamType& team, Real t, Real dt,
                           const Atmosphere& atmosphere,
                           const Prognostics& prognostics,
-                          Diagnostics& diagnostics,
-                          Tendencies& tendencies) const {
+                          const Diagnostics& diagnostics,
+                          const Tendencies& tendencies) const {
     impl_.compute_tendencies(config_, team, t, dt, atmosphere, prognostics,
                              diagnostics, tendencies);
   }

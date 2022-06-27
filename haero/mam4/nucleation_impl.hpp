@@ -71,13 +71,15 @@ class NucleationImpl {
   }
 
   // compute_tendencies -- computes tendencies and updates diagnostics
+  // NOTE: that both diags and tends are const below--this means their views
+  // NOTE: are fixed, but the data in those views is allowed to vary.
   KOKKOS_INLINE_FUNCTION
   void compute_tendencies(const AeroConfig& config,
                           const TeamType& team, Real t, Real dt,
                           const Atmosphere& atm,
                           const Prognostics& progs,
-                          Diagnostics& diags,
-                          Tendencies& tends) const {
+                          const Diagnostics& diags,
+                          const Tendencies& tends) const {
     // For now, just zero all the tendencies.
     const int nk = PackInfo::num_packs(atm.num_levels());
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk),
