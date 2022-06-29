@@ -27,8 +27,10 @@ class Prognostics final {
     }
   }
 
+  Prognostics() = default; // Careful! Only for creating placeholders in views
   Prognostics(const Prognostics&) = default;
   ~Prognostics() = default;
+  Prognostics& operator=(const Prognostics&) = default;
 
   /// modal aerosol number mixing ratios (see aero_mode.hpp for indexing)
   ColumnView n_mode[4];
@@ -42,9 +44,6 @@ class Prognostics final {
 
   int num_levels() const { return nlev_; }
 
-  Prognostics() = delete;
-  Prognostics& operator=(const Prognostics&) = delete;
-
  private:
   int nlev_;
 };
@@ -56,13 +55,12 @@ using Tendencies = Prognostics;
 class Diagnostics final {
  public:
   explicit Diagnostics(int num_levels): nlev_(num_levels) {}
+  Diagnostics() = default; // Careful! Only for creating placeholders in views
   Diagnostics(const Diagnostics&) = default;
   ~Diagnostics() = default;
+  Diagnostics& operator=(const Diagnostics&) = default;
 
   int num_levels() const { return nlev_; }
-
-  Diagnostics() = delete;
-  Diagnostics& operator=(const Diagnostics&) = delete;
 
  private:
   int nlev_;

@@ -9,8 +9,9 @@ namespace haero {
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
  public:
-  /// No default constructor.
-  Atmosphere() = delete;
+  /// Default constructor.
+  /// CAUTION: only useful for creating placeholders in views!
+  Atmosphere() = default;
 
   /// Creates an Atmosphere that stores a column of data with the given number
   /// of vertical levels and the given planetary boundary height.
@@ -41,6 +42,8 @@ class Atmosphere final {
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              Real pblh);
 
+  // Copy construction and assignment are supported for moving data between
+  // host and device, and for populating multi-column views.
   Atmosphere(const Atmosphere &) = default;
   Atmosphere& operator=(const Atmosphere&) = default;
 
