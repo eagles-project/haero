@@ -42,6 +42,8 @@ class Prognostics final {
   /// gas mass mixing ratios (see aero_mode.hpp for indexing)
   ColumnView q_gas[13];
 
+  ColumnView uptkrate_h2so4;
+
   int num_levels() const { return nlev_; }
 
  private:
@@ -75,6 +77,8 @@ class AeroConfig final {
   using Diagnostics = ::haero::mam4::Diagnostics;
   using Tendencies  = ::haero::mam4::Tendencies;
 
+  bool calculate_gas_uptake_coefficient = false;
+  int  number_gauss_points_for_integration = 2; 
   // Default constructor.
   AeroConfig() {}
 
