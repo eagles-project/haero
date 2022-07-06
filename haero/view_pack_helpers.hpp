@@ -3,7 +3,6 @@
 
 #include <Kokkos_Core.hpp>
 #include <ekat/ekat_scalar_traits.hpp>
-#include <iostream>
 #include <type_traits>
 #include <vector>
 
