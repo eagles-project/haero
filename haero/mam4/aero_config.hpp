@@ -15,15 +15,18 @@ namespace mam4 {
 /// MAM4 column-wise prognostic aerosol fields (also used for tendencies).
 class Prognostics final {
  public:
+  /// Creates a container for prognostic variables on the specified number of
+  /// vertical levels.
   explicit Prognostics(int num_levels): nlev_(num_levels) {
+    const int nk = PackInfo::num_packs(num_levels);
     for (int mode = 0; mode < 4; ++mode) {
-      n_mode[mode] = ColumnView("n_mode", num_levels);
+      n_mode[mode] = ColumnView("n_mode", nk);
       for (int spec = 0; spec < 7; ++spec) {
-        q_aero[mode][spec] = ColumnView("q_aero", num_levels);
+        q_aero[mode][spec] = ColumnView("q_aero", nk);
       }
     }
     for (int gas = 0; gas < 13; ++gas) {
-      q_gas[gas] = ColumnView("q_gas", num_levels);
+      q_gas[gas] = ColumnView("q_gas", nk);
     }
   }
 
@@ -42,6 +45,7 @@ class Prognostics final {
   /// gas mass mixing ratios (see aero_mode.hpp for indexing)
   ColumnView q_gas[13];
 
+  /// For gas-aerosol exchange process (probably temporary)
   ColumnView uptkrate_h2so4;
 
   int num_levels() const { return nlev_; }
@@ -80,7 +84,7 @@ class AeroConfig final {
   using Tendencies  = ::haero::mam4::Tendencies;
 
   bool calculate_gas_uptake_coefficient = false;
-  int  number_gauss_points_for_integration = 2; 
+  int  number_gauss_points_for_integration = 2;
   // Default constructor.
   AeroConfig() {}
 

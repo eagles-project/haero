@@ -239,9 +239,13 @@ add_subdirectory(ext)
 if (HAERO_ENABLE_GPU)
   set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-lto")
   # Avoid buggy experimental Kokkos CUDA stuff.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_")
+else()
+  # Make sure we're building with OpenMP where appropriate.
+  if (NOT APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  endif()
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
