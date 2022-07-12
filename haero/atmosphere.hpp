@@ -57,8 +57,6 @@ class Atmosphere final {
   ColumnView vapor_mixing_ratio;
   ColumnView height;
   ColumnView hydrostatic_dp;
-  ColumnView dry_geometric_mean_diameter;
-  ColumnView wet_geometric_mean_diameter;
 
   // Planetary boundary height.
   Real planetary_boundary_height;

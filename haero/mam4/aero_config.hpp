@@ -64,6 +64,8 @@ class Diagnostics final {
 
   int num_levels() const { return nlev_; }
 
+  ColumnView dry_geometric_mean_diameter;
+  ColumnView wet_geometric_mean_diameter;
  private:
   int nlev_;
 };

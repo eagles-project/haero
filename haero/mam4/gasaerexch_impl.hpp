@@ -176,7 +176,7 @@ class GasAerExchImpl {
         const int igas = igas_h2so4; // use properties of the H2SO4 gas
         const PackType &temp = atm.temperature(k);
         const PackType &pmid = atm.pressure(k);
-        const PackType &dgn_awet = atm.wet_geometric_mean_diameter(k);
+        const PackType &dgn_awet = diags.wet_geometric_mean_diameter(k);
         const Real pstd = Constants::pressure_stp;
         const Real mw_h2so4 = Constants::molec_weight_h2so4;
         const Real mw_air = Constants::molec_weight_dry_air;
