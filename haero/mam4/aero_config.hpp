@@ -48,7 +48,38 @@ class Prognostics final {
   /// For gas-aerosol exchange process (probably temporary)
   ColumnView uptkrate_h2so4;
 
+  KOKKOS_INLINE_FUNCTION
   int num_levels() const { return nlev_; }
+
+  /// Returns true iff all prognostic quantities are nonnegative, using the
+  /// given thread team to parallelize the check.
+  KOKKOS_INLINE_FUNCTION
+  bool quantities_nonnegative(const TeamType& team) const {
+    const int nk = PackInfo::num_packs(num_levels());
+    int violations = 0;
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),
+      KOKKOS_LAMBDA(int k, int& violation) {
+        for (int mode = 0; mode < 4; ++mode) { // check mode mmrs
+          if ((n_mode[mode](k) < 0).any()) {
+            ++violation;
+          } else {
+            for (int spec = 0; spec < 7; ++spec) { // check aerosol mmrs
+              if ((q_aero[mode][spec](k) < 0).any()) {
+                ++violation;
+                break;
+              }
+            }
+          }
+          if (violation > 0) break;
+        }
+        if (violation == 0) {
+          for (int gas = 0; gas < 13; ++gas) { // check gas mmrs
+            if ((q_gas[gas](k) < 0).any()) ++violation;
+          }
+        }
+      }, violations);
+    return (violations == 0);
+  }
 
  private:
   int nlev_;

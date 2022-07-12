@@ -71,6 +71,23 @@ class Atmosphere final {
     planetary_boundary_height = pblh;
   }
 
+  /// Returns true iff all atmospheric quantities are nonnegative, using the
+  /// given thread team to parallelize the check.
+  KOKKOS_INLINE_FUNCTION
+  bool quantities_nonnegative(const TeamType& team) const {
+    const int nk = PackInfo::num_packs(num_levels());
+    int violations = 0;
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),
+      KOKKOS_LAMBDA(int k, int& violation) {
+        if ((temperature(k) < 0).any() ||
+            (pressure(k) < 0).any() ||
+            (vapor_mixing_ratio(k) < 0).any()) {
+          violation = 1;
+        }
+      }, violations);
+    return (violations == 0);
+  }
+
  private:
   // Number of vertical levels.
   int num_levels_;
