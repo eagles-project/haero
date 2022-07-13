@@ -17,119 +17,6 @@ using Pack = PackType;
 // box model.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Calculates new particle production from homogeneous nucleation
-// using nucleation rates from either
-// Merikanto et al. (2007) h2so4-nh3-h2o ternary parameterization
-// Vehkamaki et al. (2002) h2so4-h2o binary parameterization
-//
-// References:
-// * merikanto, j., i. napari, h. vehkamaki, t. anttila,
-//   and m. kulmala, 2007, new parameterization of
-//   sulfuric acid-ammonia-water ternary nucleation
-//   rates at tropospheric conditions,
-//   j. geophys. res., 112, d15207, doi:10.1029/2006jd0027977
-//
-// * vehkamäki, h., m. kulmala, i. napari, k.e.j. lehtinen,
-//   c. timmreck, m. noppel and a. laaksonen, 2002,
-//   an improved parameterization for sulfuric acid-water nucleation
-//   rates for tropospheric and stratospheric conditions,
-//   j. geophys. res., 107, 4622, doi:10.1029/2002jd002184
-//
-// * Wang, M. and J.E. Penner, 2008,
-//   Aerosol indirect forcing in a global model with particle nucleation,
-//   Atmos. Chem. Phys. Discuss., 8, 13943-13998
-//   Atmos. Chem. Phys.  9, 239–260, 2009
-KOKKOS_INLINE_FUNCTION
-void mer07_veh02_wang08_nuc_1box(
-  int newnuc_method_user_choice, int& newnuc_method_actual,       // in, out
-  int pbl_nuc_wang2008_user_choice, int& pbl_nuc_wang2008_actual, // in, out
-  Real ln_nuc_rate_cutoff,                                        // in
-  Real adjust_factor_bin_tern_ratenucl,                           // in
-  Real adjust_factor_pbl_ratenucl,                                // in
-  Real pi, const Pack& so4vol_in, const Pack& nh3ppt_in,          // in
-  const Pack& temp_in, const Pack& rh_in, const Pack& zm_in,      // in
-  Real pblh_in,                                                   // in
-  Pack& dnclusterdt, Pack& rateloge, Pack& cnum_h2so4,            // out
-  Pack& cnum_nh3, Pack& radius_cluster) {                         // out
-
-  Pack rh_bb;       // bounded value of rh_in
-  Pack so4vol_bb;   // bounded value of so4vol_in (molecules per cm3)
-  Pack temp_bb;     // bounded value of temp_in (K)
-  Pack nh3ppt_bb;   // bounded nh3 (ppt)
-
-  Pack cnum_tot;    // total number of molecules in a cluster
-  Pack ratenuclt;   // J: nucleation rate from parameterization.
-                    // # of clusters/nuclei per cm3 per s
-
-  //---------------------------------------------------------------
-  // Set "effective zero"
-  //---------------------------------------------------------------
-  ratenuclt = 1.0e-38;
-  rateloge = log(ratenuclt);
-
-  //---------------------------------------------------------------
-  // Make call to merikanto ternary parameterization routine
-  // if nitrate aerosol is considered in the aerosol population
-  // and ammonia concentration is non-negligible
-  //---------------------------------------------------------------
-  if ( (newnuc_method_user_choice == 3) && (nh3ppt_in >= 0.1) ) {
-    if (so4vol_in >= 5.0e4) {
-      temp_bb   = max( 235.0, min( 295.0, temp_in ) );
-      rh_bb     = max( 0.05, min( 0.95, rh_in ) );
-      so4vol_bb = max( 5.0e4, min( 1.0e9, so4vol_in ) );
-      nh3ppt_bb = max( 0.1, min( 1.0e3, nh3ppt_in ) );
-
-      ternary_nuc_merik2007(temp_bb, rh_bb, so4vol_bb, nh3ppt_bb,
-        rateloge, cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster); // FIXME
-
-    }
-    newnuc_method_actual = 3;
-
-  //---------------------------------------------------------------------
-  // Otherwise, make call to vehkamaki binary parameterization routine
-  //---------------------------------------------------------------------
-  } else {
-    if (so4vol_in >= 1.0e4) {
-      temp_bb   = max( 230.15, min( 305.15, temp_in ) );
-      rh_bb     = max( 1.0e-4, min( 1.0, rh_in ) );
-      so4vol_bb = max( 1.0e4, min( 1.0e11, so4vol_in ) );
-      binary_nuc_vehk2002(temp_bb, rh_bb, so4vol_bb, ratenuclt, rateloge,
-                          cnum_h2so4, cnum_tot, radius_cluster );
-
-    }
-    cnum_nh3 = 0.0;
-    newnuc_method_actual = 2;
-  }
-
-  rateloge += log(max(1.0e-38, adjust_factor_bin_tern_ratenucl));
-
-  //---------------------------------------------------------------------
-  // Do boundary layer nuc
-  //---------------------------------------------------------------------
-  if ( (pbl_nuc_wang2008_user_choice != 0) && (zm_in <= max(pblh_in,100.0)) ) {
-    so4vol_bb = so4vol_in;
-    pbl_nuc_wang2008(so4vol_bb, pi, pbl_nuc_wang2008_user_choice,
-                     adjust_factor_pbl_ratenucl, pbl_nuc_wang2008_actual,                                  &! out
-                     ratenuclt, rateloge, cnum_tot, cnum_h2so4, cnum_nh3,
-                     radius_cluster);
-  } else {
-    pbl_nuc_wang2008_actual = 0;
-  }
-
-  //---------------------------------------------------------------------
-  // if nucleation rate is less than 1e-6 #/cm3/s ~= 0.1 #/cm3/day,
-  // exit with new particle formation = 0. Otherwise, calculate the
-  // nucleation rate in #/m3/s
-  //---------------------------------------------------------------------
-  if (rateloge <= ln_nuc_rate_cutoff ) {
-    dnclusterdt = 0.;
-  } else {
-    // ratenuclt is #/cm3/s; dnclusterdt is #/m3/s
-    dnclusterdt = exp( rateloge )*1.0e6;
-  }
-}
-
 //--------------------------------------------------------
 // calculates boundary nucleation nucleation rate
 // using the linear or quadratic parameterization in
@@ -259,7 +146,6 @@ void binary_nuc_vehk2002(const Pack& temp, const Pack& rh, const Pack& so4vol,
   // calc nucleation rate
   // following eq. (12) in Vehkamäki et al. (2002)
   rateloge = vehkamaki2002::nucleation_rate(cnum_h2so4, temp, rh, x_crit);
-  tmpa = min( tmpa, log(1.0e38) )
   ratenucl = exp(min(rateloge, log(1e38)));
 
   // calc number of molecules in critical cluster
@@ -310,15 +196,128 @@ void ternary_nuc_merik2007(const Pack& t, const Pack& rh, const Pack& c2,
   }
 }
 
+//-----------------------------------------------------------------------------
+// Calculates new particle production from homogeneous nucleation
+// using nucleation rates from either
+// Merikanto et al. (2007) h2so4-nh3-h2o ternary parameterization
+// Vehkamaki et al. (2002) h2so4-h2o binary parameterization
+//
+// References:
+// * merikanto, j., i. napari, h. vehkamaki, t. anttila,
+//   and m. kulmala, 2007, new parameterization of
+//   sulfuric acid-ammonia-water ternary nucleation
+//   rates at tropospheric conditions,
+//   j. geophys. res., 112, d15207, doi:10.1029/2006jd0027977
+//
+// * vehkamäki, h., m. kulmala, i. napari, k.e.j. lehtinen,
+//   c. timmreck, m. noppel and a. laaksonen, 2002,
+//   an improved parameterization for sulfuric acid-water nucleation
+//   rates for tropospheric and stratospheric conditions,
+//   j. geophys. res., 107, 4622, doi:10.1029/2002jd002184
+//
+// * Wang, M. and J.E. Penner, 2008,
+//   Aerosol indirect forcing in a global model with particle nucleation,
+//   Atmos. Chem. Phys. Discuss., 8, 13943-13998
+//   Atmos. Chem. Phys.  9, 239–260, 2009
+KOKKOS_INLINE_FUNCTION
+void mer07_veh02_wang08_nuc_1box(
+  int newnuc_method_user_choice, int& newnuc_method_actual,       // in, out
+  int pbl_nuc_wang2008_user_choice, int& pbl_nuc_wang2008_actual, // in, out
+  Real ln_nuc_rate_cutoff,                                        // in
+  Real adjust_factor_bin_tern_ratenucl,                           // in
+  Real adjust_factor_pbl_ratenucl,                                // in
+  Real pi, const Pack& so4vol_in, const Pack& nh3ppt_in,          // in
+  const Pack& temp_in, const Pack& rh_in, const Pack& zm_in,      // in
+  Real pblh_in,                                                   // in
+  Pack& dnclusterdt, Pack& rateloge, Pack& cnum_h2so4,            // out
+  Pack& cnum_nh3, Pack& radius_cluster) {                         // out
+
+  Pack rh_bb;       // bounded value of rh_in
+  Pack so4vol_bb;   // bounded value of so4vol_in (molecules per cm3)
+  Pack temp_bb;     // bounded value of temp_in (K)
+  Pack nh3ppt_bb;   // bounded nh3 (ppt)
+
+  Pack cnum_tot;    // total number of molecules in a cluster
+  Pack ratenuclt;   // J: nucleation rate from parameterization.
+                    // # of clusters/nuclei per cm3 per s
+
+  //---------------------------------------------------------------
+  // Set "effective zero"
+  //---------------------------------------------------------------
+  ratenuclt = 1.0e-38;
+  rateloge = log(ratenuclt);
+
+  //---------------------------------------------------------------
+  // Make call to merikanto ternary parameterization routine
+  // if nitrate aerosol is considered in the aerosol population
+  // and ammonia concentration is non-negligible
+  //---------------------------------------------------------------
+  if ( (newnuc_method_user_choice == 3) && (nh3ppt_in >= 0.1) ) {
+    if (so4vol_in >= 5.0e4) {
+      temp_bb   = max( 235.0, min( 295.0, temp_in ) );
+      rh_bb     = max( 0.05, min( 0.95, rh_in ) );
+      so4vol_bb = max( 5.0e4, min( 1.0e9, so4vol_in ) );
+      nh3ppt_bb = max( 0.1, min( 1.0e3, nh3ppt_in ) );
+
+      ternary_nuc_merik2007(temp_bb, rh_bb, so4vol_bb, nh3ppt_bb,
+        rateloge, cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster); // FIXME
+
+    }
+    newnuc_method_actual = 3;
+
+  //---------------------------------------------------------------------
+  // Otherwise, make call to vehkamaki binary parameterization routine
+  //---------------------------------------------------------------------
+  } else {
+    if (so4vol_in >= 1.0e4) {
+      temp_bb   = max( 230.15, min( 305.15, temp_in ) );
+      rh_bb     = max( 1.0e-4, min( 1.0, rh_in ) );
+      so4vol_bb = max( 1.0e4, min( 1.0e11, so4vol_in ) );
+      binary_nuc_vehk2002(temp_bb, rh_bb, so4vol_bb, ratenuclt, rateloge,
+                          cnum_h2so4, cnum_tot, radius_cluster );
+
+    }
+    cnum_nh3 = 0.0;
+    newnuc_method_actual = 2;
+  }
+
+  rateloge += log(max(1.0e-38, adjust_factor_bin_tern_ratenucl));
+
+  //---------------------------------------------------------------------
+  // Do boundary layer nuc
+  //---------------------------------------------------------------------
+  if ( (pbl_nuc_wang2008_user_choice != 0) && (zm_in <= max(pblh_in,100.0)) ) {
+    so4vol_bb = so4vol_in;
+    pbl_nuc_wang2008(so4vol_bb, pi, pbl_nuc_wang2008_user_choice,
+                     adjust_factor_pbl_ratenucl, pbl_nuc_wang2008_actual,
+                     ratenuclt, rateloge, cnum_tot, cnum_h2so4, cnum_nh3,
+                     radius_cluster);
+  } else {
+    pbl_nuc_wang2008_actual = 0;
+  }
+
+  //---------------------------------------------------------------------
+  // if nucleation rate is less than 1e-6 #/cm3/s ~= 0.1 #/cm3/day,
+  // exit with new particle formation = 0. Otherwise, calculate the
+  // nucleation rate in #/m3/s
+  //---------------------------------------------------------------------
+  if (rateloge <= ln_nuc_rate_cutoff ) {
+    dnclusterdt = 0.;
+  } else {
+    // ratenuclt is #/cm3/s; dnclusterdt is #/m3/s
+    dnclusterdt = exp( rateloge )*1.0e6;
+  }
+}
+
 KOKKOS_INLINE_FUNCTION
 void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   const Pack& cnum_nh3, const Pack& radius_cluster, const Pack dplom_sect[1],
   const Pack dphim_sect[1], Real dtnuc, const Pack& temp_in, const Pack& rh_in,
   const Pack& cair, Real accom_coef_h2so4, Real mw_so4a, Real mw_so4a_host,
   Real mw_nh4a, Real avogad, Real pi, const Pack& qnh3_cur,
-  const Pack& qh2so4_cur, so4vol_in, h2so4_uptkrate, int& isize_nuc,
-  Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del, Pack& qso4a_del,
-  Pack& qnh4a_del, Pack& qnuma_del) {
+  const Pack& qh2so4_cur, const Pack& so4vol_in, const Pack& h2so4_uptkrate,
+  int& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
+  Pack& qso4a_del, Pack& qnh4a_del, Pack& qnuma_del) {
 
   Real tmpa, tmpb, tmpe;
   Real voldry_clus;             // critical-cluster dry volume (m3)
