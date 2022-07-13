@@ -1,10 +1,9 @@
 #ifndef HAERO_MAM4_AERO_CONFIG_HPP
 #define HAERO_MAM4_AERO_CONFIG_HPP
 
+#include <algorithm>
 #include <haero/mam4/aero_modes.hpp>
 #include <haero/view_pack_helpers.hpp>
-
-#include <algorithm>
 #include <map>
 #include <numeric>
 #include <string>
@@ -17,7 +16,7 @@ class Prognostics final {
  public:
   /// Creates a container for prognostic variables on the specified number of
   /// vertical levels.
-  explicit Prognostics(int num_levels): nlev_(num_levels) {
+  explicit Prognostics(int num_levels) : nlev_(num_levels) {
     const int nk = PackInfo::num_packs(num_levels);
     for (int mode = 0; mode < 4; ++mode) {
       n_mode[mode] = ColumnView("n_mode", nk);
@@ -30,7 +29,7 @@ class Prognostics final {
     }
   }
 
-  Prognostics() = default; // Careful! Only for creating placeholders in views
+  Prognostics() = default;  // Careful! Only for creating placeholders in views
   Prognostics(const Prognostics&) = default;
   ~Prognostics() = default;
   Prognostics& operator=(const Prognostics&) = default;
@@ -57,27 +56,29 @@ class Prognostics final {
   bool quantities_nonnegative(const TeamType& team) const {
     const int nk = PackInfo::num_packs(num_levels());
     int violations = 0;
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),
-      KOKKOS_LAMBDA(int k, int& violation) {
-        for (int mode = 0; mode < 4; ++mode) { // check mode mmrs
-          if ((n_mode[mode](k) < 0).any()) {
-            ++violation;
-          } else {
-            for (int spec = 0; spec < 7; ++spec) { // check aerosol mmrs
-              if ((q_aero[mode][spec](k) < 0).any()) {
-                ++violation;
-                break;
+    Kokkos::parallel_reduce(
+        Kokkos::TeamThreadRange(team, nk),
+        KOKKOS_LAMBDA(int k, int& violation) {
+          for (int mode = 0; mode < 4; ++mode) {  // check mode mmrs
+            if ((n_mode[mode](k) < 0).any()) {
+              ++violation;
+            } else {
+              for (int spec = 0; spec < 7; ++spec) {  // check aerosol mmrs
+                if ((q_aero[mode][spec](k) < 0).any()) {
+                  ++violation;
+                  break;
+                }
               }
             }
+            if (violation > 0) break;
           }
-          if (violation > 0) break;
-        }
-        if (violation == 0) {
-          for (int gas = 0; gas < 13; ++gas) { // check gas mmrs
-            if ((q_gas[gas](k) < 0).any()) ++violation;
+          if (violation == 0) {
+            for (int gas = 0; gas < 13; ++gas) {  // check gas mmrs
+              if ((q_gas[gas](k) < 0).any()) ++violation;
+            }
           }
-        }
-      }, violations);
+        },
+        violations);
     return (violations == 0);
   }
 
@@ -91,16 +92,24 @@ using Tendencies = Prognostics;
 /// MAM4 column-wise diagnostic aerosol fields.
 class Diagnostics final {
  public:
-  explicit Diagnostics(int num_levels): nlev_(num_levels) {}
-  Diagnostics() = default; // Careful! Only for creating placeholders in views
+  explicit Diagnostics(int num_levels) : nlev_(num_levels) {
+    for (int mode = 0; mode < 4; ++mode) {
+      dry_geometric_mean_diameter[mode] =
+          ColumnView("dry_geometric_mean_diameter", num_levels);
+      wet_geometric_mean_diameter[mode] =
+          ColumnView("wet_geometric_mean_diameter", num_levels);
+    }
+  }
+  Diagnostics() = default;  // Careful! Only for creating placeholders in views
   Diagnostics(const Diagnostics&) = default;
   ~Diagnostics() = default;
   Diagnostics& operator=(const Diagnostics&) = default;
 
   int num_levels() const { return nlev_; }
 
-  ColumnView dry_geometric_mean_diameter;
-  ColumnView wet_geometric_mean_diameter;
+  ColumnView dry_geometric_mean_diameter[4];
+  ColumnView wet_geometric_mean_diameter[4];
+
  private:
   int nlev_;
 };
@@ -108,14 +117,13 @@ class Diagnostics final {
 /// @struct MAM4::AeroConfig: for use with all MAM4 process implementations
 class AeroConfig final {
  public:
-
   // Types.
   using Prognostics = ::haero::mam4::Prognostics;
   using Diagnostics = ::haero::mam4::Diagnostics;
-  using Tendencies  = ::haero::mam4::Tendencies;
+  using Tendencies = ::haero::mam4::Tendencies;
 
   bool calculate_gas_uptake_coefficient = false;
-  int  number_gauss_points_for_integration = 2;
+  int number_gauss_points_for_integration = 2;
   // Default constructor.
   AeroConfig() {}
 
@@ -130,18 +138,17 @@ class AeroConfig final {
 
   // Comparison operators.
   inline bool operator==(const AeroConfig& other) const {
-    return true; // all MAM4 configs are equivalent
+    return true;  // all MAM4 configs are equivalent
   }
   inline bool operator!=(const AeroConfig& other) const {
-    return false; // all MAM4 configs are equivalent
+    return false;  // all MAM4 configs are equivalent
   }
 
   /// Returns the number of aerosol modes.
   static int num_modes() { return 4; }
-
 };
 
-} // namespace mam4
-} // namespace haero
+}  // namespace mam4
+}  // namespace haero
 
 #endif
