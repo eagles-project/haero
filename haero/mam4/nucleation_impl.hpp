@@ -7,10 +7,14 @@
 #include <haero/mam4/vehkamaki2002.hpp>
 #include <haero/mam4/wang2008.hpp>
 
+#include <ekat/ekat_pack_math.hpp>
+
 namespace haero {
 namespace mam4 {
 
 using Pack = PackType;
+using IntPack = IntPackType;
+using namespace ekat;
 
 //-----------------------------------------------------------------------------
 // The following functions were ported from aero_newnuc_utils.F90 in the MAM4
@@ -29,7 +33,7 @@ KOKKOS_INLINE_FUNCTION
 void pbl_nuc_wang2008(const Pack& so4vol, Real pi,
                       int pbl_nuc_wang2008_user_choice,
                       Real adjust_factor_pbl_ratenucl,
-                      int& pbl_nuc_wang2008_actual,
+                      IntPack& pbl_nuc_wang2008_actual,
                       Pack& ratenucl, Pack& rateloge,
                       Pack& cnum_tot, Pack& cnum_h2so4, Pack& cnum_nh3,
                       Pack& radius_cluster_nm ) {
@@ -79,21 +83,17 @@ void pbl_nuc_wang2008(const Pack& so4vol, Real pi,
 
   //------------------------------------------------------------------
   // If PBL nuc rate is lower than the incoming ternary/binary rate,
-  // discard the PLB nuc rate (i.e, do not touch any incoming value).
+  // discard the PBL nuc rate (i.e, do not touch any incoming value).
+  // Otherwise, use the PBL nuc rate.
   //------------------------------------------------------------------
-  if (tmp_rateloge <= rateloge) return;
-
-  //------------------------------------------------------------------
-  // Otherwise, use the PBL nuc rate
-  //------------------------------------------------------------------
-  pbl_nuc_wang2008_actual = pbl_nuc_wang2008_user_choice;
-
-  rateloge = tmp_rateloge;
-  ratenucl = tmp_ratenucl;
+  auto pbl_rate_sufficient = (tmp_rateloge > rateloge);
+  pbl_nuc_wang2008_actual.set(pbl_rate_sufficient, pbl_nuc_wang2008_user_choice);
+  rateloge.set(pbl_rate_sufficient, tmp_rateloge);
+  ratenucl.set(pbl_rate_sufficient, tmp_ratenucl);
 
   // following wang 2002, assume fresh nuclei are 1 nm diameter
   // subsequent code will "grow" them to aitken mode size
-  radius_cluster_nm = 0.5;
+  radius_cluster_nm.set(pbl_rate_sufficient, 0.5);
 
   // assume fresh nuclei are pure h2so4
   //    since aitken size >> initial size, the initial composition
@@ -104,9 +104,10 @@ void pbl_nuc_wang2008(const Pack& so4vol, Real pi,
   tmp_mass = tmp_volu * density_sulfate_gcm3;  // mass in g
 
   // no. of h2so4 molec per cluster assuming pure h2so4
-  cnum_h2so4 = (tmp_mass / mw_h2so4_gmol) * avogadro_mol;
-  cnum_nh3 = 0.0;
-  cnum_tot = cnum_h2so4;
+  cnum_h2so4.set(pbl_rate_sufficient,
+    (tmp_mass / mw_h2so4_gmol) * avogadro_mol);
+  cnum_nh3.set(pbl_rate_sufficient, 0.0);
+  cnum_tot.set(pbl_rate_sufficient, cnum_h2so4);
 }
 
 //-----------------------------------------------------------------
@@ -184,16 +185,17 @@ void ternary_nuc_merik2007(const Pack& t, const Pack& rh, const Pack& c2,
 
   Pack t_onset = merikanto2007::onset_temperature(rh, c2, c3);
 
-  if (t_onset > t) {
-    j_log = merikanto2007::log_nucleation_rate(t, rh, c2, c3);
-    ntot = merikanto2007::num_critical_molecules(j_log, t, c2, c3);
-    r = merikanto2007::critical_radius(j_log, t, c2, c3);
-    nacid = merikanto2007::num_h2so4_molecules(j_log, t, c2, c3);
-    namm = merikanto2007::num_nh3_molecules(j_log, t, c2, c3);
-  } else {
-    // nucleation rate less that 5e-6, setting j_log arbitrary small
-    j_log = -300.;
-  }
+  // Set log(J) assuming no nucleation.
+  j_log = -300.;
+
+  // If t_onset > t, nucleation occurs.
+  auto nuc_occurs = (t_onset > t);
+
+  j_log.set(nuc_occurs, merikanto2007::log_nucleation_rate(t, rh, c2, c3));
+  ntot.set(nuc_occurs, merikanto2007::num_critical_molecules(j_log, t, c2, c3));
+  r.set(nuc_occurs, merikanto2007::critical_radius(j_log, t, c2, c3));
+  nacid.set(nuc_occurs, merikanto2007::num_h2so4_molecules(j_log, t, c2, c3));
+  namm.set(nuc_occurs, merikanto2007::num_nh3_molecules(j_log, t, c2, c3));
 }
 
 //-----------------------------------------------------------------------------
@@ -221,16 +223,16 @@ void ternary_nuc_merik2007(const Pack& t, const Pack& rh, const Pack& c2,
 //   Atmos. Chem. Phys.  9, 239–260, 2009
 KOKKOS_INLINE_FUNCTION
 void mer07_veh02_wang08_nuc_1box(
-  int newnuc_method_user_choice, int& newnuc_method_actual,       // in, out
-  int pbl_nuc_wang2008_user_choice, int& pbl_nuc_wang2008_actual, // in, out
-  Real ln_nuc_rate_cutoff,                                        // in
-  Real adjust_factor_bin_tern_ratenucl,                           // in
-  Real adjust_factor_pbl_ratenucl,                                // in
-  Real pi, const Pack& so4vol_in, const Pack& nh3ppt_in,          // in
-  const Pack& temp_in, const Pack& rh_in, const Pack& zm_in,      // in
-  Real pblh_in,                                                   // in
-  Pack& dnclusterdt, Pack& rateloge, Pack& cnum_h2so4,            // out
-  Pack& cnum_nh3, Pack& radius_cluster) {                         // out
+  int newnuc_method_user_choice, IntPack& newnuc_method_actual,       // in, out
+  int pbl_nuc_wang2008_user_choice, IntPack& pbl_nuc_wang2008_actual, // in, out
+  Real ln_nuc_rate_cutoff,                                            // in
+  Real adjust_factor_bin_tern_ratenucl,                               // in
+  Real adjust_factor_pbl_ratenucl,                                    // in
+  Real pi, const Pack& so4vol_in, const Pack& nh3ppt_in,              // in
+  const Pack& temp_in, const Pack& rh_in, const Pack& zm_in,          // in
+  Real pblh_in,                                                       // in
+  Pack& dnclusterdt, Pack& rateloge, Pack& cnum_h2so4,                // out
+  Pack& cnum_nh3, Pack& radius_cluster) {                             // out
 
   Pack rh_bb;       // bounded value of rh_in
   Pack so4vol_bb;   // bounded value of so4vol_in (molecules per cm3)
@@ -252,48 +254,72 @@ void mer07_veh02_wang08_nuc_1box(
   // if nitrate aerosol is considered in the aerosol population
   // and ammonia concentration is non-negligible
   //---------------------------------------------------------------
-  if ( (newnuc_method_user_choice == 3) && (nh3ppt_in >= 0.1) ) {
-    if (so4vol_in >= 5.0e4) {
-      temp_bb   = max( 235.0, min( 295.0, temp_in ) );
-      rh_bb     = max( 0.05, min( 0.95, rh_in ) );
-      so4vol_bb = max( 5.0e4, min( 1.0e9, so4vol_in ) );
-      nh3ppt_bb = max( 0.1, min( 1.0e3, nh3ppt_in ) );
-
-      ternary_nuc_merik2007(temp_bb, rh_bb, so4vol_bb, nh3ppt_bb,
-        rateloge, cnum_tot, cnum_h2so4, cnum_nh3, radius_cluster); // FIXME
-
-    }
-    newnuc_method_actual = 3;
+  auto nh3_present = (nh3ppt_in >= 0.1);
+  newnuc_method_actual = 0;
+  if ( (newnuc_method_user_choice == 3) && nh3_present.any()) {
+    auto enough_so4 = (so4vol_in >= 5.0e4);
+    temp_bb   = max( 235.0, min( 295.0, temp_in ) );
+    rh_bb     = max( 0.05, min( 0.95, rh_in ) );
+    so4vol_bb = max( 5.0e4, min( 1.0e9, so4vol_in ) );
+    nh3ppt_bb = max( 0.1, min( 1.0e3, nh3ppt_in ) );
+    Pack rateloge_bb, cnum_tot_bb, cnum_h2so4_bb, cnum_nh3_bb,
+         radius_cluster_bb;
+    ternary_nuc_merik2007(temp_bb, rh_bb, so4vol_bb, nh3ppt_bb,
+      rateloge_bb, cnum_tot_bb, cnum_h2so4_bb, cnum_nh3_bb, radius_cluster_bb);
+    rateloge.set(enough_so4, rateloge_bb);
+    cnum_tot.set(enough_so4, cnum_tot_bb);
+    cnum_h2so4.set(enough_so4, cnum_h2so4_bb);
+    cnum_nh3.set(enough_so4, cnum_nh3_bb);
+    radius_cluster.set(enough_so4, radius_cluster_bb);
+    newnuc_method_actual.set(enough_so4, 3);
 
   //---------------------------------------------------------------------
   // Otherwise, make call to vehkamaki binary parameterization routine
   //---------------------------------------------------------------------
   } else {
-    if (so4vol_in >= 1.0e4) {
-      temp_bb   = max( 230.15, min( 305.15, temp_in ) );
-      rh_bb     = max( 1.0e-4, min( 1.0, rh_in ) );
-      so4vol_bb = max( 1.0e4, min( 1.0e11, so4vol_in ) );
-      binary_nuc_vehk2002(temp_bb, rh_bb, so4vol_bb, ratenuclt, rateloge,
-                          cnum_h2so4, cnum_tot, radius_cluster );
-
-    }
+    auto enough_so4 = (so4vol_in >= 1.0e4);
+    temp_bb   = max( 230.15, min( 305.15, temp_in ) );
+    rh_bb     = max( 1.0e-4, min( 1.0, rh_in ) );
+    so4vol_bb = max( 1.0e4, min( 1.0e11, so4vol_in ) );
+    Pack ratenuclt_bb, rateloge_bb, cnum_tot_bb, cnum_h2so4_bb,
+         radius_cluster_bb;
+    binary_nuc_vehk2002(temp_bb, rh_bb, so4vol_bb, ratenuclt_bb, rateloge_bb,
+                        cnum_h2so4_bb, cnum_tot_bb, radius_cluster_bb);
+    rateloge.set(enough_so4, rateloge_bb);
+    cnum_tot.set(enough_so4, cnum_tot_bb);
+    cnum_h2so4.set(enough_so4, cnum_h2so4_bb);
     cnum_nh3 = 0.0;
-    newnuc_method_actual = 2;
+    radius_cluster.set(enough_so4, radius_cluster_bb);
+    newnuc_method_actual.set(enough_so4, 2);
   }
 
-  rateloge += log(max(1.0e-38, adjust_factor_bin_tern_ratenucl));
+  rateloge += log(max(1.0e-38, adjust_factor_pbl_ratenucl));
 
   //---------------------------------------------------------------------
   // Do boundary layer nuc
   //---------------------------------------------------------------------
-  if ( (pbl_nuc_wang2008_user_choice != 0) && (zm_in <= max(pblh_in,100.0)) ) {
+  pbl_nuc_wang2008_actual = 0;
+  auto inside_pbl = (zm_in <= max(pblh_in, 100.0));
+  if ( (pbl_nuc_wang2008_user_choice != 0) && inside_pbl.any()) {
     so4vol_bb = so4vol_in;
+    IntPack pbl_nuc_wang2008_actual_bb;
+    Pack ratenuclt_bb = ratenuclt;
+    Pack rateloge_bb = rateloge;
+    Pack cnum_tot_bb = cnum_tot;
+    Pack cnum_h2so4_bb = cnum_h2so4;
+    Pack cnum_nh3_bb = cnum_nh3;
+    Pack radius_cluster_bb = radius_cluster;
     pbl_nuc_wang2008(so4vol_bb, pi, pbl_nuc_wang2008_user_choice,
-                     adjust_factor_pbl_ratenucl, pbl_nuc_wang2008_actual,
-                     ratenuclt, rateloge, cnum_tot, cnum_h2so4, cnum_nh3,
-                     radius_cluster);
-  } else {
-    pbl_nuc_wang2008_actual = 0;
+                     adjust_factor_pbl_ratenucl, pbl_nuc_wang2008_actual_bb,
+                     ratenuclt_bb, rateloge_bb, cnum_tot_bb, cnum_h2so4_bb,
+                     cnum_nh3_bb, radius_cluster_bb);
+    pbl_nuc_wang2008_actual.set(inside_pbl, pbl_nuc_wang2008_actual_bb);
+    ratenuclt.set(inside_pbl, ratenuclt_bb);
+    rateloge.set(inside_pbl, rateloge_bb);
+    cnum_tot.set(inside_pbl, cnum_tot_bb);
+    cnum_h2so4.set(inside_pbl, cnum_h2so4_bb);
+    cnum_nh3.set(inside_pbl, cnum_nh3_bb);
+    radius_cluster.set(inside_pbl, radius_cluster_bb);
   }
 
   //---------------------------------------------------------------------
@@ -301,12 +327,9 @@ void mer07_veh02_wang08_nuc_1box(
   // exit with new particle formation = 0. Otherwise, calculate the
   // nucleation rate in #/m3/s
   //---------------------------------------------------------------------
-  if (rateloge <= ln_nuc_rate_cutoff ) {
-    dnclusterdt = 0.;
-  } else {
-    // ratenuclt is #/cm3/s; dnclusterdt is #/m3/s
-    dnclusterdt = exp( rateloge )*1.0e6;
-  }
+  dnclusterdt.set((rateloge > ln_nuc_rate_cutoff),
+                  exp( rateloge )*1.0e6);
+  // ratenuclt is #/cm3/s; dnclusterdt is #/m3/s
 }
 
 KOKKOS_INLINE_FUNCTION
@@ -319,13 +342,14 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   int& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
   Pack& qso4a_del, Pack& qnh4a_del, Pack& qnuma_del) {
 
-  Real tmpa, tmpb, tmpe;
-  Real voldry_clus;             // critical-cluster dry volume (m3)
+  Pack tmpa;
+  Real tmpb, tmpe;
+  Pack voldry_clus;             // critical-cluster dry volume (m3)
   Real voldry_part;             // "grown" single-particle dry volume (m3)
-  Real wetvol_dryvol;           // grown particle (wet-volume)/(dry-volume)
+  Pack wetvol_dryvol;           // grown particle (wet-volume)/(dry-volume)
   Real wet_volfrac_so4a;        // grown particle (dry-volume-from-so4)/(wet-volume)
-  Real dpdry_part;              // "grown" single-particle dry diameter (m)
-  Real dpdry_clus;              // critical cluster diameter (m)
+  Pack dpdry_part;              // "grown" single-particle dry diameter (m)
+  Pack dpdry_clus;              // critical cluster diameter (m)
 
   Real cs_prime_kk;             // kk2002 "cs_prime" parameter (1/m2)
   Real cs_kk;                   // kk2002 "cs" parameter (1/s)
@@ -336,7 +360,7 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   Real qmolso4a_del_max;        // max production of aerosol so4 over dtnuc (mol/mol-air)
   Real ratenuclt_kk;            // nucleation rate after kk2002 adjustment (#/m3/s)
 
-  int igrow;
+  IntPack igrow;
 
   Real tmp_n1, tmp_n2, tmp_n3;
   Real tmp_m1, tmp_m2, tmp_m3;
@@ -372,8 +396,8 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   constexpr Real mw_sulfacid  =  96.0;
 
   // wet/dry volume ratio - use simple kohler approx for ammsulf/ammbisulf
-  tmpa = max( 0.10, min( 0.95, rh_in ) )
-  wetvol_dryvol = 1.0 - 0.56/log(tmpa)
+  tmpa = max( 0.10, min( 0.95, rh_in ) );
+  wetvol_dryvol = 1.0 - 0.56/log(tmpa);
 
   // determine size bin into which the new particles go
   // (probably it will always be bin #1, but ...)
