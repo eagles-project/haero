@@ -1,4 +1,4 @@
-#include <haero/mam4/mam4.hpp>
+#include <haero/mam4.hpp>
 
 #include <catch2/catch.hpp>
 

@@ -1,4 +1,5 @@
-#include <haero/processes/vehkamaki2002.hpp>
+#include <haero/mam4/vehkamaki2002.hpp>
+
 #include <iostream>
 #include <skywalker.hpp>
 #include <validation.hpp>
@@ -14,6 +15,7 @@ void usage(const std::string& prog_name) {
 
 using namespace skywalker;
 using namespace haero;
+using namespace haero::mam4;
 
 void run(Ensemble* ensemble, int pbl_method) {}
 
