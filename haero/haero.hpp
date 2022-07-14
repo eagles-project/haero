@@ -74,6 +74,38 @@ const char* revision();
 // repo.
 bool has_uncommitted_changes();
 
+// Below are min/max functions for Haero's Real type and for mixed Real/Pack
+// arguments.
+
+inline Real min(Real a, Real b) {
+  return (a < b) ? a : b;
+}
+inline PackType min(Real a, const PackType& b) {
+  PackType result = b;
+  result.set(a < b, a);
+  return result;
+}
+inline PackType min(const PackType& a, Real b) {
+  PackType result = a;
+  result.set(b < a, b);
+  return result;
+}
+
+inline Real max(Real a, Real b) {
+  return (a > b) ? a : b;
+}
+inline PackType max(Real a, const PackType& b) {
+  PackType result = b;
+  result.set(a > b, a);
+  return result;
+}
+inline PackType max(const PackType& a, Real b) {
+  PackType result = a;
+  result.set(b > a, b);
+  return result;
+}
+
+
 }  // end namespace haero
 
 #endif
