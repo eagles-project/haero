@@ -335,46 +335,46 @@ void mer07_veh02_wang08_nuc_1box(
 KOKKOS_INLINE_FUNCTION
 void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   const Pack& cnum_nh3, const Pack& radius_cluster, const Pack dplom_sect[1],
-  const Pack dphim_sect[1], Real dtnuc, const Pack& temp_in, const Pack& rh_in,
+  const Pack dphim_sect[1], int nsize, Real dtnuc, const Pack& temp_in, const Pack& rh_in,
   const Pack& cair, Real accom_coef_h2so4, Real mw_so4a, Real mw_so4a_host,
   Real mw_nh4a, Real avogad, Real pi, const Pack& qnh3_cur,
   const Pack& qh2so4_cur, const Pack& so4vol_in, const Pack& h2so4_uptkrate,
-  int& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
+  Pack& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
   Pack& qso4a_del, Pack& qnh4a_del, Pack& qnuma_del) {
 
   Pack tmpa;
-  Real tmpb, tmpe;
+  Pack tmpb, tmpe;
   Pack voldry_clus;             // critical-cluster dry volume (m3)
-  Real voldry_part;             // "grown" single-particle dry volume (m3)
+  Pack voldry_part;             // "grown" single-particle dry volume (m3)
   Pack wetvol_dryvol;           // grown particle (wet-volume)/(dry-volume)
-  Real wet_volfrac_so4a;        // grown particle (dry-volume-from-so4)/(wet-volume)
+  Pack wet_volfrac_so4a;        // grown particle (dry-volume-from-so4)/(wet-volume)
   Pack dpdry_part;              // "grown" single-particle dry diameter (m)
   Pack dpdry_clus;              // critical cluster diameter (m)
 
-  Real cs_prime_kk;             // kk2002 "cs_prime" parameter (1/m2)
-  Real cs_kk;                   // kk2002 "cs" parameter (1/s)
-  Real dfin_kk, dnuc_kk;        // kk2002 final/initial new particle wet diameter (nm)
-  Real tmpa1, tmpb1;
-  Real tmp_spd;                 // h2so4 vapor molecular speed (m/s)
-  Real qmolnh4a_del_max;        // max production of aerosol nh4 over dtnuc (mol/mol-air)
-  Real qmolso4a_del_max;        // max production of aerosol so4 over dtnuc (mol/mol-air)
-  Real ratenuclt_kk;            // nucleation rate after kk2002 adjustment (#/m3/s)
+  Pack cs_prime_kk;             // kk2002 "cs_prime" parameter (1/m2)
+  Pack cs_kk;                   // kk2002 "cs" parameter (1/s)
+  Pack dfin_kk, dnuc_kk;        // kk2002 final/initial new particle wet diameter (nm)
+  Pack tmpa1, tmpb1;
+  Pack tmp_spd;                 // h2so4 vapor molecular speed (m/s)
+  Pack qmolnh4a_del_max;        // max production of aerosol nh4 over dtnuc (mol/mol-air)
+  Pack qmolso4a_del_max;        // max production of aerosol so4 over dtnuc (mol/mol-air)
+  Pack ratenuclt_kk;            // nucleation rate after kk2002 adjustment (#/m3/s)
 
   IntPack igrow;
 
-  Real tmp_n1, tmp_n2, tmp_n3;
-  Real tmp_m1, tmp_m2, tmp_m3;
-  Real dens_part;               // "grown" single-particle dry density (kg/m3)
-  Real mass_part;               // "grown" single-particle dry mass (kg)
-  Real molenh4a_per_moleso4a;   // (mol aerosol nh4)/(mol aerosol so4)
-  Real kgaero_per_moleso4a;     // (kg dry aerosol)/(mol aerosol so4)
-  Real factor_kk;
-  Real freduce;                 // reduction factor applied to nucleation rate
+  Pack tmp_n1, tmp_n2, tmp_n3;
+  Pack tmp_m1, tmp_m2, tmp_m3;
+  Pack dens_part;               // "grown" single-particle dry density (kg/m3)
+  Pack mass_part;               // "grown" single-particle dry mass (kg)
+  Pack molenh4a_per_moleso4a;   // (mol aerosol nh4)/(mol aerosol so4)
+  Pack kgaero_per_moleso4a;     // (kg dry aerosol)/(mol aerosol so4)
+  Pack factor_kk;
+  Pack freduce;                 // reduction factor applied to nucleation rate
                                 // due to limited availability of h2so4 & nh3 gases
-  Real freducea, freduceb;
-  Real gamma_kk;                // kk2002 "gamma" parameter (nm2*m2/h)
-  Real gr_kk;                   // kk2002 "gr" parameter (nm/h)
-  Real nu_kk;                   // kk2002 "nu" parameter (nm)
+  Pack freducea, freduceb;
+  Pack gamma_kk;                // kk2002 "gamma" parameter (nm2*m2/h)
+  Pack gr_kk;                   // kk2002 "gr" parameter (nm/h)
+  Pack nu_kk;                   // kk2002 "nu" parameter (nm)
 
   constexpr Real onethird = 1.0/3.0;
 
@@ -410,23 +410,18 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
 
   isize_nuc = 1;
   dpdry_part = dplom_sect[0];
-  if (dpdry_clus <= dplom_sect[0]) {
-    igrow = 1; // need to clusters to larger size
-  } else if (dpdry_clus >= dphim_sect(nsize)) {
-    igrow = 0;
-    isize_nuc = nsize;
-    dpdry_part = dphim_sect[nsize];
-  } else {
-    igrow = 0;
-    for (int i = 0; i < nsize; ++i) {
-      if (dpdry_clus < dphim_sect(i)) {
-        isize_nuc = i;
-        dpdry_part = dpdry_clus;
-        dpdry_part = min( dpdry_part, dphim_sect[i] );
-        dpdry_part = max( dpdry_part, dplom_sect[i] );
-        break;
-      }
-    }
+  igrow = 0;
+  auto dpdry_clus_lo = (dpdry_clus <= dplom_sect[0]);
+  igrow.set(dpdry_clus_lo, 1);
+  auto dpdry_clus_hi = (dpdry_clus >= dphim_sect[nsize]);
+  isize_nuc.set(dpdry_clus_hi, nsize);
+  dpdry_part.set(dpdry_clus_hi, dphim_sect[nsize]);
+  for (int i = 0; i < nsize; ++i) {
+    auto dpdry_clus_i = (dpdry_clus < dphim_sect[i]);
+    isize_nuc.set(dpdry_clus_i, i);
+    dpdry_part.set(dpdry_clus_i, dpdry_clus);
+    dpdry_part.set(dpdry_clus_i, min(dpdry_part, dphim_sect[i]));
+    dpdry_part.set(dpdry_clus_i, max(dpdry_part, dplom_sect[i]));
   }
   voldry_part = (pi/6.0)*cube(dpdry_part);
 
@@ -436,26 +431,26 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   //    so any (nh4/so4) molar ratio between 0 and 2 is allowed
   // assume that the grown particles will have
   //    (nh4/so4 molar ratio) = min( 2, (nh3/h2so4 gas molar ratio) )
-  if (igrow <= 0) {
-    // no "growing" so pure sulfuric acid
-    tmp_n1 = 0.0;
-    tmp_n2 = 0.0;
-    tmp_n3 = 1.0;
-  } else if (qnh3_cur >= qh2so4_cur) {
-    // combination of ammonium sulfate and ammonium bisulfate
-    // tmp_n1 & tmp_n2 = mole fractions of the ammsulf & ammbisulf
-    tmp_n1 = (qnh3_cur/qh2so4_cur) - 1.0;
-    tmp_n1 = max( 0.0, min( 1.0, tmp_n1 ) );
-    tmp_n2 = 1.0 - tmp_n1;
-    tmp_n3 = 0.0;
-  } else {
-    // combination of ammonium bisulfate and sulfuric acid
-    // tmp_n2 & tmp_n3 = mole fractions of the ammbisulf & sulfacid
-    tmp_n1 = 0.0;
-    tmp_n2 = (qnh3_cur/qh2so4_cur);
-    tmp_n2 = max( 0.0, min( 1.0, tmp_n2 ) );
-    tmp_n3 = 1.0 - tmp_n2;
-  }
+  auto no_growth = (igrow <= 0);
+  tmp_n1.set(no_growth, 0.0);
+  tmp_n2.set(no_growth, 0.0);
+  tmp_n3.set(no_growth, 0.0);
+
+  auto more_nh3 = (qnh3_cur >= qh2so4_cur);
+  // combination of ammonium sulfate and ammonium bisulfate
+  // tmp_n1 & tmp_n2 = mole fractions of the ammsulf & ammbisulf
+  tmp_n1.set(more_nh3, (qnh3_cur/qh2so4_cur) - 1.0);
+  tmp_n1.set(more_nh3, max(0, min(0, tmp_n1)));
+  tmp_n2.set(more_nh3, 1.0 - tmp_n1);
+  tmp_n3.set(more_nh3, 0.0);
+
+  auto more_h2so4 = !no_growth && !more_nh3;
+  // combination of ammonium bisulfate and sulfuric acid
+  // tmp_n2 & tmp_n3 = mole fractions of the ammbisulf & sulfacid
+  tmp_n1.set(more_h2so4, 0.0);
+  tmp_n2.set(more_h2so4, qnh3_cur/qh2so4_cur);
+  tmp_n2.set(more_h2so4, max(0.0, min(1.0, tmp_n2)));
+  tmp_n3.set(more_h2so4, 1.0 - tmp_n2);
 
   tmp_m1 = tmp_n1*mw_ammsulf;
   tmp_m2 = tmp_n2*mw_ammbisulf;
@@ -479,57 +474,55 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   wet_volfrac_so4a = 1.0 / ( wetvol_dryvol * tmpb );
 
   // calc kerminen & kulmala (2002) correction
-  if (igrow <= 0) {
-    factor_kk = 1.0;
-  } else {
-    // "gr" parameter (nm/h) = condensation growth rate of new particles
-    // use kk2002 eqn 21 for h2so4 uptake, and correct for nh3 & h2o uptake
-    tmp_spd = 14.7*sqrt(temp_in); // h2so4 molecular speed (m/s)
-    gr_kk = 3.0e-9*tmp_spd*mw_sulfacid*so4vol_in/(dens_part*wet_volfrac_so4a);
+  factor_kk.set(no_growth, 1.0);
+  auto growth = !no_growth;
 
-    // "gamma" parameter (nm2/m2/h)
-    // use kk2002 eqn 22
-    // dfin_kk = wet diam (nm) of grown particle having dry dia = dpdry_part (m)
-    dfin_kk = 1.0e9 * dpdry_part * pow(wetvol_dryvol, onethird);
+  // "gr" parameter (nm/h) = condensation growth rate of new particles
+  // use kk2002 eqn 21 for h2so4 uptake, and correct for nh3 & h2o uptake
+  tmp_spd.set(growth, 14.7*sqrt(temp_in)); // h2so4 molecular speed (m/s)
+  gr_kk.set(growth, 3.0e-9*tmp_spd*mw_sulfacid*so4vol_in/(dens_part*wet_volfrac_so4a));
 
-    // dnuc_kk = wet diam (nm) of cluster
-    dnuc_kk = 2.0*radius_cluster;
-    dnuc_kk = max( dnuc_kk, 1.0 );
+  // "gamma" parameter (nm2/m2/h)
+  // use kk2002 eqn 22
+  // dfin_kk = wet diam (nm) of grown particle having dry dia = dpdry_part (m)
+  dfin_kk.set(growth, 1.0e9 * dpdry_part * pow(wetvol_dryvol, onethird));
 
-    // neglect (dmean/150)**0.048 factor,
-    // which should be very close to 1.0 because of small exponent
-    gamma_kk = 0.23 * (dnuc_kk)**0.2
+  // dnuc_kk = wet diam (nm) of cluster
+  dnuc_kk.set(growth, 2.0*radius_cluster);
+  dnuc_kk.set(growth, max( dnuc_kk, 1.0 ));
+
+  // neglect (dmean/150)**0.048 factor,
+  // which should be very close to 1.0 because of small exponent
+  gamma_kk.set(growth, 0.23 * pow(dnuc_kk, 0.2)
                        * pow(dfin_kk/3.0, 0.075)
                        * pow(dens_part*1.0e-3, -0.33)
-                       * pow(temp_in/293.0, -0.75);
+                       * pow(temp_in/293.0, -0.75));
 
-    // "cs_prime parameter" (1/m2)
-    // instead kk2002 eqn 3, use
-    //     cs_prime ~= tmpa / (4*pi*tmpb * h2so4_accom_coef)
-    // where
-    //     tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
-    //     tmpb = h2so4 vapor diffusivity (m2/h units)
-    // this approx is generally within a few percent of the cs_prime
-    //     calculated directly from eqn 2,
-    //     which is acceptable, given overall uncertainties
-    // tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
-    tmpa = h2so4_uptkrate * 3600.0;
-    tmpa1 = tmpa;
-    tmpa = max( tmpa, 0.0 );
+  // "cs_prime parameter" (1/m2)
+  // instead kk2002 eqn 3, use
+  //     cs_prime ~= tmpa / (4*pi*tmpb * h2so4_accom_coef)
+  // where
+  //     tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
+  //     tmpb = h2so4 vapor diffusivity (m2/h units)
+  // this approx is generally within a few percent of the cs_prime
+  //     calculated directly from eqn 2,
+  //     which is acceptable, given overall uncertainties
+  // tmpa = -d(ln(h2so4))/dt by conden to particles   (1/h units)
+  tmpa.set(growth, h2so4_uptkrate * 3600.0);
+  tmpa1.set(growth, max(tmpa, 0.0));
 
-    // tmpb = h2so4 gas diffusivity (m2/s, then m2/h)
-    tmpb = 6.7037e-6 * (temp_in**0.75) / cair;
-    tmpb1 = tmpb;         // m2/s
-    tmpb = tmpb*3600.0;   // m2/h
-    cs_prime_kk = tmpa/(4.0*pi*tmpb*accom_coef_h2so4);
-    cs_kk = cs_prime_kk*4.0*pi*tmpb1;
+  // tmpb = h2so4 gas diffusivity (m2/s, then m2/h)
+  tmpb.set(growth, 6.7037e-6 * (pow(temp_in, 0.75) / cair));
+  tmpb1.set(growth, tmpb*3600.0);   // m2/s -> m2/h
+  cs_prime_kk.set(growth, tmpa/(4.0*pi*tmpb*accom_coef_h2so4));
+  cs_kk.set(growth, cs_prime_kk*4.0*pi*tmpb1);
 
-    // "nu" parameter (nm) -- kk2002 eqn 11
-    nu_kk = gamma_kk*cs_prime_kk/gr_kk;
+  // "nu" parameter (nm) -- kk2002 eqn 11
+  nu_kk.set(growth, gamma_kk*cs_prime_kk/gr_kk);
 
-    // nucleation rate adjustment factor (--) -- kk2002 eqn 13
-    factor_kk = exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) );
-  }
+  // nucleation rate adjustment factor (--) -- kk2002 eqn 13
+  factor_kk.set(growth, exp( (nu_kk/dfin_kk) - (nu_kk/dnuc_kk) ));
+
   ratenuclt_kk = ratenuclt_bb*factor_kk;
 
   // max production of aerosol dry mass (kg-aero/m3-air)
@@ -542,19 +535,16 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
 
   // check if max production exceeds available h2so4 vapor
   freducea = 1.0;
-  if (qmolso4a_del_max > qh2so4_cur) {
-    freducea = qh2so4_cur/qmolso4a_del_max
-  }
+  auto not_enough_h2so4 = (qmolso4_del_max > qh2so4_cur);
+  freducea.set(not_enough_h2so4, qh2so4_cur/qmolso4a_del_max);
 
   // check if max production exceeds available nh3 vapor
   freduceb = 1.0;
-  if (molenh4a_per_moleso4a >= 1.0e-10) {
-    // max production of aerosol nh4 (ppm) based on ratenuclt_kk and mass_part
-    qmolnh4a_del_max = qmolso4a_del_max*molenh4a_per_moleso4a;
-    if (qmolnh4a_del_max > qnh3_cur) {
-      freduceb = qnh3_cur/qmolnh4a_del_max;
-    }
-  }
+  auto not_enough_nh3 = (molenh4a_per_moleso4a >= 1.0e-10);
+  // max production of aerosol nh4 (ppm) based on ratenuclt_kk and mass_part
+  qmolnh4a_del_max.set(not_enough_nh3, qmolso4a_del_max*molenh4a_per_moleso4a);
+  freduceb.set(not_enough_nh3 && (qmolnh4a_del_max > qnh3_cur),
+               qnh3_cur/qmolnh4a_del_max);
 
   // get the final reduction factor for nucleation rate
   freduce = min( freducea, freduceb );
@@ -565,39 +555,39 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   //---------------------------------------------------------------------------
   // if adjusted nucleation rate is less than 1e-12 #/m3/s ~= 0.1 #/cm3/day,
   // exit with new particle formation = 0
-  if (freduce*ratenuclt_kk <= 1.0e-12) {
-    qh2so4_del = 0.0;
-    qnh3_del   = 0.0;
-    qso4a_del = 0.0;
-    qnh4a_del = 0.0;
-    qnuma_del = 0.0;
-  } else {
-    //-------------------------------------------------------------------------
-    // note:  suppose that at this point, freduce < 1.0 (no gas-available
-    //    constraints) and molenh4a_per_moleso4a < 2.0
-    // if the gas-available constraints is do to h2so4 availability,
-    //    then it would be possible to condense "additional" nh3 and have
-    //    (nh3/h2so4 gas molar ratio) < (nh4/so4 aerosol molar ratio) <= 2
-    // one could do some additional calculations of
-    //    dens_part & molenh4a_per_moleso4a to realize this
-    // however, the particle "growing" is a crude approximate way to get
-    //    the new particles to the host code's minimum particle size,
-    // are such refinements worth the effort?
-    //-------------------------------------------------------------------------
-    // changes to h2so4 & nh3 gas (in mol/mol-air), limited by amounts available
-    tmpa = 0.9999;
-    qh2so4_del = min( tmpa*qh2so4_cur, freduce*qmolso4a_del_max );
-    qnh3_del   = min( tmpa*qnh3_cur, qh2so4_del*molenh4a_per_moleso4a );
-    qh2so4_del = -qh2so4_del;
-    qnh3_del   = -qnh3_del;
+  auto nuc_too_small = (freduce*ratenuclt_kk <= 1.0e-12);
+  qh2so4_del.set(nuc_too_small, 0.0);
+  qnh3_del.set(nuc_too_small, 0.0);
+  qso4a_del.set(nuc_too_small, 0.0);
+  qnh4a_del.set(nuc_too_small, 0.0);
+  qnuma_del.set(nuc_too_small, 0.0);
 
-    // changes to so4 & nh4 aerosol (in mol/mol-air)
-    qso4a_del = -qh2so4_del;
-    qnh4a_del =   -qnh3_del;
+  //-------------------------------------------------------------------------
+  // note:  suppose that at this point, freduce < 1.0 (no gas-available
+  //    constraints) and molenh4a_per_moleso4a < 2.0
+  // if the gas-available constraints is do to h2so4 availability,
+  //    then it would be possible to condense "additional" nh3 and have
+  //    (nh3/h2so4 gas molar ratio) < (nh4/so4 aerosol molar ratio) <= 2
+  // one could do some additional calculations of
+  //    dens_part & molenh4a_per_moleso4a to realize this
+  // however, the particle "growing" is a crude approximate way to get
+  //    the new particles to the host code's minimum particle size,
+  // are such refinements worth the effort?
+  //-------------------------------------------------------------------------
+  // changes to h2so4 & nh3 gas (in mol/mol-air), limited by amounts available
+  auto enough_nuc = !nuc_too_small;
+  tmpa.set(enough_nuc, 0.9999);
+  qh2so4_del.set(enough_nuc, min( tmpa*qh2so4_cur, freduce*qmolso4a_del_max ));
+  qnh3_del.set(enough_nuc, min( tmpa*qnh3_cur, qh2so4_del*molenh4a_per_moleso4a ));
+  qh2so4_del.set(enough_nuc, -qh2so4_del);
+  qnh3_del.set(enough_nuc, -qnh3_del);
 
-    // change to aerosol number (in #/mol-air)
-    qnuma_del = 1.0e-3*(qso4a_del*mw_so4a + qnh4a_del*mw_nh4a)/mass_part;
-  }
+  // changes to so4 & nh4 aerosol (in mol/mol-air)
+  qso4a_del.set(enough_nuc, -qh2so4_del);
+  qnh4a_del.set(enough_nuc, -qnh3_del);
+
+  // change to aerosol number (in #/mol-air)
+  qnuma_del.set(enough_nuc, 1.0e-3*(qso4a_del*mw_so4a + qnh4a_del*mw_nh4a)/mass_part);
 }
 
 /// @class NucleationImpl
@@ -695,7 +685,7 @@ class NucleationImpl {
   // This function computes relevant tendencies at a single vertical level. It
   // was ported directly from the compute_tendencies subroutine in the
   // modal_aero_newnuc module from the MAM4 box model.
-  INLINE_KOKKOS_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   void compute_tendencies_(Real deltat,
     const Pack& temp, const Pack& pmid, const Pack& aircon, const Pack& zmid,
     Real pblh, const Pack& relhum, const Pack& uptkrate_h2so4,
