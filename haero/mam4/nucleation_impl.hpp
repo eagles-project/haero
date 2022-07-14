@@ -339,7 +339,7 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   const Pack& cair, Real accom_coef_h2so4, Real mw_so4a, Real mw_so4a_host,
   Real mw_nh4a, Real avogad, Real pi, const Pack& qnh3_cur,
   const Pack& qh2so4_cur, const Pack& so4vol_in, const Pack& h2so4_uptkrate,
-  Pack& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
+  IntPack& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
   Pack& qso4a_del, Pack& qnh4a_del, Pack& qnuma_del) {
 
   Pack tmpa;
@@ -535,7 +535,7 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
 
   // check if max production exceeds available h2so4 vapor
   freducea = 1.0;
-  auto not_enough_h2so4 = (qmolso4_del_max > qh2so4_cur);
+  auto not_enough_h2so4 = (qmolso4a_del_max > qh2so4_cur);
   freducea.set(not_enough_h2so4, qh2so4_cur/qmolso4a_del_max);
 
   // check if max production exceeds available nh3 vapor
@@ -601,6 +601,8 @@ class NucleationImpl {
 
   static constexpr Real avogadro = Constants::avogadro;
   static constexpr Real mw_h2so4 = Constants::molec_weight_h2so4;
+  static constexpr Real mw_so4a  = Constants::molec_weight_so4;
+  static constexpr Real mw_nh4a  = Constants::molec_weight_nh4;
   static constexpr Real pi       = Constants::pi;
   static constexpr Real rgas     = Constants::r_gas;
 
@@ -608,8 +610,21 @@ class NucleationImpl {
   static constexpr Real qh2so4_cutoff = 4.0e-16;
   static constexpr Real ln_nuc_rate_cutoff = -13.82;
 
-  // "Host parameters.
+  // "Host parameters
   Real dens_so4a_host, mw_nh4a_host, mw_so4a_host;
+
+  // Mode parameters
+  Real dgnum_aer[4],    // mean geometric number diameter
+       dgnumhi_aer[4],  // max geometric number diameter
+       dgnumlo_aer[4];  // min geometric number diameter
+
+  // Nucleation parameters
+  int newnuc_method_user_choice;
+  int pbl_nuc_wang2008_user_choice;
+  Real adjust_factor_bin_tern_ratenucl;
+  Real adjust_factor_pbl_ratenucl;
+  Real accom_coef_h2so4;
+  Real newnuc_adjust_factor_dnaitdt;
  public:
 
   // name -- unique name of the process implemented by this class
@@ -621,6 +636,27 @@ class NucleationImpl {
     dens_so4a_host = 0.0;
     mw_nh4a_host = 0.0;
     mw_so4a_host = 0.0;
+
+    // Set mode parameters.
+    for (int m = 0; m < 4; ++m) {
+      // FIXME: There is no mean geometric number diameter in a mode.
+      // FIXME: Assume "nominal" diameter for now?
+      // FIXME: There is a comment in modal_aero_newnuc.F90 that Dick Easter
+      // FIXME: thinks that dgnum_aer isn't used in MAM4, but it is actually
+      // FIXME: used in this nucleation parameterization. So we will have to
+      // FIXME: figure this out.
+      dgnum_aer[m] = modes[m].nom_diameter;
+      dgnumlo_aer[m] = modes[m].min_diameter;
+      dgnumhi_aer[m] = modes[m].max_diameter;
+    }
+
+    // Set defaults for nucleation parameters.
+    newnuc_method_user_choice = 2; // binary nucleation
+    pbl_nuc_wang2008_user_choice = 1; // first-order PBL correction
+    adjust_factor_bin_tern_ratenucl = 1.0; // nuc rate adjustment factor
+    adjust_factor_pbl_ratenucl = 1.0; // PBL adjustment factor
+    accom_coef_h2so4 = 1.0; // H2SO4 accommodation coeff (FIXME)
+    newnuc_adjust_factor_dnaitdt = 1.0;
   }
 
   // validate -- validates the given atmospheric state and prognostics against
@@ -696,11 +732,11 @@ class NucleationImpl {
     Pack& dndt_ait, Pack& dmdt_ait, Pack& dso4dt_ait, Pack& dnh4dt_ait,
     Pack& dnclusterdt) const {
 
-    int newnuc_method_actual, pbl_nuc_wang2008_actual;
+    IntPack newnuc_method_actual, pbl_nuc_wang2008_actual;
 
     constexpr int nsize = 1;
-    Real dplom_mode[nsize], dphim_mode[nsize];
-    int isize_group;
+    Pack dplom_mode[nsize], dphim_mode[nsize];
+    IntPack isize_group;
 
     Pack cair;  // air density
     Pack so4vol, nh3ppt;
@@ -744,16 +780,8 @@ class NucleationImpl {
     qh2so4_avg = qgas_avg[igas_h2so4];
     tmp_uptkrate = uptkrate_h2so4;
 
-    if (qh2so4_avg <= qh2so4_cutoff) { // qh2so4_avg very low. assume no
-                                       // nucleation will happen
-      // Diagnose so4 and nh4 tendencies and exit
-      dso4dt_ait = dmdt_ait*tmp_frso4/mw_so4a_host;
-      dnh4dt_ait = dmdt_ait*(1.0 - tmp_frso4)/mw_nh4a_host;
-      return;
-    }
-
     if (igas_nh3 > 0) {
-      qnh3_cur = max( 0.0, qgas_cur(igas_nh3) )
+      qnh3_cur = max(0.0, qgas_cur[igas_nh3]);
     } else {
       qnh3_cur = 0.0;
     }
@@ -806,35 +834,43 @@ class NucleationImpl {
     qnh3_del = 0.0;
 
     // dry-diameter limits for "grown" new particles
-    dplom_mode(1) = exp( 0.67*log(dgnumlo_aer(nait))
-                       + 0.33*log(dgnum_aer(nait)) );
-    dphim_mode(1) = dgnumhi_aer(nait);
+    dplom_mode[0] = exp( 0.67*log(dgnumlo_aer[nait])
+                       + 0.33*log(dgnum_aer[nait]));
+    dphim_mode[0] = dgnumhi_aer[nait];
 
     //----------------------------------------------------------------
     // Only do the cluster growth calculation when nucleation rate is
     // appreciable
     //----------------------------------------------------------------
-    if (rateloge > ln_nuc_rate_cutoff ) {
+    auto sufficient_nuc =  (rateloge > ln_nuc_rate_cutoff );
 
-      // mass1p_... = mass (kg) of so4 & nh4 in a single particle of diameter ...
-      // (assuming same dry density for so4 & nh4)
-      // mass1p_aitlo - dp = dplom_mode(1);
-      // mass1p_aithi - dp = dphim_mode(1);
+    // mass1p_... = mass (kg) of so4 & nh4 in a single particle of diameter ...
+    // (assuming same dry density for so4 & nh4)
+    // mass1p_aitlo - dp = dplom_mode(1);
+    // mass1p_aithi - dp = dphim_mode(1);
 
-      tmpa = dens_so4a_host*pi/6.0;
-      mass1p_aitlo = tmpa*cube(dplom_mode(1));
-      mass1p_aithi = tmpa*cube(dphim_mode(1));
+    tmpa.set(sufficient_nuc, dens_so4a_host*pi/6.0);
+    mass1p_aitlo.set(sufficient_nuc, tmpa*cube(dplom_mode[0]));
+    mass1p_aithi.set(sufficient_nuc, tmpa*cube(dphim_mode[0]));
 
-      // Cluster growth
-      newnuc_cluster_growth(
-        dnclusterdt, cnum_h2so4, cnum_nh3, radius_cluster,
-        dplom_mode, dphim_mode, nsize,
-        deltat, temp, relhumnn, cair,
-        accom_coef_h2so4, mw_so4a,mw_so4a_host, mw_nh4a, avogadro, pi,
-        qnh3_cur, qh2so4_cur, so4vol, tmp_uptkrate,
-        isize_group, dens_nh4so4a,
-        qh2so4_del, qnh3_del, qso4a_del, qnh4a_del, qnuma_del);
-    } // nucleation rate is appreciable
+    // Cluster growth
+    IntPack isize_group_bb;
+    Pack dens_nh4so4a_bb, qh2so4_del_bb, qnh3_del_bb, qso4a_del_bb,
+         qnh4a_del_bb, qnuma_del_bb;
+    newnuc_cluster_growth(
+      dnclusterdt, cnum_h2so4, cnum_nh3, radius_cluster,
+      dplom_mode, dphim_mode, nsize, deltat, temp, relhumnn, cair,
+      accom_coef_h2so4, mw_so4a,mw_so4a_host, mw_nh4a, avogadro, pi,
+      qnh3_cur, qh2so4_cur, so4vol, tmp_uptkrate,
+      isize_group_bb, dens_nh4so4a_bb, qh2so4_del_bb, qnh3_del_bb,
+      qso4a_del_bb, qnh4a_del_bb, qnuma_del_bb);
+    isize_group.set(sufficient_nuc, isize_group_bb);
+    dens_nh4so4a.set(sufficient_nuc, dens_nh4so4a_bb);
+    qh2so4_del.set(sufficient_nuc, qh2so4_del_bb);
+    qnh3_del.set(sufficient_nuc, qnh3_del_bb);
+    qso4a_del.set(sufficient_nuc, qso4a_del_bb);
+    qnh4a_del.set(sufficient_nuc, qnh4a_del_bb);
+    qnuma_del.set(sufficient_nuc, qnuma_del_bb);
 
     //=====================================
     // Deriving mass mixing ratio tendency
@@ -862,30 +898,31 @@ class NucleationImpl {
     //=====================================================
     // Various adjustments to keep the solution reasonable
     //=====================================================
-    if (dndt_ait < 1.0e2) {
-      // ignore newnuc if number rate < 100 #/kmol-air/s ~= 0.3 #/mg-air/d
-      dndt_ait = 0.0;
-      dmdt_ait = 0.0;
-    } else {
 
-      // mirage2 code checked for complete h2so4 depletion here,
-      // but this is now done in mer07_veh02_nuc_mosaic_1box
-      mass1p = dmdt_ait/dndt_ait;
+    // ignore newnuc if number rate < 100 #/kmol-air/s ~= 0.3 #/mg-air/d
+    auto dndt_small = (dndt_ait < 1.0e2);
+    dndt_ait.set(dndt_small, 0.0);
+    dmdt_ait.set(dndt_small, 0.0);
 
-      // apply particle size constraints
-      if (mass1p < mass1p_aitlo) {
-        // reduce dndt to increase new particle size
-        dndt_ait = dmdt_ait/mass1p_aitlo;
-      } else if (mass1p > mass1p_aithi) {
-        // reduce dmdt to decrease new particle size
-        dmdt_ait = dndt_ait*mass1p_aithi;
-      }
-    }
+    // mirage2 code checked for complete h2so4 depletion here,
+    // but this is now done in mer07_veh02_nuc_mosaic_1box
+    mass1p.set(!dndt_small, dmdt_ait/dndt_ait);
+
+    // apply particle size constraints
+    auto too_small = (mass1p < mass1p_aitlo);
+    // reduce dndt to increase new particle size
+    dndt_ait.set(too_small, dmdt_ait/mass1p_aitlo);
+    auto too_big = (mass1p > mass1p_aithi);
+    // reduce dmdt to decrease new particle size
+    dmdt_ait.set(too_big, dndt_ait*mass1p_aithi);
+
+    // If qh2so4_avg is very low. assume no nucleation will happen
+    auto enough_h2so4 = (qh2so4_avg > qh2so4_cutoff);
 
     // *** apply adjustment factor to avoid unrealistically high
     // aitken number concentrations in mid and upper troposphere
-    dndt_ait = dndt_ait * newnuc_adjust_factor_dnaitdt;
-    dmdt_ait = dmdt_ait * newnuc_adjust_factor_dnaitdt;
+    dndt_ait.set(enough_h2so4, dndt_ait * newnuc_adjust_factor_dnaitdt);
+    dmdt_ait.set(enough_h2so4, dmdt_ait * newnuc_adjust_factor_dnaitdt);
 
     //=================================
     // Diagnose so4 and nh4 tendencies
