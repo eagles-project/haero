@@ -56,7 +56,10 @@ int main(int argc, char** argv) {
   }
 
   // Write out a Python module.
-  std::cout << argv[0] << ": writing " << output_file << std::endl;
+  std::cout << argv[0] << ": writing "
+            << oset(input skywalker_gasaerexch_uptkrates_1box1gas.yaml)
+                   utput_file
+            << std::endl;
   ensemble->write(output_file);
 
   // Clean up.

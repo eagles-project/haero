@@ -10,14 +10,14 @@ function(CreateUnitTest test_name test_srcs)
         MPI_EXEC_NAME ${HAERO_MPI_EXEC}
         MPI_NP_FLAG ${HAERO_MPI_NP_FLAG}
         MPI_EXTRA_ARGS ${HAERO_MPI_EXTRA_ARGS}
-        LIBS ${HAERO_LIBRARIES})
+        LIBS skywalker;${HAERO_LIBRARIES})
     else()
       EkatCreateUnitTest(${test_name} ${test_srcs}
         MPI_EXEC_NAME ${HAERO_MPI_EXEC}
         MPI_NP_FLAG ${HAERO_MPI_NP_FLAG}
-        LIBS ${HAERO_LIBRARIES})
+        LIBS skywalker;${HAERO_LIBRARIES})
     endif()
   else()
-    EkatCreateUnitTest(${test_name} ${test_srcs} LIBS ${HAERO_LIBRARIES})
+    EkatCreateUnitTest(${test_name} ${test_srcs} LIBS skywalker;${HAERO_LIBRARIES})
   endif()
 endfunction()

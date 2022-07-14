@@ -44,9 +44,6 @@ class Prognostics final {
   /// gas mass mixing ratios (see aero_mode.hpp for indexing)
   ColumnView q_gas[13];
 
-  /// For gas-aerosol exchange process (probably temporary)
-  ColumnView uptkrate_h2so4;
-
   KOKKOS_INLINE_FUNCTION
   int num_levels() const { return nlev_; }
 
@@ -109,6 +106,9 @@ class Diagnostics final {
 
   ColumnView dry_geometric_mean_diameter[4];
   ColumnView wet_geometric_mean_diameter[4];
+
+  /// For gas-aerosol exchange process 
+  ColumnView uptkrate_h2so4;
 
  private:
   int nlev_;
