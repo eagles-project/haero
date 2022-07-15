@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 #include <cmath>
-#include <haero/mam4/mam4.hpp>
+#include <haero/mam4.hpp>
 #include <iomanip>
 #include <iostream>
 #include <limits>
