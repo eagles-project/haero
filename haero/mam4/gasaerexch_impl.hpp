@@ -213,14 +213,13 @@ class GasAerExchImpl {
 
             // total uptake rate (sum of all aerosol modes) for h2so4.
             // Diagnosed for calling routine. Not used in this subroutne.
-            tends.uptkrate_h2so4(k) = 0;
+            diags.uptkrate_h2so4(k) = 0;
             for (int n = 0; n < num_mode; ++n)
-              tends.uptkrate_h2so4(k) += uptkaer(igas_h2so4, n);
+              diags.uptkrate_h2so4(k) += uptkaer(igas_h2so4, n);
           });
     }
   }
 
- private:
   KOKKOS_INLINE_FUNCTION
   void gas_aer_uptkrates_1box1gas(
       const Kokkos::Array<bool, num_mode> &l_condense_to_mode,
@@ -256,8 +255,8 @@ class GasAerExchImpl {
     //      x = ln(D_p)
     //      dN/dx = log-normal particle number density distribution
     //--------------------------------------------------------------------------------
-    const Real tworootpi = 2 * std::sqrt(pi);
-    const Real root2 = std::sqrt(2.0);
+    const Real tworootpi = 2 * Kokkos::Experimental::sqrt(pi);
+    const Real root2 = Kokkos::Experimental::sqrt(2.0);
     const Real one = 1.0;
     const Real two = 2.0;
 
@@ -336,15 +335,15 @@ class GasAerExchImpl {
 
     // outermost loop over all modes
     for (int n = 0; n < num_mode; ++n) {
-      const PackType lndpgn = log(dgncur_awet[n]);  // (m)
+      const PackType lndpgn = ekat::log(dgncur_awet[n]);  // (m)
 
       // beta = dln(uptake_rate)/dln(D_p)
       //      = 2.0 in free molecular regime, 1.0 in continuum regime
       // if uptake_rate ~= a * (D_p**beta), then the 2 point quadrature is very
       // accurate
       PackType beta;
-      if (std::abs(beta_inp - 1.5) > 0.5) {
-        // D_p = dgncur_awet(n) * exp( 1.5*(lnsg[n]**2) )
+      if (Kokkos::Experimental::abs(beta_inp - 1.5) > 0.5) {
+        // D_p = dgncur_awet(n) * ekat::exp( 1.5*(lnsg[n]**2) )
         const PackType D_p = dgncur_awet[n];
         const PackType knudsen = two * gasfreepath / D_p;
         // tmpa = dln(fuchs_sutugin)/d(knudsen)
@@ -359,19 +358,20 @@ class GasAerExchImpl {
       }
 
       const PackType constant =
-          tworootpi * exp(beta * lndpgn + 0.5 * pow(beta * lnsg[n], 2.0));
+          tworootpi *
+          ekat::exp(beta * lndpgn + 0.5 * ekat::pow(beta * lnsg[n], 2.0));
 
       // sum over gauss-hermite quadrature points
       PackType sumghq = 0.0;
       for (int iq = 0; iq < nghq; ++iq) {
         const PackType lndp =
             lndpgn + beta * lnsg[n] * lnsg[n] + root2 * lnsg[n] * xghq[iq];
-        const PackType D_p = exp(lndp);
+        const PackType D_p = ekat::exp(lndp);
 
         const PackType hh =
             fuchs_sutugin(D_p, gasfreepath, accomxp283, accomxp75);
 
-        sumghq += wghq[iq] * D_p * hh / pow(D_p, beta);
+        sumghq += wghq[iq] * D_p * hh / ekat::pow(D_p, beta);
       }
       const PackType uptkrate =
           constant * gasdiffus *
@@ -399,10 +399,12 @@ class GasAerExchImpl {
     const Real onethird = 1.0 / 3.0;
 
     const PackType gas_diffusivity =
-        (1.0e-7 * pow(T_in_K, 1.75) * std::sqrt(1.0 / mw_gas + 1.0 / mw_air)) /
-        (p_in_atm *
-         std::pow(std::pow(vd_gas, onethird) + std::pow(vd_air, onethird),
-                  2.0));
+        (1.0e-7 * ekat::pow(T_in_K, 1.75) *
+         Kokkos::Experimental::sqrt(1.0 / mw_gas + 1.0 / mw_air)) /
+        (p_in_atm * Kokkos::Experimental::pow(
+                        Kokkos::Experimental::pow(vd_gas, onethird) +
+                            Kokkos::Experimental::pow(vd_air, onethird),
+                        2.0));
 
     return gas_diffusivity;
   }
@@ -414,7 +416,7 @@ class GasAerExchImpl {
       const Real r_universal,  // universal gas constant
       const Real pi) const {
     const PackType mean_molecular_speed =
-        sqrt(8.0 * r_universal * temp / (pi * rmw));
+        ekat::sqrt(8.0 * r_universal * temp / (pi * rmw));
 
     return mean_molecular_speed;
   }
