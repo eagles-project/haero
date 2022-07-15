@@ -4,9 +4,9 @@ include(create_unit_test)
 CreateUnitTest(mam4_nucleation_unit_tests mam4_nucleation_unit_tests.cpp)
 CreateUnitTest(mam4_gasaerexch_unit_tests mam4_gasaerexch_unit_tests.cpp)
 
-configure_file(${PROJECT_SOURCE_DIR}/validation/mam_x_validation/gasaerexch/skywalker_gasaerexch_uptkrates_1box1gas.yaml 
+configure_file(${PROJECT_SOURCE_DIR}/haero/mam4/validation/mam_x_validation/gasaerexch/skywalker_gasaerexch_uptkrates_1box1gas.yaml 
     skywalker_gasaerexch_uptkrates_1box1gas.yaml COPYONLY)
-configure_file(${PROJECT_SOURCE_DIR}/validation/mam_x_validation/gasaerexch/skywalker_gasaerexch_uptkrates_1box1gas.py 
+configure_file(${PROJECT_SOURCE_DIR}/haero/mam4/validation/mam_x_validation/gasaerexch/skywalker_gasaerexch_uptkrates_1box1gas.py 
     skywalker_gasaerexch_uptkrates_1box1gas.py.ref COPYONLY)
 
 add_test(NAME gasaerexch_compare_output
