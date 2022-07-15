@@ -29,17 +29,10 @@ jobs:
     # Environment variables
     env:
       FC: gfortran
-      HDF5_LIBRARY_NAME: libhdf5.a
-      HDF5_HL_LIBRARY_NAME: libhdf5_hl.a
+      CI: 1   # indicates that we are running in a CI environment.
 
     # Steps for building and running tests.
     steps:
-
-    - name: Setting HDF5 library names (Debug)
-      if: contains(matrix.build-type, 'Debug')
-      run: |
-        echo "HDF5_LIBRARY_NAME=libhdf5_debug.a" >> $GITHUB_ENV
-        echo "HDF5_HL_LIBRARY_NAME=libhdf5_hl_debug.a" >> $GITHUB_ENV
 
     - name: Checking out repository
       uses: actions/checkout@v2
@@ -72,11 +65,6 @@ jobs:
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
-          -DHDF5_LIBRARY=/opt/haero/lib/${HDF5_LIBRARY_NAME} \
-          -DHDF5_HL_LIBRARY=/opt/haero/lib/${HDF5_HL_LIBRARY_NAME} \
-          -DHDF5_INCLUDE_DIR=/opt/haero/include \
-          -DNETCDF_LIBRARY=/opt/haero/lib/libnetcdf.a \
-          -DNETCDF_INCLUDE_DIR=/opt/haero/include \
           -DOPENBLAS_LIBRARY=/opt/haero/lib/libopenblas.a \
           -DOPENBLAS_INCLUDE_DIR=/opt/haero/include \
           -DTINES_LIBRARY=/opt/haero/lib/libtines.a \

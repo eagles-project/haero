@@ -1,4 +1,5 @@
 set(NUC_VALIDATION_DIR ${MAM_X_VALIDATION_DIR}/nucleation)
+set(NUC_BASELINE_DIR ${MAM4BOX_BASELINE_DIR}/nucleation)
 
 # Include directory for .mod files.
 include_directories(${PROJECT_BINARY_DIR}/haero)
