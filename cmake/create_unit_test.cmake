@@ -18,7 +18,7 @@ function(CreateUnitTest test_name test_srcs)
         LIBS ${HAERO_LIBRARIES})
     endif()
   else()
-    EkatCreateUnitTest(${test_name} ${test_srcs} LIBS skywalker;${HAERO_LIBRARIES})
+    EkatCreateUnitTest(${test_name} ${test_srcs} LIBS ${HAERO_LIBRARIES})
   endif()
 endfunction()
 
