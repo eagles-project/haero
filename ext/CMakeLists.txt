@@ -285,42 +285,6 @@ if (NOT EXISTS ${SKYWALKER_LIBRARY})
   add_dependencies(skywalker_f90 skywalker_proj)
 endif()
 
-#----------------------------------------------------------------------------
-# MAM4 box model (for testing ported parameterizations)
-#----------------------------------------------------------------------------
-if (HAERO_ENABLE_MAM4BOX)
-  set(MAMBOX_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                        -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-                        -DMAMBOX_PRECISION=${HAERO_PRECISION}
-                        -DMAMBOX_ENABLE_DRIVER=OFF
-                        -DMAMBOX_ENABLE_VALIDATION=OFF
-                        -DMAMBOX_NUM_COLUMNS=1
-                        -DMAMBOX_NUM_LEVELS=1
-                        -DMAMBOX_NUM_SPECIES=35
-                        -DMAMBOX_NUM_BLACK_CARBON_TAGS=1
-                        -DMAMBOX_NUM_PRIMARY_ORGANIC_TAGS=1
-                        -DMAMBOX_NUM_SECONDARY_ORGANIC_TAGS=1
-                        -DMAMBOX_NUM_SECONDARY_ORGANIC_GAS_TAGS=1
-                        -DMAMBOX_RAIN_EVAP_TO_COARSE_AERO=1)
-  ExternalProject_Add(mam4box_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mam4box
-                      SOURCE_DIR ${MAM4BOX_DIR}
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mam4box
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${MAMBOX_CMAKE_OPTS}
-                      LOG_CONFIGURE TRUE
-                      BUILD_COMMAND ${MAKE} -j
-                      LOG_BUILD TRUE
-                      INSTALL_COMMAND ${MAKE} install
-                      LOG_INSTALL TRUE)
-  add_library(mam_core STATIC IMPORTED GLOBAL)
-  set_target_properties(mam_core PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libmam_core.a)
-  add_dependencies(mam_core mambox_proj)
-endif()
-
 # This target can be used as a dependency to ensure all above libraries are
 # built before proceeding.
 add_custom_target(ext_libraries DEPENDS ${HAERO_EXT_LIBRARIES})
