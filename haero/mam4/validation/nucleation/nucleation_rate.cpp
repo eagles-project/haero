@@ -5,18 +5,11 @@
 #include <skywalker.hpp>
 #include <validation.hpp>
 
-// This driver computes the binary or ternary nucleation rate for the given
-// input.
-
-void usage(const std::string& prog_name) {
-  std::cerr << prog_name << ": usage:" << std::endl;
-  std::cerr << prog_name << " <input.yaml>" << std::endl;
-  exit(0);
-}
-
 using namespace skywalker;
 using namespace haero;
 using namespace haero::mam4;
+
+namespace {
 
 void run_vehkamaki2002(Ensemble* ensemble, int pbl_method) {
   ensemble->process([](const Input& input, Output& output) {
@@ -54,24 +47,17 @@ void run_merikanto2007(Ensemble* ensemble, int pbl_method) {
   });
 }
 
-int main(int argc, char** argv) {
-  if (argc == 1) {
-    usage((const char*)argv[0]);
-  }
-  std::string input_file = argv[1];
-  std::string output_file = validation::output_name(input_file);
-  std::cout << argv[0] << ": reading " << input_file << std::endl;
+} // anonymous namespace
 
-  // Load the ensemble. Any error encountered is fatal.
-  Ensemble* ensemble = skywalker::load_ensemble(input_file, "haero");
-
+void nucleation_rate(Ensemble* ensemble) {
   // Figure out settings for binary/ternary nucleation and planetary boundary
   // layer treatment
   Settings settings = ensemble->settings();
   int nuc_method = std::stoi(settings.get("nucleation_method"));
   if ((nuc_method != 2) and (nuc_method != 3)) {
-    std::cerr << "Invalid nucleation method: " << nuc_method << std::endl;
-    exit(0);
+    std::stringstream ss;
+    ss << "Invalid nucleation method: " << nuc_method << std::endl;
+    throw skywalker::Exception(ss.str());
   }
 
   int pbl_method = 0;  // no PBL correction by default.
@@ -79,26 +65,16 @@ int main(int argc, char** argv) {
     pbl_method = std::stoi(settings.get("pbl_method"));
   }
   if ((pbl_method < 0) or (pbl_method > 2)) {
-    std::cerr << "Invalid planetary boundary layer method: " << pbl_method
-              << std::endl;
-    exit(0);
+    std::stringstream ss;
+    ss << "Invalid planetary boundary layer method: " << pbl_method
+       << std::endl;
+    throw skywalker::Exception(ss.str());
   }
 
   // Run the ensemble.
-  try {
-    if (nuc_method == 2) {  // binary nucleation
-      run_vehkamaki2002(ensemble, pbl_method);
-    } else {  // ternary nucleation
-      run_merikanto2007(ensemble, pbl_method);
-    }
-  } catch (Exception& e) {
-    std::cerr << argv[0] << ": Error: " << e.what() << std::endl;
+  if (nuc_method == 2) {  // binary nucleation
+    run_vehkamaki2002(ensemble, pbl_method);
+  } else {  // ternary nucleation
+    run_merikanto2007(ensemble, pbl_method);
   }
-
-  // Write out a Python module.
-  std::cout << argv[0] << ": writing " << output_file << std::endl;
-  ensemble->write(output_file);
-
-  // Clean up.
-  delete ensemble;
 }
