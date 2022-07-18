@@ -18,12 +18,12 @@ target_link_libraries(nucleation_driver skywalker;validation;${HAERO_LIBRARIES})
 foreach (input vehkamaki2002_contour;vehkamaki2002_fig8;
                vehkamaki2002_fig9;vehkamaki2002_fig10;vehkamaki2002_fig11;
                merikanto2007_fig2;merikanto2007_fig3;merikanto2007_fig4)
-  add_test(gen_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
+  add_test(validate_mam4_nucleation_rate_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
 
 # Nucleation threshold
 foreach (input vehkamaki2002_fig7)
-  add_test(gen_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
+  add_test(validate_mam4_nucleation_thresh_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
 
 # Nucleation growth
