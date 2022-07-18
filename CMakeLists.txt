@@ -300,29 +300,34 @@ endif()
 # MAM4 box model (for testing ported parameterizations)
 if (HAERO_ENABLE_MAM4BOX)
   message(STATUS "Enabling cross validation with MAM4 box model.")
+  if (NOT MAM4BOX_DIR)
+    message(FATAL_ERROR "MAM4 box model cross validation requested, but MAM4BOX_DIR is not set!")
+  elseif(NOT EXISTS ${MAM4BOX_DIR})
+    message(FATAL_ERROR "Invalid MAM4BOX_DIR: ${MAM4BOX_DIR}")
+  endif()
   # Build the MAM4 box model's core library.
-  set(MAMBOX_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                        -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-                        -DMAMBOX_PRECISION=${HAERO_PRECISION}
-                        -DMAMBOX_ENABLE_DRIVER=OFF
-                        -DMAMBOX_ENABLE_VALIDATION=OFF
-                        -DMAMBOX_NUM_COLUMNS=1
-                        -DMAMBOX_NUM_LEVELS=1
-                        -DMAMBOX_NUM_SPECIES=35
-                        -DMAMBOX_NUM_BLACK_CARBON_TAGS=1
-                        -DMAMBOX_NUM_PRIMARY_ORGANIC_TAGS=1
-                        -DMAMBOX_NUM_SECONDARY_ORGANIC_TAGS=1
-                        -DMAMBOX_NUM_SECONDARY_ORGANIC_GAS_TAGS=1
-                        -DMAMBOX_RAIN_EVAP_TO_COARSE_AERO=1)
+  set(MAM4BOX_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                         -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+                         -DMAMBOX_PRECISION=${HAERO_PRECISION}
+                         -DMAMBOX_ENABLE_DRIVER=OFF
+                         -DMAMBOX_ENABLE_VALIDATION=OFF
+                         -DMAMBOX_NUM_COLUMNS=1
+                         -DMAMBOX_NUM_LEVELS=1
+                         -DMAMBOX_NUM_SPECIES=35
+                         -DMAMBOX_NUM_BLACK_CARBON_TAGS=1
+                         -DMAMBOX_NUM_PRIMARY_ORGANIC_TAGS=1
+                         -DMAMBOX_NUM_SECONDARY_ORGANIC_TAGS=1
+                         -DMAMBOX_NUM_SECONDARY_ORGANIC_GAS_TAGS=1
+                         -DMAMBOX_RAIN_EVAP_TO_COARSE_AERO=1)
   ExternalProject_Add(mam4box_proj
                       PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mam4box
                       SOURCE_DIR ${MAM4BOX_DIR}
                       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mam4box
                       INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${MAMBOX_CMAKE_OPTS}
+                      CMAKE_ARGS ${MAM4BOX_CMAKE_OPTS}
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND ${MAKE} -j
                       LOG_BUILD TRUE
@@ -330,17 +335,23 @@ if (HAERO_ENABLE_MAM4BOX)
                       LOG_INSTALL TRUE)
   add_library(mam_core STATIC IMPORTED GLOBAL)
   set_target_properties(mam_core PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libmam_core.a)
-  add_dependencies(mam_core mambox_proj skywalker_f90)
+  add_dependencies(mam_core mam4box_proj skywalker_f90)
 
-  # Here's the root of the directory tree where the MAM4 box model writes its
-  # Skywalker output. Append a process's subdirectory to get the path for
-  # baselines for that process (e.g. ${MAM4BOX_BASELINE_DIR}/nucleation).
-  set(MAM4BOX_BASELINE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mam4box/standalone/tests)
+  #----------------------------------------------
+  # Build the MAM4 box model's Skywalker drivers
+  #----------------------------------------------
 
-  # Add the cross-validation Skywalker drivers from the MAM4 box model.
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/mam4box/core)
+  # Make sure the drivers can access the relevant Fortran modules and libraries.
+  include_directories(${PROJECT_BINARY_DIR}/mam4box/core)
+  #include_directories(${CMAKE_CURRENT_BINARY_DIR})
   set(MAMBOX_LIBRARIES skywalker_f90;skywalker;mam_core)
-  add_subdirectory(${MAM4BOX_DIR}/standalone/tests ${MAM4BOX_BASELINE_DIR})
+
+  # Copy the box model's standalone tests into its own source directory.
+  file(COPY ${MAM4BOX_DIR}/standalone/tests/
+       DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/mam4box_drivers)
+
+  # Build the drivers.
+  add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mam4box_drivers)
 endif()
 
 # Formatting and format checking using clang-format.
