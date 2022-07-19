@@ -103,8 +103,6 @@ jobs:
     - name: Running tests (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
         cd build
-        cp /opt/haero/bin/test-launcher bin
-        chmod a+rx bin/test-launcher
         ctest -V
 
     - name: Installing haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
