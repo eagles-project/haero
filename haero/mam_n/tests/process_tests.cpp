@@ -1,15 +1,15 @@
+#include <Kokkos_Core.hpp>
+#include <catch2/catch.hpp>
 #include <cstdio>
+#include <ekat/ekat_pack.hpp>
+#include <ekat/ekat_pack_utils.hpp>
 
-#include "catch2/catch.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_utils.hpp"
 #include "haero/aerosol_process.hpp"
 #include "haero/atmosphere.hpp"
 #include "haero/diagnostics.hpp"
 #include "haero/floating_point.hpp"
 #include "haero/prognostics.hpp"
 #include "haero/view_pack_helpers.hpp"
-#include "kokkos/Kokkos_Core.hpp"
 
 using namespace haero;
 

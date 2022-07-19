@@ -44,19 +44,6 @@ PREFIX=$PWD/$1
 #EKAT_LIBRARY_DIR=/path/to/ekat/library
 #EKAT_LIBRARY=libekat.a
 
-#YAMLCPP_INCLUDE_DIR=/path/to/yaml-cpp/includes
-#YAMLCPP_LIBRARY_DIR=/path/to/yaml-cpp/library
-#YAMLCPP_LIBRARY=libyaml-cpp.a
-
-#HDF5_INCLUDE_DIR=/path/to/hdf5/include
-#HDF5_LIBRARY_DIR=/path/to/hdf5/library
-#HDF5_LIBRARY=libhdf5.a
-#HDF5_HL_LIBRARY=libhdf5_hl.a
-
-#NETCDF_INCLUDE_DIR=/path/to/netcdf-c/includes
-#NETCDF_LIBRARY_DIR=/path/to/netcdf-c/library
-#NETCDF_LIBRARY=libnetcdf.a
-
 #OPENBLAS_INCLUDE_DIR=/path/to/openblas/includes
 #OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
 #OPENBLAS_LIBRARY=libopenblas.a
@@ -79,7 +66,7 @@ PREFIX=$PWD/$1
 ENABLE_MPI=ON
 
 # The name of the program used to execute MPI programs. Some machines require
-# thіs invocation even for single-process runs.
+# this invocation even for single-process runs.
 MPI_EXEC=
 #MPI_EXEC=mpiexec
 
@@ -137,29 +124,6 @@ DEVICE_ARCH=AMDAVX          # AMD chip (CPU)
 #DEVICE_ARCH=INTEL_GEN       # Intel GPUs Gen9+ (GPU)
 
 #-----------------------------------------------------------------------------
-#                         Kokkos View Types
-#-----------------------------------------------------------------------------
-
-# Change these only if your host model needs to specify the Kokkos view types
-# used by Haero to store aerosol data. These Views are Kokkos types defined via
-# EKAT.  See ekat/src/ekat/kokkos/ekat_kokkos_types.hpp for additional details.
-# You may reference the following types in your type specifications:
-#
-# * DeviceType - the DefaultDevice used for ekat's Kokkos build
-# * PackType - ekat's SIMD-enabled Pack with Haero's floating point data type
-#
-# Remember to use quotes around these C++ types!
-
-# Column view type (maps vertical index k to a datum)
-HAERO_COLUMN_VIEW_TYPE="DeviceType::view_1d<PackType>"
-
-# Species column view type (maps species index s, vertical index k to a datum)
-HAERO_SPECIES_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
-
-# Mode column view type (maps mode index m, vertical index k to a datum)
-HAERO_MODE_COLUMN_VIEW_TYPE="DeviceType::view_2d<PackType>"
-
-#-----------------------------------------------------------------------------
 #                         Build features and parameters
 #-----------------------------------------------------------------------------
 
@@ -179,13 +143,6 @@ PACK_SIZE=1
 # * 'single' for single precision
 PRECISION=double
 
-# Set this to ON to enable Fortran aerosol processes. This is overridden if
-# PACK_SIZE > 1.
-ENABLE_FORTRAN=ON
-
-# Set this to ON to enable the standalone 1D haero atmosphere driver
-ENABLE_DRIVER=OFF
-
 # Set this to ON to enable building the chemistry solver and driver.
 ENABLE_CHEMISTRY=OFF
 
@@ -193,18 +150,22 @@ ENABLE_CHEMISTRY=OFF
 #VERBOSE=ON
 
 #-----------------------------------------------------------------------------
+#                          MAM4 box model testing setup
+#-----------------------------------------------------------------------------
+
+# Set this to ON to enable testing against MAM4 box model parameterizations.
+ENABLE_MAM4BOX=OFF
+
+# If Set this to a local directory containing a clone of the mam_refactor repo.
+#MAM4BOX_DIR=/path/to/mam_box_model_source
+
+#-----------------------------------------------------------------------------
 #                                   Compilers
 #-----------------------------------------------------------------------------
 
-if [ "\$ENABLE_MPI" = "ON" ]; then
-  CXX=mpic++
-  CC=mpicc
-  FC=mpif90
-else
-  CXX=c++
-  CC=cc
-  FC=gfortran
-fi
+CXX=c++
+CC=cc
+FC=gfortran
 
 # Override compilers here (ONLY if you know what you're doing!).
 
@@ -251,53 +212,6 @@ if [ "\$ENABLE_MPI" = "ON" ]; then
 fi
 if [ "\$VERBOSE" = "ON" ]; then
   OPTIONS="\$OPTIONS -DCMAKE_VERBOSE_MAKEFILE=ON"
-fi
-
-# Configure HDF5 if needed.
-if [ ! "\$HDF5_LIBRARY_DIR" = "" -o ! "\$HDF5_INCLUDE_DIR" = "" -o ! "\$HDF5_LIBRARY" = "" -o ! "\$HDF5_HL_LIBRARY" = "" ]; then
-  if [ "\$HDF5_LIBRARY" = "" ]; then
-    echo "Error: HDF5_LIBRARY must be specified for a custom HDF5 library."
-    exit 1
-  fi
-  if [ "\$HDF5_HL_LIBRARY" = "" ]; then
-    echo "Error: HDF5_HL_LIBRARY must be specified for a custom high-level HDF5 library."
-    exit 1
-  fi
-  if [ "\$HDF5_INCLUDE_DIR" = "" ]; then
-    echo "Error: HDF5_INCLUDE_DIR must be specified for a custom HDF5 library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DHDF5_LIBRARY=\$HDF5_LIBRARY_DIR/\$HDF5_LIBRARY"
-  OPTIONS="\$OPTIONS -DHDF5_HL_LIBRARY=\$HDF5_LIBRARY_DIR/\$HDF5_HL_LIBRARY"
-  OPTIONS="\$OPTIONS -DHDF5_INCLUDE_DIR=\$HDF5_INCLUDE_DIR"
-fi
-
-# Configure NetCDF if needed.
-if [ ! "\$NETCDF_LIBRARY_DIR" = "" -o ! "\$NETCDF_INCLUDE_DIR" = "" -o ! "\$NETCDF_LIBRARY" = "" ]; then
-  if [ "\$NETCDF_LIBRARY" = "" ]; then
-    echo "Error: NETCDF_LIBRARY must be specified for a custom NetCDF library."
-    exit 1
-  fi
-  if [ "\$NETCDF_INCLUDE_DIR" = "" ]; then
-    echo "Error: NETCDF_INCLUDE_DIR must be specified for a custom NetCDF library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DNETCDF_LIBRARY=\$NETCDF_LIBRARY_DIR/\$NETCDF_LIBRARY"
-  OPTIONS="\$OPTIONS -DNETCDF_INCLUDE_DIR=\$NETCDF_INCLUDE_DIR"
-fi
-
-# Configure yaml-cpp if needed.
-if [ ! "\$YAMLCPP_LIBRARY_DIR" = "" -o ! "\$YAMLCPP_INCLUDE_DIR" = "" -o ! "\$YAMLCPP_LIBRARY" = "" ]; then
-  if [ "\$YAMLCPP_LIBRARY" = "" ]; then
-    echo "Error: YAMLCPP_LIBRARY must be specified for a custom yaml-cpp library."
-    exit 1
-  fi
-  if [ "\$YAMLCPP_INCLUDE_DIR" = "" ]; then
-    echo "Error: YAMLCPP_INCLUDE_DIR must be specified for a custom yaml-cpp library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DYAMLCPP_LIBRARY=\$YAMLCPP_LIBRARY_DIR/\$YAMLCPP_LIBRARY"
-  OPTIONS="\$OPTIONS -DYAMLCPP_INCLUDE_DIR=\$YAMLCPP_INCLUDE_DIR"
 fi
 
 # Configure ekat if needed.
@@ -364,8 +278,9 @@ fi
 # Clear the build cache.
 rm -f CMakeCache.txt
 
-if [ "\$PACK_SIZE" = "1" -a "\$DEVICE" = "CPU" ]; then
-  OPTIONS="\$OPTIONS -DCMAKE_Fortran_COMPILER=\$FC"
+# Pass along MAM4 box model options if needed.
+if [ "\$ENABLE_MAM4BOX" = "ON" ]; then
+  OPTIONS="\$OPTIONS -DCMAKE_Fortran_COMPILER=\$FC -DMAM4BOX_DIR=\$MAM4BOX_DIR"
 fi
 
 # Configure the build.
@@ -374,17 +289,14 @@ cmake \
  -DCMAKE_BUILD_TYPE=\$BUILD_TYPE \
  -DCMAKE_C_COMPILER=\$CC \
  -DCMAKE_CXX_COMPILER=\$CXX \
- -DENABLE_FORTRAN=\$ENABLE_FORTRAN \
- -DENABLE_DRIVER=\$ENABLE_DRIVER \
- -DENABLE_CHEMISTRY=\$ENABLE_CHEMISTRY \
- -DENABLE_GPU=\$ENABLE_GPU \
- -DENABLE_MPI=\$ENABLE_MPI \
+ -DHAERO_ENABLE_CHEMISTRY=\$ENABLE_CHEMISTRY \
+ -DHAERO_ENABLE_GPU=\$ENABLE_GPU \
+ -DHAERO_ENABLE_MPI=\$ENABLE_MPI \
+ -DHAERO_ENABLE_MAM4BOX=\$ENABLE_MAM4BOX \
  -DHAERO_PRECISION=\$PRECISION \
- -DHAERO_DEVICE_ARCH=\$DEVICE_ARCH \
+ -DHAERO_DEVICE_ARCH:STRING=\$DEVICE_ARCH \
+ -DKokkos_ARCH_\$DEVICE_ARCH:BOOL=ON \
  -DHAERO_PACK_SIZE=\$PACK_SIZE \
- -DHAERO_COLUMN_VIEW_TYPE="\$HAERO_COLUMN_VIEW_TYPE" \
- -DHAERO_SPECIES_COLUMN_VIEW_TYPE="\$HAERO_SPECIES_COLUMN_VIEW_TYPE" \
- -DHAERO_MODE_COLUMN_VIEW_TYPE="\$HAERO_MODE_COLUMN_VIEW_TYPE" \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR

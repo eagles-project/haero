@@ -23,29 +23,45 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    # Pre-fab container with third-party libs installed.
-    container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
+#    # Pre-fab container with third-party libs installed.
+#    container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
 
     # Environment variables
     env:
       FC: gfortran
-      HDF5_LIBRARY_NAME: libhdf5.a
-      HDF5_HL_LIBRARY_NAME: libhdf5_hl.a
+      CI: 1   # indicates that we are running in a CI environment.
 
     # Steps for building and running tests.
     steps:
 
-    - name: Setting HDF5 library names (Debug)
-      if: contains(matrix.build-type, 'Debug')
+    - name: Installing dependencies
       run: |
-        echo "HDF5_LIBRARY_NAME=libhdf5_debug.a" >> $GITHUB_ENV
-        echo "HDF5_HL_LIBRARY_NAME=libhdf5_hl_debug.a" >> $GITHUB_ENV
+        sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+        autoconf \
+        clang-format \
+        cmake \
+        libopenmpi-dev \
+        gcc \
+        g++ \
+        gfortran \
+        git \
+        make \
+        pkg-config \
+        ca-certificates
 
     - name: Checking out repository
       uses: actions/checkout@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         submodules: recursive
+
+#    - name: Checking out MAM4 box model (no submodules)
+#      uses: actions/checkout@v2
+#      with:
+#        repository: git@github.com:eagles-project/mam_refactor.git
+#        path: mam4-box
+#        token: ${{ secrets.MAM4BOX_TOKEN }}
+#        submodules: false
 
     - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision, pack size=${{ matrix.pack-size }})
       run: |
@@ -54,40 +70,30 @@ jobs:
         cmake \
           -DCMAKE_INSTALL_PREFIX=`pwd`/build \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
-          -DCMAKE_CXX_COMPILER=mpicxx \
-          -DCMAKE_C_COMPILER=mpicc \
-          -DCMAKE_Fortran_COMPILER=mpif90 \
-          -DENABLE_BOX=ON \
-          -DENABLE_CHEMISTRY=ON \
-          -DENABLE_GPU=OFF \
+          -DCMAKE_CXX_COMPILER=c++ \
+          -DCMAKE_C_COMPILER=cc \
+          -DCMAKE_Fortran_COMPILER=gfortran \
+          -DHAERO_ENABLE_CHEMISTRY=OFF \
+          -DHAERO_ENABLE_GPU=OFF \
+          -DHAERO_ENABLE_OPENMP=ON \
+          -DHAERO_ENABLE_MAM4BOX=OFF \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
-          -DEKAT_LIBRARY=/opt/haero/lib/libekat.a \
-          -DEKAT_INCLUDE_DIR=/opt/haero/include \
-          -DYAMLCPP_LIBRARY=/opt/haero/lib/libyaml-cpp.a \
-          -DYAMLCPP_INCLUDE_DIR=/opt/haero/include \
-          -DHDF5_LIBRARY=/opt/haero/lib/${HDF5_LIBRARY_NAME} \
-          -DHDF5_HL_LIBRARY=/opt/haero/lib/${HDF5_HL_LIBRARY_NAME} \
-          -DHDF5_INCLUDE_DIR=/opt/haero/include \
-          -DNETCDF_LIBRARY=/opt/haero/lib/libnetcdf.a \
-          -DNETCDF_INCLUDE_DIR=/opt/haero/include \
-          -DOPENBLAS_LIBRARY=/opt/haero/lib/libopenblas.a \
-          -DOPENBLAS_INCLUDE_DIR=/opt/haero/include \
-          -DTINES_LIBRARY=/opt/haero/lib/libtines.a \
-          -DTINES_INCLUDE_DIR=/opt/haero/include \
-          -DTCHEM_LIBRARY=/opt/haero/lib/libtchem.a \
-          -DTCHEM_INCLUDE_DIR=/opt/haero/include \
-          -DSKYWALKER_LIBRARY=/opt/haero/lib/libskywalker_${{ matrix.fp-precision }}.a \
-          -DSKYWALKER_F90_LIBRARY=/opt/haero/lib/libskywalker_f90_${{ matrix.fp-precision }}.a \
-          -DSKYWALKER_INCLUDE_DIR=/opt/haero/include \
           -G "Unix Makefiles" \
           ..
+#          -DOPENBLAS_LIBRARY=/opt/haero/lib/libopenblas.a \
+#          -DOPENBLAS_INCLUDE_DIR=/opt/haero/include \
+#          -DTINES_LIBRARY=/opt/haero/lib/libtines.a \
+#          -DTINES_INCLUDE_DIR=/opt/haero/include \
+#          -DTCHEM_LIBRARY=/opt/haero/lib/libtchem.a \
+#          -DTCHEM_INCLUDE_DIR=/opt/haero/include \
 
-    - name: Checking code formatting...
-      run: |
-        cd build
-        make format-check
+# TODO: clang-format seems unstable under different versions. Not helpful!
+#    - name: Checking code formatting...
+#      run: |
+#        cd build
+#        make format-cxx-check
 
     - name: Building haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
@@ -97,8 +103,6 @@ jobs:
     - name: Running tests (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
         cd build
-        cp /opt/haero/bin/test-launcher bin
-        chmod a+rx bin/test-launcher
         ctest -V
 
     - name: Installing haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)

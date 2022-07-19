@@ -1,4 +1,3 @@
-# Minimum CMake version -- currently determined by HDF5.
 cmake_minimum_required (VERSION 3.12.0)
 
 # Adjust CMake's module path.
@@ -8,12 +7,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 #---------
 # Options
 #---------
-option(ENABLE_BOX       "Enable box model"                 ON)
-option(ENABLE_CHEMISTRY "Enable TChem chemistry solver"    OFF)
-option(ENABLE_DRIVER    "Enable 1D atmospheric driver"     OFF)
-option(ENABLE_FORTRAN   "Enable Fortran aerosol processes" ON)
-option(ENABLE_GPU       "Enable GPU support"               OFF)
-option(ENABLE_MPI       "Enable MPI parallelism"           ON)
+option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"              OFF)
+option(HAERO_ENABLE_GPU       "Enable GPU support"                         OFF)
+option(HAERO_ENABLE_MPI       "Enable MPI parallelism"                     ON)
+option(HAERO_ENABLE_OPENMP    "Enable OpenMP threading (CPU only)"         OFF)
+option(HAERO_ENABLE_MAM4BOX   "Enable MAM4 box model and related testing"  OFF)
 
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.
@@ -29,35 +27,15 @@ elseif(HAERO_PACK_SIZE LESS 1)
   message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
 endif()
 message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
-if(HAERO_PACK_SIZE GREATER 1)
-  if (ENABLE_FORTRAN)
-    message(WARNING "Disabling Fortran")
-    set(ENABLE_FORTRAN OFF)
-  endif()
-  if (ENABLE_BOX)
-    message(WARNING "Disabling box model")
-    set(ENABLE_BOX OFF)
-  endif()
-endif()
 
 # Configure the requested device (CPU or GPU).
 if (NOT HAERO_DEVICE_ARCH)
   message(FATAL_ERROR "HAERO_DEVICE_ARCH was not provided!")
 endif()
 
-if(ENABLE_GPU)
+if(HAERO_ENABLE_GPU)
   message(STATUS "Building for GPU (${HAERO_DEVICE_ARCH})")
-  if (ENABLE_FORTRAN)
-    message(WARNING "Disabling Fortran")
-    set(ENABLE_FORTRAN OFF)
-  endif()
 else() #CPU
-  # If we're C++ only and not using a Mac, use OpenMP.
-  if (NOT APPLE AND NOT ENABLE_FORTRAN)
-    set(USE_OPENMP ON)
-  else()
-    set(USE_OPENMP OFF)
-  endif()
   message(STATUS "Building for CPU (${HAERO_DEVICE_ARCH})")
 endif()
 
@@ -74,16 +52,6 @@ endif()
 
 enable_language(CXX)
 enable_language(Fortran)
-
-if (ENABLE_FORTRAN)
-  message(STATUS "Enabling Fortran aerosol processes.")
-  set(HAERO_FORTRAN 1)
-else()
-  set(HAERO_FORTRAN 0)
-  message(STATUS "================================================================")
-  message(STATUS "  DISABLING FORTRAN PROCESSES: (GPU arch and/or pack size > 1)")
-  message(STATUS "================================================================")
-endif()
 
 project (haero)
 
@@ -190,24 +158,22 @@ elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
 endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SYS_FLAGS}")
 
-if (ENABLE_FORTRAN)
-  # Fortran compiler flags
-  set(CMAKE_Fortran_FLAGS "-cpp -Dc_real=c_${HAERO_REAL_TYPE}")
-  if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")
-    endif()
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -ffree-form -ffree-line-length-none")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-unused-dummy-argument")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Werror=tabs")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-maybe-uninitialized")
-    if (APPLE)
-      # Mac-specific stuff goes here.
-    endif()
-  elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
-    endif()
+# Fortran compiler flags
+set(CMAKE_Fortran_FLAGS "-cpp")
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fbacktrace")
+  endif()
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -ffree-form -ffree-line-length-none")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-unused-dummy-argument")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Werror=tabs")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wno-maybe-uninitialized")
+  if (APPLE)
+    # Mac-specific stuff goes here.
+  endif()
+elseif (CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
   endif()
 endif()
 
@@ -224,12 +190,16 @@ if (HAERO_EXTRA_LDFLAGS)
 endif()
 
 # Figure out MPI.
-if (ENABLE_MPI)
+if (HAERO_ENABLE_MPI)
   message(STATUS "MPI is enabled")
 
-  # NOTE: Disable C++ bindings for MPI, since they have never worked for anyone.
-  set(NO_MPI_CXX_FLAGS "-DMPICH_SKIP_MPICXX -UHAVE_MPI_CPP -DLAM_WANT_MPI2CPP=0 -DLAM_BUILDING=1 -DOMPI_WANT_CXX_BINDINGS=0 -DOMPI_BUILDING=1")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NO_MPI_CXX_FLAGS}")
+  find_package(MPI REQUIRED COMPONENTS C)
+  include(EkatMpiUtils)
+  DisableMpiCxxBindings()
+
+  include_directories(${MPI_C_INCLUDE_DIRS})
+  set(HAERO_LIBRARIES ${MPI_C_LIBRARIES};${HAERO_LIBRARIES})
+
   if (HAERO_MPI_EXEC)
     message(STATUS "MPI exec: ${HAERO_MPI_EXEC}")
     if (NOT HAERO_MPI_NP_FLAG)
@@ -245,7 +215,7 @@ else()
 endif()
 
 # OpenMP support?
-if (USE_OPENMP)
+if (HAERO_ENABLE_OPENMP)
   find_package(OpenMP QUIET)
   if (OPENMP_FOUND)
     message(STATUS "OpenMP is enabled")
@@ -266,26 +236,30 @@ endif()
 add_subdirectory(ext)
 
 # If we're building on a GPU, set the C++ compiler appropriately.
-if (ENABLE_GPU)
-  set(CMAKE_CXX_COMPILER "${EKAT_LIBRARY_DIR}/../bin/nvcc_wrapper")
+if (HAERO_ENABLE_GPU)
+  set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
   # Avoid buggy experimental Kokkos CUDA stuff.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_")
-
+else()
+  # Make sure we're building with OpenMP where appropriate.
+  if (NOT APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  endif()
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
-# our box model needs. We use this for efficiently linking unit tests.
+# we need. We use this for efficiently linking unit tests.
 set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 
 # Include the binary directory in the header file search path,
 # since it's where we place the third-party libraries.
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_BINARY_DIR}/include")
+include_directories(${HAERO_INCLUDE_DIRS})
 
 include(GNUInstallDirs)
 link_directories("${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
-include_directories(${HAERO_INCDIRS})
 
 # Support for valgrind -- Linux only.
 if (LINUX)
@@ -309,7 +283,7 @@ else()
   set(VALGRIND_FOUND 0)
 endif()
 
-# Unit testing.
+# Testing
 include(CTest)
 enable_testing()
 
@@ -317,44 +291,78 @@ enable_testing()
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
-if (ENABLE_DRIVER)
-  message(STATUS "Building standalone haero_driver.")
-  add_subdirectory(driver)
-endif()
-
-if (ENABLE_CHEMISTRY)
+if (HAERO_ENABLE_CHEMISTRY)
   message(STATUS "Building chem_driver.")
   include_directories("${TINES_INCLUDE_DIR}/tines")
   add_subdirectory(chem_driver)
 endif()
 
-# Box model for acceptance testing (Fortran configs only)
-if (ENABLE_BOX)
-  message(STATUS "Building box model.")
-  add_subdirectory(box)
-endif()
+# MAM4 box model (for testing ported parameterizations)
+if (HAERO_ENABLE_MAM4BOX)
+  message(STATUS "Enabling cross validation with MAM4 box model.")
+  if (NOT MAM4BOX_DIR)
+    message(FATAL_ERROR "MAM4 box model cross validation requested, but MAM4BOX_DIR is not set!")
+  elseif(NOT EXISTS ${MAM4BOX_DIR})
+    message(FATAL_ERROR "Invalid MAM4BOX_DIR: ${MAM4BOX_DIR}")
+  endif()
+  # Build the MAM4 box model's core library.
+  set(MAM4BOX_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
+                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                         -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
+                         -DMAMBOX_PRECISION=${HAERO_PRECISION}
+                         -DMAMBOX_ENABLE_DRIVER=OFF
+                         -DMAMBOX_ENABLE_VALIDATION=OFF
+                         -DMAMBOX_NUM_COLUMNS=1
+                         -DMAMBOX_NUM_LEVELS=1
+                         -DMAMBOX_NUM_SPECIES=35
+                         -DMAMBOX_NUM_BLACK_CARBON_TAGS=1
+                         -DMAMBOX_NUM_PRIMARY_ORGANIC_TAGS=1
+                         -DMAMBOX_NUM_SECONDARY_ORGANIC_TAGS=1
+                         -DMAMBOX_NUM_SECONDARY_ORGANIC_GAS_TAGS=1
+                         -DMAMBOX_RAIN_EVAP_TO_COARSE_AERO=1)
+  ExternalProject_Add(mam4box_proj
+                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/mam4box
+                      SOURCE_DIR ${MAM4BOX_DIR}
+                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mam4box
+                      INSTALL_DIR ${PROJECT_BINARY_DIR}
+                      CMAKE_ARGS ${MAM4BOX_CMAKE_OPTS}
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND ${MAKE} -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND ${MAKE} install
+                      LOG_INSTALL TRUE)
+  add_library(mam_core STATIC IMPORTED GLOBAL)
+  set_target_properties(mam_core PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libmam_core.a)
+  add_dependencies(mam_core mam4box_proj skywalker_f90)
 
-# Validation tools (currently offered only for CPU builds with pack size 1,
-# because we're using it with Fortran.)
-if(NOT HAERO_USE_CUDA AND HAERO_PACK_SIZE EQUAL 1)
-  # Aerosol cross-validation materials
-  message(STATUS "Building validation programs...")
-  add_subdirectory(validation)
+  #----------------------------------------------
+  # Build the MAM4 box model's Skywalker drivers
+  #----------------------------------------------
+
+  # Make sure the drivers can access the relevant Fortran modules and libraries.
+  include_directories(${PROJECT_BINARY_DIR}/mam4box/core)
+  #include_directories(${CMAKE_CURRENT_BINARY_DIR})
+  set(MAMBOX_LIBRARIES skywalker_f90;skywalker;mam_core)
+
+  # Copy the box model's standalone tests into its own source directory.
+  file(COPY ${MAM4BOX_DIR}/standalone/tests/
+       DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/mam4box_drivers)
+
+  # Build the drivers.
+  add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mam4box_drivers)
 endif()
 
 # Formatting and format checking using clang-format.
 find_program(CLANG_FORMAT clang-format)
 if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
-  add_custom_target(format
+  add_custom_target(format-cxx
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
     VERBATIM
     COMMENT "Auto-formatting C++ code...")
-  add_custom_target(format-check
+  add_custom_target(format-cxx-check
     find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/driver -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
-    COMMAND find ${PROJECT_SOURCE_DIR}/validation -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
     VERBATIM
     COMMENT "Checking C++ formatting...")
 endif()

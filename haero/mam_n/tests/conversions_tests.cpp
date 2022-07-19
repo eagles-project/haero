@@ -56,7 +56,7 @@ TEST_CASE("conversions::water_vapor_functions") {
   ekat::Comm comm;
 
   ekat::logger::Logger<> logger("water_vapor_tests",
-                                ekat::logger::Log::level::debug, comm);
+                                ekat::logger::LogLevel::debug, comm);
 
   const Real tol = (std::is_same<Real, double>::value ? 1e-9 : 1e-5);
 

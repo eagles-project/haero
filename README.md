@@ -1,22 +1,18 @@
 ![auto_test](https://github.com/jeff-cohere/haero/actions/workflows/auto_test.yml/badge.svg)
 ![push_mirror](https://github.com/jeff-cohere/haero/actions/workflows/push_mirror.yml/badge.svg)
 
-# Haero: A High-Performance Modal Aerosol Model
+# Haero: A High-Performance Aerosol Library
 
-Haero is a library that can be used to solve the modal aerosol equations in
-order to analyze how aerosols form, grow, and interact with water vapor and
-other elements in the Earth's atmosphere. Rather than providing a model to be
-coupled in a specific way with other models, it provides a low-level application
-programming interface (API) that allows you to construct your own coupling and
-time-integrated methods.
+Haero is a library that contains parameterizations that describe the dynamics of
+aerosols in the atmosphere. Rather than providing an aerosol package to be
+coupled in a specific way with a host models, it provides direct access to
+individual aerosol parameterizations tied to specific governing equations. This
+low-level approach allows an atmospheric "host model" to use its own coupling
+and time integration logic with these parameterizations.
 
-The short-term goal of Haero is to provide an aerosol model for
-[E3SM](https://github.com/E3SM-Project)'s state-of-the-science cloud-resolving
+The short-term goal of Haero is to provide the capabilities of the MAM4 package
+to [E3SM](https://github.com/E3SM-Project)'s state-of-the-science cloud-resolving
 atmospheric model, [SCREAM](https://github.com/E3SM-Project/scream).
-
-In addition to the Haero API, this repo also contains a standalone @ref driver
-that can be used to easily set up and run simple column physics simulations. The
-source for this driver lives in the `driver/` directory.
 
 ## Supported Platforms
 
@@ -54,29 +50,26 @@ brew install cmake gfortran openmpi
 
 To configure Haero:
 
-1. Create a build directory by running the `setup` script from the top-level
+1. Make sure you have the latest versions of all the required submodules:
+   ```
+   git submodule update --init --recursive
+   ```
+2. Create a build directory by running the `setup` script from the top-level
    source directory:
    ```
    ./setup build
    ```
-2. Change to your build directory and edit the `config.sh` file to select
+3. Change to your build directory and edit the `config.sh` file to select
    configuration options. Then run `./config.sh` to configure the model.
-3. From the build directory, type `make -j` to build the library. (If you've
+4. From the build directory, type `make -j` to build the library. (If you've
    configured your build for a GPU, place a number after the `-j` flag, as in
    `make -j 8`).
-4. To run tests for the library (and the driver, if configured), type
+5. To run tests for the library (and the driver, if configured), type
    `make test`.
-5. To install the model to the location indicated by `PREFIX` in your
+6. To install the model to the location indicated by `PREFIX` in your
    `config.sh` script, type `make install`. By default, products are installed
    in `include`, `lib`, `bin`, and `share` ѕubdirectories within your build
    directory.
-
-### Model subcomponents
-
-The Haero library includes its basic library and interfaces as well as a standalone
-driver for testing purposes.  These two components are separated into different
-namespaces, @ref haero and @ref driver.
-
 
 ### Making code changes and rebuilding
 
@@ -116,14 +109,9 @@ documentation, you must download `mkdocs` and its Material theme:
 Then, run `mkdocs serve` from the root directory of your Haero repo,
 and point your browser to [`http://localhost:8000`](http://localhost:8000).
 
-Haero's documentation includes:
-
-* an extensive design document.
-This document describes the aerosol modeling methodology used by Haero,
-as well as the library itself, and its various representations of aerosol processes.
-
-* documentation for Haero's C++/Fortran API, found at
-[`Library/Fortran aerosol processes`](http://localhost:8000/library/#fortran-aerosol-processes).
+At this time, Haero's documentation includes an extensive design document
+describing the design approach used by Haero, including high-level descriptions
+of its aerosol parameterizations.
 
 # FAQ
 
@@ -142,12 +130,6 @@ as well as the library itself, and its various representations of aerosol proces
   structure of the `config.sh` script, so you must rerun `setup <build_dir>`
   to regenerate your `config.sh` script. Once you've regenerated this script,
   you can reconfigure and build as usual.
-
-## Programming for CPUs and GPUs with Kokkos
-
-"Performance-portable" programming is a rich topic, fraught with complexity,
-and deserves its [own special FAQ](https://github.com/jeff-cohere/haero/wiki/Cxx---Kokkos-Programming-FAQ)
-on our [Wiki](https://github.com/jeff-cohere/haero/wiki).
 
 ## Testing
 

@@ -1,9 +1,9 @@
+#include <Kokkos_Core.hpp>
+#include <catch2/catch.hpp>
 #include <cstdio>
+#include <ekat/kokkos/ekat_kokkos_utils.hpp>
 
-#include "catch2/catch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "haero/view_pack_helpers.hpp"
-#include "kokkos/Kokkos_Core.hpp"
 
 using namespace haero;
 

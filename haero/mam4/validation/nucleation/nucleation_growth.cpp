@@ -1,5 +1,6 @@
 #include <haero/constants.hpp>
-#include <haero/processes/kerminen2002.hpp>
+#include <haero/mam4/kerminen2002.hpp>
+
 #include <iostream>
 #include <skywalker.hpp>
 #include <validation.hpp>
@@ -15,6 +16,7 @@ void usage(const std::string& prog_name) {
 
 using namespace skywalker;
 using namespace haero;
+using namespace haero::mam4;
 
 int main(int argc, char** argv) {
   if (argc == 1) {

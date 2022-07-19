@@ -1,13 +1,13 @@
 #ifndef HAERO_DIAGNOSTICS_HPP
 #define HAERO_DIAGNOSTICS_HPP
 
+#include <Kokkos_Core.hpp>
 #include <map>
 #include <vector>
 
 #include "haero/haero.hpp"
 #include "haero/modal_aerosol_config.hpp"
 #include "haero/view_pack_helpers.hpp"
-#include "kokkos/Kokkos_Core.hpp"
 
 namespace haero {
 

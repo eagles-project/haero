@@ -15,7 +15,7 @@
 #include "haero/math.hpp"
 
 #define private \
- public  // unit tests need to access HostDynamics private variables
+  public  // unit tests need to access HostDynamics private variables
 #include "driver/host_dynamics.hpp"
 #undef private  // back to normal
 

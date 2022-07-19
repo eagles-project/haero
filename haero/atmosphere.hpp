@@ -9,6 +9,10 @@ namespace haero {
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
  public:
+  /// Default constructor.
+  /// CAUTION: only useful for creating placeholders in views!
+  Atmosphere() = default;
+
   /// Creates an Atmosphere that stores a column of data with the given number
   /// of vertical levels and the given planetary boundary height.
   /// @param [in] num_levels the number of vertical levels per column stored by
@@ -38,10 +42,10 @@ class Atmosphere final {
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              Real pblh);
 
-  /// Default constructor and copy constructor is needed to define Views
-  /// of Atmosphere classes and then copy data into the views.
-  Atmosphere() = default;
+  // Copy construction and assignment are supported for moving data between
+  // host and device, and for populating multi-column views.
   Atmosphere(const Atmosphere &) = default;
+  Atmosphere& operator=(const Atmosphere&) = default;
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -65,6 +69,23 @@ class Atmosphere final {
   KOKKOS_INLINE_FUNCTION
   void set_planetary_boundary_height(Real pblh) {
     planetary_boundary_height = pblh;
+  }
+
+  /// Returns true iff all atmospheric quantities are nonnegative, using the
+  /// given thread team to parallelize the check.
+  KOKKOS_INLINE_FUNCTION
+  bool quantities_nonnegative(const TeamType& team) const {
+    const int nk = PackInfo::num_packs(num_levels());
+    int violations = 0;
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),
+      KOKKOS_LAMBDA(int k, int& violation) {
+        if ((temperature(k) < 0).any() ||
+            (pressure(k) < 0).any() ||
+            (vapor_mixing_ratio(k) < 0).any()) {
+          violation = 1;
+        }
+      }, violations);
+    return (violations == 0);
   }
 
  private:
