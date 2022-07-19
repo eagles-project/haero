@@ -317,17 +317,6 @@ endif()
 if (${NETCDF_LIBRARY_DIR} MATCHES ${PROJECT_BINARY_DIR}) # we built NetCDF-C
   install(FILES ${NETCDF_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
-if (HAERO_BUILDS_EKAT)
-  install(FILES       ${EKAT_LIBRARY}
-                      ${EKAT_LIBRARY_DIR}/libekat_test_main.a
-                      ${EKAT_LIBRARY_DIR}/libekat_test_session.a
-                      ${EKAT_LIBRARY_DIR}/libspdlog.a
-                      ${EKAT_LIBRARY_DIR}/libkokkoscore.a
-                      ${EKAT_LIBRARY_DIR}/libkokkoscontainers.a
-          DESTINATION lib)
-  install(FILES       ${PROJECT_BINARY_DIR}/bin/test-launcher
-          DESTINATION bin)
-endif()
 
 if (HAERO_ENABLE_CHEMISTRY)
   if (NOT HAERO_ENABLE_GPU AND OPENBLAS_LIBRARY_DIR)
