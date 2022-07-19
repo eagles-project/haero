@@ -607,9 +607,6 @@ class NucleationImpl {
   static constexpr Real rgas     = Constants::r_gas;
 
   // min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3
-  // NOTE: These are "inline" because static class member definitions are
-  // NOTE: broken in C++14. We can remove the inline keyword when we move to
-  // NOTE: C++17.
   static constexpr Real qh2so4_cutoff = 4.0e-16;
   static constexpr Real ln_nuc_rate_cutoff = -13.82;
 
