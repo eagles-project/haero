@@ -20,6 +20,7 @@ if (HAERO_BUILDS_EKAT)
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/pkg_build)
   include(EkatBuildEkat)
+  set(EKAT_ENABLE_TESTS OFF CACHE BOOL "Disable EKAT tests")
   set(Kokkos_ENABLE_LIBDL OFF CACHE BOOL "Disable broken Kokkos libdl support")
   if (CMAKE_BUILD_TYPE STREQUAL Release)
     set(Kokkos_ENABLE_DEBUG FALSE)
