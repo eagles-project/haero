@@ -34,6 +34,21 @@ jobs:
     # Steps for building and running tests.
     steps:
 
+    - name: Installing dependencies
+      run: |
+        apt-get update && apt-get install -y --no-install-recommends \
+        autoconf \
+        clang-format \
+        cmake \
+        libopenmpi-dev \
+        gcc \
+        g++ \
+        gfortran \
+        git \
+        make \
+        pkg-config \
+        ca-certificates
+
     - name: Checking out repository
       uses: actions/checkout@v2
       with:
