@@ -65,9 +65,6 @@ jobs:
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
-          -DSKYWALKER_LIBRARY=/opt/haero/lib/libskywalker_${{ matrix.fp-precision }}.a \
-          -DSKYWALKER_F90_LIBRARY=/opt/haero/lib/libskywalker_f90_${{ matrix.fp-precision }}.a \
-          -DSKYWALKER_INCLUDE_DIR=/opt/haero/include \
           -G "Unix Makefiles" \
           ..
 #          -DOPENBLAS_LIBRARY=/opt/haero/lib/libopenblas.a \
