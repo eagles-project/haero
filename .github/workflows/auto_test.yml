@@ -55,14 +55,13 @@ jobs:
         cmake \
           -DCMAKE_INSTALL_PREFIX=`pwd`/build \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
-          -DCMAKE_CXX_COMPILER=mpicxx \
-          -DCMAKE_C_COMPILER=mpicc \
-          -DCMAKE_Fortran_COMPILER=mpif90 \
+          -DCMAKE_CXX_COMPILER=c++ \
+          -DCMAKE_C_COMPILER=cc \
+          -DCMAKE_Fortran_COMPILER=gfortran \
           -DHAERO_ENABLE_CHEMISTRY=OFF \
           -DHAERO_ENABLE_GPU=OFF \
           -DHAERO_ENABLE_OPENMP=ON \
           -DHAERO_ENABLE_MAM4BOX=OFF \
-          -DMAM4BOX_DIR=${GITHUB_WORKSPACE}/mam4-box \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
