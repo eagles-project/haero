@@ -610,8 +610,8 @@ class NucleationImpl {
   // NOTE: These are "inline" because static class member definitions are
   // NOTE: broken in C++14. We can remove the inline keyword when we move to
   // NOTE: C++17.
-  static inline constexpr Real qh2so4_cutoff = 4.0e-16;
-  static inline constexpr Real ln_nuc_rate_cutoff = -13.82;
+  static constexpr Real qh2so4_cutoff = 4.0e-16;
+  static constexpr Real ln_nuc_rate_cutoff = -13.82;
 
   // "Host parameters
   Real dens_so4a_host, mw_nh4a_host, mw_so4a_host;

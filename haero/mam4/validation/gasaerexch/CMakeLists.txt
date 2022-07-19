@@ -1,20 +1,22 @@
-set(VALIDATION_DIR ${MAM_X_VALIDATION_DIR}/gasaerexch)
+set(EXCH_VALIDATION_DIR ${MAM_X_VALIDATION_DIR}/gasaerexch)
+set(EXCH_BASELINE_DIR ${MAM4BOX_BASELINE_DIR}/gasaerexch)
 
 # Include directory for .mod files.
 include_directories(${PROJECT_BINARY_DIR}/haero)
 include_directories(${PROJECT_BINARY_DIR}/validation)
 
-
 # These skywalker drivers compute gasaerexch update rates.
-add_executable(exe_skywalker_gasaerexch_uptkrates_1box1gas  skywalker_gasaerexch_uptkrates_1box1gas.F90)
-target_link_libraries(exe_skywalker_gasaerexch_uptkrates_1box1gas skywalker_f90;skywalker;validation_f90;${HAERO_LIBRARIES})
+add_executable(gasaerexch_driver  gasaerexch_driver.cpp gasaerexch_uptkrates_1box1gas.cpp)
+target_link_libraries(gasaerexch_driver skywalker;validation;${HAERO_LIBRARIES})
 
-# Run the drivers in several configurations to produce datasets.
+configure_file(${PROJECT_SOURCE_DIR}/haero/mam4/validation/mam_x_validation/gasaerexch/skywalker_gasaerexch_uptkrates_1box1gas.py
+    haero_skywalker_gasaerexch_uptkrates_1box1gas.py.ref COPYONLY)
 
-# gasaerexch rate
-foreach (input skywalker_gasaerexch_1subarea_1gas_nonvolatile
-               skywalker_gasaerexch_uptkrates_1box1gas
-               skywalker_gasaerexch_uptkrates_1box1gas_plot
-               skywalker_gasaerexch_veh02_fig08)
-  add_test(gen_${input} exe_skywalker_gasaerexch_uptkrates_1box1gas ${VALIDATION_DIR}/${input}.yaml)
-endforeach()
+add_test(gasaerexch_uptkrates_1box1gas  gasaerexch_driver ${EXCH_VALIDATION_DIR}/skywalker_gasaerexch_uptkrates_1box1gas.yaml)
+
+add_test(NAME gasaerexch_compare_output
+    COMMAND ${CMAKE_COMMAND} -E compare_files haero_skywalker_gasaerexch_uptkrates_1box1gas.py haero_skywalker_gasaerexch_uptkrates_1box1gas.py.ref
+)
+
+set_tests_properties(gasaerexch_compare_output  PROPERTIES DEPENDS gasaerexch_driver)
+
