@@ -60,8 +60,8 @@ project (haero)
 include(set_up_platform)
 set_up_platform()
 
-# We use C++14 these days.
-set(CMAKE_CXX_STANDARD 14)
+# We use C++17 these days.
+set(CMAKE_CXX_STANDARD 17)
 
 message(STATUS "Generating project files in build directory: ${PROJECT_BINARY_DIR}")
 message(STATUS "C++ compiler is ${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
