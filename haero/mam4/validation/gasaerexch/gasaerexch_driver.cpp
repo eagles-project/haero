@@ -27,12 +27,12 @@ int main(int argc, char** argv) {
   std::unique_ptr<Ensemble> ensemble(load_ensemble(input_file, "settings"));
 
   Settings settings = ensemble->settings();
-  if (!settings.has("name")) {
+  if (!settings.has("function")) {
     std::cerr << "Required to have 'name' for config file but not found "
               << std::endl;
     exit(1);
   }
-  const std::string name = settings.get("name");
+  const std::string name = settings.get("function");
   if ((name != "gas_aer_uptkrates_1box1gas")) {
     std::cerr << "Invalid name: " << name << std::endl;
     std::cerr << "Currently the only valid name is: gas_aer_uptkrates_1box1gas"
