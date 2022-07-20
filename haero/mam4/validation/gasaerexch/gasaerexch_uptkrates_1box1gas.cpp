@@ -29,27 +29,31 @@ void test_gasaerexch_uptkrates_1box1gas_process(
               << "aernum" << std::endl;
     exit(0);
   }
+  const bool has_mw_gas = input.has("mw_gas");
+  const bool has_pmid = input.has("pmid");
+  const bool has_beta = input.has("beta");
+  const bool has_nghq = input.has("nghq");
+  const bool has_vol_molar_gas = input.has("vol_molar_gas");
+  const bool has_condense_to_mode = input.has_array("condense_to_mode");
   const bool has_solution = input.has_array("uptkaer");
 
   //-------------------------------------------------------
   // Process input, do calculations, and prepare output
   //-------------------------------------------------------
   const int n_mode = 4;
-  const int nghq = 2;
+  int nghq = 2;
   const Real accom = 0.65000000000000002;
-  const Real beta_inp = 0.0000000000000000;
+  Real beta_inp = 1.5000000000000000;
   const Real pi = 3.1415926535897931;
   const Real r_universal = 8314.4675910000005;
-  const Real mw_gas = 98.078400000000002;
+  Real mw_gas = 98.078400000000002;
   const Real mw_air = 28.966000000000001;
-  const Real pmid = 100000.00000000000;
+  Real pmid = 100000.00000000000;
   const Real pstd = 101325.00000000000;
-  const Real vol_molar_gas = 42.880000000000003;
+  Real vol_molar_gas = 42.880000000000003;
   const Real vol_molar_air = 20.100000000000001;
 
-  const Kokkos::Array<bool, n_mode> l_condense_to_mode = {true, true, true,
-                                                          true};
-
+  Kokkos::Array<bool, n_mode> l_condense_to_mode = {true, true, true, true};
   // Parse input
   Kokkos::Array<PackType, n_mode> dgncur_awet;
   Kokkos::Array<Real, n_mode> lnsg;
@@ -64,6 +68,16 @@ void test_gasaerexch_uptkrates_1box1gas_process(
   }
   const std::vector<Real> aernum = input.get_array("aernum");
   const Real temp = input.get("temp");
+  if (has_mw_gas) mw_gas = input.get("mw_gas");
+  if (has_pmid) pmid = input.get("pmid");
+  if (has_beta) beta_inp = input.get("beta");
+  if (has_nghq) nghq = static_cast<int>(input.get("nghq"));
+  if (has_vol_molar_gas) vol_molar_gas = input.get("vol_molar_gas");
+  if (has_condense_to_mode) {
+    const std::vector<Real> values = input.get_array("condense_to_mode");
+    for (int i = 0; i < n_mode; ++i)
+      l_condense_to_mode[i] = (values[i] <= 0) ? false : true;
+  }
   std::vector<Real> test_uptkaer;
   if (has_solution) {
     test_uptkaer = input.get_array("uptkaer");
