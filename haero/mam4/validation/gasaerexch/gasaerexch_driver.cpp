@@ -20,7 +20,8 @@ int main(int argc, char** argv) {
   }
   Kokkos::initialize(argc, argv);
   std::string input_file = argv[1];
-  std::string output_file = validation::output_name(input_file);
+  std::string output_file =
+      validation::output_name(input_file).replace(0, 6, "");
   std::cout << argv[0] << ": reading " << input_file << std::endl;
 
   // Load the ensemble. Any error encountered is fatal.
@@ -28,7 +29,7 @@ int main(int argc, char** argv) {
 
   Settings settings = ensemble->settings();
   if (!settings.has("function")) {
-    std::cerr << "Required to have 'name' for config file but not found "
+    std::cerr << "Required to have 'function' for config file but not found "
               << std::endl;
     exit(1);
   }
