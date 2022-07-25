@@ -12,16 +12,17 @@ namespace haero {
 /// This type defines the interface for a specific process in the aerosol
 /// lifecycle, backed by a specific implementation, the structure of which is
 /// defined by a specific "aerosol configuration".
-template <typename AeroConfig, typename AeroImpl>
+template <typename AerosolConfig, typename AerosolProcessImpl>
 class AeroProcess final {
  public:
 
   // Types derived from template parameters.
-  using Config      = AeroConfig;
-  using Prognostics = typename AeroConfig::Prognostics;
-  using Diagnostics = typename AeroConfig::Diagnostics;
-  using Tendencies  = typename AeroConfig::Tendencies;
-  using Impl        = AeroImpl;
+  using AeroConfig    = AerosolConfig;
+  using Prognostics   = typename AerosolConfig::Prognostics;
+  using Diagnostics   = typename AerosolConfig::Diagnostics;
+  using Tendencies    = typename AerosolConfig::Tendencies;
+  using Impl          = AerosolProcessImpl;
+  using ProcessConfig = typename Impl::Config;
 
   // Tendencies type must be the same as that for Prognostics.
   static_assert(std::is_same<Tendencies, Prognostics>::value,
@@ -29,14 +30,17 @@ class AeroProcess final {
 
   /// Constructs an instance of an aerosol process with the given name,
   /// associated with the given aerosol configuration.
-  /// @param [in] config An instance of a type that defines any metadata needed
-  ///                    by this process's implementation.
-  explicit AeroProcess(const Config& config)
-      : name_(), config_(config), impl_() {
+  /// @param [in] aero_config The aerosol configuration for this process
+  /// @param [in] process_config Any process-specific information required by
+  ///                            this process's implementation.
+  explicit AeroProcess(const AeroConfig& aero_config,
+                       const ProcessConfig& process_config = ProcessConfig())
+      : name_(), aero_config_(aero_config), process_config_(process_config),
+        impl_() {
     // Set the name of this process.
     name_ = impl_.name();
     // Pass the configuration data to the implementation to initialize it.
-    impl_.init(config_);
+    impl_.init(aero_config_, process_config_);
   }
 
   /// Destructor.
@@ -59,9 +63,15 @@ class AeroProcess final {
   /// On host: returns the name of this process.
   std::string name() const { return name_; }
 
-  /// On host: returns the metadata associated with this process.
-  const Config& config() const {
-    return config_;
+  /// On host: returns the aerosol configuration (metadata) associated with
+  /// this process.
+  const AeroConfig& aero_config() const {
+    return aero_config_;
+  }
+
+  /// On host: returns any process-specific configuration data.
+  const ProcessConfig& process_config() const {
+    return process_config_;
   }
 
   //------------------------------------------------------------------------
@@ -80,7 +90,7 @@ class AeroProcess final {
   bool validate(const TeamType& team,
                 const Atmosphere& atmosphere,
                 const Prognostics& prognostics) const {
-    return impl_.validate(config_, team, atmosphere, prognostics);
+    return impl_.validate(aero_config_, team, atmosphere, prognostics);
   }
 
   /// On host or device: runs the aerosol process at a given time with the given
@@ -105,14 +115,15 @@ class AeroProcess final {
                           const Prognostics& prognostics,
                           const Diagnostics& diagnostics,
                           const Tendencies& tendencies) const {
-    impl_.compute_tendencies(config_, team, t, dt, atmosphere, prognostics,
+    impl_.compute_tendencies(aero_config_, team, t, dt, atmosphere, prognostics,
                              diagnostics, tendencies);
   }
 
  private:
-  std::string name_;
-  Config      config_;
-  Impl        impl_;
+  std::string   name_;
+  AeroConfig    aero_config_;
+  ProcessConfig process_config_;
+  Impl          impl_;
 };
 
 }  // namespace haero
