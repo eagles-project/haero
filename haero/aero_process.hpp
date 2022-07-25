@@ -21,8 +21,8 @@ class AeroProcess final {
   using Prognostics   = typename AerosolConfig::Prognostics;
   using Diagnostics   = typename AerosolConfig::Diagnostics;
   using Tendencies    = typename AerosolConfig::Tendencies;
-  using Impl          = AerosolProcessImpl;
-  using ProcessConfig = typename Impl::Config;
+  using ProcessImpl   = AerosolProcessImpl;
+  using ProcessConfig = typename ProcessImpl::Config;
 
   // Tendencies type must be the same as that for Prognostics.
   static_assert(std::is_same<Tendencies, Prognostics>::value,
@@ -36,11 +36,11 @@ class AeroProcess final {
   explicit AeroProcess(const AeroConfig& aero_config,
                        const ProcessConfig& process_config = ProcessConfig())
       : name_(), aero_config_(aero_config), process_config_(process_config),
-        impl_() {
+        process_impl_() {
     // Set the name of this process.
-    name_ = impl_.name();
+    name_ = process_impl_.name();
     // Pass the configuration data to the implementation to initialize it.
-    impl_.init(aero_config_, process_config_);
+    process_impl_.init(aero_config_, process_config_);
   }
 
   /// Destructor.
@@ -90,7 +90,7 @@ class AeroProcess final {
   bool validate(const TeamType& team,
                 const Atmosphere& atmosphere,
                 const Prognostics& prognostics) const {
-    return impl_.validate(aero_config_, team, atmosphere, prognostics);
+    return process_impl_.validate(aero_config_, team, atmosphere, prognostics);
   }
 
   /// On host or device: runs the aerosol process at a given time with the given
@@ -115,15 +115,15 @@ class AeroProcess final {
                           const Prognostics& prognostics,
                           const Diagnostics& diagnostics,
                           const Tendencies& tendencies) const {
-    impl_.compute_tendencies(aero_config_, team, t, dt, atmosphere, prognostics,
-                             diagnostics, tendencies);
+    process_impl_.compute_tendencies(aero_config_, team, t, dt, atmosphere,
+                                     prognostics, diagnostics, tendencies);
   }
 
  private:
   std::string   name_;
   AeroConfig    aero_config_;
   ProcessConfig process_config_;
-  Impl          impl_;
+  ProcessImpl   process_impl_;
 };
 
 }  // namespace haero
