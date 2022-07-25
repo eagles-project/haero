@@ -47,11 +47,20 @@ class GasAerExchImpl {
   haero::kokkos_device_type::view_1d<int> mode_aging_optaa;
 
  public:
+  // process-specific configuration data (if any)
+  struct Config {
+    Config() {}
+    Config(const Config&) = default;
+    ~Config() = default;
+    Config& operator=(const Config&) = default;
+  };
+
   // name -- unique name of the process implemented by this class
   const char *name() const { return "MAM4 gas/aersol exchange"; }
 
   // init -- initializes the implementation with MAM4's configuration
-  void init(const AeroConfig &config) {
+  void init(const AeroConfig &aero_config,
+            const Config& process_config = Config()) {
     Kokkos::resize(l_mode_can_contain_species, num_aer, num_mode);
     Kokkos::resize(l_gas_condense_to_mode, num_gas, num_mode);
     Kokkos::resize(l_mode_can_age, num_aer);

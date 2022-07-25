@@ -595,6 +595,36 @@ void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
 /// defined by the usage of the impl_ member in the AeroProcess class in
 /// ../aero_process.hpp.
 class NucleationImpl {
+ public:
+  // nucleation-specific configuration
+  struct Config {
+    // "host" parameters
+    Real dens_so4a_host, mw_nh4a_host, mw_so4a_host;
+
+    // Nucleation parameters
+    int newnuc_method_user_choice;
+    int pbl_nuc_wang2008_user_choice;
+    Real adjust_factor_bin_tern_ratenucl;
+    Real adjust_factor_pbl_ratenucl;
+    Real accom_coef_h2so4;
+    Real newnuc_adjust_factor_dnaitdt;
+
+    // default constructor -- sets default values for parameters
+    Config():
+      dens_so4a_host(0), mw_nh4a_host(mw_nh4a), mw_so4a_host(mw_so4a),
+      newnuc_method_user_choice(2), pbl_nuc_wang2008_user_choice(1),
+      adjust_factor_bin_tern_ratenucl(1.0),
+      adjust_factor_pbl_ratenucl(1.0),
+      accom_coef_h2so4(1.0),
+      newnuc_adjust_factor_dnaitdt(1.0) {}
+
+    Config(const Config&) = default;
+    ~Config() = default;
+    Config& operator=(const Config&) = default;
+  };
+
+ private:
+
   static const int nait       = static_cast<int>(ModeIndex::Aitken);
   static const int igas_h2so4 = static_cast<int>(GasId::H2SO4);
   static const int igas_nh3   = static_cast<int>(GasId::NH3);
@@ -610,8 +640,8 @@ class NucleationImpl {
   static constexpr Real qh2so4_cutoff = 4.0e-16;
   static constexpr Real ln_nuc_rate_cutoff = -13.82;
 
-  // "Host parameters
-  Real dens_so4a_host, mw_nh4a_host, mw_so4a_host;
+  // Nucleation-specific configuration
+  Config config_;
 
   // Mode parameters
   Real dgnum_aer[4],    // mean geometric number diameter
@@ -630,12 +660,12 @@ class NucleationImpl {
   // name -- unique name of the process implemented by this class
   const char* name() const { return "MAM4 nucleation"; }
 
-  // init -- initializes the implementation with MAM4's configuration
-  void init(const AeroConfig& config) {
-    // set "host" variables.
-    dens_so4a_host = 0.0;
-    mw_nh4a_host = 0.0;
-    mw_so4a_host = 0.0;
+  // init -- initializes the implementation with MAM4's configuration and with
+  // a process-specific configuration.
+  void init(const AeroConfig& aero_config,
+            const Config& nucl_config = Config()) {
+    // Set nucleation-specific config parameters.
+    config_ = nucl_config;
 
     // Set mode parameters.
     for (int m = 0; m < 4; ++m) {
@@ -649,14 +679,6 @@ class NucleationImpl {
       dgnumlo_aer[m] = modes[m].min_diameter;
       dgnumhi_aer[m] = modes[m].max_diameter;
     }
-
-    // Set defaults for nucleation parameters.
-    newnuc_method_user_choice = 2; // binary nucleation
-    pbl_nuc_wang2008_user_choice = 1; // first-order PBL correction
-    adjust_factor_bin_tern_ratenucl = 1.0; // nuc rate adjustment factor
-    adjust_factor_pbl_ratenucl = 1.0; // PBL adjustment factor
-    accom_coef_h2so4 = 1.0; // H2SO4 accommodation coeff (FIXME)
-    newnuc_adjust_factor_dnaitdt = 1.0;
   }
 
   // validate -- validates the given atmospheric state and prognostics against
@@ -757,6 +779,11 @@ class NucleationImpl {
     Pack tmp_q2, tmp_q3;
     Pack tmp_frso4, tmp_uptkrate;
     Pack dens_nh4so4a;
+
+    // process-specific configuration data
+    Real dens_so4a_host = config_.dens_so4a_host;
+    Real mw_so4a_host = config_.mw_so4a_host;
+    Real mw_nh4a_host = config_.mw_nh4a_host;
 
     dndt_ait = 0;
     dmdt_ait = 0;

@@ -13,7 +13,7 @@ TEST_CASE("test_constructor", "mam4_nucleation_process") {
   mam4::AeroConfig mam4_config;
   mam4::NucleationProcess process(mam4_config);
   REQUIRE(process.name() == "MAM4 nucleation");
-  REQUIRE(process.config() == mam4_config);
+  REQUIRE(process.aero_config() == mam4_config);
 }
 
 TEST_CASE("test_compute_tendencies", "mam4_nucleation_process") {
