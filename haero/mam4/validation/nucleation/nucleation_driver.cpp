@@ -17,8 +17,8 @@ using namespace skywalker;
 using namespace haero;
 
 // Parameterizations used by the nucleation process.
-void nucleation_rate(Ensemble* ensemble);
-void nucleation_thresh(Ensemble* ensemble);
+void mer07_veh02_wang08_nuc_1box(Ensemble* ensemble);
+void newnuc_cluster_growth(Ensemble* ensemble);
 
 int main(int argc, char** argv) {
   if (argc == 1) {
@@ -42,8 +42,10 @@ int main(int argc, char** argv) {
   // Dispatch to the requested function.
   auto func_name = settings.get("function");
   try {
-    if (func_name == "nucleation_rate") {
-      nucleation_rate(ensemble);
+    if (func_name == "mer07_veh02_wang08_nuc_1box") { // nucleation
+      mer07_veh02_wang08_nuc_1box(ensemble);
+    } else if (func_name == "newnuc_cluster_growth") {
+      newnuc_cluster_growth(ensemble);
     }
   } catch (std::exception& e) {
     std::cerr << argv[0] << ": Error: " << e.what() << std::endl;

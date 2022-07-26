@@ -15,7 +15,6 @@ namespace mam4 {
 
 using Pack = PackType;
 using IntPack = IntPackType;
-using namespace ekat;
 
 //-----------------------------------------------------------------------------
 // The following functions were ported from aero_newnuc_utils.F90 in the MAM4
@@ -336,10 +335,11 @@ void mer07_veh02_wang08_nuc_1box(
 KOKKOS_INLINE_FUNCTION
 void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
   const Pack& cnum_nh3, const Pack& radius_cluster, const Pack dplom_sect[1],
-  const Pack dphim_sect[1], int nsize, Real dtnuc, const Pack& temp_in, const Pack& rh_in,
-  const Pack& cair, Real accom_coef_h2so4, Real mw_so4a, Real mw_so4a_host,
-  Real mw_nh4a, Real avogad, Real pi, const Pack& qnh3_cur,
-  const Pack& qh2so4_cur, const Pack& so4vol_in, const Pack& h2so4_uptkrate,
+  const Pack dphim_sect[1], int nsize, Real dtnuc, const Pack& temp_in,
+  const Pack& rh_in, const Pack& cair, Real accom_coef_h2so4,
+  Real mw_so4a, Real mw_so4a_host, Real mw_nh4a, Real avogad, Real pi,
+  const Pack& qnh3_cur, const Pack& qh2so4_cur, const Pack& so4vol_in,
+  const Pack& h2so4_uptkrate,
   IntPack& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
   Pack& qso4a_del, Pack& qnh4a_del, Pack& qnuma_del) {
 
