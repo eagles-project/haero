@@ -3,6 +3,7 @@
 
 #include <haero/atmosphere.hpp>
 #include <haero/mam4/aero_config.hpp>
+#include <haero/mam4/conversions.hpp>
 #include <haero/mam4/merikanto2007.hpp>
 #include <haero/mam4/vehkamaki2002.hpp>
 #include <haero/mam4/wang2008.hpp>
@@ -14,7 +15,6 @@ namespace mam4 {
 
 using Pack = PackType;
 using IntPack = IntPackType;
-using namespace ekat;
 
 //-----------------------------------------------------------------------------
 // The following functions were ported from aero_newnuc_utils.F90 in the MAM4
@@ -334,11 +334,12 @@ void mer07_veh02_wang08_nuc_1box(
 
 KOKKOS_INLINE_FUNCTION
 void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
-  const Pack& cnum_nh3, const Pack& radius_cluster, const Pack dplom_sect[1],
-  const Pack dphim_sect[1], int nsize, Real dtnuc, const Pack& temp_in, const Pack& rh_in,
-  const Pack& cair, Real accom_coef_h2so4, Real mw_so4a, Real mw_so4a_host,
-  Real mw_nh4a, Real avogad, Real pi, const Pack& qnh3_cur,
-  const Pack& qh2so4_cur, const Pack& so4vol_in, const Pack& h2so4_uptkrate,
+  const Pack& cnum_nh3, const Pack& radius_cluster, const Pack* dplom_sect,
+  const Pack* dphim_sect, int nsize, Real dtnuc, const Pack& temp_in,
+  const Pack& rh_in, const Pack& cair, Real accom_coef_h2so4,
+  Real mw_so4a, Real mw_so4a_host, Real mw_nh4a, Real avogad, Real pi,
+  const Pack& qnh3_cur, const Pack& qh2so4_cur, const Pack& so4vol_in,
+  const Pack& h2so4_uptkrate,
   IntPack& isize_nuc, Pack& dens_nh4so4a, Pack& qh2so4_del, Pack& qnh3_del,
   Pack& qso4a_del, Pack& qnh4a_del, Pack& qnuma_del) {
 
@@ -697,16 +698,19 @@ class NucleationImpl {
                           const Prognostics& progs,
                           const Diagnostics& diags,
                           const Tendencies& tends) const {
+    constexpr Real r_universal = Constants::r_gas;
     const int nk = PackInfo::num_packs(atm.num_levels());
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk),
       KOKKOS_LAMBDA(int k) {
         // extract column data at level k
         Pack temp = atm.temperature(k);
         Pack pmid = atm.pressure(k);
-        Pack aircon = 0;
-        Pack zmid = 0;
+        Pack aircon = pmid/(r_universal*temp);
+        Pack zmid = atm.height(k);
         Real pblh = atm.planetary_boundary_height;
-        Pack relhum = 0;
+        Pack qv = atm.vapor_mixing_ratio(k);
+        Pack relhum = conversions::relative_humidity_from_vapor_mixing_ratio(
+            qv, pmid, temp);
         Pack uptkrate_so4 = 0;
         Pack del_h2so4_gasprod = 0;
         Pack del_h2so4_aeruptk = 0;

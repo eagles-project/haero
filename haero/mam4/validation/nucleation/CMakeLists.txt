@@ -8,28 +8,32 @@ include_directories(${PROJECT_BINARY_DIR}/validation)
 
 # We use a single driver for all nucleation-related parameterizations.
 add_executable(nucleation_driver nucleation_driver.cpp
-               nucleation_rate.cpp
-               nucleation_thresh.cpp)
+               mer07_veh02_wang08_nuc_1box.cpp
+               newnuc_cluster_growth.cpp)
 target_link_libraries(nucleation_driver skywalker;validation;${HAERO_LIBRARIES})
 
-# Run the drivers in several configurations to produce datasets.
+# Run the driver in several configurations to produce datasets.
 
 # Nucleation rate
-foreach (input vehkamaki2002_contour;vehkamaki2002_fig8;
-               vehkamaki2002_fig9;vehkamaki2002_fig10;vehkamaki2002_fig11;
-               merikanto2007_fig2;merikanto2007_fig3;merikanto2007_fig4)
-  add_test(validate_mam4_nucleation_rate_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
+foreach (input
+         vehkamaki2002_fig8
+         vehkamaki2002_fig9
+         vehkamaki2002_fig10
+         vehkamaki2002_fig11
+         vehkamaki2002_contour
+         merikanto2007_fig2
+         merikanto2007_fig3
+         merikanto2007_fig4)
+  add_test(validate_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
 
-# Nucleation threshold
-foreach (input vehkamaki2002_fig7)
-  add_test(validate_mam4_nucleation_thresh_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
+# Nucleation particle cluster growth
+foreach (input
+         nucgrowth_case1
+         nucgrowth_case2
+         nucgrowth_case3)
+  add_test(validate_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
-
-# Nucleation growth
-#foreach (input nuc_growth_case1 nuc_growth_case2 nuc_growth_case3)
-#  add_test(gen_${input} nucleation_thresh ${NUC_VALIDATION_DIR}/${input}.yaml)
-#endforeach()
 
 # Copy generate_plots.py to our binary directory for ease of use.
 configure_file(
