@@ -3,6 +3,7 @@
 
 #include <haero/atmosphere.hpp>
 #include <haero/mam4/aero_config.hpp>
+#include <haero/mam4/conversions.hpp>
 #include <haero/mam4/merikanto2007.hpp>
 #include <haero/mam4/vehkamaki2002.hpp>
 #include <haero/mam4/wang2008.hpp>
@@ -697,16 +698,19 @@ class NucleationImpl {
                           const Prognostics& progs,
                           const Diagnostics& diags,
                           const Tendencies& tends) const {
+    constexpr Real r_universal = Constants::r_gas;
     const int nk = PackInfo::num_packs(atm.num_levels());
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk),
       KOKKOS_LAMBDA(int k) {
         // extract column data at level k
         Pack temp = atm.temperature(k);
         Pack pmid = atm.pressure(k);
-        Pack aircon = 0;
-        Pack zmid = 0;
+        Pack aircon = pmid/(r_universal*temp);
+        Pack zmid = atm.height(k);
         Real pblh = atm.planetary_boundary_height;
-        Pack relhum = 0;
+        Pack qv = atm.vapor_mixing_ratio(k);
+        Pack relhum = conversions::relative_humidity_from_vapor_mixing_ratio(
+            qv, pmid, temp);
         Pack uptkrate_so4 = 0;
         Pack del_h2so4_gasprod = 0;
         Pack del_h2so4_aeruptk = 0;
