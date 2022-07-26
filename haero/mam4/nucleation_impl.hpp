@@ -334,8 +334,8 @@ void mer07_veh02_wang08_nuc_1box(
 
 KOKKOS_INLINE_FUNCTION
 void newnuc_cluster_growth(const Pack& ratenuclt_bb, const Pack& cnum_h2so4,
-  const Pack& cnum_nh3, const Pack& radius_cluster, const Pack dplom_sect[1],
-  const Pack dphim_sect[1], int nsize, Real dtnuc, const Pack& temp_in,
+  const Pack& cnum_nh3, const Pack& radius_cluster, const Pack* dplom_sect,
+  const Pack* dphim_sect, int nsize, Real dtnuc, const Pack& temp_in,
   const Pack& rh_in, const Pack& cair, Real accom_coef_h2so4,
   Real mw_so4a, Real mw_so4a_host, Real mw_nh4a, Real avogad, Real pi,
   const Pack& qnh3_cur, const Pack& qh2so4_cur, const Pack& so4vol_in,

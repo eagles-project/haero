@@ -29,9 +29,9 @@ endforeach()
 
 # Nucleation particle cluster growth
 foreach (input
-         nuc_growth_case1
-         nuc_growth_case2
-         nuc_growth_case3)
+         nucgrowth_case1
+         nucgrowth_case2
+         nucgrowth_case3)
   add_test(validate_${input} nucleation_driver ${NUC_VALIDATION_DIR}/${input}.yaml)
 endforeach()
 

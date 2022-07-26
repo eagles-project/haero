@@ -53,15 +53,18 @@ void newnuc_cluster_growth(Ensemble* ensemble) {
     IntPack isize_group;
     Pack dens_nh4so4a, qh2so4_del, qnh3_del, qso4a_del, qnh4a_del, qnuma_del;
 
-    // Call cluster growth function.
-    newnuc_cluster_growth(dnclusterdt, cnum_h2so4, cnum_nh3, radius_cluster,
-                          dplom_mode, dphim_mode, nsize,
-                          deltat, temp, relhumnn, cair,
-                          accom_coef_h2so4, mw_so4a, mw_so4a_host, mw_nh4a,
-                          avogadro, pi, qnh3_cur, qh2so4_cur, so4vol,
-                          tmp_uptkrate, isize_group, dens_nh4so4a,
-                          qh2so4_del, qnh3_del, qso4a_del, qnh4a_del,
-                          qnuma_del);
+    // Call the cluster growth function on device.
+    Kokkos::parallel_for("newnuc_cluster_growth", 1,
+      [&]KOKKOS_FUNCTION(int i) {
+        newnuc_cluster_growth(dnclusterdt, cnum_h2so4, cnum_nh3, radius_cluster,
+          dplom_mode, dphim_mode, nsize,
+          deltat, temp, relhumnn, cair,
+          accom_coef_h2so4, mw_so4a, mw_so4a_host, mw_nh4a,
+          avogadro, pi, qnh3_cur, qh2so4_cur, so4vol,
+          tmp_uptkrate, isize_group, dens_nh4so4a,
+          qh2so4_del, qnh3_del, qso4a_del, qnh4a_del,
+          qnuma_del);
+      });
 
     output.set("qh2so4_del", qh2so4_del[0]);
     output.set("qnh3_del", qnh3_del[0]);
