@@ -648,13 +648,6 @@ class NucleationImpl {
        dgnumhi_aer[4],  // max geometric number diameter
        dgnumlo_aer[4];  // min geometric number diameter
 
-  // Nucleation parameters
-  int newnuc_method_user_choice;
-  int pbl_nuc_wang2008_user_choice;
-  Real adjust_factor_bin_tern_ratenucl;
-  Real adjust_factor_pbl_ratenucl;
-  Real accom_coef_h2so4;
-  Real newnuc_adjust_factor_dnaitdt;
  public:
 
   // name -- unique name of the process implemented by this class
@@ -781,6 +774,12 @@ class NucleationImpl {
     Pack dens_nh4so4a;
 
     // process-specific configuration data
+    int newnuc_method_user_choice = config_.newnuc_method_user_choice;
+    int pbl_nuc_wang2008_user_choice = config_.pbl_nuc_wang2008_user_choice;
+    Real adjust_factor_bin_tern_ratenucl = config_.adjust_factor_bin_tern_ratenucl;
+    Real adjust_factor_pbl_ratenucl = config_.adjust_factor_pbl_ratenucl;
+    Real accom_coef_h2so4 = config_.accom_coef_h2so4;
+    Real newnuc_adjust_factor_dnaitdt = config_.newnuc_adjust_factor_dnaitdt;
     Real dens_so4a_host = config_.dens_so4a_host;
     Real mw_so4a_host = config_.mw_so4a_host;
     Real mw_nh4a_host = config_.mw_nh4a_host;
