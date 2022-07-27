@@ -3,6 +3,7 @@
 
 #include <haero/atmosphere.hpp>
 #include <haero/mam4/aero_config.hpp>
+#include <haero/mam4/aero_modes.hpp>
 #include <haero/mam4/conversions.hpp>
 #include <haero/mam4/merikanto2007.hpp>
 #include <haero/mam4/vehkamaki2002.hpp>
@@ -56,8 +57,8 @@ void pbl_nuc_wang2008(const Pack& so4vol, Real pi,
   Pack tmp_diam, tmp_mass, tmp_volu;
   Pack tmp_rateloge, tmp_ratenucl;
 
-  constexpr Real mw_h2so4_gmol = 98.0;
-  constexpr Real avogadro_mol  = 6.023e23;
+  constexpr Real mw_h2so4_gmol        = 98.0;
+  constexpr Real avogadro_mol         = 6.023e23;
   constexpr Real density_sulfate_gcm3 = 1.8;
 
   //-----------------------------------------------------------------
@@ -629,6 +630,7 @@ class NucleationImpl {
   static const int nait       = static_cast<int>(ModeIndex::Aitken);
   static const int igas_h2so4 = static_cast<int>(GasId::H2SO4);
   static const int igas_nh3   = static_cast<int>(GasId::NH3);
+  static const int iaer_so4   = static_cast<int>(AeroId::SO4);
 
   static constexpr Real avogadro = Constants::avogadro;
   static constexpr Real mw_h2so4 = Constants::molec_weight_h2so4;
@@ -702,7 +704,7 @@ class NucleationImpl {
     const int nk = PackInfo::num_packs(atm.num_levels());
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk),
       KOKKOS_LAMBDA(int k) {
-        // extract column data at level k
+        // extract atmospheric state
         Pack temp = atm.temperature(k);
         Pack pmid = atm.pressure(k);
         Pack aircon = pmid/(r_universal*temp);
@@ -714,24 +716,38 @@ class NucleationImpl {
         Pack uptkrate_so4 = 0;
         Pack del_h2so4_gasprod = 0;
         Pack del_h2so4_aeruptk = 0;
-        Pack qgas_cur[13] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        Pack qgas_avg[13] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        Pack qnum_cur[4]  = {0, 0, 0, 0};
-        Pack qaer_cur[4][7] = {
-          {0, 0, 0, 0, 0, 0, 0},
-          {0, 0, 0, 0, 0, 0, 0},
-          {0, 0, 0, 0, 0, 0, 0},
-          {0, 0, 0, 0, 0, 0, 0},
-        };
-        Pack qwtr_cur[4] = {0, 0, 0, 0};
-        Pack dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, dnclusterdt;
+
+        // extract gas mixing ratios
+        Pack qgas_cur[13], qgas_avg[13];
+        for (int g = 0; g < 13; ++g) {
+          qgas_cur[g] = progs.q_gas[g](k);
+          qgas_avg[g] = progs.q_gas[g](k); // FIXME: what should we do here??
+        }
+
+        // extract aerosol mixing ratios
+        Pack qnum_cur[4], qaer_cur[4][7];
+        for (int m = 0; m < 4; ++m) { // modes
+          qnum_cur[m] = progs.n_mode[m](k);
+          for (int a = 0; a < 7; ++a) { // aerosols
+            qaer_cur[m][a] = progs.q_aero[m][a](k);
+          }
+        }
+
+        Pack qwtr_cur[4] = {0, 0, 0, 0}; // FIXME: what is this?
 
         // compute tendencies at this level
+        Pack dndt_ait, dmdt_ait, dso4dt_ait, dnh4dt_ait, dnclusterdt;
         compute_tendencies_(dt, temp, pmid, aircon, zmid, pblh, relhum,
                             uptkrate_so4, del_h2so4_gasprod, del_h2so4_aeruptk,
                             qgas_cur, qgas_avg, qnum_cur, qaer_cur,
                             qwtr_cur, dndt_ait, dmdt_ait, dso4dt_ait,
                             dnh4dt_ait, dnclusterdt);
+
+        // Store the computed tendencies.
+        tends.n_mode[nait](k)           =  dndt_ait;
+        tends.q_aero[nait][iaer_so4](k) =  dso4dt_ait;
+        tends.q_gas[igas_h2so4](k)      = -dso4dt_ait;
+        // FIXME: what about dmdt_ait?
       });
   }
 
