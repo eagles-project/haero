@@ -43,14 +43,18 @@ TEST_CASE("test_multicol_compute_tendencies", "mam4_nucleation_process") {
   DeviceType::view_1d<mam4::Prognostics> mc_progs("mc_atm", ncol);
   DeviceType::view_1d<mam4::Diagnostics> mc_diags("mc_diags", ncol);
   DeviceType::view_1d<mam4::Tendencies>  mc_tends("mc_tends", ncol);
+  int nlev = 72;
+  Real pblh = 1000;
+  Atmosphere atmosphere(nlev, pblh);
+  mam4::Prognostics prognostics(nlev);
+  mam4::Diagnostics diagnostics(nlev);
+  mam4::Tendencies  tendencies(nlev);
   for (int icol = 0; icol < ncol; ++icol) {
     Kokkos::parallel_for("Load multi-column views", 1, KOKKOS_LAMBDA(const int) {
-      int nlev = 72;
-      Real pblh = 1000;
-      mc_atm(icol)   = Atmosphere(nlev, pblh);
-      mc_progs(icol) = mam4::Prognostics(nlev);
-      mc_diags(icol) = mam4::Diagnostics(nlev);
-      mc_tends(icol) = mam4::Tendencies(nlev);
+      mc_atm(icol)   = atmosphere;
+      mc_progs(icol) = prognostics;
+      mc_diags(icol) = diagnostics;
+      mc_tends(icol) = tendencies;
     });
   }
 
