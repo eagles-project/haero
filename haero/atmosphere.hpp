@@ -78,7 +78,7 @@ class Atmosphere final {
     const int nk = PackInfo::num_packs(num_levels());
     int violations = 0;
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),
-      KOKKOS_LAMBDA(int k, int& violation) {
+      KOKKOS_CLASS_LAMBDA(int k, int& violation) {
         if ((temperature(k) < 0).any() ||
             (pressure(k) < 0).any() ||
             (vapor_mixing_ratio(k) < 0).any()) {

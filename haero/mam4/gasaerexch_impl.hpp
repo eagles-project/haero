@@ -86,7 +86,7 @@ class GasAerExchImpl {
     //------------------------------------------------------------------
     // Set default to 0, meaning no uptake
     Kokkos::parallel_for(
-        num_gas, KOKKOS_LAMBDA(int k) { uptk_rate_factor(k) = 0.0; });
+        num_gas, KOKKOS_CLASS_LAMBDA(int k) { uptk_rate_factor(k) = 0.0; });
 
     // H2SO4 is the ref species, so the ratio is 1
     uptk_rate_factor(igas_h2so4) = 1.0;
@@ -167,13 +167,13 @@ class GasAerExchImpl {
     // Initialize the time-step mean gas concentration (explain why?)
     //=========================================================================
     Kokkos::parallel_for(
-        num_gas, KOKKOS_LAMBDA(int k) { qgas_avg(k) = 0.0; });
+        num_gas, KOKKOS_CLASS_LAMBDA(int k) { qgas_avg(k) = 0.0; });
 
     const int h2so4 = igas_h2so4;
     if (l_calc_gas_uptake_coeff) {
       const int nk = PackInfo::num_packs(atm.num_levels());
       Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team, nk), KOKKOS_LAMBDA(int k) {
+          Kokkos::TeamThreadRange(team, nk), KOKKOS_CLASS_LAMBDA(int k) {
             //=========================================================================
             // Calculate the reference uptake coefficient for all aerosol modes
             // using properties of the H2SO4 gas
@@ -398,6 +398,7 @@ class GasAerExchImpl {
 
   //--------------------------------------------------------------------------------
   // gas_diffusivity       ! (m2/s)
+  KOKKOS_INLINE_FUNCTION
   PackType gas_diffusivity(
       const PackType &T_in_K,    // temperature (K)
       const PackType &p_in_atm,  // pressure (atmospheres)
@@ -420,6 +421,7 @@ class GasAerExchImpl {
   }
   //--------------------------------------------------------------------------------
   //  mean_molecular_speed    ! (m/s)
+  KOKKOS_INLINE_FUNCTION
   PackType mean_molecular_speed(
       const PackType &temp,    // temperature (K)
       const Real rmw,          // molec. weight (g/mol)
@@ -431,6 +433,7 @@ class GasAerExchImpl {
     return mean_molecular_speed;
   }
   //--------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
   PackType fuchs_sutugin(const PackType &D_p, const PackType &gasfreepath,
                          const Real accomxp283, const Real accomxp75) const {
     const PackType knudsen = 2.0 * gasfreepath / D_p;

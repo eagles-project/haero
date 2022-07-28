@@ -698,7 +698,7 @@ class NucleationImpl {
     constexpr Real r_universal = Constants::r_gas;
     const int nk = PackInfo::num_packs(atm.num_levels());
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk),
-      KOKKOS_LAMBDA(int k) {
+      KOKKOS_CLASS_LAMBDA(int k) {
         // extract atmospheric state
         Pack temp = atm.temperature(k);
         Pack pmid = atm.pressure(k);
