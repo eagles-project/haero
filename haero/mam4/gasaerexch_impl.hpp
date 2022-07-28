@@ -166,8 +166,7 @@ class GasAerExchImpl {
     //=========================================================================
     // Initialize the time-step mean gas concentration (explain why?)
     //=========================================================================
-    Kokkos::parallel_for(
-        num_gas, KOKKOS_CLASS_LAMBDA(int k) { qgas_avg(k) = 0.0; });
+    for (int k=0; k< num_gas; ++k) qgas_avg(k) = 0.0;
 
     const int h2so4 = igas_h2so4;
     if (l_calc_gas_uptake_coeff) {
