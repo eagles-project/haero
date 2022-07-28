@@ -14,17 +14,17 @@ namespace mam4 {
 /// class in
 /// ../aero_process.hpp.
 class GasAerExchImpl {
-  static const int num_mode = 4;
-  static const int num_gas = 13;
-  static const int num_aer = 7;
-  static const int nait = static_cast<int>(ModeIndex::Aitken);
-  static const int npca = static_cast<int>(ModeIndex::PrimaryCarbon);
-  static const int igas_h2so4 = static_cast<int>(GasId::H2SO4);
-  static const int igas_nh3 = static_cast<int>(GasId::NH3);
-  static const int iaer_h2so4 = static_cast<int>(GasId::H2SO4);
-  static const int iaer_so4 = static_cast<int>(AeroId::SO4);
-  static const int iaer_pom = static_cast<int>(AeroId::POM);
-  static const int nsoa = static_cast<int>(AeroId::SOA);
+  static constexpr int num_mode = 4;
+  static constexpr int num_gas = 13;
+  static constexpr int num_aer = 7;
+  static constexpr int nait = static_cast<int>(ModeIndex::Aitken);
+  static constexpr int npca = static_cast<int>(ModeIndex::PrimaryCarbon);
+  static constexpr int igas_h2so4 = static_cast<int>(GasId::H2SO4);
+  static constexpr int igas_nh3 = static_cast<int>(GasId::NH3);
+  static constexpr int iaer_h2so4 = static_cast<int>(GasId::H2SO4);
+  static constexpr int iaer_so4 = static_cast<int>(AeroId::SO4);
+  static constexpr int iaer_pom = static_cast<int>(AeroId::POM);
+  static constexpr int nsoa = static_cast<int>(AeroId::SOA);
   // static const int npoa     = static_cast<int>(AeroId::POA);
 
   static constexpr Real mw_h2so4 = Constants::molec_weight_h2so4;
