@@ -169,6 +169,7 @@ class GasAerExchImpl {
     Kokkos::parallel_for(
         num_gas, KOKKOS_LAMBDA(int k) { qgas_avg(k) = 0.0; });
 
+    const int h2so4 = igas_h2so4;
     if (l_calc_gas_uptake_coeff) {
       const int nk = PackInfo::num_packs(atm.num_levels());
       Kokkos::parallel_for(
@@ -224,7 +225,7 @@ class GasAerExchImpl {
             // Diagnosed for calling routine. Not used in this subroutne.
             diags.uptkrate_h2so4(k) = 0;
             for (int n = 0; n < num_mode; ++n)
-              diags.uptkrate_h2so4(k) += uptkaer(igas_h2so4, n);
+              diags.uptkrate_h2so4(k) += uptkaer(h2so4, n);
           });
     }
   }
@@ -351,7 +352,7 @@ class GasAerExchImpl {
       // if uptake_rate ~= a * (D_p**beta), then the 2 point quadrature is very
       // accurate
       PackType beta;
-      if (Kokkos::Experimental::abs(beta_inp - 1.5) > 0.5) {
+      if (abs(beta_inp - 1.5) > 0.5) {
         // D_p = dgncur_awet(n) * ekat::exp( 1.5*(lnsg[n]**2) )
         const PackType D_p = dgncur_awet[n];
         const PackType knudsen = two * gasfreepath / D_p;
