@@ -88,11 +88,14 @@ class GasAerExchImpl {
     Kokkos::parallel_for(
         num_gas, KOKKOS_CLASS_LAMBDA(int k) { uptk_rate_factor(k) = 0.0; });
 
-    // H2SO4 is the ref species, so the ratio is 1
-    uptk_rate_factor(igas_h2so4) = 1.0;
-
-    // For NH3
-    uptk_rate_factor(igas_nh3) = nh3_h2so4_uptake_coeff_ratio;
+    const int h2so4 = igas_h2so4;
+    const int   nh3 = igas_nh3;
+    Kokkos::parallel_for( 1, KOKKOS_CLASS_LAMBDA(int) { 
+      // H2SO4 is the ref species, so the ratio is 1
+      uptk_rate_factor(h2so4) = 1.0;
+      // For NH3
+      uptk_rate_factor(nh3) = nh3_h2so4_uptake_coeff_ratio;
+    });
 
     // For SOAG. (igas_soag_bgn and igas_soag_end are the start- and
     // end-indices) Remove use of igas_soag_bgn but keep comments in case need
