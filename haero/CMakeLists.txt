@@ -38,6 +38,7 @@ add_library(haero
             utils.cpp
             view_pack_helpers.cpp)
 add_dependencies(haero ext_libraries update_version_info)
+target_compile_options(haero PRIVATE  $<$<COMPILE_LANGUAGE:CXX>:${KOKKOS_CUDA_OPTIONS}>)
 if (HAERO_ENABLE_CHEMISTRY)
   add_dependencies(haero tchem)
 endif()
