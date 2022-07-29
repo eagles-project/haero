@@ -4,6 +4,7 @@
 #include "haero/atmosphere.hpp"
 
 #include <memory>
+#include <cstring>
 #include <type_traits>
 
 namespace haero {
@@ -35,10 +36,11 @@ class AeroProcess final {
   ///                            this process's implementation.
   explicit AeroProcess(const AeroConfig& aero_config,
                        const ProcessConfig& process_config = ProcessConfig())
-      : name_(), aero_config_(aero_config), process_config_(process_config),
+      : aero_config_(aero_config), process_config_(process_config),
         process_impl_() {
     // Set the name of this process.
-    name_ = process_impl_.name();
+    const char *name = process_impl_.name();
+    strncpy(name_, name, sizeof(name_));
     // Pass the configuration data to the implementation to initialize it.
     process_impl_.init(aero_config_, process_config_);
   }
@@ -61,7 +63,7 @@ class AeroProcess final {
   //------------------------------------------------------------------------
 
   /// On host: returns the name of this process.
-  std::string name() const { return name_; }
+  std::string name() const { return std::string(name_); }
 
   /// On host: returns the aerosol configuration (metadata) associated with
   /// this process.
@@ -120,7 +122,7 @@ class AeroProcess final {
   }
 
  private:
-  std::string   name_;
+  char          name_[256];
   AeroConfig    aero_config_;
   ProcessConfig process_config_;
   ProcessImpl   process_impl_;

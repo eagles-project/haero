@@ -14,17 +14,17 @@ namespace mam4 {
 /// class in
 /// ../aero_process.hpp.
 class GasAerExchImpl {
-  static const int num_mode = 4;
-  static const int num_gas = 13;
-  static const int num_aer = 7;
-  static const int nait = static_cast<int>(ModeIndex::Aitken);
-  static const int npca = static_cast<int>(ModeIndex::PrimaryCarbon);
-  static const int igas_h2so4 = static_cast<int>(GasId::H2SO4);
-  static const int igas_nh3 = static_cast<int>(GasId::NH3);
-  static const int iaer_h2so4 = static_cast<int>(GasId::H2SO4);
-  static const int iaer_so4 = static_cast<int>(AeroId::SO4);
-  static const int iaer_pom = static_cast<int>(AeroId::POM);
-  static const int nsoa = static_cast<int>(AeroId::SOA);
+  static constexpr int num_mode = 4;
+  static constexpr int num_gas = 13;
+  static constexpr int num_aer = 7;
+  static constexpr int nait = static_cast<int>(ModeIndex::Aitken);
+  static constexpr int npca = static_cast<int>(ModeIndex::PrimaryCarbon);
+  static constexpr int igas_h2so4 = static_cast<int>(GasId::H2SO4);
+  static constexpr int igas_nh3 = static_cast<int>(GasId::NH3);
+  static constexpr int iaer_h2so4 = static_cast<int>(GasId::H2SO4);
+  static constexpr int iaer_so4 = static_cast<int>(AeroId::SO4);
+  static constexpr int iaer_pom = static_cast<int>(AeroId::POM);
+  static constexpr int nsoa = static_cast<int>(AeroId::SOA);
   // static const int npoa     = static_cast<int>(AeroId::POA);
 
   static constexpr Real mw_h2so4 = Constants::molec_weight_h2so4;
@@ -86,13 +86,16 @@ class GasAerExchImpl {
     //------------------------------------------------------------------
     // Set default to 0, meaning no uptake
     Kokkos::parallel_for(
-        num_gas, KOKKOS_LAMBDA(int k) { uptk_rate_factor(k) = 0.0; });
+        num_gas, KOKKOS_CLASS_LAMBDA(int k) { uptk_rate_factor(k) = 0.0; });
 
-    // H2SO4 is the ref species, so the ratio is 1
-    uptk_rate_factor(igas_h2so4) = 1.0;
-
-    // For NH3
-    uptk_rate_factor(igas_nh3) = nh3_h2so4_uptake_coeff_ratio;
+    const int h2so4 = igas_h2so4;
+    const int   nh3 = igas_nh3;
+    Kokkos::parallel_for( 1, KOKKOS_CLASS_LAMBDA(int) { 
+      // H2SO4 is the ref species, so the ratio is 1
+      uptk_rate_factor(h2so4) = 1.0;
+      // For NH3
+      uptk_rate_factor(nh3) = nh3_h2so4_uptake_coeff_ratio;
+    });
 
     // For SOAG. (igas_soag_bgn and igas_soag_end are the start- and
     // end-indices) Remove use of igas_soag_bgn but keep comments in case need
@@ -166,13 +169,13 @@ class GasAerExchImpl {
     //=========================================================================
     // Initialize the time-step mean gas concentration (explain why?)
     //=========================================================================
-    Kokkos::parallel_for(
-        num_gas, KOKKOS_LAMBDA(int k) { qgas_avg(k) = 0.0; });
+    for (int k=0; k< num_gas; ++k) qgas_avg(k) = 0.0;
 
+    const int h2so4 = igas_h2so4;
     if (l_calc_gas_uptake_coeff) {
       const int nk = PackInfo::num_packs(atm.num_levels());
       Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team, nk), KOKKOS_LAMBDA(int k) {
+          Kokkos::TeamThreadRange(team, nk), KOKKOS_CLASS_LAMBDA(int k) {
             //=========================================================================
             // Calculate the reference uptake coefficient for all aerosol modes
             // using properties of the H2SO4 gas
@@ -224,7 +227,7 @@ class GasAerExchImpl {
             // Diagnosed for calling routine. Not used in this subroutne.
             diags.uptkrate_h2so4(k) = 0;
             for (int n = 0; n < num_mode; ++n)
-              diags.uptkrate_h2so4(k) += uptkaer(igas_h2so4, n);
+              diags.uptkrate_h2so4(k) += uptkaer(h2so4, n);
           });
     }
   }
@@ -351,7 +354,7 @@ class GasAerExchImpl {
       // if uptake_rate ~= a * (D_p**beta), then the 2 point quadrature is very
       // accurate
       PackType beta;
-      if (Kokkos::Experimental::abs(beta_inp - 1.5) > 0.5) {
+      if (abs(beta_inp - 1.5) > 0.5) {
         // D_p = dgncur_awet(n) * ekat::exp( 1.5*(lnsg[n]**2) )
         const PackType D_p = dgncur_awet[n];
         const PackType knudsen = two * gasfreepath / D_p;
@@ -397,6 +400,7 @@ class GasAerExchImpl {
 
   //--------------------------------------------------------------------------------
   // gas_diffusivity       ! (m2/s)
+  KOKKOS_INLINE_FUNCTION
   PackType gas_diffusivity(
       const PackType &T_in_K,    // temperature (K)
       const PackType &p_in_atm,  // pressure (atmospheres)
@@ -419,6 +423,7 @@ class GasAerExchImpl {
   }
   //--------------------------------------------------------------------------------
   //  mean_molecular_speed    ! (m/s)
+  KOKKOS_INLINE_FUNCTION
   PackType mean_molecular_speed(
       const PackType &temp,    // temperature (K)
       const Real rmw,          // molec. weight (g/mol)
@@ -430,6 +435,7 @@ class GasAerExchImpl {
     return mean_molecular_speed;
   }
   //--------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
   PackType fuchs_sutugin(const PackType &D_p, const PackType &gasfreepath,
                          const Real accomxp283, const Real accomxp75) const {
     const PackType knudsen = 2.0 * gasfreepath / D_p;

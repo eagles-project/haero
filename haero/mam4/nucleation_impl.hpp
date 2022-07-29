@@ -2,6 +2,7 @@
 #define HAERO_MAM4_NUCLEATION_IMPL_HPP
 
 #include <haero/atmosphere.hpp>
+#include <haero/haero_math.hpp>
 #include <haero/mam4/aero_config.hpp>
 #include <haero/mam4/aero_modes.hpp>
 #include <haero/mam4/conversions.hpp>
@@ -632,16 +633,10 @@ class NucleationImpl {
   static const int igas_nh3   = static_cast<int>(GasId::NH3);
   static const int iaer_so4   = static_cast<int>(AeroId::SO4);
 
-  static constexpr Real avogadro = Constants::avogadro;
   static constexpr Real mw_h2so4 = Constants::molec_weight_h2so4;
   static constexpr Real mw_so4a  = Constants::molec_weight_so4;
   static constexpr Real mw_nh4a  = Constants::molec_weight_nh4;
   static constexpr Real pi       = Constants::pi;
-  static constexpr Real rgas     = Constants::r_gas;
-
-  // min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3
-  static constexpr Real qh2so4_cutoff = 4.0e-16;
-  static constexpr Real ln_nuc_rate_cutoff = -13.82;
 
   // Nucleation-specific configuration
   Config config_;
@@ -703,7 +698,7 @@ class NucleationImpl {
     constexpr Real r_universal = Constants::r_gas;
     const int nk = PackInfo::num_packs(atm.num_levels());
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk),
-      KOKKOS_LAMBDA(int k) {
+      KOKKOS_CLASS_LAMBDA(int k) {
         // extract atmospheric state
         Pack temp = atm.temperature(k);
         Pack pmid = atm.pressure(k);
@@ -766,6 +761,13 @@ class NucleationImpl {
     const Pack qwtr_cur[4],
     Pack& dndt_ait, Pack& dmdt_ait, Pack& dso4dt_ait, Pack& dnh4dt_ait,
     Pack& dnclusterdt) const {
+
+    static constexpr Real avogadro = Constants::avogadro;
+    static constexpr Real rgas               = Constants::r_gas;
+    static constexpr Real ln_nuc_rate_cutoff = -13.82;
+
+    // min h2so4 vapor for nuc calcs = 4.0e-16 mol/mol-air ~= 1.0e4 molecules/cm3
+    static constexpr Real qh2so4_cutoff      = 4.0e-16;
 
     IntPack newnuc_method_actual, pbl_nuc_wang2008_actual;
 

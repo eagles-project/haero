@@ -238,9 +238,10 @@ add_subdirectory(ext)
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_ENABLE_GPU)
   set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
+  # the esa_on_defaulted_function_ignored supresses a warning about KOKKOS markups of defaulted constructors/destructors
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
   # Avoid buggy experimental Kokkos CUDA stuff.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_  -DKokkos_CXX_STANDARD=C++17")
 else()
   # Make sure we're building with OpenMP where appropriate.
   if (NOT APPLE)

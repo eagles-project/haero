@@ -55,7 +55,7 @@ class Prognostics final {
     int violations = 0;
     Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, nk),
-        KOKKOS_LAMBDA(int k, int& violation) {
+        KOKKOS_CLASS_LAMBDA(int k, int& violation) {
           for (int mode = 0; mode < 4; ++mode) {  // check mode mmrs
             if ((n_mode[mode](k) < 0).any()) {
               ++violation;
