@@ -256,6 +256,8 @@ set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_BINARY_DIR}/include")
 include_directories(${HAERO_INCLUDE_DIRS})
+# Add external include files as SYSTEM to turn off warnings from these
+include_directories(SYSTEM ${HAERO_EXT_INCLUDE_DIRS})
 
 include(GNUInstallDirs)
 link_directories("${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
