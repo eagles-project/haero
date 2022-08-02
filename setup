@@ -41,20 +41,22 @@ PREFIX=$PWD/$1
 #KOKKOS_DIR=/path/to/kokkos
 
 #EKAT_INCLUDE_DIR=/path/to/ekat/includes
-#EKAT_LIBRARY_DIR=/path/to/ekat/library
-#EKAT_LIBRARY=libekat.a
+#EKAT_LIBRARY=/path/to/libekat.a
 
 #OPENBLAS_INCLUDE_DIR=/path/to/openblas/includes
-#OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
-#OPENBLAS_LIBRARY=libopenblas.a
+#OPENBLAS_LIBRARY=/path/to/libopenblas.a
 
 #TINES_INCLUDE_DIR=/path/to/tines/includes
-#TINES_LIBRARY_DIR=/path/to/tines/library
-#TINES_LIBRARY=libtines.a
+#TINES_LIBRARY=/path/to/libtines.a
 
 #TCHEM_INCLUDE_DIR=/path/to/tchem/includes
-#TCHEM_LIBRARY_DIR=/path/to/tchem/library
-#TCHEM_LIBRARY=libtchemcore.a
+#TCHEM_LIBRARY=/path/to/libtchemcore.a
+
+# If you're using your own build of Skywalker, make sure its precision matches
+# Haero's (see PRECISION below).
+#SKYWALKER_INCLUDE_DIR=/path/to/skywalker/includes
+#SKYWALKER_LIBRARY=/path/to/libskywalker_double.a
+#SKYWALKER_F90_LIBRARY=/path/to/libskywalker_f90_double.a
 
 #-----------------------------------------------------------------------------
 #                             Inter-Node Parallelism (MPI)
