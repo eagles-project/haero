@@ -631,7 +631,6 @@ class NucleationImpl {
   static const int nait       = static_cast<int>(ModeIndex::Aitken);
   static const int igas_h2so4 = static_cast<int>(GasId::H2SO4);
   static const int igas_nh3   = static_cast<int>(GasId::NH3);
-  static const int iaer_so4   = static_cast<int>(AeroId::SO4);
 
   static constexpr Real mw_h2so4 = Constants::molec_weight_h2so4;
   static constexpr Real mw_so4a  = Constants::molec_weight_so4;
@@ -695,6 +694,7 @@ class NucleationImpl {
                           const Prognostics& progs,
                           const Diagnostics& diags,
                           const Tendencies& tends) const {
+    int iaer_so4 = aerosol_index_for_mode(ModeIndex::Aitken, AeroId::SO4);
     constexpr Real r_universal = Constants::r_gas;
     const int nk = PackInfo::num_packs(atm.num_levels());
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk),
