@@ -314,8 +314,8 @@ class GasAerExchImpl {
                                            7.0710678118654746e-01};
     const Kokkos::Array<Real, 2> wghq_2 = {8.8622692545275794e-01,
                                            8.8622692545275794e-01};
-    Real const *xghq;
-    Real const *wghq;
+    Real const *xghq=nullptr;
+    Real const *wghq=nullptr;
     if (20 == nghq) {
       xghq = xghq_20.data();
       wghq = wghq_20.data();
@@ -329,7 +329,8 @@ class GasAerExchImpl {
       xghq = xghq_2.data();
       wghq = wghq_2.data();
     } else {
-      printf("nghq option is not available: %d\n", nghq);
+      printf("nghq integration option is not available: %d, valid are 20, 10, 4, and 2\n", nghq);
+      Kokkos::Impl::throw_runtime_exception("Invalid integration order requested.");
     }
     //---------------------------------------------------------------------------------------------
 
