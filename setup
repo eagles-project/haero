@@ -41,16 +41,20 @@ PREFIX=$PWD/$1
 #KOKKOS_DIR=/path/to/kokkos
 
 #EKAT_INCLUDE_DIR=/path/to/ekat/includes
-#EKAT_LIBRARY=/path/to/libekat.a
+#EKAT_LIBRARY_DIR=/path/to/ekat/library
+#EKAT_LIBRARY=libekat.a
 
 #OPENBLAS_INCLUDE_DIR=/path/to/openblas/includes
-#OPENBLAS_LIBRARY=/path/to/libopenblas.a
+#OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
+#OPENBLAS_LIBRARY=libopenblas.a
 
 #TINES_INCLUDE_DIR=/path/to/tines/includes
-#TINES_LIBRARY=/path/to/libtines.a
+#TINES_LIBRARY_DIR=/path/to/tines/library
+#TINES_LIBRARY=libtines.a
 
 #TCHEM_INCLUDE_DIR=/path/to/tchem/includes
-#TCHEM_LIBRARY=/path/to/libtchemcore.a
+#TCHEM_LIBRARY_DIR=/path/to/tchem/library
+#TCHEM_LIBRARY=libtchemcore.a
 
 #-----------------------------------------------------------------------------
 #                             Inter-Node Parallelism (MPI)
