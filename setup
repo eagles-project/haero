@@ -272,6 +272,33 @@ if [ ! "\$TCHEM_LIBRARY_DIR" = "" -o ! "\$TCHEM_INCLUDE_DIR" = "" -o ! "\$TCHEM_
   OPTIONS="\$OPTIONS -DTCHEM_INCLUDE_DIR=\$TCHEM_INCLUDE_DIR"
 fi
 
+# Configure Skywalker if needed.
+if [ ! "\$SKYWALKER_LIBRARY_DIR" = "" -o ! "\$SKYWALKER_INCLUDE_DIR" = "" -o ! "\$SKYWALKER_LIBRARY" = "" ]; then
+  if [ "\$SKYWALKER_LIBRARY" = "" ]; then
+    echo "Error: SKYWALKER_LIBRARY must be specified for a custom Skywalker library."
+    exit 1
+  fi
+  if [ "\$SKYWALKER_INCLUDE_DIR" = "" ]; then
+    echo "Error: SKYWALKER_INCLUDE_DIR must be specified for a custom Skywalker library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DSKYWALKER_LIBRARY=\$SKYWALKER_LIBRARY_DIR/\$SKYWALKER_LIBRARY"
+  OPTIONS="\$OPTIONS -DSKYWALKER_INCLUDE_DIR=\$SKYWALKER_INCLUDE_DIR"
+fi
+# Configure Fortran Skywalker if needed.
+if [ ! "\$SKYWALKER_F90_LIBRARY_DIR" = "" -o ! "\$SKYWALKER_INCLUDE_DIR" = "" -o ! "\$SKYWALKER_F90_LIBRARY" = "" ]; then
+  if [ "\$SKYWALKER_F90_LIBRARY" = "" ]; then
+    echo "Error: SKYWALKER_F90_LIBRARY must be specified for a custom Skywalker fortran library."
+    exit 1
+  fi
+  if [ "\$SKYWALKER_INCLUDE_DIR" = "" ]; then
+    echo "Error: SKYWALKER_INCLUDE_DIR must be specified for a custom Skywalker fortran library."
+    exit 1
+  fi
+  OPTIONS="\$OPTIONS -DSKYWALKER_F90_LIBRARY=\$SKYWALKER_F90_LIBRARY_DIR/\$SKYWALKER_F90_LIBRARY"
+  OPTIONS="\$OPTIONS -DSKYWALKER_INCLUDE_DIR=\$SKYWALKER_INCLUDE_DIR"
+fi
+
 # Add extra linker flags if needed.
 if [ ! "\$EXTRA_LDFLAGS" = "" ]; then
   OPTIONS="\$OPTIONS -DHAERO_EXTRA_LDFLAGS=\$EXTRA_LDFLAGS"
