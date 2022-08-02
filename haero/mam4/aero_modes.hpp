@@ -181,30 +181,30 @@ static AeroSpecies aero_species[7] = {
   AeroSpecies(250093.0, 1601.0, 0.1)  // marine organic matter
 };
 
-// A list of species within each mode for MAM4.
-static constexpr AeroId mode_aero_species[4][7] = {
-  { // accumulation mode
-    AeroId::SO4, AeroId::POM, AeroId::SOA, AeroId::BC, AeroId::DST,
-    AeroId::NaCl, AeroId::MOM
-  },
-  { // aitken mode
-    AeroId::SO4, AeroId::SOA, AeroId::NaCl, AeroId::MOM, AeroId::None,
-    AeroId::None, AeroId::None,
-  },
-  { // coarse mode
-    AeroId::DST, AeroId::NaCl, AeroId::SO4, AeroId::BC, AeroId::POM,
-    AeroId::SOA, AeroId::MOM
-  },
-  { // primary carbon mode
-    AeroId::POM, AeroId::BC, AeroId::MOM, AeroId::None, AeroId::None,
-    AeroId::None, AeroId::None
-  }
-};
-
 /// Returns the index of the given aerosol species within the given mode, or
 /// -1 if the species is not found within the mode.
 KOKKOS_INLINE_FUNCTION
 int aerosol_index_for_mode(ModeIndex mode, AeroId aero_id) {
+  // A list of species within each mode for MAM4.
+  static constexpr AeroId mode_aero_species[4][7] = {
+    { // accumulation mode
+      AeroId::SO4, AeroId::POM, AeroId::SOA, AeroId::BC, AeroId::DST,
+      AeroId::NaCl, AeroId::MOM
+    },
+    { // aitken mode
+      AeroId::SO4, AeroId::SOA, AeroId::NaCl, AeroId::MOM, AeroId::None,
+      AeroId::None, AeroId::None,
+    },
+    { // coarse mode
+      AeroId::DST, AeroId::NaCl, AeroId::SO4, AeroId::BC, AeroId::POM,
+      AeroId::SOA, AeroId::MOM
+    },
+    { // primary carbon mode
+      AeroId::POM, AeroId::BC, AeroId::MOM, AeroId::None, AeroId::None,
+      AeroId::None, AeroId::None
+    }
+  };
+
   int mode_index = static_cast<int>(mode);
   for (int s = 0; s < 7; ++s) {
     if (aero_id == mode_aero_species[mode_index][s]) {
