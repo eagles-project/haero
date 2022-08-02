@@ -330,7 +330,7 @@ class GasAerExchImpl {
       wghq = wghq_2.data();
     } else {
       printf("nghq integration option is not available: %d, valid are 20, 10, 4, and 2\n", nghq);
-      Kokkos::Impl::throw_runtime_exception("Invalid integration order requested.");
+      Kokkos::abort("Invalid integration order requested.");
     }
     //---------------------------------------------------------------------------------------------
 
