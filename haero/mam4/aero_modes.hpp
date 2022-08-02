@@ -182,7 +182,7 @@ static AeroSpecies aero_species[7] = {
 };
 
 // A list of species within each mode for MAM4.
-static AeroId mode_aero_species[4][7] = {
+static constexpr AeroId mode_aero_species[4][7] = {
   { // accumulation mode
     AeroId::SO4, AeroId::POM, AeroId::SOA, AeroId::BC, AeroId::DST,
     AeroId::NaCl, AeroId::MOM
@@ -200,6 +200,19 @@ static AeroId mode_aero_species[4][7] = {
     AeroId::None, AeroId::None
   }
 };
+
+/// Returns the index of the given aerosol species within the given mode, or
+/// -1 if the species is not found within the mode.
+KOKKOS_INLINE_FUNCTION
+int aerosol_index_for_mode(ModeIndex mode, AeroId aero_id) {
+  int mode_index = static_cast<int>(mode);
+  for (int s = 0; s < 7; ++s) {
+    if (aero_id == mode_aero_species[mode_index][s]) {
+      return s;
+    }
+  }
+  return -1;
+}
 
 // Identifiers for gas species in MAM4.
 enum class GasId {
