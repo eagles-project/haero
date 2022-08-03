@@ -34,13 +34,13 @@ class AeroProcess final {
   /// @param [in] aero_config The aerosol configuration for this process
   /// @param [in] process_config Any process-specific information required by
   ///                            this process's implementation.
-  explicit AeroProcess(const AeroConfig& aero_config,
-                       const ProcessConfig& process_config = ProcessConfig())
+  AeroProcess(const AeroConfig& aero_config,
+              const ProcessConfig& process_config = ProcessConfig())
       : aero_config_(aero_config), process_config_(process_config),
         process_impl_() {
     // Set the name of this process.
     const char *name = process_impl_.name();
-    strncpy(name_, name, sizeof(name_));
+    std::strncpy(name_, name, sizeof(name_));
     // Pass the configuration data to the implementation to initialize it.
     process_impl_.init(aero_config_, process_config_);
   }
