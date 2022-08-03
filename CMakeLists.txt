@@ -212,7 +212,7 @@ else()
 endif()
 
 # Enable OpenMP for CPU backends if available.
-if (NOT HAERO_ENABLE_GPU)
+if (NOT HAERO_ENABLE_GPU AND NOT APPLE)
   find_package(OpenMP QUIET)
   if (OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
