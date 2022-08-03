@@ -9,9 +9,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 #---------
 option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"              OFF)
 option(HAERO_ENABLE_GPU       "Enable GPU support"                         OFF)
-option(HAERO_ENABLE_MPI       "Enable MPI parallelism"                     ON)
-option(HAERO_ENABLE_OPENMP    "Enable OpenMP threading (CPU only)"         OFF)
 option(HAERO_ENABLE_MAM4BOX   "Enable MAM4 box model and related testing"  OFF)
+option(HAERO_ENABLE_MPI       "Enable MPI parallelism"                     ON)
 
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.
@@ -212,22 +211,14 @@ else()
   message(STATUS "MPI is disabled")
 endif()
 
-# OpenMP support?
-if (HAERO_ENABLE_OPENMP)
+# Enable OpenMP for CPU backends if available.
+if (NOT HAERO_ENABLE_GPU)
   find_package(OpenMP QUIET)
   if (OPENMP_FOUND)
-    message(STATUS "OpenMP is enabled")
-    set(HAVE_OPENMP 1)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  else()
-    message(STATUS "OpenMP is not supported")
-    set(HAVE_OPENMP 0)
   endif()
-else()
-  message(STATUS "OpenMP is disabled")
-  set(HAVE_OPENMP 0)
 endif()
 
 # Other third-party libraries.
@@ -240,11 +231,6 @@ if (HAERO_ENABLE_GPU)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
   # Avoid buggy experimental Kokkos CUDA stuff.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_  -DKokkos_CXX_STANDARD=C++17")
-else()
-  # Make sure we're building with OpenMP where appropriate.
-  if (NOT APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-  endif()
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
