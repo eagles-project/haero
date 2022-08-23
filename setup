@@ -150,16 +150,6 @@ ENABLE_CHEMISTRY=OFF
 #VERBOSE=ON
 
 #-----------------------------------------------------------------------------
-#                          MAM4 box model testing setup
-#-----------------------------------------------------------------------------
-
-# Set this to ON to enable testing against MAM4 box model parameterizations.
-ENABLE_MAM4BOX=OFF
-
-# If Set this to a local directory containing a clone of the mam_refactor repo.
-#MAM4BOX_DIR=/path/to/mam_box_model_source
-
-#-----------------------------------------------------------------------------
 #                                   Compilers
 #-----------------------------------------------------------------------------
 
@@ -278,11 +268,6 @@ fi
 # Clear the build cache.
 rm -f CMakeCache.txt
 
-# Pass along MAM4 box model options if needed.
-if [ "\$ENABLE_MAM4BOX" = "ON" ]; then
-  OPTIONS="\$OPTIONS -DCMAKE_Fortran_COMPILER=\$FC -DMAM4BOX_DIR=\$MAM4BOX_DIR"
-fi
-
 # Configure the build.
 cmake \
  -DCMAKE_INSTALL_PREFIX:PATH=\$PREFIX \
@@ -292,7 +277,6 @@ cmake \
  -DHAERO_ENABLE_CHEMISTRY=\$ENABLE_CHEMISTRY \
  -DHAERO_ENABLE_GPU=\$ENABLE_GPU \
  -DHAERO_ENABLE_MPI=\$ENABLE_MPI \
- -DHAERO_ENABLE_MAM4BOX=\$ENABLE_MAM4BOX \
  -DHAERO_PRECISION=\$PRECISION \
  -DHAERO_DEVICE_ARCH:STRING=\$DEVICE_ARCH \
  -DKokkos_ARCH_\$DEVICE_ARCH:BOOL=ON \

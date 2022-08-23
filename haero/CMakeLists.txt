@@ -62,7 +62,3 @@ install(FILES aero_process.hpp
               view_pack_helpers.hpp
         DESTINATION include/haero)
 
-# Aerosol package implementations
-add_subdirectory(mam4)
-#add_subdirectory(mamx)  <--- dynamically-indexed MAM (if we get to it!)
-
