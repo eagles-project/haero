@@ -156,12 +156,6 @@ message(STATUS "Installation prefix is ${CMAKE_INSTALL_PREFIX}")
 # Basic libraries to be linked in.
 set(HAERO_LIBRARIES m)
 
-# Process any additional linker flags supplied with EXTRA_LDFLAGS.
-if (HAERO_EXTRA_LDFLAGS)
-  include(parse_extra_ldflags)
-  parse_extra_ldflags(${HAERO_EXTRA_LDFLAGS})
-endif()
-
 # Figure out MPI.
 if (HAERO_ENABLE_MPI)
   message(STATUS "MPI is enabled")
@@ -261,13 +255,13 @@ if (HAERO_ENABLE_CHEMISTRY)
 endif()
 
 # Generate haero.cmake (for downstream aerosol packages) and install it.
-if (${PROJECT_BINARY_DIR}/share)
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/cmake/haero.cmake.in
-    ${PROJECT_BINARY_DIR}/share/haero.cmake
-  @ONLY
+configure_file(
+  ${PROJECT_SOURCE_DIR}/cmake/haero.cmake.in
+  ${PROJECT_BINARY_DIR}/share/haero.cmake
+@ONLY
 )
-install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION share)
+install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION .)
+install(FILES ${PROJECT_SOURCE_DIR}/cmake/create_unit_test.cmake DESTINATION share)
 
 # Formatting and format checking using clang-format.
 find_program(CLANG_FORMAT clang-format)

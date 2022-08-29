@@ -1,6 +1,5 @@
 include(ExternalProject)
 include(GNUInstallDirs)
-include(${PROJECT_SOURCE_DIR}/cmake/cmake_helpers.cmake)
 include_directories(${PROJECT_BINARY_DIR}/include)
 
 # Create canonical top-level directories in the build directory.

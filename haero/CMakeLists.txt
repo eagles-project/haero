@@ -53,11 +53,14 @@ set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 install(TARGETS haero DESTINATION lib)
 install(FILES aero_process.hpp
               aero_species.hpp
+              atmosphere.hpp
+              check.hpp
               constants.hpp
               floating_point.hpp
               gas_species.hpp
               haero.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
+              math.hpp
               utils.hpp
               view_pack_helpers.hpp
         DESTINATION include/haero)
