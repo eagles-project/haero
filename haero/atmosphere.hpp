@@ -74,7 +74,7 @@ class Atmosphere final {
   /// Returns true iff all atmospheric quantities are nonnegative, using the
   /// given thread team to parallelize the check.
   KOKKOS_INLINE_FUNCTION
-  bool quantities_nonnegative(const TeamType& team) const {
+  bool quantities_nonnegative(const ThreadTeam& team) const {
     const int nk = PackInfo::num_packs(num_levels());
     int violations = 0;
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),

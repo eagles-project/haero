@@ -89,7 +89,7 @@ class AeroProcess final {
   /// @param [in] prognostics A collection of aerosol prognostic variables to be
   ///                         validated.
   KOKKOS_INLINE_FUNCTION
-  bool validate(const TeamType& team,
+  bool validate(const ThreadTeam& team,
                 const Atmosphere& atmosphere,
                 const Prognostics& prognostics) const {
     return process_impl_.validate(aero_config_, team, atmosphere, prognostics);
@@ -112,7 +112,7 @@ class AeroProcess final {
   /// @param [out]   tendencies An array analogous to prognostics that
   ///                           stores computed tendencies.
   KOKKOS_INLINE_FUNCTION
-  void compute_tendencies(const TeamType& team, Real t, Real dt,
+  void compute_tendencies(const ThreadTeam& team, Real t, Real dt,
                           const Atmosphere& atmosphere,
                           const Prognostics& prognostics,
                           const Diagnostics& diagnostics,

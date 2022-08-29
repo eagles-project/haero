@@ -37,13 +37,13 @@ using ExecutionSpace = typename DeviceType::ExeSpace;
 
 /// Kokkos team policy used to perform parallel dispatches of aerosol processes
 /// over several columns.
-using TeamPolicy = typename DeviceType::TeamPolicy;
+using ThreadTeamPolicy = typename DeviceType::TeamPolicy;
 
 /// Kokkos team type for the Kokkos::TeamThreadRange parallel dispatch policy.
 /// This type is often called a TeamMember in other Kokkos codes, but it's
 /// actually not a member of a team--it's a member of a league: in other words,
 /// a team!
-using TeamType = typename DeviceType::MemberType;
+using ThreadTeam = typename DeviceType::MemberType;
 
 /// A TracersView іs a rank 3 Kokkos View with the following indices:
 /// 1. A tracer index identifying an advected quantity
