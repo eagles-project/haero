@@ -38,9 +38,9 @@ set(HAERO_INCLUDE_DIRS @CMAKE_INSTALL_PREFIX@/include @CMAKE_INSTALL_PREFIX@/inc
 foreach (lib kokkoscore kokkoscontainers spdlog ekat ekat_test_main ekat_test_session haero)
   add_library(${lib} STATIC IMPORTED GLOBAL)
   if (${lib} MATCHES "spdlog" AND HAERO_BUILD_TYPE MATCHES "Debug")
-    set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION @CMAKE_INSTALL_PREFIX@/lib/lib${lib}d.a)
+    set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/lib${lib}d.a)
   else()
-    set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION @CMAKE_INSTALL_PREFIX@/lib/lib${lib}.a)
+    set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/lib${lib}.a)
   endif()
 endforeach()
 
