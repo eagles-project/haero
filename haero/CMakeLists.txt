@@ -50,7 +50,7 @@ set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 
 # Installation targets
-install(TARGETS haero DESTINATION lib)
+install(TARGETS haero DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES aero_process.hpp
               aero_species.hpp
               atmosphere.hpp
