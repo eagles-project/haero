@@ -50,19 +50,18 @@ set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
 
 # Installation targets
-install(TARGETS haero DESTINATION lib)
+install(TARGETS haero DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES aero_process.hpp
               aero_species.hpp
+              atmosphere.hpp
+              check.hpp
               constants.hpp
               floating_point.hpp
               gas_species.hpp
               haero.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
+              math.hpp
               utils.hpp
               view_pack_helpers.hpp
         DESTINATION include/haero)
-
-# Aerosol package implementations
-add_subdirectory(mam4)
-#add_subdirectory(mamx)  <--- dynamically-indexed MAM (if we get to it!)
 
