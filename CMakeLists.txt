@@ -37,17 +37,7 @@ else() #CPU
   message(STATUS "Building for CPU (${HAERO_DEVICE_ARCH})")
 endif()
 
-# Define default Kokkos View types
-if (NOT HAERO_COLUMN_VIEW_TYPE)
-  set(HAERO_COLUMN_VIEW_TYPE "DeviceType::view_1d<PackType>")
-endif()
-if (NOT HAERO_SPECIES_COLUMN_VIEW_TYPE)
-  set(HAERO_SPECIES_COLUMN_VIEW_TYPE "DeviceType::view_2d<PackType>")
-endif()
-if (NOT HAERO_MODE_COLUMN_VIEW_TYPE)
-  set(HAERO_MODE_COLUMN_VIEW_TYPE "DeviceType::view_2d<PackType>")
-endif()
-
+enable_language(C)   # needed so ekat can detect MPI
 enable_language(CXX)
 
 project (haero)
