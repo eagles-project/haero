@@ -45,3 +45,9 @@ foreach (lib kokkoscore kokkoscontainers spdlog ekat ekat_test_main ekat_test_se
 endforeach()
 
 set(HAERO_LIBRARIES @HAERO_LIBRARIES@)
+
+# Skywalker cross validation libraries (C++/Fortran)
+add_library(skywalker STATIC IMPORTED GLOBAL)
+add_library(skywalker_f90 STATIC IMPORTED GLOBAL)
+set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/libskywalker_@HAERO_PRECISION@.a)
+set_target_properties(skywalker_f90 PROPERTIES IMPORTED_LOCATION @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/libskywalker_f90_@HAERO_PRECISION@.a)
