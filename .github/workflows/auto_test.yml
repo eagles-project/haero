@@ -16,15 +16,12 @@ jobs:
     # A build matrix storing all desired configurations.
     strategy:
       matrix:
-        os: [ubuntu-latest] #, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         build-type: [Debug, Release]
         fp-precision: [single, double]
         pack-size: [1, 4]
 
     runs-on: ${{ matrix.os }}
-
-#    # Pre-fab container with third-party libs installed.
-#    container: coherellc/haero-tpl:${{ matrix.build-type }}-${{ matrix.fp-precision }}-pack-size-${{ matrix.pack-size }}
 
     # Environment variables
     env:
@@ -34,7 +31,8 @@ jobs:
     # Steps for building and running tests.
     steps:
 
-    - name: Installing dependencies
+    - name: Installing dependencies (Linux)
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         sudo apt-get update && sudo apt-get install -y --no-install-recommends \
         autoconf \
@@ -48,6 +46,19 @@ jobs:
         make \
         pkg-config \
         ca-certificates
+
+    - name: Installing dependencies (Mac)
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        sudo brew install \
+        autoconf \
+        clang-format \
+        cmake \
+        openmpi \
+        gfortran \
+        git \
+        make \
+        pkg-config
 
     - name: Checking out repository
       uses: actions/checkout@v2
