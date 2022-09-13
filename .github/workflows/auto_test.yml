@@ -53,6 +53,7 @@ jobs:
         open-mpi \
         make
         echo "/usr/local/bin" >> $GITHUB_PATH
+        ls -l /usr/local/bin/gfortran
 
     - name: Checking out repository
       uses: actions/checkout@v2
