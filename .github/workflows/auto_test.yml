@@ -50,7 +50,7 @@ jobs:
     - name: Installing dependencies (Mac)
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
-        sudo brew install \
+        brew install \
         autoconf \
         clang-format \
         cmake \
