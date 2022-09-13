@@ -24,9 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     # Environment variables
-    env:
-      FC: gfortran
-      CI: 1   # indicates that we are running in a CI environment.
+    #env:
 
     # Steps for building and running tests.
     steps:

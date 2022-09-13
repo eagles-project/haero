@@ -11,11 +11,6 @@ option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"              OFF)
 option(HAERO_ENABLE_GPU       "Enable GPU support"                         OFF)
 option(HAERO_ENABLE_MPI       "Enable MPI parallelism"                     ON)
 
-# This option is only used in CI, where we have to use special sauce to get the
-# submodules working with SSH. No mortal user should be concerned with this.
-option(DISABLE_SUBMODULE_CHECKS "Skip checks for git submodules" OFF)
-mark_as_advanced(FORCE DISABLE_SUBMODULE_CHECKS)
-
 message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
 
 # Check our pack size
