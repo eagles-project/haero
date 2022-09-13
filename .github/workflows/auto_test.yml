@@ -50,10 +50,10 @@ jobs:
       run: |
         brew install \
         clang-format \
-        open-mpi \
-        make
+        gcc \
+        open-mpi
         echo "/usr/local/bin" >> $GITHUB_PATH
-        ls -l /usr/local/bin/gfortran
+        ls -l /usr/local/bin
 
     - name: Checking out repository
       uses: actions/checkout@v2
