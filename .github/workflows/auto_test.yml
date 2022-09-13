@@ -51,8 +51,8 @@ jobs:
         brew install \
         clang-format \
         open-mpi \
-        gcc@9 \
         make
+        echo "/usr/local/bin" >> $GITHUB_PATH
 
     - name: Checking out repository
       uses: actions/checkout@v2
