@@ -41,7 +41,6 @@ jobs:
         libopenmpi-dev \
         gcc \
         g++ \
-        gfortran \
         git \
         make \
         pkg-config \
@@ -53,7 +52,6 @@ jobs:
         brew install \
         clang-format \
         open-mpi \
-        gcc \
         make
 
     - name: Checking out repository
@@ -71,7 +69,6 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
           -DCMAKE_CXX_COMPILER=c++ \
           -DCMAKE_C_COMPILER=cc \
-          -DCMAKE_Fortran_COMPILER=gfortran \
           -DHAERO_ENABLE_CHEMISTRY=OFF \
           -DHAERO_ENABLE_GPU=OFF \
           -DHAERO_ENABLE_OPENMP=ON \
