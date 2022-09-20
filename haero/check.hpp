@@ -40,9 +40,9 @@ struct Check {
   are not defined --- users must specify whether the required condition holds
   for _all_ values of the pack, or _any_ value.
 */
-template <typename ScalarType, int PackSize>
-struct Check<ekat::Pack<ScalarType, PackSize>> {
-  using ValueType = ekat::Pack<ScalarType, PackSize>;
+template <typename ScalarType>
+struct Check<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
+  using ValueType = ekat::Pack<ScalarType, HAERO_PACK_SIZE>;
 
   KOKKOS_INLINE_FUNCTION
   static bool is_negative(const ValueType& x) { return (x < 0).all(); }
