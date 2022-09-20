@@ -44,6 +44,7 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
   quartic_leg_poly p4;
 
   const Real conv_tol = 100*FloatingPoint<Real>::zero_tol;
+  std::cout << "convergence tolerance = " << conv_tol << "\n";
 
   SECTION("Newton solve") {
     const Real x0 = 1.0;
@@ -119,6 +120,7 @@ TEST_CASE("haer_math_rootfinding_packs","") {
   quartic_leg_poly p4;
 
   const Real conv_tol = 100*FloatingPoint<Real>::zero_tol;
+  std::cout << "convergence tolerance = " << conv_tol << "\n";
 
   SECTION("newton solve") {
     const pack_type x0(1.0);
@@ -175,7 +177,7 @@ TEST_CASE("haer_math_rootfinding_packs","") {
               << abs(cubic_sol - cubic_root) / cubic_root
               << " n_iter = " << cubic_solver.counter << "\n";
 
-    REQUIRE(FloatingPoint<pack_type>::rel(cubic_sol, cubic_root));
+    REQUIRE(FloatingPoint<pack_type>::rel(cubic_sol, cubic_root, conv_tol));
 
     auto quartic_solver = math::BracketedNewtonSolver<quartic_leg_poly>(x0,a0, b0, conv_tol, p4);
     const pack_type quartic_sol = quartic_solver.solve();
@@ -184,7 +186,7 @@ TEST_CASE("haer_math_rootfinding_packs","") {
               << abs(quartic_sol - quartic_root) / quartic_root
               << " n_iter = " << quartic_solver.counter << "\n";
 
-    REQUIRE(FloatingPoint<pack_type>::rel(quartic_sol, quartic_root));
+    REQUIRE(FloatingPoint<pack_type>::rel(quartic_sol, quartic_root, conv_tol));
   }
 }
 #endif
