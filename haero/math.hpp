@@ -175,12 +175,6 @@ struct LegendreQuartic {
   This algorithm has a quadratic convergence rate but it is not guaranteed to
   converge. It may converge to an incorrect root if a poor initial guess is
   chosen. It requires both function values and derivative values.
-
-  The Legendre polynomials above demonstrate the required ScalarFunction
-  interface.
-
-  For an application example, see KohlerPolynomial.
-
 */
 namespace {
 template <typename T>
