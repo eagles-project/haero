@@ -175,12 +175,6 @@ struct LegendreQuartic {
   This algorithm has a quadratic convergence rate but it is not guaranteed to
   converge. It may converge to an incorrect root if a poor initial guess is
   chosen. It requires both function values and derivative values.
-
-  The Legendre polynomials above demonstrate the required ScalarFunction
-  interface.
-
-  For an application example, see KohlerPolynomial.
-
 */
 namespace {
 template <typename T>
@@ -366,24 +360,16 @@ struct BracketedNewtonSolver {
       // assure progress: guard against tiny steps
       const Real pad_fac = bracket_pad_factor;
       const VT pad = pad_fac * (b - a);
-      const auto mbnd = (x > (a + pad)) and (x < (b - pad));
-      vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
-        if (!mbnd[s]) {
-          x[s] = 0.5 * (a[s] + b[s]);
-        }
-      }
+      const auto mbnd = (x >= (a + pad)) and (x <= (b - pad));
+      const auto mid = 0.5*(a + b);
+      x.set(mbnd, x, mid);
       fx = f(x);
       // update bracket
       const auto msign = (fx * fa > 0);
-      vector_simd for (int s = 0; s < HAERO_PACK_SIZE; ++s) {
-        if (msign[s]) {
-          a[s] = x[s];
-          fa[s] = fx[s];
-        } else {
-          b[s] = x[s];
-          fb[s] = fx[s];
-        }
-      }
+      a.set(msign, x, a);
+      fa.set(msign, fx, fa);
+      b.set(msign, b, x);
+      fb.set(msign, fb, fx);
       // check convergence
       iter_diff = abs(x - xroot);
       keep_going = !FloatingPoint<VT>::zero(iter_diff, conv_tol);
@@ -396,7 +382,7 @@ struct BracketedNewtonSolver {
         ss << xroot << ", x = " << x << ", |diff| = " << iter_diff << "\n";
         std::cout << ss.str();
 #else
-        static_assert(HAERO_PACK_SIZE == 1, "cuda uses pack size 1");
+        static_assert(VT::n == 1, "cuda uses pack size 1");
         printf(
             "bracketed newton solve warning, max iterations reached: xroot = "
             "%g xnp1 = %g |diff| = %g\n",

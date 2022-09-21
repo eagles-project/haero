@@ -105,6 +105,14 @@ struct FloatingPoint<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
     return (abs(x0 - x1) < tol).all();
   }
 
+  KOKKOS_INLINE_FUNCTION
+  static bool equiv(const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x0,
+                    const ScalarType& x1,
+                    const Real tol = zero_tol) {
+    EKAT_KERNEL_ASSERT(tol > 0);
+    return (abs(x0 - x1) < tol).all();
+  }
+
   // Define floating point equivalence by
   // @f$\frac{\lvert x_0 - x_1 \rvert}{max(\lvert x_0 \rvert, \lvert x_1
   // \rvert)} < \epsilon_{tol}@f$ return true if *all* pack values meet the
@@ -117,6 +125,16 @@ struct FloatingPoint<ekat::Pack<ScalarType, HAERO_PACK_SIZE>> {
     const Real max0 = ekat::max(x0);
     const Real max1 = ekat::max(x1);
     const Real max = (max0 > max1 ? max0 : max1);
+    return (abs(x0 - x1) / max < tol).all();
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static bool rel(const ekat::Pack<ScalarType, HAERO_PACK_SIZE>& x0,
+                  const ScalarType& x1,
+                  const Real tol = zero_tol) {
+    EKAT_KERNEL_ASSERT(tol > 0);
+    const Real max0 = ekat::max(x0);
+    const Real max = (max0 > x1 ? max0 : x1);
     return (abs(x0 - x1) / max < tol).all();
   }
 
