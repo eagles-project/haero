@@ -104,7 +104,7 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
     REQUIRE(quartic_sol == Approx(quartic_root));
   }
 }
-TEST_CASE("haer_math_rootfinding_packs","") {
+TEST_CASE("haero_math_rootfinding_packs","") {
   const Real cubic_root = sqrt(3.0/5.0);
   const Real quartic_root = sqrt((15.0 + 2*sqrt(30.0))/35.0);
 
