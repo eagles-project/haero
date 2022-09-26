@@ -37,7 +37,7 @@ add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
             utils.cpp
             view_pack_helpers.cpp
-            kohler.cpp)
+            )
 add_dependencies(haero ext_libraries update_version_info)
 target_compile_options(haero PRIVATE  $<$<COMPILE_LANGUAGE:CXX>:${KOKKOS_CUDA_OPTIONS}>)
 if(CMAKE_COMPILER_IS_GNUCXX)
