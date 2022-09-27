@@ -187,7 +187,7 @@ KOKKOS_INLINE_FUNCTION Real scalarize(const Real r) {
 }
 }  // namespace
 template <typename ScalarFunction>
-struct ScalarNewtonSolver {
+struct NewtonSolver {
   using value_type = typename ScalarFunction::value_type;
 
   /// maximum number of iterations allowed per solve
@@ -205,14 +205,16 @@ struct ScalarNewtonSolver {
 
   /** @brief Constructor.
 
-    @param [in] xinit Initial guess for the rootfinding algorithm
+    @param [in] x0 Initial guess for the rootfinding algorithm
+    @param [in] a0 Unused. Required to have unified interface for all solvers.
+    @param [in] b0 Unused. Required to have unified interface for all solvers.
     @param [in] tol Convergence tolerance that determines when a root is found.
     @param [in] fn ScalarFunction instance whose root needs to be found
   */
   KOKKOS_INLINE_FUNCTION
-  ScalarNewtonSolver(const value_type& xinit, const Real& tol,
+  NewtonSolver(const value_type x0, const value_type a0, const value_type b0, const Real& tol,
                      const ScalarFunction& fn)
-      : xroot(xinit),
+      : xroot(x0),
         conv_tol(tol),
         counter(0),
         iter_diff(std::numeric_limits<Real>::max()),
@@ -278,8 +280,16 @@ struct BracketedNewtonSolver {
   int counter;
   value_type iter_diff;
 
+  /** @brief Constructor.
+
+    @param [in] x0 x0 Initial guess for the rootfinding algorithm
+    @param [in] a0 Left endpoint of the initial interval
+    @param [in] b0 Right endpoint of the initial interval
+    @param [in] tol Convergence tolerance that determines when a root is found.
+    @param [in] fn ScalarFunction instance whose root needs to be found
+  */
   KOKKOS_INLINE_FUNCTION
-  BracketedNewtonSolver(const value_type x0, const Real a0, const Real b0,
+  BracketedNewtonSolver(const value_type x0, const value_type a0, const value_type b0,
                         const Real tol, const ScalarFunction& fn)
       : xroot(x0),
         a(a0),
@@ -435,13 +445,14 @@ struct BisectionSolver {
 
   /** @brief Constructor.
 
+    @param [in] x0 Unused. Required to have unified interface for all solvers.
     @param [in] a0 Left endpoint of the initial interval
     @param [in] b0 Right endpoint of the initial interval
     @param [in] tol Convergence tolerance that determines when a root is found.
     @param [in] fn ScalarFunction instance whose root needs to be found
   */
   KOKKOS_INLINE_FUNCTION
-  BisectionSolver(const value_type& a0, const value_type& b0, const Real tol,
+  BisectionSolver(const value_type x0, const value_type a0, const value_type b0, const Real tol,
                   const ScalarFunction& fn)
       : xroot(0.5 * (a0 + b0)),
         a(a0),

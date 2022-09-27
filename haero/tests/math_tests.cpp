@@ -43,10 +43,13 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
   const Real conv_tol = 100*FloatingPoint<Real>::zero_tol;
   std::cout << "convergence tolerance = " << conv_tol << "\n";
 
-  SECTION("Newton solve") {
-    const Real x0 = 1.0;
+  const Real a0 = 0.5;
+  const Real b0 = 1.0;
+  const Real x0 = 1.0;
 
-    auto cubic_solver = math::ScalarNewtonSolver<cubic_leg_poly>(x0, conv_tol, p3);
+  SECTION("Newton solve") {
+
+    auto cubic_solver = math::NewtonSolver<cubic_leg_poly>(x0, a0, b0, conv_tol, p3);
     const Real cubic_sol = cubic_solver.solve();
 
     std::cout << "newton cubic_sol rel. error = "
@@ -55,7 +58,7 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
 
     REQUIRE(cubic_sol == Approx(cubic_root));
 
-    auto quartic_solver = math::ScalarNewtonSolver<quartic_leg_poly>(x0, conv_tol, p4);
+    auto quartic_solver = math::NewtonSolver<quartic_leg_poly>(x0, a0, b0, conv_tol, p4);
     const Real quartic_sol = quartic_solver.solve();
 
     std::cout << "newton quartic_sol rel. error = "
@@ -66,9 +69,7 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
   }
 
   SECTION("bisection_solve") {
-    const Real a0 = 0.5;
-    const Real b0 = 1.0;
-    auto cubic_solver = math::BisectionSolver<cubic_leg_poly>(a0, b0, conv_tol, p3);
+    auto cubic_solver = math::BisectionSolver<cubic_leg_poly>(x0, a0, b0, conv_tol, p3);
     const Real cubic_sol = cubic_solver.solve();
     std::cout << "bisection cubic_sol rel. error = "
               << std::abs(cubic_sol - cubic_root) / cubic_root
@@ -76,7 +77,7 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
 
     REQUIRE(cubic_sol == Approx(cubic_root));
 
-    auto quartic_solver = math::BisectionSolver<quartic_leg_poly>(a0, b0, conv_tol, p4);
+    auto quartic_solver = math::BisectionSolver<quartic_leg_poly>(x0, a0, b0, conv_tol, p4);
     const Real quartic_sol = quartic_solver.solve();
     std::cout << "bisection quartic_sol rel. error = "
               << std::abs(quartic_sol - quartic_root) / quartic_root
@@ -85,9 +86,6 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
   }
 
   SECTION("bracketed_newton_solve") {
-    const Real a0 = 0.5;
-    const Real b0 = 1.0;
-    const Real x0 = 1.0;
     auto cubic_solver = math::BracketedNewtonSolver<cubic_leg_poly>(x0, a0, b0, conv_tol, p3);
     const Real cubic_sol = cubic_solver.solve();
     std::cout << "bracketed newton cubic_sol rel. error = "
@@ -117,10 +115,12 @@ TEST_CASE("haero_math_rootfinding_packs","") {
   const Real conv_tol = 100*FloatingPoint<Real>::zero_tol;
   std::cout << "convergence tolerance = " << conv_tol << "\n";
 
-  SECTION("newton solve") {
-    const PackType x0(1.0);
+  const PackType x0(1.0);
+  const PackType a0(0.5);
+  const PackType b0(1.0);
 
-    auto cubic_solver = math::ScalarNewtonSolver<cubic_leg_poly>(x0, conv_tol, p3);
+  SECTION("newton solve") {
+    auto cubic_solver = math::NewtonSolver<cubic_leg_poly>(x0,a0, b0, conv_tol, p3);
     const PackType cubic_sol = cubic_solver.solve();
 
     std::cout << "newton cubic_sol rel. error = "
@@ -129,7 +129,7 @@ TEST_CASE("haero_math_rootfinding_packs","") {
 
     REQUIRE(FloatingPoint<PackType>::rel(cubic_sol, cubic_root));
 
-    auto quartic_solver = math::ScalarNewtonSolver<quartic_leg_poly>(x0, conv_tol, p4);
+    auto quartic_solver = math::NewtonSolver<quartic_leg_poly>(x0, a0, b0, conv_tol, p4);
     const PackType quartic_sol = quartic_solver.solve();
 
     std::cout << "newton quartic_sol rel. error = "
@@ -139,10 +139,8 @@ TEST_CASE("haero_math_rootfinding_packs","") {
     REQUIRE(FloatingPoint<PackType>::rel(quartic_sol, quartic_root));
   }
   SECTION("bisection solve") {
-    const PackType a0(0.5);
-    const PackType b0(1.0);
 
-    auto cubic_solver = math::BisectionSolver<cubic_leg_poly>(a0,b0, conv_tol, p3);
+    auto cubic_solver = math::BisectionSolver<cubic_leg_poly>(x0, a0,b0, conv_tol, p3);
     const PackType cubic_sol = cubic_solver.solve();
 
     std::cout << "bisection cubic_sol rel. error = "
@@ -151,7 +149,7 @@ TEST_CASE("haero_math_rootfinding_packs","") {
 
     REQUIRE(FloatingPoint<PackType>::rel(cubic_sol, cubic_root, conv_tol));
 
-    auto quartic_solver = math::BisectionSolver<quartic_leg_poly>(a0, b0, conv_tol, p4);
+    auto quartic_solver = math::BisectionSolver<quartic_leg_poly>(x0, a0, b0, conv_tol, p4);
     const PackType quartic_sol = quartic_solver.solve();
 
     std::cout << "bisection quartic_sol rel. error = "
@@ -161,9 +159,6 @@ TEST_CASE("haero_math_rootfinding_packs","") {
     REQUIRE(FloatingPoint<PackType>::rel(quartic_sol, quartic_root, conv_tol));
   }
     SECTION("bracketed newton solve") {
-    const PackType x0(1.0);
-    const Real a0(0.5);
-    const Real b0(1.0);
 
     auto cubic_solver = math::BracketedNewtonSolver<cubic_leg_poly>(x0, a0,b0, conv_tol, p3);
     const PackType cubic_sol = cubic_solver.solve();
