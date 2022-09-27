@@ -216,16 +216,6 @@ struct MonicParabola {
   converge. It may converge to an incorrect root if a poor initial guess is
   chosen. It requires both function values and derivative values.
 */
-// namespace {
-// template <typename T>
-// KOKKOS_INLINE_FUNCTION Real scalarize(const T pack) {
-//   return pack[0];
-// }
-// template <>
-// KOKKOS_INLINE_FUNCTION Real scalarize(const Real r) {
-//   return r;
-// }
-// }  // namespace
 template <typename ScalarFunction>
 struct NewtonSolver {
   using value_type = typename ScalarFunction::value_type;
