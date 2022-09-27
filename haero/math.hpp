@@ -191,20 +191,23 @@ struct MonicParabola {
   using value_type = T;
   using scalar_type = typename ekat::ScalarTraits<T>::scalar_type;
 
-  static constexpr Real a = 0;
-  static constexpr Real b = 3;
+  Real a;
+  Real b;
 
   KOKKOS_INLINE_FUNCTION
-  MonicParabola() {}
+  MonicParabola() : a(0), b(3) {}
 
   KOKKOS_INLINE_FUNCTION
   T operator() (const T xin) const {
-    return square(xin) + a * xin + b;
+    const T aa(a);
+    const T bb(b);
+    return square(xin) + aa * xin + bb;
   }
 
   KOKKOS_INLINE_FUNCTION
   T derivative(const T xin) const {
-    return 2*xin + a;
+    const T aa(a);
+    return 2*xin + aa;
   }
 };
 

@@ -21,7 +21,7 @@ export NETCDFF_LIBRARY=libnetcdff.a
 # export OPENBLAS_LIBRARY_DIR=/home/mjschm/OpenBLAS/install/lib
 # export OPENBLAS_LIBRARY=libopenblas.a
 
-export FC=mpifort
-export CC=mpicc
-export CXX=mpicxx
+#export FC=mpifort
+#export CC=mpicc
+#export CXX=mpicxx
 
