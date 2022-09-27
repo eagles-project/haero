@@ -102,6 +102,7 @@ TEST_CASE("haero_math_rootfinding_no_packs", "") {
     REQUIRE(quartic_sol == Approx(quartic_root));
   }
 }
+
 TEST_CASE("haero_math_rootfinding_packs","") {
   const Real cubic_root = sqrt(3.0/5.0);
   const Real quartic_root = sqrt((15.0 + 2*sqrt(30.0))/35.0);
@@ -159,7 +160,6 @@ TEST_CASE("haero_math_rootfinding_packs","") {
     REQUIRE(FloatingPoint<PackType>::rel(quartic_sol, quartic_root, conv_tol));
   }
     SECTION("bracketed newton solve") {
-
     auto cubic_solver = math::BracketedNewtonSolver<cubic_leg_poly>(x0, a0,b0, conv_tol, p3);
     const PackType cubic_sol = cubic_solver.solve();
 
@@ -193,10 +193,12 @@ TEST_CASE("no_root", "") {
   const PackType b0(1);
 
   auto quadratic_solver = math::NewtonSolver<quadratic_poly>(x0, a0, b0, conv_tol, qpoly);
-
   const PackType qsol = quadratic_solver.solve();
   std::cout << "newton quadratic_sol = " << qsol
             << " n_iter = " << quadratic_solver.counter << "\n";
+
+  REQUIRE( quadratic_solver.fail );
+  REQUIRE( isnan(qsol).any() );
 }
 
 

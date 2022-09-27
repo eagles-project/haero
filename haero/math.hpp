@@ -30,7 +30,7 @@ using ekat::tanh;
 using ekat::erf;
 
 // bring in std:: or CUDA C++ functions
-#ifndef __CUDACC__
+#ifdef __CUDACC__
 using ::exp;
 using ::log;
 using ::sqrt;
@@ -263,7 +263,13 @@ struct NewtonSolver {
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
   KOKKOS_INLINE_FUNCTION
-  value_type solve() {
+  value_type solve() {return solve_impl<value_type>();}
+
+  template <typename VT>
+  KOKKOS_INLINE_FUNCTION
+      typename std::enable_if<std::is_floating_point<VT>::value,
+                              value_type>::type
+      solve_impl() {
     bool keep_going = true;
     while (keep_going) {
       ++counter;
@@ -276,6 +282,29 @@ struct NewtonSolver {
         fail = true;
       }
       if (isnan(xnp1)) {
+        keep_going = false;
+        fail = true;
+      }
+      xroot = xnp1;
+    }
+    return xroot;
+  }
+
+  template <typename VT>
+  KOKKOS_INLINE_FUNCTION typename std::enable_if<VT::packtag, value_type>::type
+  solve_impl() {
+    bool keep_going = true;
+    while (keep_going) {
+      ++counter;
+      const value_type xnp1 = xroot - f(xroot) / f.derivative(xroot);
+      iter_diff = abs(xnp1 - xroot);
+      keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
+      if (counter > max_iter) {
+        keep_going = false;
+        fail = true;
+      }
+      if (isnan(xnp1).any()) {
         keep_going = false;
         fail = true;
       }
@@ -420,7 +449,7 @@ struct BracketedNewtonSolver {
         keep_going = false;
         fail = true;
       }
-      if (isnan(x)) {
+      if (isnan(x).any()) {
         keep_going = false;
         fail = true;
       }
@@ -548,7 +577,7 @@ struct BisectionSolver {
         keep_going = false;
         fail = true;
       }
-      if (isnan(xnp1)) {
+      if (isnan(xnp1).any()) {
         keep_going = false;
         fail = true;
       }
