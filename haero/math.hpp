@@ -6,6 +6,7 @@
 #include <haero/floating_point.hpp>
 #include <haero/haero.hpp>
 
+#include <ekat/ekat_assert.hpp>
 #include <ekat/ekat_pack.hpp>
 #include <ekat/ekat_pack_math.hpp>
 #include <ekat/ekat_scalar_traits.hpp>
@@ -33,10 +34,12 @@ using ekat::erf;
 using ::exp;
 using ::log;
 using ::sqrt;
+using ::isnan;
 #else
 using std::exp;
 using std::log;
 using std::sqrt;
+using std::isnan;
 #endif
 
 //// bring in kokkos math functions
@@ -171,6 +174,40 @@ struct LegendreQuartic {
   }
 };
 
+/** @brief Quadratic polynomial.
+
+  This struct is used for unit tests and to demonstrate the required
+  interface for scalar functions to be used with rootfinding algorithms.
+
+  Each scalar function must implement the T operator() (const T x) method.
+
+  If it is to be used by the Newton solver, it must also implement the
+  derivative(const T x) method, which returns f'(x).
+*/
+template <typename T>
+struct MonicParabola {
+  static_assert(std::is_floating_point<typename ekat::ScalarTraits<T>::scalar_type>::value,
+    "floating point type.");
+  using value_type = T;
+  using scalar_type = typename ekat::ScalarTraits<T>::scalar_type;
+
+  static constexpr Real a = 0;
+  static constexpr Real b = 3;
+
+  KOKKOS_INLINE_FUNCTION
+  MonicParabola() {}
+
+  KOKKOS_INLINE_FUNCTION
+  T operator() (const T xin) const {
+    return square(xin) + a * xin + b;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  T derivative(const T xin) const {
+    return 2*xin + a;
+  }
+};
+
 /** @brief Scalar rootfinding algorithm that employs Newton's method.
   This algorithm has a quadratic convergence rate but it is not guaranteed to
   converge. It may converge to an incorrect root if a poor initial guess is
@@ -202,6 +239,8 @@ struct NewtonSolver {
   value_type iter_diff;
   /// Scalar function whose root we need
   const ScalarFunction& f;
+  /// true if a failure condition is met
+  bool fail;
 
   /** @brief Constructor.
 
@@ -218,7 +257,8 @@ struct NewtonSolver {
         conv_tol(tol),
         counter(0),
         iter_diff(std::numeric_limits<Real>::max()),
-        f(fn) {}
+        f(fn),
+        fail(false) {}
 
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
@@ -233,6 +273,11 @@ struct NewtonSolver {
       EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
+        fail = true;
+      }
+      if (isnan(xnp1)) {
+        keep_going = false;
+        fail = true;
       }
       xroot = xnp1;
     }
@@ -268,6 +313,8 @@ struct BracketedNewtonSolver {
   const ScalarFunction& f;
   int counter;
   value_type iter_diff;
+  /// true if a failure condition is met
+  bool fail;
 
   /** @brief Constructor.
 
@@ -289,7 +336,8 @@ struct BracketedNewtonSolver {
         fb(fn(value_type(b0))),
         f(fn),
         counter(0),
-        iter_diff(std::numeric_limits<Real>::max()) {
+        iter_diff(std::numeric_limits<Real>::max()),
+        fail(false) {
     EKAT_KERNEL_ASSERT(Check<value_type>::is_positive(b - a));
     EKAT_KERNEL_ASSERT(Check<value_type>::is_negative(fa * fb));
   }
@@ -330,6 +378,11 @@ struct BracketedNewtonSolver {
       EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BracketedNewtonSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
+        fail = true;
+      }
+      if (isnan(x)) {
+        keep_going = false;
+        fail = true;
       }
       xroot = x;
     }
@@ -365,6 +418,11 @@ struct BracketedNewtonSolver {
       EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
+        fail = true;
+      }
+      if (isnan(x)) {
+        keep_going = false;
+        fail = true;
       }
       xroot = x;
     }
@@ -408,6 +466,8 @@ struct BisectionSolver {
   value_type iter_diff;
   /// scalar function whose root we need
   const ScalarFunction& f;
+  /// true if a failure condition is met
+  bool fail;
 
   /** @brief Constructor.
 
@@ -428,7 +488,8 @@ struct BisectionSolver {
         xnp1(0.5 * (a0 + b0)),
         counter(0),
         iter_diff(b0 - a0),
-        f(fn) {}
+        f(fn),
+        fail(false) {}
 
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
@@ -457,6 +518,11 @@ struct BisectionSolver {
       EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BisectionSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
+        fail = true;
+      }
+      if (isnan(xnp1)) {
+        keep_going = false;
+        fail = true;
       }
     }
     return xroot;
@@ -480,6 +546,11 @@ struct BisectionSolver {
       EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BisectionSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
+        fail = true;
+      }
+      if (isnan(xnp1)) {
+        keep_going = false;
+        fail = true;
       }
     }
     return xroot;

@@ -180,6 +180,23 @@ TEST_CASE("haero_math_rootfinding_packs","") {
   }
 }
 
+TEST_CASE("no_root", "") {
+  using quadratic_poly = math::MonicParabola<PackType>;
 
+  quadratic_poly qpoly;
+
+  const Real conv_tol = 100*FloatingPoint<Real>::zero_tol;
+  std::cout << "convergence tolerance = " << conv_tol << "\n";
+
+  const PackType x0(0);
+  const PackType a0(-1);
+  const PackType b0(1);
+
+  auto quadratic_solver = math::NewtonSolver<quadratic_poly>(x0, a0, b0, conv_tol, qpoly);
+
+  const PackType qsol = quadratic_solver.solve();
+  std::cout << "newton quadratic_sol = " << qsol
+            << " n_iter = " << quadratic_solver.counter << "\n";
+}
 
 
