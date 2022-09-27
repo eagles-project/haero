@@ -471,15 +471,9 @@ struct BisectionSolver {
       xnp1 = 0.5 * (a + b);
       const value_type fx = f(xroot);
       const auto m = (fx * fa < 0);
-//       const auto notm = !m;
       b.set(m, xroot);
       a.set(!m, xroot);
       fa.set(!m, fx);
-//       ekat_masked_loop(m, s) { b[s] = xroot[s]; };
-//       ekat_masked_loop(notm, s) {
-//         a[s] = xroot[s];
-//         fa[s] = fx[s];
-//       };
       iter_diff = b - a;
       xroot = xnp1;
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
