@@ -29,7 +29,7 @@ using ekat::tanh;
 using ekat::erf;
 
 // bring in std:: or CUDA C++ functions
-#ifndef __CUDACC__
+#ifdef __CUDACC__
 using ::exp;
 using ::log;
 using ::sqrt;
@@ -229,7 +229,7 @@ struct ScalarNewtonSolver {
       iter_diff = abs(xnp1 - xroot);
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       if (counter >= max_iter) {
-#ifndef HAERO_USE_CUDA
+#ifndef HAERO_ENABLE_GPU
         std::ostringstream ss;
         ss << "newton solve warning, max iterations reached: xroot = " << xroot
            << ", xnp1 = " << xnp1 << ", |diff| = " << iter_diff << "\n";
@@ -329,7 +329,7 @@ struct BracketedNewtonSolver {
       keep_going = !FloatingPoint<value_type>::zero(iter_diff, conv_tol);
       // prevent infinite loops
       if (counter >= max_iter) {
-#ifndef HAERO_USE_CUDA
+#ifndef HAERO_ENABLE_GPU
         std::ostringstream ss;
         ss << "bracketed newton solve warning, max iterations reached: xroot "
               "= ";
@@ -375,7 +375,7 @@ struct BracketedNewtonSolver {
       keep_going = !FloatingPoint<VT>::zero(iter_diff, conv_tol);
       // prevent infinite loops
       if (counter >= max_iter) {
-#ifndef HAERO_USE_CUDA
+#ifndef HAERO_ENABLE_GPU
         std::ostringstream ss;
         ss << "bracketed newton solve warning, max iterations reached: xroot "
               "= ";
