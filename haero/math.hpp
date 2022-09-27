@@ -176,16 +176,16 @@ struct LegendreQuartic {
   converge. It may converge to an incorrect root if a poor initial guess is
   chosen. It requires both function values and derivative values.
 */
-namespace {
-template <typename T>
-KOKKOS_INLINE_FUNCTION Real scalarize(const T pack) {
-  return pack[0];
-}
-template <>
-KOKKOS_INLINE_FUNCTION Real scalarize(const Real r) {
-  return r;
-}
-}  // namespace
+// namespace {
+// template <typename T>
+// KOKKOS_INLINE_FUNCTION Real scalarize(const T pack) {
+//   return pack[0];
+// }
+// template <>
+// KOKKOS_INLINE_FUNCTION Real scalarize(const Real r) {
+//   return r;
+// }
+// }  // namespace
 template <typename ScalarFunction>
 struct NewtonSolver {
   using value_type = typename ScalarFunction::value_type;
@@ -230,19 +230,8 @@ struct NewtonSolver {
       const value_type xnp1 = xroot - f(xroot) / f.derivative(xroot);
       iter_diff = abs(xnp1 - xroot);
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      if (counter >= max_iter) {
-#ifndef HAERO_USE_CUDA
-        std::ostringstream ss;
-        ss << "newton solve warning, max iterations reached: xroot = " << xroot
-           << ", xnp1 = " << xnp1 << ", |diff| = " << iter_diff << "\n";
-        std::cout << ss.str();
-#else
-        static_assert(HAERO_PACK_SIZE == 1, "cuda uses pack size = 1");
-        printf(
-            "newton solve warning: max iterations reached xroot = %g xnp1 = %g "
-            "|diff| = %g\n",
-            scalarize(xroot), scalarize(xnp1), scalarize(iter_diff));
-#endif
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
+      if (counter > max_iter) {
         keep_going = false;
       }
       xroot = xnp1;
@@ -338,19 +327,8 @@ struct BracketedNewtonSolver {
       iter_diff = abs(x - xroot);
       keep_going = !FloatingPoint<value_type>::zero(iter_diff, conv_tol);
       // prevent infinite loops
-      if (counter >= max_iter) {
-#ifndef HAERO_USE_CUDA
-        std::ostringstream ss;
-        ss << "bracketed newton solve warning, max iterations reached: xroot "
-              "= ";
-        ss << xroot << ", x = " << x << ", |diff| = " << iter_diff << "\n";
-        std::cout << ss.str();
-#else
-        printf(
-            "bracketed newton solve warning, max iterations reached: xroot = "
-            "%g xnp1 = %g |diff| = %g\n",
-            xroot, x, iter_diff);
-#endif
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BracketedNewtonSolver: max iterations");
+      if (counter > max_iter) {
         keep_going = false;
       }
       xroot = x;
@@ -384,20 +362,8 @@ struct BracketedNewtonSolver {
       iter_diff = abs(x - xroot);
       keep_going = !FloatingPoint<VT>::zero(iter_diff, conv_tol);
       // prevent infinite loops
-      if (counter >= max_iter) {
-#ifndef HAERO_USE_CUDA
-        std::ostringstream ss;
-        ss << "bracketed newton solve warning, max iterations reached: xroot "
-              "= ";
-        ss << xroot << ", x = " << x << ", |diff| = " << iter_diff << "\n";
-        std::cout << ss.str();
-#else
-        static_assert(VT::n == 1, "cuda uses pack size 1");
-        printf(
-            "bracketed newton solve warning, max iterations reached: xroot = "
-            "%g xnp1 = %g |diff| = %g\n",
-            xroot[0], x[0], iter_diff[0]);
-#endif
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
+      if (counter > max_iter) {
         keep_going = false;
       }
       xroot = x;
@@ -488,8 +454,8 @@ struct BisectionSolver {
       iter_diff = b - a;
       xroot = xnp1;
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      if (counter >= max_iter) {
-        printf("bisection solve warning: max iterations reached");
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BisectionSolver: max iterations");
+      if (counter > max_iter) {
         keep_going = false;
       }
     }
@@ -505,17 +471,20 @@ struct BisectionSolver {
       xnp1 = 0.5 * (a + b);
       const value_type fx = f(xroot);
       const auto m = (fx * fa < 0);
-      const auto notm = !m;
-      ekat_masked_loop(m, s) { b[s] = xroot[s]; };
-      ekat_masked_loop(notm, s) {
-        a[s] = xroot[s];
-        fa[s] = fx[s];
-      };
+//       const auto notm = !m;
+      b.set(m, xroot);
+      a.set(!m, xroot);
+      fa.set(!m, fx);
+//       ekat_masked_loop(m, s) { b[s] = xroot[s]; };
+//       ekat_masked_loop(notm, s) {
+//         a[s] = xroot[s];
+//         fa[s] = fx[s];
+//       };
       iter_diff = b - a;
       xroot = xnp1;
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      if (counter >= max_iter) {
-        printf("bisection solve warning: max iterations reached");
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BisectionSolver: max iterations");
+      if (counter > max_iter) {
         keep_going = false;
       }
     }
