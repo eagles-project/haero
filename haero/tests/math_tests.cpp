@@ -1,11 +1,9 @@
 #include <cmath>
 #include <iostream>
 
+#include "math_tests.hpp"
 #include "catch2/catch.hpp"
-#include "haero/haero.hpp"
-#include "haero/math.hpp"
-#include "haero/floating_point.hpp"
-#include "ekat/ekat_pack_math.hpp"
+
 
 using namespace haero;
 
