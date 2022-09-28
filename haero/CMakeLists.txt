@@ -67,5 +67,6 @@ install(FILES aero_process.hpp
               math.hpp
               utils.hpp
               view_pack_helpers.hpp
+              root_finders.hpp
         DESTINATION include/haero)
 
