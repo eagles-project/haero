@@ -69,6 +69,9 @@ static constexpr Real pressure_stp = 101325.0;
 /// Freezing point of water [K]
 static constexpr Real freezing_pt_h2o = 273.15;
 
+/// Triple point of water [K]
+static constexpr Real triple_pt_h2o = 273.16;
+
 /// Melting point of water [K]
 static constexpr Real melting_pt_h2o = freezing_pt_h2o;
 
@@ -98,6 +101,9 @@ static constexpr Real surface_tension_h2o_air_273k = 0.07564;
 
 /// Dry adiabatic lapse rate [K/m]
 static constexpr Real dry_adiabatic_lapse_rate = 0.0098;
+
+/// Critical temperature of water [K]
+static constexpr Real tc_water = 647.096;
 
 /// @}
 

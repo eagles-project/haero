@@ -22,7 +22,7 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 #define HAERO_SINGLE_PRECISION 1
 #endif
 
-#cmakedefine HAERO_USE_CUDA
+#cmakedefine HAERO_ENABLE_GPU
 
 #define HAERO_TEST_DATA_DIR "@CMAKE_CURRENT_SOURCE_DIR@/tests/data"
 
