@@ -63,7 +63,7 @@ TEST_CASE("view_pack_helpers", "") {
     Kokkos::deep_copy(host_v1d_pack, v1d_pack);
     int nerr = 0;
     for (int j = 0; j < nn; ++j) {
-      if (host_v1d_pack(pack_info::pack_idx(j))[pack_info::vec_idx(j)] !=
+      if (host_v1d_pack(PackInfo::pack_idx(j))[PackInfo::vec_idx(j)] !=
           plus_minus_one[j])
         ++nerr;
     }
@@ -90,8 +90,8 @@ TEST_CASE("view_pack_helpers", "") {
     Kokkos::deep_copy(host_v2d_rowpack, v2d_rowpack);
     for (int i = 0; i < mm; ++i) {
       for (int j = 0; j < nn; ++j) {
-        if (host_v2d_rowpack(i, pack_info::pack_idx(
-                                    j))[pack_info::vec_idx(j)] != vectors[i][j])
+        if (host_v2d_rowpack(i, PackInfo::pack_idx(
+                                    j))[PackInfo::vec_idx(j)] != vectors[i][j])
           ++nerr;
       }
     }
@@ -174,7 +174,7 @@ TEST_CASE("Haero view type basics", "") {
               << empty_view.extent(0) << "\n";
     REQUIRE(empty_view.extent(0) == 0);
 
-    ColumnView view_18("view_18", ekat::PackInfo<HAERO_PACK_SIZE>::num_packs(18));
+    ColumnView view_18("view_18", PackInfo::num_packs(18));
     std::cout << "view_18 has extent " << view_18.extent(0) << "\n";
 
     auto s_view_18 = ekat::scalarize(view_18);

@@ -13,24 +13,15 @@ namespace haero {
 
 //---------------------- Compile-time stuff ---------------//
 
-/// Kokkos device definitions
-using kokkos_device_type = DeviceType;
-using kokkos_host_type = HostType;
-
-/// Ekat Pack definitions
-using real_pack_type = ekat::Pack<Real, HAERO_PACK_SIZE>;
-using pack_mask_type = ekat::Mask<HAERO_PACK_SIZE>;
-using pack_info = ekat::PackInfo<HAERO_PACK_SIZE>;
-
 /// View definitions
-using view_1d_scalar_type = kokkos_device_type::view_1d<Real>;
-using view_1d_int_type = kokkos_device_type::view_1d<int>;
-using view_1d_pack_type = kokkos_device_type::view_1d<real_pack_type>;
-using mask_view_1d_type = kokkos_device_type::view_1d<pack_mask_type>;
+using view_1d_scalar_type = DeviceType::view_1d<Real>;
+using view_1d_int_type = DeviceType::view_1d<int>;
+using view_1d_pack_type = DeviceType::view_1d<PackType>;
+using mask_view_1d_type = DeviceType::view_1d<MaskType>;
 
-using view_2d_scalar_type = kokkos_device_type::view_2d<Real>;
-using view_2d_pack_type = kokkos_device_type::view_2d<real_pack_type>;
-using mask_view_2d_type = kokkos_device_type::view_2d<pack_mask_type>;
+using view_2d_scalar_type = DeviceType::view_2d<Real>;
+using view_2d_pack_type = DeviceType::view_2d<PackType>;
+using mask_view_2d_type = DeviceType::view_2d<MaskType>;
 
 //------------------------ Run-time stuff ---------------//
 
@@ -56,8 +47,8 @@ view1d_to_vector_impl(const VT& v, const int& array_length);
   invalid values for the padded entries.
 */
 template <typename T>
-void zero_init(kokkos_device_type::view_1d<ekat::Pack<T,HAERO_PACK_SIZE>> view, const int n_entries) {
-  const int np = pack_info::num_packs(view.extent(0));
+void zero_init(DeviceType::view_1d<ekat::Pack<T,HAERO_PACK_SIZE>> view, const int n_entries) {
+  const int np = PackInfo::num_packs(view.extent(0));
   if (n_entries == np) {
     // pack size = 1
     ekat::Pack<T,HAERO_PACK_SIZE> zero_pack(T(0));
@@ -65,12 +56,12 @@ void zero_init(kokkos_device_type::view_1d<ekat::Pack<T,HAERO_PACK_SIZE>> view, 
   }
   else {
     auto h_view = Kokkos::create_mirror_view(view);
-    const int last_pack_idx = pack_info::last_pack_idx(n_entries);
+    const int last_pack_idx = PackInfo::last_pack_idx(n_entries);
     for (int i=0; i<last_pack_idx; ++i) {
       h_view(i) = ekat::Pack<T,HAERO_PACK_SIZE>(T(0));
     }
     ekat::Mask<HAERO_PACK_SIZE> last_mask(false);
-    for (int i=0; i<pack_info::last_vec_end(n_entries); ++i) {
+    for (int i=0; i<PackInfo::last_vec_end(n_entries); ++i) {
       last_mask.set(i, true);
     }
     h_view(last_pack_idx) = ekat::Pack<T,HAERO_PACK_SIZE>(last_mask, T(0));
@@ -98,9 +89,9 @@ view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector,
                                         const std::string& view_name);
 
 template <typename T>
-kokkos_device_type::view_1d<T> vector_to_1dview(const std::vector<T>& vector,
+DeviceType::view_1d<T> vector_to_1dview(const std::vector<T>& vector,
                                                 const std::string& view_name) {
-  kokkos_device_type::view_1d<T> result(view_name, vector.size());
+  DeviceType::view_1d<T> result(view_name, vector.size());
   auto hm = Kokkos::create_mirror_view(result);
   for (int i = 0; i < vector.size(); ++i) {
     hm(i) = vector[i];
@@ -160,11 +151,11 @@ view_2d_pack_type vectors_to_row_packed_2dview(
     const std::string& view_name);
 
 template <typename T>
-kokkos_device_type::view_2d<T> vector_to_2dview(
+DeviceType::view_2d<T> vector_to_2dview(
     const std::vector<std::vector<T>>& vectors, const std::string& view_name) {
   const int mm = vectors.size();
   const int nn = vectors[0].size();
-  kokkos_device_type::view_2d<T> result(view_name, mm, nn);
+  DeviceType::view_2d<T> result(view_name, mm, nn);
   auto hm = Kokkos::create_mirror_view(result);
   for (int i = 0; i < mm; ++i) {
     for (int j = 0; j < nn; ++j) {
@@ -199,8 +190,8 @@ view1d_to_vector_impl(const VT& v, const int& array_length) {
   Kokkos::deep_copy(hm, v);
   std::vector<Real> result(array_length);
   for (int i = 0; i < v.extent(0); ++i) {
-    for (int j = 0; j < pack_info::vec_end(array_length, i); ++j) {
-      result[pack_info::array_idx(i, j)] = hm(i)[j];
+    for (int j = 0; j < PackInfo::vec_end(array_length, i); ++j) {
+      result[PackInfo::array_idx(i, j)] = hm(i)[j];
     }
   }
   return result;

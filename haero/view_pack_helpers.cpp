@@ -27,10 +27,10 @@ view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector,
 view_1d_pack_type vector_to_packed_1dview(const std::vector<Real>& vector,
                                           const std::string& view_name) {
   const int nn = vector.size();
-  view_1d_pack_type result(view_name, pack_info::num_packs(nn));
+  view_1d_pack_type result(view_name, PackInfo::num_packs(nn));
   auto hm = Kokkos::create_mirror_view(result);
   for (int i = 0; i < nn; ++i) {
-    hm(pack_info::pack_idx(i))[pack_info::vec_idx(i)] = vector[i];
+    hm(PackInfo::pack_idx(i))[PackInfo::vec_idx(i)] = vector[i];
   }
   Kokkos::deep_copy(result, hm);
   return result;
@@ -57,11 +57,11 @@ view_2d_pack_type vectors_to_row_packed_2dview(
     const std::string& view_name) {
   const int mm = vectors.size();
   const int nn = vectors[0].size();
-  view_2d_pack_type result(view_name, mm, pack_info::num_packs(nn));
+  view_2d_pack_type result(view_name, mm, PackInfo::num_packs(nn));
   auto hm = Kokkos::create_mirror_view(result);
   for (int i = 0; i < mm; ++i) {
     for (int j = 0; j < nn; ++j) {
-      hm(i, pack_info::pack_idx(j))[pack_info::vec_idx(j)] = vectors[i][j];
+      hm(i, PackInfo::pack_idx(j))[PackInfo::vec_idx(j)] = vectors[i][j];
     }
   }
   Kokkos::deep_copy(result, hm);
