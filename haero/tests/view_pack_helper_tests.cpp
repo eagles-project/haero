@@ -90,8 +90,8 @@ TEST_CASE("view_pack_helpers", "") {
     Kokkos::deep_copy(host_v2d_rowpack, v2d_rowpack);
     for (int i = 0; i < mm; ++i) {
       for (int j = 0; j < nn; ++j) {
-        if (host_v2d_rowpack(i, PackInfo::pack_idx(
-                                    j))[PackInfo::vec_idx(j)] != vectors[i][j])
+        if (host_v2d_rowpack(i, PackInfo::pack_idx(j))[PackInfo::vec_idx(j)] !=
+            vectors[i][j])
           ++nerr;
       }
     }
@@ -181,7 +181,7 @@ TEST_CASE("Haero view type basics", "") {
     auto h_view_18 = Kokkos::create_mirror_view(s_view_18);
     Kokkos::deep_copy(h_view_18, s_view_18);
     std::cout << "view_18 = [ ";
-    for (int i=0; i<s_view_18.extent(0); ++i) {
+    for (int i = 0; i < s_view_18.extent(0); ++i) {
       std::cout << h_view_18(i) << " ";
     }
     std::cout << "]\n";
@@ -189,7 +189,7 @@ TEST_CASE("Haero view type basics", "") {
     zero_init(view_18, 18);
     Kokkos::deep_copy(h_view_18, s_view_18);
     std::cout << "view_18 = [ ";
-    for (int i=0; i<s_view_18.extent(0); ++i) {
+    for (int i = 0; i < s_view_18.extent(0); ++i) {
       std::cout << h_view_18(i) << " ";
     }
     std::cout << "]\n";

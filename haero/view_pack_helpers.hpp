@@ -47,24 +47,24 @@ view1d_to_vector_impl(const VT& v, const int& array_length);
   invalid values for the padded entries.
 */
 template <typename T>
-void zero_init(DeviceType::view_1d<ekat::Pack<T,HAERO_PACK_SIZE>> view, const int n_entries) {
+void zero_init(DeviceType::view_1d<ekat::Pack<T, HAERO_PACK_SIZE>> view,
+               const int n_entries) {
   const int np = PackInfo::num_packs(view.extent(0));
   if (n_entries == np) {
     // pack size = 1
-    ekat::Pack<T,HAERO_PACK_SIZE> zero_pack(T(0));
+    ekat::Pack<T, HAERO_PACK_SIZE> zero_pack(T(0));
     Kokkos::deep_copy(view, zero_pack);
-  }
-  else {
+  } else {
     auto h_view = Kokkos::create_mirror_view(view);
     const int last_pack_idx = PackInfo::last_pack_idx(n_entries);
-    for (int i=0; i<last_pack_idx; ++i) {
-      h_view(i) = ekat::Pack<T,HAERO_PACK_SIZE>(T(0));
+    for (int i = 0; i < last_pack_idx; ++i) {
+      h_view(i) = ekat::Pack<T, HAERO_PACK_SIZE>(T(0));
     }
     ekat::Mask<HAERO_PACK_SIZE> last_mask(false);
-    for (int i=0; i<PackInfo::last_vec_end(n_entries); ++i) {
+    for (int i = 0; i < PackInfo::last_vec_end(n_entries); ++i) {
       last_mask.set(i, true);
     }
-    h_view(last_pack_idx) = ekat::Pack<T,HAERO_PACK_SIZE>(last_mask, T(0));
+    h_view(last_pack_idx) = ekat::Pack<T, HAERO_PACK_SIZE>(last_mask, T(0));
 
     Kokkos::deep_copy(view, h_view);
   }
@@ -90,7 +90,7 @@ view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector,
 
 template <typename T>
 DeviceType::view_1d<T> vector_to_1dview(const std::vector<T>& vector,
-                                                const std::string& view_name) {
+                                        const std::string& view_name) {
   DeviceType::view_1d<T> result(view_name, vector.size());
   auto hm = Kokkos::create_mirror_view(result);
   for (int i = 0; i < vector.size(); ++i) {
