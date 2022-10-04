@@ -46,6 +46,39 @@ typename std::enable_if<ekat::ScalarTraits<typename VT::value_type>::is_simd,
                         std::vector<Real>>::type
 view1d_to_vector_impl(const VT& v, const int& array_length);
 
+/** @brief Initialize a view of packs to zero, preserve quiet nan entries
+  in padding.
+
+  The default Pack constructor initializes all entries to scalar_type::invalid
+  (usually a quiet nan) to protect users from mishandling padded entries.
+
+  This function initializes non-padded entries to zero, and preserves the
+  invalid values for the padded entries.
+*/
+template <typename T>
+void zero_init(kokkos_device_type::view_1d<ekat::Pack<T,HAERO_PACK_SIZE>> view, const int n_entries) {
+  const int np = pack_info::num_packs(view.extent(0));
+  if (n_entries == np) {
+    // pack size = 1
+    ekat::Pack<T,HAERO_PACK_SIZE> zero_pack(T(0));
+    Kokkos::deep_copy(view, zero_pack);
+  }
+  else {
+    auto h_view = Kokkos::create_mirror_view(view);
+    const int last_pack_idx = pack_info::last_pack_idx(n_entries);
+    for (int i=0; i<last_pack_idx; ++i) {
+      h_view(i) = ekat::Pack<T,HAERO_PACK_SIZE>(T(0));
+    }
+    ekat::Mask<HAERO_PACK_SIZE> last_mask(false);
+    for (int i=0; i<pack_info::last_vec_end(n_entries); ++i) {
+      last_mask.set(i, true);
+    }
+    h_view(last_pack_idx) = ekat::Pack<T,HAERO_PACK_SIZE>(last_mask, T(0));
+
+    Kokkos::deep_copy(view, h_view);
+  }
+}
+
 /** @brief Convert a std::vector<Real> to Kokkos::View<Real*>.
 
   @param [in] vector
