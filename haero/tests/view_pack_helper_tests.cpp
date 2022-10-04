@@ -169,30 +169,31 @@ TEST_CASE("scalarized views", "") {
 
 TEST_CASE("Haero view type basics", "") {
   SECTION("ColumnView") {
+    using std::isnan;
+
     ColumnView empty_view;
     std::cout << "An empty view (default-constructed) has extent "
               << empty_view.extent(0) << "\n";
     REQUIRE(empty_view.extent(0) == 0);
 
     ColumnView view_18("view_18", PackInfo::num_packs(18));
-    std::cout << "view_18 has extent " << view_18.extent(0) << "\n";
 
     auto s_view_18 = ekat::scalarize(view_18);
     auto h_view_18 = Kokkos::create_mirror_view(s_view_18);
     Kokkos::deep_copy(h_view_18, s_view_18);
-    std::cout << "view_18 = [ ";
     for (int i = 0; i < s_view_18.extent(0); ++i) {
-      std::cout << h_view_18(i) << " ";
+      REQUIRE(isnan(h_view_18(i)));
     }
-    std::cout << "]\n";
 
     zero_init(view_18, 18);
     Kokkos::deep_copy(h_view_18, s_view_18);
-    std::cout << "view_18 = [ ";
-    for (int i = 0; i < s_view_18.extent(0); ++i) {
-      std::cout << h_view_18(i) << " ";
+    for (int i = 0; i < 18; ++i) {
+      REQUIRE(h_view_18(i) == 0);
     }
-    std::cout << "]\n";
+    for (int i=18; i<h_view_18.extent(0); ++i) {
+      REQUIRE( isnan(h_view_18(i)) );
+    }
+
   }
 }
 
