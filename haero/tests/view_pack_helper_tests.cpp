@@ -25,7 +25,7 @@ TEST_CASE("view_pack_helpers", "") {
 
   SECTION("basic_views") {
     /// Test vector -> view (1d)
-    view_1d_scalar_type v1d =
+    RealView1D v1d =
         vector_to_basic_1dview(plus_minus_one, "plus_minus_one");
     auto host_v1d = Kokkos::create_mirror_view(v1d);
     Kokkos::deep_copy(host_v1d, v1d);
@@ -44,7 +44,7 @@ TEST_CASE("view_pack_helpers", "") {
     REQUIRE(nerr == 0);
 
     /// Test 2d vectors -> view (2d)
-    view_2d_scalar_type v2d = vector_to_basic_2dview(vectors, "vectors");
+    RealView2D v2d = vector_to_basic_2dview(vectors, "vectors");
     auto host_v2d = Kokkos::create_mirror_view(v2d);
     Kokkos::deep_copy(host_v2d, v2d);
     nerr = 0;
@@ -57,7 +57,7 @@ TEST_CASE("view_pack_helpers", "") {
   }
   SECTION("packed_views") {
     /// Test vector -> view (packed 1d)
-    view_1d_pack_type v1d_pack =
+    PackRealView1D v1d_pack =
         vector_to_packed_1dview(plus_minus_one, "plus_minus_one");
     auto host_v1d_pack = Kokkos::create_mirror_view(v1d_pack);
     Kokkos::deep_copy(host_v1d_pack, v1d_pack);
@@ -84,7 +84,7 @@ TEST_CASE("view_pack_helpers", "") {
     REQUIRE(nerr == 0);
 
     /// Test 2d vectors -> view
-    view_2d_pack_type v2d_rowpack =
+    PackRealView2D v2d_rowpack =
         vectors_to_row_packed_2dview(vectors, "vectors");
     auto host_v2d_rowpack = Kokkos::create_mirror_view(v2d_rowpack);
     Kokkos::deep_copy(host_v2d_rowpack, v2d_rowpack);

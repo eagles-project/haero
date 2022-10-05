@@ -14,14 +14,12 @@ namespace haero {
 //---------------------- Compile-time stuff ---------------//
 
 /// View definitions
-using view_1d_scalar_type = DeviceType::view_1d<Real>;
-using view_1d_int_type = DeviceType::view_1d<int>;
-using view_1d_pack_type = DeviceType::view_1d<PackType>;
-using mask_view_1d_type = DeviceType::view_1d<MaskType>;
+using RealView1D = DeviceType::view_1d<Real>;
+using IntView1D = DeviceType::view_1d<int>;
+using PackRealView1D = DeviceType::view_1d<PackType>;
 
-using view_2d_scalar_type = DeviceType::view_2d<Real>;
-using view_2d_pack_type = DeviceType::view_2d<PackType>;
-using mask_view_2d_type = DeviceType::view_2d<MaskType>;
+using RealView2D = DeviceType::view_2d<Real>;
+using PackRealView2D = DeviceType::view_2d<PackType>;
 
 //------------------------ Run-time stuff ---------------//
 
@@ -76,7 +74,7 @@ void zero_init(DeviceType::view_1d<ekat::Pack<T, HAERO_PACK_SIZE>> view,
   @param [in] view_name
   @return Kokkos view + deep copied data
 */
-view_1d_scalar_type vector_to_basic_1dview(const std::vector<Real>& vector,
+RealView1D vector_to_basic_1dview(const std::vector<Real>& vector,
                                            const std::string& view_name);
 
 /** @brief Convert a std::vector<int> to Kokkos::View<int*>.
@@ -85,7 +83,7 @@ view_1d_scalar_type vector_to_basic_1dview(const std::vector<Real>& vector,
   @param [in] view_name
   @return Kokkos view + deep copied data
 */
-view_1d_int_type vector_to_basic_1dview(const std::vector<int>& vector,
+IntView1D vector_to_basic_1dview(const std::vector<int>& vector,
                                         const std::string& view_name);
 
 template <typename T>
@@ -107,7 +105,7 @@ DeviceType::view_1d<T> vector_to_1dview(const std::vector<T>& vector,
   @param [in] view_name
   @return Kokkos view + deep copied data
 */
-view_1d_pack_type vector_to_packed_1dview(const std::vector<Real>& vector,
+PackRealView1D vector_to_packed_1dview(const std::vector<Real>& vector,
                                           const std::string& view_name);
 
 /** @brief Converts a 1d view (or 1d subview) to a std::vector
@@ -133,7 +131,7 @@ std::vector<Real> view1d_to_vector(const ViewType& v,
   @param [in] view_name
   @return Kokkos view + deep copied data
 */
-view_2d_scalar_type vector_to_basic_2dview(
+RealView2D vector_to_basic_2dview(
     const std::vector<std::vector<Real>>& vectors,
     const std::string& view_name);
 
@@ -146,7 +144,7 @@ view_2d_scalar_type vector_to_basic_2dview(
   @param [in] view_name
   @return Kokkos view + deep copied data
 */
-view_2d_pack_type vectors_to_row_packed_2dview(
+PackRealView2D vectors_to_row_packed_2dview(
     const std::vector<std::vector<Real>>& vectors,
     const std::string& view_name);
 
