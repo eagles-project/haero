@@ -45,6 +45,12 @@ static constexpr Real gravity = 9.80616;
 /// Molecular weight of water [kg/mol]
 static constexpr Real molec_weight_h2o = 0.018016;
 
+/// Molecular weight of carbon [kg/mol]
+static constexpr Real molec_weight_c = 0.0120107;
+
+/// Molecular weight of sodium chloride [kg/mol]
+static constexpr Real molec_weight_nacl = 0.05844;
+
 /// Molecular weight of dry air [kg/mol]
 static constexpr Real molec_weight_dry_air = 0.028966;
 
