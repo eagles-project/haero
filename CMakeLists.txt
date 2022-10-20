@@ -37,6 +37,9 @@ else() #CPU
   message(STATUS "Building for CPU (${HAERO_DEVICE_ARCH})")
 endif()
 
+# Blessed version of clang-format.
+set(CLANG_FORMAT_VERSION 14)
+
 enable_language(C)   # needed so ekat can detect MPI
 enable_language(CXX)
 
@@ -208,28 +211,6 @@ include_directories(SYSTEM ${HAERO_EXT_INCLUDE_DIRS})
 include(GNUInstallDirs)
 link_directories("${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
 
-# Support for valgrind -- Linux only.
-if (LINUX)
-  find_package(Valgrind QUIET)
-  if (VALGRIND_FOUND)
-    set(VALGRIND_FOUND 1) # regularize this value
-    include_directories(${VALGRIND_INCLUDE_DIR})
-    set(MEMORYCHECK_COMMAND ${VALGRIND_PROGRAM})
-    # Add "--gen-suppressions=all" to MEMORYCHECK_COMMAND_OPTIONS to generate
-    # suppressions for Valgrind's false positives. The suppressions show up
-    # right in the MemoryChecker.*.log files.
-    set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=definite,possible --track-origins=yes --error-exitcode=1 --trace-children=yes --suppressions=${PROJECT_SOURCE_DIR}/tools/valgrind/scasm.supp" CACHE STRING "Options passed to Valgrind." FORCE)
-
-    # make memcheck target
-    add_custom_target(memcheck ctest -T memcheck -j ${NUMBER_OF_CORES} USES_TERMINAL)
-  else()
-    set(VALGRIND_FOUND 0)
-  endif()
-else()
-  # Valgrind doesn't work on Macs.
-  set(VALGRIND_FOUND 0)
-endif()
-
 # Testing
 include(CTest)
 enable_testing()
@@ -253,15 +234,51 @@ configure_file(
 install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION .)
 install(FILES ${PROJECT_SOURCE_DIR}/cmake/create_unit_test.cmake DESTINATION share)
 
+# Support for valgrind -- Linux only.
+if (LINUX)
+  find_program(VALGRIND_EXE valgrind)
+  if (NOT VALGRIND_EXE MATCHES "-NOTFOUND")
+    set(VALGRIND_FOUND 1) # regularize this value
+    set(MEMORYCHECK_COMMAND ${VALGRIND_EXE})
+    # Add "--gen-suppressions=all" to MEMORYCHECK_COMMAND_OPTIONS to generate
+    # suppressions for Valgrind's false positives. The suppressions show up
+    # right in the MemoryChecker.*.log files.
+    set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=definite,possible --track-origins=yes --error-exitcode=1 --trace-children=yes" CACHE STRING "Options passed to Valgrind." FORCE)
+
+    # make memcheck target
+    add_custom_target(memcheck ctest -T memcheck -j ${NUMBER_OF_CORES} USES_TERMINAL)
+  else()
+    set(VALGRIND_FOUND 0)
+  endif()
+else()
+  # Valgrind doesn't work on Macs.
+  set(VALGRIND_FOUND 0)
+endif()
+
 # Formatting and format checking using clang-format.
 find_program(CLANG_FORMAT clang-format)
 if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
-  add_custom_target(format-cxx
-    find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i --style=google {} \+;
-    VERBATIM
-    COMMENT "Auto-formatting C++ code...")
-  add_custom_target(format-cxx-check
-    find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 --style=google {} \+;
-    VERBATIM
-    COMMENT "Checking C++ formatting...")
+  # Is this the blessed version? If not, we create targets that warn the user
+  # to obtain the right version.
+  execute_process(COMMAND clang-format --version
+    OUTPUT_VARIABLE CF_VERSION)
+  string(STRIP ${CF_VERSION} CF_VERSION)
+  if (NOT ${CF_VERSION} MATCHES ${CLANG_FORMAT_VERSION})
+    add_custom_target(format-cxx
+      echo "You have clang-format version ${CF_VERSION}, but ${CLANG_FORMAT_VERSION} is required."
+      "Please make sure this version appears in your path and rerun config.sh.")
+    add_custom_target(format-cxx-check
+      echo "You have clang-format version ${CF_VERSION}, but ${CLANG_FORMAT_VERSION} is required."
+      "Please make sure this version appears in your path and rerun config.sh.")
+  else()
+    add_custom_target(format-cxx
+      find ${PROJECT_SOURCE_DIR}/src -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i {} \+;
+      VERBATIM
+      COMMENT "Auto-formatting C++ code...")
+    add_custom_target(format-cxx-check
+      find ${PROJECT_SOURCE_DIR}/src -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 {} \+;
+      VERBATIM
+      COMMENT "Checking C++ formatting...")
+  endif()
+
 endif()
