@@ -49,6 +49,7 @@ if (HAERO_BUILDS_EKAT)
   list(APPEND EKAT_INCLUDE_DIRS
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/src
        ${PROJECT_BINARY_DIR}/externals/ekat/src
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/tpls/desul/include
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/core/src
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/containers/src
        ${PROJECT_BINARY_DIR}/externals/kokkos
