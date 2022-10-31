@@ -32,7 +32,8 @@ To build Haero, you need:
 * reliable C and C++ compilers
 * a good Fortran compiler, such as GNU `gfortran` or Intel's `ifort` compiler
 * a working MPI installation (like [OpenMPI](https://www.open-mpi.org/) or
-  [Mpich](https://www.mpich.org/)).
+  [Mpich](https://www.mpich.org/)), if you're interested in multi-node
+  parallelism.
 
 You can obtain all of these (except perhaps your favorite Fortran compiler)
 freely on the Linux and Mac platforms. On Linux, just use your favorite package
