@@ -16,7 +16,7 @@ jobs:
     # A build matrix storing all desired configurations.
     strategy:
       matrix:
-        os: [ubuntu-latest] #, macos-latest]
+        os: [ubuntu-22.04] #, macos-latest]
         build-type: [Debug, Release]
         fp-precision: [single, double]
         pack-size: [1, 4]
@@ -40,7 +40,6 @@ jobs:
         autoconf \
         clang-format \
         cmake \
-        libopenmpi-dev \
         gcc \
         g++ \
         gfortran \
@@ -62,12 +61,14 @@ jobs:
         cmake \
           -DCMAKE_INSTALL_PREFIX=`pwd`/build \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+          -DCMAKE_VERBOSE_MAKEFILE=ON \
           -DCMAKE_CXX_COMPILER=c++ \
           -DCMAKE_C_COMPILER=cc \
           -DCMAKE_Fortran_COMPILER=gfortran \
           -DHAERO_ENABLE_CHEMISTRY=OFF \
           -DHAERO_ENABLE_GPU=OFF \
           -DHAERO_ENABLE_OPENMP=ON \
+          -DHAERO_ENABLE_MPI=OFF \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
           -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \

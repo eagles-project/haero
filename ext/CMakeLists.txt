@@ -19,6 +19,7 @@ if (HAERO_BUILDS_EKAT)
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/pkg_build)
   include(EkatBuildEkat)
+  set(EKAT_ENABLE_MPI ${HAERO_ENABLE_MPI} CACHE BOOL "Enable MPI")
   set(EKAT_ENABLE_TESTS OFF CACHE BOOL "Disable EKAT tests")
   set(Kokkos_ENABLE_LIBDL OFF CACHE BOOL "Disable broken Kokkos libdl support")
   if (CMAKE_BUILD_TYPE STREQUAL Release)
@@ -48,6 +49,7 @@ if (HAERO_BUILDS_EKAT)
   list(APPEND EKAT_INCLUDE_DIRS
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/src
        ${PROJECT_BINARY_DIR}/externals/ekat/src
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/tpls/desul/include
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/core/src
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/containers/src
        ${PROJECT_BINARY_DIR}/externals/kokkos
@@ -61,7 +63,6 @@ else()
   set(EKAT_NVCC_WRAPPER ${EKAT_INSTALL_ROOT}/bin/nvcc_wrapper)
 endif()
 set(HAERO_EXT_LIBRARIES ekat;spdlog;kokkoscontainers;kokkoscore;${HAERO_EXT_LIBRARIES})
-set(HAERO_EXT_DRIVER_LIBRARIES ${YAMLCPP_LIBRARIES};${HAERO_EXT_DRIVER_LIBRARIES})
 foreach(inc_dir ${EKAT_INCLUDE_DIRS})
   list(APPEND HAERO_EXT_INCLUDE_DIRS ${inc_dir})
 endforeach()
@@ -292,8 +293,6 @@ add_custom_target(ext_libraries DEPENDS ${HAERO_EXT_LIBRARIES})
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
 list(REMOVE_DUPLICATES HAERO_EXT_INCLUDE_DIRS)
-set(HAERO_DRIVER_LIBRARIES ${HAERO_EXT_DRIVER_LIBRARIES} PARENT_SCOPE)
-set(HAERO_DRIVER_INCLUDE_DIRS ${HAERO_EXT_DRIVER_INCLUDE_DIRS} PARENT_SCOPE)
 set(HAERO_EXT_INCLUDE_DIRS ${HAERO_EXT_INCLUDE_DIRS} PARENT_SCOPE)
 
 #----------------------

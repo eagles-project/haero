@@ -61,8 +61,6 @@ PREFIX=$PWD/$1
 #-----------------------------------------------------------------------------
 
 # Build with MPI for parallel simulations.
-# This is currently needed by the EKAT library. We can get rid of it as
-# a requirement down the line if necessary.
 ENABLE_MPI=ON
 
 # The name of the program used to execute MPI programs. Some machines require
