@@ -62,6 +62,7 @@ jobs:
         cmake \
           -DCMAKE_INSTALL_PREFIX=`pwd`/build \
           -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+          -DCMAKE_VERBOSE_MAKEFILE=ON \
           -DCMAKE_CXX_COMPILER=c++ \
           -DCMAKE_C_COMPILER=cc \
           -DCMAKE_Fortran_COMPILER=gfortran \
