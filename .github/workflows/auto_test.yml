@@ -54,6 +54,10 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         submodules: recursive
 
+    - name: Showing some things
+      run: |
+        ls -lR ext/ekat/extern/kokkos/core/src
+
     - name: Configuring haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision, pack size=${{ matrix.pack-size }})
       run: |
         ./setup build
