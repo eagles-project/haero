@@ -29,6 +29,10 @@ if (HAERO_BUILDS_EKAT)
     set(Kokkos_ENABLE_DEBUG TRUE)
     set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF)
   endif()
+  if (APPLE)
+    # floating point exceptions don't work properly on Macs
+    set(EKAT_ENABLE_FPE OFF CACHE BOOL "")
+  endif()
   if (HAERO_ENABLE_GPU)
     set(Kokkos_ENABLE_SERIAL ON CACHE BOOL "Enable serial Kokkos backend")
     set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable CUDA Kokkos backend")
@@ -62,7 +66,7 @@ else()
   set(EKAT_INCLUDE_DIRS ${EKAT_INSTALL_ROOT}/include)
   set(EKAT_NVCC_WRAPPER ${EKAT_INSTALL_ROOT}/bin/nvcc_wrapper)
 endif()
-set(HAERO_EXT_LIBRARIES ${EKAT_TPL_LIBRARIES};${HAERO_EXT_LIBRARIES})
+set(HAERO_EXT_LIBRARIES ekat;${EKAT_TPL_LIBRARIES};${HAERO_EXT_LIBRARIES})
 foreach(inc_dir ${EKAT_INCLUDE_DIRS})
   list(APPEND HAERO_EXT_INCLUDE_DIRS ${inc_dir})
 endforeach()
@@ -284,11 +288,6 @@ endif()
 # This target can be used as a dependency to ensure all above libraries are
 # built before proceeding.
 add_custom_target(ext_libraries DEPENDS ${HAERO_EXT_LIBRARIES})
-
-## Provide dynamic linking capability (required by kokkoscore).
-#if (NOT APPLE)
-#  set(HAERO_EXT_LIBRARIES ${HAERO_EXT_LIBRARIES};dl)
-#endif()
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)

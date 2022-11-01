@@ -16,9 +16,9 @@ atmospheric model, [SCREAM](https://github.com/E3SM-Project/scream).
 
 ## Supported Platforms
 
-You can build and run Haero on a Mac or Linux laptop or workstation. We
-also support a limited number of platforms on which the Haero model is built and
-tested:
+You can build and run Haero on a Mac (**Intel, not M1**) or Linux laptop or
+workstation. We also support a limited number of platforms on which the Haero
+model is built and tested:
 
 * NERSC Cori
 * Compy and Constance at PNNL
