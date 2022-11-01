@@ -70,7 +70,6 @@ jobs:
           -DHAERO_ENABLE_OPENMP=ON \
           -DHAERO_ENABLE_MPI=OFF \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
-          -DHAERO_DEVICE_ARCH=AMDAVX \
           -DHAERO_PACK_SIZE=${{ matrix.pack-size}} \
           -G "Unix Makefiles" \
           ..

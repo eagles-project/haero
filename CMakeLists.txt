@@ -26,15 +26,10 @@ elseif(HAERO_PACK_SIZE LESS 1)
 endif()
 message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
 
-# Configure the requested device (CPU or GPU).
-if (NOT HAERO_DEVICE_ARCH)
-  message(FATAL_ERROR "HAERO_DEVICE_ARCH was not provided!")
-endif()
-
 if(HAERO_ENABLE_GPU)
-  message(STATUS "Building for GPU (${HAERO_DEVICE_ARCH})")
+  message(STATUS "Building for GPU")
 else() #CPU
-  message(STATUS "Building for CPU (${HAERO_DEVICE_ARCH})")
+  message(STATUS "Building for CPU")
 endif()
 
 # Blessed version of clang-format.
