@@ -226,10 +226,25 @@ if (HAERO_ENABLE_CHEMISTRY)
 endif()
 
 # Generate haero.cmake (for downstream aerosol packages) and install it.
+# NOTE: This assumes that EKAT was built using HAERO. We'll figure out the more
+# NOTE: general case when it makes sense
+set(HAERO_TPL_IMPORTED_LOCATIONS "") # <-- generated segment of haero.cmake
+foreach (lib kokkoscore kokkoscontainers kokkosimd spdlog yaml-cpp ekat ekat_test_main ekat_test_session haero)
+  string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "add_library(${lib} STATIC IMPORTED GLOBAL)\n")
+  set(suffix "")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # It seems to be a trend these days to append 'd' to your library in
+    # Debug builds. :-/
+    if (${lib} MATCHES "spdlog" OR ${lib} MATCHES "yaml-cpp")
+      set(suffix "d")
+    endif()
+  endif()
+  string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lib${lib}${suffix}.a)\n")
+endforeach()
 configure_file(
   ${PROJECT_SOURCE_DIR}/cmake/haero.cmake.in
   ${PROJECT_BINARY_DIR}/share/haero.cmake
-@ONLY
+  @ONLY
 )
 install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION .)
 install(FILES ${PROJECT_SOURCE_DIR}/cmake/create_unit_test.cmake DESTINATION share)
