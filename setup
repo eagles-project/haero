@@ -82,6 +82,57 @@ MPI_EXTRA_ARGS=
 # Set this to ON to dispatch aerosol calculations to a GPU.
 ENABLE_GPU=OFF
 
+# OPTIONAL: Select one of the following device architectures based on the above.
+# (These options are taken from kokkos_arch.cmake)
+#DEVICE_ARCH=AMDAVX          # AMD CPU
+#DEVICE_ARCH=ARMV80          # ARMv8.0 Compatible CPU
+#DEVICE_ARCH=ARMV81          # ARMv8.1 Compatible CPU
+#DEVICE_ARCH=ARMV8_THUNDERX  # ARMv8 Cavium ThunderX CPU
+#DEVICE_ARCH=ARMV8_THUNDERX2 # ARMv8 Cavium ThunderX2 CPU
+#DEVICE_ARCH=A64FX           # ARMv8.2 CPU with SVE Support
+#DEVICE_ARCH=WSM             # Intel Westmere CPU
+#DEVICE_ARCH=SNB             # Intel Sandy/Ivy Bridge CPUs
+#DEVICE_ARCH=HSW             # Intel Haswell CPUs
+#DEVICE_ARCH=BDW             # Intel Broadwell Xeon E-class CPUs
+#DEVICE_ARCH=ICL             # Intel Ice Lake Client CPUs (AVX512)
+#DEVICE_ARCH=ICX             # Intel Ice Lake Xeon Server CPUs (AVX512)
+#DEVICE_ARCH=SKX             # Intel Sky Lake Xeon E-class HPC CPUs (AVX512) (CPU)
+#DEVICE_ARCH=SKL             # Intel Skylake Client CPUs
+#DEVICE_ARCH=KNC             # Intel Knights Corner Xeon Phi CPU
+#DEVICE_ARCH=KNL             # Intel Knights Landing Xeon Phi CPU
+#DEVICE_ARCH=BGQ             # IBM Blue Gene Q CPU
+#DEVICE_ARCH=POWER7          # IBM POWER7 CPUs
+#DEVICE_ARCH=POWER8          # IBM POWER8 CPUs
+#DEVICE_ARCH=POWER9          # IBM POWER9 CPUs
+#DEVICE_ARCH=ZEN             # AMD Zen architecture (CPU)
+#DEVICE_ARCH=ZEN2            # AMD Zen2 architecture (CPU)
+#DEVICE_ARCH=ZEN3            # AMD Zen3 architecture (CPU)
+#DEVICE_ARCH=KEPLER30        # NVIDIA Kepler generation CC 3.0 (CUDA)
+#DEVICE_ARCH=KEPLER32        # NVIDIA Kepler generation CC 3.2 (CUDA)
+#DEVICE_ARCH=KEPLER35        # NVIDIA Kepler generation CC 3.5 (CUDA)
+#DEVICE_ARCH=KEPLER37        # NVIDIA Kepler generation CC 3.7 (CUDA)
+#DEVICE_ARCH=MAXWELL50       # NVIDIA Maxwell generation CC 5.0 (CUDA)
+#DEVICE_ARCH=MAXWELL52       # NVIDIA Maxwell generation CC 5.2 (CUDA)
+#DEVICE_ARCH=MAXWELL53       # NVIDIA Maxwell generation CC 5.3 (CUDA)
+#DEVICE_ARCH=PASCAL60        # NVIDIA Pascal generation CC 6.0 (CUDA)
+#DEVICE_ARCH=PASCAL61        # NVIDIA Pascal generation CC 6.1 (CUDA)
+#DEVICE_ARCH=VOLTA70         # NVIDIA Volta generation CC 7.0 (CUDA)
+#DEVICE_ARCH=VOLTA72         # NVIDIA Volta generation CC 7.2 (CUDA)
+#DEVICE_ARCH=TURING75        # NVIDIA Turing generation CC 7.5 (CUDA)
+#DEVICE_ARCH=AMPERE80        # NVIDIA Ampere generation CC 8.0 (CUDA)
+#DEVICE_ARCH=AMPERE86        # NVIDIA Ampere generation CC 8.6 (CUDA)
+#DEVICE_ARCH=VEGA900         # AMD GPU MI25 GFX900 (HIP)
+#DEVICE_ARCH=VEGA906         # AMD GPU MI50/MI60 GFX906 (HIP)
+#DEVICE_ARCH=VEGA908         # AMD GPU (HIP)
+#DEVICE_ARCH=VEGA90A         # AMD GPU MI200 GFX90A (HIP)
+#DEVICE_ARCH=INTEL_GEN       # Intel GPUs (SPIR64-based devices)
+#DEVICE_ARCH=INTEL_DG1       # Intel Iris XeMAX GPU
+#DEVICE_ARCH=INTEL_GEN9      # Intel GPU Gen9
+#DEVICE_ARCH=INTEL_GEN11     # Intel GPU Gen11
+#DEVICE_ARCH=INTEL_GEN12LP   # Intel GPU Gen12LP
+#DEVICE_ARCH=INTEL_XEHP      # Intel GPU Xe-HP
+#DEVICE_ARCH=INTEL_PVC       # Intel GPU Ponte Vecchio
+
 #-----------------------------------------------------------------------------
 #                         Build features and parameters
 #-----------------------------------------------------------------------------
@@ -161,6 +212,11 @@ if [ "\$ENABLE_MPI" = "ON" ]; then
 fi
 if [ "\$VERBOSE" = "ON" ]; then
   OPTIONS="\$OPTIONS -DCMAKE_VERBOSE_MAKEFILE=ON"
+fi
+
+# Set the device architecture if needed.
+if [ ! "\$DEVICE_ARCH" = "" ]; then
+  OPTIONS="\$OPTIONS -DKokkos_ARCH_\$DEVICE_ARCH:BOOL=ON"
 fi
 
 # Configure ekat if needed.
