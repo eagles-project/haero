@@ -56,19 +56,13 @@ Real max(Real a, Real b) {
   return (a > b) ? a : b;
 }
 
-template <typename T>
 KOKKOS_INLINE_FUNCTION
-    typename std::enable_if<!ekat::ScalarTraits<T>::is_simd, T>::type
-    square(T x) {
-  static_assert(std::is_arithmetic<T>::value, "square: bad type");
+Real square(Real x) {
   return x * x;
 }
 
-template <typename T>
 KOKKOS_INLINE_FUNCTION
-    typename std::enable_if<!ekat::ScalarTraits<T>::is_simd, T>::type
-    cube(T x) {
-  static_assert(std::is_arithmetic<T>::value, "arithmetic type");
+Real cube(Real x) {
   return x * x * x;
 }
 
