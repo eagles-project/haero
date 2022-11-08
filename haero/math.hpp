@@ -17,6 +17,7 @@ namespace haero {
 using ::cbrt;
 using ::erf;
 using ::exp;
+using ::pow;
 using ::expm1;
 using ::isinf;
 using ::isnan;
@@ -29,6 +30,7 @@ using ::tgamma;
 using std::cbrt;
 using std::erf;
 using std::exp;
+using std::pow;
 using std::expm1;
 using std::isinf;
 using std::isnan;
