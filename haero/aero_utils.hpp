@@ -1,7 +1,7 @@
 #ifndef HAERO_AERO_UTILS_HPP
 #define HAERO_AERO_UTILS_HPP
 
-#include "gas_species.hpp"
+#include <haero/gas_species.hpp>
 
 namespace haero {
 

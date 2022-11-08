@@ -18,14 +18,6 @@ mark_as_advanced(FORCE DISABLE_SUBMODULE_CHECKS)
 
 message(STATUS "Configuring with build type: ${CMAKE_BUILD_TYPE}")
 
-# Check our pack size
-if (NOT HAERO_PACK_SIZE)
-  message(FATAL_ERROR "HAERO_PACK_SIZE is not specified! (Must be a positive integer).")
-elseif(HAERO_PACK_SIZE LESS 1)
-  message(FATAL_ERROR "Invalid HAERO_PACK_SIZE: ${HAERO_PACK_SIZE} (Must be a positive integer).")
-endif()
-message(STATUS "Configuring with pack size = ${HAERO_PACK_SIZE}")
-
 if(HAERO_ENABLE_GPU)
   message(STATUS "Building for GPU")
 else() #CPU

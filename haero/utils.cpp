@@ -1,5 +1,7 @@
 #include "utils.hpp"
 
+#include <ekat/ekat_assert.hpp>
+
 #include <cstring>
 #include <sstream>
 

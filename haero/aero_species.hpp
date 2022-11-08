@@ -1,12 +1,12 @@
 #ifndef HAERO_AERO_SPECIES_HPP
 #define HAERO_AERO_SPECIES_HPP
 
+#include <haero/haero.hpp>
+
 #include <limits>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "haero/haero.hpp"
 
 namespace haero {
 

@@ -1,13 +1,15 @@
-#include "haero/atmosphere.hpp"
+#include "atmosphere.hpp"
+
+#include <ekat/ekat_assert.hpp>
 
 namespace haero {
 
 Atmosphere::Atmosphere(int num_levels, Real pblh)
-    : temperature("temperature", PackInfo::num_packs(num_levels)),
-      pressure("pressure", PackInfo::num_packs(num_levels)),
-      vapor_mixing_ratio("vapor mixing ratio", PackInfo::num_packs(num_levels)),
-      height("height", PackInfo::num_packs(num_levels)),
-      hydrostatic_dp("hydrostatic_dp", PackInfo::num_packs(num_levels)),
+    : temperature("temperature", num_levels),
+      pressure("pressure", num_levels),
+      vapor_mixing_ratio("vapor mixing ratio", num_levels),
+      height("height", num_levels),
+      hydrostatic_dp("hydrostatic_dp", num_levels),
       planetary_boundary_height(pblh),
       num_levels_(num_levels) {
   EKAT_REQUIRE_MSG(num_levels > 0,
@@ -31,24 +33,19 @@ Atmosphere::Atmosphere(int num_levels, const ColumnView temp,
   EKAT_REQUIRE_MSG(pblh >= 0.0,
                    "Planetary boundary height must be non-negative");
 
-  // Make sure the views we're given are properly sized.
-  int num_vert_packs = PackInfo::num_packs(num_levels);
-  EKAT_REQUIRE_MSG(temp.extent(0) == num_vert_packs,
-                   "Temperature view must have extent == " << num_vert_packs);
-  EKAT_REQUIRE_MSG(press.extent(0) == num_vert_packs,
-                   "Pressure view must have extent == " << num_vert_packs);
+  // Make sure the views we're given are large enough to store their data.
+  EKAT_REQUIRE_MSG(temp.extent(0) >= num_levels,
+                   "Temperature view must have extent >= " << num_levels);
+  EKAT_REQUIRE_MSG(press.extent(0) >= num_levels,
+                   "Pressure view must have extent >= " << num_levels);
   EKAT_REQUIRE_MSG(
-      qv.extent(0) == num_vert_packs,
-      "Vapor mixing ratio view must have extent == " << num_vert_packs);
+      qv.extent(0) >= num_levels,
+      "Vapor mixing ratio view must have extent >= " << num_levels);
   EKAT_REQUIRE_MSG(
-      pdel.extent(0) == num_vert_packs,
-      "Hydrostatic pressure thickness must have extent == " << num_vert_packs);
-  int num_iface_packs = (num_levels_ + 1) / HAERO_PACK_SIZE;
-  if (num_iface_packs * HAERO_PACK_SIZE < (num_levels_ + 1)) {
-    num_iface_packs++;
-  }
-  EKAT_REQUIRE_MSG(ht.extent(0) == num_iface_packs,
-                   "Height view must have extent == " << num_iface_packs);
+      pdel.extent(0) >= num_levels,
+      "Hydrostatic pressure thickness must have extent >= " << num_levels);
+  EKAT_REQUIRE_MSG(ht.extent(0) >= num_levels + 1,
+                   "Height view must have extent >= " << num_levels);
 }
 
 }  // namespace haero

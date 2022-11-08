@@ -4,7 +4,6 @@
 #include "haero/haero.hpp"
 #include "haero/math.hpp"
 #include "haero/floating_point.hpp"
-#include "ekat/ekat_pack_math.hpp"
 
 #include "haero/math.hpp"
 #include "haero/root_finders.hpp"
