@@ -1,4 +1,4 @@
-# This file loads all necessary modules for building MAM on Constance (PNNL)
+# This file loads all necessary modules for building Haero on Constance (PNNL)
 
 source /etc/profile.d/modules.sh
 module purge
