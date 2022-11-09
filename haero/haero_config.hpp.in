@@ -4,17 +4,12 @@
 #ifndef HAERO_CONFIG_HPP
 #define HAERO_CONFIG_HPP
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
 
 namespace haero {
 
 /// Real-valued numbers are of this type.
 typedef @HAERO_REAL_TYPE@ Real;
-
-/// Size for scalar packs (used for vector simd ops)
-static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 
 #if @HAERO_DOUBLE_PRECISION@
 #define HAERO_DOUBLE_PRECISION 1
@@ -23,8 +18,6 @@ static constexpr int HAERO_PACK_SIZE = @HAERO_PACK_SIZE@;
 #endif
 
 #cmakedefine HAERO_ENABLE_GPU
-
-#define HAERO_TEST_DATA_DIR "@CMAKE_CURRENT_SOURCE_DIR@/tests/data"
 
 } // namespace haero
 

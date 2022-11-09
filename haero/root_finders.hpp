@@ -1,9 +1,8 @@
 #ifndef HAERO_ROOTFINDERS_HPP
 #define HAERO_ROOTFINDERS_HPP
 
-#include "haero/math.hpp"
-#include "haero/check.hpp"
-#include "haero/floating_point.hpp"
+#include <haero/floating_point.hpp>
+#include <haero/math.hpp>
 
 namespace haero {
 namespace math {
@@ -79,29 +78,6 @@ struct NewtonSolver {
     }
     return xroot;
   }
-
-  template <typename VT>
-  KOKKOS_INLINE_FUNCTION typename std::enable_if<VT::packtag, value_type>::type
-  solve_impl() {
-    bool keep_going = true;
-    while (keep_going) {
-      ++counter;
-      const value_type xnp1 = xroot - f(xroot) / f.derivative(xroot);
-      iter_diff = abs(xnp1 - xroot);
-      keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
-      if (counter > max_iter) {
-        keep_going = false;
-        fail = true;
-      }
-      if (isnan(xnp1).any()) {
-        keep_going = false;
-        fail = true;
-      }
-      xroot = xnp1;
-    }
-    return xroot;
-  }
 };
 
 /** padding factor stops BracketedNewtonSolver from getting stuck at an endpoint
@@ -157,8 +133,8 @@ struct BracketedNewtonSolver {
         counter(0),
         iter_diff(std::numeric_limits<Real>::max()),
         fail(false) {
-    EKAT_KERNEL_ASSERT(Check<value_type>::is_positive(b - a));
-    EKAT_KERNEL_ASSERT(Check<value_type>::is_negative(fa * fb));
+    EKAT_KERNEL_ASSERT(b - a > 0.0);
+    EKAT_KERNEL_ASSERT(fa * fb < 0.0);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -200,46 +176,6 @@ struct BracketedNewtonSolver {
         fail = true;
       }
       if (isnan(x)) {
-        keep_going = false;
-        fail = true;
-      }
-      xroot = x;
-    }
-    return xroot;
-  }
-
-  template <typename VT>
-  KOKKOS_INLINE_FUNCTION typename std::enable_if<VT::packtag, value_type>::type
-  solve_impl() {
-    bool keep_going = true;
-    while (keep_going) {
-      ++counter;
-      // newton step
-      VT x = xroot - fx / f.derivative(xroot);
-      // safeguard: require x to be inside current bracket
-      // assure progress: guard against tiny steps
-      const Real pad_fac = bracket_pad_factor;
-      const VT pad = pad_fac * (b - a);
-      const auto mbnd = (x >= (a + pad)) and (x <= (b - pad));
-      const auto mid = 0.5*(a + b);
-      x.set(mbnd, x, mid);
-      fx = f(x);
-      // update bracket
-      const auto msign = (fx * fa > 0);
-      a.set(msign, x, a);
-      fa.set(msign, fx, fa);
-      b.set(msign, b, x);
-      fb.set(msign, fb, fx);
-      // check convergence
-      iter_diff = abs(x - xroot);
-      keep_going = !FloatingPoint<VT>::zero(iter_diff, conv_tol);
-      // prevent infinite loops
-      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
-      if (counter > max_iter) {
-        keep_going = false;
-        fail = true;
-      }
-      if (isnan(x).any()) {
         keep_going = false;
         fail = true;
       }
@@ -340,34 +276,6 @@ struct BisectionSolver {
         fail = true;
       }
       if (isnan(xnp1)) {
-        keep_going = false;
-        fail = true;
-      }
-    }
-    return xroot;
-  }
-
-  template <typename VT>
-  KOKKOS_INLINE_FUNCTION typename std::enable_if<VT::packtag, value_type>::type
-  solve_impl() {
-    bool keep_going = true;
-    while (keep_going) {
-      ++counter;
-      xnp1 = 0.5 * (a + b);
-      const value_type fx = f(xroot);
-      const auto m = (fx * fa < 0);
-      b.set(m, xroot);
-      a.set(!m, xroot);
-      fa.set(!m, fx);
-      iter_diff = b - a;
-      xroot = xnp1;
-      keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BisectionSolver: max iterations");
-      if (counter > max_iter) {
-        keep_going = false;
-        fail = true;
-      }
-      if (isnan(xnp1).any()) {
         keep_going = false;
         fail = true;
       }

@@ -36,7 +36,6 @@ add_library(haero
             atmosphere.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
             utils.cpp
-            view_pack_helpers.cpp
             )
 add_dependencies(haero ext_libraries update_version_info)
 target_compile_options(haero PRIVATE  $<$<COMPILE_LANGUAGE:CXX>:${KOKKOS_CUDA_OPTIONS}>)
@@ -58,7 +57,6 @@ install(TARGETS haero DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES aero_process.hpp
               aero_species.hpp
               atmosphere.hpp
-              check.hpp
               constants.hpp
               floating_point.hpp
               gas_species.hpp
@@ -66,7 +64,6 @@ install(FILES aero_process.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
               math.hpp
               utils.hpp
-              view_pack_helpers.hpp
               root_finders.hpp
         DESTINATION include/haero)
 

@@ -1,7 +1,7 @@
 #ifndef HAERO_ATMOSPHERE_HPP
 #define HAERO_ATMOSPHERE_HPP
 
-#include "haero/haero.hpp"
+#include <haero/haero.hpp>
 
 namespace haero {
 
@@ -75,13 +75,12 @@ class Atmosphere final {
   /// given thread team to parallelize the check.
   KOKKOS_INLINE_FUNCTION
   bool quantities_nonnegative(const ThreadTeam& team) const {
-    const int nk = PackInfo::num_packs(num_levels());
+    const int nk = num_levels();
     int violations = 0;
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),
       KOKKOS_CLASS_LAMBDA(int k, int& violation) {
-        if ((temperature(k) < 0).any() ||
-            (pressure(k) < 0).any() ||
-            (vapor_mixing_ratio(k) < 0).any()) {
+        if ((temperature(k) < 0) || (pressure(k) < 0) ||
+            (vapor_mixing_ratio(k) < 0)) {
           violation = 1;
         }
       }, violations);

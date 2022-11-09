@@ -1,7 +1,7 @@
 #ifndef HAERO_AERO_PROCESS_HPP
 #define HAERO_AERO_PROCESS_HPP
 
-#include "haero/atmosphere.hpp"
+#include <haero/atmosphere.hpp>
 
 #include <memory>
 #include <cstring>

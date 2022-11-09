@@ -1,7 +1,7 @@
 #ifndef HAERO_HPP
 #define HAERO_HPP
 
-#include "haero/haero_config.hpp"
+#include <haero/haero_config.hpp>
 
 // Cuda "C++" can't handle lambdas consisting of private/protected methods
 // This seems awful, but other solutions seem to involve dancing carefully
@@ -19,14 +19,6 @@ typedef Kokkos::CudaSpace MemorySpace;
 #else
 typedef Kokkos::HostSpace MemorySpace;
 #endif
-
-/// Helpers for pack/array indexing
-using PackInfo = ekat::PackInfo<HAERO_PACK_SIZE>;
-
-/// Pack data structures for SIMD
-using PackType = ekat::Pack<Real, HAERO_PACK_SIZE>;
-using IntPackType = ekat::Pack<int, HAERO_PACK_SIZE>;
-using MaskType = ekat::Mask<HAERO_PACK_SIZE>;
 
 /// Device and host types
 using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
@@ -48,21 +40,18 @@ using ThreadTeam = typename DeviceType::MemberType;
 /// A TracersView іs a rank 3 Kokkos View with the following indices:
 /// 1. A tracer index identifying an advected quantity
 /// 2. A column index identifying a unique atmospheric column
-/// 3. A level index identifying a unique pack containing a set of data
-///    associated with adjacent vertical levels.
-using TracersView = typename DeviceType::view_3d<PackType>;
+/// 3. A level index identifying a unique vertical level in the column
+using TracersView = typename DeviceType::view_3d<Real>;
 
 /// A DiagnosticsView іs a rank 3 Kokkos View with the following indices:
 /// 1. A diagnostic index identifying a diagnostic quantity
 /// 2. A column index identifying a unique atmospheric column
-/// 3. A level index identifying a unique pack containing a set of data
-///    associated with adjacent vertical levels.
-using DiagnosticsView = typename DeviceType::view_3d<PackType>;
+/// 3. A level index identifying a unique vertical level in the column
+using DiagnosticsView = typename DeviceType::view_3d<Real>;
 
 /// A ColumnView is a rank-1 Kokkos View whose single index identifies a
-/// unique pack containing a set of data associated with adjacent vertical
-/// levels.
-using ColumnView = typename DeviceType::view_1d<PackType>;
+/// unique vertical level.
+using ColumnView = typename DeviceType::view_1d<Real>;
 
 // Returns haero's version string.
 const char* version();

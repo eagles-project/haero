@@ -1,11 +1,11 @@
 #ifndef HAERO_UTILS_HPP
 #define HAERO_UTILS_HPP
 
+#include <haero/haero_config.hpp>
+
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include "haero/haero_config.hpp"
 
 namespace haero {
 

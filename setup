@@ -142,12 +142,6 @@ ENABLE_GPU=OFF
 # * 'Release' for production (no symbols, optimization).
 BUILD_TYPE=Debug
 
-# This controls how many floating point numbers we can operate on simultaneously
-# using SIMD vector operations. This is mostly for use on CPUs, but some newer
-# GPUs also support vectorization. NOTE: Fortran implementations of aerosol
-# processes are only supported for a PACK_SIZE of 1.
-PACK_SIZE=1
-
 # Set this to
 # * 'double' for double precision
 # * 'single' for single precision
@@ -293,7 +287,6 @@ cmake \
  -DHAERO_ENABLE_GPU=\$ENABLE_GPU \
  -DHAERO_ENABLE_MPI=\$ENABLE_MPI \
  -DHAERO_PRECISION=\$PRECISION \
- -DHAERO_PACK_SIZE=\$PACK_SIZE \
  \$OPTIONS \
  -G "\$GENERATOR" \
  \$SOURCE_DIR
