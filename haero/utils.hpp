@@ -18,21 +18,21 @@ namespace haero {
 std::string indent_string(const int tab_lev);
 
 /// convert a string to lower case
-std::string& tolower(std::string& s);
+std::string &tolower(std::string &s);
 
 /// Returns true if the string s can be interpreted as a boolean variable, false
 /// if not. Valid (case-insensitive) boolean values are:
 /// * true/false
 /// * yes/no
 /// * on/off
-bool is_boolean(const std::string& s);
+bool is_boolean(const std::string &s);
 
 /// Returns the boolean value interpreted from the string s. If is_boolean(s)
 /// returns false, this function throws an exception.
-bool as_boolean(const std::string& s);
+bool as_boolean(const std::string &s);
 
 /// Get the filename extension from a string containing a filename
-std::string get_filename_ext(const std::string& fname);
+std::string get_filename_ext(const std::string &fname);
 
 /// Write a horizontal line to a string
 std::string line_delim();
@@ -45,7 +45,7 @@ std::string line_delim();
 
   @param [in] vals
 */
-bool vector_is_monotone(const std::vector<Real>& vals);
+bool vector_is_monotone(const std::vector<Real> &vals);
 
 /** @brief A simple progress bar to show program % completion with the console.
  */
@@ -55,15 +55,15 @@ class ProgressBar {
   Real freq_;
   int it_;
   Real next_;
-  std::ostream& os_;
+  std::ostream &os_;
 
- public:
-  ProgressBar(const std::string& name, const int niterations,
-              const Real write_freq = 10.0, std::ostream& os = std::cout);
+public:
+  ProgressBar(const std::string &name, const int niterations,
+              const Real write_freq = 10.0, std::ostream &os = std::cout);
 
   void update();
 };
 
 /// @} defgroup utilities
-}  // namespace haero
+} // namespace haero
 #endif

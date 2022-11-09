@@ -23,6 +23,6 @@ struct AeroSpecies final {
   const Real hygroscopicity;
 };
 
-}  // namespace haero
+} // namespace haero
 
 #endif

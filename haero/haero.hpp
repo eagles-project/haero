@@ -22,7 +22,7 @@ typedef Kokkos::HostSpace MemorySpace;
 
 /// Device and host types
 using DeviceType = ekat::KokkosTypes<ekat::DefaultDevice>;
-using HostType   = ekat::KokkosTypes<ekat::HostDevice>;
+using HostType = ekat::KokkosTypes<ekat::HostDevice>;
 
 /// Execution space (based on DeviceType)
 using ExecutionSpace = typename DeviceType::ExeSpace;
@@ -54,15 +54,15 @@ using DiagnosticsView = typename DeviceType::view_3d<Real>;
 using ColumnView = typename DeviceType::view_1d<Real>;
 
 // Returns haero's version string.
-const char* version();
+const char *version();
 
 // Returns haero's git revision hash, or "unknown" if not found.
-const char* revision();
+const char *revision();
 
 // Returns true iff this build has changes that weren't committed to the git
 // repo.
 bool has_uncommitted_changes();
 
-}  // end namespace haero
+} // end namespace haero
 
 #endif

@@ -1,9 +1,9 @@
 #ifndef HAERO_MATH_TESTS_HPP
 #define HAERO_MATH_TESTS_HPP
 
+#include "haero/floating_point.hpp"
 #include "haero/haero.hpp"
 #include "haero/math.hpp"
-#include "haero/floating_point.hpp"
 
 #include "haero/math.hpp"
 #include "haero/root_finders.hpp"
@@ -24,8 +24,7 @@ namespace math {
 
   For an application example, see KohlerPolynomial.
 */
-template <typename T>
-struct LegendreCubic {
+template <typename T> struct LegendreCubic {
   static_assert(std::is_floating_point<
                     typename ekat::ScalarTraits<T>::scalar_type>::value,
                 "floating point type");
@@ -37,12 +36,12 @@ struct LegendreCubic {
   LegendreCubic() {}
 
   KOKKOS_INLINE_FUNCTION
-  T operator()(const T& xin) const { return 0.5 * (-3 * xin + 5 * cube(xin)); }
+  T operator()(const T &xin) const { return 0.5 * (-3 * xin + 5 * cube(xin)); }
 
   /// @brief Derivative of the cubic Legendre polynomial, @f$ \frac{d
   /// P_3}{dx}(x) @f$
   KOKKOS_INLINE_FUNCTION
-  T derivative(const T& xin) const { return 0.5 * (-3 + 15 * square(xin)); }
+  T derivative(const T &xin) const { return 0.5 * (-3 + 15 * square(xin)); }
 };
 
 /** @brief Quartic Legendre polynomial, @f$ P_4(x) @f$
@@ -57,8 +56,7 @@ struct LegendreCubic {
 
   For an application example, see KohlerPolynomial.
 */
-template <typename T>
-struct LegendreQuartic {
+template <typename T> struct LegendreQuartic {
   static_assert(std::is_floating_point<
                     typename ekat::ScalarTraits<T>::scalar_type>::value,
                 "floating point type.");
@@ -92,10 +90,10 @@ struct LegendreQuartic {
   If it is to be used by the Newton solver, it must also implement the
   derivative(const T x) method, which returns f'(x).
 */
-template <typename T>
-struct MonicParabola {
-  static_assert(std::is_floating_point<typename ekat::ScalarTraits<T>::scalar_type>::value,
-    "floating point type.");
+template <typename T> struct MonicParabola {
+  static_assert(std::is_floating_point<
+                    typename ekat::ScalarTraits<T>::scalar_type>::value,
+                "floating point type.");
   using value_type = T;
   using scalar_type = typename ekat::ScalarTraits<T>::scalar_type;
 
@@ -106,7 +104,7 @@ struct MonicParabola {
   MonicParabola() : a(0), b(3) {}
 
   KOKKOS_INLINE_FUNCTION
-  T operator() (const T xin) const {
+  T operator()(const T xin) const {
     const T aa(a);
     const T bb(b);
     return square(xin) + aa * xin + bb;
@@ -115,7 +113,7 @@ struct MonicParabola {
   KOKKOS_INLINE_FUNCTION
   T derivative(const T xin) const {
     const T aa(a);
-    return 2*xin + aa;
+    return 2 * xin + aa;
   }
 };
 

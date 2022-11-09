@@ -8,7 +8,7 @@ namespace haero {
 /// @class Atmosphere
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
- public:
+public:
   /// Default constructor.
   /// CAUTION: only useful for creating placeholders in views!
   Atmosphere() = default;
@@ -45,7 +45,7 @@ class Atmosphere final {
   // Copy construction and assignment are supported for moving data between
   // host and device, and for populating multi-column views.
   Atmosphere(const Atmosphere &) = default;
-  Atmosphere& operator=(const Atmosphere&) = default;
+  Atmosphere &operator=(const Atmosphere &) = default;
 
   /// Destructor.
   KOKKOS_FUNCTION
@@ -74,24 +74,26 @@ class Atmosphere final {
   /// Returns true iff all atmospheric quantities are nonnegative, using the
   /// given thread team to parallelize the check.
   KOKKOS_INLINE_FUNCTION
-  bool quantities_nonnegative(const ThreadTeam& team) const {
+  bool quantities_nonnegative(const ThreadTeam &team) const {
     const int nk = num_levels();
     int violations = 0;
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk),
-      KOKKOS_CLASS_LAMBDA(int k, int& violation) {
-        if ((temperature(k) < 0) || (pressure(k) < 0) ||
-            (vapor_mixing_ratio(k) < 0)) {
-          violation = 1;
-        }
-      }, violations);
+    Kokkos::parallel_reduce(
+        Kokkos::TeamThreadRange(team, nk),
+        KOKKOS_CLASS_LAMBDA(int k, int &violation) {
+          if ((temperature(k) < 0) || (pressure(k) < 0) ||
+              (vapor_mixing_ratio(k) < 0)) {
+            violation = 1;
+          }
+        },
+        violations);
     return (violations == 0);
   }
 
- private:
+private:
   // Number of vertical levels.
   int num_levels_;
 };
 
-}  // namespace haero
+} // namespace haero
 
 #endif

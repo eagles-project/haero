@@ -274,11 +274,11 @@ if (NOT CLANG_FORMAT STREQUAL "CLANG_FORMAT-NOTFOUND")
       "Please make sure this version appears in your path and rerun config.sh.")
   else()
     add_custom_target(format-cxx
-      find ${PROJECT_SOURCE_DIR}/src -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i {} \+;
+      find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -i {} \+;
       VERBATIM
       COMMENT "Auto-formatting C++ code...")
     add_custom_target(format-cxx-check
-      find ${PROJECT_SOURCE_DIR}/src -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 {} \+;
+      find ${PROJECT_SOURCE_DIR}/haero -name "*.[hc]pp" -exec ${CLANG_FORMAT} -n --Werror -ferror-limit=1 {} \+;
       VERBATIM
       COMMENT "Checking C++ formatting...")
   endif()

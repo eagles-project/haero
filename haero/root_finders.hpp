@@ -12,8 +12,7 @@ namespace math {
   converge. It may converge to an incorrect root if a poor initial guess is
   chosen. It requires both function values and derivative values.
 */
-template <typename ScalarFunction>
-struct NewtonSolver {
+template <typename ScalarFunction> struct NewtonSolver {
   using value_type = typename ScalarFunction::value_type;
 
   /// maximum number of iterations allowed per solve
@@ -27,7 +26,7 @@ struct NewtonSolver {
   /// absolute difference between two consecutive iterations
   value_type iter_diff;
   /// Scalar function whose root we need
-  const ScalarFunction& f;
+  const ScalarFunction &f;
   /// true if a failure condition is met
   bool fail;
 
@@ -40,19 +39,15 @@ struct NewtonSolver {
     @param [in] fn ScalarFunction instance whose root needs to be found
   */
   KOKKOS_INLINE_FUNCTION
-  NewtonSolver(const value_type x0, const value_type a0, const value_type b0, const Real& tol,
-                     const ScalarFunction& fn)
-      : xroot(x0),
-        conv_tol(tol),
-        counter(0),
-        iter_diff(std::numeric_limits<Real>::max()),
-        f(fn),
-        fail(false) {}
+  NewtonSolver(const value_type x0, const value_type a0, const value_type b0,
+               const Real &tol, const ScalarFunction &fn)
+      : xroot(x0), conv_tol(tol), counter(0),
+        iter_diff(std::numeric_limits<Real>::max()), f(fn), fail(false) {}
 
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
   KOKKOS_INLINE_FUNCTION
-  value_type solve() {return solve_impl<value_type>();}
+  value_type solve() { return solve_impl<value_type>(); }
 
   template <typename VT>
   KOKKOS_INLINE_FUNCTION
@@ -65,7 +60,8 @@ struct NewtonSolver {
       const value_type xnp1 = xroot - f(xroot) / f.derivative(xroot);
       iter_diff = abs(xnp1 - xroot);
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "NewtonSolver: max iterations");
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter,
+                             "NewtonSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
         fail = true;
@@ -94,8 +90,7 @@ robustness of the bisection method. In addition to the requirement that the
 initial interval contains a root, this solver requires that function value at
 the initial interval endpoints have opposite sign.
 */
-template <typename ScalarFunction>
-struct BracketedNewtonSolver {
+template <typename ScalarFunction> struct BracketedNewtonSolver {
   using value_type = typename ScalarFunction::value_type;
   static constexpr int max_iter = 200;
   value_type xroot;
@@ -105,7 +100,7 @@ struct BracketedNewtonSolver {
   value_type fa;
   value_type fx;
   value_type fb;
-  const ScalarFunction& f;
+  const ScalarFunction &f;
   int counter;
   value_type iter_diff;
   /// true if a failure condition is met
@@ -120,19 +115,12 @@ struct BracketedNewtonSolver {
     @param [in] fn ScalarFunction instance whose root needs to be found
   */
   KOKKOS_INLINE_FUNCTION
-  BracketedNewtonSolver(const value_type x0, const value_type a0, const value_type b0,
-                        const Real tol, const ScalarFunction& fn)
-      : xroot(x0),
-        a(a0),
-        b(b0),
-        conv_tol(tol),
-        fa(fn(value_type(a0))),
-        fx(fn(x0)),
-        fb(fn(value_type(b0))),
-        f(fn),
-        counter(0),
-        iter_diff(std::numeric_limits<Real>::max()),
-        fail(false) {
+  BracketedNewtonSolver(const value_type x0, const value_type a0,
+                        const value_type b0, const Real tol,
+                        const ScalarFunction &fn)
+      : xroot(x0), a(a0), b(b0), conv_tol(tol), fa(fn(value_type(a0))),
+        fx(fn(x0)), fb(fn(value_type(b0))), f(fn), counter(0),
+        iter_diff(std::numeric_limits<Real>::max()), fail(false) {
     EKAT_KERNEL_ASSERT(b - a > 0.0);
     EKAT_KERNEL_ASSERT(fa * fb < 0.0);
   }
@@ -170,7 +158,8 @@ struct BracketedNewtonSolver {
       iter_diff = abs(x - xroot);
       keep_going = !FloatingPoint<value_type>::zero(iter_diff, conv_tol);
       // prevent infinite loops
-      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BracketedNewtonSolver: max iterations");
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter,
+                             "BracketedNewtonSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
         fail = true;
@@ -197,8 +186,7 @@ struct BracketedNewtonSolver {
   For an application example, see KohlerPolynomial.
 
 */
-template <typename ScalarFunction>
-struct BisectionSolver {
+template <typename ScalarFunction> struct BisectionSolver {
   using value_type = typename ScalarFunction::value_type;
 
   /// maximum number of iterations allowed
@@ -220,7 +208,7 @@ struct BisectionSolver {
   /// width of the current search interval
   value_type iter_diff;
   /// scalar function whose root we need
-  const ScalarFunction& f;
+  const ScalarFunction &f;
   /// true if a failure condition is met
   bool fail;
 
@@ -233,17 +221,10 @@ struct BisectionSolver {
     @param [in] fn ScalarFunction instance whose root needs to be found
   */
   KOKKOS_INLINE_FUNCTION
-  BisectionSolver(const value_type x0, const value_type a0, const value_type b0, const Real tol,
-                  const ScalarFunction& fn)
-      : xroot(0.5 * (a0 + b0)),
-        a(a0),
-        b(b0),
-        conv_tol(tol),
-        fa(fn(a0)),
-        xnp1(0.5 * (a0 + b0)),
-        counter(0),
-        iter_diff(b0 - a0),
-        f(fn),
+  BisectionSolver(const value_type x0, const value_type a0, const value_type b0,
+                  const Real tol, const ScalarFunction &fn)
+      : xroot(0.5 * (a0 + b0)), a(a0), b(b0), conv_tol(tol), fa(fn(a0)),
+        xnp1(0.5 * (a0 + b0)), counter(0), iter_diff(b0 - a0), f(fn),
         fail(false) {}
 
   /// Solves for the root.  Prints a warning message if the convergence
@@ -270,7 +251,8 @@ struct BisectionSolver {
       iter_diff = b - a;
       xroot = xnp1;
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
-      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter, "BisectionSolver: max iterations");
+      EKAT_KERNEL_ASSERT_MSG(counter <= max_iter,
+                             "BisectionSolver: max iterations");
       if (counter > max_iter) {
         keep_going = false;
         fail = true;
@@ -283,7 +265,6 @@ struct BisectionSolver {
     return xroot;
   }
 };
-
 
 } // namespace math
 } // namespace haero

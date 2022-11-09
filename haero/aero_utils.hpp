@@ -8,8 +8,7 @@ namespace haero {
 /// @struct AeroUtils
 /// This is just a grab bag of utility functions that work with an aerosol
 /// package with the given configuration type.
-template <typename AeroConfig>
-struct AeroUtils final {
+template <typename AeroConfig> struct AeroUtils final {
 
   // Types derived from template parameters.
   using Config = AeroConfig;
@@ -17,7 +16,7 @@ struct AeroUtils final {
 
   // You can't create one of these classes--it's just a templated namespace.
   AeroUtils() = delete;
-  AeroUtils(const AeroUtils&) = delete;
+  AeroUtils(const AeroUtils &) = delete;
   ~AeroUtils() = delete;
 
   /// On host: calls a given function, passing it each of the mass mixing ratios
@@ -27,8 +26,8 @@ struct AeroUtils final {
   /// @param [in] f The function to be called with the given arguments. Usually
   ///               f is a lambda that is allowed to capture values from the
   ///               call site.
-  static void foreach_aero_mmr(const Config& config,
-                               std::function<void(const AeroMD&)> f) {
+  static void foreach_aero_mmr(const Config &config,
+                               std::function<void(const AeroMD &)> f) {
     config.foreach_aero_mmr(f);
   }
 
@@ -39,8 +38,8 @@ struct AeroUtils final {
   /// @param [in] f The function to be called with the given arguments. Usually
   ///               f is a lambda that is allowed to capture values from the
   ///               call site.
-  static void foreach_aero_nmr(const Config& config,
-                               std::function<void(const AeroMD&)> f) {
+  static void foreach_aero_nmr(const Config &config,
+                               std::function<void(const AeroMD &)> f) {
     config.foreach_aero_nmr(f);
   }
 
@@ -51,11 +50,10 @@ struct AeroUtils final {
   /// @param [in] f The function to be called with the given arguments. Usually
   ///               f is a lambda that is allowed to capture values from the
   ///               call site.
-  static void foreach_gas(const Config& config,
-                          std::function<void(const GasSpecies&)> f) {
+  static void foreach_gas(const Config &config,
+                          std::function<void(const GasSpecies &)> f) {
     config.foreach_gas(f);
   }
-
 };
 
 } // namespace haero

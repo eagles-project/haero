@@ -3,8 +3,8 @@
 
 #include <haero/haero.hpp>
 
-#include <ekat/ekat_assert.hpp>
 #include <Kokkos_Core.hpp>
+#include <ekat/ekat_assert.hpp>
 
 namespace haero {
 
@@ -14,8 +14,7 @@ using std::abs;
   struct for help with common floating point operations
 
 */
-template <typename T = Real>
-struct FloatingPoint {
+template <typename T = Real> struct FloatingPoint {
   static_assert(std::is_floating_point<T>::value,
                 "floating point type required.");
 
@@ -80,5 +79,5 @@ struct FloatingPoint {
   }
 };
 
-}  // namespace haero
+} // namespace haero
 #endif
