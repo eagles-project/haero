@@ -12,9 +12,12 @@ patch_version=`grep '(HAERO_PATCH_VERSION' $1/CMakeLists.txt | sed -e 's/set (//
 which_git_wc=`which git | wc -l`
 
 if [ $which_git_wc -gt 0 ]; then
+  cwd=`pwd`
+  cd $1
   # Ask git for the revision and for diff information.
   git_revision=`git log -1 --format=format:%h`
   git_diffs=`git diff | wc -l`
+  cd $cwd
 else
   git_revision="unknown"
   git_diffs=0
