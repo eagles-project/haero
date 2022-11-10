@@ -181,10 +181,10 @@ pushd "\$SOURCE_DIR"/machines >& /dev/null
 for MACHINE_FILE in \$(ls)
 do
   MACHINE=\${MACHINE_FILE/\.sh/}
-  echo `hostname` | grep -q "\$MACHINE" 
-  host_match=$\?
+  echo \`hostname\` | grep -q "\$MACHINE" 
+  host_match=\$?
   echo \$SYSTEM_NAME | grep -q "\$MACHINE"
-  sys_match=$\?
+  sys_match=\$?
   if  [ \$host_match -eq 0 ] || [ \$sys_match -eq 0 ]; then
     echo "Found machine file \$MACHINE_FILE. Setting up environment for \$MACHINE..."
     . ./\$MACHINE.sh
