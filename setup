@@ -187,7 +187,7 @@ do
   sys_match=\$?
   if  [ \$host_match -eq 0 ] || [ \$sys_match -eq 0 ]; then
     echo "Found machine file \$MACHINE_FILE. Setting up environment for \$MACHINE..."
-    . ./\$MACHINE.sh
+    source ./\$MACHINE.sh
   fi
 done
 popd >& /dev/null
