@@ -1,4 +1,4 @@
-# This file loads all necessary modules for building MAM on NERSC Cori (KNL nodes).
+# This file loads all necessary modules for building Haero on NERSC Cori (KNL nodes).
 
 # Load relevant modules
 module purge

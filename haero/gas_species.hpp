@@ -18,5 +18,5 @@ struct GasSpecies final {
   Real molecular_weight;
 };
 
-}  // namespace haero
+} // namespace haero
 #endif

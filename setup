@@ -181,9 +181,13 @@ pushd "\$SOURCE_DIR"/machines >& /dev/null
 for MACHINE_FILE in \$(ls)
 do
   MACHINE=\${MACHINE_FILE/\.sh/}
-  if echo `hostname` | grep -q "\$MACHINE"; then
+  echo \`hostname\` | grep -q "\$MACHINE" 
+  host_match=\$?
+  echo \$SYSTEM_NAME | grep -q "\$MACHINE"
+  sys_match=\$?
+  if  [ \$host_match -eq 0 ] || [ \$sys_match -eq 0 ]; then
     echo "Found machine file \$MACHINE_FILE. Setting up environment for \$MACHINE..."
-    . ./\$MACHINE.sh
+    source ./\$MACHINE.sh
   fi
 done
 popd >& /dev/null
@@ -300,6 +304,6 @@ echo "Your build directory '$1' is ready."
 echo "To configure your build:"
 echo "  1. cd $1"
 echo "  2. Edit config.sh"
-echo "  3. ./config.sh"
+echo "  3. source config.sh"
 echo "  4. Build using 'make -j'."
 

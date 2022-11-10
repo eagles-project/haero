@@ -54,13 +54,19 @@ appropriate options set.
 
 To configure Haero:
 
-1. Create a build directory by running the `setup` script from the top-level
+1. Make sure you have the latest versions of all the required submodules:
+   ```
+   git submodule update --init --recursive
+   ```
+2. Create a build directory by running the `setup` script from the top-level
    source directory:
    ```
    ./setup build
    ```
-2. Change to your build directory and edit the `config.sh` file to select
-   configuration options. Then run `./config.sh` to configure the model.
+3. Change to your build directory and edit the `config.sh` file to select
+   configuration options. Then run `source config.sh` to configure the model
+   (this ensures that any settings by machine-specific scripts stick around in
+   your environment).
 
 If you prefer, you can fish the options out of the `setup` script (or your
 generated `config.sh` file) and feed them directly to CMake.

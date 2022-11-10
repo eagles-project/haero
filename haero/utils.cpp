@@ -17,14 +17,14 @@ std::string indent_string(const int tab_lev) {
 
 std::string line_delim() { return "------------------------------\n"; }
 
-std::string& tolower(std::string& s) {
-  for (auto& c : s) {
+std::string &tolower(std::string &s) {
+  for (auto &c : s) {
     c = std::tolower(c);
   }
   return s;
 }
 
-bool is_boolean(const std::string& s) {
+bool is_boolean(const std::string &s) {
   return ((strcasecmp("true", s.c_str()) == 0) ||
           (strcasecmp("false", s.c_str()) == 0) ||
           (strcasecmp("yes", s.c_str()) == 0) ||
@@ -33,7 +33,7 @@ bool is_boolean(const std::string& s) {
           (strcasecmp("off", s.c_str()) == 0));
 }
 
-bool as_boolean(const std::string& s) {
+bool as_boolean(const std::string &s) {
   EKAT_REQUIRE_MSG(is_boolean(s), "'" << s << "' is not a boolean!\n"
                                       << "Must be one of (case-insensitive):\n"
                                       << "* \"true\", \"false\"\n"
@@ -44,7 +44,7 @@ bool as_boolean(const std::string& s) {
           (strcasecmp("on", s.c_str()) == 0));
 }
 
-std::string get_filename_ext(const std::string& fname) {
+std::string get_filename_ext(const std::string &fname) {
   const auto dotpos = fname.rfind('.');
   std::string result = "";
   if (dotpos != std::string::npos) {
@@ -53,7 +53,7 @@ std::string get_filename_ext(const std::string& fname) {
   return result;
 }
 
-bool vector_is_monotone(const std::vector<Real>& vals) {
+bool vector_is_monotone(const std::vector<Real> &vals) {
   bool result = true;
   if (vals.size() > 1) {
     // check increasing or decreasing based on first 2 values
@@ -77,4 +77,4 @@ bool vector_is_monotone(const std::vector<Real>& vals) {
   return result;
 }
 
-}  // namespace haero
+} // namespace haero

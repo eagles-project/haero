@@ -3,8 +3,8 @@
 
 #include <haero/atmosphere.hpp>
 
-#include <memory>
 #include <cstring>
+#include <memory>
 #include <type_traits>
 
 namespace haero {
@@ -15,27 +15,26 @@ namespace haero {
 /// defined by a specific "aerosol configuration".
 template <typename AerosolConfig, typename AerosolProcessImpl>
 class AeroProcess final {
- public:
-
+public:
   // Types derived from template parameters.
-  using AeroConfig    = AerosolConfig;
-  using Prognostics   = typename AerosolConfig::Prognostics;
-  using Diagnostics   = typename AerosolConfig::Diagnostics;
-  using Tendencies    = typename AerosolConfig::Tendencies;
-  using ProcessImpl   = AerosolProcessImpl;
+  using AeroConfig = AerosolConfig;
+  using Prognostics = typename AerosolConfig::Prognostics;
+  using Diagnostics = typename AerosolConfig::Diagnostics;
+  using Tendencies = typename AerosolConfig::Tendencies;
+  using ProcessImpl = AerosolProcessImpl;
   using ProcessConfig = typename ProcessImpl::Config;
 
   // Tendencies type must be the same as that for Prognostics.
   static_assert(std::is_same<Tendencies, Prognostics>::value,
-    "Tendencies and Prognostics types must be identical!");
+                "Tendencies and Prognostics types must be identical!");
 
   /// Constructs an instance of an aerosol process with the given name,
   /// associated with the given aerosol configuration.
   /// @param [in] aero_config The aerosol configuration for this process
   /// @param [in] process_config Any process-specific information required by
   ///                            this process's implementation.
-  AeroProcess(const AeroConfig& aero_config,
-              const ProcessConfig& process_config = ProcessConfig())
+  AeroProcess(const AeroConfig &aero_config,
+              const ProcessConfig &process_config = ProcessConfig())
       : aero_config_(aero_config), process_config_(process_config),
         process_impl_() {
     // Set the name of this process.
@@ -50,13 +49,13 @@ class AeroProcess final {
 
   // Copy construction is required for host -> device dispatches
   KOKKOS_INLINE_FUNCTION
-  AeroProcess(const AeroProcess&) = default;
+  AeroProcess(const AeroProcess &) = default;
 
   /// Default constructor is disabled.
   AeroProcess() = delete;
 
   // Deep copies are not allowed.
-  AeroProcess& operator=(const AeroProcess&) = delete;
+  AeroProcess &operator=(const AeroProcess &) = delete;
 
   //------------------------------------------------------------------------
   //                          Accessors (host only)
@@ -67,14 +66,10 @@ class AeroProcess final {
 
   /// On host: returns the aerosol configuration (metadata) associated with
   /// this process.
-  const AeroConfig& aero_config() const {
-    return aero_config_;
-  }
+  const AeroConfig &aero_config() const { return aero_config_; }
 
   /// On host: returns any process-specific configuration data.
-  const ProcessConfig& process_config() const {
-    return process_config_;
-  }
+  const ProcessConfig &process_config() const { return process_config_; }
 
   //------------------------------------------------------------------------
   //                            Public Interface
@@ -89,9 +84,8 @@ class AeroProcess final {
   /// @param [in] prognostics A collection of aerosol prognostic variables to be
   ///                         validated.
   KOKKOS_INLINE_FUNCTION
-  bool validate(const ThreadTeam& team,
-                const Atmosphere& atmosphere,
-                const Prognostics& prognostics) const {
+  bool validate(const ThreadTeam &team, const Atmosphere &atmosphere,
+                const Prognostics &prognostics) const {
     return process_impl_.validate(aero_config_, team, atmosphere, prognostics);
   }
 
@@ -112,22 +106,22 @@ class AeroProcess final {
   /// @param [out]   tendencies An array analogous to prognostics that
   ///                           stores computed tendencies.
   KOKKOS_INLINE_FUNCTION
-  void compute_tendencies(const ThreadTeam& team, Real t, Real dt,
-                          const Atmosphere& atmosphere,
-                          const Prognostics& prognostics,
-                          const Diagnostics& diagnostics,
-                          const Tendencies& tendencies) const {
+  void compute_tendencies(const ThreadTeam &team, Real t, Real dt,
+                          const Atmosphere &atmosphere,
+                          const Prognostics &prognostics,
+                          const Diagnostics &diagnostics,
+                          const Tendencies &tendencies) const {
     process_impl_.compute_tendencies(aero_config_, team, t, dt, atmosphere,
                                      prognostics, diagnostics, tendencies);
   }
 
- private:
-  char          name_[256];
-  AeroConfig    aero_config_;
+private:
+  char name_[256];
+  AeroConfig aero_config_;
   ProcessConfig process_config_;
-  ProcessImpl   process_impl_;
+  ProcessImpl process_impl_;
 };
 
-}  // namespace haero
+} // namespace haero
 
 #endif

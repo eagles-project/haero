@@ -1,4 +1,4 @@
-# This file loads all necessary modules for building MAM on PNNL's Marianas system
+# This file loads all necessary modules for building Haero on Marianas (PNNL).
 
 module purge
 

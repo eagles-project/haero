@@ -1,4 +1,4 @@
-# This file sets up the environment variables for building MAM on s1024454.srn.sandia.gov
+# This file sets up the environment variables for building Haero on s1024454.srn.sandia.gov
 #
 # It's a rhel7 linux box with an intel skylake gold (24 cores with 2 threads per core over 2 sockets)
 # with an nvidia maxwell gpu.
