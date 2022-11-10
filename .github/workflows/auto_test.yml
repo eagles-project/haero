@@ -75,11 +75,6 @@ jobs:
 #          -DTCHEM_LIBRARY=/opt/haero/lib/libtchem.a \
 #          -DTCHEM_INCLUDE_DIR=/opt/haero/include \
 
-    - name: Checking C++ code formatting...
-      run: |
-        cd build
-        make format-cxx-check
-
     - name: Building haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |
         cd build
