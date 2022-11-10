@@ -21,7 +21,7 @@ workstation. We also support a limited number of platforms on which the Haero
 model is built and tested:
 
 * NERSC Cori
-* Compy and Constance at PNNL
+* Compy, Constance, Deception at PNNL
 
 ## Required Software
 
@@ -61,7 +61,9 @@ To configure Haero:
    ./setup build
    ```
 3. Change to your build directory and edit the `config.sh` file to select
-   configuration options. Then run `./config.sh` to configure the model.
+   configuration options. Then execute `config.sh` to configure the model.
+   If you're on a machine that requires modules to get access to compilers, etc,
+   use `source config.sh` to make sure your environment is updated.
 4. From the build directory, type `make -j` to build the library. (If you've
    configured your build for a GPU, place a number after the `-j` flag, as in
    `make -j 8`).
