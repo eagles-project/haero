@@ -60,6 +60,9 @@ static constexpr Real molec_weight_h2so4 = 0.098079;
 ///  Accommodation coefficient (for condensation) value for h2so4 []
 static constexpr Real accom_coef_h2so4 = 0.65;
 
+/// Molecular diffusion volume of h2so4 [-]
+static constexpr Real molec_diffusion_h2so4 = 42.88;
+
 /// Molecular weight of ammonia @f$\text{N}\text{H}_3@f$ [kg/mol]
 static constexpr Real molec_weight_nh3 = 0.01703052;
 
