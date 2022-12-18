@@ -57,11 +57,17 @@ static constexpr Real molec_weight_dry_air = 0.028966;
 /// Molecular weight of sulfuric acid @f$\text{H}_2\text{SO}_4@f$ [kg/mol]
 static constexpr Real molec_weight_h2so4 = 0.098079;
 
-///  Accommodation coefficient (for condensation) value for h2so4 []
+/// Accommodation coefficient (for condensation) value for h2so4 []
 static constexpr Real accom_coef_h2so4 = 0.65;
 
 /// Molecular diffusion volume of h2so4 [-]
 static constexpr Real molec_diffusion_h2so4 = 42.88;
+
+/// Ratio of gas uptake coeff for SOAG w.r.t. that of h2so4 []
+static constexpr Real soag_h2so4_uptake_coeff_ratio = 0.81;
+
+/// Ratio of gas uptake coeff for NH3 w.r.t. that of h2so4 []
+static constexpr Real nh3_h2so4_uptake_coeff_ratio = 2.08;
 
 /// Molecular weight of ammonia @f$\text{N}\text{H}_3@f$ [kg/mol]
 static constexpr Real molec_weight_nh3 = 0.01703052;
