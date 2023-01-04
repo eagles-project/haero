@@ -51,7 +51,7 @@ macro(set_up_platform)
   else()
     set(EKAT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ext/ekat")
     set(EKAT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/externals/ekat")
-    message(STATUS "Building EKAT."
+    message(STATUS "Building EKAT internally.")
     set(HAERO_BUILDS_EKAT ON)
   endif()
 
