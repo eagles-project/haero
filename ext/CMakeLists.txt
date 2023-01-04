@@ -13,7 +13,6 @@ endforeach()
 #----------------------------------------------------------------------------
 # E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
-get_filename_component(EKAT_INSTALL_ROOT ${EKAT_LIBRARY_DIR}/.. ABSOLUTE)
 if (HAERO_BUILDS_EKAT)
   list(APPEND CMAKE_MODULE_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
@@ -59,20 +58,32 @@ if (HAERO_BUILDS_EKAT)
        ${PROJECT_BINARY_DIR}/externals/kokkos
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/spdlog/include
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/yaml-cpp/include)
-  set(EKAT_NVCC_WRAPPER ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/bin/nvcc_wrapper)
+  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/bin/nvcc_wrapper
+       DESTINATION ${CMAKE_BINARY_DIR}/bin)
 else()
-  # Copy EKAT's test-launcher into place so we can use it for our unit tests.
-  file(COPY ${EKAT_INSTALL_ROOT}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
-  set(EKAT_INCLUDE_DIRS ${EKAT_INSTALL_ROOT}/include)
-  set(EKAT_NVCC_WRAPPER ${EKAT_INSTALL_ROOT}/bin/nvcc_wrapper)
+  # Copy EKAT's test-launcher and nvcc_wrapper into place.
+  file(COPY ${EKAT_ЅOURCE_DIR}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  file(COPY ${EKAT_ЅOURCE_DIR}/bin/nvcc_wrapper DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  list(APPEND EKAT_INCLUDE_DIRS
+       ${EKAT_SOURCE_DIR}/src
+       ${EKAT_BINARY_DIR}/src)
 endif()
+set(EKAT_NVCC_WRAPPER ${CMAKE_BINARY_DIR}/bin/nvcc_wrapper)
+set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
 set(HAERO_EXT_LIBRARIES ekat;${EKAT_TPL_LIBRARIES};${HAERO_EXT_LIBRARIES})
 foreach(inc_dir ${EKAT_INCLUDE_DIRS})
   list(APPEND HAERO_EXT_INCLUDE_DIRS ${inc_dir})
 endforeach()
-set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
 
+# FIXME: The following is broken and must either be fixed or removed.
+# FIXME: Specifically, it assumes that EKAT can be installed as an external
+# FIXME: package instead of being built in-tree. At the time of writing
+# FIXME: (1/4/2023), I don't believe we have figured out how to build ekat
+# FIXME: as an external package in a way that properly sets up compilers and
+# FIXME: flags, because of Kokkos hokkos pokkos. -JNJ
 if (HAERO_ENABLE_CHEMISTRY)
+  message(FATAL_ERROR "HAERO_ENABLE_CHEMISTRY is unsupported at the moment!")
+
   #----------------------------------------------------------------------------
   # OpenBLAS linear algebra library: needed by Tines on CPU builds
   # (We can skip it if we use Intel's compilers, which provide MKL.)
