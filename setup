@@ -34,15 +34,12 @@ PREFIX=$PWD/$1
 #                             Third-party libraries
 #-----------------------------------------------------------------------------
 # Usually you don't need to set these. But we provide this ability in case
-# another project (e.g. SCREAM) needs to build this one and use its own
+# another project (e.g. eamxx) needs to build this one and use its own
 # libraries. We also use these in our automatic testing environment. If any one
-# of these variables is supplied for a library, all must be supplied.
+# of these variables is supplied for a given library, all must be supplied.
 
-#KOKKOS_DIR=/path/to/kokkos
-
-#EKAT_INCLUDE_DIR=/path/to/ekat/includes
-#EKAT_LIBRARY_DIR=/path/to/ekat/library
-#EKAT_LIBRARY=libekat.a
+#EKAT_SOURCE_DIR=/path/to/ekat-src
+#EKAT_BINARY_DIR=/path/to/ekat-bin
 
 #OPENBLAS_INCLUDE_DIR=/path/to/openblas/includes
 #OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
@@ -218,17 +215,17 @@ if [ ! "\$DEVICE_ARCH" = "" ]; then
 fi
 
 # Configure ekat if needed.
-if [ ! "\$EKAT_LIBRARY_DIR" = "" -o ! "\$EKAT_INCLUDE_DIR" = "" -o ! "\$EKAT_LIBRARY" = "" ]; then
-  if [ "\$EKAT_LIBRARY" = "" ]; then
-    echo "Error: EKAT_LIBRARY must be specified for a custom EKAT library."
+if [ ! "\$EKAT_SOURCE_DIR" = "" -o ! "\$EKAT_BINARY_DIR" = "" ]; then
+  if [ "\$EKAT_SOURCE_DIR" = "" ]; then
+    echo "Error: EKAT_SOURCE_DIR must be specified for a custom EKAT library."
     exit 1
   fi
-  if [ "\$EKAT_INCLUDE_DIR" = "" ]; then
-    echo "Error: EKAT_INCLUDE_DIR must be specified for a custom EKAT library."
+  if [ "\$EKAT_BINARY_DIR" = "" ]; then
+    echo "Error: EKAT_BINARY_DIR must be specified for a custom EKAT library."
     exit 1
   fi
-  OPTIONS="\$OPTIONS -DEKAT_LIBRARY=\$EKAT_LIBRARY_DIR/\$EKAT_LIBRARY"
-  OPTIONS="\$OPTIONS -DEKAT_INCLUDE_DIR=\$EKAT_INCLUDE_DIR"
+  OPTIONS="\$OPTIONS -DEKAT_SOURCE_DIR=\$EKAT_SOURCE_DIR"
+  OPTIONS="\$OPTIONS -DEKAT_BINARY_DIR=\$EKAT_BINARY_DIR"
 fi
 
 # Configure OpenBLAS if needed.
