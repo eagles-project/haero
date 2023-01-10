@@ -62,8 +62,10 @@ if (HAERO_BUILDS_EKAT)
        DESTINATION ${CMAKE_BINARY_DIR}/bin)
 else()
   # Copy EKAT's test-launcher and nvcc_wrapper into place.
-  file(COPY ${EKAT_ЅOURCE_DIR}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
-  file(COPY ${EKAT_ЅOURCE_DIR}/bin/nvcc_wrapper DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  file(COPY ${EKAT_SOURCE_DIR}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  if (HAERO_ENABLE_GPU)
+    file(COPY ${EKAT_SOURCE_DIR}/bin/nvcc_wrapper DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  endif()
   list(APPEND EKAT_INCLUDE_DIRS
        ${EKAT_SOURCE_DIR}/src
        ${EKAT_BINARY_DIR}/src)
