@@ -275,11 +275,6 @@ if [ ! "\$EXTRA_LDFLAGS" = "" ]; then
   OPTIONS="\$OPTIONS -DHAERO_EXTRA_LDFLAGS=\$EXTRA_LDFLAGS"
 fi
 
-# Add flag to turn off warnings for use of deprecated
-# functions in Kokkos.
-# See eagles-project/mam4xx Issue #99 for more details.
-OPTIONS="\$OPTIONS -DKokkos_ENABLE_DEPRECATION_WARNINGS:BOOL=OFF"
-
 # Clear the build cache.
 rm -f CMakeCache.txt
 
