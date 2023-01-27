@@ -16,6 +16,7 @@ namespace haero {
 #ifdef __CUDACC__
 using ::cbrt;
 using ::erf;
+using ::erfc;
 using ::exp;
 using ::expm1;
 using ::isinf;
@@ -29,6 +30,7 @@ using ::tgamma;
 #else
 using std::cbrt;
 using std::erf;
+using std::erfc;
 using std::exp;
 using std::expm1;
 using std::isinf;
