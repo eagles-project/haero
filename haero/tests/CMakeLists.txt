@@ -1,3 +1,3 @@
-include(create_unit_test)
+include(EkatCreateUnitTest)
 
-CreateUnitTest(math_tests math_tests.cpp)
+EkatCreateUnitTest(math_tests math_tests.cpp)
