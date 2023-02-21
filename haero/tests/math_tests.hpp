@@ -1,3 +1,7 @@
+// Copyright (c) 2021, National Technology & Engineering Solutions of Sandia,
+// LLC (NTESS). Copyright (c) 2022, Battelle Memorial Institute
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef HAERO_MATH_TESTS_HPP
 #define HAERO_MATH_TESTS_HPP
 

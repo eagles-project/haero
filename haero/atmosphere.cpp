@@ -1,3 +1,7 @@
+// Copyright (c) 2021, National Technology & Engineering Solutions of Sandia,
+// LLC (NTESS). Copyright (c) 2022, Battelle Memorial Institute
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include "atmosphere.hpp"
 
 #include <ekat/ekat_assert.hpp>
