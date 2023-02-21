@@ -234,7 +234,6 @@ configure_file(
   @ONLY
 )
 install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION .)
-install(FILES ${PROJECT_SOURCE_DIR}/cmake/create_unit_test.cmake DESTINATION share)
 
 # Support for valgrind -- Linux only.
 if (LINUX)
