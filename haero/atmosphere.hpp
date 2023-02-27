@@ -44,7 +44,7 @@ public:
   ///                  computed by the host model
   Atmosphere(int num_levels, const ColumnView temp, const ColumnView press,
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
-             const ColumnView could_f, const ColumnView uv_ice_nuc, Real pblh);
+             const ColumnView cloud_f, const ColumnView uv_ice_nuc, Real pblh);
 
   // Copy construction and assignment are supported for moving data between
   // host and device, and for populating multi-column views.
