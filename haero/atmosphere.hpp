@@ -42,6 +42,10 @@ public:
   ///                  bounding each vertical level [Pa]
   /// @param [in] pblh The column-specific planetary boundary height [m],
   ///                  computed by the host model
+  /// @param [in] cloud_f The column-specific cloud fraction [unitless]
+  ///
+  /// @param [in] uv_ice_nuc The column-specific updraft velocity for ice
+  /// nucleation[m/s]
   Atmosphere(int num_levels, const ColumnView temp, const ColumnView press,
              const ColumnView qv, const ColumnView ht, const ColumnView pdel,
              const ColumnView cloud_f, const ColumnView uv_ice_nuc, Real pblh);
@@ -61,6 +65,8 @@ public:
   ColumnView vapor_mixing_ratio;
   ColumnView height;
   ColumnView hydrostatic_dp;
+  // Ask experts for better names for cloud_fraction and
+  // updraft_vel_ice_nucleation
   ColumnView cloud_fraction;
   ColumnView updraft_vel_ice_nucleation;
 
