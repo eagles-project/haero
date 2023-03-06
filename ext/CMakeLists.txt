@@ -69,10 +69,42 @@ else()
   endif()
   list(APPEND EKAT_INCLUDE_DIRS
        ${EKAT_SOURCE_DIR}/src
-       ${EKAT_BINARY_DIR}/src)
+       ${EKAT_BINARY_DIR}/src
+       ${EKAT_SOURCE_DIR}/extern/kokkos/tpls/desul/include
+       ${EKAT_SOURCE_DIR}/extern/kokkos/core/src
+       ${EKAT_SOURCE_DIR}/extern/kokkos/containers/src
+       ${EKAT_BINARY_DIR}/../kokkos
+       ${EKAT_SOURCE_DIR}/extern/spdlog/include
+       ${EKAT_SOURCE_DIR}/extern/yaml-cpp/include)
+  set(EKAT_TPL_LIBRARIES yaml-cpp;spdlog;kokkossimd;kokkoscontainers;kokkoscore)
+  # FIXME: this is gross, and should be replaced when EKAT has a mechanism for
+  # FIXME: describing its installed configuration
+  add_library(yaml-cpp STATIC IMPORTED GLOBAL)
+  add_library(spdlog STATIC IMPORTED GLOBAL)
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    set_target_properties(yaml-cpp PROPERTIES
+      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../yaml-cpp/libyaml-cppd.a)
+    set_target_properties(spdlog PROPERTIES
+      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../spdlog/libspdlogd.a)
+  else()
+    set_target_properties(yaml-cpp PROPERTIES
+      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../yaml-cpp/libyaml-cpp.a)
+    set_target_properties(spdlog PROPERTIES
+      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../spdlog/libspdlog.a)
+  endif()
+  add_library(kokkoscore STATIC IMPORTED GLOBAL)
+  set_target_properties(kokkoscore PROPERTIES
+      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../kokkos/core/src/libkokkoscore.a)
+  add_library(kokkoscontainers STATIC IMPORTED GLOBAL)
+  set_target_properties(kokkoscontainers PROPERTIES
+      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../kokkos/containers/src/libkokkoscontainers.a)
+  add_library(kokkossimd STATIC IMPORTED GLOBAL)
+  set_target_properties(kokkossimd PROPERTIES
+      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../kokkos/simd/src/libkokkossimd.a)
 endif()
 set(EKAT_NVCC_WRAPPER ${CMAKE_BINARY_DIR}/bin/nvcc_wrapper)
 set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
+
 set(HAERO_EXT_LIBRARIES ekat;${EKAT_TPL_LIBRARIES};${HAERO_EXT_LIBRARIES})
 foreach(inc_dir ${EKAT_INCLUDE_DIRS})
   list(APPEND HAERO_EXT_INCLUDE_DIRS ${inc_dir})
