@@ -76,7 +76,7 @@ else()
        ${EKAT_BINARY_DIR}/../kokkos
        ${EKAT_SOURCE_DIR}/extern/spdlog/include
        ${EKAT_SOURCE_DIR}/extern/yaml-cpp/include)
-  set(EKAT_TPL_LIBRARIES yaml-cpp;spdlog;kokkoscore;kokkoscontainers;kokkossimd)
+  set(EKAT_TPL_LIBRARIES yaml-cpp;spdlog;kokkossimd;kokkoscontainers;kokkoscore)
   # FIXME: this is gross, and should be replaced when EKAT has a mechanism for
   # FIXME: describing its installed configuration
   add_library(yaml-cpp STATIC IMPORTED GLOBAL)
