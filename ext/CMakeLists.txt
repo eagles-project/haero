@@ -304,37 +304,6 @@ if (HAERO_ENABLE_CHEMISTRY)
   set(HAERO_EXT_LIBRARIES tchem;${HAERO_EXT_LIBRARIES})
 endif()
 
-#----------------------------------------------------------------------------
-# Skywalker parameter study library
-#----------------------------------------------------------------------------
-add_library(skywalker STATIC IMPORTED GLOBAL)
-set(SKYWALKER_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libskywalker_${HAERO_PRECISION}.a)
-set_target_properties(skywalker PROPERTIES IMPORTED_LOCATION ${SKYWALKER_LIBRARY})
-add_library(skywalker_f90 STATIC IMPORTED GLOBAL)
-set(SKYWALKER_F90_LIBRARY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libskywalker_f90_${HAERO_PRECISION}.a)
-set_target_properties(skywalker_f90 PROPERTIES IMPORTED_LOCATION ${SKYWALKER_F90_LIBRARY})
-if (NOT EXISTS ${SKYWALKER_LIBRARY})
-  set(SW_CMAKE_OPTS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}
-                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                    -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-                    -DSKYWALKER_PRECISION=${HAERO_PRECISION})
-  ExternalProject_Add(skywalker_proj
-                      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/skywalker
-                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/skywalker
-                      BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/skywalker
-                      INSTALL_DIR ${PROJECT_BINARY_DIR}
-                      CMAKE_ARGS ${SW_CMAKE_OPTS}
-                      LOG_CONFIGURE TRUE
-                      BUILD_COMMAND ${MAKE} -j
-                      LOG_BUILD TRUE
-                      INSTALL_COMMAND ${MAKE} install
-                      LOG_INSTALL TRUE)
-  add_dependencies(skywalker skywalker_proj)
-  add_dependencies(skywalker_f90 skywalker_proj)
-endif()
-
 # This target can be used as a dependency to ensure all above libraries are
 # built before proceeding.
 add_custom_target(ext_libraries DEPENDS ${HAERO_EXT_LIBRARIES})
@@ -364,6 +333,3 @@ if (HAERO_ENABLE_CHEMISTRY)
     install(FILES ${TCHEM_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
   endif()
 endif()
-
-install(FILES ${SKYWALKER_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${SKYWALKER_F90_LIBRARY} DESTINATION ${CMAKE_INSTALL_LIBDIR})
