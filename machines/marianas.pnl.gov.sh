@@ -18,27 +18,10 @@ export CI_CACHE="${CI_CACHE_ROOT}/gcc@${GCC_VERSION}_openmpi@${OMPI_VERSION}_cud
 
 export LD_LIBRARY_PATH="${CI_CACHE}/lib:${LD_LIBRARY_PATH}"
 
-export HDF5_INCLUDE_DIR=$CI_CACHE/include
-export HDF5_LIBRARY_DIR=$CI_CACHE/lib
-export HDF5_LIBRARY=libhdf5_debug.a
-export HDF5_HL_LIBRARY=libhdf5_hl_debug.a
-
-export NETCDF_INCLUDE_DIR=$CI_CACHE/include
-export NETCDF_LIBRARY_DIR=$CI_CACHE/lib
-export NETCDF_LIBRARY=libnetcdf.a
-
 export YAMLCPP_INCLUDE_DIR=$CI_CACHE/include
 export YAMLCPP_LIBRARY_DIR=$CI_CACHE/lib
 export YAMLCPP_LIBRARY=libyaml-cpp.a
  
-export TINES_INCLUDE_DIR=$CI_CACHE/include
-export TINES_LIBRARY_DIR=$CI_CACHE/lib
-export TINES_LIBRARY=libtines.a
-
-export TCHEM_INCLUDE_DIR=$CI_CACHE/include
-export TCHEM_LIBRARY_DIR=$CI_CACHE/lib
-export TCHEM_LIBRARY=libtchem.a
-
 export CC=mpicc
 export CXX=mpic++
 export FC=mpifort

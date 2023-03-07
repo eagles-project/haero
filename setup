@@ -41,18 +41,6 @@ PREFIX=$PWD/$1
 #EKAT_SOURCE_DIR=/path/to/ekat-src
 #EKAT_BINARY_DIR=/path/to/ekat-bin
 
-#OPENBLAS_INCLUDE_DIR=/path/to/openblas/includes
-#OPENBLAS_LIBRARY_DIR=/path/to/openblas/library
-#OPENBLAS_LIBRARY=libopenblas.a
-
-#TINES_INCLUDE_DIR=/path/to/tines/includes
-#TINES_LIBRARY_DIR=/path/to/tines/library
-#TINES_LIBRARY=libtines.a
-
-#TCHEM_INCLUDE_DIR=/path/to/tchem/includes
-#TCHEM_LIBRARY_DIR=/path/to/tchem/library
-#TCHEM_LIBRARY=libtchemcore.a
-
 #-----------------------------------------------------------------------------
 #                             Inter-Node Parallelism (MPI)
 #-----------------------------------------------------------------------------
@@ -144,9 +132,6 @@ BUILD_TYPE=Debug
 # * 'single' for single precision
 PRECISION=double
 
-# Set this to ON to enable building the chemistry solver and driver.
-ENABLE_CHEMISTRY=OFF
-
 # Uncomment this if you want really verbose builds.
 #VERBOSE=ON
 
@@ -228,48 +213,6 @@ if [ ! "\$EKAT_SOURCE_DIR" = "" -o ! "\$EKAT_BINARY_DIR" = "" ]; then
   OPTIONS="\$OPTIONS -DEKAT_BINARY_DIR=\$EKAT_BINARY_DIR"
 fi
 
-# Configure OpenBLAS if needed.
-if [ ! "\$OPENBLAS_LIBRARY_DIR" = "" -o ! "\$OPENBLAS_INCLUDE_DIR" = "" -o ! "\$OPENBLAS_LIBRARY" = "" ]; then
-  if [ "\$OPENBLAS_LIBRARY" = "" ]; then
-    echo "Error: OPENBLAS_LIBRARY must be specified for a custom OpenBLAS library."
-    exit 1
-  fi
-  if [ "\$OPENBLAS_INCLUDE_DIR" = "" ]; then
-    echo "Error: OPENBLAS_INCLUDE_DIR must be specified for a custom OpenBLAS library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DOPENBLAS_LIBRARY=\$OPENBLAS_LIBRARY_DIR/\$OPENBLAS_LIBRARY"
-  OPTIONS="\$OPTIONS -DOPENBLAS_INCLUDE_DIR=\$OPENBLAS_INCLUDE_DIR"
-fi
-
-# Configure Tines if needed.
-if [ ! "\$TINES_LIBRARY_DIR" = "" -o ! "\$TINES_INCLUDE_DIR" = "" -o ! "\$TINES_LIBRARY" = "" ]; then
-  if [ "\$TINES_LIBRARY" = "" ]; then
-    echo "Error: TINES_LIBRARY must be specified for a custom Tines library."
-    exit 1
-  fi
-  if [ "\$TINES_INCLUDE_DIR" = "" ]; then
-    echo "Error: TINES_INCLUDE_DIR must be specified for a custom Tines library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DTINES_LIBRARY=\$TINES_LIBRARY_DIR/\$TINES_LIBRARY"
-  OPTIONS="\$OPTIONS -DTINES_INCLUDE_DIR=\$TINES_INCLUDE_DIR"
-fi
-
-# Configure TChem if needed.
-if [ ! "\$TCHEM_LIBRARY_DIR" = "" -o ! "\$TCHEM_INCLUDE_DIR" = "" -o ! "\$TCHEM_LIBRARY" = "" ]; then
-  if [ "\$TCHEM_LIBRARY" = "" ]; then
-    echo "Error: TCHEM_LIBRARY must be specified for a custom TChem library."
-    exit 1
-  fi
-  if [ "\$TCHEM_INCLUDE_DIR" = "" ]; then
-    echo "Error: TCHEM_INCLUDE_DIR must be specified for a custom TChem library."
-    exit 1
-  fi
-  OPTIONS="\$OPTIONS -DTCHEM_LIBRARY=\$TCHEM_LIBRARY_DIR/\$TCHEM_LIBRARY"
-  OPTIONS="\$OPTIONS -DTCHEM_INCLUDE_DIR=\$TCHEM_INCLUDE_DIR"
-fi
-
 # Add extra linker flags if needed.
 if [ ! "\$EXTRA_LDFLAGS" = "" ]; then
   OPTIONS="\$OPTIONS -DHAERO_EXTRA_LDFLAGS=\$EXTRA_LDFLAGS"
@@ -284,7 +227,6 @@ cmake \
  -DCMAKE_BUILD_TYPE=\$BUILD_TYPE \
  -DCMAKE_C_COMPILER=\$CC \
  -DCMAKE_CXX_COMPILER=\$CXX \
- -DHAERO_ENABLE_CHEMISTRY=\$ENABLE_CHEMISTRY \
  -DHAERO_ENABLE_GPU=\$ENABLE_GPU \
  -DHAERO_ENABLE_MPI=\$ENABLE_MPI \
  -DHAERO_PRECISION=\$PRECISION \
