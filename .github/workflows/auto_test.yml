@@ -61,19 +61,12 @@ jobs:
           -DCMAKE_CXX_COMPILER=c++ \
           -DCMAKE_C_COMPILER=cc \
           -DCMAKE_Fortran_COMPILER=gfortran \
-          -DHAERO_ENABLE_CHEMISTRY=OFF \
           -DHAERO_ENABLE_GPU=OFF \
           -DHAERO_ENABLE_OPENMP=ON \
           -DHAERO_ENABLE_MPI=OFF \
           -DHAERO_PRECISION=${{ matrix.fp-precision }} \
           -G "Unix Makefiles" \
           ..
-#          -DOPENBLAS_LIBRARY=/opt/haero/lib/libopenblas.a \
-#          -DOPENBLAS_INCLUDE_DIR=/opt/haero/include \
-#          -DTINES_LIBRARY=/opt/haero/lib/libtines.a \
-#          -DTINES_INCLUDE_DIR=/opt/haero/include \
-#          -DTCHEM_LIBRARY=/opt/haero/lib/libtchem.a \
-#          -DTCHEM_INCLUDE_DIR=/opt/haero/include \
 
     - name: Building haero (${{ matrix.build-type }}, ${{ matrix.fp-precision }} precision)
       run: |

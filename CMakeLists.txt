@@ -7,7 +7,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 #---------
 # Options
 #---------
-option(HAERO_ENABLE_CHEMISTRY "Enable TChem chemistry solver"              OFF)
 option(HAERO_ENABLE_GPU       "Enable GPU support"                         OFF)
 option(HAERO_ENABLE_MPI       "Enable MPI parallelism"                     ON)
 
@@ -205,12 +204,6 @@ enable_testing()
 # Source directories.
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
-
-if (HAERO_ENABLE_CHEMISTRY)
-  message(STATUS "Building chem_driver.")
-  include_directories("${TINES_INCLUDE_DIR}/tines")
-  add_subdirectory(chem_driver)
-endif()
 
 # Generate haero.cmake (for downstream aerosol packages) and install it.
 # NOTE: This assumes that EKAT was built using HAERO. We'll figure out the more
