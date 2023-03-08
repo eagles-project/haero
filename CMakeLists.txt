@@ -206,10 +206,8 @@ include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
 # Generate haero.cmake (for downstream aerosol packages) and install it.
-# NOTE: This assumes that EKAT was built using HAERO. We'll figure out the more
-# NOTE: general case when it makes sense
 set(HAERO_TPL_IMPORTED_LOCATIONS "") # <-- generated segment of haero.cmake
-foreach (lib kokkoscore kokkoscontainers kokkosimd spdlog yaml-cpp ekat ekat_test_main ekat_test_session haero)
+foreach (lib kokkoscore kokkoscontainers kokkossimd spdlog yaml-cpp ekat ekat_test_main ekat_test_session haero)
   string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "add_library(${lib} STATIC IMPORTED GLOBAL)\n")
   set(suffix "")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -219,7 +217,11 @@ foreach (lib kokkoscore kokkoscontainers kokkosimd spdlog yaml-cpp ekat ekat_tes
       set(suffix "d")
     endif()
   endif()
-  string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lib${lib}${suffix}.a)\n")
+  get_target_property(imported_loc ${lib} IMPORTED_LOCATION)
+  if (imported_loc MATCHES "-NOTFOUND")
+    set(imported_loc ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lib${lib}${suffix}.a)
+  endif()
+  string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${imported_loc})\n")
 endforeach()
 configure_file(
   ${PROJECT_SOURCE_DIR}/cmake/haero.cmake.in
