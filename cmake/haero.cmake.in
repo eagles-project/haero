@@ -5,7 +5,9 @@
 # include(haero)
 
 # Bring in EKAT config info.
+# FIXME: we need both of these because EKAT's installation process is weird.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "@CMAKE_INSTALL_PREFIX@/share")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "@CMAKE_INSTALL_PREFIX@/share/cmake/Modules")
 
 set(HAERO_BUILD_TYPE @CMAKE_BUILD_TYPE@)
 
