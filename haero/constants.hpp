@@ -97,6 +97,9 @@ static constexpr Real triple_pt_h2o = 273.16;
 /// Melting point of water [K]
 static constexpr Real melting_pt_h2o = freezing_pt_h2o;
 
+/// Boiling point of water [K]
+static constexpr Real boil_pt_h2o = 373.16;
+
 /// Molecular diffusion volume of dry air [-]
 static constexpr Real molec_diffusion_dry_air = 20.1;
 
