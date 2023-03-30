@@ -12,13 +12,20 @@ namespace haero {
 /// @class Atmosphere
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
+  // number of vertical levels
+  int num_levels_;
+
+  // managed storage for views (if any)
+  Real *view_storage_;
+
 public:
   /// Default constructor.
   /// CAUTION: only useful for creating placeholders in views!
   Atmosphere() = default;
 
   /// Creates an Atmosphere that stores a column of data with the given number
-  /// of vertical levels and the given planetary boundary height.
+  /// of vertical levels and the given planetary boundary height. Column data
+  /// storage is managed by the resulting Atmosphere object itself.
   /// @param [in] num_levels the number of vertical levels per column stored by
   ///                        the state
   /// @param [in] pblh The column-specific planetary boundary height [m],
@@ -57,7 +64,7 @@ public:
 
   /// Destructor.
   KOKKOS_FUNCTION
-  ~Atmosphere() {}
+  ~Atmosphere();
 
   // Views.
   ColumnView temperature;
@@ -100,10 +107,6 @@ public:
         violations);
     return (violations == 0);
   }
-
-private:
-  // Number of vertical levels.
-  int num_levels_;
 };
 
 } // namespace haero
