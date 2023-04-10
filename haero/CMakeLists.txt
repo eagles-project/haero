@@ -33,7 +33,6 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-            atmosphere.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
             testing.cpp
             utils.cpp

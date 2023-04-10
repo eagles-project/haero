@@ -15,72 +15,47 @@ class Atmosphere final {
   // number of vertical levels
   int num_levels_;
 
-  // managed storage for views (if any)
-  Real *view_storage_;
-
 public:
-  /// Default constructor.
-  /// CAUTION: only useful for creating placeholders in views!
+  /// default constructor (individual views must be set manually)
   Atmosphere() = default;
-
-  /// Creates an Atmosphere that stores a column of data with the given number
-  /// of vertical levels and the given planetary boundary height. Column data
-  /// storage is managed by the resulting Atmosphere object itself.
-  /// @param [in] num_levels the number of vertical levels per column stored by
-  ///                        the state
-  /// @param [in] pblh The column-specific planetary boundary height [m],
-  ///                  computed by the host model
-  Atmosphere(int num_levels, Real pblh);
-
-  /// Creates an Atmosphere that stores unmanaged views of atmospheric column
-  /// data owned and managed by the atmosphere host model.
-  /// @param [in] num_levels the number of vertical levels per column stored by
-  ///                        the state
-  /// @param [in] temp A view of temperature column data [K] managed by the host
-  ///                  model
-  /// @param [in] press A view of total pressure column data [Pa] managed by the
-  ///                   host model
-  /// @param [in] qv A view of water vapor mass mixing ratio column data
-  ///                [kg vapor/kg dry air] managed by the host model
-  /// @param [in] ht A view of height column data [m] on level interfaces,
-  ///                managed by the host model
-  /// @param [in] pdel The hydrostatic "pressure thickness" defined as the
-  ///                  difference in hydrostatic pressure levels at interfaces
-  ///                  bounding each vertical level [Pa]
-  /// @param [in] pblh The column-specific planetary boundary height [m],
-  ///                  computed by the host model
-  /// @param [in] cloud_f The column-specific cloud fraction [unitless]
-  ///
-  /// @param [in] uv_ice_nuc The column-specific updraft velocity for ice
-  /// nucleation[m/s]
-  Atmosphere(int num_levels, const ColumnView temp, const ColumnView press,
-             const ColumnView qv, const ColumnView ht, const ColumnView pdel,
-             const ColumnView cloud_f, const ColumnView uv_ice_nuc, Real pblh);
 
   // Copy construction and assignment are supported for moving data between
   // host and device, and for populating multi-column views.
   Atmosphere(const Atmosphere &) = default;
   Atmosphere &operator=(const Atmosphere &) = default;
 
-  /// Destructor.
+  /// destructor, valid on both host and device
   KOKKOS_FUNCTION
-  ~Atmosphere();
+  ~Atmosphere() {}
 
-  // Views.
+  // views storing atmospheric state data for a single vertical column
+
+  /// temperature [K]
   ColumnView temperature;
+
+  /// pressure [Pa]
   ColumnView pressure;
+
+  /// water vapor mass mixing ratio [kg vapor/kg dry air]
   ColumnView vapor_mixing_ratio;
+
+  /// height at the midpoint of each vertical level [m]
   ColumnView height;
+
+  /// hydroѕtatic "pressure thickness" defined as the difference in hydrostatic
+  /// pressure levels between the interfaces bounding a vertical level [Pa]
   ColumnView hydrostatic_dp;
-  // Ask experts for better names for cloud_fraction and
-  // updraft_vel_ice_nucleation
+
+  /// cloud fraction [-]
   ColumnView cloud_fraction;
+
+  /// vertical updraft velocity used for ice nucleation [m/s]
   ColumnView updraft_vel_ice_nucleation;
 
-  // Planetary boundary height.
+  // column-specific planetary boundary height [m]
   Real planetary_boundary_height;
 
-  /// Returns the number of vertical levels per column in the system.
+  /// returns the number of vertical levels per column in the system
   KOKKOS_INLINE_FUNCTION
   int num_levels() const { return num_levels_; }
 

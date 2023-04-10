@@ -5,13 +5,21 @@
 #ifndef HAERO_TESTING_HPP
 #define HAERO_TESTING_HPP
 
-#include <haero/haero.hpp>
+#include <haero/atmosphere.hpp>
 
 namespace haero {
 
 // The testing namespace contains tools that are useful only in testing
 // environments.
 namespace testing {
+
+/// creates an Atmosphere object that stores a column of data with the given
+/// number of vertical levels and the given planetary boundary height
+/// @param [in] num_levels the number of vertical levels per column stored by
+///                        the state
+/// @param [in] pblh The column-specific planetary boundary height [m],
+///                  computed by the host model
+Atmosphere create_atmosphere(int num_levels, Real pblh);
 
 /// Creates a standalone ColumnView that uses resources allocated by a memory
 /// pool.
