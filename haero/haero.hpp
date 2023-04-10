@@ -59,10 +59,6 @@ using DiagnosticsView = typename DeviceType::view_3d<Real>;
 /// any Haero aerosol packages.
 using ColumnView = typename DeviceType::view_1d<Real, Kokkos::MemoryUnmanaged>;
 
-/// Use this to create a standalone ColumnView that uses resources allocated by
-/// Haero's memory pool. You should only use this for testing.
-ColumnView create_column_view(int num_levels);
-
 // Returns haero's version string.
 const char *version();
 
