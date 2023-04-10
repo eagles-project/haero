@@ -67,6 +67,18 @@ std::map<size_t, std::unique_ptr<ColumnPool>> pools_{};
 
 namespace testing {
 
+Atmosphere create_atmosphere(int num_levels, Real pblh) {
+  Atmosphere atm(num_levels, pblh);
+  atm.temperature = create_column_view(num_levels);
+  atm.pressure = create_column_view(num_levels);
+  atm.vapor_mixing_ratio = create_column_view(num_levels);
+  atm.height = create_column_view(num_levels);
+  atm.hydrostatic_dp = create_column_view(num_levels);
+  atm.cloud_fraction = create_column_view(num_levels);
+  atm.updraft_vel_ice_nucleation = create_column_view(num_levels);
+  return atm;
+}
+
 ColumnView create_column_view(int num_levels) {
   // find a column pool for the given number of vertical levels
   auto iter = pools_.find(num_levels);

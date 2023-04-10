@@ -7,20 +7,29 @@
 
 #include <haero/haero.hpp>
 
+#include <ekat/ekat_assert.hpp>
+
 namespace haero {
 
 /// @class Atmosphere
 /// This type stores atmospheric state variables inherited from a host model.
 class Atmosphere final {
   // number of vertical levels
-  int num_levels_;
+  const int num_levels_;
 
 public:
-  /// default constructor (individual views must be set manually)
-  Atmosphere() = default;
+  /// Constructs an Atmosphere object holding the state for a single atmospheric
+  /// column with the given planetary boundary layer height.
+  /// All views must be set manually.
+  Atmosphere(int num_levels, Real pblh)
+      : num_levels_(num_levels), planetary_boundary_layer_height(pblh) {
+    EKAT_ASSERT(num_levels > 0);
+    EKAT_ASSERT(pblh > 0.0);
+  }
 
   // Copy construction and assignment are supported for moving data between
   // host and device, and for populating multi-column views.
+  Atmosphere() = delete;
   Atmosphere(const Atmosphere &) = default;
   Atmosphere &operator=(const Atmosphere &) = default;
 
@@ -52,18 +61,12 @@ public:
   /// vertical updraft velocity used for ice nucleation [m/s]
   ColumnView updraft_vel_ice_nucleation;
 
-  // column-specific planetary boundary height [m]
-  Real planetary_boundary_height;
+  // column-specific planetary boundary layer height [m]
+  Real planetary_boundary_layer_height;
 
   /// returns the number of vertical levels per column in the system
   KOKKOS_INLINE_FUNCTION
   int num_levels() const { return num_levels_; }
-
-  /// Sets the planetary boundary height [m].
-  KOKKOS_INLINE_FUNCTION
-  void set_planetary_boundary_height(Real pblh) {
-    planetary_boundary_height = pblh;
-  }
 
   /// Returns true iff all atmospheric quantities are nonnegative, using the
   /// given thread team to parallelize the check.
