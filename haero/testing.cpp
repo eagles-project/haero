@@ -17,7 +17,7 @@ class ColumnPool {
   size_t num_levels_; // number of vertical levels per column (fixed)
   size_t num_cols_;   // number of allocated columns
   std::vector<size_t> col_offsets_; // offsets of columns in memory_
-  std::vector<size_t> col_in_use_;  // an array indicating whether a column is
+  std::vector<int> col_in_use_;     // an array indicating whether a column is
                                     // being used
 
   Real *memory_; // memory pool itself (allocated on device)
@@ -36,6 +36,7 @@ public:
   // no copying of the pool
 
   // destructor
+  ~ColumnPool() { Kokkos::kokkos_free(memory_); }
 
   // returns a "fresh" (unused) ColumnView from the ColumnPool, marking it as
   // used, and allocating additional memory if needed)
@@ -54,7 +55,7 @@ public:
           memory_, sizeof(Real) * num_levels_ * num_cols_));
     }
 
-    col_in_use_[i] = true;
+    col_in_use_[i] = 1;
     size_t offset = sizeof(Real) * i * num_levels_;
     return ColumnView(&memory_[offset], num_levels_);
   }
