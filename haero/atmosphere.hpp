@@ -18,6 +18,8 @@ class Atmosphere final {
   const int num_levels_;
 
 public:
+  Atmosphere() = delete;
+
   /// Constructs an Atmosphere object holding the state for a single atmospheric
   /// column with the given planetary boundary layer height.
   /// All views must be set manually.
@@ -29,9 +31,27 @@ public:
 
   // Copy construction and assignment are supported for moving data between
   // host and device, and for populating multi-column views.
-  Atmosphere() = delete;
-  Atmosphere(const Atmosphere &) = default;
-  Atmosphere &operator=(const Atmosphere &) = default;
+  Atmosphere(const Atmosphere &rhs)
+      : num_levels_(rhs.num_levels_), temperature(rhs.temperature),
+        pressure(rhs.pressure), vapor_mixing_ratio(rhs.vapor_mixing_ratio),
+        height(rhs.height), hydrostatic_dp(rhs.hydrostatic_dp),
+        cloud_fraction(rhs.cloud_fraction),
+        updraft_vel_ice_nucleation(rhs.updraft_vel_ice_nucleation),
+        planetary_boundary_layer_height(rhs.planetary_boundary_layer_height) {}
+  Atmosphere &operator=(const Atmosphere &rhs) {
+    EKAT_ASSERT(num_levels_ == rhs.num_levels_);
+    if (this != &rhs) {
+      temperature = rhs.temperature;
+      pressure = rhs.pressure;
+      vapor_mixing_ratio = rhs.vapor_mixing_ratio;
+      height = rhs.height;
+      hydrostatic_dp = rhs.hydrostatic_dp;
+      cloud_fraction = rhs.cloud_fraction;
+      updraft_vel_ice_nucleation = rhs.updraft_vel_ice_nucleation;
+      planetary_boundary_layer_height = rhs.planetary_boundary_layer_height;
+    }
+    return *this;
+  }
 
   /// destructor, valid on both host and device
   KOKKOS_FUNCTION
