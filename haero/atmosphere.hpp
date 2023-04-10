@@ -24,7 +24,7 @@ public:
   Atmosphere(int num_levels, Real pblh)
       : num_levels_(num_levels), planetary_boundary_layer_height(pblh) {
     EKAT_ASSERT(num_levels > 0);
-    EKAT_ASSERT(pblh > 0.0);
+    EKAT_ASSERT(pblh >= 0.0);
   }
 
   Atmosphere() = default; // use only for creating containers of Atmospheres!
