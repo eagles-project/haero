@@ -17,26 +17,27 @@ class ColumnPool {
   size_t num_levels_; // number of vertical levels per column (fixed)
   size_t num_cols_;   // number of allocated columns
   std::vector<size_t> col_offsets_; // offsets of columns in memory_
-  std::vector<int> col_in_use_;     // an array indicating whether a column is
-                                    // being used
-
-  Real *memory_; // memory pool itself (allocated on device)
-  size_t size_;  // size of memory pool in bytes
+  std::vector<Real *> memory_; // per-column memory itself (allocated on device)
 public:
   // constructs a column pool with the given initial number of columns, each
   // with the given number of vertical levels.`
   ColumnPool(size_t num_vertical_levels, size_t initial_num_columns = 64)
       : num_levels_(num_vertical_levels), num_cols_(initial_num_columns),
-        col_in_use_(initial_num_columns, 0),
-        memory_(reinterpret_cast<Real *>(Kokkos::kokkos_malloc(
-            "Column pool",
-            sizeof(Real) * num_vertical_levels * initial_num_columns))),
-        size_(sizeof(Real) * num_vertical_levels * initial_num_columns) {}
+        memory_(initial_num_columns, nullptr) {
+    for (size_t i = 0; i < num_cols_; ++i) {
+      memory_[i] = reinterpret_cast<Real *>(Kokkos::kokkos_malloc(
+          "Column pool", sizeof(Real) * num_vertical_levels));
+    }
+  }
 
   // no copying of the pool
 
   // destructor
-  ~ColumnPool() { Kokkos::kokkos_free(memory_); }
+  ~ColumnPool() {
+    for (size_t i = 0; i < num_cols_; ++i) {
+      Kokkos::kokkos_free(memory_[i]);
+    }
+  }
 
   // returns a "fresh" (unused) ColumnView from the ColumnPool, marking it as
   // used, and allocating additional memory if needed)
@@ -44,20 +45,21 @@ public:
     // find the first unused column
     size_t i;
     for (i = 0; i < num_cols_; ++i) {
-      if (!col_in_use_[i])
+      if (!memory_[i])
         break;
     }
     if (i == num_cols_) { // all columns in the pool are in use!
       // double the number of allocated columns in the pool
-      num_cols_ *= 2;
-      col_in_use_.resize(num_cols_, 0);
-      memory_ = reinterpret_cast<Real *>(Kokkos::kokkos_realloc(
-          memory_, sizeof(Real) * num_levels_ * num_cols_));
+      size_t new_num_cols = 2 * num_cols_;
+      memory_.resize(new_num_cols, nullptr);
+      for (size_t i = num_cols_; i < new_num_cols; ++i) {
+        memory_[i] = reinterpret_cast<Real *>(
+            Kokkos::kokkos_realloc(memory_[i], sizeof(Real) * num_levels_));
+      }
+      num_cols_ = new_num_cols;
     }
 
-    col_in_use_[i] = 1;
-    size_t offset = sizeof(Real) * i * num_levels_;
-    return ColumnView(&memory_[offset], num_levels_);
+    return ColumnView(memory_[i], num_levels_);
   }
 };
 
