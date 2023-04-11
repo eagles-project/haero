@@ -16,15 +16,16 @@ using Real = haero::Real;
 // (e.g.) unit tests. A ColumnPool manages a number of ColumnViews with a fixed
 // number of vertical levels.
 class ColumnPool {
-  size_t num_levels_; // number of vertical levels per column (fixed)
-  size_t num_cols_;   // number of allocated columns
-  std::vector<size_t> col_offsets_; // offsets of columns in memory_
+  size_t num_levels_;          // number of vertical levels per column (fixed)
+  size_t num_cols_;            // number of allocated columns
+  std::vector<int> col_used_;  // columns that are being used already
   std::vector<Real *> memory_; // per-column memory itself (allocated on device)
 public:
   // constructs a column pool with the given initial number of columns, each
   // with the given number of vertical levels.`
   ColumnPool(size_t num_vertical_levels, size_t initial_num_columns = 64)
       : num_levels_(num_vertical_levels), num_cols_(initial_num_columns),
+        col_used_(initial_num_columns, 0),
         memory_(initial_num_columns, nullptr) {
     for (size_t i = 0; i < num_cols_; ++i) {
       memory_[i] = reinterpret_cast<Real *>(Kokkos::kokkos_malloc(
@@ -47,12 +48,13 @@ public:
     // find the first unused column
     size_t i;
     for (i = 0; i < num_cols_; ++i) {
-      if (!memory_[i])
+      if (!col_used_[i])
         break;
     }
     if (i == num_cols_) { // all columns in the pool are in use!
       // double the number of allocated columns in the pool
       size_t new_num_cols = 2 * num_cols_;
+      col_used_.resize(new_num_cols, 0);
       memory_.resize(new_num_cols, nullptr);
       for (size_t i = num_cols_; i < new_num_cols; ++i) {
         memory_[i] = reinterpret_cast<Real *>(
@@ -61,6 +63,7 @@ public:
       num_cols_ = new_num_cols;
     }
 
+    col_used_[i] = 1;
     return ColumnView(memory_[i], num_levels_);
   }
 };
