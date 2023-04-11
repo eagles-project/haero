@@ -25,6 +25,12 @@ Atmosphere create_atmosphere(int num_levels, Real pblh);
 /// pool.
 ColumnView create_column_view(int num_levels);
 
+/// Call this at the end of a testing session to delete all ColumnViews
+/// allocated by create_column_view. This is called by Haero's implementation
+/// of ekat_finalize_test_session, which is called automatically at the end of
+/// each Catch2-powered unit test.
+void finalize();
+
 } // end namespace testing
 
 } // end namespace haero

@@ -4,6 +4,8 @@
 
 #include "testing.hpp"
 
+#include <ekat/ekat_session.hpp>
+
 namespace haero {
 
 namespace {
@@ -93,6 +95,31 @@ ColumnView create_column_view(int num_levels) {
   return iter->second->column_view();
 }
 
+void finalize() { pools_.clear(); }
+
 } // namespace testing
 
 } // namespace haero
+
+//------------------------------------------------------------------------
+// EKAT test session initialization and finalization overrides
+//------------------------------------------------------------------------
+// The following functions are called at the beginning and the end of an
+// EKAT test session. When calling EkatCreateUnitTest, you must specify the
+// option EXCLUDE_TEST_SESSION which prevents EKAT from using its own
+// default implementations.
+//------------------------------------------------------------------------
+
+// This implementation of ekat_initialize_test_session is identical to the
+// default provided by EKAT.
+void ekat_initialize_test_session(int argc, char **argv,
+                                  const bool print_config) {
+  ekat::initialize_ekat_session(argc, argv, print_config);
+}
+
+// This implementation of ekat_finalize_test_session calls
+// haero::testing::finalize() to deallocate all ColumnView pools.
+void ekat_finalize_test_session() {
+  haero::testing::finalize();
+  ekat::finalize_ekat_session();
+}
