@@ -56,7 +56,7 @@ public:
       memory_.resize(new_num_cols, nullptr);
       for (size_t i = num_cols_; i < new_num_cols; ++i) {
         memory_[i] = reinterpret_cast<Real *>(
-            Kokkos::kokkos_realloc(memory_[i], sizeof(Real) * num_levels_));
+            Kokkos::kokkos_malloc(sizeof(Real) * num_levels_));
       }
       num_cols_ = new_num_cols;
     }
