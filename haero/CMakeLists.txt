@@ -33,8 +33,8 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
 
 add_library(haero
             ${CMAKE_CURRENT_BINARY_DIR}/haero_version.cpp
-            atmosphere.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
+            testing.cpp
             utils.cpp
             )
 add_dependencies(haero ext_libraries update_version_info)
@@ -60,6 +60,7 @@ install(FILES aero_process.hpp
               haero.hpp
               ${CMAKE_CURRENT_BINARY_DIR}/haero_config.hpp
               math.hpp
+              testing.hpp
               utils.hpp
               root_finders.hpp
         DESTINATION include/haero)

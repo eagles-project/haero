@@ -54,8 +54,10 @@ using TracersView = typename DeviceType::view_3d<Real>;
 using DiagnosticsView = typename DeviceType::view_3d<Real>;
 
 /// A ColumnView is a rank-1 Kokkos View whose single index identifies a
-/// unique vertical level.
-using ColumnView = typename DeviceType::view_1d<Real>;
+/// unique vertical level. ColumnViews are unmanaged, meaning that they don't
+/// own their storage. This allows a host model to manage column data for
+/// any Haero aerosol packages.
+using ColumnView = typename DeviceType::view_1d<Real, Kokkos::MemoryUnmanaged>;
 
 // Returns haero's version string.
 const char *version();
