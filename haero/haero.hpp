@@ -57,7 +57,7 @@ using DiagnosticsView = typename DeviceType::view_3d<Real>;
 /// unique vertical level. ColumnViews are unmanaged, meaning that they don't
 /// own their storage. This allows a host model to manage column data for
 /// any Haero aerosol packages.
-using ColumnView = typename DeviceType::view_1d<Real, Kokkos::MemoryUnmanaged>;
+using ColumnView = ekat::Unmanaged<typename DeviceType::view_1d<Real>>;
 
 // Returns haero's version string.
 const char *version();
