@@ -48,6 +48,12 @@ public:
   /// water vapor mass mixing ratio [kg vapor/kg dry air]
   ColumnView vapor_mixing_ratio;
 
+  /// liquid water mass mixing ratio [kg vapor/kg dry air]
+  ColumnView liquid_mixing_ratio;
+
+  /// ice water mass mixing ratio [kg vapor/kg dry air]
+  ColumnView ice_mixing_ratio;
+
   /// height at the midpoint of each vertical level [m]
   ColumnView height;
 
@@ -78,7 +84,8 @@ public:
         Kokkos::TeamThreadRange(team, nk),
         KOKKOS_CLASS_LAMBDA(int k, int &violation) {
           if ((temperature(k) < 0) || (pressure(k) < 0) ||
-              (vapor_mixing_ratio(k) < 0)) {
+              (vapor_mixing_ratio(k) < 0) || (liquid_mixing_ratio(k) < 0) ||
+              (ice_mixing_ratio(k) < 0)) {
             violation = 1;
           }
         },

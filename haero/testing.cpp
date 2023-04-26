@@ -80,6 +80,8 @@ Atmosphere create_atmosphere(int num_levels, Real pblh) {
   atm.temperature = create_column_view(num_levels);
   atm.pressure = create_column_view(num_levels);
   atm.vapor_mixing_ratio = create_column_view(num_levels);
+  atm.liquid_mixing_ratio = create_column_view(num_levels);
+  atm.ice_mixing_ratio = create_column_view(num_levels);
   atm.height = create_column_view(num_levels);
   atm.hydrostatic_dp = create_column_view(num_levels);
   atm.cloud_fraction = create_column_view(num_levels);

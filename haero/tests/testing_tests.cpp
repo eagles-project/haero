@@ -16,5 +16,7 @@ TEST_CASE("create_column_view", "") {
 TEST_CASE("create_atmosphere", "") {
   Atmosphere atm = testing::create_atmosphere(72, 100.0);
   REQUIRE(atm.temperature.extent(0) == 72);
+  REQUIRE(atm.liquid_mixing_ratio.extent(0) == 72);
+  REQUIRE(atm.ice_mixing_ratio.extent(0) == 72);
   REQUIRE(atm.planetary_boundary_layer_height == 100.0);
 }
