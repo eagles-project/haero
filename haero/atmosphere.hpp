@@ -91,7 +91,7 @@ public:
         KOKKOS_CLASS_LAMBDA(int k, int &violation) {
           if ((temperature(k) < 0) || (pressure(k) < 0) ||
               (vapor_mixing_ratio(k) < 0) || (liquid_mixing_ratio(k) < 0) ||
-              (ice_mixing_ratio(k) < 0) || (cloud_liquid_number(k) < 0) || 
+              (ice_mixing_ratio(k) < 0) || (cloud_liquid_number(k) < 0) ||
               (cloud_ice_number(k) < 0)) {
             violation = 1;
           }
