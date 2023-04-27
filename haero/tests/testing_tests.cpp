@@ -17,8 +17,8 @@ TEST_CASE("create_atmosphere", "") {
   Atmosphere atm = testing::create_atmosphere(72, 100.0);
   REQUIRE(atm.temperature.extent(0) == 72);
   REQUIRE(atm.liquid_mixing_ratio.extent(0) == 72);
-  REQUIRE(atm.cloud_liquid_number.extent(0) == 72);
-  REQUIRE(atm.cloud_ice_number.extent(0) == 72);
+  REQUIRE(atm.cloud_liquid_number_mixing_ratio.extent(0) == 72);
+  REQUIRE(atm.cloud_ice_number_mixing_ratio.extent(0) == 72);
   REQUIRE(atm.ice_mixing_ratio.extent(0) == 72);
   REQUIRE(atm.planetary_boundary_layer_height == 100.0);
 }

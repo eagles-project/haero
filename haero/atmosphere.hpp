@@ -51,14 +51,14 @@ public:
   /// liquid water mass mixing ratio [kg vapor/kg dry air]
   ColumnView liquid_mixing_ratio;
 
-  /// grid box averaged cloud liquid number [#/kg dry air]
-  ColumnView cloud_liquid_number;
+  /// grid box averaged cloud liquid number mixing ratio [#/kg dry air]
+  ColumnView cloud_liquid_number_mixing_ratio;
 
   /// ice water mass mixing ratio [kg vapor/kg dry air]
   ColumnView ice_mixing_ratio;
 
-  // grid box averaged cloud ice number [#/kg dry air]
-  ColumnView cloud_ice_number;
+  // grid box averaged cloud ice number mixing ratio [#/kg dry air]
+  ColumnView cloud_ice_number_mixing_ratio;
 
   /// height at the midpoint of each vertical level [m]
   ColumnView height;
@@ -91,8 +91,9 @@ public:
         KOKKOS_CLASS_LAMBDA(int k, int &violation) {
           if ((temperature(k) < 0) || (pressure(k) < 0) ||
               (vapor_mixing_ratio(k) < 0) || (liquid_mixing_ratio(k) < 0) ||
-              (ice_mixing_ratio(k) < 0) || (cloud_liquid_number(k) < 0) ||
-              (cloud_ice_number(k) < 0)) {
+              (ice_mixing_ratio(k) < 0) ||
+              (cloud_liquid_number_mixing_ratio(k) < 0) ||
+              (cloud_ice_number_mixing_ratio(k) < 0)) {
             violation = 1;
           }
         },
