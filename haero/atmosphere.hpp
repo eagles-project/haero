@@ -40,38 +40,38 @@ public:
   // views storing atmospheric state data for a single vertical column
 
   /// temperature [K]
-  ColumnView temperature;
+  ConstColumnView temperature;
 
   /// pressure [Pa]
-  ColumnView pressure;
+  ConstColumnView pressure;
 
   /// water vapor mass mixing ratio [kg vapor/kg dry air]
-  ColumnView vapor_mixing_ratio;
+  ConstColumnView vapor_mixing_ratio;
 
   /// liquid water mass mixing ratio [kg vapor/kg dry air]
-  ColumnView liquid_mixing_ratio;
+  ConstColumnView liquid_mixing_ratio;
 
   /// grid box averaged cloud liquid number mixing ratio [#/kg dry air]
-  ColumnView cloud_liquid_number_mixing_ratio;
+  ConstColumnView cloud_liquid_number_mixing_ratio;
 
   /// ice water mass mixing ratio [kg vapor/kg dry air]
-  ColumnView ice_mixing_ratio;
+  ConstColumnView ice_mixing_ratio;
 
   // grid box averaged cloud ice number mixing ratio [#/kg dry air]
-  ColumnView cloud_ice_number_mixing_ratio;
+  ConstColumnView cloud_ice_number_mixing_ratio;
 
   /// height at the midpoint of each vertical level [m]
-  ColumnView height;
+  ConstColumnView height;
 
   /// hydroѕtatic "pressure thickness" defined as the difference in hydrostatic
   /// pressure levels between the interfaces bounding a vertical level [Pa]
-  ColumnView hydrostatic_dp;
+  ConstColumnView hydrostatic_dp;
 
   /// cloud fraction [-]
-  ColumnView cloud_fraction;
+  ConstColumnView cloud_fraction;
 
   /// vertical updraft velocity used for ice nucleation [m/s]
-  ColumnView updraft_vel_ice_nucleation;
+  ConstColumnView updraft_vel_ice_nucleation;
 
   // column-specific planetary boundary layer height [m]
   Real planetary_boundary_layer_height;

@@ -58,6 +58,7 @@ using DiagnosticsView = typename DeviceType::view_3d<Real>;
 /// own their storage. This allows a host model to manage column data for
 /// any Haero aerosol packages.
 using ColumnView = ekat::Unmanaged<typename DeviceType::view_1d<Real>>;
+using ConstColumnView = ekat::Unmanaged<typename DeviceType::view_1d<const Real>>;
 
 // Returns haero's version string.
 const char *version();
