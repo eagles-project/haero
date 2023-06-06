@@ -20,14 +20,43 @@ class Atmosphere final {
 public:
   /// Constructs an Atmosphere object holding the state for a single atmospheric
   /// column with the given planetary boundary layer height.
-  /// All views must be set manually.
-  Atmosphere(int num_levels, Real pblh)
-      : num_levels_(num_levels), planetary_boundary_layer_height(pblh) {
-    EKAT_ASSERT(num_levels > 0);
-    EKAT_ASSERT(pblh >= 0.0);
-  }
+  /// All views must be set manually elsewhere or provided by a host model.
+  Atmosphere(const ColumnView T, const ColumnView p, const ColumnView qv,
+    const ColumnView qc, const ColumnView nqc, const ColumnView qi,
+    const ColumnView nqi, const ColumnView z, const ColumnView hdp,
+    const ColumnView cf, const ColumnView w, const Real pblh) :
+      num_levels_(T.extent(0)),
+      temperature(T),
+      pressure(p),
+      vapor_mixing_ratio(qv),
+      liquid_mixing_ratio(qc),
+      cloud_liquid_number_mixing_ratio(nqc),
+      ice_mixing_ratio(qi),
+      cloud_ice_number_mixing_ratio(nqi),
+      height(z),
+      hydrostatic_dp(hdp),
+      cloud_fraction(cf),
+      updraft_vel_ice_nucleation(w),
+      planetary_boundary_layer_height(pblh) {
 
-  Atmosphere() = default; // use only for creating containers of Atmospheres!
+        EKAT_ASSERT(T.extent(0) > 0);
+
+        EKAT_ASSERT(
+          T.extent(0) == p.extent(0) &&
+          T.extent(0) == qv.extent(0) &&
+          T.extent(0) == qc.extent(0) &&
+          T.extent(0) == nqc.extent(0) &&
+          T.extent(0) == qi.extent(0) &&
+          T.extent(0) == nqi.extent(0) &&
+          T.extent(0) == z.extent(0) &&
+          T.extent(0) == hdp.extent(0) &&
+          T.extent(0) == cf.extent(0) &&
+          T.extent(0) == w.extent(0));
+
+        EKAT_ASSERT(pblh >= 0.0);
+      }
+
+  Atmosphere() = delete;
 
   // these are supported for initializing containers of Atmospheres
   Atmosphere(const Atmosphere &rhs) = default;
