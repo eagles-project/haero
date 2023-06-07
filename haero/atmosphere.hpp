@@ -56,7 +56,8 @@ public:
         EKAT_ASSERT(pblh >= 0.0);
       }
 
-  Atmosphere() = delete;
+  // use only for creating containers of Atmospheres!
+  Atmosphere() = default;
 
   // these are supported for initializing containers of Atmospheres
   Atmosphere(const Atmosphere &rhs) = default;
