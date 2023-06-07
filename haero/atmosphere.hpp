@@ -21,10 +21,10 @@ public:
   /// Constructs an Atmosphere object holding the state for a single atmospheric
   /// column with the given planetary boundary layer height.
   /// All views must be set manually elsewhere or provided by a host model.
-  Atmosphere(const ColumnView T, const ColumnView p, const ColumnView qv,
-    const ColumnView qc, const ColumnView nqc, const ColumnView qi,
-    const ColumnView nqi, const ColumnView z, const ColumnView hdp,
-    const ColumnView cf, const ColumnView w, const Real pblh) :
+  Atmosphere(const ConstColumnView T, const ConstColumnView p, const ConstColumnView qv,
+    const ConstColumnView qc, const ConstColumnView nqc, const ConstColumnView qi,
+    const ConstColumnView nqi, const ConstColumnView z, const ConstColumnView hdp,
+    const ConstColumnView cf, const ConstColumnView w, const Real pblh) :
       num_levels_(T.extent(0)),
       temperature(T),
       pressure(p),
