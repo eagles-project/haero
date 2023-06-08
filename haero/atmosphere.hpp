@@ -20,14 +20,33 @@ class Atmosphere final {
 public:
   /// Constructs an Atmosphere object holding the state for a single atmospheric
   /// column with the given planetary boundary layer height.
-  /// All views must be set manually.
-  Atmosphere(int num_levels, Real pblh)
-      : num_levels_(num_levels), planetary_boundary_layer_height(pblh) {
-    EKAT_ASSERT(num_levels > 0);
+  /// All views must be set manually elsewhere or provided by a host model.
+  Atmosphere(const ConstColumnView T, const ConstColumnView p,
+             const ConstColumnView qv, const ConstColumnView qc,
+             const ConstColumnView nqc, const ConstColumnView qi,
+             const ConstColumnView nqi, const ConstColumnView z,
+             const ConstColumnView hdp, const ConstColumnView cf,
+             const ConstColumnView w, const Real pblh)
+      : num_levels_(T.extent(0)), temperature(T), pressure(p),
+        vapor_mixing_ratio(qv), liquid_mixing_ratio(qc),
+        cloud_liquid_number_mixing_ratio(nqc), ice_mixing_ratio(qi),
+        cloud_ice_number_mixing_ratio(nqi), height(z), hydrostatic_dp(hdp),
+        cloud_fraction(cf), updraft_vel_ice_nucleation(w),
+        planetary_boundary_layer_height(pblh) {
+
+    EKAT_ASSERT(T.extent(0) > 0);
+
+    EKAT_ASSERT(T.extent(0) == p.extent(0) && T.extent(0) == qv.extent(0) &&
+                T.extent(0) == qc.extent(0) && T.extent(0) == nqc.extent(0) &&
+                T.extent(0) == qi.extent(0) && T.extent(0) == nqi.extent(0) &&
+                T.extent(0) == z.extent(0) && T.extent(0) == hdp.extent(0) &&
+                T.extent(0) == cf.extent(0) && T.extent(0) == w.extent(0));
+
     EKAT_ASSERT(pblh >= 0.0);
   }
 
-  Atmosphere() = default; // use only for creating containers of Atmospheres!
+  // use only for creating containers of Atmospheres!
+  Atmosphere() = default;
 
   // these are supported for initializing containers of Atmospheres
   Atmosphere(const Atmosphere &rhs) = default;
@@ -40,38 +59,38 @@ public:
   // views storing atmospheric state data for a single vertical column
 
   /// temperature [K]
-  ColumnView temperature;
+  ConstColumnView temperature;
 
   /// pressure [Pa]
-  ColumnView pressure;
+  ConstColumnView pressure;
 
   /// water vapor mass mixing ratio [kg vapor/kg dry air]
-  ColumnView vapor_mixing_ratio;
+  ConstColumnView vapor_mixing_ratio;
 
   /// liquid water mass mixing ratio [kg vapor/kg dry air]
-  ColumnView liquid_mixing_ratio;
+  ConstColumnView liquid_mixing_ratio;
 
   /// grid box averaged cloud liquid number mixing ratio [#/kg dry air]
-  ColumnView cloud_liquid_number_mixing_ratio;
+  ConstColumnView cloud_liquid_number_mixing_ratio;
 
   /// ice water mass mixing ratio [kg vapor/kg dry air]
-  ColumnView ice_mixing_ratio;
+  ConstColumnView ice_mixing_ratio;
 
   // grid box averaged cloud ice number mixing ratio [#/kg dry air]
-  ColumnView cloud_ice_number_mixing_ratio;
+  ConstColumnView cloud_ice_number_mixing_ratio;
 
   /// height at the midpoint of each vertical level [m]
-  ColumnView height;
+  ConstColumnView height;
 
   /// hydroѕtatic "pressure thickness" defined as the difference in hydrostatic
   /// pressure levels between the interfaces bounding a vertical level [Pa]
-  ColumnView hydrostatic_dp;
+  ConstColumnView hydrostatic_dp;
 
   /// cloud fraction [-]
-  ColumnView cloud_fraction;
+  ConstColumnView cloud_fraction;
 
   /// vertical updraft velocity used for ice nucleation [m/s]
-  ColumnView updraft_vel_ice_nucleation;
+  ConstColumnView updraft_vel_ice_nucleation;
 
   // column-specific planetary boundary layer height [m]
   Real planetary_boundary_layer_height;

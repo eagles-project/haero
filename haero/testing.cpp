@@ -76,19 +76,22 @@ std::map<size_t, std::unique_ptr<ColumnPool>> pools_{};
 namespace testing {
 
 Atmosphere create_atmosphere(int num_levels, Real pblh) {
-  Atmosphere atm(num_levels, pblh);
-  atm.temperature = create_column_view(num_levels);
-  atm.pressure = create_column_view(num_levels);
-  atm.vapor_mixing_ratio = create_column_view(num_levels);
-  atm.liquid_mixing_ratio = create_column_view(num_levels);
-  atm.cloud_liquid_number_mixing_ratio = create_column_view(num_levels);
-  atm.ice_mixing_ratio = create_column_view(num_levels);
-  atm.cloud_ice_number_mixing_ratio = create_column_view(num_levels);
-  atm.height = create_column_view(num_levels);
-  atm.hydrostatic_dp = create_column_view(num_levels);
-  atm.cloud_fraction = create_column_view(num_levels);
-  atm.updraft_vel_ice_nucleation = create_column_view(num_levels);
-  return atm;
+  auto temperature = create_column_view(num_levels);
+  auto pressure = create_column_view(num_levels);
+  auto vapor_mixing_ratio = create_column_view(num_levels);
+  auto liquid_mixing_ratio = create_column_view(num_levels);
+  auto cloud_liquid_number_mixing_ratio = create_column_view(num_levels);
+  auto ice_mixing_ratio = create_column_view(num_levels);
+  auto cloud_ice_number_mixing_ratio = create_column_view(num_levels);
+  auto height = create_column_view(num_levels);
+  auto hydrostatic_dp = create_column_view(num_levels);
+  auto cloud_fraction = create_column_view(num_levels);
+  auto updraft_vel_ice_nucleation = create_column_view(num_levels);
+  return Atmosphere(temperature, pressure, vapor_mixing_ratio,
+                    liquid_mixing_ratio, cloud_liquid_number_mixing_ratio,
+                    ice_mixing_ratio, cloud_ice_number_mixing_ratio, height,
+                    hydrostatic_dp, cloud_fraction, updraft_vel_ice_nucleation,
+                    pblh);
 }
 
 ColumnView create_column_view(int num_levels) {
