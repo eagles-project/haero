@@ -21,40 +21,29 @@ public:
   /// Constructs an Atmosphere object holding the state for a single atmospheric
   /// column with the given planetary boundary layer height.
   /// All views must be set manually elsewhere or provided by a host model.
-  Atmosphere(const ConstColumnView T, const ConstColumnView p, const ConstColumnView qv,
-    const ConstColumnView qc, const ConstColumnView nqc, const ConstColumnView qi,
-    const ConstColumnView nqi, const ConstColumnView z, const ConstColumnView hdp,
-    const ConstColumnView cf, const ConstColumnView w, const Real pblh) :
-      num_levels_(T.extent(0)),
-      temperature(T),
-      pressure(p),
-      vapor_mixing_ratio(qv),
-      liquid_mixing_ratio(qc),
-      cloud_liquid_number_mixing_ratio(nqc),
-      ice_mixing_ratio(qi),
-      cloud_ice_number_mixing_ratio(nqi),
-      height(z),
-      hydrostatic_dp(hdp),
-      cloud_fraction(cf),
-      updraft_vel_ice_nucleation(w),
-      planetary_boundary_layer_height(pblh) {
+  Atmosphere(const ConstColumnView T, const ConstColumnView p,
+             const ConstColumnView qv, const ConstColumnView qc,
+             const ConstColumnView nqc, const ConstColumnView qi,
+             const ConstColumnView nqi, const ConstColumnView z,
+             const ConstColumnView hdp, const ConstColumnView cf,
+             const ConstColumnView w, const Real pblh)
+      : num_levels_(T.extent(0)), temperature(T), pressure(p),
+        vapor_mixing_ratio(qv), liquid_mixing_ratio(qc),
+        cloud_liquid_number_mixing_ratio(nqc), ice_mixing_ratio(qi),
+        cloud_ice_number_mixing_ratio(nqi), height(z), hydrostatic_dp(hdp),
+        cloud_fraction(cf), updraft_vel_ice_nucleation(w),
+        planetary_boundary_layer_height(pblh) {
 
-        EKAT_ASSERT(T.extent(0) > 0);
+    EKAT_ASSERT(T.extent(0) > 0);
 
-        EKAT_ASSERT(
-          T.extent(0) == p.extent(0) &&
-          T.extent(0) == qv.extent(0) &&
-          T.extent(0) == qc.extent(0) &&
-          T.extent(0) == nqc.extent(0) &&
-          T.extent(0) == qi.extent(0) &&
-          T.extent(0) == nqi.extent(0) &&
-          T.extent(0) == z.extent(0) &&
-          T.extent(0) == hdp.extent(0) &&
-          T.extent(0) == cf.extent(0) &&
-          T.extent(0) == w.extent(0));
+    EKAT_ASSERT(T.extent(0) == p.extent(0) && T.extent(0) == qv.extent(0) &&
+                T.extent(0) == qc.extent(0) && T.extent(0) == nqc.extent(0) &&
+                T.extent(0) == qi.extent(0) && T.extent(0) == nqi.extent(0) &&
+                T.extent(0) == z.extent(0) && T.extent(0) == hdp.extent(0) &&
+                T.extent(0) == cf.extent(0) && T.extent(0) == w.extent(0));
 
-        EKAT_ASSERT(pblh >= 0.0);
-      }
+    EKAT_ASSERT(pblh >= 0.0);
+  }
 
   // use only for creating containers of Atmospheres!
   Atmosphere() = default;
