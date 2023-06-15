@@ -79,6 +79,12 @@ public:
   //                            Public Interface
   //------------------------------------------------------------------------
 
+  /// On host: (re-)initializes the process with the given configuration
+  void init(const ProcessConfig &config) {
+    process_config_ = config;
+    process_impl_.init(aero_config_, process_config_);
+  }
+
   /// On host or device: Validates input aerosol and atmosphere data, returning
   /// true if all data is physically consistent (whatever that means), and false
   /// if not.
