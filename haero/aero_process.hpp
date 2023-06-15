@@ -80,7 +80,7 @@ public:
   //------------------------------------------------------------------------
 
   /// On host: (re-)initializes the process with the given configuration
-  void init(const ProcessConfig& config) {
+  void init(const ProcessConfig &config) {
     process_config_ = config;
     process_impl_.init(aero_config_, process_config_);
   }
