@@ -87,7 +87,7 @@ Atmosphere create_atmosphere(int num_levels, Real pblh) {
   auto hydrostatic_dp = create_column_view(num_levels);
   auto cloud_fraction = create_column_view(num_levels);
   auto updraft_vel_ice_nucleation = create_column_view(num_levels);
-  return Atmosphere(temperature, pressure, vapor_mixing_ratio,
+  return Atmosphere(num_levels, temperature, pressure, vapor_mixing_ratio,
                     liquid_mixing_ratio, cloud_liquid_number_mixing_ratio,
                     ice_mixing_ratio, cloud_ice_number_mixing_ratio, height,
                     hydrostatic_dp, cloud_fraction, updraft_vel_ice_nucleation,
