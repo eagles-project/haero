@@ -18,6 +18,7 @@ namespace haero {
 
 // bring in std:: or CUDA C++ functions
 #ifdef __CUDACC__
+using ::atan;
 using ::cbrt;
 using ::cos;
 using ::erf;
@@ -35,6 +36,7 @@ using ::sqrt;
 using ::tanh;
 using ::tgamma;
 #else
+using std::atan;
 using std::cbrt;
 using std::cos;
 using std::erf;
