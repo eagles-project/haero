@@ -54,6 +54,7 @@ install(TARGETS haero DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES aero_process.hpp
               aero_species.hpp
               atmosphere.hpp
+              surface.hpp
               constants.hpp
               floating_point.hpp
               gas_species.hpp
@@ -63,5 +64,6 @@ install(FILES aero_process.hpp
               testing.hpp
               utils.hpp
               root_finders.hpp
+
         DESTINATION include/haero)
 
