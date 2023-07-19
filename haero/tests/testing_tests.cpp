@@ -22,3 +22,12 @@ TEST_CASE("create_atmosphere", "") {
   REQUIRE(atm.ice_mixing_ratio.extent(0) == 72);
   REQUIRE(atm.planetary_boundary_layer_height == 100.0);
 }
+
+TEST_CASE("create_surface", "") {
+  Surface sfc = testing::create_surface();
+  REQUIRE(sfc.landfrac == 0.0);
+  REQUIRE(sfc.icefrac == 0.0);
+  REQUIRE(sfc.ocnfrac == 0.0);
+  REQUIRE(sfc.fricvelin == 0.0);
+  REQUIRE(sfc.ram1in == 0.0);
+}

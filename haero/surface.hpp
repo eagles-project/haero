@@ -26,19 +26,19 @@ public:
   ~Surface() {}
 
   // land fraction [unitless]
-  Real landfrac;
+  Real landfrac = 0.0;
 
   // ice fraction [unitless]
-  Real icefrac;
+  Real icefrac = 0.0;
 
   // ocean fraction [unitless]
-  Real ocnfrac;
+  Real ocnfrac = 0.0;
 
   // friction velocity from land model [m/s]
-  Real fricvelin;
+  Real fricvelin = 0.0;
 
   // aerodynamical resistance from land model [s/m]
-  Real ram1in;
+  Real ram1in = 0.0;
 };
 
 } // namespace haero

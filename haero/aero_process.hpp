@@ -5,9 +5,9 @@
 #ifndef HAERO_AERO_PROCESS_HPP
 #define HAERO_AERO_PROCESS_HPP
 
-#include <haero/atmosphere.hpp>
-
 #include <cstring>
+#include <haero/atmosphere.hpp>
+#include <haero/surface.hpp>
 #include <memory>
 #include <type_traits>
 
@@ -95,7 +95,7 @@ public:
   ///                         validated.
   KOKKOS_INLINE_FUNCTION
   bool validate(const ThreadTeam &team, const Atmosphere &atmosphere,
-                const Prognostics &prognostics) const {
+                const Surface &surface, const Prognostics &prognostics) const {
     return process_impl_.validate(aero_config_, team, atmosphere, prognostics);
   }
 
@@ -117,12 +117,13 @@ public:
   ///                           stores computed tendencies.
   KOKKOS_INLINE_FUNCTION
   void compute_tendencies(const ThreadTeam &team, Real t, Real dt,
-                          const Atmosphere &atmosphere,
+                          const Atmosphere &atmosphere, const Surface &surface,
                           const Prognostics &prognostics,
                           const Diagnostics &diagnostics,
                           const Tendencies &tendencies) const {
     process_impl_.compute_tendencies(aero_config_, team, t, dt, atmosphere,
-                                     prognostics, diagnostics, tendencies);
+                                     surface, prognostics, diagnostics,
+                                     tendencies);
   }
 
 private:

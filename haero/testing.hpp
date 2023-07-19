@@ -6,6 +6,7 @@
 #define HAERO_TESTING_HPP
 
 #include <haero/atmosphere.hpp>
+#include <haero/surface.hpp>
 
 namespace haero {
 
@@ -24,6 +25,9 @@ Atmosphere create_atmosphere(int num_levels, Real pblh);
 /// Creates a standalone ColumnView that uses resources allocated by a memory
 /// pool.
 ColumnView create_column_view(int num_levels);
+
+// creates a Surface object
+Surface create_surface();
 
 /// Call this at the end of a testing session to delete all ColumnViews
 /// allocated by create_column_view. This is called by Haero's implementation
