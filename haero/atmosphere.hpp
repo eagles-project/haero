@@ -34,17 +34,20 @@ public:
         cloud_fraction(cf), updraft_vel_ice_nucleation(w),
         planetary_boundary_layer_height(pblh) {
 
-    EKAT_ASSERT(T.extent(0) >= num_levels_);
-    EKAT_ASSERT(p.extent(0) >= num_levels_);
-    EKAT_ASSERT(qv.extent(0) >= num_levels_);
-    EKAT_ASSERT(qc.extent(0) >= num_levels_);
-    EKAT_ASSERT(nqc.extent(0) >= num_levels_);
-    EKAT_ASSERT(qi.extent(0) >= num_levels_);
-    EKAT_ASSERT(nqi.extent(0) >= num_levels_);
-    EKAT_ASSERT(z.extent(0) >= num_levels_);
-    EKAT_ASSERT(hdp.extent(0) >= num_levels_);
-    EKAT_ASSERT(cf.extent(0) >= num_levels_);
-    EKAT_ASSERT(w.extent(0) >= num_levels_);
+#ifndef NDEBUG
+    auto nlev = static_cast<std::size_t>(num_levels_);
+#endif
+    EKAT_ASSERT(T.extent(0) >= nlev);
+    EKAT_ASSERT(p.extent(0) >= nlev);
+    EKAT_ASSERT(qv.extent(0) >= nlev);
+    EKAT_ASSERT(qc.extent(0) >= nlev);
+    EKAT_ASSERT(nqc.extent(0) >= nlev);
+    EKAT_ASSERT(qi.extent(0) >= nlev);
+    EKAT_ASSERT(nqi.extent(0) >= nlev);
+    EKAT_ASSERT(z.extent(0) >= nlev);
+    EKAT_ASSERT(hdp.extent(0) >= nlev);
+    EKAT_ASSERT(cf.extent(0) >= nlev);
+    EKAT_ASSERT(w.extent(0) >= nlev);
 
     EKAT_ASSERT(pblh >= 0.0);
   }
