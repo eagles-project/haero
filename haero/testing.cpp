@@ -107,6 +107,8 @@ ColumnView create_column_view(int num_levels) {
 
 void finalize() { pools_.clear(); }
 
+Surface create_surface() { return Surface(); }
+
 } // namespace testing
 
 } // namespace haero
