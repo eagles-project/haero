@@ -96,7 +96,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   bool validate(const ThreadTeam &team, const Atmosphere &atmosphere,
                 const Surface &surface, const Prognostics &prognostics) const {
-    return process_impl_.validate(aero_config_, team, atmosphere, prognostics);
+    return process_impl_.validate(aero_config_, team, atmosphere, surface,
+                                  prognostics);
   }
 
   /// On host or device: runs the aerosol process at a given time with the given
