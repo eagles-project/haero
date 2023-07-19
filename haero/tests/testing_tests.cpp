@@ -24,10 +24,10 @@ TEST_CASE("create_atmosphere", "") {
 }
 
 TEST_CASE("create_surface", "") {
-  Surface sfc = testing::create_surface();
-  REQUIRE(sfc.landfrac == 0.0);
-  REQUIRE(sfc.icefrac == 0.0);
-  REQUIRE(sfc.ocnfrac == 0.0);
-  REQUIRE(sfc.fricvelin == 0.0);
+  Surface sfc{};
+  REQUIRE(sfc.land_frac == 0.0);
+  REQUIRE(sfc.ice_frac == 0.0);
+  REQUIRE(sfc.ocn_frac == 0.0);
+  REQUIRE(sfc.ustar == 0.0);
   REQUIRE(sfc.ram1in == 0.0);
 }
