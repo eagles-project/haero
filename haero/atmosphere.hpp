@@ -34,7 +34,9 @@ public:
         cloud_fraction(cf), updraft_vel_ice_nucleation(w),
         planetary_boundary_layer_height(pblh) {
 
+#ifndef NDEBUG
     auto nlev = static_cast<std::size_t>(num_levels_);
+#endif
     EKAT_ASSERT(T.extent(0) >= nlev);
     EKAT_ASSERT(p.extent(0) >= nlev);
     EKAT_ASSERT(qv.extent(0) >= nlev);
