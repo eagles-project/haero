@@ -64,6 +64,5 @@ install(FILES aero_process.hpp
               testing.hpp
               utils.hpp
               root_finders.hpp
-
         DESTINATION include/haero)
 
