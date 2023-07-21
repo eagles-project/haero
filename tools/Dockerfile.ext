@@ -35,7 +35,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libopenmpi-dev \
   gcc \
   g++ \
-  gfortran \
   git \
   make \
   pkg-config \
@@ -50,7 +49,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DCMAKE_C_COMPILER=mpicc \
-    -DCMAKE_Fortran_COMPILER=mpif90 \
     -DHAERO_PRECISION=$PRECISION \
     -DHAERO_DEVICE=CPU \
     -DHAERO_DEVICE_ARCH=AMDAVX \
