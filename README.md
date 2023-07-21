@@ -30,21 +30,20 @@ To build Haero, you need:
 * [CMake v3.12+](https://cmake.org/)
 * GNU Make
 * reliable C and C++ compilers
-* a good Fortran compiler, such as GNU `gfortran` or Intel's `ifort` compiler
 * a working MPI installation (like [OpenMPI](https://www.open-mpi.org/) or
   [Mpich](https://www.mpich.org/)), if you're interested in multi-node
   parallelism.
 
-You can obtain all of these (except perhaps your favorite Fortran compiler)
-freely on the Linux and Mac platforms. On Linux, just use your favorite package
-manager. On a Mac, you can get the Clang C/C++ compiler by installing XCode, and
-then use a package manager like [Homebrew](https://brew.sh/) or
-[MacPorts](https://www.macports.org/) to get the rest.
+You can obtain all of these freely on the Linux and Mac platforms. On Linux,
+just use your favorite package manager. On a Mac, you can get the Clang C/C++
+compiler by installing XCode, and then use a package manager like
+[Homebrew](https://brew.sh/) or [MacPorts](https://www.macports.org/) to get
+the rest.
 
 For example, to download the relevant software on your Mac using Homebrew, type
 
 ```
-brew install cmake gfortran openmpi
+brew install cmake openmpi
 ```
 
 ## Building the Model
