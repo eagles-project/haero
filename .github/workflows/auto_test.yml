@@ -24,7 +24,6 @@ jobs:
 
     # Environment variables
     env:
-      FC: gfortran
       CI: 1   # indicates that we are running in a CI environment.
 
     # Steps for building and running tests.
@@ -38,7 +37,6 @@ jobs:
         cmake \
         gcc \
         g++ \
-        gfortran \
         git \
         make \
         pkg-config \
@@ -60,7 +58,6 @@ jobs:
           -DCMAKE_VERBOSE_MAKEFILE=ON \
           -DCMAKE_CXX_COMPILER=c++ \
           -DCMAKE_C_COMPILER=cc \
-          -DCMAKE_Fortran_COMPILER=gfortran \
           -DHAERO_ENABLE_GPU=OFF \
           -DHAERO_ENABLE_OPENMP=ON \
           -DHAERO_ENABLE_MPI=OFF \

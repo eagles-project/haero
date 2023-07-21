@@ -141,15 +141,11 @@ PRECISION=double
 
 CXX=c++
 CC=cc
-FC=gfortran
 
 # Override compilers here (ONLY if you know what you're doing!).
 
 # C++ compiler.
 #CXX=c++
-
-# Fortran compiler.
-#FC=gfortran
 
 # C compiler.
 #CC=cc

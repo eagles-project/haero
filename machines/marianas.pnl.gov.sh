@@ -24,6 +24,5 @@ export YAMLCPP_LIBRARY=libyaml-cpp.a
  
 export CC=mpicc
 export CXX=mpic++
-export FC=mpifort
 
-# export OMPI_CC=gcc OMPI_FC=gfortran OMPI_CXX=g++
+# export OMPI_CC=gcc OMPI_CXX=g++
