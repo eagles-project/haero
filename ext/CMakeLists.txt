@@ -69,7 +69,7 @@ else()
   # Copy EKAT's test-launcher and nvcc_wrapper into place.
   file(COPY ${EKAT_SOURCE_DIR}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
   if (HAERO_ENABLE_GPU)
-    file(COPY ${EKAT_SOURCE_DIR}/bin/nvcc_wrapper DESTINATION ${CMAKE_BINARY_DIR}/bin)
+    file(COPY ${EKAT_SOURCE_DIR}/extern/kokkos/bin/nvcc_wrapper DESTINATION ${CMAKE_BINARY_DIR}/bin)
   endif()
   # Copy Catch2 single header to where Haero can reach it.
   file(COPY ${EKAT_SOURCE_DIR}/extern/Catch2/single_include/catch2 DESTINATION ${PROJECT_BINARY_DIR}/include)
