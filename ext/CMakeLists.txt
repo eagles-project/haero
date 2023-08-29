@@ -73,10 +73,11 @@ else()
   endif()
   # Copy Catch2 single header to where Haero can reach it.
   file(COPY ${EKAT_SOURCE_DIR}/extern/Catch2/single_include/catch2 DESTINATION ${PROJECT_BINARY_DIR}/include)
-  # Copy Kokkos_Random.hpp header to where Haero can reach it.
+  # Copy some Kokkos headers to where Haero can reach them.
   file(COPY
        ${EKAT_SOURCE_DIR}/extern/kokkos/algorithms/src/Kokkos_Random.hpp
        ${EKAT_SOURCE_DIR}/extern/kokkos/algorithms/src/Kokkos_Sort.hpp
+       ${EKAT_SOURCE_DIR}/extern/kokkos/core/src/Kokkos_Complex.hpp
        DESTINATION ${PROJECT_BINARY_DIR}/include)
   # Copy EKAT cmake functions to where Haero can see them.
   foreach(script EkatCreateUnitTest EkatUtils)
