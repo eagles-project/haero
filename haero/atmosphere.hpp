@@ -21,6 +21,7 @@ public:
   /// Constructs an Atmosphere object holding the state for a single atmospheric
   /// column with the given planetary boundary layer height.
   /// All views must be set manually elsewhere or provided by a host model.
+  KOKKOS_INLINE_FUNCTION
   Atmosphere(int num_levels, const ConstColumnView T, const ConstColumnView p,
              const ConstColumnView qv, const ConstColumnView qc,
              const ConstColumnView nqc, const ConstColumnView qi,
@@ -37,26 +38,28 @@ public:
 #ifndef NDEBUG
     auto nlev = static_cast<std::size_t>(num_levels_);
 #endif
-    EKAT_ASSERT(T.extent(0) >= nlev);
-    EKAT_ASSERT(p.extent(0) >= nlev);
-    EKAT_ASSERT(qv.extent(0) >= nlev);
-    EKAT_ASSERT(qc.extent(0) >= nlev);
-    EKAT_ASSERT(nqc.extent(0) >= nlev);
-    EKAT_ASSERT(qi.extent(0) >= nlev);
-    EKAT_ASSERT(nqi.extent(0) >= nlev);
-    EKAT_ASSERT(z.extent(0) >= nlev);
-    EKAT_ASSERT(hdp.extent(0) >= nlev);
-    EKAT_ASSERT(cf.extent(0) >= nlev);
-    EKAT_ASSERT(w.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(T.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(p.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(qv.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(qc.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(nqc.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(qi.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(nqi.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(z.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(hdp.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(cf.extent(0) >= nlev);
+    EKAT_KERNEL_ASSERT(w.extent(0) >= nlev);
 
-    EKAT_ASSERT(pblh >= 0.0);
+    EKAT_KERNEL_ASSERT(pblh >= 0.0);
   }
 
   // use only for creating containers of Atmospheres!
   Atmosphere() = default;
 
   // these are supported for initializing containers of Atmospheres
+  KOKKOS_INLINE_FUNCTION
   Atmosphere(const Atmosphere &rhs) = default;
+  KOKKOS_INLINE_FUNCTION
   Atmosphere &operator=(const Atmosphere &rhs) = default;
 
   /// destructor, valid on both host and device
