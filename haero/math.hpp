@@ -65,9 +65,15 @@ using std::sin;
 using std::sqrt;
 using std::tanh;
 using std::tgamma;
-using std::numeric_limits::min<Real>;
-using std::numeric_limits::max<Real>;
-using epsilon = std::numeric_limits<Real>::epsilon;
+KOKKOS_INLINE_FUNCTION constexpr Real min() {
+  return std::numeric_limits<Real>::min();
+}
+KOKKOS_INLINE_FUNCTION constexpr Real max() {
+  return std::numeric_limits<Real>::max();
+}
+KOKKOS_INLINE_FUNCTION constexpr Real epsilon() {
+  return std::numeric_limits<Real>::epsilon();
+}
 #endif
 
 //// bring in kokkos math functions
