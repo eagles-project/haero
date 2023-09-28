@@ -14,6 +14,7 @@
 
 #ifndef __CUDACC__
 #include <cmath>
+#include <limits>
 #endif
 
 namespace haero {
@@ -64,8 +65,8 @@ using std::sin;
 using std::sqrt;
 using std::tanh;
 using std::tgamma;
-using std::max;
-using std::min;
+using std::numeric_limits::min<Real>;
+using std::numeric_limits::max<Real>;
 using epsilon = std::numeric_limits<Real>::epsilon;
 #endif
 
