@@ -54,6 +54,7 @@ public:
   }
 
   // use only for creating containers of Atmospheres!
+  KOKKOS_INLINE_FUNCTION
   Atmosphere() = default;
 
   // these are supported for initializing containers of Atmospheres
@@ -63,7 +64,7 @@ public:
   Atmosphere &operator=(const Atmosphere &rhs) = default;
 
   /// destructor, valid on both host and device
-  KOKKOS_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   ~Atmosphere() {}
 
   // views storing atmospheric state data for a single vertical column

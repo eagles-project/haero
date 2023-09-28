@@ -10,6 +10,8 @@
 #include <ekat/ekat_assert.hpp>
 #include <ekat/ekat_scalar_traits.hpp>
 
+#include <Kokkos_NumericTraits.hpp>
+
 #ifndef __CUDACC__
 #include <cmath>
 #endif
@@ -35,6 +37,15 @@ using ::sin;
 using ::sqrt;
 using ::tanh;
 using ::tgamma;
+KOKKOS_INLINE_FUNCTION constexpr Real min() {
+  return Kokkos::Experimental::norm_min_v<Real>;
+}
+KOKKOS_INLINE_FUNCTION constexpr Real max() {
+  return Kokkos::Experimental::finite_max_v<Real>;
+}
+KOKKOS_INLINE_FUNCTION constexpr Real epsilon() {
+  return Kokkos::Experimental::epsilon_v<Real>;
+}
 #else
 using std::atan;
 using std::cbrt;
@@ -53,6 +64,9 @@ using std::sin;
 using std::sqrt;
 using std::tanh;
 using std::tgamma;
+using std::max;
+using std::min;
+using epsilon = std::numeric_limits<Real>::epsilon;
 #endif
 
 //// bring in kokkos math functions
