@@ -44,4 +44,4 @@ set(HAERO_INCLUDE_DIRS @CMAKE_INSTALL_PREFIX@/include @CMAKE_INSTALL_PREFIX@/inc
 add_library(kokkos INTERFACE)
 target_link_libraries(kokkos INTERFACE kokkoscontainers kokkoscore)
 
-set(HAERO_LIBRARIES @HAERO_LIBRARIES@)
+set(HAERO_LIBRARIES @HAERO_LIBRARIES@;kokkos;m)
