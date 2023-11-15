@@ -140,8 +140,10 @@ if (HAERO_ENABLE_MPI)
   message(STATUS "MPI is enabled")
 
   find_package(MPI REQUIRED COMPONENTS C)
-  include(EkatMpiUtils)
-  DisableMpiCxxBindings()
+  if (HAERO_BUILDS_EKAT)
+    include(EkatMpiUtils)
+    DisableMpiCxxBindings()
+  endif()
 
   include_directories(${MPI_C_INCLUDE_DIRS})
   set(HAERO_LIBRARIES ${MPI_C_LIBRARIES};${HAERO_LIBRARIES})
