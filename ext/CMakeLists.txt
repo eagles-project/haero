@@ -16,7 +16,7 @@ endforeach()
 if (HAERO_BUILDS_EKAT)
   list(APPEND CMAKE_MODULE_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/pkg_build)
+       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/tpls)
   include(EkatBuildEkat)
   set(EKAT_ENABLE_MPI ${HAERO_ENABLE_MPI} CACHE BOOL "Enable MPI")
   set(EKAT_ENABLE_FORTRAN OFF CACHE BOOL "Enable EKAT Fortran support")
