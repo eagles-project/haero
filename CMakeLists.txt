@@ -9,7 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/ext/ekat/cmake/"
 #---------
 option(HAERO_ENABLE_GPU       "Enable GPU support"                         OFF)
 option(HAERO_ENABLE_MPI       "Enable MPI parallelism"                     ON)
-
+option(HAERO_SKIP_FIND_YAML_CPP "Enable SKIP FIND YAML_CPP"                OFF)
 # This option is only used in CI, where we have to use special sauce to get the
 # submodules working with SSH. No mortal user should be concerned with this.
 option(DISABLE_SUBMODULE_CHECKS "Skip checks for git submodules" OFF)
