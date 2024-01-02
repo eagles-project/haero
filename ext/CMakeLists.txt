@@ -27,7 +27,7 @@ if (HAERO_BUILDS_EKAT)
     set(EKAT_SKIP_FIND_YAML_CPP ON CACHE BOOL "EKAT will build yaml-cpp ")
     message(STATUS "SKIP FIND YAML CPP")
   else()
-    set(EKAT_SKIP_FIND_YAML_CPP OFF CACHE BOOL "EKAT will build yaml-cpp ")  
+    set(EKAT_SKIP_FIND_YAML_CPP OFF CACHE BOOL "EKAT will build yaml-cpp ")
     message(STATUS "EKAT WILL LOOK FOR YAML-CPP")
   endif()
 
@@ -70,6 +70,26 @@ if (HAERO_BUILDS_EKAT)
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/yaml-cpp/include)
   file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/bin/nvcc_wrapper
        DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  if (NOT TARGET yaml-cpp)
+    add_library(yaml-cpp STATIC IMPORTED GLOBAL)
+    if (CMAKE_BUILD_TYPE MATCHES "Debug")
+      set_target_properties(yaml-cpp PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libyaml-cppd.a)
+    else()
+      set_target_properties(yaml-cpp PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libyaml-cpp.a)
+    endif()
+  endif()
+  if (NOT TARGET spdlog)
+    add_library(spdlog STATIC IMPORTED GLOBAL)
+    if (CMAKE_BUILD_TYPE MATCHES "Debug")
+      set_target_properties(spdlog PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libspdlogd.a)
+    else()
+      set_target_properties(spdlog PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libspdlog.a)
+    endif()
+  endif()
 else()
   # FIXME: this is horrible. We need to package EKAT better so it includes
   # FIXME: the various information and files that we cobble together here.
