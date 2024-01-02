@@ -70,6 +70,8 @@ if (HAERO_BUILDS_EKAT)
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/yaml-cpp/include)
   file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/bin/nvcc_wrapper
        DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  add_library(yaml-cpp STATIC IMPORTED GLOBAL)
+  add_library(spdlog STATIC IMPORTED GLOBAL)
   if (CMAKE_BUILD_TYPE MATCHES "Debug")
     set_target_properties(yaml-cpp PROPERTIES
       IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libyaml-cppd.a)
