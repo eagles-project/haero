@@ -70,6 +70,17 @@ if (HAERO_BUILDS_EKAT)
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/yaml-cpp/include)
   file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/bin/nvcc_wrapper
        DESTINATION ${CMAKE_BINARY_DIR}/bin)
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    set_target_properties(yaml-cpp PROPERTIES
+      IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libyaml-cppd.a)
+    set_target_properties(spdlog PROPERTIES
+      IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libspdlogd.a)
+  else()
+    set_target_properties(yaml-cpp PROPERTIES
+      IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libyaml-cpp.a)
+    set_target_properties(spdlog PROPERTIES
+      IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libspdlog.a)
+  endif()
 else()
   # FIXME: this is horrible. We need to package EKAT better so it includes
   # FIXME: the various information and files that we cobble together here.
