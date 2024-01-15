@@ -85,13 +85,14 @@ Atmosphere create_atmosphere(int num_levels, Real pblh) {
   auto cloud_ice_number_mixing_ratio = create_column_view(num_levels);
   auto height = create_column_view(num_levels);
   auto hydrostatic_dp = create_column_view(num_levels);
+  auto interface_pressure = create_column_view(num_levels + 1);
   auto cloud_fraction = create_column_view(num_levels);
   auto updraft_vel_ice_nucleation = create_column_view(num_levels);
   return Atmosphere(num_levels, temperature, pressure, vapor_mixing_ratio,
                     liquid_mixing_ratio, cloud_liquid_number_mixing_ratio,
                     ice_mixing_ratio, cloud_ice_number_mixing_ratio, height,
-                    hydrostatic_dp, cloud_fraction, updraft_vel_ice_nucleation,
-                    pblh);
+                    hydrostatic_dp, interface_pressure, cloud_fraction,
+                    updraft_vel_ice_nucleation, pblh);
 }
 
 ColumnView create_column_view(int num_levels) {
