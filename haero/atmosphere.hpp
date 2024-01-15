@@ -97,6 +97,10 @@ public:
   /// pressure levels between the interfaces bounding a vertical level [Pa]
   ConstColumnView hydrostatic_dp;
 
+  /// Pressure at the level interfaces. Length is number of 1 + the
+  /// number of levels.  [Pa]
+  ConstColumnView interface_pressure;
+
   /// cloud fraction [-]
   ConstColumnView cloud_fraction;
 
