@@ -26,14 +26,14 @@ public:
              const ConstColumnView qv, const ConstColumnView qc,
              const ConstColumnView nqc, const ConstColumnView qi,
              const ConstColumnView nqi, const ConstColumnView z,
-             const ConstColumnView hdp, const ConstColumnView intp,
-             const ConstColumnView cf, const ConstColumnView w, const Real pblh)
+             const ConstColumnView hdp, const ConstColumnView cf,
+             const ConstColumnView w, const Real pblh)
       : num_levels_(num_levels), temperature(T), pressure(p),
         vapor_mixing_ratio(qv), liquid_mixing_ratio(qc),
         cloud_liquid_number_mixing_ratio(nqc), ice_mixing_ratio(qi),
         cloud_ice_number_mixing_ratio(nqi), height(z), hydrostatic_dp(hdp),
-        interface_pressure(intp), cloud_fraction(cf),
-        updraft_vel_ice_nucleation(w), planetary_boundary_layer_height(pblh) {
+        cloud_fraction(cf), updraft_vel_ice_nucleation(w),
+        planetary_boundary_layer_height(pblh) {
 
 #ifndef NDEBUG
     auto nlev = static_cast<std::size_t>(num_levels_);
