@@ -13,7 +13,7 @@ endforeach()
 #----------------------------------------------------------------------------
 # E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
-if (HAERO_BUILDS_EKAT)
+if (NOT TARGET ekat)
   list(APPEND CMAKE_MODULE_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/tpls)
@@ -90,87 +90,12 @@ if (HAERO_BUILDS_EKAT)
         IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libspdlog.a)
     endif()
   endif()
-else()
-  # FIXME: this is horrible. We need to package EKAT better so it includes
-  # FIXME: the various information and files that we cobble together here.
-
-  # Copy EKAT's test-launcher and nvcc_wrapper into place.
-  file(COPY ${EKAT_SOURCE_DIR}/bin/test-launcher DESTINATION ${CMAKE_BINARY_DIR}/bin)
-  if (HAERO_ENABLE_GPU)
-    file(COPY ${EKAT_SOURCE_DIR}/extern/kokkos/bin/nvcc_wrapper DESTINATION ${CMAKE_BINARY_DIR}/bin)
-  endif()
-  # Copy Catch2 single header to where Haero can reach it.
-  file(COPY ${EKAT_SOURCE_DIR}/extern/Catch2/single_include/catch2 DESTINATION ${PROJECT_BINARY_DIR}/include)
-  # Copy some Kokkos headers to where Haero can reach them.
-  file(COPY
-       ${EKAT_SOURCE_DIR}/extern/kokkos/algorithms/src/Kokkos_Random.hpp
-       ${EKAT_SOURCE_DIR}/extern/kokkos/algorithms/src/Kokkos_Sort.hpp
-       ${EKAT_SOURCE_DIR}/extern/kokkos/core/src/Kokkos_Complex.hpp
-       DESTINATION ${PROJECT_BINARY_DIR}/include)
-  # Copy EKAT cmake functions to where Haero can see them.
-  foreach(script EkatCreateUnitTest EkatUtils)
-    file(COPY ${EKAT_SOURCE_DIR}/cmake/${script}.cmake DESTINATION ${PROJECT_BINARY_DIR}/share)
-  endforeach()
-  list(APPEND EKAT_INCLUDE_DIRS
-       ${EKAT_SOURCE_DIR}/src
-       ${EKAT_BINARY_DIR}/src
-       ${EKAT_SOURCE_DIR}/extern/kokkos/tpls/desul/include
-       ${EKAT_SOURCE_DIR}/extern/kokkos/core/src
-       ${EKAT_SOURCE_DIR}/extern/kokkos/containers/src
-       ${EKAT_BINARY_DIR}/../kokkos
-       ${EKAT_SOURCE_DIR}/extern/spdlog/include
-       ${EKAT_SOURCE_DIR}/extern/yaml-cpp/include
-       ${EKAT_BINARY_DIR}/extern/Catch2/single_include)
-  set(EKAT_TPL_LIBRARIES kokkos;yaml-cpp;spdlog)
-  add_library(ekat STATIC IMPORTED GLOBAL)
-  set_target_properties(ekat PROPERTIES
-    IMPORTED_LOCATION ${EKAT_BINARY_DIR}/src/ekat/libekat.a)
-  add_library(ekat_test_main STATIC IMPORTED GLOBAL)
-  set_target_properties(ekat_test_main PROPERTIES
-    IMPORTED_LOCATION ${EKAT_BINARY_DIR}/src/ekat/libekat_test_main.a)
-  add_library(ekat_test_session STATIC IMPORTED GLOBAL)
-  set_target_properties(ekat_test_session PROPERTIES
-    IMPORTED_LOCATION ${EKAT_BINARY_DIR}/src/ekat/libekat_test_session.a)
-
-  add_library(yaml-cpp STATIC IMPORTED GLOBAL)
-  add_library(spdlog STATIC IMPORTED GLOBAL)
-  if (CMAKE_BUILD_TYPE MATCHES "Debug")
-    set_target_properties(yaml-cpp PROPERTIES
-      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../yaml-cpp/libyaml-cppd.a)
-    set_target_properties(spdlog PROPERTIES
-      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../spdlog/libspdlogd.a)
-  else()
-    set_target_properties(yaml-cpp PROPERTIES
-      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../yaml-cpp/libyaml-cpp.a)
-    set_target_properties(spdlog PROPERTIES
-      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../spdlog/libspdlog.a)
-  endif()
-  add_library(kokkoscore STATIC IMPORTED GLOBAL)
-  set_target_properties(kokkoscore PROPERTIES
-      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../kokkos/core/src/libkokkoscore.a)
-  add_library(kokkoscontainers STATIC IMPORTED GLOBAL)
-  set_target_properties(kokkoscontainers PROPERTIES
-      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../kokkos/containers/src/libkokkoscontainers.a)
-  add_library(kokkossimd STATIC IMPORTED GLOBAL)
-  set_target_properties(kokkossimd PROPERTIES
-      IMPORTED_LOCATION ${EKAT_BINARY_DIR}/../kokkos/simd/src/libkokkossimd.a)
-
-  # set up the "kokkos" interface library
-  add_library(kokkos INTERFACE)
-  add_library(Kokkos::kokkos ALIAS kokkos)
-  target_link_libraries(kokkos INTERFACE kokkoscore kokkoscontainers)
 endif()
 set(EKAT_NVCC_WRAPPER ${CMAKE_BINARY_DIR}/bin/nvcc_wrapper)
 set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
 
-set(HAERO_EXT_LIBRARIES ekat;${EKAT_TPL_LIBRARIES};${HAERO_EXT_LIBRARIES})
-foreach(inc_dir ${EKAT_INCLUDE_DIRS})
-  list(APPEND HAERO_EXT_INCLUDE_DIRS ${inc_dir})
-endforeach()
-
-# This target can be used as a dependency to ensure all above libraries are
-# built before proceeding.
-add_custom_target(ext_libraries DEPENDS ${HAERO_EXT_LIBRARIES})
+add_library(ext_libraries INTERFACE)
+target_link_libraries (ext_libraries INTERFACE ekat;${HAERO_EXT_LIBRARIES})
 
 # Add all the libraries to the build system at large.
 set(HAERO_LIBRARIES ${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
