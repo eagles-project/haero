@@ -94,6 +94,7 @@ endif()
 set(EKAT_NVCC_WRAPPER ${CMAKE_BINARY_DIR}/bin/nvcc_wrapper)
 set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
 
+# This target represents all external libraries needed by Haero and its dependents.
 add_library(ext_libraries INTERFACE)
 target_link_libraries (ext_libraries INTERFACE ekat;${HAERO_EXT_LIBRARIES})
 
