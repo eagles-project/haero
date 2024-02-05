@@ -13,7 +13,7 @@ endforeach()
 #----------------------------------------------------------------------------
 # E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
-if (NOT TARGET ekat)
+if (HAERO_BUILDS_EKAT)
   list(APPEND CMAKE_MODULE_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
        ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/tpls)
