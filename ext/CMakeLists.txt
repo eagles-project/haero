@@ -97,8 +97,8 @@ set(EKAT_NVCC_WRAPPER ${EKAT_NVCC_WRAPPER} PARENT_SCOPE)
 add_library(ext_libraries INTERFACE)
 target_link_libraries (ext_libraries INTERFACE ekat;${HAERO_EXT_LIBRARIES})
 
-# Add all the libraries to the build system at large.
-set(HAERO_LIBRARIES ext_libraries;${HAERO_LIBRARIES} PARENT_SCOPE)
+# Add all the libraries to the list maintained for the standalone build config file.
+set(HAERO_LIBRARIES ekat;${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
 list(REMOVE_DUPLICATES HAERO_EXT_INCLUDE_DIRS)
 set(HAERO_EXT_INCLUDE_DIRS ${HAERO_EXT_INCLUDE_DIRS} PARENT_SCOPE)
 
