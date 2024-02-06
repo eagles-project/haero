@@ -25,9 +25,9 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
   COMMAND ${CMAKE_COMMAND}
     -DCPP_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
     -DCPP_SOURCE=${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
-    -P ${PROJECT_SOURCE_DIR}/cmake/gen_consts_cpp.cmake
+    -P ${PROJECT_SOURCE_DIR}/cmake/HaeroGenerateConstants.cmake
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
-          ${PROJECT_SOURCE_DIR}/cmake/gen_consts_cpp.cmake
+          ${PROJECT_SOURCE_DIR}/cmake/HaeroGenerateConstants.cmake
   COMMENT "Generating constants.cpp..."
 )
 

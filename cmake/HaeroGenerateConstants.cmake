@@ -7,7 +7,7 @@
 # some structure:
 # 1. Constants are defined within a haero::constants C++ namespace
 # 2. All constants are floating point numbers (of type Real or double).
-function(gen_consts_cpp cxx_header cpp_file)
+function(HaeroGenerateConstants cxx_header cpp_file)
   set(in_haero_ns FALSE)
   set(in_constants_struct FALSE)
 
@@ -72,4 +72,4 @@ function(gen_consts_cpp cxx_header cpp_file)
   file(WRITE ${cpp_file} ${cxx_source})
 endfunction()
 
-gen_consts_cpp(${CPP_HEADER} ${CPP_SOURCE})
+HaeroGenerateConstants(${CPP_HEADER} ${CPP_SOURCE})

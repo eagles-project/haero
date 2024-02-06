@@ -1,6 +1,6 @@
 # This macro identifies compilers and third-party library needs
 # for particular hosts.
-macro(set_up_platform)
+macro(HaeroConfigurePlatform)
 
   # Are we on Linux?
   if (UNIX AND NOT APPLE)
@@ -30,9 +30,23 @@ macro(set_up_platform)
 
   include(GNUInstallDirs)
 
-  # Configure ekat (whether built externally or internally).
+  # Haero can be configured either as a standalone library or as part of a
+  # larger project.
+  #
+  # If built as a standalone library, it can either use an
+  # existing installation of ekat or build its own. This behavior is governed
+  # by the HAERO_BUILDS_EKAT flag (if ON, Haero builds its own ekat, if OFF,
+  # it uses an existing one).
   set(HAERO_BUILDS_EKAT OFF)
-  if (NOT TARGET ekat)
+
+  # If built as part of a larger project, an ekat target must exist within
+  # the CMake build system already. Haero thus uses the existence of an ekat
+  # target to determine whether it's part of a larger project
+  set(HAERO_IN_SUBDIRECTORY OFF)
+
+  if (TARGET ekat) # we're part of a larger project
+    set(HAERO_IN_SUBDIRECTORY ON)
+  else() # we're in standalone mode
     if (EKAT_SOURCE_DIR) # ekat paths specified
       if (NOT EXISTS ${EKAT_SOURCE_DIR})
         message(FATAL_ERROR "Invalid EKAT source dir: ${EKAT_SOURCE_DIR}.")

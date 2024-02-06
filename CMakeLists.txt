@@ -34,8 +34,8 @@ project (haero)
 
 # Set all installation folders for third-party libraries, and figure out which
 # ones have to be built for Haero.
-include(set_up_platform)
-set_up_platform()
+include(HaeroConfigurePlatform)
+HaeroConfigurePlatform()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
@@ -210,30 +210,9 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
-# Generate haero.cmake (for downstream aerosol packages) and install it.
-set(HAERO_TPL_IMPORTED_LOCATIONS "") # <-- generated segment of haero.cmake
-foreach (lib kokkoscore kokkoscontainers kokkossimd spdlog yaml-cpp ekat ekat_test_main ekat_test_session haero)
-  string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "add_library(${lib} STATIC IMPORTED GLOBAL)\n")
-  set(suffix "")
-  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    # It seems to be a trend these days to append 'd' to your library in
-    # Debug builds. :-/
-    if (${lib} MATCHES "spdlog" OR ${lib} MATCHES "yaml-cpp")
-      set(suffix "d")
-    endif()
-  endif()
-  get_target_property(imported_loc ${lib} IMPORTED_LOCATION)
-  if (imported_loc MATCHES "-NOTFOUND")
-    set(imported_loc ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lib${lib}${suffix}.a)
-  endif()
-  string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${imported_loc})\n")
-endforeach()
-configure_file(
-  ${PROJECT_SOURCE_DIR}/cmake/haero.cmake.in
-  ${PROJECT_BINARY_DIR}/share/haero.cmake
-  @ONLY
-)
-install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION .)
+if (NOT HAERO_IN_ЅUBDIRECTORY)
+  HaeroGenerateConfig()
+endif()
 
 # Support for valgrind -- Linux only.
 if (LINUX)
