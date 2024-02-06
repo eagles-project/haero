@@ -211,6 +211,7 @@ include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
 if (NOT HAERO_IN_ЅUBDIRECTORY)
+  include(HaeroGenerateConfig)
   HaeroGenerateConfig()
 endif()
 
