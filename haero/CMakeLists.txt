@@ -45,7 +45,7 @@ target_include_directories(haero PUBLIC
 )
 target_link_libraries(haero PUBLIC ext_libraries)
 target_compile_options(haero PRIVATE  $<$<COMPILE_LANGUAGE:CXX>:${KOKKOS_CUDA_OPTIONS}>)
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX AND HAERO_STANDALONE)
   MESSAGE(STATUS "Using GNU compiler, turning on warnings are errors....")
   target_compile_options(haero PRIVATE -Werror)
 endif()

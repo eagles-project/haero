@@ -210,7 +210,7 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
 
-if (NOT HAERO_IN_ЅUBDIRECTORY)
+if (HAERO_STANDALONE)
   include(HaeroGenerateConfig)
   HaeroGenerateConfig()
 endif()

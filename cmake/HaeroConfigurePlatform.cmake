@@ -42,11 +42,13 @@ macro(HaeroConfigurePlatform)
   # If built as part of a larger project, an ekat target must exist within
   # the CMake build system already. Haero thus uses the existence of an ekat
   # target to determine whether it's part of a larger project
-  set(HAERO_IN_SUBDIRECTORY OFF)
+  set(HAERO_STANDALONE ON)
 
   if (TARGET ekat) # we're part of a larger project
-    set(HAERO_IN_SUBDIRECTORY ON)
+    message(STATUS "Building Haero within another project.")
+    set(HAERO_STANDALONE OFF)
   else() # we're in standalone mode
+    message(STATUS "Building Haero in standalone mode.")
     if (EKAT_SOURCE_DIR) # ekat paths specified
       if (NOT EXISTS ${EKAT_SOURCE_DIR})
         message(FATAL_ERROR "Invalid EKAT source dir: ${EKAT_SOURCE_DIR}.")
