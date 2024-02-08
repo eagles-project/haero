@@ -25,9 +25,9 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
   COMMAND ${CMAKE_COMMAND}
     -DCPP_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
     -DCPP_SOURCE=${CMAKE_CURRENT_BINARY_DIR}/constants.cpp
-    -P ${PROJECT_SOURCE_DIR}/cmake/gen_consts_cpp.cmake
+    -P ${PROJECT_SOURCE_DIR}/cmake/HaeroGenerateConstants.cmake
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/constants.hpp
-          ${PROJECT_SOURCE_DIR}/cmake/gen_consts_cpp.cmake
+          ${PROJECT_SOURCE_DIR}/cmake/HaeroGenerateConstants.cmake
   COMMENT "Generating constants.cpp..."
 )
 
@@ -37,9 +37,15 @@ add_library(haero
             testing.cpp
             utils.cpp
             )
-add_dependencies(haero ext_libraries update_version_info)
+add_dependencies(haero update_version_info)
+target_include_directories(haero PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(haero PUBLIC ext_libraries)
 target_compile_options(haero PRIVATE  $<$<COMPILE_LANGUAGE:CXX>:${KOKKOS_CUDA_OPTIONS}>)
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX AND HAERO_STANDALONE)
   MESSAGE(STATUS "Using GNU compiler, turning on warnings are errors....")
   target_compile_options(haero PRIVATE -Werror)
 endif()
