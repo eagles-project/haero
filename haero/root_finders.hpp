@@ -59,9 +59,19 @@ template <typename ScalarFunction> struct NewtonSolver {
                               value_type>::type
       solve_impl() {
     bool keep_going = true;
+    value_type xnp1;
+    value_type f_deriv = 0;
     while (keep_going) {
       ++counter;
-      const value_type xnp1 = xroot - f(xroot) / f.derivative(xroot);
+      f_deriv = f.derivative(xroot);
+      if (FloatingPoint<value_type>::zero(f_deriv))
+      {
+        xroot = nan("");
+        keep_going = false;
+        fail = true;
+        break;
+      }
+      xnp1 = xroot - f(xroot) / f_deriv;
       iter_diff = abs(xnp1 - xroot);
       keep_going = !(FloatingPoint<value_type>::zero(iter_diff, conv_tol));
       EKAT_KERNEL_ASSERT_MSG(counter <= max_iter,
