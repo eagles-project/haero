@@ -5,6 +5,8 @@
 #ifndef HAERO_TESTING_HPP
 #define HAERO_TESTING_HPP
 
+#include <cfenv>
+
 #include <haero/atmosphere.hpp>
 #include <haero/surface.hpp>
 
@@ -13,6 +15,8 @@ namespace haero {
 // The testing namespace contains tools that are useful only in testing
 // environments.
 namespace testing {
+
+constexpr int default_fpes = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 
 /// creates an Atmosphere object that stores a column of data with the given
 /// number of vertical levels and the given planetary boundary height

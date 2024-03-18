@@ -128,6 +128,9 @@ Surface create_surface() { return Surface(); }
 void ekat_initialize_test_session(int argc, char **argv,
                                   const bool print_config) {
   ekat::initialize_ekat_session(argc, argv, print_config);
+#ifdef EKAT_ENABLE_FPE
+  ekat::enable_fpes(haero::testing::default_fpes);
+#endif
 }
 
 // This implementation of ekat_finalize_test_session calls

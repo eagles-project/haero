@@ -105,6 +105,7 @@ template <typename T> struct MonicParabola {
   Real b;
 
   KOKKOS_INLINE_FUNCTION
+  // y = x**2 + 3
   MonicParabola() : a(0), b(3) {}
 
   KOKKOS_INLINE_FUNCTION
