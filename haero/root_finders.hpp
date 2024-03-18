@@ -64,8 +64,7 @@ template <typename ScalarFunction> struct NewtonSolver {
     while (keep_going) {
       ++counter;
       f_deriv = f.derivative(xroot);
-      if (FloatingPoint<value_type>::zero(f_deriv))
-      {
+      if (FloatingPoint<value_type>::zero(f_deriv)) {
         xroot = nan("");
         keep_going = false;
         fail = true;
