@@ -68,9 +68,6 @@ else()
 endif()
 message(STATUS "Using ${HAERO_PRECISION} precision floating point numbers")
 
-# We build static libraries only.
-set(BUILD_SHARED_LIBS OFF)
-
 # Figure out the system type.
 if (APPLE)
   set(SYS_FLAGS "-DAPPLE=1")
