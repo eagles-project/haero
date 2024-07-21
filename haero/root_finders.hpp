@@ -46,7 +46,7 @@ template <typename ScalarFunction> struct NewtonSolver {
   NewtonSolver(const value_type x0, const value_type a0, const value_type b0,
                const Real &tol, const ScalarFunction &fn)
       : xroot(x0), conv_tol(tol), counter(0),
-        iter_diff(std::numeric_limits<Real>::max()), f(fn), fail(false) {}
+        iter_diff(max()), f(fn), fail(false) {}
 
   /// Solves for the root.  Prints a warning message if the convergence
   /// tolerance is not met before the maximum number of iterations is achieved.
@@ -133,7 +133,7 @@ template <typename ScalarFunction> struct BracketedNewtonSolver {
                         const ScalarFunction &fn)
       : xroot(x0), a(a0), b(b0), conv_tol(tol), fa(fn(value_type(a0))),
         fx(fn(x0)), fb(fn(value_type(b0))), f(fn), counter(0),
-        iter_diff(std::numeric_limits<Real>::max()), fail(false) {
+        iter_diff(max()), fail(false) {
     EKAT_KERNEL_ASSERT(b - a > 0.0);
     EKAT_KERNEL_ASSERT(fa * fb < 0.0);
   }
