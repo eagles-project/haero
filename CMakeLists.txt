@@ -179,7 +179,7 @@ if (HAERO_ENABLE_GPU)
   # the esa_on_defaulted_function_ignored supresses a warning about KOKKOS markups of defaulted constructors/destructors
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
   # Avoid buggy experimental Kokkos CUDA stuff.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKOKKOS_CUDA_HALF_HPP_  -DKokkos_CXX_STANDARD=C++17")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKokkos_CXX_STANDARD=C++17")
 endif()
 
 # Record the libraries we've gathered so far as the "base" libraries that
