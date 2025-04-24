@@ -27,10 +27,10 @@ endif()
 # Blessed version of clang-format.
 set(CLANG_FORMAT_VERSION 14)
 
+project (haero)
+
 enable_language(C)   # needed so ekat can detect MPI
 enable_language(CXX)
-
-project (haero)
 
 # Set all installation folders for third-party libraries, and figure out which
 # ones have to be built for Haero.
