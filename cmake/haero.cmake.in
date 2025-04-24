@@ -46,10 +46,6 @@ target_link_libraries(kokkos INTERFACE kokkoscontainers kokkoscore)
 
 if (HAERO_ENABLE_GPU)
   # FIXME: this assumes an NVIDIA GPU!
-
-  # CUDA stuff
-  find_package(CUDAToolkit)
-
   set(HAERO_LIBRARIES @HAERO_LIBRARIES@;kokkos;cuda;m)
 else()
   set(HAERO_LIBRARIES @HAERO_LIBRARIES@;kokkos;m)
