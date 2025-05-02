@@ -173,8 +173,9 @@ endif()
 set(HAERO_AMD_GPU 0)
 # NOTE: this is hacky, but done as a result of not knowing what the
 # Kokkos_ARCH_$DEVICE_ARCH variable will be named
-string(FIND "${HAERO_DEVICE_ARCH}" "AMD" AMD_GPU)
-if (${AMD_GPU} GREATER_EQUAL 0)
+# string(FIND "${HAERO_DEVICE_ARCH}" "AMD" AMD_GPU)
+# if (${AMD_GPU} GREATER_EQUAL 0)
+if ("${HAERO_DEVICE_ARCH}" MATCHES "AMD")
   set(HAERO_AMD_GPU 1)
 endif()
 
