@@ -69,6 +69,8 @@ ENABLE_GPU=OFF
 
 # OPTIONAL: Select one of the following device architectures based on the above.
 # (These options are taken from kokkos_arch.cmake)
+# Source in docs (incomplete list here):
+# https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html
 #DEVICE_ARCH=AMDAVX          # AMD CPU
 #DEVICE_ARCH=ARMV80          # ARMv8.0 Compatible CPU
 #DEVICE_ARCH=ARMV81          # ARMv8.1 Compatible CPU
@@ -106,10 +108,15 @@ ENABLE_GPU=OFF
 #DEVICE_ARCH=TURING75        # NVIDIA Turing generation CC 7.5 (CUDA)
 #DEVICE_ARCH=AMPERE80        # NVIDIA Ampere generation CC 8.0 (CUDA)
 #DEVICE_ARCH=AMPERE86        # NVIDIA Ampere generation CC 8.6 (CUDA)
-#DEVICE_ARCH=VEGA900         # AMD GPU MI25 GFX900 (HIP)
-#DEVICE_ARCH=VEGA906         # AMD GPU MI50/MI60 GFX906 (HIP)
-#DEVICE_ARCH=VEGA908         # AMD GPU (HIP)
-#DEVICE_ARCH=VEGA90A         # AMD GPU MI200 GFX90A (HIP)
+#DEVICE_ARCH=AMD_GFX942_APU  # MI300A
+#DEVICE_ARCH=AMD_GFX942      # MI300A, MI300X
+#DEVICE_ARCH=AMD_GFX940      # MI300A (pre-production--not sure on meaning)
+#DEVICE_ARCH=AMD_GFX90A      # MI200 series
+#DEVICE_ARCH=AMD_GFX908      # MI100
+#DEVICE_ARCH=AMD_GFX906      # MI50, MI60
+#DEVICE_ARCH=AMD_GFX1103     # Ryzen 8000G Phoenix series APU
+#DEVICE_ARCH=AMD_GFX1100     # 7900xt
+#DEVICE_ARCH=AMD_GFX1030     # V620, W6800
 #DEVICE_ARCH=INTEL_GEN       # Intel GPUs (SPIR64-based devices)
 #DEVICE_ARCH=INTEL_DG1       # Intel Iris XeMAX GPU
 #DEVICE_ARCH=INTEL_GEN9      # Intel GPU Gen9
@@ -142,6 +149,14 @@ PRECISION=double
 CXX=c++
 CC=cc
 
+# NVIDIA GPU + gcc
+# CXX=[PATH]/nvcc_wrapper
+# CC=gcc
+
+# AMD GPU
+# CXX=hipcc
+# CC=amdclang
+
 # Override compilers here (ONLY if you know what you're doing!).
 
 # C++ compiler.
@@ -159,7 +174,7 @@ pushd "\$SOURCE_DIR"/machines >& /dev/null
 for MACHINE_FILE in \$(ls)
 do
   MACHINE=\${MACHINE_FILE/\.sh/}
-  echo \`hostname\` | grep -q "\$MACHINE" 
+  echo \`hostname\` | grep -q "\$MACHINE"
   host_match=\$?
   echo \$SYSTEM_NAME | grep -q "\$MACHINE"
   sys_match=\$?
@@ -193,6 +208,7 @@ fi
 # Set the device architecture if needed.
 if [ ! "\$DEVICE_ARCH" = "" ]; then
   OPTIONS="\$OPTIONS -DKokkos_ARCH_\$DEVICE_ARCH:BOOL=ON"
+  OPTIONS="\$OPTIONS -DHAERO_DEVICE_ARCH=\$DEVICE_ARCH"
 fi
 
 # Configure ekat if needed.
@@ -241,4 +257,3 @@ echo "  1. cd $1"
 echo "  2. Edit config.sh"
 echo "  3. source config.sh"
 echo "  4. Build using 'make -j'."
-
