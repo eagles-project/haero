@@ -170,14 +170,26 @@ if (NOT HAERO_ENABLE_GPU AND NOT APPLE)
   endif()
 endif()
 
+set(HAERO_AMD_GPU FALSE)
+# NOTE: this is hacky, but done as a result of not knowing what the
+# Kokkos_ARCH_$DEVICE_ARCH variable will be named
+if ("${HAERO_DEVICE_ARCH}" MATCHES "AMD")
+  set(HAERO_AMD_GPU 1)
+endif()
+
 # Other third-party libraries.
 add_subdirectory(ext)
 
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_ENABLE_GPU)
-  set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
-  # the esa_on_defaulted_function_ignored supresses a warning about KOKKOS markups of defaulted constructors/destructors
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
+  if (HAERO_AMD_GPU)
+    set(CMAKE_CXX_COMPILER "hipcc")
+    set(CMAKE_CXX_FAGS "${CMAKE_CXX_FLAGS} --nocudalib --nocudainc")
+  else()
+    set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
+    # the esa_on_defaulted_function_ignored supresses a warning about KOKKOS markups of defaulted constructors/destructors
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
+  endif()
   # Avoid buggy experimental Kokkos CUDA stuff.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKokkos_CXX_STANDARD=C++17")
 endif()

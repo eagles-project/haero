@@ -44,10 +44,16 @@ target_include_directories(haero PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(haero PUBLIC ext_libraries)
-target_compile_options(haero PRIVATE  $<$<COMPILE_LANGUAGE:CXX>:${KOKKOS_CUDA_OPTIONS}>)
-if(CMAKE_COMPILER_IS_GNUCXX AND HAERO_STANDALONE)
-  MESSAGE(STATUS "Using GNU compiler, turning on warnings are errors....")
-  target_compile_options(haero PRIVATE -Werror)
+if (HAERO_ENABLE_GPU)
+  if (HAERO_AMD_GPU)
+    # Nothing... yet
+  else()
+    target_compile_options(haero PRIVATE  $<$<COMPILE_LANGUAGE:CXX>:${KOKKOS_CUDA_OPTIONS}>)
+  endif()
+  if(CMAKE_COMPILER_IS_GNUCXX AND HAERO_STANDALONE)
+    MESSAGE(STATUS "Using GNU compiler, turning on warnings are errors....")
+    target_compile_options(haero PRIVATE -Werror)
+  endif()
 endif()
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES})
 set(HAERO_LIBRARIES haero;${HAERO_LIBRARIES} PARENT_SCOPE)
@@ -73,4 +79,3 @@ install(FILES aero_process.hpp
               utils.hpp
               root_finders.hpp
         DESTINATION include/haero)
-
