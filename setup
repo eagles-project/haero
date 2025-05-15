@@ -157,6 +157,10 @@ CC=cc
 # CXX=hipcc
 # CC=amdclang
 
+# Intel GPU
+# CXX=icpx
+# CC=icx
+
 # Override compilers here (ONLY if you know what you're doing!).
 
 # C++ compiler.
