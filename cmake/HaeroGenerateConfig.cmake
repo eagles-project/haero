@@ -17,4 +17,11 @@ macro(HaeroGenerateConfig)
     endif()
     string(APPEND HAERO_TPL_IMPORTED_LOCATIONS "set_target_properties(${lib} PROPERTIES IMPORTED_LOCATION ${imported_loc})\n")
   endforeach()
+  # generate the cmake file used by mam4xx
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/cmake/haero.cmake.in
+    ${PROJECT_BINARY_DIR}/share/haero.cmake
+    @ONLY
+  )
+  install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION .)
 endmacro()

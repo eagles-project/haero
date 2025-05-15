@@ -236,14 +236,6 @@ if (HAERO_STANDALONE)
   HaeroGenerateConfig()
 endif()
 
-# generate the cmake file used by mam4xx
-configure_file(
-  ${PROJECT_SOURCE_DIR}/cmake/haero.cmake.in
-  ${PROJECT_BINARY_DIR}/share/haero.cmake
-  @ONLY
-)
-install(DIRECTORY ${PROJECT_BINARY_DIR}/share DESTINATION .)
-
 # Support for valgrind -- Linux only.
 if (LINUX)
   find_program(VALGRIND_EXE valgrind)
