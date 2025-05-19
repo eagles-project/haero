@@ -4,7 +4,8 @@
 
 #include "testing.hpp"
 
-#include <ekat/ekat_session.hpp>
+#include <ekat_kokkos_session.hpp>
+#include <ekat_fpe.hpp>
 
 namespace haero {
 
@@ -127,15 +128,13 @@ Surface create_surface() { return Surface(); }
 // default provided by EKAT.
 void ekat_initialize_test_session(int argc, char **argv,
                                   const bool print_config) {
-  ekat::initialize_ekat_session(argc, argv, print_config);
-#ifdef EKAT_ENABLE_FPE
+  ekat::initialize_kokkos_session(argc, argv, print_config);
   ekat::enable_fpes(haero::testing::default_fpes);
-#endif
 }
 
 // This implementation of ekat_finalize_test_session calls
 // haero::testing::finalize() to deallocate all ColumnView pools.
 void ekat_finalize_test_session() {
   haero::testing::finalize();
-  ekat::finalize_ekat_session();
+  ekat::finalize_kokkos_session();
 }

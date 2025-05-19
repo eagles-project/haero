@@ -4,7 +4,7 @@
 #ifndef HAERO_CONFIG_HPP
 #define HAERO_CONFIG_HPP
 
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
+#include <ekat_kokkos_types.hpp>
 
 namespace haero {
 
