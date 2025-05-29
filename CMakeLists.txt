@@ -183,7 +183,7 @@ endif()
 # Other third-party libraries.
 add_subdirectory(ext)
 
-set(HAERO_LIBRARIES "${HAERO_LIBRARIES};kokkos")
+set(HAERO_LIBRARIES "${HAERO_LIBRARIES}")
 
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_ENABLE_GPU)
