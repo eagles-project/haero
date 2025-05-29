@@ -40,5 +40,5 @@ add_library(kokkos INTERFACE)
 target_link_libraries(kokkos INTERFACE kokkoscontainers kokkoscore)
 
 set(HAERO_CXX_COMPILER @CMAKE_CXX_COMPILER@)
-set(HAERO_LIBRARIES @HAERO_LIBRARIES@)
+set(HAERO_LIBRARIES "@HAERO_LIBRARIES@;kokkos")
 list(REMOVE_DUPLICATES HAERO_LIBRARIES)
