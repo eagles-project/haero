@@ -32,9 +32,6 @@ set(HAERO_PRECISION @HAERO_PRECISION@)
 # Haero include directories, including third-party dependencies.
 set(HAERO_INCLUDE_DIRS @CMAKE_INSTALL_PREFIX@/include @CMAKE_INSTALL_PREFIX@/include/kokkos @MPI_C_COMPILER_INCLUDE_DIRS@ @HAERO_EXT_INCLUDE_DIRS@)
 
-# Third-party libraries
-@HAERO_TPL_IMPORTED_LOCATIONS@
-
 # kokkos interface target
 add_library(kokkos INTERFACE)
 target_link_libraries(kokkos INTERFACE kokkoscontainers kokkoscore)
