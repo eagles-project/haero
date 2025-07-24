@@ -4,8 +4,8 @@
 
 #include "testing.hpp"
 
-#include <ekat_kokkos_session.hpp>
 #include <ekat_fpe.hpp>
+#include <ekat_kokkos_session.hpp>
 
 namespace haero {
 
