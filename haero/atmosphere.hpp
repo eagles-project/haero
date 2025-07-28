@@ -7,7 +7,7 @@
 
 #include <haero/haero.hpp>
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_kernel_assert.hpp>
 
 namespace haero {
 

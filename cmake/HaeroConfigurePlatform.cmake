@@ -44,7 +44,7 @@ macro(HaeroConfigurePlatform)
   # target to determine whether it's part of a larger project
   set(HAERO_STANDALONE ON)
 
-  if (TARGET ekat) # we're part of a larger project
+  if (TARGET ekat::AllLibs) # we're part of a larger project
     message(STATUS "Building Haero within another project.")
     set(HAERO_STANDALONE OFF)
   else() # we're in standalone mode

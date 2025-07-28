@@ -7,8 +7,8 @@
 
 #include <haero/haero.hpp>
 
-#include <ekat/ekat_assert.hpp>
-#include <ekat/ekat_scalar_traits.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_scalar_traits.hpp>
 
 #include <Kokkos_NumericTraits.hpp>
 

@@ -14,22 +14,10 @@ endforeach()
 # E3SM Kokkos Application Toolkit (EKAT) library and friends.
 #----------------------------------------------------------------------------
 if (HAERO_BUILDS_EKAT)
-  list(APPEND CMAKE_MODULE_PATH
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake/tpls)
-  include(EkatBuildEkat)
-  set(EKAT_ENABLE_MPI ${HAERO_ENABLE_MPI} CACHE BOOL "Enable MPI")
-  set(EKAT_ENABLE_FORTRAN OFF CACHE BOOL "Enable EKAT Fortran support")
-  set(EKAT_ENABLE_TESTS OFF CACHE BOOL "Enable EKAT tests")
-  set(Kokkos_ENABLE_LIBDL OFF CACHE BOOL "Enable broken Kokkos libdl support")
-  set(Kokkos_ENABLE_DEPRECATED_CODE_3 OFF CACHE BOOL "Enable deprecated code to avoid warnings of using deprecated functions.")
-  if (HAERO_SKIP_FIND_YAML_CPP)
-    set(EKAT_SKIP_FIND_YAML_CPP ON CACHE BOOL "EKAT will build yaml-cpp ")
-    message(STATUS "SKIP FIND YAML CPP")
-  else()
-    set(EKAT_SKIP_FIND_YAML_CPP OFF CACHE BOOL "EKAT will build yaml-cpp ")
-    message(STATUS "EKAT WILL LOOK FOR YAML-CPP")
-  endif()
+
+  # Set Kokkos config options
+  set(Kokkos_ENABLE_LIBDL OFF CACHE BOOL "Whether to enable the LIBDL library")
+  set(Kokkos_ENABLE_DEPRECATED_CODE_4 OFF CACHE BOOL "Whether code deprecated in major release 4 is available")
 
   if (CMAKE_BUILD_TYPE STREQUAL Release)
     set(Kokkos_ENABLE_DEBUG FALSE)
@@ -37,10 +25,6 @@ if (HAERO_BUILDS_EKAT)
   else()
     set(Kokkos_ENABLE_DEBUG TRUE)
     set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION OFF)
-  endif()
-  if (APPLE)
-    # floating point exceptions don't work properly on Macs
-    set(EKAT_ENABLE_FPE OFF CACHE BOOL "")
   endif()
   if (HAERO_ENABLE_GPU)
     if (HAERO_AMD_GPU)
@@ -69,43 +53,20 @@ if (HAERO_BUILDS_EKAT)
       set(Kokkos_ENABLE_PTHREAD ON CACHE BOOL "Enable pthreads Kokkos backend")
     endif()
   endif()
-  BuildEkat(PREFIX "HAERO")
-  list(APPEND EKAT_INCLUDE_DIRS
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/src
-       ${PROJECT_BINARY_DIR}/externals/ekat/src
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/tpls/desul/include
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/core/src
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/kokkos/containers/src
-       ${PROJECT_BINARY_DIR}/externals/kokkos
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/spdlog/include
-       ${CMAKE_CURRENT_SOURCE_DIR}/ekat/extern/yaml-cpp/include)
-  if (NOT TARGET yaml-cpp)
-    add_library(yaml-cpp STATIC IMPORTED GLOBAL)
-    if (CMAKE_BUILD_TYPE MATCHES "Debug")
-      set_target_properties(yaml-cpp PROPERTIES
-        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libyaml-cppd.a)
-    else()
-      set_target_properties(yaml-cpp PROPERTIES
-        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libyaml-cpp.a)
-    endif()
-  endif()
-  if (NOT TARGET spdlog)
-    add_library(spdlog STATIC IMPORTED GLOBAL)
-    if (CMAKE_BUILD_TYPE MATCHES "Debug")
-      set_target_properties(spdlog PROPERTIES
-        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libspdlogd.a)
-    else()
-      set_target_properties(spdlog PROPERTIES
-        IMPORTED_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/libspdlog.a)
-    endif()
-  endif()
+
+  # Set EKAT config options
+  set(EKAT_ENABLE_MPI ${HAERO_ENABLE_MPI} CACHE BOOL "Enable MPI")
+  set(EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether tests should be built")
+  option(EKAT_ENABLE_KOKKOS       "Enable EKAT kokkos utilities" ON)
+  option(EKAT_ENABLE_YAML_PARSER  "Enable EKAT yaml parsing utilities" ON)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ekat ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
 
 add_library(ext_libraries INTERFACE)
-target_link_libraries (ext_libraries INTERFACE ekat;${HAERO_EXT_LIBRARIES})
+target_link_libraries (ext_libraries INTERFACE ekat::AllLibs;${HAERO_EXT_LIBRARIES})
 
 # Add all the libraries to the list maintained for the standalone build config file.
-set(HAERO_LIBRARIES ekat;${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
+set(HAERO_LIBRARIES ekat::AllLibs;${HAERO_EXT_LIBRARIES};${HAERO_LIBRARIES} PARENT_SCOPE)
 list(REMOVE_DUPLICATES HAERO_EXT_INCLUDE_DIRS)
 set(HAERO_EXT_INCLUDE_DIRS ${HAERO_EXT_INCLUDE_DIRS} PARENT_SCOPE)
 
