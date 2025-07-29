@@ -55,11 +55,9 @@ message(STATUS "Configuring haero v${HAERO_VERSION}")
 # Precision of floating point numbers.
 if (HAERO_PRECISION STREQUAL "single")
   set(HAERO_REAL_TYPE "float")
-  set(HAERO_REAL_KIND "sp")
   set(HAERO_DOUBLE_PRECISION 0)
 elseif(HAERO_PRECISION STREQUAL "double")
   set(HAERO_REAL_TYPE "double")
-  set(HAERO_REAL_KIND "dp")
   set(HAERO_DOUBLE_PRECISION 1)
 elseif(HAERO_PRECISION)
   message(FATAL_ERROR "Invalid HAERO_PRECISION: ${HAERO_PRECISION} (use 'single' or 'double')")
@@ -201,10 +199,6 @@ if (HAERO_ENABLE_GPU)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKokkos_CXX_STANDARD=C++17")
 endif()
 list(REMOVE_DUPLICATES HAERO_LIBRARIES)
-
-# Record the libraries we've gathered so far as the "base" libraries that
-# we need. We use this for efficiently linking unit tests.
-set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 
 # Include the binary directory in the header file search path,
 # since it's where we place the third-party libraries.
