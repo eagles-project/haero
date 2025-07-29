@@ -180,10 +180,8 @@ elseif ("${HAERO_DEVICE_ARCH}" MATCHES "INTEL")
   set(HAERO_INTEL_GPU TRUE)
 endif()
 
-# Other third-party libraries.
+# Other third-party libraries (so far only ekat).
 add_subdirectory(ext)
-
-set(HAERO_LIBRARIES "${HAERO_LIBRARIES}")
 
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_ENABLE_GPU)
@@ -228,11 +226,6 @@ endif()
 # Source directories.
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
-
-if (HAERO_STANDALONE)
-  include(HaeroGenerateConfig)
-  HaeroGenerateConfig()
-endif()
 
 # Support for valgrind -- Linux only.
 if (LINUX)
@@ -283,3 +276,30 @@ if (NOT TARGET format-cxx)
     endif()
   endif()
 endif()
+
+###########################################
+###   Package Haero as a CMake package   ###
+###########################################
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+CONFIGURE_PACKAGE_CONFIG_FILE(
+  cmake/haeroConfig.cmake.in
+  "${haero_BINARY_DIR}/haeroConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR}/cmake)
+
+WRITE_BASIC_PACKAGE_VERSION_FILE("${haero_BINARY_DIR}/haeroConfigVersion.cmake"
+    VERSION ${HAERO_VERSION_MAJOR}.${HAERO_VERSION_MINOR}.${HAERO_VERSION_PATCH}.
+    COMPATIBILITY SameMajorVersion)
+
+# Install the EkatConfig*.cmake files
+install(FILES
+  "${haero_BINARY_DIR}/haeroConfig.cmake"
+  "${haero_BINARY_DIR}/haeroConfigVersion.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/haero)
+
+# Install cmake targets
+install(EXPORT HaeroTargets
+        FILE haeroTargets.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/haero)

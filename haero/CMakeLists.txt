@@ -43,7 +43,8 @@ target_include_directories(haero PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(haero PUBLIC ext_libraries)
+target_link_libraries(haero PUBLIC ekat::AllLibs)
+
 if (HAERO_ENABLE_GPU)
   if (HAERO_AMD_GPU)
     # Nothing... yet
@@ -64,7 +65,9 @@ if (HAERO_ENABLE_TESTS)
 endif()
 
 # Installation targets
-install(TARGETS haero DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS haero
+        EXPORT HaeroTargets
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES aero_process.hpp
               aero_species.hpp
               atmosphere.hpp
