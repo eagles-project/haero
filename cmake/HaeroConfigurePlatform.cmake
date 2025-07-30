@@ -49,32 +49,27 @@ macro(HaeroConfigurePlatform)
     set(HAERO_STANDALONE OFF)
   else() # we're in standalone mode
     message(STATUS "Building Haero in standalone mode.")
-    if (EKAT_SOURCE_DIR) # ekat paths specified
-      if (NOT EXISTS ${EKAT_SOURCE_DIR})
-        message(FATAL_ERROR "Invalid EKAT source dir: ${EKAT_SOURCE_DIR}.")
-      elseif()
-        if (NOT EXISTS ${EKAT_SOURCE_DIR}/src)
-          message(FATAL_ERROR "EKAT source dir (${EKAT_SOURCE_DIR}) has no src/ subdirectory!")
-        endif()
+    # set (CMAKE_FIND_DEBUG_MODE ON)
+    find_package(Ekat COMPONENTS Core KokkosUtils HINTS ${EKAT_PATH}
+      NO_CMAKE_PATH
+      NO_CMAKE_ENVIRONMENT_PATH
+      NO_SYSTEM_ENVIRONMENT_PATH
+      NO_CMAKE_PACKAGE_REGISTRY
+      NO_CMAKE_SYSTEM_PATH
+      NO_CMAKE_SYSTEM_PACKAGE_REGISTRY
+    ) # can we find it on the system?
+  # set (CMAKE_FIND_DEBUG_MODE OFF)
+    if (NOT Ekat_FOUND) # no... build it ourselves
+      set(EKAT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ext/ekat")
+      set(EKAT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/externals/ekat")
+      if (Ekat_NOT_FOUND_MESSAGE)
+        message(STATUS "EKAT not found with message: ${Ekat_NOT_FOUND_MESSAGE}")
       endif()
-      if (NOT EKAT_BINARY_DIR)
-        message(FATAL_ERROR "EKAT source dir was given, but binary dir was not!")
-      elseif (NOT EXISTS ${EKAT_BINARY_DIR})
-        message(FATAL_ERROR "Invalid EKAT binary dir: ${EKAT_BINARY_DIR}.")
-      elseif (NOT EXISTS ${EKAT_BINARY_DIR}/src/ekat/libekat.a)
-        message(FATAL_ERROR "EKAT binary dir (${EKAT_BINARY_DIR}) does not contain an EKAT library!")
-      endif()
-      message(STATUS "Using pre-built EKAT library in ${EKAT_BINARY_DIR}.")
-    else() # no specified paths to ekat
-      find_package(ekat QUIET) # can we find it on the system?
-      if (NOT ekat_FOUND) # no... build it ourselves
-        set(EKAT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ext/ekat")
-        set(EKAT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/externals/ekat")
-        message(STATUS "Building EKAT internally.")
-        set(HAERO_BUILDS_EKAT ON)
-      else()
-        message(STATUS "EKAT found on system--attempting to use local version.")
-      endif()
+      message(STATUS "Building EKAT internally.")
+      set(HAERO_BUILDS_EKAT ON)
+    else()
+      message(STATUS "EKAT found on system--attempting to use local version.")
+      message(STATUS "EKAT_DIR: ${Ekat_DIR}")
     endif()
   endif()
 

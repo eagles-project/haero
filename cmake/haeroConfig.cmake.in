@@ -1,0 +1,29 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+include(GNUInstallDirs)
+
+# HAERO options
+set(HAERO_PRECISION @HAERO_PRECISION@)
+set(HAERO_ENABLE_GPU  @HAERO_ENABLE_GPU@)
+
+###############################
+#      TPLs dependencies      #
+###############################
+
+if (@HAERO_BUILDS_EKAT@)
+  # We're installing ekat alongside haero
+  find_dependency(Ekat REQUIRED
+    COMPONENTS Core KokkosUtils
+    HINTS @CMAKE_INSTALL_PREFIX@)
+  set (EKAT_PREFIX @CMAKE_INSTALL_PREFIX@)
+else()
+  find_dependency(Ekat REQUIRED
+    COMPONENTS Core KokkosUtils
+    HINTS @EKAT_PATH@)
+endif()
+
+include (${CMAKE_CURRENT_LIST_DIR}/haeroTargets.cmake)
+
+set(EKAT_CMAKE_DIR "${EKAT_PREFIX}/share/cmake/Modules")
+list(APPEND CMAKE_MODULE_PATH "${EKAT_CMAKE_DIR}")

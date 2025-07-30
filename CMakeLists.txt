@@ -55,11 +55,9 @@ message(STATUS "Configuring haero v${HAERO_VERSION}")
 # Precision of floating point numbers.
 if (HAERO_PRECISION STREQUAL "single")
   set(HAERO_REAL_TYPE "float")
-  set(HAERO_REAL_KIND "sp")
   set(HAERO_DOUBLE_PRECISION 0)
 elseif(HAERO_PRECISION STREQUAL "double")
   set(HAERO_REAL_TYPE "double")
-  set(HAERO_REAL_KIND "dp")
   set(HAERO_DOUBLE_PRECISION 1)
 elseif(HAERO_PRECISION)
   message(FATAL_ERROR "Invalid HAERO_PRECISION: ${HAERO_PRECISION} (use 'single' or 'double')")
@@ -180,10 +178,8 @@ elseif ("${HAERO_DEVICE_ARCH}" MATCHES "INTEL")
   set(HAERO_INTEL_GPU TRUE)
 endif()
 
-# Other third-party libraries.
+# Other third-party libraries (so far only ekat).
 add_subdirectory(ext)
-
-set(HAERO_LIBRARIES "${HAERO_LIBRARIES}")
 
 # If we're building on a GPU, set the C++ compiler appropriately.
 if (HAERO_ENABLE_GPU)
@@ -197,16 +193,11 @@ if (HAERO_ENABLE_GPU)
     set(CMAKE_CXX_COMPILER ${EKAT_NVCC_WRAPPER})
     # the esa_on_defaulted_function_ignored supresses a warning about KOKKOS markups of defaulted constructors/destructors
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
-    set(HAERO_LIBRARIES "${HAERO_LIBRARIES};cuda")
   endif()
   # Avoid buggy experimental Kokkos CUDA stuff.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DKokkos_CXX_STANDARD=C++17")
 endif()
 list(REMOVE_DUPLICATES HAERO_LIBRARIES)
-
-# Record the libraries we've gathered so far as the "base" libraries that
-# we need. We use this for efficiently linking unit tests.
-set(HAERO_BASE_LIBRARIES ${HAERO_LIBRARIES})
 
 # Include the binary directory in the header file search path,
 # since it's where we place the third-party libraries.
@@ -228,11 +219,6 @@ endif()
 # Source directories.
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory(haero)
-
-if (HAERO_STANDALONE)
-  include(HaeroGenerateConfig)
-  HaeroGenerateConfig()
-endif()
 
 # Support for valgrind -- Linux only.
 if (LINUX)
@@ -283,3 +269,30 @@ if (NOT TARGET format-cxx)
     endif()
   endif()
 endif()
+
+###########################################
+###   Package Haero as a CMake package   ###
+###########################################
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+CONFIGURE_PACKAGE_CONFIG_FILE(
+  cmake/haeroConfig.cmake.in
+  "${haero_BINARY_DIR}/haeroConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR}/cmake)
+
+WRITE_BASIC_PACKAGE_VERSION_FILE("${haero_BINARY_DIR}/haeroConfigVersion.cmake"
+    VERSION ${HAERO_VERSION_MAJOR}.${HAERO_VERSION_MINOR}.${HAERO_VERSION_PATCH}.
+    COMPATIBILITY SameMajorVersion)
+
+# Install the EkatConfig*.cmake files
+install(FILES
+  "${haero_BINARY_DIR}/haeroConfig.cmake"
+  "${haero_BINARY_DIR}/haeroConfigVersion.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/haero)
+
+# Install cmake targets
+install(EXPORT HaeroTargets
+        FILE haeroTargets.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/haero)
