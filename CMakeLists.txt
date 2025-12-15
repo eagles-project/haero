@@ -32,6 +32,13 @@ project (haero)
 enable_language(C)   # needed so ekat can detect MPI
 enable_language(CXX)
 
+# Determine whether Haero is built as a standalone project or as part of e.g. E3SM
+if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(HAERO_STANDALONE ON)
+else()
+  set(HAERO_STANDALONE OFF)
+endif()
+
 # Set all installation folders for third-party libraries, and figure out which
 # ones have to be built for Haero.
 include(HaeroConfigurePlatform)
@@ -158,8 +165,8 @@ else()
   message(STATUS "MPI is disabled")
 endif()
 
-# Enable OpenMP for CPU backends if available.
-if (NOT HAERO_ENABLE_GPU AND NOT APPLE)
+# Enable OpenMP for CPU backends in standalone builds if available.
+if (HAERO_STANDALONE AND NOT HAERO_ENABLE_GPU AND NOT APPLE)
   find_package(OpenMP QUIET)
   if (OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
